@@ -18,17 +18,30 @@ const Header = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 glass border-b border-border/50">
+    <header className="sticky top-0 z-50 bg-background border-b-4 border-foreground">
+      {/* Announcement Bar */}
+      <div className="bg-foreground text-background overflow-hidden">
+        <div className="py-2 flex whitespace-nowrap">
+          <span className="marquee font-display tracking-wider text-sm">
+            🇬🇧 PROPER BRITISH BROADBAND • NO ROBOT SUPPORT LINES • ACTUAL HUMANS IN HUDDERSFIELD • FREE INSTALLATION • 30-DAY CONTRACTS • 
+          </span>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-warning flex items-center justify-center shadow-glow group-hover:scale-110 transition-transform duration-300">
-              <span className="text-primary-foreground font-display font-bold text-xl">O</span>
+          <Link to="/" className="flex items-center gap-4 group">
+            <div className="relative">
+              <div className="w-14 h-14 bg-primary border-4 border-foreground shadow-brutal flex items-center justify-center group-hover:-translate-y-0.5 group-hover:-translate-x-0.5 group-hover:shadow-brutal-lg transition-all duration-150">
+                <span className="font-display text-2xl text-primary-foreground">O</span>
+              </div>
             </div>
             <div className="flex flex-col">
-              <span className="font-display font-bold text-xl text-foreground">OCCTA</span>
-              <span className="text-xs text-muted-foreground -mt-1">Telecom that gets it</span>
+              <span className="font-display text-3xl tracking-tight">OCCTA</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+                Telecom That Gets It
+              </span>
             </div>
           </Link>
 
@@ -38,10 +51,10 @@ const Header = () => {
               <Link
                 key={item.name}
                 to={item.path}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                className={`px-4 py-2 font-display text-lg tracking-wide transition-all duration-150 flex items-center gap-2 border-4 ${
                   isActive(item.path)
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "bg-primary text-primary-foreground border-foreground shadow-brutal -translate-y-0.5"
+                    : "border-transparent hover:border-foreground hover:bg-secondary"
                 }`}
               >
                 {item.icon && <item.icon className="w-4 h-4" />}
@@ -51,10 +64,15 @@ const Header = () => {
           </nav>
 
           {/* CTA Buttons */}
-          <div className="hidden lg:flex items-center gap-3">
-            <a href="tel:08002606627" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-              <Phone className="w-4 h-4" />
-              <span className="font-medium">0800 260 6627</span>
+          <div className="hidden lg:flex items-center gap-4">
+            <a 
+              href="tel:08002606627" 
+              className="flex items-center gap-2 font-display text-lg hover:text-accent transition-colors"
+            >
+              <div className="p-2 bg-foreground text-background">
+                <Phone className="w-4 h-4" />
+              </div>
+              0800 260 6627
             </a>
             <Link to="/auth">
               <Button variant="outline" size="sm">Sign In</Button>
@@ -66,7 +84,7 @@ const Header = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="lg:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
+            className="lg:hidden p-3 border-4 border-foreground bg-background hover:bg-secondary transition-colors"
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"
           >
@@ -76,27 +94,29 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="lg:hidden py-4 border-t border-border/50 animate-fade-in">
+          <div className="lg:hidden py-4 border-t-4 border-foreground animate-slide-up">
             <nav className="flex flex-col gap-2">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
                   onClick={() => setIsOpen(false)}
-                  className={`px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 flex items-center gap-3 ${
+                  className={`px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
                     isActive(item.path)
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      ? "bg-primary text-primary-foreground border-foreground shadow-brutal"
+                      : "border-transparent hover:border-foreground hover:bg-secondary"
                   }`}
                 >
                   {item.icon && <item.icon className="w-5 h-5" />}
                   {item.name}
                 </Link>
               ))}
-              <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border/50">
-                <a href="tel:08002606627" className="flex items-center gap-2 px-4 py-2 text-muted-foreground">
-                  <Phone className="w-5 h-5" />
-                  <span className="font-medium">0800 260 6627</span>
+              <div className="flex flex-col gap-3 mt-4 pt-4 border-t-4 border-foreground">
+                <a href="tel:08002606627" className="flex items-center gap-3 px-4 py-2 font-display text-lg">
+                  <div className="p-2 bg-foreground text-background">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  0800 260 6627
                 </a>
                 <Link to="/auth" onClick={() => setIsOpen(false)}>
                   <Button variant="outline" className="w-full">Sign In</Button>

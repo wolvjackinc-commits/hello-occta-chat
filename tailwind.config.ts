@@ -14,8 +14,13 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["DM Sans", "system-ui", "sans-serif"],
-        display: ["Space Grotesk", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Bebas Neue", "Impact", "sans-serif"],
+      },
+      fontSize: {
+        "display-xl": ["clamp(4rem, 15vw, 12rem)", { lineHeight: "0.85", letterSpacing: "-0.02em" }],
+        "display-lg": ["clamp(3rem, 10vw, 8rem)", { lineHeight: "0.9", letterSpacing: "-0.01em" }],
+        "display-md": ["clamp(2rem, 6vw, 4rem)", { lineHeight: "0.95" }],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -83,8 +88,11 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius))",
+        sm: "calc(var(--radius))",
+      },
+      borderWidth: {
+        "3": "3px",
       },
       keyframes: {
         "accordion-down": {
@@ -111,10 +119,10 @@ export default {
         "bounce-slow": "bounce 2s ease-in-out infinite",
       },
       boxShadow: {
-        glow: "0 0 30px hsl(var(--primary) / 0.3)",
-        "glow-lg": "0 0 50px hsl(var(--primary) / 0.4)",
-        soft: "0 10px 40px -10px hsl(var(--foreground) / 0.1)",
-        card: "0 4px 20px -4px hsl(var(--foreground) / 0.08)",
+        brutal: "6px 6px 0 0 hsl(var(--foreground))",
+        "brutal-lg": "10px 10px 0 0 hsl(var(--foreground))",
+        "brutal-primary": "6px 6px 0 0 hsl(var(--primary))",
+        "brutal-accent": "6px 6px 0 0 hsl(var(--accent))",
       },
     },
   },

@@ -1,148 +1,97 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Loader2, CheckCircle } from "lucide-react";
-import { z } from "zod";
+import { Search, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
-const postcodeSchema = z.string()
-  .min(5, "That's a bit short for a postcode, innit?")
-  .max(8, "That postcode is longer than a Monday morning")
-  .regex(/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i, "That doesn't look like a UK postcode. Try something like 'HD3 3WU'");
-
-interface PostcodeCheckerProps {
-  variant?: "hero" | "compact";
-}
-
-const PostcodeChecker = ({ variant = "hero" }: PostcodeCheckerProps) => {
+const PostcodeChecker = () => {
   const [postcode, setPostcode] = useState("");
-  const [isChecking, setIsChecking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ available: boolean; message: string } | null>(null);
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [result, setResult] = useState<string | null>(null);
+
+  const validatePostcode = (pc: string) => {
+    const postcodeRegex = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i;
+    return postcodeRegex.test(pc.trim());
+  };
 
   const handleCheck = async () => {
-    setError(null);
-    setResult(null);
-    
-    const validation = postcodeSchema.safeParse(postcode);
-    if (!validation.success) {
-      setError(validation.error.errors[0].message);
+    if (!validatePostcode(postcode)) {
+      setStatus("error");
+      setResult("That doesn't look like a proper postcode, mate.");
       return;
     }
 
-    setIsChecking(true);
+    setStatus("loading");
     
-    // Simulate API check - in production this would hit a real postcode API
+    // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
     
-    // Mock result
+    // Mock response - in production this would hit your actual availability API
     const isAvailable = Math.random() > 0.2;
-    setResult({
-      available: isAvailable,
-      message: isAvailable 
-        ? "Brilliant! We can hook you up with blazing fast broadband. 🎉"
-        : "We're working on reaching your area! Pop your email below and we'll let you know when we arrive.",
-    });
     
-    setIsChecking(false);
+    if (isAvailable) {
+      setStatus("success");
+      setResult("Brilliant! We've got ultrafast fibre available at your address. Speeds up to 900Mbps!");
+    } else {
+      setStatus("error");
+      setResult("Not quite there yet, but we're expanding fast. Leave your email and we'll give you a shout when we arrive.");
+    }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleCheck();
     }
   };
 
-  if (variant === "compact") {
-    return (
-      <div className="flex gap-2">
+  return (
+    <div className="w-full max-w-xl">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Enter your postcode"
+            placeholder="e.g. HD3 3WU"
             value={postcode}
-            onChange={(e) => setPostcode(e.target.value.toUpperCase())}
-            onKeyDown={handleKeyDown}
-            className="pl-10 h-11"
-            maxLength={8}
+            onChange={(e) => {
+              setPostcode(e.target.value.toUpperCase());
+              if (status !== "idle") setStatus("idle");
+            }}
+            onKeyPress={handleKeyPress}
+            className="h-14 pl-12 text-lg font-display uppercase tracking-wider border-4 border-foreground focus:ring-0 focus:border-foreground bg-background placeholder:text-muted-foreground/50"
           />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         </div>
-        <Button onClick={handleCheck} disabled={isChecking}>
-          {isChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : "Check"}
+        <Button 
+          onClick={handleCheck} 
+          disabled={!postcode || status === "loading"}
+          size="lg"
+          className="h-14"
+        >
+          {status === "loading" ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Checking...
+            </>
+          ) : (
+            "Check Availability"
+          )}
         </Button>
       </div>
-    );
-  }
 
-  return (
-    <div className="w-full max-w-xl mx-auto space-y-4">
-      <div className="relative">
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Enter your postcode (e.g., HD3 3WU)"
-              value={postcode}
-              onChange={(e) => {
-                setPostcode(e.target.value.toUpperCase());
-                setError(null);
-                setResult(null);
-              }}
-              onKeyDown={handleKeyDown}
-              className="pl-12 h-14 text-lg rounded-xl border-2 border-border focus:border-primary transition-colors"
-              maxLength={8}
-            />
-          </div>
-          <Button 
-            onClick={handleCheck} 
-            disabled={isChecking || !postcode}
-            variant="hero"
-            size="lg"
-            className="h-14 px-8"
-          >
-            {isChecking ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                <Search className="w-5 h-5" />
-                <span className="hidden sm:inline">Check</span>
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="flex items-center gap-2 text-destructive text-sm animate-fade-in">
-          <span>🤔</span>
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Result */}
+      {/* Result Display */}
       {result && (
-        <div className={`p-4 rounded-xl animate-slide-up ${
-          result.available 
-            ? "bg-success/10 border border-success/20" 
-            : "bg-warning/10 border border-warning/20"
-        }`}>
-          <div className="flex items-start gap-3">
-            {result.available ? (
-              <CheckCircle className="w-6 h-6 text-success mt-0.5" />
-            ) : (
-              <span className="text-2xl">📮</span>
-            )}
-            <div>
-              <p className="font-medium">{result.message}</p>
-              {result.available && (
-                <Button variant="hero" size="sm" className="mt-3">
-                  View Available Packages
-                </Button>
-              )}
-            </div>
-          </div>
+        <div
+          className={`mt-4 p-4 border-4 animate-slide-up flex items-start gap-3 ${
+            status === "success"
+              ? "border-success bg-success/10"
+              : "border-destructive bg-destructive/10"
+          }`}
+        >
+          {status === "success" ? (
+            <CheckCircle className="w-6 h-6 text-success flex-shrink-0 mt-0.5" />
+          ) : (
+            <XCircle className="w-6 h-6 text-destructive flex-shrink-0 mt-0.5" />
+          )}
+          <p className="font-medium">{result}</p>
         </div>
       )}
     </div>

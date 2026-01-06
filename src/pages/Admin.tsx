@@ -85,7 +85,12 @@ type GuestOrder = {
   user_id: string | null;
   linked_at: string | null;
   created_at: string;
+  status: string;
 };
+
+type GuestOrderStatus = 'pending' | 'processing' | 'dispatched' | 'installed' | 'active' | 'cancelled';
+
+const guestOrderStatusOptions: GuestOrderStatus[] = ['pending', 'processing', 'dispatched', 'installed', 'active', 'cancelled'];
 
 type OrderStatus = 'pending' | 'confirmed' | 'active' | 'cancelled';
 type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -96,6 +101,9 @@ const ticketStatusOptions: TicketStatus[] = ['open', 'in_progress', 'resolved', 
 const statusColors: Record<string, string> = {
   pending: "bg-warning text-warning-foreground",
   confirmed: "bg-accent text-accent-foreground",
+  processing: "bg-accent text-accent-foreground",
+  dispatched: "bg-secondary text-secondary-foreground",
+  installed: "bg-primary/80 text-primary-foreground",
   active: "bg-primary text-primary-foreground",
   cancelled: "bg-destructive text-destructive-foreground",
   open: "bg-warning text-warning-foreground",
@@ -241,6 +249,27 @@ const Admin = () => {
         description: "Ticket status updated successfully.",
       });
       setTickets(tickets.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
+    }
+  };
+
+  const updateGuestOrderStatus = async (orderId: string, newStatus: GuestOrderStatus) => {
+    const { error } = await supabase
+      .from("guest_orders")
+      .update({ status: newStatus })
+      .eq("id", orderId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update order status.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Updated",
+        description: "Guest order status updated successfully.",
+      });
+      setGuestOrders(guestOrders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     }
   };
 
@@ -436,8 +465,8 @@ const Admin = () => {
                           <TableHead className="font-display uppercase">Plan</TableHead>
                           <TableHead className="font-display uppercase">Type</TableHead>
                           <TableHead className="font-display uppercase">Location</TableHead>
-                          <TableHead className="font-display uppercase">Provider</TableHead>
                           <TableHead className="font-display uppercase">Date</TableHead>
+                          <TableHead className="font-display uppercase">Status</TableHead>
                           <TableHead className="font-display uppercase">Linked</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -470,9 +499,25 @@ const Admin = () => {
                               <p className="text-sm">{order.city}</p>
                               <p className="text-xs text-muted-foreground">{order.postcode}</p>
                             </TableCell>
-                            <TableCell className="text-sm">{order.current_provider || '—'}</TableCell>
                             <TableCell className="text-sm">
                               {format(new Date(order.created_at), 'dd MMM yyyy')}
+                            </TableCell>
+                            <TableCell>
+                              <Select 
+                                value={order.status} 
+                                onValueChange={(value) => updateGuestOrderStatus(order.id, value as GuestOrderStatus)}
+                              >
+                                <SelectTrigger className={`w-32 border-2 border-foreground ${statusColors[order.status]}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {guestOrderStatusOptions.map((status) => (
+                                    <SelectItem key={status} value={status} className="uppercase">
+                                      {status}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell>
                               {order.user_id ? (

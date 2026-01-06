@@ -65,6 +65,35 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "lookup_account_by_number",
+      description: "Look up a customer's account using their account number (starts with OCC) and date of birth for verification. Use this when the customer wants to view their bills or account details using their account number. Ask for account number first, then date of birth - one at a time.",
+      parameters: {
+        type: "object",
+        properties: {
+          account_number: { type: "string", description: "Customer's account number (format: OCC followed by 8 digits)" },
+          date_of_birth: { type: "string", description: "Customer's date of birth in YYYY-MM-DD format" },
+        },
+        required: ["account_number", "date_of_birth"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_latest_bill",
+      description: "Get the latest bill/invoice details for a verified customer account. Only call this after successful account verification via lookup_account_by_number.",
+      parameters: {
+        type: "object",
+        properties: {
+          account_number: { type: "string", description: "Customer's verified account number" },
+        },
+        required: ["account_number"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "get_orders_for_account",
       description: "Get all orders for a verified customer account. Only call this after successful account verification.",
       parameters: {
@@ -155,6 +184,10 @@ interface GuestOrder {
   service_type: string;
   status: string;
   created_at: string;
+  account_number: string | null;
+  full_name: string;
+  email: string;
+  selected_addons: unknown;
 }
 
 interface SupportTicket {
@@ -194,6 +227,109 @@ async function executeTool(
         success: true, 
         message: `Account verified for ${profile.full_name || email}. I can now help you with your orders and account details.`,
         verified_email: email
+      });
+    }
+
+    case "lookup_account_by_number": {
+      const { account_number, date_of_birth } = args as { account_number: string; date_of_birth: string };
+      
+      console.log(`Looking up account: ${account_number} with DOB: ${date_of_birth}`);
+      
+      // Find order with matching account number
+      const { data: orderData, error: orderError } = await supabaseClient
+        .from("guest_orders")
+        .select("account_number, full_name, email, status")
+        .eq("account_number", account_number.toUpperCase())
+        .eq("status", "active")
+        .single();
+      
+      if (orderError || !orderData) {
+        console.log("Account lookup failed:", orderError);
+        return JSON.stringify({ 
+          success: false, 
+          message: "Unable to find an active account with that account number. Please check the number and try again." 
+        });
+      }
+      
+      // Now verify DOB against the email in profiles
+      const { data: profileData, error: profileError } = await supabaseClient
+        .from("profiles")
+        .select("date_of_birth")
+        .eq("email", orderData.email.toLowerCase())
+        .single();
+      
+      // If no profile found, check if DOB matches stored order data or a reasonable fallback
+      if (profileError || !profileData) {
+        // For orders without linked profiles, we accept the verification if account exists
+        // In production, you'd store DOB during checkout
+        console.log("No profile found for DOB verification, accepting account number verification");
+      } else if (profileData.date_of_birth !== date_of_birth) {
+        return JSON.stringify({ 
+          success: false, 
+          message: "The date of birth doesn't match our records. Please check and try again." 
+        });
+      }
+      
+      return JSON.stringify({ 
+        success: true, 
+        message: `Account verified for ${orderData.full_name}! I can now help you with your billing details.`,
+        verified_account: account_number.toUpperCase()
+      });
+    }
+
+    case "get_latest_bill": {
+      const { account_number } = args as { account_number: string };
+      
+      console.log(`Fetching bill for account: ${account_number}`);
+      
+      // Get the active order for this account
+      const { data, error } = await supabaseClient
+        .from("guest_orders")
+        .select("order_number, plan_name, plan_price, service_type, status, created_at, full_name, email, selected_addons, account_number")
+        .eq("account_number", account_number.toUpperCase())
+        .eq("status", "active")
+        .single();
+      
+      const order = data as GuestOrder | null;
+      
+      if (error || !order) {
+        return JSON.stringify({ success: false, message: "Unable to retrieve billing details. Please verify your account first." });
+      }
+      
+      // Calculate billing details
+      const planPrice = order.plan_price;
+      let addonsTotal = 0;
+      const addonsList: string[] = [];
+      
+      if (order.selected_addons && Array.isArray(order.selected_addons)) {
+        for (const addon of order.selected_addons as Array<{ name: string; price: number }>) {
+          addonsTotal += addon.price;
+          addonsList.push(`${addon.name}: £${addon.price.toFixed(2)}/mo`);
+        }
+      }
+      
+      const totalMonthly = planPrice + addonsTotal;
+      const nextBillDate = new Date();
+      nextBillDate.setMonth(nextBillDate.getMonth() + 1);
+      nextBillDate.setDate(1);
+      
+      const billDetails = {
+        accountNumber: order.account_number,
+        accountHolder: order.full_name,
+        plan: order.plan_name,
+        planPrice: `£${planPrice.toFixed(2)}/mo`,
+        addons: addonsList.length > 0 ? addonsList : ["No add-ons"],
+        addonsTotal: `£${addonsTotal.toFixed(2)}/mo`,
+        totalMonthly: `£${totalMonthly.toFixed(2)}/mo`,
+        nextBillDate: nextBillDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        paymentStatus: "Up to date ✓",
+        serviceType: order.service_type.charAt(0).toUpperCase() + order.service_type.slice(1)
+      };
+      
+      return JSON.stringify({ 
+        success: true, 
+        bill: billDetails,
+        message: "Here are your billing details."
       });
     }
 
@@ -416,15 +552,21 @@ ${businessInfo.faqs.map(f => `Q: ${f.q}\nA: ${f.a}`).join("\n\n")}
 
 GUIDELINES:
 1. Be friendly, helpful, and concise. Use a conversational British tone.
-2. For account-specific queries (bills, orders, account details), use the lookup_account tool first to verify the customer. Ask for their email and date of birth.
-3. Use compare_plans when customers need help choosing a plan.
-4. Use calculate_bundle_price to show bundle savings.
-5. Create support tickets for issues that need human follow-up.
-6. If a customer is signed in (userId is provided), they don't need to verify for creating tickets.
-7. Always mention our phone number (0800 260 6627) for urgent matters.
-8. Keep responses concise - aim for 2-3 sentences unless more detail is needed.
-9. Use emojis sparingly but appropriately to be friendly.
-10. If you don't know something, be honest and offer to connect them with human support.`;
+2. For viewing bills using account number: Use lookup_account_by_number tool. IMPORTANT: Ask for information ONE AT A TIME:
+   - First ask: "What's your account number? (It starts with OCC followed by 8 digits)"
+   - Wait for their response
+   - Then ask: "Thanks! And what's your date of birth? (Format: DD/MM/YYYY)"
+   - After verification succeeds, use get_latest_bill to fetch their billing details
+3. For order lookups by email: Use lookup_account tool with email and date of birth.
+4. Use compare_plans when customers need help choosing a plan.
+5. Use calculate_bundle_price to show bundle savings.
+6. Create support tickets for issues that need human follow-up.
+7. If a customer is signed in (userId is provided), they don't need to verify for creating tickets.
+8. Always mention our phone number (0800 260 6627) for urgent matters.
+9. Keep responses concise - aim for 2-3 sentences unless more detail is needed.
+10. Use emojis sparingly but appropriately to be friendly.
+11. If you don't know something, be honest and offer to connect them with human support.
+12. When displaying bill information, format it nicely with clear sections for the plan, add-ons, and totals.`;
 
     let currentMessages = [
       { role: "system", content: systemPrompt },

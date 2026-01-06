@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       guest_orders: {
         Row: {
+          account_number: string | null
           additional_notes: string | null
           address_line1: string
           address_line2: string | null
@@ -44,6 +45,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          account_number?: string | null
           additional_notes?: string | null
           address_line1: string
           address_line2?: string | null
@@ -72,6 +74,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          account_number?: string | null
           additional_notes?: string | null
           address_line1?: string
           address_line2?: string | null
@@ -399,6 +402,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      generate_account_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

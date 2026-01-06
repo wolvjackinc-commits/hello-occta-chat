@@ -42,6 +42,7 @@ import { format } from "date-fns";
 import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
 import { UserManageDialog } from "@/components/admin/UserManageDialog";
 import { TicketReplyDialog } from "@/components/admin/TicketReplyDialog";
+import { UserPackagesDialog } from "@/components/admin/UserPackagesDialog";
 
 type Order = {
   id: string;
@@ -158,6 +159,8 @@ const Admin = () => {
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
+  const [packagesDialogOpen, setPackagesDialogOpen] = useState(false);
+  const [packagesProfile, setPackagesProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     const checkAdminAndFetch = async () => {
@@ -736,18 +739,32 @@ const Admin = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="border-2 border-foreground"
-                                  onClick={() => {
-                                    setSelectedProfile(profile);
-                                    setUserDialogOpen(true);
-                                  }}
-                                >
-                                  <Settings className="w-4 h-4 mr-1" />
-                                  Manage
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-2 border-foreground"
+                                    onClick={() => {
+                                      setPackagesProfile(profile);
+                                      setPackagesDialogOpen(true);
+                                    }}
+                                  >
+                                    <Package className="w-4 h-4 mr-1" />
+                                    Packages
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-2 border-foreground"
+                                    onClick={() => {
+                                      setSelectedProfile(profile);
+                                      setUserDialogOpen(true);
+                                    }}
+                                  >
+                                    <Settings className="w-4 h-4 mr-1" />
+                                    Manage
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
@@ -788,6 +805,13 @@ const Admin = () => {
         open={ticketDialogOpen}
         onOpenChange={setTicketDialogOpen}
         onUpdate={handleTicketUpdate}
+      />
+
+      <UserPackagesDialog
+        profile={packagesProfile}
+        open={packagesDialogOpen}
+        onOpenChange={setPackagesDialogOpen}
+        onUpdate={fetchAllData}
       />
     </Layout>
   );

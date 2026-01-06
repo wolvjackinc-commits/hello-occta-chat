@@ -1,81 +1,44 @@
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { Check, Wifi, Zap, Shield, Clock, ArrowRight, HelpCircle } from "lucide-react";
-
-const plans = [
-  {
-    name: "ESSENTIAL",
-    speed: "36",
-    price: "24.99",
-    description: "Perfect for light browsing and the occasional Netflix binge",
-    features: [
-      "Up to 36Mbps download",
-      "10Mbps upload",
-      "Unlimited usage",
-      "Free router included",
-      "24/7 support",
-    ],
-    popular: false,
-  },
-  {
-    name: "SUPERFAST",
-    speed: "150",
-    price: "32.99",
-    description: "For households that actually use the internet properly",
-    features: [
-      "Up to 150Mbps download",
-      "25Mbps upload",
-      "Unlimited usage",
-      "Premium router included",
-      "Priority support",
-      "Static IP available",
-    ],
-    popular: true,
-  },
-  {
-    name: "ULTRAFAST",
-    speed: "500",
-    price: "44.99",
-    description: "For gamers, streamers, and people who work from home",
-    features: [
-      "Up to 500Mbps download",
-      "100Mbps upload",
-      "Unlimited usage",
-      "WiFi 6 router included",
-      "Priority support",
-      "Free static IP",
-      "Guest network setup",
-    ],
-    popular: false,
-  },
-  {
-    name: "GIGABIT",
-    speed: "900",
-    price: "59.99",
-    description: "The fastest internet money can buy. Period.",
-    features: [
-      "Up to 900Mbps download",
-      "200Mbps upload",
-      "Unlimited usage",
-      "WiFi 6E mesh system",
-      "Dedicated support line",
-      "Free static IP",
-      "Smart home setup",
-      "1TB cloud backup",
-    ],
-    popular: false,
-  },
-];
+import { broadbandPlans } from "@/lib/plans";
 
 const Broadband = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 40, rotate: -1 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      rotate: 0,
+      transition: {
+        duration: 0.5,
+        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
+      },
+    },
+  };
+
   return (
     <Layout>
       {/* Hero */}
       <section className="py-20 grid-pattern">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl">
+          <motion.div
+            className="max-w-4xl"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <div className="inline-block stamp text-accent border-accent mb-6 rotate-[-2deg]">
               <Zap className="w-4 h-4 inline mr-2" />
               Free installation until March
@@ -90,30 +53,46 @@ const Broadband = () => {
               From streaming Netflix to hosting video calls for the entire office — we've got you sorted.
             </p>
             <PostcodeChecker />
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Plans */}
       <section className="py-20 bg-secondary stripes">
         <div className="container mx-auto px-4">
-          <div className="mb-12">
+          <motion.div
+            className="mb-12"
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+          >
             <h2 className="text-display-md mb-4">
               PICK YOUR SPEED
             </h2>
             <p className="text-xl text-muted-foreground">
               All plans include unlimited data and no price rises mid-contract. Novel concept, we know.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {plans.map((plan, index) => (
-              <div 
-                key={plan.name} 
-                className={`relative card-brutal bg-card p-6 flex flex-col animate-slide-up ${
+          <motion.div
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={containerVariants}
+          >
+            {broadbandPlans.map((plan) => (
+              <motion.div
+                key={plan.id}
+                className={`relative card-brutal bg-card p-6 flex flex-col ${
                   plan.popular ? "border-primary" : ""
                 }`}
-                style={{ animationDelay: `${index * 0.1}s` }}
+                variants={cardVariants}
+                whileHover={{
+                  y: -8,
+                  x: -4,
+                  boxShadow: "12px 12px 0px 0px hsl(var(--foreground))",
+                }}
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-4 bg-primary text-primary-foreground px-4 py-1 font-display uppercase tracking-wider text-sm border-4 border-foreground">
@@ -139,24 +118,25 @@ const Broadband = () => {
                   <ul className="space-y-3 mb-8 flex-grow">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-center gap-3 text-sm">
-                        <Check className="w-5 h-5 text-success flex-shrink-0" />
+                        <Check className="w-5 h-5 text-primary flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
                   
-                  <Link to="/auth?mode=signup" className="block">
+                  <Link to={`/checkout?plan=${plan.id}`} className="block">
                     <Button 
-                      variant={plan.popular ? "default" : "outline"} 
+                      variant={plan.popular ? "hero" : "outline"} 
                       className="w-full"
                     >
                       Choose {plan.name}
+                      <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           <p className="text-center text-sm text-muted-foreground mt-8">
             All prices exclude line rental. 30-day rolling contracts available.{" "}
@@ -171,7 +151,10 @@ const Broadband = () => {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="p-6 border-4 border-foreground bg-card text-center">
+            <motion.div
+              className="p-6 border-4 border-foreground bg-card text-center"
+              whileHover={{ y: -6, x: -4, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
+            >
               <div className="w-16 h-16 bg-primary border-4 border-foreground flex items-center justify-center mx-auto mb-4">
                 <Clock className="w-8 h-8 text-primary-foreground" />
               </div>
@@ -179,27 +162,33 @@ const Broadband = () => {
               <p className="text-muted-foreground">
                 Unlimited means unlimited. Stream, download, game — all at full speed, all the time.
               </p>
-            </div>
+            </motion.div>
             
-            <div className="p-6 border-4 border-foreground bg-card text-center">
+            <motion.div
+              className="p-6 border-4 border-foreground bg-card text-center"
+              whileHover={{ y: -6, x: -4, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
+            >
               <div className="w-16 h-16 bg-accent border-4 border-foreground flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-accent-foreground" />
+                <Shield className="w-8 h-8" />
               </div>
               <h3 className="font-display text-2xl mb-2">FREE SECURITY</h3>
               <p className="text-muted-foreground">
                 Protect your devices with our included antivirus and parental controls.
               </p>
-            </div>
+            </motion.div>
             
-            <div className="p-6 border-4 border-foreground bg-card text-center">
+            <motion.div
+              className="p-6 border-4 border-foreground bg-card text-center"
+              whileHover={{ y: -6, x: -4, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
+            >
               <div className="w-16 h-16 bg-warning border-4 border-foreground flex items-center justify-center mx-auto mb-4">
-                <HelpCircle className="w-8 h-8 text-warning-foreground" />
+                <HelpCircle className="w-8 h-8" />
               </div>
               <h3 className="font-display text-2xl mb-2">YORKSHIRE SUPPORT</h3>
               <p className="text-muted-foreground">
                 Real humans in Huddersfield who actually understand broadband. Fancy that!
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -213,7 +202,7 @@ const Broadband = () => {
           <p className="text-background/70 mb-8 text-lg">
             We handle everything — even cancelling your old provider. No faff, no fuss.
           </p>
-          <Link to="/auth?mode=signup">
+          <Link to="/checkout?plan=broadband-superfast">
             <Button variant="hero" size="lg" className="border-background">
               Get Started
               <ArrowRight className="w-5 h-5" />

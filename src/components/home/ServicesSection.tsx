@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Wifi, Smartphone, PhoneCall, ArrowRight } from "lucide-react";
 
@@ -36,33 +37,97 @@ const services = [
 ];
 
 const ServicesSection = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const headerVariants = {
+    hidden: { opacity: 0, x: -40 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 60, rotate: -2 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      rotate: 0,
+      transition: {
+        duration: 0.5,
+        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
+      },
+    },
+  };
+
   return (
     <section className="py-24 bg-secondary stripes">
       <div className="container mx-auto px-4">
         {/* Section Header */}
-        <div className="max-w-3xl mb-16">
+        <motion.div
+          className="max-w-3xl mb-16"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={headerVariants}
+        >
           <h2 className="text-display-md mb-4">
             WHAT WE
-            <span className="text-gradient ml-4">ACTUALLY DO</span>
+            <motion.span 
+              className="text-gradient ml-4 inline-block"
+              whileHover={{ scale: 1.05 }}
+            >
+              ACTUALLY DO
+            </motion.span>
           </h2>
           <p className="text-xl text-muted-foreground">
             Three services. Zero nonsense. All with proper customer support 
             from people who speak your language.
           </p>
-        </div>
+        </motion.div>
 
         {/* Services Grid */}
-        <div className="grid lg:grid-cols-3 gap-8">
+        <motion.div
+          className="grid lg:grid-cols-3 gap-8"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={containerVariants}
+        >
           {services.map((service, index) => (
-            <div
+            <motion.div
               key={service.title}
-              className="group card-brutal bg-card p-8 flex flex-col animate-slide-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className="group card-brutal bg-card p-8 flex flex-col"
+              variants={cardVariants}
+              whileHover={{
+                y: -12,
+                x: -6,
+                boxShadow: "14px 14px 0px 0px hsl(var(--foreground))",
+                transition: { duration: 0.2, ease: "easeOut" },
+              }}
+              whileTap={{ scale: 0.98 }}
             >
               {/* Icon */}
-              <div className={`w-16 h-16 ${service.color} border-4 border-foreground flex items-center justify-center mb-6`}>
+              <motion.div
+                className={`w-16 h-16 ${service.color} border-4 border-foreground flex items-center justify-center mb-6`}
+                whileHover={{ rotate: 5, scale: 1.1 }}
+                transition={{ duration: 0.2 }}
+              >
                 <service.icon className="w-8 h-8 text-foreground" />
-              </div>
+              </motion.div>
 
               {/* Content */}
               <h3 className="text-display-md mb-2">{service.title}</h3>
@@ -74,20 +139,28 @@ const ServicesSection = () => {
               </p>
 
               {/* Price */}
-              <div className={`inline-block self-start px-4 py-2 ${service.color} border-4 border-foreground mb-6`}>
+              <motion.div
+                className={`inline-block self-start px-4 py-2 ${service.color} border-4 border-foreground mb-6`}
+                whileHover={{ scale: 1.05 }}
+              >
                 <span className="font-display text-lg">{service.price}</span>
-              </div>
+              </motion.div>
 
               {/* CTA */}
               <Link to={service.link}>
                 <Button variant="outline" className="w-full group-hover:bg-foreground group-hover:text-background transition-colors">
                   View Plans
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <motion.span
+                    className="inline-block"
+                    whileHover={{ x: 5 }}
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.span>
                 </Button>
               </Link>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

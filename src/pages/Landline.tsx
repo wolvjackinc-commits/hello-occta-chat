@@ -137,7 +137,7 @@ const Landline = () => {
                     ))}
                   </ul>
                   
-                  <Link to={`/checkout?plan=${plan.id}`} className="block">
+                  <Link to={`/pre-checkout?plans=${plan.id}`} className="block">
                     <Button 
                       variant={plan.popular ? "hero" : "outline"} 
                       className="w-full"

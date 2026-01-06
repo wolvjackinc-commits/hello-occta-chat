@@ -283,7 +283,7 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
 
                 {/* CTA */}
                 <Link 
-                  to={`/checkout?bundle=${selectedPlans.map(p => p.id).join(',')}`}
+                  to={`/pre-checkout?plans=${selectedPlans.map(p => p.id).join(',')}`}
                   className="block"
                 >
                   <Button variant="hero" size="lg" className="w-full">

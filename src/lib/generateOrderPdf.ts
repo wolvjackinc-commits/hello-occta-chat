@@ -15,16 +15,45 @@ interface OrderData {
   addons?: { name: string; price: number }[];
 }
 
+// HTML escape function to prevent XSS attacks
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export function generateOrderPdf(order: OrderData): void {
-  const addonsTotal = order.addons?.reduce((sum, a) => sum + a.price, 0) || 0;
-  const total = order.planPrice;
+  // Sanitize all user-controlled data to prevent XSS
+  const safeOrder = {
+    orderNumber: escapeHtml(order.orderNumber),
+    customerName: escapeHtml(order.customerName),
+    email: escapeHtml(order.email),
+    phone: escapeHtml(order.phone),
+    address: escapeHtml(order.address),
+    city: escapeHtml(order.city),
+    postcode: escapeHtml(order.postcode),
+    planName: escapeHtml(order.planName),
+    planPrice: order.planPrice,
+    serviceType: escapeHtml(order.serviceType),
+    createdAt: order.createdAt,
+    addons: order.addons?.map(addon => ({
+      name: escapeHtml(addon.name),
+      price: addon.price
+    }))
+  };
+  const addonsTotal = safeOrder.addons?.reduce((sum, a) => sum + a.price, 0) || 0;
+  const total = safeOrder.planPrice;
   
   const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Order Confirmation - ${order.orderNumber}</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline';">
+  <title>Order Confirmation - ${safeOrder.orderNumber}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');
     
@@ -173,30 +202,30 @@ export function generateOrderPdf(order: OrderData): void {
     </div>
     
     <div class="content">
-      <div class="order-number">ORDER #${order.orderNumber}</div>
+      <div class="order-number">ORDER #${safeOrder.orderNumber}</div>
       <p style="text-align: center; margin-bottom: 30px; color: #666;">
-        ${format(new Date(order.createdAt), "dd MMMM yyyy 'at' HH:mm")}
+        ${format(new Date(safeOrder.createdAt), "dd MMMM yyyy 'at' HH:mm")}
       </p>
       
       <div class="plan-box">
-        <div class="plan-type">${order.serviceType.toUpperCase()}</div>
-        <div class="plan-name">${order.planName}</div>
-        <div class="plan-price">£${order.planPrice.toFixed(2)}/mo</div>
+        <div class="plan-type">${safeOrder.serviceType.toUpperCase()}</div>
+        <div class="plan-name">${safeOrder.planName}</div>
+        <div class="plan-price">£${safeOrder.planPrice.toFixed(2)}/mo</div>
       </div>
       
       <div class="section">
         <div class="section-title">CUSTOMER DETAILS</div>
         <div class="row">
           <span class="label">Name</span>
-          <span class="value">${order.customerName}</span>
+          <span class="value">${safeOrder.customerName}</span>
         </div>
         <div class="row">
           <span class="label">Email</span>
-          <span class="value">${order.email}</span>
+          <span class="value">${safeOrder.email}</span>
         </div>
         <div class="row">
           <span class="label">Phone</span>
-          <span class="value">${order.phone}</span>
+          <span class="value">${safeOrder.phone}</span>
         </div>
       </div>
       
@@ -204,25 +233,25 @@ export function generateOrderPdf(order: OrderData): void {
         <div class="section-title">INSTALLATION ADDRESS</div>
         <div class="row">
           <span class="label">Address</span>
-          <span class="value">${order.address}</span>
+          <span class="value">${safeOrder.address}</span>
         </div>
         <div class="row">
           <span class="label">City</span>
-          <span class="value">${order.city}</span>
+          <span class="value">${safeOrder.city}</span>
         </div>
         <div class="row">
           <span class="label">Postcode</span>
-          <span class="value">${order.postcode}</span>
+          <span class="value">${safeOrder.postcode}</span>
         </div>
       </div>
       
       <div class="section">
         <div class="section-title">ORDER SUMMARY</div>
         <div class="row">
-          <span class="label">${order.planName}</span>
-          <span class="value">£${order.planPrice.toFixed(2)}/mo</span>
+          <span class="label">${safeOrder.planName}</span>
+          <span class="value">£${safeOrder.planPrice.toFixed(2)}/mo</span>
         </div>
-        ${order.addons && order.addons.length > 0 ? order.addons.map(addon => `
+        ${safeOrder.addons && safeOrder.addons.length > 0 ? safeOrder.addons.map(addon => `
         <div class="row">
           <span class="label">${addon.name}</span>
           <span class="value">£${addon.price.toFixed(2)}/mo</span>

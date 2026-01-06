@@ -6,13 +6,12 @@ import { User, Session } from "@supabase/supabase-js";
 import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
 import { 
   Wifi, 
   Smartphone, 
   PhoneCall, 
   FileText, 
-  Settings, 
   HelpCircle, 
   Plus,
   LogOut,
@@ -25,7 +24,9 @@ import {
   MessageSquare,
   Download,
   File,
+  Receipt,
 } from "lucide-react";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 type Order = {
@@ -52,8 +53,10 @@ type GuestOrder = {
 type SupportTicket = {
   id: string;
   subject: string;
+  description: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  category?: string | null;
   created_at: string;
 };
 
@@ -105,6 +108,8 @@ const Dashboard = () => {
   const [userFiles, setUserFiles] = useState<UserFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -237,6 +242,21 @@ const Dashboard = () => {
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
   const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
   const allOrders = [...orders, ...guestOrders.map(g => ({ ...g, status: 'pending' as const, service_type: g.service_type as 'broadband' | 'sim' | 'landline' }))];
+  
+  // Filter invoices from user files
+  const invoices = userFiles.filter(f => 
+    f.file_type.includes('pdf') || 
+    f.file_name.toLowerCase().includes('invoice') ||
+    f.description?.toLowerCase().includes('invoice')
+  );
+  
+  // Group invoices by month
+  const groupedInvoices = invoices.reduce((acc, file) => {
+    const monthKey = format(new Date(file.created_at), "MMMM yyyy");
+    if (!acc[monthKey]) acc[monthKey] = [];
+    acc[monthKey].push(file);
+    return acc;
+  }, {} as Record<string, UserFile[]>);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -436,8 +456,12 @@ const Dashboard = () => {
                       return (
                         <motion.div
                           key={ticket.id}
-                          className="p-3 border-4 border-foreground bg-background"
+                          className="p-3 border-4 border-foreground bg-background cursor-pointer"
                           whileHover={{ x: -2, boxShadow: "4px 0px 0px 0px hsl(var(--foreground))" }}
+                          onClick={() => {
+                            setSelectedTicket(ticket);
+                            setTicketDialogOpen(true);
+                          }}
                         >
                           <div className="flex items-start gap-3">
                             <div className={`w-8 h-8 ${ticketStatus.color} flex items-center justify-center flex-shrink-0`}>
@@ -470,12 +494,48 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* User Files */}
-              {userFiles.length > 0 && (
+              {/* Invoices Section */}
+              {Object.keys(groupedInvoices).length > 0 && (
+                <div className="card-brutal bg-card p-6">
+                  <h3 className="font-display text-lg mb-4 flex items-center gap-2">
+                    <Receipt className="w-5 h-5" />
+                    INVOICES
+                  </h3>
+                  <div className="space-y-4">
+                    {Object.entries(groupedInvoices).map(([month, files]) => (
+                      <div key={month}>
+                        <p className="text-xs text-muted-foreground uppercase font-display mb-2">{month}</p>
+                        <div className="space-y-2">
+                          {files.map((file) => (
+                            <motion.div
+                              key={file.id}
+                              className="flex items-center gap-3 p-3 border-2 border-foreground bg-background cursor-pointer"
+                              whileHover={{ x: -2, boxShadow: "4px 0px 0px 0px hsl(var(--foreground))" }}
+                              onClick={() => handleDownloadFile(file.file_path, file.file_name)}
+                            >
+                              <FileText className="w-5 h-5 flex-shrink-0 text-primary" />
+                              <div className="flex-grow min-w-0">
+                                <p className="font-display text-sm truncate">{file.file_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(new Date(file.created_at), "dd MMM yyyy")}
+                                </p>
+                              </div>
+                              <Download className="w-4 h-4 text-muted-foreground" />
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* User Files (non-invoices) */}
+              {userFiles.filter(f => !invoices.includes(f)).length > 0 && (
                 <div className="card-brutal bg-card p-6">
                   <h3 className="font-display text-lg mb-4">YOUR DOCUMENTS</h3>
                   <div className="space-y-2">
-                    {userFiles.slice(0, 5).map((file) => (
+                    {userFiles.filter(f => !invoices.includes(f)).slice(0, 5).map((file) => (
                       <motion.div
                         key={file.id}
                         className="flex items-center gap-3 p-3 border-2 border-foreground bg-background cursor-pointer"
@@ -534,6 +594,12 @@ const Dashboard = () => {
           </div>
         </motion.div>
       </div>
+
+      <TicketDetailDialog
+        ticket={selectedTicket}
+        open={ticketDialogOpen}
+        onOpenChange={setTicketDialogOpen}
+      />
     </Layout>
   );
 };

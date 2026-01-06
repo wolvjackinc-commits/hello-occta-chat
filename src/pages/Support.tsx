@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,7 +140,7 @@ const Support = () => {
       if (error) throw error;
       setTickets(data || []);
     } catch (error) {
-      console.error("Error fetching tickets:", error);
+      logError("Support.fetchTickets", error);
     } finally {
       setIsLoadingTickets(false);
     }
@@ -191,7 +192,7 @@ const Support = () => {
       setShowTicketForm(false);
       fetchTickets(user.id);
     } catch (error) {
-      console.error("Error submitting ticket:", error);
+      logError("Support.handleSubmitTicket", error);
       toast({
         title: "Something went wrong",
         description: "Please try again or call us on 0800 260 6627.",

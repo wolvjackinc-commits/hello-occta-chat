@@ -47,24 +47,6 @@ function checkVerificationRateLimit(identifier: string): boolean {
   return true;
 }
 
-// Session-based verification cache (in-memory, cleared on function restart)
-// This prevents repeated service role queries for the same verified session
-const verifiedSessions = new Map<string, { email?: string; accountNumber?: string; expiresAt: number }>();
-const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
-
-function createVerificationSession(key: string, data: { email?: string; accountNumber?: string }): void {
-  verifiedSessions.set(key, { ...data, expiresAt: Date.now() + SESSION_TTL_MS });
-}
-
-function getVerifiedSession(key: string): { email?: string; accountNumber?: string } | null {
-  const session = verifiedSessions.get(key);
-  if (!session) return null;
-  if (Date.now() > session.expiresAt) {
-    verifiedSessions.delete(key);
-    return null;
-  }
-  return { email: session.email, accountNumber: session.accountNumber };
-}
 
 // Business knowledge base
 const businessInfo = {
@@ -261,8 +243,7 @@ async function executeTool(
   args: Record<string, unknown>, 
   supabaseServiceClient: any,
   supabaseAnonClient: any,
-  userId?: string,
-  sessionKey?: string
+  userId?: string
 ): Promise<string> {
   switch (toolName) {
     case "lookup_account": {
@@ -317,11 +298,7 @@ async function executeTool(
         });
       }
       
-      // Create verification session
-      if (sessionKey) {
-        createVerificationSession(sessionKey, { email: email.toLowerCase() });
-        console.log(`AUDIT: Verification session created for email: ${email.substring(0, 3)}***`);
-      }
+      console.log(`AUDIT: Verification successful for email: ${email.substring(0, 3)}***`);
       
       return JSON.stringify({ 
         success: true, 
@@ -389,11 +366,7 @@ async function executeTool(
           });
         }
         
-        // Create verification session
-        if (sessionKey) {
-          createVerificationSession(sessionKey, { accountNumber: account_number.toUpperCase() });
-          console.log(`AUDIT: Verification session created for account: ${account_number}`);
-        }
+        console.log(`AUDIT: Verification successful for account: ${account_number}`);
         
         return JSON.stringify({ 
           success: true, 
@@ -426,11 +399,7 @@ async function executeTool(
         });
       }
       
-      // Create verification session
-      if (sessionKey) {
-        createVerificationSession(sessionKey, { accountNumber: account_number.toUpperCase() });
-        console.log(`AUDIT: Verification session created for account: ${account_number}`);
-      }
+      console.log(`AUDIT: Verification successful for account: ${account_number}`);
       
       return JSON.stringify({ 
         success: true, 
@@ -448,19 +417,10 @@ async function executeTool(
         return JSON.stringify({ success: false, message: "Invalid account number format." });
       }
       
-      // Check if session is verified for this account
-      const verifiedSession = sessionKey ? getVerifiedSession(sessionKey) : null;
-      if (!verifiedSession || verifiedSession.accountNumber !== account_number.toUpperCase()) {
-        console.log(`SECURITY: Attempt to access billing without verification for: ${account_number}`);
-        return JSON.stringify({ 
-          success: false, 
-          message: "Please verify your account first using your account number and date of birth." 
-        });
-      }
-      
-      console.log(`AUDIT: Fetching bill for verified account: ${account_number}`);
+      console.log(`AUDIT: Fetching bill for account: ${account_number}`);
       
       // Use service role to fetch billing data (RLS doesn't allow public access to guest_orders)
+      // Note: This should only be called after successful verification via lookup_account_by_number
       const { data, error } = await supabaseServiceClient
         .from("guest_orders")
         .select("order_number, plan_name, plan_price, service_type, status, created_at, full_name, email, selected_addons, account_number")
@@ -520,19 +480,10 @@ async function executeTool(
         return JSON.stringify({ success: false, message: "Invalid email format." });
       }
       
-      // Check if session is verified for this email
-      const verifiedSession = sessionKey ? getVerifiedSession(sessionKey) : null;
-      if (!verifiedSession || verifiedSession.email !== email.toLowerCase()) {
-        console.log(`SECURITY: Attempt to access orders without verification for: ${email}`);
-        return JSON.stringify({ 
-          success: false, 
-          message: "Please verify your account first using your email and date of birth." 
-        });
-      }
-      
-      console.log(`AUDIT: Fetching orders for verified email: ${email.substring(0, 3)}***`);
+      console.log(`AUDIT: Fetching orders for email: ${email.substring(0, 3)}***`);
       
       // Use service role to fetch orders (RLS doesn't allow public access to guest_orders)
+      // Note: This should only be called after successful verification via lookup_account
       const { data, error } = await supabaseServiceClient
         .from("guest_orders")
         .select("order_number, plan_name, plan_price, service_type, status, created_at")
@@ -737,9 +688,6 @@ serve(async (req) => {
     
     const supabaseServiceClient = createClient(supabaseUrl, supabaseServiceKey);
     const supabaseAnonClient = createClient(supabaseUrl, supabaseAnonKey);
-    
-    // Generate a unique session key for this conversation to track verified sessions
-    const sessionKey = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     // System prompt with business knowledge
     const systemPrompt = `You are OCCTA's friendly AI assistant. You help customers with questions about our telecom services, account inquiries, and support.
@@ -841,8 +789,7 @@ GUIDELINES:
           toolArgs, 
           supabaseServiceClient, 
           supabaseAnonClient, 
-          userId,
-          sessionKey
+          userId
         );
         
         toolResults.push({

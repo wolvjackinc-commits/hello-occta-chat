@@ -38,6 +38,7 @@ export type Database = {
           preferred_switch_date: string | null
           selected_addons: Json | null
           service_type: string
+          status: string
           updated_at: string
           user_id: string | null
         }
@@ -64,6 +65,7 @@ export type Database = {
           preferred_switch_date?: string | null
           selected_addons?: Json | null
           service_type: string
+          status?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -90,6 +92,7 @@ export type Database = {
           preferred_switch_date?: string | null
           selected_addons?: Json | null
           service_type?: string
+          status?: string
           updated_at?: string
           user_id?: string | null
         }

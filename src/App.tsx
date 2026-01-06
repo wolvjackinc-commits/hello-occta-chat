@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
 import Broadband from "./pages/Broadband";
 import SimPlans from "./pages/SimPlans";
 import Landline from "./pages/Landline";
@@ -57,6 +58,7 @@ const AnimatedRoutes = () => {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/broadband" element={<Broadband />} />
           <Route path="/sim-plans" element={<SimPlans />} />
           <Route path="/landline" element={<Landline />} />

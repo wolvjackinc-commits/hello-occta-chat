@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Broadband from "./pages/Broadband";
 import SimPlans from "./pages/SimPlans";
 import Landline from "./pages/Landline";
+import Checkout from "./pages/Checkout";
 import Support from "./pages/Support";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
@@ -59,6 +60,7 @@ const AnimatedRoutes = () => {
           <Route path="/broadband" element={<Broadband />} />
           <Route path="/sim-plans" element={<SimPlans />} />
           <Route path="/landline" element={<Landline />} />
+          <Route path="/checkout" element={<Checkout />} />
           <Route path="/support" element={<Support />} />
           <Route path="/about" element={<About />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

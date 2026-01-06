@@ -1,9 +1,19 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Allowed origins for CORS - restrict to known domains
+const ALLOWED_ORIGINS = [
+  Deno.env.get('SITE_URL') || '',
+  'http://localhost:5173',
+  'http://localhost:8080',
+].filter(Boolean);
+
+const getCorsHeaders = (origin: string | null) => {
+  const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0] || '',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
 };
 
 interface LinkOrderRequest {
@@ -13,6 +23,9 @@ interface LinkOrderRequest {
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("Link order function called");
+  
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
   
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -135,6 +148,8 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error) {
     console.error("Error in link-order function:", error);
+    const origin = req.headers.get('Origin');
+    const corsHeaders = getCorsHeaders(origin);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }

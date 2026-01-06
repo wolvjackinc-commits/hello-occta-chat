@@ -204,6 +204,28 @@ const PreCheckout = () => {
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     
     try {
+      // Check rate limit (5 orders per hour per email)
+      const { data: allowed, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+        _identifier: customerData.email.toLowerCase(),
+        _action: 'order_create',
+        _max_requests: 5,
+        _window_minutes: 60
+      });
+      
+      if (rateLimitError) {
+        logError('PreCheckout.rateLimit', rateLimitError);
+      }
+      
+      if (allowed === false) {
+        toast({
+          title: "Too many requests",
+          description: "Please wait before submitting another order.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
       // Calculate total price
       const bundleCalc = calculateBundleDiscount(selectedPlans);
       const addonsTotal = selectedAddons.reduce((sum, id) => {

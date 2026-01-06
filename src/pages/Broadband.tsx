@@ -4,7 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
-import { Check, Wifi, Zap, Shield, Clock, ArrowRight, HelpCircle } from "lucide-react";
+import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X } from "lucide-react";
 import { broadbandPlans } from "@/lib/plans";
 
 const Broadband = () => {
@@ -12,71 +12,133 @@ const Broadband = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 },
+      transition: { staggerChildren: 0.08 },
     },
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 40, rotate: -1 },
+    hidden: { opacity: 0, y: 30 },
     visible: {
       opacity: 1,
       y: 0,
-      rotate: 0,
       transition: {
-        duration: 0.5,
+        duration: 0.4,
         ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
       },
     },
   };
 
+  const features = [
+    { icon: X, text: "No Contracts" },
+    { icon: Shield, text: "No Hidden Fees" },
+    { icon: Clock, text: "7-Day Setup" },
+  ];
+
   return (
     <Layout>
-      {/* Hero */}
-      <section className="py-20 grid-pattern">
+      {/* Hero - Compact */}
+      <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
-          <motion.div
-            className="max-w-4xl"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="inline-block stamp text-accent border-accent mb-6 rotate-[-2deg]">
-              <Zap className="w-4 h-4 inline mr-2" />
-              Free installation until March
-            </div>
-            <h1 className="text-display-lg mb-6">
-              BROADBAND THAT
-              <br />
-              <span className="text-gradient">ACTUALLY WORKS</span>
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
-              Fast, reliable internet without the corporate nonsense. 
-              From streaming Netflix to hosting video calls for the entire office — we've got you sorted.
-            </p>
-            <PostcodeChecker />
-          </motion.div>
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            {/* Left - Content */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
+                <Zap className="w-4 h-4 inline mr-2" />
+                Free installation until March
+              </div>
+              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4">
+                BROADBAND
+                <br />
+                <span className="text-gradient">THAT WORKS</span>
+              </h1>
+              <p className="text-lg text-muted-foreground mb-6 max-w-lg">
+                Fast, reliable internet without the corporate nonsense. 
+                From £22.99/month with no price rises mid-contract.
+              </p>
+              
+              {/* Benefits */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {features.map((feature) => (
+                  <div
+                    key={feature.text}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border-2 border-foreground/20 bg-background"
+                  >
+                    <feature.icon className="w-3.5 h-3.5" />
+                    {feature.text}
+                  </div>
+                ))}
+              </div>
+              
+              <PostcodeChecker />
+            </motion.div>
+
+            {/* Right - Plans Preview */}
+            <motion.div
+              className="space-y-3"
+              initial="hidden"
+              animate="visible"
+              variants={containerVariants}
+            >
+              <p className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+                Choose Your Speed
+              </p>
+              {broadbandPlans.slice(0, 3).map((plan) => (
+                <motion.div
+                  key={plan.id}
+                  variants={cardVariants}
+                  whileHover={{ x: 4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
+                  transition={{ duration: 0.12 }}
+                >
+                  <Link
+                    to={`/pre-checkout?plans=${plan.id}`}
+                    className={`flex items-center justify-between p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-accent/10 transition-colors group`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {plan.popular && (
+                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-display uppercase">Popular</span>
+                      )}
+                      <div>
+                        <h3 className="font-display text-lg uppercase">{plan.name}</h3>
+                        <p className="text-xs text-muted-foreground">Up to {plan.speed}Mbps</p>
+                      </div>
+                    </div>
+                    <div className="text-right flex items-center gap-3">
+                      <div>
+                        <p className="font-display text-2xl text-primary">£{plan.price}</p>
+                        <p className="text-xs text-muted-foreground">/month</p>
+                      </div>
+                      <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+              <Link to="#plans" className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+                View all plans ↓
+              </Link>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Plans */}
-      <section className="py-20 bg-secondary stripes">
+      {/* All Plans */}
+      <section id="plans" className="py-16 bg-secondary stripes">
         <div className="container mx-auto px-4">
           <motion.div
-            className="mb-12"
-            initial={{ opacity: 0, x: -30 }}
+            className="mb-8"
+            initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-display-md mb-4">
-              PICK YOUR SPEED
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              All plans include unlimited data and no price rises mid-contract. Novel concept, we know.
-            </p>
+            <h2 className="text-display-md mb-2">ALL PLANS</h2>
+            <p className="text-muted-foreground">Unlimited data, no price rises. Novel concept.</p>
           </motion.div>
 
           <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-4"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
@@ -85,52 +147,41 @@ const Broadband = () => {
             {broadbandPlans.map((plan) => (
               <motion.div
                 key={plan.id}
-                className={`relative card-brutal bg-card p-6 flex flex-col ${
-                  plan.popular ? "border-primary" : ""
-                }`}
+                className={`relative card-brutal bg-card p-5 flex flex-col ${plan.popular ? "border-primary" : ""}`}
                 variants={cardVariants}
-                whileHover={{
-                  y: -8,
-                  x: -4,
-                  boxShadow: "12px 12px 0px 0px hsl(var(--foreground))",
-                }}
+                whileHover={{ y: -6, x: -3, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-4 bg-primary text-primary-foreground px-4 py-1 font-display uppercase tracking-wider text-sm border-4 border-foreground">
+                  <div className="absolute -top-3 left-3 bg-primary text-primary-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
                     Most Popular
                   </div>
                 )}
                 
-                <div className={plan.popular ? "pt-4" : ""}>
-                  <h3 className="font-display text-3xl mb-2">{plan.name}</h3>
+                <div className={plan.popular ? "pt-2" : ""}>
+                  <h3 className="font-display text-2xl mb-1">{plan.name}</h3>
                   
                   <div className="flex items-baseline gap-1 mb-2">
-                    <span className="font-display text-5xl">£{plan.price}</span>
-                    <span className="text-muted-foreground">/mo</span>
+                    <span className="font-display text-4xl">£{plan.price}</span>
+                    <span className="text-muted-foreground text-sm">/mo</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-accent/10 border-2 border-accent inline-block">
-                    <Wifi className="w-4 h-4 text-accent" />
-                    <span className="font-display text-accent">Up to {plan.speed}Mbps</span>
+                  <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-accent/10 border-2 border-accent inline-block">
+                    <Wifi className="w-3 h-3 text-accent" />
+                    <span className="font-display text-accent text-sm">Up to {plan.speed}Mbps</span>
                   </div>
                   
-                  <p className="text-muted-foreground mb-6">{plan.description}</p>
-                  
-                  <ul className="space-y-3 mb-8 flex-grow">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-3 text-sm">
-                        <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                  <ul className="space-y-2 mb-4 flex-grow">
+                    {plan.features.slice(0, 3).map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-xs">
+                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
                   
                   <Link to={`/pre-checkout?plans=${plan.id}`} className="block">
-                    <Button 
-                      variant={plan.popular ? "hero" : "outline"} 
-                      className="w-full"
-                    >
-                      Choose {plan.name}
+                    <Button variant={plan.popular ? "hero" : "outline"} className="w-full" size="sm">
+                      Choose Plan
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
@@ -138,59 +189,6 @@ const Broadband = () => {
               </motion.div>
             ))}
           </motion.div>
-
-          <p className="text-center text-sm text-muted-foreground mt-8">
-            All prices exclude line rental. 30-day rolling contracts available.{" "}
-            <Link to="/terms" className="underline hover:text-foreground">
-              Full terms apply
-            </Link>
-          </p>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <motion.div
-              className="p-6 border-4 border-foreground bg-card text-center"
-              whileHover={{ y: -6, x: -4, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
-            >
-              <div className="w-16 h-16 bg-primary border-4 border-foreground flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-primary-foreground" />
-              </div>
-              <h3 className="font-display text-2xl mb-2">NO THROTTLING</h3>
-              <p className="text-muted-foreground">
-                Unlimited means unlimited. Stream, download, game — all at full speed, all the time.
-              </p>
-            </motion.div>
-            
-            <motion.div
-              className="p-6 border-4 border-foreground bg-card text-center"
-              whileHover={{ y: -6, x: -4, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
-            >
-              <div className="w-16 h-16 bg-accent border-4 border-foreground flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8" />
-              </div>
-              <h3 className="font-display text-2xl mb-2">FREE SECURITY</h3>
-              <p className="text-muted-foreground">
-                Protect your devices with our included antivirus and parental controls.
-              </p>
-            </motion.div>
-            
-            <motion.div
-              className="p-6 border-4 border-foreground bg-card text-center"
-              whileHover={{ y: -6, x: -4, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
-            >
-              <div className="w-16 h-16 bg-warning border-4 border-foreground flex items-center justify-center mx-auto mb-4">
-                <HelpCircle className="w-8 h-8" />
-              </div>
-              <h3 className="font-display text-2xl mb-2">YORKSHIRE SUPPORT</h3>
-              <p className="text-muted-foreground">
-                Real humans in Huddersfield who actually understand broadband. Fancy that!
-              </p>
-            </motion.div>
-          </div>
         </div>
       </section>
 

@@ -2,9 +2,8 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
-import { Check, Smartphone, Signal, Globe, ArrowRight, Phone, MessageSquare } from "lucide-react";
+import { Check, Smartphone, Signal, Globe, ArrowRight, X } from "lucide-react";
 import { simPlans } from "@/lib/plans";
 
 const SimPlans = () => {
@@ -12,85 +11,137 @@ const SimPlans = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 },
+      transition: { staggerChildren: 0.08 },
     },
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 40, rotate: -1 },
+    hidden: { opacity: 0, y: 30 },
     visible: {
       opacity: 1,
       y: 0,
-      rotate: 0,
       transition: {
-        duration: 0.5,
+        duration: 0.4,
         ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
       },
     },
   };
 
+  const features = [
+    { icon: Signal, text: "Full 5G Network" },
+    { icon: Globe, text: "EU Roaming" },
+    { icon: X, text: "No Contracts" },
+  ];
+
   return (
     <Layout>
-      {/* Hero */}
-      <section className="py-20 grid-pattern">
+      {/* Hero - Compact */}
+      <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
-          <motion.div
-            className="max-w-3xl mx-auto text-center"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="inline-block stamp text-accent border-accent mb-6">
-              <Signal className="w-4 h-4 inline mr-2" />
-              5G in 500+ UK towns
-            </div>
-            <h1 className="text-display-lg mb-6">
-              SIM PLANS THAT
-              <br />
-              <span className="text-gradient">DON'T TAKE THE MICK</span>
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              No credit checks. No long contracts. No "fair usage" policies that aren't actually fair. Just great mobile service at honest prices.
-            </p>
-            <div className="flex flex-wrap justify-center gap-6">
-              {[
-                { icon: Signal, text: "Full 5G network", color: "bg-accent" },
-                { icon: Globe, text: "EU roaming", color: "bg-primary" },
-                { icon: Smartphone, text: "Keep your number", color: "bg-warning" },
-              ].map((item) => (
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            {/* Left - Content */}
+            <motion.div
+              className="text-center lg:text-left"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="inline-block stamp text-accent border-accent mb-4">
+                <Signal className="w-4 h-4 inline mr-2" />
+                5G in 500+ UK towns
+              </div>
+              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4">
+                SIM PLANS
+                <br />
+                <span className="text-gradient">THAT DON'T</span>
+                <br />
+                <span className="text-gradient">TAKE THE MICK</span>
+              </h1>
+              <p className="text-lg text-muted-foreground mb-6 max-w-lg mx-auto lg:mx-0">
+                No credit checks. No long contracts. Great mobile service at honest prices. From £7.99/month.
+              </p>
+              
+              {/* Benefits */}
+              <div className="flex flex-wrap gap-2 mb-6 justify-center lg:justify-start">
+                {features.map((feature) => (
+                  <div
+                    key={feature.text}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border-2 border-foreground/20 bg-background"
+                  >
+                    <feature.icon className="w-3.5 h-3.5" />
+                    {feature.text}
+                  </div>
+                ))}
+              </div>
+
+              <Link to={`/pre-checkout?plans=${simPlans[1]?.id || simPlans[0].id}`}>
+                <Button size="lg" variant="hero">
+                  Get Your SIM
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </Link>
+            </motion.div>
+
+            {/* Right - Plans Preview */}
+            <motion.div
+              className="space-y-3"
+              initial="hidden"
+              animate="visible"
+              variants={containerVariants}
+            >
+              <p className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+                Choose Your Data
+              </p>
+              {simPlans.slice(0, 3).map((plan) => (
                 <motion.div
-                  key={item.text}
-                  className="flex items-center gap-2 px-4 py-2 border-4 border-foreground bg-background"
-                  whileHover={{ y: -4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
+                  key={plan.id}
+                  variants={cardVariants}
+                  whileHover={{ x: 4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
+                  transition={{ duration: 0.12 }}
                 >
-                  <item.icon className="w-4 h-4" />
-                  <span className="font-display uppercase tracking-wider text-sm">{item.text}</span>
+                  <Link
+                    to={`/pre-checkout?plans=${plan.id}`}
+                    className={`flex items-center justify-between p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-accent/10 transition-colors group`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {plan.popular && (
+                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-display uppercase">Best Value</span>
+                      )}
+                      <div>
+                        <h3 className="font-display text-lg uppercase">{plan.name}</h3>
+                        <p className="text-xs text-muted-foreground">{plan.data} data</p>
+                      </div>
+                    </div>
+                    <div className="text-right flex items-center gap-3">
+                      <div>
+                        <p className="font-display text-2xl text-primary">£{plan.price}</p>
+                        <p className="text-xs text-muted-foreground">/month</p>
+                      </div>
+                      <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </Link>
                 </motion.div>
               ))}
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Plans */}
-      <section className="py-20 bg-secondary stripes">
+      {/* All Plans */}
+      <section id="plans" className="py-16 bg-secondary stripes">
         <div className="container mx-auto px-4">
           <motion.div
-            className="text-center mb-12"
+            className="mb-8"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-display-md mb-4">
-              CHOOSE YOUR DATA
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              All plans are 30-day rolling. Switch up, switch down, or switch off whenever you like.
-            </p>
+            <h2 className="text-display-md mb-2">ALL SIM PLANS</h2>
+            <p className="text-muted-foreground">30-day rolling. Switch up, down, or off whenever.</p>
           </motion.div>
 
           <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto"
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-4"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
@@ -99,52 +150,40 @@ const SimPlans = () => {
             {simPlans.map((plan) => (
               <motion.div
                 key={plan.id}
-                className={`relative card-brutal bg-card p-6 flex flex-col ${
-                  plan.popular ? "border-primary" : ""
-                }`}
+                className={`relative card-brutal bg-card p-5 flex flex-col ${plan.popular ? "border-primary" : ""}`}
                 variants={cardVariants}
-                whileHover={{
-                  y: -8,
-                  x: -4,
-                  boxShadow: "12px 12px 0px 0px hsl(var(--foreground))",
-                }}
+                whileHover={{ y: -6, x: -3, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-4 bg-primary text-primary-foreground px-4 py-1 font-display uppercase tracking-wider text-sm border-4 border-foreground">
+                  <div className="absolute -top-3 left-3 bg-primary text-primary-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
                     Best Value
                   </div>
                 )}
                 
-                <div className={plan.popular ? "pt-4" : ""}>
-                  <h3 className="font-display text-3xl mb-2">{plan.name}</h3>
+                <div className={plan.popular ? "pt-2" : ""}>
+                  <h3 className="font-display text-2xl mb-1">{plan.name}</h3>
                   
                   <div className="flex items-baseline gap-1 mb-2">
-                    <span className="font-display text-5xl">£{plan.price}</span>
-                    <span className="text-muted-foreground">/mo</span>
+                    <span className="font-display text-4xl">£{plan.price}</span>
+                    <span className="text-muted-foreground text-sm">/mo</span>
                   </div>
                   
-                  <div className="inline-block px-4 py-2 bg-accent border-4 border-foreground mb-4">
-                    <span className="font-display text-2xl">{plan.data}</span>
-                    <span className="font-display text-sm ml-1">DATA</span>
+                  <div className="inline-block px-2 py-1 bg-accent border-2 border-foreground mb-3">
+                    <span className="font-display text-lg">{plan.data}</span>
                   </div>
                   
-                  <p className="text-muted-foreground mb-6">{plan.description}</p>
-                  
-                  <ul className="space-y-3 mb-8 flex-grow">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-3 text-sm">
-                        <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                  <ul className="space-y-2 mb-4 flex-grow">
+                    {plan.features.slice(0, 3).map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-xs">
+                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
                   
                   <Link to={`/pre-checkout?plans=${plan.id}`} className="block">
-                    <Button 
-                      variant={plan.popular ? "hero" : "outline"} 
-                      className="w-full"
-                    >
-                      Get {plan.name}
+                    <Button variant={plan.popular ? "hero" : "outline"} className="w-full" size="sm">
+                      Get SIM
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
@@ -152,59 +191,6 @@ const SimPlans = () => {
               </motion.div>
             ))}
           </motion.div>
-
-          <p className="text-center text-sm text-muted-foreground mt-8">
-            All SIM plans require a compatible unlocked phone.{" "}
-            <Link to="/terms" className="underline hover:text-foreground">
-              Full terms apply
-            </Link>
-          </p>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <motion.div
-              className="p-6 border-4 border-foreground bg-card text-center"
-              whileHover={{ y: -6, x: -4, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
-            >
-              <div className="w-16 h-16 bg-primary border-4 border-foreground flex items-center justify-center mx-auto mb-4">
-                <Phone className="w-8 h-8 text-primary-foreground" />
-              </div>
-              <h3 className="font-display text-2xl mb-2">KEEP YOUR NUMBER</h3>
-              <p className="text-muted-foreground">
-                Text 'PAC' to 65075 to get your code. We'll do the rest. Takes about 24 hours.
-              </p>
-            </motion.div>
-            
-            <motion.div
-              className="p-6 border-4 border-foreground bg-card text-center"
-              whileHover={{ y: -6, x: -4, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
-            >
-              <div className="w-16 h-16 bg-accent border-4 border-foreground flex items-center justify-center mx-auto mb-4">
-                <Signal className="w-8 h-8" />
-              </div>
-              <h3 className="font-display text-2xl mb-2">REAL 5G COVERAGE</h3>
-              <p className="text-muted-foreground">
-                Not the "technically 5G but actually just fast 4G" nonsense. Proper 5G, where it's available.
-              </p>
-            </motion.div>
-            
-            <motion.div
-              className="p-6 border-4 border-foreground bg-card text-center"
-              whileHover={{ y: -6, x: -4, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
-            >
-              <div className="w-16 h-16 bg-warning border-4 border-foreground flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="w-8 h-8" />
-              </div>
-              <h3 className="font-display text-2xl mb-2">WIFI CALLING</h3>
-              <p className="text-muted-foreground">
-                Bad signal at home? No problem. Make calls over your WiFi. It's like magic, but real.
-              </p>
-            </motion.div>
-          </div>
         </div>
       </section>
 

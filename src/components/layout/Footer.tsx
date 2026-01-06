@@ -137,11 +137,11 @@ const Footer = () => {
               <span>•</span>
               <span>VAT No. XXXXXXXXX</span>
               <span>•</span>
-              <span>Ofcom Registered</span>
+              <span>UK Registered</span>
             </div>
           </div>
           <p className="text-center text-xs text-background/30 mt-4">
-            OCCTA Limited is authorised and regulated by Ofcom. We comply with all UK telecommunications regulations and GDPR requirements.
+            OCCTA Limited complies with all UK telecommunications regulations and GDPR requirements. 98% of our customers recommend us.
           </p>
         </div>
       </div>

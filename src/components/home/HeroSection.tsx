@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Zap, Shield, Phone, Wifi, X } from "lucide-react";
+import { ArrowRight, X, Shield, Phone, Wifi } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -8,58 +8,49 @@ const HeroSection = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+      transition: { staggerChildren: 0.06, delayChildren: 0.1 },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 15 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
+      transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
     },
   };
 
   const benefits = [
-    { icon: X, text: "No Contracts", highlight: true },
+    { icon: X, text: "No Contracts" },
     { icon: Shield, text: "No Hidden Fees" },
-    { icon: Phone, text: "UK Support" },
-    { icon: Wifi, text: "Ofcom Regulated" },
+    { icon: Phone, text: "UK Human Support" },
+    { icon: Wifi, text: "Cancel Anytime" },
   ];
 
   const services = [
-    { name: "Broadband", from: "£22.99", link: "/broadband" },
-    { name: "Mobile SIM", from: "£7.99", link: "/sim-plans" },
-    { name: "Landline", from: "£7.99", link: "/landline" },
+    { name: "Broadband", price: "£22.99", link: "/broadband" },
+    { name: "Mobile SIM", price: "£7.99", link: "/sim-plans" },
+    { name: "Landline", price: "£7.99", link: "/landline" },
   ];
 
   return (
-    <section className="relative min-h-[calc(100vh-80px)] flex items-center overflow-hidden bg-gradient-to-br from-background via-background to-muted/30">
-      {/* Background Accent */}
+    <section className="relative min-h-[calc(100vh-80px)] flex items-center bg-gradient-to-br from-background via-background to-muted/30">
       <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 translate-x-20 hidden lg:block" />
       
-      <div className="container mx-auto px-4 py-12 md:py-16 relative z-10">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Content */}
           <motion.div
-            className="space-y-6"
+            className="space-y-5"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
-            {/* Badge */}
-            <motion.div variants={itemVariants}>
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground font-display text-sm uppercase tracking-wider border-2 border-foreground">
-                <Zap className="w-4 h-4" />
-                Now Serving Yorkshire
-              </span>
-            </motion.div>
-
-            {/* Headline */}
+            {/* Headline - Large and Prominent */}
             <motion.h1 
               variants={itemVariants} 
-              className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.95] tracking-tight"
+              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display uppercase leading-[0.9] tracking-tight"
             >
               Internet That
               <br />
@@ -69,7 +60,7 @@ const HeroSection = () => {
             {/* Subheadline */}
             <motion.p 
               variants={itemVariants} 
-              className="text-lg md:text-xl text-muted-foreground max-w-lg"
+              className="text-lg text-muted-foreground max-w-lg"
             >
               Broadband, mobile & landline from <span className="text-foreground font-semibold">actual humans</span>. 
               Leave anytime—we earn your loyalty, not lock you in.
@@ -78,25 +69,25 @@ const HeroSection = () => {
             {/* Benefits Row */}
             <motion.div 
               variants={itemVariants}
-              className="flex flex-wrap gap-3"
+              className="flex flex-wrap gap-2"
             >
-              {benefits.map((benefit) => (
+              {benefits.map((benefit, i) => (
                 <div
                   key={benefit.text}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium border-2 ${
-                    benefit.highlight 
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border-2 ${
+                    i === 0 
                       ? "border-primary bg-primary text-primary-foreground" 
                       : "border-foreground/20 bg-background"
                   }`}
                 >
-                  <benefit.icon className="w-4 h-4" />
+                  <benefit.icon className="w-3.5 h-3.5" />
                   {benefit.text}
                 </div>
               ))}
             </motion.div>
 
             {/* CTA */}
-            <motion.div variants={itemVariants} className="flex flex-wrap gap-4 pt-2">
+            <motion.div variants={itemVariants} className="flex flex-wrap gap-3 pt-2">
               <Button asChild size="lg" variant="hero">
                 <Link to="/broadband">
                   Check Your Postcode
@@ -111,7 +102,7 @@ const HeroSection = () => {
 
           {/* Right - Service Cards */}
           <motion.div
-            className="grid gap-4"
+            className="space-y-3"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -123,26 +114,28 @@ const HeroSection = () => {
               Starting From
             </motion.p>
             
-            {services.map((service, i) => (
+            {services.map((service) => (
               <motion.div
                 key={service.name}
                 variants={itemVariants}
-                whileHover={{ x: 8, boxShadow: "8px 8px 0px 0px hsl(var(--foreground))" }}
-                transition={{ duration: 0.15 }}
+                whileHover={{ x: 6, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
+                transition={{ duration: 0.12 }}
               >
                 <Link
                   to={service.link}
-                  className="flex items-center justify-between p-5 bg-card border-4 border-foreground hover:bg-accent/10 transition-colors group"
+                  className="flex items-center justify-between p-4 bg-card border-4 border-foreground hover:bg-accent/10 transition-colors group"
                 >
                   <div>
-                    <h3 className="font-display text-xl uppercase">{service.name}</h3>
-                    <p className="text-sm text-muted-foreground">No contract required</p>
+                    <h3 className="font-display text-lg uppercase">{service.name}</h3>
+                    <p className="text-xs text-muted-foreground">No contract required</p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-display text-3xl text-primary">{service.from}</p>
-                    <p className="text-sm text-muted-foreground">/month</p>
+                  <div className="text-right flex items-center gap-3">
+                    <div>
+                      <p className="font-display text-2xl text-primary">{service.price}</p>
+                      <p className="text-xs text-muted-foreground">/month</p>
+                    </div>
+                    <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <ArrowRight className="w-6 h-6 ml-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Link>
               </motion.div>
             ))}
@@ -150,13 +143,13 @@ const HeroSection = () => {
             {/* Trust Badge */}
             <motion.div 
               variants={itemVariants}
-              className="flex items-center justify-center gap-6 pt-4 text-sm text-muted-foreground"
+              className="flex items-center justify-center gap-6 pt-2 text-sm text-muted-foreground"
             >
               <span className="flex items-center gap-2">
                 <span className="text-lg">🇬🇧</span> 100% British
               </span>
               <span className="flex items-center gap-2">
-                <Shield className="w-4 h-4" /> Ofcom Regulated
+                <Shield className="w-4 h-4" /> 98% Recommend Us
               </span>
             </motion.div>
           </motion.div>

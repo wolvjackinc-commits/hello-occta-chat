@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { generateOrderPdf } from "@/lib/generateOrderPdf";
 import { 
   CheckCircle, 
   User,
@@ -22,6 +23,7 @@ import {
   EyeOff,
   Loader2,
   Home,
+  Download,
 } from "lucide-react";
 
 const passwordSchema = z.object({
@@ -255,7 +257,33 @@ const ThankYou = () => {
               transition={{ delay: 0.6 }}
               className="card-brutal bg-card p-6 mb-8"
             >
-              <h2 className="font-display text-lg mb-4 uppercase tracking-wider">Order Summary</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-lg uppercase tracking-wider">Order Summary</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-2 border-foreground"
+                  onClick={() => {
+                    const totalPrice = orderData.selectedPlans.reduce((sum, p) => sum + parseFloat(p.price), 0);
+                    generateOrderPdf({
+                      orderNumber: orderData.orderNumber,
+                      customerName: `${orderData.customerData.firstName} ${orderData.customerData.lastName}`,
+                      email: orderData.customerData.email,
+                      phone: orderData.customerData.phone,
+                      address: orderData.customerData.addressLine1,
+                      city: orderData.customerData.city,
+                      postcode: orderData.customerData.postcode,
+                      planName: orderData.selectedPlans.map(p => p.name).join(' + '),
+                      planPrice: totalPrice,
+                      serviceType: orderData.selectedPlans.map(p => p.serviceType).join(', '),
+                      createdAt: orderData.timestamp,
+                    });
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF
+                </Button>
+              </div>
               <div className="space-y-3">
                 {orderData.selectedPlans.map((plan) => (
                   <div key={plan.id} className="flex justify-between items-center py-2 border-b border-foreground/10 last:border-0">

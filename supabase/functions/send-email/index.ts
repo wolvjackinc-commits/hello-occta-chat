@@ -22,7 +22,7 @@ const getCorsHeaders = (origin: string | null) => {
 };
 
 interface EmailRequest {
-  type: "order_confirmation" | "welcome" | "status_update";
+  type: "order_confirmation" | "welcome" | "status_update" | "order_message" | "ticket_reply";
   to: string;
   data: Record<string, unknown>;
   // For guest order confirmations - order verification data
@@ -220,6 +220,93 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
 `;
 };
 
+const getOrderMessageHtml = (data: Record<string, unknown>) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+    .container { max-width: 600px; margin: 0 auto; background: white; }
+    .header { background: #000; color: white; padding: 24px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
+    .content { padding: 32px 24px; }
+    .message-box { background: #f9f9f9; border: 2px solid #000; padding: 20px; margin: 20px 0; }
+    .cta { display: block; background: #000; color: white; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 24px 0; }
+    .footer { background: #f4f4f4; padding: 24px; text-align: center; color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Message About Your Order</h1>
+    </div>
+    <div class="content">
+      <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
+      
+      <p>We have a message regarding your order <strong>${escapeHtml(data.order_number)}</strong>:</p>
+      
+      <div class="message-box">
+        <p>${escapeHtml(data.message)}</p>
+      </div>
+      
+      <p>If you have any questions or need to respond, please log in to your account or contact our support team.</p>
+      
+      <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/dashboard" class="cta">View Your Order</a>
+    </div>
+    <div class="footer">
+      <p>© ${new Date().getFullYear()} Your Telecom Company. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+const getTicketReplyHtml = (data: Record<string, unknown>) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+    .container { max-width: 600px; margin: 0 auto; background: white; }
+    .header { background: #000; color: white; padding: 24px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
+    .content { padding: 32px 24px; }
+    .ticket-subject { background: #f9f9f9; border-left: 4px solid #000; padding: 12px 16px; margin: 16px 0; font-weight: bold; }
+    .message-box { background: #f9f9f9; border: 2px solid #000; padding: 20px; margin: 20px 0; }
+    .cta { display: block; background: #000; color: white; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 24px 0; }
+    .footer { background: #f4f4f4; padding: 24px; text-align: center; color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Support Ticket Reply</h1>
+    </div>
+    <div class="content">
+      <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
+      
+      <p>Our support team has replied to your ticket:</p>
+      
+      <div class="ticket-subject">
+        RE: ${escapeHtml(data.ticket_subject)}
+      </div>
+      
+      <div class="message-box">
+        <p>${escapeHtml(data.message)}</p>
+      </div>
+      
+      <p>You can reply to this ticket from your dashboard.</p>
+      
+      <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/dashboard" class="cta">View Ticket</a>
+    </div>
+    <div class="footer">
+      <p>© ${new Date().getFullYear()} Your Telecom Company. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
 // Helper to verify user is admin
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const isAdmin = async (supabase: any, userId: string): Promise<boolean> => {
@@ -327,17 +414,17 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`Authenticated user: ${userId}`);
 
       // Authorization checks based on email type
-      if (type === "status_update") {
-        // Only admins can send status update emails
+      if (type === "status_update" || type === "order_message" || type === "ticket_reply") {
+        // Only admins can send these email types
         const userIsAdmin = await isAdmin(supabase, userId);
         if (!userIsAdmin) {
-          console.error("User is not admin, cannot send status_update email");
+          console.error("User is not admin, cannot send this email type");
           return new Response(
-            JSON.stringify({ error: "Forbidden - Admin access required for status updates" }),
+            JSON.stringify({ error: "Forbidden - Admin access required" }),
             { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
-        console.log("Admin verified for status_update email");
+        console.log(`Admin verified for ${type} email`);
       } else if (type === "order_confirmation") {
         // For authenticated order confirmations, verify the email matches the order recipient
         const orderEmail = data.email as string | undefined;
@@ -383,6 +470,14 @@ const handler = async (req: Request): Promise<Response> => {
       case "status_update":
         subject = `Order Update - ${data.order_number}: ${(data.status as string).toUpperCase()}`;
         html = getStatusUpdateHtml(data);
+        break;
+      case "order_message":
+        subject = `Message About Your Order - ${data.order_number}`;
+        html = getOrderMessageHtml(data);
+        break;
+      case "ticket_reply":
+        subject = `Support Ticket Reply: ${data.ticket_subject}`;
+        html = getTicketReplyHtml(data);
         break;
       default:
         throw new Error(`Unknown email type: ${type}`);

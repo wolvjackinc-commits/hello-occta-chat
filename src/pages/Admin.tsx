@@ -33,10 +33,15 @@ import {
   AlertTriangle,
   FileText,
   Mail,
-  Phone
+  Phone,
+  Eye,
+  Settings
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
+import { UserManageDialog } from "@/components/admin/UserManageDialog";
+import { TicketReplyDialog } from "@/components/admin/TicketReplyDialog";
 
 type Order = {
   id: string;
@@ -67,6 +72,11 @@ type Profile = {
   full_name: string | null;
   email: string | null;
   phone: string | null;
+  address_line1?: string | null;
+  address_line2?: string | null;
+  city?: string | null;
+  postcode?: string | null;
+  date_of_birth?: string | null;
   created_at: string;
 };
 
@@ -82,11 +92,19 @@ type GuestOrder = {
   postcode: string;
   city: string;
   address_line1: string;
+  address_line2?: string | null;
   current_provider: string | null;
   user_id: string | null;
   linked_at: string | null;
   created_at: string;
   status: string;
+  admin_notes?: string | null;
+  in_contract?: boolean;
+  preferred_switch_date?: string | null;
+  selected_addons?: any;
+  additional_notes?: string | null;
+  gdpr_consent?: boolean;
+  marketing_consent?: boolean;
 };
 
 type GuestOrderStatus = 'pending' | 'processing' | 'dispatched' | 'installed' | 'active' | 'cancelled';
@@ -132,6 +150,14 @@ const Admin = () => {
   const [guestOrders, setGuestOrders] = useState<GuestOrder[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+
+  // Dialog states
+  const [selectedGuestOrder, setSelectedGuestOrder] = useState<GuestOrder | null>(null);
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [userDialogOpen, setUserDialogOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
   useEffect(() => {
     const checkAdminAndFetch = async () => {
@@ -187,7 +213,7 @@ const Admin = () => {
           .order("created_at", { ascending: false }),
         supabase
           .from("profiles")
-          .select("id, full_name, email, phone, created_at")
+          .select("*")
           .order("created_at", { ascending: false })
           .limit(100),
       ]);
@@ -298,6 +324,18 @@ const Admin = () => {
     }
   };
 
+  const handleGuestOrderUpdate = (updatedOrder: GuestOrder) => {
+    setGuestOrders(guestOrders.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+  };
+
+  const handleProfileUpdate = (updatedProfile: Profile) => {
+    setProfiles(profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p));
+  };
+
+  const handleTicketUpdate = (updatedTicket: SupportTicket) => {
+    setTickets(tickets.map(t => t.id === updatedTicket.id ? updatedTicket : t));
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -355,8 +393,8 @@ const Admin = () => {
           {/* Stats */}
           <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {[
-              { label: "Total Orders", value: orders.length, icon: Package, color: "bg-primary" },
-              { label: "Pending Orders", value: orders.filter(o => o.status === 'pending').length, icon: AlertTriangle, color: "bg-warning" },
+              { label: "Total Orders", value: orders.length + guestOrders.length, icon: Package, color: "bg-primary" },
+              { label: "Pending Orders", value: orders.filter(o => o.status === 'pending').length + guestOrders.filter(o => o.status === 'pending').length, icon: AlertTriangle, color: "bg-warning" },
               { label: "Open Tickets", value: tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length, icon: MessageSquare, color: "bg-accent" },
               { label: "Total Users", value: profiles.length, icon: Users, color: "bg-secondary" },
             ].map((stat) => (
@@ -378,7 +416,7 @@ const Admin = () => {
 
           {/* Tabs */}
           <motion.div variants={itemVariants}>
-            <Tabs defaultValue="orders" className="space-y-6">
+            <Tabs defaultValue="guest-orders" className="space-y-6">
               <TabsList className="grid w-full grid-cols-4 border-4 border-foreground bg-background h-auto p-0">
                 <TabsTrigger value="orders" className="font-display uppercase py-3 data-[state=active]:bg-foreground data-[state=active]:text-background border-r-4 border-foreground">
                   <Package className="w-4 h-4 mr-2" />
@@ -488,11 +526,9 @@ const Admin = () => {
                           <TableHead className="font-display uppercase">Customer</TableHead>
                           <TableHead className="font-display uppercase">Contact</TableHead>
                           <TableHead className="font-display uppercase">Plan</TableHead>
-                          <TableHead className="font-display uppercase">Type</TableHead>
-                          <TableHead className="font-display uppercase">Location</TableHead>
                           <TableHead className="font-display uppercase">Date</TableHead>
                           <TableHead className="font-display uppercase">Status</TableHead>
-                          <TableHead className="font-display uppercase">Linked</TableHead>
+                          <TableHead className="font-display uppercase">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -514,15 +550,9 @@ const Admin = () => {
                                 </a>
                               </div>
                             </TableCell>
-                            <TableCell className="font-display">{order.plan_name}</TableCell>
                             <TableCell>
-                              <Badge variant="outline" className="uppercase border-2 border-foreground">
-                                {order.service_type}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <p className="text-sm">{order.city}</p>
-                              <p className="text-xs text-muted-foreground">{order.postcode}</p>
+                              <p className="font-display">{order.plan_name}</p>
+                              <p className="text-xs text-muted-foreground">£{order.plan_price}/mo</p>
                             </TableCell>
                             <TableCell className="text-sm">
                               {format(new Date(order.created_at), 'dd MMM yyyy')}
@@ -545,11 +575,18 @@ const Admin = () => {
                               </Select>
                             </TableCell>
                             <TableCell>
-                              {order.user_id ? (
-                                <Badge className="bg-primary text-primary-foreground">Linked</Badge>
-                              ) : (
-                                <Badge variant="outline" className="border-warning text-warning">Pending</Badge>
-                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-2 border-foreground"
+                                onClick={() => {
+                                  setSelectedGuestOrder(order);
+                                  setOrderDialogOpen(true);
+                                }}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                View
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -581,6 +618,7 @@ const Admin = () => {
                           <TableHead className="font-display uppercase">Priority</TableHead>
                           <TableHead className="font-display uppercase">Date</TableHead>
                           <TableHead className="font-display uppercase">Status</TableHead>
+                          <TableHead className="font-display uppercase">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -627,6 +665,20 @@ const Admin = () => {
                                 </SelectContent>
                               </Select>
                             </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-2 border-foreground"
+                                onClick={() => {
+                                  setSelectedTicket(ticket);
+                                  setTicketDialogOpen(true);
+                                }}
+                              >
+                                <MessageSquare className="w-4 h-4 mr-1" />
+                                Reply
+                              </Button>
+                            </TableCell>
                           </TableRow>
                           );
                         })}
@@ -658,6 +710,7 @@ const Admin = () => {
                           <TableHead className="font-display uppercase">Joined</TableHead>
                           <TableHead className="font-display uppercase">Orders</TableHead>
                           <TableHead className="font-display uppercase">Tickets</TableHead>
+                          <TableHead className="font-display uppercase">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -682,6 +735,20 @@ const Admin = () => {
                                   {userTickets.length}
                                 </Badge>
                               </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-2 border-foreground"
+                                  onClick={() => {
+                                    setSelectedProfile(profile);
+                                    setUserDialogOpen(true);
+                                  }}
+                                >
+                                  <Settings className="w-4 h-4 mr-1" />
+                                  Manage
+                                </Button>
+                              </TableCell>
                             </TableRow>
                           );
                         })}
@@ -699,6 +766,29 @@ const Admin = () => {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Dialogs */}
+      <OrderDetailDialog
+        order={selectedGuestOrder}
+        open={orderDialogOpen}
+        onOpenChange={setOrderDialogOpen}
+        onUpdate={handleGuestOrderUpdate}
+      />
+
+      <UserManageDialog
+        profile={selectedProfile}
+        open={userDialogOpen}
+        onOpenChange={setUserDialogOpen}
+        onUpdate={handleProfileUpdate}
+      />
+
+      <TicketReplyDialog
+        ticket={selectedTicket}
+        profile={selectedTicket ? getProfileForUser(selectedTicket.user_id) || null : null}
+        open={ticketDialogOpen}
+        onOpenChange={setTicketDialogOpen}
+        onUpdate={handleTicketUpdate}
+      />
     </Layout>
   );
 };

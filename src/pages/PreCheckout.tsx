@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +48,7 @@ import {
   PhoneForwarded,
   Voicemail,
   User,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +121,8 @@ const PreCheckout = () => {
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [termsConsent, setTermsConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [additionalNotes, setAdditionalNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (planIds.length === 0) {
@@ -189,24 +194,76 @@ const PreCheckout = () => {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
+    
+    setIsSubmitting(true);
     
     // Generate order number
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     
-    // Store order data and navigate to thank you page
-    const orderData = {
-      orderNumber,
-      customerData,
-      selectedPlans,
-      selectedAddons,
-      marketingConsent,
-      timestamp: new Date().toISOString(),
-    };
-    
-    sessionStorage.setItem('pendingOrder', JSON.stringify(orderData));
-    navigate('/thank-you');
+    try {
+      // Calculate total price
+      const bundleCalc = calculateBundleDiscount(selectedPlans);
+      const addonsTotal = selectedAddons.reduce((sum, id) => {
+        const addon = availableAddons.find(a => a.id === id);
+        return sum + (addon?.price || 0);
+      }, 0);
+      const totalPrice = bundleCalc.discountedTotal + addonsTotal;
+      
+      // Get addon details for storage
+      const selectedAddonDetails = selectedAddons.map(id => {
+        const addon = availableAddons.find(a => a.id === id);
+        return addon ? { id: addon.id, name: addon.name, price: addon.price } : null;
+      }).filter(Boolean);
+      
+      // Save to database
+      const { error } = await supabase.from('guest_orders').insert({
+        order_number: orderNumber,
+        email: customerData.email,
+        full_name: `${customerData.firstName} ${customerData.lastName}`,
+        phone: customerData.phone,
+        address_line1: customerData.addressLine1,
+        address_line2: customerData.addressLine2 || null,
+        city: customerData.city,
+        postcode: customerData.postcode,
+        current_provider: customerData.currentProvider,
+        in_contract: customerData.inContract !== 'no' && customerData.inContract !== 'new-connection',
+        contract_end_date: null,
+        preferred_switch_date: customerData.preferredSwitchDate ? format(customerData.preferredSwitchDate, 'yyyy-MM-dd') : null,
+        additional_notes: additionalNotes || null,
+        gdpr_consent: gdprConsent,
+        marketing_consent: marketingConsent,
+        plan_name: selectedPlans.map(p => p.name).join(' + '),
+        plan_price: totalPrice,
+        service_type: selectedPlans.map(p => p.serviceType).join(','),
+        selected_addons: selectedAddonDetails as unknown as Json,
+      });
+      
+      if (error) throw error;
+      
+      // Store order data for thank you page
+      const orderData = {
+        orderNumber,
+        customerData,
+        selectedPlans,
+        selectedAddons,
+        marketingConsent,
+        timestamp: new Date().toISOString(),
+      };
+      
+      sessionStorage.setItem('pendingOrder', JSON.stringify(orderData));
+      navigate('/thank-you');
+    } catch (error: any) {
+      console.error('Error saving order:', error);
+      toast({
+        title: "Error submitting order",
+        description: "Please try again or contact support.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Calculate totals

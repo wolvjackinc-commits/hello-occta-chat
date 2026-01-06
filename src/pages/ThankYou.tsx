@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
+import { logError } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -116,22 +117,37 @@ const ThankYou = () => {
 
       if (error) throw error;
 
-      // Update profile with additional info
+      // Update profile with additional info using upsert to handle race condition
       if (data.user) {
-        await supabase.from('profiles').update({
+        const { error: profileError } = await supabase.from('profiles').upsert({
+          id: data.user.id,
           full_name: `${orderData.customerData.firstName} ${orderData.customerData.lastName}`,
           phone: orderData.customerData.phone,
           address_line1: orderData.customerData.addressLine1,
           address_line2: orderData.customerData.addressLine2 || null,
           city: orderData.customerData.city,
           postcode: orderData.customerData.postcode,
-        }).eq('id', data.user.id);
+          email: orderData.customerData.email,
+        }, { onConflict: 'id' });
+
+        if (profileError) {
+          logError('ThankYou.handleCreateAccount.profileUpsert', profileError);
+          // Profile update failed but account was created - notify user
+          toast({
+            title: "Account created",
+            description: "Some profile details may need updating in settings.",
+          });
+        }
 
         // Link the guest order to the new user account
-        await supabase.from('guest_orders').update({
+        const { error: orderLinkError } = await supabase.from('guest_orders').update({
           user_id: data.user.id,
           linked_at: new Date().toISOString(),
         }).eq('order_number', orderData.orderNumber);
+
+        if (orderLinkError) {
+          logError('ThankYou.handleCreateAccount.orderLink', orderLinkError);
+        }
       }
 
       setAccountCreated(true);
@@ -141,10 +157,11 @@ const ThankYou = () => {
         title: "Account created!",
         description: "Check your email to verify your account.",
       });
-    } catch (error: any) {
-      console.error("Account creation error:", error);
+    } catch (error: unknown) {
+      logError("ThankYou.handleCreateAccount", error);
       
-      if (error.message?.includes('already registered')) {
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage.includes('already registered')) {
         toast({
           title: "Email already registered",
           description: "Try logging in instead, or use a different email.",

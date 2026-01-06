@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -263,7 +264,7 @@ const PreCheckout = () => {
           }
         });
       } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
+        logError('PreCheckout.handleSubmit.sendEmail', emailError);
         // Don't block the order if email fails
       }
       
@@ -279,8 +280,8 @@ const PreCheckout = () => {
       
       sessionStorage.setItem('pendingOrder', JSON.stringify(orderData));
       navigate('/thank-you');
-    } catch (error: any) {
-      console.error('Error saving order:', error);
+    } catch (error) {
+      logError('PreCheckout.handleSubmit', error);
       toast({
         title: "Error submitting order",
         description: "Please try again or contact support.",

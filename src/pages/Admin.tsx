@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -186,8 +187,9 @@ const Admin = () => {
           .order("created_at", { ascending: false }),
         supabase
           .from("profiles")
-          .select("*")
-          .order("created_at", { ascending: false }),
+          .select("id, full_name, email, phone, created_at")
+          .order("created_at", { ascending: false })
+          .limit(100),
       ]);
 
       if (ordersResult.data) setOrders(ordersResult.data as Order[]);
@@ -195,7 +197,7 @@ const Admin = () => {
       if (ticketsResult.data) setTickets(ticketsResult.data as SupportTicket[]);
       if (profilesResult.data) setProfiles(profilesResult.data);
     } catch (error) {
-      console.error("Error fetching admin data:", error);
+      logError("Admin.fetchAllData", error);
       toast({
         title: "Error",
         description: "Failed to load admin data.",
@@ -290,7 +292,7 @@ const Admin = () => {
             }
           });
         } catch (emailError) {
-          console.error('Failed to send status update email:', emailError);
+          logError('Admin.updateGuestOrderStatus.sendEmail', emailError);
         }
       }
     }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import Layout from "@/components/layout/Layout";
@@ -12,24 +13,73 @@ import {
   FileText, 
   Settings, 
   HelpCircle, 
-  Download, 
   Plus,
   LogOut,
   Loader2,
   Package,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  CheckCircle,
+  XCircle,
+  MessageSquare
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+type Order = {
+  id: string;
+  service_type: 'broadband' | 'sim' | 'landline';
+  plan_name: string;
+  plan_price: number;
+  status: 'pending' | 'confirmed' | 'active' | 'cancelled';
+  created_at: string;
+};
+
+type SupportTicket = {
+  id: string;
+  subject: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  created_at: string;
+};
+
+type Profile = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+};
+
+const serviceIcons = {
+  broadband: Wifi,
+  sim: Smartphone,
+  landline: PhoneCall,
+};
+
+const statusConfig = {
+  pending: { color: "bg-warning", textColor: "text-warning", label: "Pending" },
+  confirmed: { color: "bg-accent", textColor: "text-accent", label: "Confirmed" },
+  active: { color: "bg-primary", textColor: "text-primary", label: "Active" },
+  cancelled: { color: "bg-destructive", textColor: "text-destructive", label: "Cancelled" },
+};
+
+const ticketStatusConfig = {
+  open: { icon: Clock, color: "bg-warning", label: "Open" },
+  in_progress: { icon: Loader2, color: "bg-accent", label: "In Progress" },
+  resolved: { icon: CheckCircle, color: "bg-primary", label: "Resolved" },
+  closed: { icon: XCircle, color: "bg-muted", label: "Closed" },
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -37,10 +87,14 @@ const Dashboard = () => {
       
       if (!session) {
         navigate("/auth");
+      } else {
+        // Defer data fetching to avoid deadlock
+        setTimeout(() => {
+          fetchUserData(session.user.id);
+        }, 0);
       }
     });
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -48,11 +102,42 @@ const Dashboard = () => {
       
       if (!session) {
         navigate("/auth");
+      } else {
+        fetchUserData(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const fetchUserData = async (userId: string) => {
+    setIsDataLoading(true);
+    
+    try {
+      // Fetch all data in parallel
+      const [profileResult, ordersResult, ticketsResult] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+        supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+      ]);
+
+      if (profileResult.data) {
+        setProfile(profileResult.data);
+      }
+      
+      if (ordersResult.data) {
+        setOrders(ordersResult.data);
+      }
+      
+      if (ticketsResult.data) {
+        setTickets(ticketsResult.data);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -75,7 +160,9 @@ const Dashboard = () => {
     return (
       <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div className="p-4 border-4 border-foreground bg-background">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
         </div>
       </Layout>
     );
@@ -85,182 +172,251 @@ const Dashboard = () => {
     return null;
   }
 
-  const userFullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer";
+  const userFullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer";
+  const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
+  const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
 
-  const quickActions = [
-    { icon: Package, label: "My Services", description: "View and manage your active services", href: "/dashboard/services" },
-    { icon: FileText, label: "Invoices", description: "Download bills and payment history", href: "/dashboard/invoices" },
-    { icon: HelpCircle, label: "Get Support", description: "Raise a ticket or check status", href: "/dashboard/support" },
-    { icon: Settings, label: "Account Settings", description: "Update your details and preferences", href: "/dashboard/settings" },
-  ];
-
-  const activeServices = [
-    { 
-      type: "Broadband", 
-      icon: Wifi, 
-      plan: "Ultrafast 500", 
-      status: "Active",
-      nextBill: "£29.99 on 1st Feb" 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 },
     },
-  ];
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
+    },
+  };
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 md:py-12">
-        {/* Welcome Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-display font-bold">
-              Alright, {userFullName}! 👋
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Here's what's happening with your services
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link to="/dashboard/services/new">
-              <Button variant="hero">
-                <Plus className="w-4 h-4" />
-                Add Service
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
+          {/* Welcome Header */}
+          <motion.div
+            variants={itemVariants}
+            className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8"
+          >
+            <div>
+              <h1 className="text-display-md">
+                Alright, {userFullName}! 👋
+              </h1>
+              <p className="text-muted-foreground mt-1 font-display uppercase tracking-wider">
+                Here's what's happening with your services
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Link to="/broadband">
+                <motion.div whileHover={{ y: -4, x: -4, boxShadow: "8px 8px 0px 0px hsl(var(--foreground))" }}>
+                  <Button variant="hero">
+                    <Plus className="w-4 h-4" />
+                    Add Service
+                  </Button>
+                </motion.div>
+              </Link>
+              <Button variant="outline" onClick={handleSignOut} className="border-4 border-foreground">
+                <LogOut className="w-4 h-4" />
+                Sign Out
               </Button>
-            </Link>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
+            </div>
+          </motion.div>
 
-        {/* Quick Actions */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {quickActions.map((action) => (
-            <Link key={action.label} to={action.href}>
-              <Card className="h-full hover:shadow-soft transition-all duration-300 hover:border-primary/30 cursor-pointer group">
-                <CardContent className="p-6">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <action.icon className="w-6 h-6 text-primary" />
+          {/* Stats Bar */}
+          <motion.div
+            variants={itemVariants}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          >
+            {[
+              { label: "Active Services", value: activeOrders.length, color: "bg-primary" },
+              { label: "Total Orders", value: orders.length, color: "bg-accent" },
+              { label: "Open Tickets", value: openTickets.length, color: "bg-warning" },
+              { label: "All Tickets", value: tickets.length, color: "bg-secondary" },
+            ].map((stat) => (
+              <motion.div
+                key={stat.label}
+                className={`p-4 border-4 border-foreground ${stat.color}`}
+                whileHover={{ y: -4, x: -4, boxShadow: "8px 8px 0px 0px hsl(var(--foreground))" }}
+              >
+                <div className="font-display text-display-sm">{stat.value}</div>
+                <div className="font-display text-sm uppercase tracking-wider">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Orders Section */}
+            <motion.div variants={itemVariants} className="lg:col-span-2">
+              <div className="card-brutal bg-card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-display-sm">YOUR ORDERS</h2>
+                  <Link to="/broadband">
+                    <Button variant="outline" size="sm" className="border-4 border-foreground">
+                      <Plus className="w-4 h-4" />
+                      New Order
+                    </Button>
+                  </Link>
+                </div>
+
+                {isDataLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
-                  <h3 className="font-display font-bold text-lg mb-1">{action.label}</h3>
-                  <p className="text-sm text-muted-foreground">{action.description}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-
-        {/* Active Services */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display">Your Active Services</CardTitle>
-                <CardDescription>
-                  Everything you've got running with us
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {activeServices.length > 0 ? (
+                ) : orders.length > 0 ? (
                   <div className="space-y-4">
-                    {activeServices.map((service, index) => (
-                      <div 
-                        key={index}
-                        className="flex items-center justify-between p-4 rounded-xl bg-secondary/50 border border-border/50"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-                            <service.icon className="w-6 h-6 text-accent" />
+                    {orders.map((order, index) => {
+                      const Icon = serviceIcons[order.service_type];
+                      const status = statusConfig[order.status];
+                      return (
+                        <motion.div
+                          key={order.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center justify-between p-4 border-4 border-foreground bg-background hover:bg-secondary transition-colors"
+                          whileHover={{ x: -4, boxShadow: "8px 0px 0px 0px hsl(var(--foreground))" }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-foreground text-background flex items-center justify-center">
+                              <Icon className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="font-display text-lg uppercase">{order.plan_name}</h4>
+                              <p className="text-sm text-muted-foreground capitalize">{order.service_type}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-semibold">{service.type}</h4>
-                            <p className="text-sm text-muted-foreground">{service.plan}</p>
+                          <div className="text-right">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 ${status.color} border-2 border-foreground`}>
+                              <span className="font-display text-sm uppercase">{status.label}</span>
+                            </div>
+                            <p className="text-lg font-display mt-1">£{order.plan_price}/mo</p>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                            {service.status}
-                          </span>
-                          <p className="text-sm text-muted-foreground mt-1">{service.nextBill}</p>
-                        </div>
-                      </div>
-                    ))}
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                      <Package className="w-8 h-8 text-muted-foreground" />
+                  <div className="text-center py-12 border-4 border-dashed border-foreground/30">
+                    <div className="w-16 h-16 bg-foreground text-background flex items-center justify-center mx-auto mb-4">
+                      <Package className="w-8 h-8" />
                     </div>
-                    <h3 className="font-display font-bold text-lg mb-2">No services yet</h3>
+                    <h3 className="font-display text-xl mb-2">NO ORDERS YET</h3>
                     <p className="text-muted-foreground mb-4">
-                      You haven't signed up for any services. Let's change that!
+                      You haven't ordered any services. Let's change that!
                     </p>
                     <Link to="/broadband">
                       <Button variant="hero">Browse Services</Button>
                     </Link>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </motion.div>
 
-          {/* Recent Activity / Quick Help */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display text-lg">Latest Invoice</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold">January 2025</p>
-                    <p className="text-2xl font-display font-bold text-primary">£29.99</p>
-                    <p className="text-sm text-muted-foreground">Paid on 1st Jan</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Download className="w-4 h-4" />
-                    Download
-                  </Button>
+            {/* Sidebar */}
+            <motion.div variants={itemVariants} className="space-y-6">
+              {/* Support Tickets */}
+              <div className="card-brutal bg-card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display text-lg">SUPPORT TICKETS</h3>
+                  <Link to="/support">
+                    <Button variant="ghost" size="sm">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </Link>
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display text-lg">Need Help?</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Link to="/dashboard/support">
-                  <Button variant="outline" className="w-full justify-start">
-                    <HelpCircle className="w-4 h-4" />
-                    Raise a Support Ticket
-                  </Button>
-                </Link>
-                <a href="tel:08002606627">
-                  <Button variant="ghost" className="w-full justify-start text-muted-foreground">
-                    📞 Call 0800 260 6627
-                  </Button>
-                </a>
-              </CardContent>
-            </Card>
+                {isDataLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  </div>
+                ) : tickets.length > 0 ? (
+                  <div className="space-y-3">
+                    {tickets.slice(0, 3).map((ticket) => {
+                      const ticketStatus = ticketStatusConfig[ticket.status];
+                      return (
+                        <motion.div
+                          key={ticket.id}
+                          className="p-3 border-4 border-foreground bg-background"
+                          whileHover={{ x: -2, boxShadow: "4px 0px 0px 0px hsl(var(--foreground))" }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-8 h-8 ${ticketStatus.color} flex items-center justify-center flex-shrink-0`}>
+                              <ticketStatus.icon className="w-4 h-4" />
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <p className="font-display text-sm truncate">{ticket.subject}</p>
+                              <p className="text-xs text-muted-foreground uppercase">{ticketStatus.label}</p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                    <Link to="/support" className="block">
+                      <Button variant="outline" className="w-full border-4 border-foreground">
+                        View All Tickets
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">No tickets yet</p>
+                    <Link to="/support">
+                      <Button variant="outline" size="sm" className="mt-3 border-4 border-foreground">
+                        Get Support
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
 
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="p-6">
+              {/* Quick Help */}
+              <div className="card-brutal bg-foreground text-background p-6">
+                <h3 className="font-display text-lg mb-4">NEED HELP?</h3>
+                <div className="space-y-3">
+                  <Link to="/support">
+                    <Button variant="outline" className="w-full justify-start bg-transparent border-background text-background hover:bg-background hover:text-foreground">
+                      <HelpCircle className="w-4 h-4" />
+                      Raise a Ticket
+                    </Button>
+                  </Link>
+                  <a href="tel:08002606627">
+                    <Button variant="ghost" className="w-full justify-start text-background/70 hover:text-background hover:bg-background/10">
+                      📞 Call 0800 260 6627
+                    </Button>
+                  </a>
+                </div>
+              </div>
+
+              {/* Promo Card */}
+              <motion.div
+                className="p-6 border-4 border-primary bg-primary/10"
+                whileHover={{ rotate: 1 }}
+              >
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-primary mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-sm mb-1">Upgrade Available!</h4>
+                    <h4 className="font-display text-sm mb-1">UPGRADE AVAILABLE!</h4>
                     <p className="text-sm text-muted-foreground">
-                      You're eligible for our new Ultrafast 900 plan. Same price, double the speed!
+                      Double your speed for £5/mo more. Worth it? We think so.
                     </p>
-                    <Button variant="link" className="px-0 h-auto mt-2 text-primary">
+                    <Button variant="link" className="px-0 h-auto mt-2 text-primary font-display">
                       Learn more →
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </motion.div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </Layout>
   );

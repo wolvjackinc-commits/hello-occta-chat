@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import BundleBuilder from "@/components/bundle/BundleBuilder";
 import { Check, Wifi, Zap, Shield, Clock, ArrowRight, HelpCircle } from "lucide-react";
 import { broadbandPlans } from "@/lib/plans";
 
@@ -193,23 +194,8 @@ const Broadband = () => {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16 bg-foreground text-background">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="font-display text-display-md mb-4">
-            READY TO SWITCH?
-          </h2>
-          <p className="text-background/70 mb-8 text-lg">
-            We handle everything — even cancelling your old provider. No faff, no fuss.
-          </p>
-          <Link to="/checkout?plan=broadband-superfast">
-            <Button variant="hero" size="lg" className="border-background">
-              Get Started
-              <ArrowRight className="w-5 h-5" />
-            </Button>
-          </Link>
-        </div>
-      </section>
+      {/* Bundle Builder */}
+      <BundleBuilder currentService="broadband" />
     </Layout>
   );
 };

@@ -29,7 +29,10 @@ import {
   Users,
   MessageSquare,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  Mail,
+  Phone
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -66,6 +69,24 @@ type Profile = {
   created_at: string;
 };
 
+type GuestOrder = {
+  id: string;
+  order_number: string;
+  service_type: string;
+  plan_name: string;
+  plan_price: number;
+  full_name: string;
+  email: string;
+  phone: string;
+  postcode: string;
+  city: string;
+  address_line1: string;
+  current_provider: string | null;
+  user_id: string | null;
+  linked_at: string | null;
+  created_at: string;
+};
+
 type OrderStatus = 'pending' | 'confirmed' | 'active' | 'cancelled';
 type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 
@@ -99,6 +120,7 @@ const Admin = () => {
   const [isDataLoading, setIsDataLoading] = useState(true);
   
   const [orders, setOrders] = useState<Order[]>([]);
+  const [guestOrders, setGuestOrders] = useState<GuestOrder[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
@@ -141,9 +163,13 @@ const Admin = () => {
     setIsDataLoading(true);
     
     try {
-      const [ordersResult, ticketsResult, profilesResult] = await Promise.all([
+      const [ordersResult, guestOrdersResult, ticketsResult, profilesResult] = await Promise.all([
         supabase
           .from("orders")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("guest_orders")
           .select("*")
           .order("created_at", { ascending: false }),
         supabase
@@ -157,6 +183,7 @@ const Admin = () => {
       ]);
 
       if (ordersResult.data) setOrders(ordersResult.data as Order[]);
+      if (guestOrdersResult.data) setGuestOrders(guestOrdersResult.data);
       if (ticketsResult.data) setTickets(ticketsResult.data as SupportTicket[]);
       if (profilesResult.data) setProfiles(profilesResult.data);
     } catch (error) {
@@ -298,10 +325,14 @@ const Admin = () => {
           {/* Tabs */}
           <motion.div variants={itemVariants}>
             <Tabs defaultValue="orders" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 border-4 border-foreground bg-background h-auto p-0">
+              <TabsList className="grid w-full grid-cols-4 border-4 border-foreground bg-background h-auto p-0">
                 <TabsTrigger value="orders" className="font-display uppercase py-3 data-[state=active]:bg-foreground data-[state=active]:text-background border-r-4 border-foreground">
                   <Package className="w-4 h-4 mr-2" />
                   Orders ({orders.length})
+                </TabsTrigger>
+                <TabsTrigger value="guest-orders" className="font-display uppercase py-3 data-[state=active]:bg-foreground data-[state=active]:text-background border-r-4 border-foreground">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Guest ({guestOrders.length})
                 </TabsTrigger>
                 <TabsTrigger value="tickets" className="font-display uppercase py-3 data-[state=active]:bg-foreground data-[state=active]:text-background border-r-4 border-foreground">
                   <MessageSquare className="w-4 h-4 mr-2" />
@@ -384,6 +415,81 @@ const Admin = () => {
                   <div className="text-center py-12">
                     <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                     <p className="font-display text-lg">NO ORDERS YET</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Guest Orders Tab */}
+              <TabsContent value="guest-orders" className="border-4 border-foreground bg-card">
+                {isDataLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  </div>
+                ) : guestOrders.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b-4 border-foreground bg-secondary">
+                          <TableHead className="font-display uppercase">Order #</TableHead>
+                          <TableHead className="font-display uppercase">Customer</TableHead>
+                          <TableHead className="font-display uppercase">Contact</TableHead>
+                          <TableHead className="font-display uppercase">Plan</TableHead>
+                          <TableHead className="font-display uppercase">Type</TableHead>
+                          <TableHead className="font-display uppercase">Location</TableHead>
+                          <TableHead className="font-display uppercase">Provider</TableHead>
+                          <TableHead className="font-display uppercase">Date</TableHead>
+                          <TableHead className="font-display uppercase">Linked</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {guestOrders.map((order) => (
+                          <TableRow key={order.id} className="border-b-2 border-foreground/20">
+                            <TableCell className="font-display font-bold">{order.order_number}</TableCell>
+                            <TableCell>
+                              <p className="font-display">{order.full_name}</p>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <a href={`mailto:${order.email}`} className="flex items-center gap-1 text-sm text-primary hover:underline">
+                                  <Mail className="w-3 h-3" />
+                                  {order.email}
+                                </a>
+                                <a href={`tel:${order.phone}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:underline">
+                                  <Phone className="w-3 h-3" />
+                                  {order.phone}
+                                </a>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-display">{order.plan_name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="uppercase border-2 border-foreground">
+                                {order.service_type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm">{order.city}</p>
+                              <p className="text-xs text-muted-foreground">{order.postcode}</p>
+                            </TableCell>
+                            <TableCell className="text-sm">{order.current_provider || '—'}</TableCell>
+                            <TableCell className="text-sm">
+                              {format(new Date(order.created_at), 'dd MMM yyyy')}
+                            </TableCell>
+                            <TableCell>
+                              {order.user_id ? (
+                                <Badge className="bg-primary text-primary-foreground">Linked</Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-warning text-warning">Pending</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="font-display text-lg">NO GUEST ORDERS YET</p>
                   </div>
                 )}
               </TabsContent>

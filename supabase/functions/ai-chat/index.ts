@@ -16,6 +16,56 @@ const getCorsHeaders = (origin: string | null) => {
   };
 };
 
+// In-memory rate limiting for verification attempts (per account/IP)
+const verificationAttempts = new Map<string, { count: number; firstAttempt: number }>();
+const VERIFICATION_RATE_LIMIT = 5; // Max attempts
+const VERIFICATION_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkVerificationRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const record = verificationAttempts.get(identifier);
+  
+  if (!record) {
+    verificationAttempts.set(identifier, { count: 1, firstAttempt: now });
+    return true;
+  }
+  
+  // Reset if window has passed
+  if (now - record.firstAttempt > VERIFICATION_WINDOW_MS) {
+    verificationAttempts.set(identifier, { count: 1, firstAttempt: now });
+    return true;
+  }
+  
+  // Check if limit exceeded
+  if (record.count >= VERIFICATION_RATE_LIMIT) {
+    console.log(`Rate limit exceeded for: ${identifier}`);
+    return false;
+  }
+  
+  // Increment count
+  record.count++;
+  return true;
+}
+
+// Session-based verification cache (in-memory, cleared on function restart)
+// This prevents repeated service role queries for the same verified session
+const verifiedSessions = new Map<string, { email?: string; accountNumber?: string; expiresAt: number }>();
+const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+function createVerificationSession(key: string, data: { email?: string; accountNumber?: string }): void {
+  verifiedSessions.set(key, { ...data, expiresAt: Date.now() + SESSION_TTL_MS });
+}
+
+function getVerifiedSession(key: string): { email?: string; accountNumber?: string } | null {
+  const session = verifiedSessions.get(key);
+  if (!session) return null;
+  if (Date.now() > session.expiresAt) {
+    verifiedSessions.delete(key);
+    return null;
+  }
+  return { email: session.email, accountNumber: session.accountNumber };
+}
+
 // Business knowledge base
 const businessInfo = {
   company: "OCCTA Telecom",
@@ -204,33 +254,73 @@ interface SupportTicket {
   id: string;
 }
 
-// Tool execution functions
+// Tool execution functions - uses separate clients based on security needs
 // deno-lint-ignore no-explicit-any
 async function executeTool(
   toolName: string, 
   args: Record<string, unknown>, 
-  supabaseClient: any,
-  userId?: string
+  supabaseServiceClient: any,
+  supabaseAnonClient: any,
+  userId?: string,
+  sessionKey?: string
 ): Promise<string> {
   switch (toolName) {
     case "lookup_account": {
       const { email, date_of_birth } = args as { email: string; date_of_birth: string };
       
-      // Check profiles table for matching email and DOB
-      const { data, error } = await supabaseClient
+      // Validate inputs
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return JSON.stringify({ success: false, message: "Please provide a valid email address." });
+      }
+      
+      const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dobRegex.test(date_of_birth)) {
+        return JSON.stringify({ success: false, message: "Please provide your date of birth in YYYY-MM-DD format." });
+      }
+      
+      // Rate limit check
+      const rateLimitKey = `email:${email.toLowerCase()}`;
+      if (!checkVerificationRateLimit(rateLimitKey)) {
+        console.log(`SECURITY: Rate limit exceeded for email verification: ${email}`);
+        return JSON.stringify({ 
+          success: false, 
+          message: "Too many verification attempts. Please wait 15 minutes or call us at 0800 260 6627." 
+        });
+      }
+      
+      // Use service role ONLY for verification query (necessary to check DOB without RLS)
+      console.log(`AUDIT: Account lookup attempt for email: ${email.substring(0, 3)}***`);
+      
+      const { data, error } = await supabaseServiceClient
         .from("profiles")
         .select("id, email, full_name, date_of_birth")
         .eq("email", email.toLowerCase())
-        .eq("date_of_birth", date_of_birth)
         .single();
       
       const profile = data as Profile | null;
       
       if (error || !profile) {
+        console.log(`AUDIT: Account lookup failed - no profile found for email`);
         return JSON.stringify({ 
           success: false, 
           message: "Unable to verify account. Please check your email and date of birth are correct." 
         });
+      }
+      
+      // Verify DOB matches
+      if (profile.date_of_birth !== date_of_birth) {
+        console.log(`AUDIT: DOB mismatch for email verification`);
+        return JSON.stringify({ 
+          success: false, 
+          message: "Unable to verify account. Please check your email and date of birth are correct." 
+        });
+      }
+      
+      // Create verification session
+      if (sessionKey) {
+        createVerificationSession(sessionKey, { email: email.toLowerCase() });
+        console.log(`AUDIT: Verification session created for email: ${email.substring(0, 3)}***`);
       }
       
       return JSON.stringify({ 
@@ -242,8 +332,6 @@ async function executeTool(
 
     case "lookup_account_by_number": {
       const { account_number, date_of_birth } = args as { account_number: string; date_of_birth: string };
-      
-      console.log(`Looking up account: ${account_number} with DOB: ${date_of_birth}`);
       
       // Validate account number format (OCC + 8 digits)
       const accountNumberRegex = /^OCC\d{8}$/i;
@@ -263,8 +351,20 @@ async function executeTool(
         });
       }
       
-      // Find order with matching account number
-      const { data: orderData, error: orderError } = await supabaseClient
+      // Rate limit check for account number verification
+      const rateLimitKey = `account:${account_number.toUpperCase()}`;
+      if (!checkVerificationRateLimit(rateLimitKey)) {
+        console.log(`SECURITY: Rate limit exceeded for account verification: ${account_number}`);
+        return JSON.stringify({ 
+          success: false, 
+          message: "Too many verification attempts. Please wait 15 minutes or call us at 0800 260 6627." 
+        });
+      }
+      
+      console.log(`AUDIT: Account lookup attempt for: ${account_number.toUpperCase()}`);
+      
+      // Use service role for verification query (necessary to check DOB without RLS)
+      const { data: orderData, error: orderError } = await supabaseServiceClient
         .from("guest_orders")
         .select("account_number, full_name, email, status, date_of_birth")
         .eq("account_number", account_number.toUpperCase())
@@ -272,7 +372,7 @@ async function executeTool(
         .single();
       
       if (orderError || !orderData) {
-        console.log("Account lookup failed:", orderError);
+        console.log(`AUDIT: Account lookup failed - no active account found`);
         return JSON.stringify({ 
           success: false, 
           message: "Unable to find an active account with that account number. Please check the number and try again." 
@@ -282,13 +382,19 @@ async function executeTool(
       // First, try to verify DOB from the guest_orders table directly
       if (orderData.date_of_birth) {
         if (orderData.date_of_birth !== date_of_birth) {
-          console.log("DOB mismatch from guest_orders");
+          console.log(`AUDIT: DOB mismatch for account: ${account_number}`);
           return JSON.stringify({ 
             success: false, 
             message: "The date of birth doesn't match our records. Please check and try again." 
           });
         }
-        // DOB matched from guest_orders
+        
+        // Create verification session
+        if (sessionKey) {
+          createVerificationSession(sessionKey, { accountNumber: account_number.toUpperCase() });
+          console.log(`AUDIT: Verification session created for account: ${account_number}`);
+        }
+        
         return JSON.stringify({ 
           success: true, 
           message: `Account verified for ${orderData.full_name}! I can now help you with your billing details.`,
@@ -297,15 +403,15 @@ async function executeTool(
       }
       
       // Fallback: verify DOB against the email in profiles
-      const { data: profileData, error: profileError } = await supabaseClient
+      const { data: profileData, error: profileError } = await supabaseServiceClient
         .from("profiles")
         .select("date_of_birth")
         .eq("email", orderData.email.toLowerCase())
         .single();
       
-      // If no profile found and no DOB on order, we cannot verify - require DOB to be set
+      // If no profile found and no DOB on order, we cannot verify
       if (profileError || !profileData || !profileData.date_of_birth) {
-        console.log("No DOB found for verification - denying access");
+        console.log(`AUDIT: No DOB found for verification - denying access`);
         return JSON.stringify({ 
           success: false, 
           message: "We cannot verify your identity without a date of birth on file. Please contact support at 0800 260 6627 to update your account details." 
@@ -313,10 +419,17 @@ async function executeTool(
       }
       
       if (profileData.date_of_birth !== date_of_birth) {
+        console.log(`AUDIT: DOB mismatch from profiles for account: ${account_number}`);
         return JSON.stringify({ 
           success: false, 
           message: "The date of birth doesn't match our records. Please check and try again." 
         });
+      }
+      
+      // Create verification session
+      if (sessionKey) {
+        createVerificationSession(sessionKey, { accountNumber: account_number.toUpperCase() });
+        console.log(`AUDIT: Verification session created for account: ${account_number}`);
       }
       
       return JSON.stringify({ 
@@ -329,10 +442,26 @@ async function executeTool(
     case "get_latest_bill": {
       const { account_number } = args as { account_number: string };
       
-      console.log(`Fetching bill for account: ${account_number}`);
+      // Validate account number format
+      const accountNumberRegex = /^OCC\d{8}$/i;
+      if (!accountNumberRegex.test(account_number)) {
+        return JSON.stringify({ success: false, message: "Invalid account number format." });
+      }
       
-      // Get the active order for this account
-      const { data, error } = await supabaseClient
+      // Check if session is verified for this account
+      const verifiedSession = sessionKey ? getVerifiedSession(sessionKey) : null;
+      if (!verifiedSession || verifiedSession.accountNumber !== account_number.toUpperCase()) {
+        console.log(`SECURITY: Attempt to access billing without verification for: ${account_number}`);
+        return JSON.stringify({ 
+          success: false, 
+          message: "Please verify your account first using your account number and date of birth." 
+        });
+      }
+      
+      console.log(`AUDIT: Fetching bill for verified account: ${account_number}`);
+      
+      // Use service role to fetch billing data (RLS doesn't allow public access to guest_orders)
+      const { data, error } = await supabaseServiceClient
         .from("guest_orders")
         .select("order_number, plan_name, plan_price, service_type, status, created_at, full_name, email, selected_addons, account_number")
         .eq("account_number", account_number.toUpperCase())
@@ -385,8 +514,26 @@ async function executeTool(
     case "get_orders_for_account": {
       const { email } = args as { email: string };
       
-      // Get orders from guest_orders (linked orders have user_id but we match by email)
-      const { data, error } = await supabaseClient
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return JSON.stringify({ success: false, message: "Invalid email format." });
+      }
+      
+      // Check if session is verified for this email
+      const verifiedSession = sessionKey ? getVerifiedSession(sessionKey) : null;
+      if (!verifiedSession || verifiedSession.email !== email.toLowerCase()) {
+        console.log(`SECURITY: Attempt to access orders without verification for: ${email}`);
+        return JSON.stringify({ 
+          success: false, 
+          message: "Please verify your account first using your email and date of birth." 
+        });
+      }
+      
+      console.log(`AUDIT: Fetching orders for verified email: ${email.substring(0, 3)}***`);
+      
+      // Use service role to fetch orders (RLS doesn't allow public access to guest_orders)
+      const { data, error } = await supabaseServiceClient
         .from("guest_orders")
         .select("order_number, plan_name, plan_price, service_type, status, created_at")
         .eq("email", email.toLowerCase())
@@ -427,12 +574,23 @@ async function executeTool(
         subject: string; description: string; category: string; priority?: string 
       };
       
-      const { data, error } = await supabaseClient
+      // Validate inputs
+      if (!subject || subject.length < 3 || subject.length > 200) {
+        return JSON.stringify({ success: false, message: "Please provide a subject between 3 and 200 characters." });
+      }
+      if (!description || description.length < 10 || description.length > 2000) {
+        return JSON.stringify({ success: false, message: "Please provide a description between 10 and 2000 characters." });
+      }
+      
+      console.log(`AUDIT: Creating support ticket for user: ${userId}`);
+      
+      // Use anon client for support tickets (RLS allows authenticated users to create their own)
+      const { data, error } = await supabaseAnonClient
         .from("support_tickets")
         .insert({
           user_id: userId,
-          subject,
-          description,
+          subject: subject.trim(),
+          description: description.trim(),
           category,
           priority: priority || "medium",
           status: "open",
@@ -443,6 +601,7 @@ async function executeTool(
       const ticket = data as SupportTicket | null;
       
       if (error || !ticket) {
+        console.log("Support ticket creation failed:", error);
         return JSON.stringify({ success: false, message: "Failed to create ticket. Please try again or call us." });
       }
       
@@ -571,10 +730,16 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Create Supabase client for tool execution
+    // Create Supabase clients - use service role ONLY for verification queries
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    
+    const supabaseServiceClient = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonClient = createClient(supabaseUrl, supabaseAnonKey);
+    
+    // Generate a unique session key for this conversation to track verified sessions
+    const sessionKey = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     // System prompt with business knowledge
     const systemPrompt = `You are OCCTA's friendly AI assistant. You help customers with questions about our telecom services, account inquiries, and support.
@@ -671,7 +836,14 @@ GUIDELINES:
         
         console.log(`Executing tool: ${toolName}`, toolArgs);
         
-        const result = await executeTool(toolName, toolArgs, supabaseClient, userId);
+        const result = await executeTool(
+          toolName, 
+          toolArgs, 
+          supabaseServiceClient, 
+          supabaseAnonClient, 
+          userId,
+          sessionKey
+        );
         
         toolResults.push({
           role: "tool",

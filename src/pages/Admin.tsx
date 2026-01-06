@@ -253,6 +253,8 @@ const Admin = () => {
   };
 
   const updateGuestOrderStatus = async (orderId: string, newStatus: GuestOrderStatus) => {
+    const order = guestOrders.find(o => o.id === orderId);
+    
     const { error } = await supabase
       .from("guest_orders")
       .update({ status: newStatus })
@@ -270,6 +272,27 @@ const Admin = () => {
         description: "Guest order status updated successfully.",
       });
       setGuestOrders(guestOrders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      
+      // Send status update email
+      if (order && newStatus !== 'pending') {
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'status_update',
+              to: order.email,
+              data: {
+                full_name: order.full_name,
+                order_number: order.order_number,
+                status: newStatus,
+                plan_name: order.plan_name,
+                service_type: order.service_type,
+              }
+            }
+          });
+        } catch (emailError) {
+          console.error('Failed to send status update email:', emailError);
+        }
+      }
     }
   };
 

@@ -242,6 +242,29 @@ const PreCheckout = () => {
       
       if (error) throw error;
       
+      // Send confirmation email
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'order_confirmation',
+            to: customerData.email,
+            data: {
+              full_name: `${customerData.firstName} ${customerData.lastName}`,
+              order_number: orderNumber,
+              service_type: selectedPlans.map(p => p.serviceType).join(', '),
+              plan_name: selectedPlans.map(p => p.name).join(' + '),
+              plan_price: totalPrice.toFixed(2),
+              address_line1: customerData.addressLine1,
+              city: customerData.city,
+              postcode: customerData.postcode,
+            }
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Don't block the order if email fails
+      }
+      
       // Store order data for thank you page
       const orderData = {
         orderNumber,

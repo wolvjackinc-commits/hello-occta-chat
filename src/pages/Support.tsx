@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
+import AIChatBot from "@/components/chat/AIChatBot";
 import { 
   Search, 
   Wifi, 
@@ -214,6 +215,12 @@ const Support = () => {
                 <a href="mailto:hello@occtatele.com" className="flex items-center gap-2 px-4 py-2 border-4 border-foreground bg-background font-display text-sm">
                   <Mail className="w-4 h-4" /> Email
                 </a>
+              </div>
+
+              {/* Embedded AI Chat */}
+              <div className="mt-6">
+                <h3 className="font-display text-lg uppercase mb-3">💬 Ask Our AI Assistant</h3>
+                <AIChatBot embedded className="h-[400px]" />
               </div>
             </motion.div>
 

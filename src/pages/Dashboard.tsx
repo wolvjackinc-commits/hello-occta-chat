@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
+import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,9 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  MessageSquare
+  MessageSquare,
+  Download,
+  File,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,6 +63,16 @@ type Profile = {
   email: string | null;
 };
 
+type UserFile = {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number | null;
+  description: string | null;
+  created_at: string;
+};
+
 const serviceIcons = {
   broadband: Wifi,
   sim: Smartphone,
@@ -89,6 +102,7 @@ const Dashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [guestOrders, setGuestOrders] = useState<GuestOrder[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [userFiles, setUserFiles] = useState<UserFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -128,11 +142,12 @@ const Dashboard = () => {
     
     try {
       // Fetch all data in parallel
-      const [profileResult, ordersResult, guestOrdersResult, ticketsResult] = await Promise.all([
+      const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
         supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("guest_orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        supabase.from("user_files").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
       ]);
 
       if (profileResult.data) {
@@ -150,10 +165,38 @@ const Dashboard = () => {
       if (ticketsResult.data) {
         setTickets(ticketsResult.data);
       }
+
+      if (filesResult.data) {
+        setUserFiles(filesResult.data);
+      }
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      logError("Dashboard.fetchUserData", error);
     } finally {
       setIsDataLoading(false);
+    }
+  };
+
+  const handleDownloadFile = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("user-files")
+        .download(filePath);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      logError("Dashboard.handleDownloadFile", error);
+      toast({
+        title: "Download failed",
+        description: "Could not download the file. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -427,7 +470,31 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* Quick Help */}
+              {/* User Files */}
+              {userFiles.length > 0 && (
+                <div className="card-brutal bg-card p-6">
+                  <h3 className="font-display text-lg mb-4">YOUR DOCUMENTS</h3>
+                  <div className="space-y-2">
+                    {userFiles.slice(0, 5).map((file) => (
+                      <motion.div
+                        key={file.id}
+                        className="flex items-center gap-3 p-3 border-2 border-foreground bg-background cursor-pointer"
+                        whileHover={{ x: -2, boxShadow: "4px 0px 0px 0px hsl(var(--foreground))" }}
+                        onClick={() => handleDownloadFile(file.file_path, file.file_name)}
+                      >
+                        <File className="w-5 h-5 flex-shrink-0" />
+                        <div className="flex-grow min-w-0">
+                          <p className="font-display text-sm truncate">{file.file_name}</p>
+                          {file.description && (
+                            <p className="text-xs text-muted-foreground truncate">{file.description}</p>
+                          )}
+                        </div>
+                        <Download className="w-4 h-4 text-muted-foreground" />
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="card-brutal bg-foreground text-background p-6">
                 <h3 className="font-display text-lg mb-4">NEED HELP?</h3>
                 <div className="space-y-3">

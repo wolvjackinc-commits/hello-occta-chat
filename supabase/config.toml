@@ -2,3 +2,6 @@ project_id = "oexgjmuvgdndizsufipe"
 
 [functions.send-email]
 verify_jwt = false
+
+[functions.link-order]
+verify_jwt = false

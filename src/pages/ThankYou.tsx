@@ -141,11 +141,13 @@ const ThankYou = () => {
           });
         }
 
-        // Link the guest order to the new user account
-        const { error: orderLinkError } = await supabase.from('guest_orders').update({
-          user_id: data.user.id,
-          linked_at: new Date().toISOString(),
-        }).eq('order_number', orderData.orderNumber);
+        // Link the guest order to the new user account via secure edge function
+        const { error: orderLinkError } = await supabase.functions.invoke('link-order', {
+          body: {
+            orderNumber: orderData.orderNumber,
+            email: orderData.customerData.email,
+          }
+        });
 
         if (orderLinkError) {
           logError('ThankYou.handleCreateAccount.orderLink', orderLinkError);

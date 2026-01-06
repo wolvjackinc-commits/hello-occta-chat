@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -12,6 +13,8 @@ interface EmailRequest {
   type: "order_confirmation" | "welcome" | "status_update";
   to: string;
   data: Record<string, unknown>;
+  // For guest order confirmations - order verification data
+  orderNumber?: string;
 }
 
 const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
@@ -184,6 +187,25 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
 `;
 };
 
+// Helper to verify user is admin
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isAdmin = async (supabase: any, userId: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  
+  return !error && data !== null;
+};
+
+// Helper to validate email format
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 254;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("Email function called");
   
@@ -192,7 +214,122 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, to, data }: EmailRequest = await req.json();
+    // Parse request body first to determine auth requirements
+    const { type, to, data, orderNumber }: EmailRequest = await req.json();
+    
+    // Validate email format
+    if (!isValidEmail(to)) {
+      console.error("Invalid email format:", to);
+      return new Response(
+        JSON.stringify({ error: "Invalid email address format" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Create unauthenticated Supabase client for verification
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Handle order_confirmation for guest orders (no auth required, but verify order exists)
+    if (type === "order_confirmation" && orderNumber) {
+      // Verify the order exists and email matches
+      const { data: guestOrder, error: orderError } = await supabaseAdmin
+        .from("guest_orders")
+        .select("email, order_number")
+        .eq("order_number", orderNumber)
+        .single();
+      
+      if (orderError || !guestOrder) {
+        console.error("Order not found:", orderNumber);
+        return new Response(
+          JSON.stringify({ error: "Order not found" }),
+          { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      
+      if (guestOrder.email.toLowerCase() !== to.toLowerCase()) {
+        console.error("Email mismatch for order confirmation");
+        return new Response(
+          JSON.stringify({ error: "Forbidden - Email recipient mismatch" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      
+      console.log(`Verified guest order confirmation for ${orderNumber}`);
+    } else {
+      // All other email types require authentication
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) {
+        console.error("No authorization header provided");
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - No authorization header" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      // Verify JWT token
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+      
+      if (claimsError || !claimsData?.claims) {
+        console.error("Invalid token:", claimsError?.message);
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - Invalid token" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      const userId = claimsData.claims.sub as string;
+      console.log(`Authenticated user: ${userId}`);
+
+      // Authorization checks based on email type
+      if (type === "status_update") {
+        // Only admins can send status update emails
+        const userIsAdmin = await isAdmin(supabase, userId);
+        if (!userIsAdmin) {
+          console.error("User is not admin, cannot send status_update email");
+          return new Response(
+            JSON.stringify({ error: "Forbidden - Admin access required for status updates" }),
+            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+        console.log("Admin verified for status_update email");
+      } else if (type === "order_confirmation") {
+        // For authenticated order confirmations, verify the email matches the order recipient
+        const orderEmail = data.email as string | undefined;
+        if (orderEmail && orderEmail.toLowerCase() !== to.toLowerCase()) {
+          console.error("Email mismatch: order email vs recipient");
+          return new Response(
+            JSON.stringify({ error: "Forbidden - Email recipient mismatch" }),
+            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      } else if (type === "welcome") {
+        // Welcome emails should only be sent to the authenticated user's email
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", userId)
+          .single();
+        
+        if (profile?.email && profile.email.toLowerCase() !== to.toLowerCase()) {
+          console.error("Welcome email can only be sent to user's own email");
+          return new Response(
+            JSON.stringify({ error: "Forbidden - Can only send welcome email to own address" }),
+            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      }
+    }
+
     console.log(`Sending ${type} email to ${to}`);
 
     let subject: string;

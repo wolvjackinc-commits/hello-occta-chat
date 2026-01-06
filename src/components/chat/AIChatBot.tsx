@@ -30,6 +30,7 @@ interface AIChatBotProps {
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 const quickActions = [
+  { label: "📄 Get my latest bill", message: "I'd like to get my latest bill" },
   { label: "Compare broadband plans", message: "Help me choose a broadband plan" },
   { label: "View my orders", message: "I'd like to check my orders" },
   { label: "SIM plan options", message: "What SIM plans do you offer?" },

@@ -25,6 +25,7 @@ export type Database = {
           contract_end_date: string | null
           created_at: string
           current_provider: string | null
+          date_of_birth: string | null
           email: string
           full_name: string
           gdpr_consent: boolean
@@ -54,6 +55,7 @@ export type Database = {
           contract_end_date?: string | null
           created_at?: string
           current_provider?: string | null
+          date_of_birth?: string | null
           email: string
           full_name: string
           gdpr_consent?: boolean
@@ -83,6 +85,7 @@ export type Database = {
           contract_end_date?: string | null
           created_at?: string
           current_provider?: string | null
+          date_of_birth?: string | null
           email?: string
           full_name?: string
           gdpr_consent?: boolean

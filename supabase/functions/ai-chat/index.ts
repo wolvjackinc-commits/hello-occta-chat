@@ -245,10 +245,28 @@ async function executeTool(
       
       console.log(`Looking up account: ${account_number} with DOB: ${date_of_birth}`);
       
+      // Validate account number format (OCC + 8 digits)
+      const accountNumberRegex = /^OCC\d{8}$/i;
+      if (!accountNumberRegex.test(account_number)) {
+        return JSON.stringify({ 
+          success: false, 
+          message: "Invalid account number format. Account numbers start with OCC followed by 8 digits (e.g., OCC12345678)." 
+        });
+      }
+      
+      // Validate date of birth format (YYYY-MM-DD)
+      const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dobRegex.test(date_of_birth)) {
+        return JSON.stringify({ 
+          success: false, 
+          message: "Please provide your date of birth in YYYY-MM-DD format (e.g., 1990-01-15)." 
+        });
+      }
+      
       // Find order with matching account number
       const { data: orderData, error: orderError } = await supabaseClient
         .from("guest_orders")
-        .select("account_number, full_name, email, status")
+        .select("account_number, full_name, email, status, date_of_birth")
         .eq("account_number", account_number.toUpperCase())
         .eq("status", "active")
         .single();
@@ -261,19 +279,40 @@ async function executeTool(
         });
       }
       
-      // Now verify DOB against the email in profiles
+      // First, try to verify DOB from the guest_orders table directly
+      if (orderData.date_of_birth) {
+        if (orderData.date_of_birth !== date_of_birth) {
+          console.log("DOB mismatch from guest_orders");
+          return JSON.stringify({ 
+            success: false, 
+            message: "The date of birth doesn't match our records. Please check and try again." 
+          });
+        }
+        // DOB matched from guest_orders
+        return JSON.stringify({ 
+          success: true, 
+          message: `Account verified for ${orderData.full_name}! I can now help you with your billing details.`,
+          verified_account: account_number.toUpperCase()
+        });
+      }
+      
+      // Fallback: verify DOB against the email in profiles
       const { data: profileData, error: profileError } = await supabaseClient
         .from("profiles")
         .select("date_of_birth")
         .eq("email", orderData.email.toLowerCase())
         .single();
       
-      // If no profile found, check if DOB matches stored order data or a reasonable fallback
-      if (profileError || !profileData) {
-        // For orders without linked profiles, we accept the verification if account exists
-        // In production, you'd store DOB during checkout
-        console.log("No profile found for DOB verification, accepting account number verification");
-      } else if (profileData.date_of_birth !== date_of_birth) {
+      // If no profile found and no DOB on order, we cannot verify - require DOB to be set
+      if (profileError || !profileData || !profileData.date_of_birth) {
+        console.log("No DOB found for verification - denying access");
+        return JSON.stringify({ 
+          success: false, 
+          message: "We cannot verify your identity without a date of birth on file. Please contact support at 0800 260 6627 to update your account details." 
+        });
+      }
+      
+      if (profileData.date_of_birth !== date_of_birth) {
         return JSON.stringify({ 
           success: false, 
           message: "The date of birth doesn't match our records. Please check and try again." 

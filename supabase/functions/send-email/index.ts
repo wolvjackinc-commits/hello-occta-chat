@@ -4,7 +4,7 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-// Get allowed origins - in production, restrict to your domain
+// Get allowed origins - strictly defined, no wildcard subdomains
 const ALLOWED_ORIGINS = [
   Deno.env.get('SITE_URL') || '',
   'http://localhost:5173',
@@ -12,13 +12,11 @@ const ALLOWED_ORIGINS = [
 ].filter(Boolean);
 
 const getCorsHeaders = (origin: string | null) => {
-  // Check if the origin is allowed
-  const isAllowed = origin && ALLOWED_ORIGINS.some(allowed => 
-    origin === allowed || origin.endsWith('.lovableproject.com') || origin.endsWith('.lovable.app')
-  );
+  // Strict origin check - no wildcard subdomain matching
+  const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
   
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0] || '*',
+    'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0] || '',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   };
 };
@@ -30,6 +28,24 @@ interface EmailRequest {
   // For guest order confirmations - order verification data
   orderNumber?: string;
 }
+
+// HTML escape helper to prevent injection attacks
+const escapeHtml = (unsafe: unknown): string => {
+  if (unsafe === null || unsafe === undefined) return '';
+  const str = String(unsafe);
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+// Sanitize numeric values
+const sanitizeNumber = (value: unknown): string => {
+  const num = parseFloat(String(value));
+  return isNaN(num) ? '0.00' : num.toFixed(2);
+};
 
 const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
@@ -56,29 +72,29 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
       <h1>Order Confirmed!</h1>
     </div>
     <div class="content">
-      <p>Hi <strong>${data.full_name}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
       <p>Thank you for your order! We've received your request and will be in touch shortly to confirm your installation date.</p>
       
       <div class="order-box">
         <div class="order-row">
           <span class="label">Order Number:</span>
-          <span class="value">${data.order_number}</span>
+          <span class="value">${escapeHtml(data.order_number)}</span>
         </div>
         <div class="order-row">
           <span class="label">Service:</span>
-          <span class="value">${data.service_type}</span>
+          <span class="value">${escapeHtml(data.service_type)}</span>
         </div>
         <div class="order-row">
           <span class="label">Plan:</span>
-          <span class="value">${data.plan_name}</span>
+          <span class="value">${escapeHtml(data.plan_name)}</span>
         </div>
         <div class="order-row">
           <span class="label">Monthly Price:</span>
-          <span class="value">£${data.plan_price}/mo</span>
+          <span class="value">£${sanitizeNumber(data.plan_price)}/mo</span>
         </div>
         <div class="order-row">
           <span class="label">Installation Address:</span>
-          <span class="value">${data.address_line1}, ${data.city}, ${data.postcode}</span>
+          <span class="value">${escapeHtml(data.address_line1)}, ${escapeHtml(data.city)}, ${escapeHtml(data.postcode)}</span>
         </div>
       </div>
       
@@ -121,7 +137,7 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
       <h1>Welcome!</h1>
     </div>
     <div class="content">
-      <p>Hi <strong>${data.full_name || "there"}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(data.full_name) || "there"}</strong>,</p>
       <p>Welcome to our service! Your account has been created successfully.</p>
       
       <p>With your account, you can:</p>
@@ -153,6 +169,9 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
     cancelled: "Your order has been cancelled. If you didn't request this, please contact support.",
   };
 
+  const safeStatus = escapeHtml(data.status);
+  const statusMessage = statusMessages[data.status as string] || "Your order status has been updated.";
+
   return `
 <!DOCTYPE html>
 <html>
@@ -175,17 +194,17 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
       <h1>Order Update</h1>
     </div>
     <div class="content">
-      <p>Hi <strong>${data.full_name}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
       
-      <p>Your order <strong>${data.order_number}</strong> has been updated:</p>
+      <p>Your order <strong>${escapeHtml(data.order_number)}</strong> has been updated:</p>
       
-      <span class="status-badge">${data.status}</span>
+      <span class="status-badge">${safeStatus}</span>
       
-      <p>${statusMessages[data.status as string] || "Your order status has been updated."}</p>
+      <p>${statusMessage}</p>
       
       <div class="order-box">
-        <p><strong>Plan:</strong> ${data.plan_name}</p>
-        <p><strong>Service:</strong> ${data.service_type}</p>
+        <p><strong>Plan:</strong> ${escapeHtml(data.plan_name)}</p>
+        <p><strong>Service:</strong> ${escapeHtml(data.service_type)}</p>
       </div>
       
       <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/dashboard" class="cta">View Order Details</a>

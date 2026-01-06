@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import BundleBuilder from "@/components/bundle/BundleBuilder";
 import { Check, Smartphone, Signal, Globe, ArrowRight, Phone, MessageSquare } from "lucide-react";
 import { simPlans } from "@/lib/plans";
 
@@ -207,23 +208,8 @@ const SimPlans = () => {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16 bg-foreground text-background">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="font-display text-display-md mb-4">
-            READY TO DITCH YOUR PROVIDER?
-          </h2>
-          <p className="text-background/70 mb-8 text-lg">
-            Free SIM delivery. Free activation. Free from contracts that trap you.
-          </p>
-          <Link to="/checkout?plan=sim-plus">
-            <Button variant="hero" size="lg" className="border-background">
-              Order Your SIM
-              <ArrowRight className="w-5 h-5" />
-            </Button>
-          </Link>
-        </div>
-      </section>
+      {/* Bundle Builder */}
+      <BundleBuilder currentService="sim" />
     </Layout>
   );
 };

@@ -1,11 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Phone, Wifi, Smartphone, PhoneCall } from "lucide-react";
+import { Menu, X, Phone, Wifi, Smartphone, PhoneCall, ShieldCheck, User, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        setTimeout(() => {
+          checkAdminRole(session.user.id);
+        }, 0);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkAdminRole(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase.rpc('has_role', {
+      _user_id: userId,
+      _role: 'admin'
+    });
+    setIsAdmin(!!data);
+  };
 
   const navItems = [
     { name: "Broadband", path: "/broadband", icon: Wifi },
@@ -61,6 +99,19 @@ const Header = () => {
                 {item.name}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`px-4 py-2 font-display text-lg tracking-wide transition-all duration-150 flex items-center gap-2 border-4 ${
+                  isActive("/admin")
+                    ? "bg-destructive text-destructive-foreground border-foreground shadow-brutal -translate-y-0.5"
+                    : "border-transparent hover:border-foreground hover:bg-destructive/10 text-destructive"
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Admin
+              </Link>
+            )}
           </nav>
 
           {/* CTA Buttons */}
@@ -74,12 +125,23 @@ const Header = () => {
               </div>
               0800 260 6627
             </a>
-            <Link to="/auth">
-              <Button variant="outline" size="sm">Sign In</Button>
-            </Link>
-            <Link to="/auth?mode=signup">
-              <Button variant="hero" size="sm">Get Started</Button>
-            </Link>
+            {user ? (
+              <Link to="/dashboard">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <User className="w-4 h-4" />
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="outline" size="sm">Sign In</Button>
+                </Link>
+                <Link to="/auth?mode=signup">
+                  <Button variant="hero" size="sm">Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -111,6 +173,20 @@ const Header = () => {
                   {item.name}
                 </Link>
               ))}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setIsOpen(false)}
+                  className={`px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
+                    isActive("/admin")
+                      ? "bg-destructive text-destructive-foreground border-foreground shadow-brutal"
+                      : "border-transparent hover:border-foreground hover:bg-destructive/10 text-destructive"
+                  }`}
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  Admin
+                </Link>
+              )}
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t-4 border-foreground">
                 <a href="tel:08002606627" className="flex items-center gap-3 px-4 py-2 font-display text-lg">
                   <div className="p-2 bg-foreground text-background">
@@ -118,12 +194,23 @@ const Header = () => {
                   </div>
                   0800 260 6627
                 </a>
-                <Link to="/auth" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full">Sign In</Button>
-                </Link>
-                <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
-                  <Button variant="hero" className="w-full">Get Started</Button>
-                </Link>
+                {user ? (
+                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full gap-2">
+                      <User className="w-4 h-4" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" className="w-full">Sign In</Button>
+                    </Link>
+                    <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
+                      <Button variant="hero" className="w-full">Get Started</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>

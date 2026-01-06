@@ -34,6 +34,18 @@ type Order = {
   created_at: string;
 };
 
+type GuestOrder = {
+  id: string;
+  order_number: string;
+  service_type: string;
+  plan_name: string;
+  plan_price: number;
+  full_name: string;
+  email: string;
+  created_at: string;
+  user_id: string | null;
+};
+
 type SupportTicket = {
   id: string;
   subject: string;
@@ -75,6 +87,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [guestOrders, setGuestOrders] = useState<GuestOrder[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -115,9 +128,10 @@ const Dashboard = () => {
     
     try {
       // Fetch all data in parallel
-      const [profileResult, ordersResult, ticketsResult] = await Promise.all([
+      const [profileResult, ordersResult, guestOrdersResult, ticketsResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
         supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("guest_orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
       ]);
 
@@ -127,6 +141,10 @@ const Dashboard = () => {
       
       if (ordersResult.data) {
         setOrders(ordersResult.data);
+      }
+
+      if (guestOrdersResult.data) {
+        setGuestOrders(guestOrdersResult.data);
       }
       
       if (ticketsResult.data) {
@@ -175,6 +193,7 @@ const Dashboard = () => {
   const userFullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer";
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
   const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
+  const allOrders = [...orders, ...guestOrders.map(g => ({ ...g, status: 'pending' as const, service_type: g.service_type as 'broadband' | 'sim' | 'landline' }))];
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -237,7 +256,7 @@ const Dashboard = () => {
           >
             {[
               { label: "Active Services", value: activeOrders.length, color: "bg-primary" },
-              { label: "Total Orders", value: orders.length, color: "bg-accent" },
+              { label: "Total Orders", value: allOrders.length, color: "bg-accent" },
               { label: "Open Tickets", value: openTickets.length, color: "bg-warning" },
               { label: "All Tickets", value: tickets.length, color: "bg-secondary" },
             ].map((stat) => (
@@ -270,7 +289,7 @@ const Dashboard = () => {
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
-                ) : orders.length > 0 ? (
+                ) : allOrders.length > 0 ? (
                   <div className="space-y-4">
                     {orders.map((order, index) => {
                       const Icon = serviceIcons[order.service_type];
@@ -296,6 +315,36 @@ const Dashboard = () => {
                           <div className="text-right">
                             <div className={`inline-flex items-center gap-2 px-3 py-1 ${status.color} border-2 border-foreground`}>
                               <span className="font-display text-sm uppercase">{status.label}</span>
+                            </div>
+                            <p className="text-lg font-display mt-1">£{order.plan_price}/mo</p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                    {guestOrders.map((order, index) => {
+                      const Icon = serviceIcons[order.service_type as keyof typeof serviceIcons] || Package;
+                      return (
+                        <motion.div
+                          key={order.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: (orders.length + index) * 0.1 }}
+                          className="flex items-center justify-between p-4 border-4 border-foreground bg-background hover:bg-secondary transition-colors"
+                          whileHover={{ x: -4, boxShadow: "8px 0px 0px 0px hsl(var(--foreground))" }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-foreground text-background flex items-center justify-center">
+                              <Icon className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="font-display text-lg uppercase">{order.plan_name}</h4>
+                              <p className="text-sm text-muted-foreground capitalize">{order.service_type}</p>
+                              <p className="text-xs text-muted-foreground">Order #{order.order_number}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-warning border-2 border-foreground">
+                              <span className="font-display text-sm uppercase">Processing</span>
                             </div>
                             <p className="text-lg font-display mt-1">£{order.plan_price}/mo</p>
                           </div>

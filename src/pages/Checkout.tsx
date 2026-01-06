@@ -477,6 +477,13 @@ const Checkout = () => {
                         )}
                       </Button>
                     </div>
+                    
+                    <p className="text-center text-sm text-muted-foreground mt-4">
+                      Order time: {new Date().toLocaleString('en-GB', { 
+                        dateStyle: 'medium', 
+                        timeStyle: 'short' 
+                      })}
+                    </p>
                   </>
                 )}
               </motion.div>

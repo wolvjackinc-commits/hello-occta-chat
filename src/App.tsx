@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -44,36 +45,50 @@ const pageVariants = {
   },
 };
 
+// Scroll to top on route change
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
+  
+  return null;
+};
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial="initial"
-        animate="enter"
-        exit="exit"
-        variants={pageVariants}
-      >
-        <Routes location={location}>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/broadband" element={<Broadband />} />
-          <Route path="/sim-plans" element={<SimPlans />} />
-          <Route path="/landline" element={<Landline />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/pre-checkout" element={<PreCheckout />} />
-          <Route path="/thank-you" element={<ThankYou />} />
-          <Route path="/support" element={<Support />} />
-          <Route path="/about" element={<About />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+    <>
+      <ScrollToTop />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial="initial"
+          animate="enter"
+          exit="exit"
+          variants={pageVariants}
+        >
+          <Routes location={location}>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/broadband" element={<Broadband />} />
+            <Route path="/sim-plans" element={<SimPlans />} />
+            <Route path="/landline" element={<Landline />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/pre-checkout" element={<PreCheckout />} />
+            <Route path="/thank-you" element={<ThankYou />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/about" element={<About />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </motion.div>
+      </AnimatePresence>
+    </>
   );
 };
 

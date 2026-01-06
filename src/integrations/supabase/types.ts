@@ -19,6 +19,7 @@ export type Database = {
           additional_notes: string | null
           address_line1: string
           address_line2: string | null
+          admin_notes: string | null
           city: string
           contract_end_date: string | null
           created_at: string
@@ -46,6 +47,7 @@ export type Database = {
           additional_notes?: string | null
           address_line1: string
           address_line2?: string | null
+          admin_notes?: string | null
           city: string
           contract_end_date?: string | null
           created_at?: string
@@ -73,6 +75,7 @@ export type Database = {
           additional_notes?: string | null
           address_line1?: string
           address_line2?: string | null
+          admin_notes?: string | null
           city?: string
           contract_end_date?: string | null
           created_at?: string
@@ -98,10 +101,44 @@ export type Database = {
         }
         Relationships: []
       }
+      order_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          order_id: string
+          order_type: string
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          order_id: string
+          order_type: string
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          order_id?: string
+          order_type?: string
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           address_line1: string | null
           address_line2: string | null
+          admin_notes: string | null
           city: string | null
           created_at: string
           id: string
@@ -118,6 +155,7 @@ export type Database = {
         Insert: {
           address_line1?: string | null
           address_line2?: string | null
+          admin_notes?: string | null
           city?: string | null
           created_at?: string
           id?: string
@@ -134,6 +172,7 @@ export type Database = {
         Update: {
           address_line1?: string | null
           address_line2?: string | null
+          admin_notes?: string | null
           city?: string | null
           created_at?: string
           id?: string
@@ -155,6 +194,7 @@ export type Database = {
           address_line2: string | null
           city: string | null
           created_at: string
+          date_of_birth: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -167,6 +207,7 @@ export type Database = {
           address_line2?: string | null
           city?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -179,6 +220,7 @@ export type Database = {
           address_line2?: string | null
           city?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -258,6 +300,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_files: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          uploaded_by: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          uploaded_by: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          uploaded_by?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

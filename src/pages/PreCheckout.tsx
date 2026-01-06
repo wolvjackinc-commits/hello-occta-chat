@@ -242,12 +242,13 @@ const PreCheckout = () => {
       
       if (error) throw error;
       
-      // Send confirmation email
+      // Send confirmation email (with orderNumber for guest verification)
       try {
         await supabase.functions.invoke('send-email', {
           body: {
             type: 'order_confirmation',
             to: customerData.email,
+            orderNumber: orderNumber,
             data: {
               full_name: `${customerData.firstName} ${customerData.lastName}`,
               order_number: orderNumber,
@@ -257,6 +258,7 @@ const PreCheckout = () => {
               address_line1: customerData.addressLine1,
               city: customerData.city,
               postcode: customerData.postcode,
+              email: customerData.email,
             }
           }
         });

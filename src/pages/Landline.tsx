@@ -100,23 +100,33 @@ const Landline = () => {
                 >
                   <Link
                     to={`/pre-checkout?plans=${plan.id}`}
-                    className={`flex items-center justify-between p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-accent/10 transition-colors group`}
+                    className={`block p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-accent/10 transition-colors group`}
                   >
-                    <div className="flex items-center gap-4">
-                      {plan.popular && (
-                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-display uppercase">Popular</span>
-                      )}
-                      <div>
-                        <h3 className="font-display text-lg uppercase">{plan.name}</h3>
-                        <p className="text-xs text-muted-foreground">{plan.callRate}</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        {plan.popular && (
+                          <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-display uppercase">Popular</span>
+                        )}
+                        <div>
+                          <h3 className="font-display text-lg uppercase">{plan.name}</h3>
+                          <p className="text-xs text-muted-foreground">{plan.callRate}</p>
+                        </div>
+                      </div>
+                      <div className="text-right flex items-center gap-3">
+                        <div>
+                          <p className="font-display text-2xl text-primary">£{plan.price}</p>
+                          <p className="text-xs text-muted-foreground">/month</p>
+                        </div>
+                        <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </div>
-                    <div className="text-right flex items-center gap-3">
-                      <div>
-                        <p className="font-display text-2xl text-primary">£{plan.price}</p>
-                        <p className="text-xs text-muted-foreground">/month</p>
-                      </div>
-                      <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex flex-wrap gap-1.5">
+                      {plan.features.slice(0, 6).map((feature) => (
+                        <span key={feature} className="inline-flex items-center gap-1 px-2 py-0.5 bg-secondary text-xs border border-foreground/10">
+                          <Check className="w-3 h-3 text-primary" />
+                          {feature}
+                        </span>
+                      ))}
                     </div>
                   </Link>
                 </motion.div>
@@ -171,10 +181,10 @@ const Landline = () => {
                     <span className="font-display text-xs">{plan.callRate}</span>
                   </div>
                   
-                  <ul className="space-y-2 mb-4 flex-grow">
-                    {plan.features.slice(0, 3).map((feature) => (
+                  <ul className="space-y-1.5 mb-4 flex-grow">
+                    {plan.features.slice(0, 6).map((feature) => (
                       <li key={feature} className="flex items-center gap-2 text-xs">
-                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                        <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}

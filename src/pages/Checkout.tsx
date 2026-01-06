@@ -408,7 +408,7 @@ const Checkout = () => {
 
                       {/* Plan Summary */}
                       <div className="p-4 border-4 border-foreground">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 mb-4">
                           <div className="w-12 h-12 bg-primary border-4 border-foreground flex items-center justify-center">
                             <Icon className="w-6 h-6 text-primary-foreground" />
                           </div>
@@ -420,6 +420,14 @@ const Checkout = () => {
                             <div className="font-display text-2xl">£{plan.price}</div>
                             <div className="text-muted-foreground text-sm">/month</div>
                           </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {plan.features.map((feature) => (
+                            <div key={feature} className="flex items-center gap-2 text-xs">
+                              <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                              <span>{feature}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
@@ -505,7 +513,7 @@ const Checkout = () => {
                 </div>
                 
                 <ul className="space-y-2 mb-6">
-                  {plan.features.slice(0, 4).map((feature) => (
+                  {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-sm">
                       <Check className="w-4 h-4 text-primary flex-shrink-0" />
                       <span className="text-background/80">{feature}</span>

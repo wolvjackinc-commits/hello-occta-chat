@@ -126,6 +126,12 @@ const ThankYou = () => {
           city: orderData.customerData.city,
           postcode: orderData.customerData.postcode,
         }).eq('id', data.user.id);
+
+        // Link the guest order to the new user account
+        await supabase.from('guest_orders').update({
+          user_id: data.user.id,
+          linked_at: new Date().toISOString(),
+        }).eq('order_number', orderData.orderNumber);
       }
 
       setAccountCreated(true);

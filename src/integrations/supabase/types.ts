@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      guest_orders: {
+        Row: {
+          additional_notes: string | null
+          address_line1: string
+          address_line2: string | null
+          city: string
+          contract_end_date: string | null
+          created_at: string
+          current_provider: string | null
+          email: string
+          full_name: string
+          gdpr_consent: boolean
+          id: string
+          in_contract: boolean | null
+          linked_at: string | null
+          marketing_consent: boolean | null
+          order_number: string
+          phone: string
+          plan_name: string
+          plan_price: number
+          postcode: string
+          preferred_switch_date: string | null
+          selected_addons: Json | null
+          service_type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          additional_notes?: string | null
+          address_line1: string
+          address_line2?: string | null
+          city: string
+          contract_end_date?: string | null
+          created_at?: string
+          current_provider?: string | null
+          email: string
+          full_name: string
+          gdpr_consent?: boolean
+          id?: string
+          in_contract?: boolean | null
+          linked_at?: string | null
+          marketing_consent?: boolean | null
+          order_number: string
+          phone: string
+          plan_name: string
+          plan_price: number
+          postcode: string
+          preferred_switch_date?: string | null
+          selected_addons?: Json | null
+          service_type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          additional_notes?: string | null
+          address_line1?: string
+          address_line2?: string | null
+          city?: string
+          contract_end_date?: string | null
+          created_at?: string
+          current_provider?: string | null
+          email?: string
+          full_name?: string
+          gdpr_consent?: boolean
+          id?: string
+          in_contract?: boolean | null
+          linked_at?: string | null
+          marketing_consent?: boolean | null
+          order_number?: string
+          phone?: string
+          plan_name?: string
+          plan_price?: number
+          postcode?: string
+          preferred_switch_date?: string | null
+          selected_addons?: Json | null
+          service_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           address_line1: string | null

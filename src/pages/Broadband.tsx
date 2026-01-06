@@ -1,17 +1,15 @@
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { Check, Wifi, Zap, Shield, Clock, ArrowRight, HelpCircle } from "lucide-react";
 
 const plans = [
   {
-    name: "Essential",
+    name: "ESSENTIAL",
     speed: "36",
     price: "24.99",
-    description: "Perfect for light browsing and streaming",
+    description: "Perfect for light browsing and the occasional Netflix binge",
     features: [
       "Up to 36Mbps download",
       "10Mbps upload",
@@ -20,13 +18,12 @@ const plans = [
       "24/7 support",
     ],
     popular: false,
-    cta: "Choose Essential",
   },
   {
-    name: "Superfast",
+    name: "SUPERFAST",
     speed: "150",
     price: "32.99",
-    description: "Great for busy households and HD streaming",
+    description: "For households that actually use the internet properly",
     features: [
       "Up to 150Mbps download",
       "25Mbps upload",
@@ -36,13 +33,12 @@ const plans = [
       "Static IP available",
     ],
     popular: true,
-    cta: "Choose Superfast",
   },
   {
-    name: "Ultrafast",
+    name: "ULTRAFAST",
     speed: "500",
     price: "44.99",
-    description: "Blazing speeds for power users and gamers",
+    description: "For gamers, streamers, and people who work from home",
     features: [
       "Up to 500Mbps download",
       "100Mbps upload",
@@ -53,13 +49,12 @@ const plans = [
       "Guest network setup",
     ],
     popular: false,
-    cta: "Choose Ultrafast",
   },
   {
-    name: "Gigabit",
+    name: "GIGABIT",
     speed: "900",
     price: "59.99",
-    description: "The fastest internet money can buy",
+    description: "The fastest internet money can buy. Period.",
     features: [
       "Up to 900Mbps download",
       "200Mbps upload",
@@ -71,7 +66,6 @@ const plans = [
       "1TB cloud backup",
     ],
     popular: false,
-    cta: "Choose Gigabit",
   },
 ];
 
@@ -79,19 +73,21 @@ const Broadband = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="py-20 hero-pattern">
+      <section className="py-20 grid-pattern">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <Badge className="mb-4 bg-accent/10 text-accent border-0">
-              <Zap className="w-3 h-3 mr-1" />
+          <div className="max-w-4xl">
+            <div className="inline-block stamp text-accent border-accent mb-6 rotate-[-2deg]">
+              <Zap className="w-4 h-4 inline mr-2" />
               Free installation until March
-            </Badge>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-display font-bold mb-6">
-              Broadband that actually
-              <span className="text-gradient"> works</span>
+            </div>
+            <h1 className="text-display-lg mb-6">
+              BROADBAND THAT
+              <br />
+              <span className="text-gradient">ACTUALLY WORKS</span>
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Fast, reliable internet without the corporate nonsense. From streaming Netflix to hosting video calls for the entire office – we've got you covered.
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
+              Fast, reliable internet without the corporate nonsense. 
+              From streaming Netflix to hosting video calls for the entire office — we've got you sorted.
             </p>
             <PostcodeChecker />
           </div>
@@ -99,71 +95,72 @@ const Broadband = () => {
       </section>
 
       {/* Plans */}
-      <section className="py-20 bg-secondary/30">
+      <section className="py-20 bg-secondary stripes">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-display font-bold mb-4">
-              Pick your speed, skip the hassle
+          <div className="mb-12">
+            <h2 className="text-display-md mb-4">
+              PICK YOUR SPEED
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-xl text-muted-foreground">
               All plans include unlimited data and no price rises mid-contract. Novel concept, we know.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            {plans.map((plan) => (
-              <Card 
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {plans.map((plan, index) => (
+              <div 
                 key={plan.name} 
-                className={`relative overflow-hidden card-hover ${
-                  plan.popular ? "border-primary shadow-glow" : "border-border"
+                className={`relative card-brutal bg-card p-6 flex flex-col animate-slide-up ${
+                  plan.popular ? "border-primary" : ""
                 }`}
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {plan.popular && (
-                  <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-center py-1 text-xs font-semibold">
+                  <div className="absolute -top-4 left-4 bg-primary text-primary-foreground px-4 py-1 font-display uppercase tracking-wider text-sm border-4 border-foreground">
                     Most Popular
                   </div>
                 )}
-                <CardHeader className={plan.popular ? "pt-10" : ""}>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-display font-bold">{plan.name}</h3>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-display font-bold">£{plan.price}</span>
-                      <span className="text-muted-foreground">/mo</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Wifi className="w-4 h-4 text-accent" />
-                      Up to {plan.speed}Mbps
-                    </div>
+                
+                <div className={plan.popular ? "pt-4" : ""}>
+                  <h3 className="font-display text-3xl mb-2">{plan.name}</h3>
+                  
+                  <div className="flex items-baseline gap-1 mb-2">
+                    <span className="font-display text-5xl">£{plan.price}</span>
+                    <span className="text-muted-foreground">/mo</span>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
-                  <ul className="space-y-2">
+                  
+                  <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-accent/10 border-2 border-accent inline-block">
+                    <Wifi className="w-4 h-4 text-accent" />
+                    <span className="font-display text-accent">Up to {plan.speed}Mbps</span>
+                  </div>
+                  
+                  <p className="text-muted-foreground mb-6">{plan.description}</p>
+                  
+                  <ul className="space-y-3 mb-8 flex-grow">
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-sm">
-                        <Check className="w-4 h-4 text-accent flex-shrink-0" />
+                      <li key={feature} className="flex items-center gap-3 text-sm">
+                        <Check className="w-5 h-5 text-success flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
-                </CardContent>
-                <CardFooter>
-                  <Link to="/auth?mode=signup" className="w-full">
+                  
+                  <Link to="/auth?mode=signup" className="block">
                     <Button 
-                      variant={plan.popular ? "hero" : "outline"} 
+                      variant={plan.popular ? "default" : "outline"} 
                       className="w-full"
                     >
-                      {plan.cta}
+                      Choose {plan.name}
                     </Button>
                   </Link>
-                </CardFooter>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-8">
-            All prices exclude line rental. 30-day rolling contracts available. 
-            <Link to="/terms" className="underline hover:text-primary ml-1">
+            All prices exclude line rental. 30-day rolling contracts available.{" "}
+            <Link to="/terms" className="underline hover:text-foreground">
               Full terms apply
             </Link>
           </p>
@@ -174,30 +171,32 @@ const Broadband = () => {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-primary" />
+            <div className="p-6 border-4 border-foreground bg-card text-center">
+              <div className="w-16 h-16 bg-primary border-4 border-foreground flex items-center justify-center mx-auto mb-4">
+                <Clock className="w-8 h-8 text-primary-foreground" />
               </div>
-              <h3 className="font-display font-bold text-xl mb-2">No Speed Throttling</h3>
-              <p className="text-muted-foreground text-sm">
-                Unlimited means unlimited. Stream, download, game – all at full speed, all the time.
+              <h3 className="font-display text-2xl mb-2">NO THROTTLING</h3>
+              <p className="text-muted-foreground">
+                Unlimited means unlimited. Stream, download, game — all at full speed, all the time.
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-accent" />
+            
+            <div className="p-6 border-4 border-foreground bg-card text-center">
+              <div className="w-16 h-16 bg-accent border-4 border-foreground flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-accent-foreground" />
               </div>
-              <h3 className="font-display font-bold text-xl mb-2">Free Security Suite</h3>
-              <p className="text-muted-foreground text-sm">
+              <h3 className="font-display text-2xl mb-2">FREE SECURITY</h3>
+              <p className="text-muted-foreground">
                 Protect your devices with our included antivirus and parental controls.
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-4">
-                <HelpCircle className="w-8 h-8 text-warning" />
+            
+            <div className="p-6 border-4 border-foreground bg-card text-center">
+              <div className="w-16 h-16 bg-warning border-4 border-foreground flex items-center justify-center mx-auto mb-4">
+                <HelpCircle className="w-8 h-8 text-warning-foreground" />
               </div>
-              <h3 className="font-display font-bold text-xl mb-2">Yorkshire Support</h3>
-              <p className="text-muted-foreground text-sm">
+              <h3 className="font-display text-2xl mb-2">YORKSHIRE SUPPORT</h3>
+              <p className="text-muted-foreground">
                 Real humans in Huddersfield who actually understand broadband. Fancy that!
               </p>
             </div>
@@ -206,16 +205,16 @@ const Broadband = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-navy">
+      <section className="py-16 bg-foreground text-background">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-display font-bold text-navy-foreground mb-4">
-            Ready to make the switch?
+          <h2 className="font-display text-display-md mb-4">
+            READY TO SWITCH?
           </h2>
-          <p className="text-navy-foreground/70 mb-8">
-            We handle everything – even cancelling your old provider. No faff, no fuss.
+          <p className="text-background/70 mb-8 text-lg">
+            We handle everything — even cancelling your old provider. No faff, no fuss.
           </p>
           <Link to="/auth?mode=signup">
-            <Button variant="hero" size="lg">
+            <Button variant="hero" size="lg" className="border-background">
               Get Started
               <ArrowRight className="w-5 h-5" />
             </Button>

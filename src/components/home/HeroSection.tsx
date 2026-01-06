@@ -3,60 +3,75 @@ import PostcodeChecker from "./PostcodeChecker";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center hero-pattern overflow-hidden">
-      {/* Floating Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-20 h-20 bg-primary/10 rounded-full blur-xl animate-float" />
-        <div className="absolute top-40 right-20 w-32 h-32 bg-accent/10 rounded-full blur-xl animate-float" style={{ animationDelay: "2s" }} />
-        <div className="absolute bottom-40 left-1/4 w-24 h-24 bg-warning/10 rounded-full blur-xl animate-float" style={{ animationDelay: "4s" }} />
-      </div>
+    <section className="relative min-h-[90vh] flex items-center justify-center grid-pattern overflow-hidden">
+      {/* Decorative Elements */}
+      <div className="absolute top-20 right-10 w-32 h-32 border-4 border-foreground bg-primary rotate-12 hidden lg:block" />
+      <div className="absolute bottom-32 left-10 w-24 h-24 border-4 border-foreground bg-accent -rotate-6 hidden lg:block" />
+      <div className="absolute top-1/3 left-20 w-16 h-16 border-4 border-foreground bg-warning rotate-45 hidden xl:block" />
 
       <div className="container mx-auto px-4 py-20 relative z-10">
-        <div className="text-center max-w-4xl mx-auto space-y-8">
+        <div className="max-w-5xl mx-auto space-y-8">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-full text-sm font-medium animate-fade-in">
-            <Zap className="w-4 h-4" />
-            <span>New: Ultrafast Fibre now available in Yorkshire!</span>
+          <div className="inline-block animate-slide-up">
+            <div className="stamp text-accent border-accent text-sm">
+              <Zap className="w-4 h-4 inline mr-2" />
+              Now in Yorkshire!
+            </div>
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-tight animate-slide-up">
-            Internet that doesn't
+          <h1 className="text-display-xl animate-slide-up" style={{ animationDelay: "0.1s" }}>
+            INTERNET
             <br />
-            <span className="text-gradient">make you want to scream</span>
+            THAT DOESN'T
+            <br />
+            <span className="text-gradient">MAKE YOU SCREAM</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            Broadband, mobile, and landline services from actual humans who understand that "have you tried turning it off and on again" isn't always the answer.
+          <p 
+            className="text-xl md:text-2xl max-w-2xl font-medium leading-relaxed animate-slide-up" 
+            style={{ animationDelay: "0.2s" }}
+          >
+            Broadband, mobile & landline from{" "}
+            <span className="cutout">actual humans</span>{" "}
+            who know that "have you tried turning it off and on again" 
+            isn't always the answer.
           </p>
 
           {/* Postcode Checker */}
-          <div className="pt-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            <p className="text-sm text-muted-foreground mb-4">Check what's available at your gaff:</p>
+          <div className="pt-4 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+            <p className="font-display text-lg mb-4 uppercase tracking-wider">
+              Check what's available at your gaff:
+            </p>
             <PostcodeChecker />
           </div>
 
           {/* Trust Badges */}
-          <div className="flex flex-wrap justify-center gap-6 pt-8 animate-fade-in" style={{ animationDelay: "0.6s" }}>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Shield className="w-5 h-5 text-accent" />
-              <span>Ofcom Regulated</span>
+          <div 
+            className="flex flex-wrap gap-6 pt-8 animate-slide-up" 
+            style={{ animationDelay: "0.4s" }}
+          >
+            <div className="flex items-center gap-3 px-4 py-2 border-4 border-foreground bg-background">
+              <Shield className="w-5 h-5" />
+              <span className="font-display uppercase tracking-wide">Ofcom Regulated</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <HeartHandshake className="w-5 h-5 text-primary" />
-              <span>UK-Based Support</span>
+            <div className="flex items-center gap-3 px-4 py-2 border-4 border-foreground bg-background">
+              <HeartHandshake className="w-5 h-5" />
+              <span className="font-display uppercase tracking-wide">UK Support</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 px-4 py-2 border-4 border-foreground bg-primary">
               <span className="text-lg">🇬🇧</span>
-              <span>Proudly British</span>
+              <span className="font-display uppercase tracking-wide text-primary-foreground">100% British</span>
             </div>
           </div>
         </div>
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce-slow">
-          <ArrowDown className="w-6 h-6 text-muted-foreground" />
+          <div className="p-3 border-4 border-foreground bg-background">
+            <ArrowDown className="w-6 h-6" />
+          </div>
         </div>
       </div>
     </section>

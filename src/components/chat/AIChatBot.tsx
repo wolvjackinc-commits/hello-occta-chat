@@ -162,7 +162,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
               onClick={() => setIsOpen(true)}
-              className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary border-4 border-foreground shadow-brutal flex items-center justify-center hover:-translate-y-1 hover:shadow-brutal-lg transition-all"
+              className="fixed bottom-24 right-4 z-40 w-12 h-12 bg-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all"
               aria-label="Open chat"
             >
               <MessageCircle className="w-6 h-6 text-primary-foreground" />
@@ -182,7 +182,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                 height: isMinimized ? "auto" : "min(600px, 80vh)"
               }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] bg-card border-4 border-foreground shadow-brutal-lg flex flex-col overflow-hidden ${className}`}
+              className={`fixed bottom-24 right-4 z-40 w-[360px] max-w-[calc(100vw-32px)] bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
             >
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">

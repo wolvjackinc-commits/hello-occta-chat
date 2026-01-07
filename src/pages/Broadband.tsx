@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import Layout from "@/components/layout/Layout";
+import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { Button } from "@/components/ui/button";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
@@ -35,7 +35,7 @@ const Broadband = () => {
   ];
 
   return (
-    <Layout>
+    <ResponsiveLayout>
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
@@ -204,7 +204,7 @@ const Broadband = () => {
 
       {/* Bundle Builder */}
       <BundleBuilder currentService="broadband" />
-    </Layout>
+    </ResponsiveLayout>
   );
 };
 

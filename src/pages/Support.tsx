@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
+import AppLayout from "@/components/app/AppLayout";
+import AppSupport from "@/components/app/AppSupport";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useToast } from "@/hooks/use-toast";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
 import AIChatBot from "@/components/chat/AIChatBot";
+import { useAppMode } from "@/hooks/useAppMode";
 import { 
   Search, 
   Wifi, 
@@ -73,6 +76,7 @@ const statusConfig = {
 };
 
 const Support = () => {
+  const { isAppMode } = useAppMode();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState<User | null>(null);
@@ -167,6 +171,15 @@ const Support = () => {
   );
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+  // App mode: show compact app UI
+  if (isAppMode) {
+    return (
+      <AppLayout>
+        <AppSupport />
+      </AppLayout>
+    );
+  }
 
   return (
     <Layout>

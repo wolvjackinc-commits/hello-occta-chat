@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safe area insets for PWA */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* OCCTA Brutalist British Design System
    Raw, bold, unapologetic. Punk zine meets telecom.
 */

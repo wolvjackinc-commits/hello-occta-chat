@@ -1,13 +1,16 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
+import AppLayout from "@/components/app/AppLayout";
 import { Button } from "@/components/ui/button";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
 import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X } from "lucide-react";
 import { broadbandPlans } from "@/lib/plans";
+import { useAppMode } from "@/hooks/useAppMode";
 
 const Broadband = () => {
+  const { isAppMode } = useAppMode();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -34,8 +37,10 @@ const Broadband = () => {
     { icon: Clock, text: "7-Day Setup" },
   ];
 
+  const LayoutComponent = isAppMode ? AppLayout : Layout;
+
   return (
-    <Layout>
+    <LayoutComponent>
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
@@ -203,8 +208,8 @@ const Broadband = () => {
       </section>
 
       {/* Bundle Builder */}
-      <BundleBuilder currentService="broadband" />
-    </Layout>
+      {!isAppMode && <BundleBuilder currentService="broadband" />}
+    </LayoutComponent>
   );
 };
 

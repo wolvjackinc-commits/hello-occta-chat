@@ -1,12 +1,15 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
+import AppLayout from "@/components/app/AppLayout";
 import { Button } from "@/components/ui/button";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
 import { Check, Smartphone, Signal, Globe, ArrowRight, X } from "lucide-react";
 import { simPlans } from "@/lib/plans";
+import { useAppMode } from "@/hooks/useAppMode";
 
 const SimPlans = () => {
+  const { isAppMode } = useAppMode();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -33,8 +36,10 @@ const SimPlans = () => {
     { icon: X, text: "No Contracts" },
   ];
 
+  const LayoutComponent = isAppMode ? AppLayout : Layout;
+
   return (
-    <Layout>
+    <LayoutComponent>
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
@@ -205,8 +210,8 @@ const SimPlans = () => {
       </section>
 
       {/* Bundle Builder */}
-      <BundleBuilder currentService="sim" />
-    </Layout>
+      {!isAppMode && <BundleBuilder currentService="sim" />}
+    </LayoutComponent>
   );
 };
 

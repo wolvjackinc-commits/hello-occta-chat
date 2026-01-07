@@ -1,4 +1,4 @@
-import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
+import Layout from "@/components/layout/Layout";
 import HeroSection from "@/components/home/HeroSection";
 import ServicesSection from "@/components/home/ServicesSection";
 import WhyUsSection from "@/components/home/WhyUsSection";
@@ -6,12 +6,12 @@ import CTASection from "@/components/home/CTASection";
 
 const Index = () => {
   return (
-    <ResponsiveLayout>
+    <Layout>
       <HeroSection />
       <ServicesSection />
       <WhyUsSection />
       <CTASection />
-    </ResponsiveLayout>
+    </Layout>
   );
 };
 

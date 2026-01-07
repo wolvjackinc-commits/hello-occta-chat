@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { logError } from "@/lib/logger";
-import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
+import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -341,13 +341,13 @@ const Admin = () => {
 
   if (isLoading) {
     return (
-      <ResponsiveLayout>
+      <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="p-4 border-4 border-foreground bg-background">
             <Loader2 className="w-8 h-8 animate-spin" />
           </div>
         </div>
-      </ResponsiveLayout>
+      </Layout>
     );
   }
 
@@ -366,7 +366,7 @@ const Admin = () => {
   };
 
   return (
-    <ResponsiveLayout>
+    <Layout>
       <div className="container mx-auto px-4 py-8 md:py-12">
         <motion.div initial="hidden" animate="visible" variants={containerVariants}>
           {/* Header */}
@@ -813,7 +813,7 @@ const Admin = () => {
         onOpenChange={setPackagesDialogOpen}
         onUpdate={fetchAllData}
       />
-    </ResponsiveLayout>
+    </Layout>
   );
 };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
+import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Smartphone, Monitor, CheckCircle, Share, MoreVertical } from "lucide-react";
@@ -56,7 +56,7 @@ const Install = () => {
   };
 
   return (
-    <ResponsiveLayout>
+    <Layout>
       <div className="min-h-screen bg-background py-16 px-4">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
@@ -237,7 +237,7 @@ const Install = () => {
           )}
         </div>
       </div>
-    </ResponsiveLayout>
+    </Layout>
   );
 };
 

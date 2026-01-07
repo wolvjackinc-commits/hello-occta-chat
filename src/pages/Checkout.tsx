@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
-import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
+import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -169,19 +169,19 @@ const Checkout = () => {
 
   if (isLoading || !plan) {
     return (
-      <ResponsiveLayout>
+      <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="p-4 border-4 border-foreground bg-background">
             <Loader2 className="w-8 h-8 animate-spin" />
           </div>
         </div>
-      </ResponsiveLayout>
+      </Layout>
     );
   }
 
   if (orderComplete) {
     return (
-      <ResponsiveLayout>
+      <Layout>
         <div className="min-h-[60vh] flex items-center justify-center py-20">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -233,14 +233,14 @@ const Checkout = () => {
             </div>
           </motion.div>
         </div>
-      </ResponsiveLayout>
+      </Layout>
     );
   }
 
   const Icon = serviceIcons[plan.serviceType];
 
   return (
-    <ResponsiveLayout>
+    <Layout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           {/* Back Link */}
@@ -535,7 +535,7 @@ const Checkout = () => {
           </div>
         </div>
       </div>
-    </ResponsiveLayout>
+    </Layout>
   );
 };
 

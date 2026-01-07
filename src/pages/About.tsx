@@ -1,4 +1,4 @@
-import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
+import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -20,7 +20,7 @@ const About = () => {
   ];
 
   return (
-    <ResponsiveLayout>
+    <Layout>
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 hero-pattern">
         <div className="container mx-auto px-4">
@@ -125,7 +125,7 @@ const About = () => {
           </div>
         </div>
       </section>
-    </ResponsiveLayout>
+    </Layout>
   );
 };
 

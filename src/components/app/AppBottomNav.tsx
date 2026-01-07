@@ -14,7 +14,7 @@ const AppBottomNav = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t-4 border-foreground safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border safe-area-bottom shadow-lg">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -22,27 +22,26 @@ const AppBottomNav = () => {
             <Link
               key={item.path}
               to={item.path}
-              className="flex flex-col items-center justify-center flex-1 h-full relative"
+              className="flex flex-col items-center justify-center flex-1 h-full relative py-2"
             >
+              <motion.div
+                className={`flex flex-col items-center justify-center ${isActive ? 'text-accent' : 'text-muted-foreground'}`}
+                whileTap={{ scale: 0.9 }}
+              >
+                <div className={`p-1.5 rounded-xl ${isActive ? 'bg-accent/10' : ''}`}>
+                  <item.icon className="w-5 h-5" />
+                </div>
+                <span className={`text-[10px] mt-0.5 font-medium ${isActive ? 'text-accent' : 'text-muted-foreground'}`}>
+                  {item.label}
+                </span>
+              </motion.div>
               {isActive && (
                 <motion.div
-                  layoutId="activeTab"
-                  className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary"
+                  layoutId="activeTabIndicator"
+                  className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-accent rounded-full"
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 />
               )}
-              <item.icon
-                className={`w-5 h-5 mb-1 transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-              />
-              <span
-                className={`text-xs font-display uppercase tracking-wider transition-colors ${
-                  isActive ? "text-primary font-bold" : "text-muted-foreground"
-                }`}
-              >
-                {item.label}
-              </span>
             </Link>
           );
         })}

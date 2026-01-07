@@ -1,188 +1,207 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { 
-  MessageSquare, 
   Phone, 
   Mail, 
+  MessageCircle, 
   ChevronRight,
-  Send,
-  Loader2,
-  HelpCircle,
   FileText,
-  CreditCard,
+  HelpCircle,
   Wifi,
+  Smartphone,
+  CreditCard,
+  Settings,
+  Plus,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+
+type Ticket = {
+  id: string;
+  subject: string;
+  status: string;
+  created_at: string;
+};
 
 const faqItems = [
-  { icon: Wifi, question: "How do I check my broadband speed?", link: "/support" },
-  { icon: CreditCard, question: "How do I update my payment method?", link: "/dashboard" },
-  { icon: FileText, question: "Where can I find my invoices?", link: "/dashboard" },
-  { icon: HelpCircle, question: "How do I cancel my service?", link: "/support" },
+  { icon: Wifi, label: "Broadband Setup", description: "Installation & troubleshooting" },
+  { icon: Smartphone, label: "SIM Activation", description: "Activate your new SIM" },
+  { icon: CreditCard, label: "Billing Help", description: "Payment & invoices" },
+  { icon: Settings, label: "Account Settings", description: "Manage your account" },
 ];
 
-const contactOptions = [
-  { icon: Phone, label: "Call Us", value: "0800 123 4567", action: "tel:08001234567" },
-  { icon: Mail, label: "Email", value: "support@occta.com", action: "mailto:support@occta.com" },
+const contactMethods = [
+  { icon: Phone, label: "Call Us", value: "0800 123 4567", color: "bg-success/10 text-success" },
+  { icon: Mail, label: "Email", value: "support@occta.uk", color: "bg-accent/10 text-accent" },
+  { icon: MessageCircle, label: "Live Chat", value: "Start chat", color: "bg-primary/10 text-primary" },
 ];
 
 const AppSupport = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSubmit = async () => {
-    if (!subject.trim() || !message.trim()) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in both subject and message",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
+  useEffect(() => {
+    const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
       
-      if (!user) {
-        toast({
-          title: "Sign in required",
-          description: "Please sign in to submit a support ticket",
-        });
-        navigate("/auth");
-        return;
+      if (user) {
+        const { data } = await supabase
+          .from("support_tickets")
+          .select("id, subject, status, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(3);
+        
+        if (data) setTickets(data);
       }
+      setIsLoading(false);
+    };
+    
+    fetchData();
+  }, []);
 
-      const { error } = await supabase.from("support_tickets").insert({
-        user_id: user.id,
-        subject: subject.trim(),
-        description: message.trim(),
-        status: "open",
-        priority: "medium",
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Ticket submitted!",
-        description: "We'll get back to you soon",
-      });
-      setSubject("");
-      setMessage("");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit ticket. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const statusColors: Record<string, string> = {
+    open: "bg-warning/20 text-warning",
+    in_progress: "bg-accent/20 text-accent",
+    resolved: "bg-success/20 text-success",
+    closed: "bg-muted text-muted-foreground",
   };
 
   return (
-    <motion.div
-      className="px-4 py-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      {/* Contact Options */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
-        <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-3">
-          Contact Us
-        </h2>
-        <div className="grid grid-cols-2 gap-3">
-          {contactOptions.map((option) => (
-            <a
-              key={option.label}
-              href={option.action}
-              className="flex flex-col items-center gap-2 p-4 bg-card border-4 border-foreground text-center active:bg-secondary"
-            >
-              <option.icon className="w-6 h-6" />
-              <span className="font-display text-sm uppercase">{option.label}</span>
-              <span className="text-xs text-muted-foreground">{option.value}</span>
-            </a>
-          ))}
-        </div>
-      </motion.div>
+    <div className="min-h-screen bg-muted/30">
+      {/* Header Area */}
+      <div className="bg-accent px-4 pt-4 pb-8 rounded-b-3xl">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-background rounded-2xl p-4"
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
+              <HelpCircle className="w-8 h-8 text-accent" />
+            </div>
+            <h2 className="font-bold text-lg mb-1">How can we help?</h2>
+            <p className="text-sm text-muted-foreground">We're here 24/7 for you</p>
+          </div>
+        </motion.div>
+      </div>
 
-      {/* Quick Ticket Form */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mb-6"
-      >
-        <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-3">
-          Submit a Ticket
-        </h2>
-        <div className="p-4 bg-card border-4 border-foreground space-y-3">
-          <Input
-            placeholder="Subject"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            className="border-2 border-foreground"
-          />
-          <Textarea
-            placeholder="How can we help?"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="border-2 border-foreground min-h-[100px]"
-          />
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="w-full"
-            variant="hero"
+      <div className="px-4 -mt-4">
+        {/* Contact Methods */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-background rounded-2xl p-4 shadow-sm mb-4"
+        >
+          <h3 className="font-semibold mb-4">Contact Us</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {contactMethods.map((method) => (
+              <button
+                key={method.label}
+                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-muted/30"
+              >
+                <div className={`w-12 h-12 rounded-xl ${method.color} flex items-center justify-center`}>
+                  <method.icon className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-medium">{method.label}</span>
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Active Tickets */}
+        {user && tickets.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-background rounded-2xl p-4 shadow-sm mb-4"
           >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Send className="w-4 h-4 mr-2" />
-                Send
-              </>
-            )}
-          </Button>
-        </div>
-      </motion.div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">Your Tickets</h3>
+              <Link to="/dashboard" className="text-sm text-accent font-medium">View All</Link>
+            </div>
+            <div className="space-y-3">
+              {tickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{ticket.subject}</p>
+                    <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${statusColors[ticket.status] || statusColors.closed}`}>
+                      {ticket.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                </div>
+              ))}
+            </div>
+            <Button className="w-full mt-4 rounded-xl bg-accent hover:bg-accent/90">
+              <Plus className="w-4 h-4 mr-2" />
+              New Ticket
+            </Button>
+          </motion.div>
+        )}
 
-      {/* FAQ */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-3">
-          Common Questions
-        </h2>
-        <div className="bg-card border-4 border-foreground divide-y-2 divide-foreground">
-          {faqItems.map((item) => (
-            <Link
-              key={item.question}
-              to={item.link}
-              className="flex items-center gap-3 p-4 active:bg-secondary transition-colors"
+        {/* Create Ticket for logged in users without tickets */}
+        {user && tickets.length === 0 && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-background rounded-2xl p-4 shadow-sm mb-4"
+          >
+            <div className="text-center py-4">
+              <div className="w-14 h-14 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
+                <FileText className="w-7 h-7 text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold mb-1">No Support Tickets</h3>
+              <p className="text-sm text-muted-foreground mb-4">Need help? Create a ticket</p>
+              <Button className="rounded-xl bg-accent hover:bg-accent/90">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Ticket
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* FAQ Categories */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-background rounded-2xl shadow-sm mb-4 overflow-hidden"
+        >
+          <h3 className="font-semibold p-4 pb-2">Help Topics</h3>
+          {faqItems.map((item, index) => (
+            <button
+              key={item.label}
+              className={`flex items-center gap-4 p-4 w-full text-left ${index !== faqItems.length - 1 ? 'border-b border-border' : ''}`}
             >
-              <item.icon className="w-5 h-5 text-muted-foreground" />
-              <span className="flex-1 text-sm">{item.question}</span>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </Link>
+              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                <item.icon className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">{item.label}</p>
+                <p className="text-sm text-muted-foreground">{item.description}</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
           ))}
-        </div>
-      </motion.div>
-    </motion.div>
+        </motion.div>
+
+        {/* Padding for bottom nav */}
+        <div className="h-4" />
+      </div>
+    </div>
   );
 };
 

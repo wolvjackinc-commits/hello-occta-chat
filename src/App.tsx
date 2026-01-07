@@ -17,6 +17,7 @@ import PreCheckout from "./pages/PreCheckout";
 import ThankYou from "./pages/ThankYou";
 import Support from "./pages/Support";
 import About from "./pages/About";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,7 @@ const AnimatedRoutes = () => {
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/support" element={<Support />} />
             <Route path="/about" element={<About />} />
+            <Route path="/install" element={<Install />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

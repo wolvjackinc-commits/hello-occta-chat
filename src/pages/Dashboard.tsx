@@ -5,8 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
+import AppLayout from "@/components/app/AppLayout";
+import AppDashboard from "@/components/app/AppDashboard";
 import { Button } from "@/components/ui/button";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
+import { useAppMode } from "@/hooks/useAppMode";
 import { 
   Wifi, 
   Smartphone, 
@@ -99,6 +102,7 @@ const ticketStatusConfig = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAppMode } = useAppMode();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -222,20 +226,31 @@ const Dashboard = () => {
     }
   };
 
+  const LayoutComponent = isAppMode ? AppLayout : Layout;
+
   if (isLoading) {
     return (
-      <Layout>
+      <LayoutComponent>
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="p-4 border-4 border-foreground bg-background">
             <Loader2 className="w-8 h-8 animate-spin" />
           </div>
         </div>
-      </Layout>
+      </LayoutComponent>
     );
   }
 
   if (!user) {
     return null;
+  }
+
+  // App mode: show compact app UI
+  if (isAppMode) {
+    return (
+      <AppLayout>
+        <AppDashboard />
+      </AppLayout>
+    );
   }
 
   const userFullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer";

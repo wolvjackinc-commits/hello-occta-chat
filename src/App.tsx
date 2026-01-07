@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -18,6 +19,7 @@ import ThankYou from "./pages/ThankYou";
 import Support from "./pages/Support";
 import About from "./pages/About";
 import Install from "./pages/Install";
+import Offline from "./pages/Offline";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +61,12 @@ const ScrollToTop = () => {
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+  const isOnline = useOnlineStatus();
+
+  // Show offline page when not connected (except for cached pages)
+  if (!isOnline && !navigator.onLine) {
+    return <Offline />;
+  }
 
   return (
     <>
@@ -85,6 +93,7 @@ const AnimatedRoutes = () => {
             <Route path="/support" element={<Support />} />
             <Route path="/about" element={<About />} />
             <Route path="/install" element={<Install />} />
+            <Route path="/offline" element={<Offline />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

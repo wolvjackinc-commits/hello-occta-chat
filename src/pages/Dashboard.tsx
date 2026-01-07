@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { logError } from "@/lib/logger";
-import Layout from "@/components/layout/Layout";
+import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { Button } from "@/components/ui/button";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
 import { 
@@ -224,13 +224,13 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <Layout>
+      <ResponsiveLayout>
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="p-4 border-4 border-foreground bg-background">
             <Loader2 className="w-8 h-8 animate-spin" />
           </div>
         </div>
-      </Layout>
+      </ResponsiveLayout>
     );
   }
 
@@ -276,7 +276,7 @@ const Dashboard = () => {
   };
 
   return (
-    <Layout>
+    <ResponsiveLayout>
       <div className="container mx-auto px-4 py-8 md:py-12">
         <motion.div
           initial="hidden"
@@ -600,7 +600,7 @@ const Dashboard = () => {
         open={ticketDialogOpen}
         onOpenChange={setTicketDialogOpen}
       />
-    </Layout>
+    </ResponsiveLayout>
   );
 };
 

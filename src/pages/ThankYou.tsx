@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import Layout from "@/components/layout/Layout";
+import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { logError } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -185,11 +185,11 @@ const ThankYou = () => {
 
   if (!orderData) {
     return (
-      <Layout>
+      <ResponsiveLayout>
         <div className="min-h-[60vh] flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin" />
         </div>
-      </Layout>
+      </ResponsiveLayout>
     );
   }
 
@@ -202,7 +202,7 @@ const ThankYou = () => {
   ];
 
   return (
-    <Layout>
+    <ResponsiveLayout>
       <div className="min-h-[60vh] py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
@@ -482,7 +482,7 @@ const ThankYou = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </ResponsiveLayout>
   );
 };
 

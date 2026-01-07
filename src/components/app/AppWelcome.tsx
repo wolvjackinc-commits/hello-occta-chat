@@ -58,12 +58,12 @@ const AppWelcome = () => {
 
           <div className="flex gap-3">
             <Link to="/auth" className="flex-1">
-              <Button className="w-full h-12 rounded-xl bg-background text-accent hover:bg-background/90 font-semibold">
+              <Button className="w-full h-12 rounded-xl bg-white text-primary hover:bg-white/90 font-semibold shadow-md">
                 Sign In
               </Button>
             </Link>
             <Link to="/broadband" className="flex-1">
-              <Button variant="outline" className="w-full h-12 rounded-xl border-2 border-accent-foreground/30 text-accent-foreground hover:bg-accent-foreground/10 font-semibold">
+              <Button className="w-full h-12 rounded-xl bg-white/20 text-white border-2 border-white/40 hover:bg-white/30 font-semibold backdrop-blur-sm">
                 Browse Plans
               </Button>
             </Link>

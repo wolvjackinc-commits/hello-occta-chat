@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { logError } from "@/lib/logger";
@@ -9,6 +9,7 @@ import AppLayout from "@/components/app/AppLayout";
 import AppDashboard from "@/components/app/AppDashboard";
 import { Button } from "@/components/ui/button";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
+import { OrderTracking } from "@/components/dashboard/OrderTracking";
 import { useAppMode } from "@/hooks/useAppMode";
 import { 
   Wifi, 
@@ -28,6 +29,7 @@ import {
   Download,
   File,
   Receipt,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +41,8 @@ type Order = {
   plan_price: number;
   status: 'pending' | 'confirmed' | 'active' | 'cancelled';
   created_at: string;
+  installation_date?: string | null;
+  admin_notes?: string | null;
 };
 
 type GuestOrder = {
@@ -51,6 +55,8 @@ type GuestOrder = {
   email: string;
   created_at: string;
   user_id: string | null;
+  status?: string;
+  admin_notes?: string | null;
 };
 
 type SupportTicket = {
@@ -113,6 +119,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | GuestOrder | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -351,7 +358,47 @@ const Dashboard = () => {
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Orders Section */}
-            <motion.div variants={itemVariants} className="lg:col-span-2">
+            <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
+              {/* Order Tracking */}
+              <AnimatePresence mode="wait">
+                {selectedOrder && (
+                  <motion.div
+                    key="order-tracking"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-display-sm">ORDER TRACKING</h2>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setSelectedOrder(null)}
+                        className="border-2 border-foreground"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Close
+                      </Button>
+                    </div>
+                    <OrderTracking 
+                      order={{
+                        id: selectedOrder.id,
+                        order_number: 'order_number' in selectedOrder ? selectedOrder.order_number : undefined,
+                        plan_name: selectedOrder.plan_name,
+                        plan_price: selectedOrder.plan_price,
+                        service_type: selectedOrder.service_type,
+                        status: 'status' in selectedOrder ? selectedOrder.status : 'pending',
+                        created_at: selectedOrder.created_at,
+                        installation_date: 'installation_date' in selectedOrder ? selectedOrder.installation_date : null,
+                        admin_notes: selectedOrder.admin_notes,
+                      }}
+                      onContactSupport={() => navigate('/support')}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div className="card-brutal bg-card p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-display-sm">YOUR ORDERS</h2>
@@ -369,16 +416,23 @@ const Dashboard = () => {
                   </div>
                 ) : allOrders.length > 0 ? (
                   <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground mb-2">Click an order to track its progress</p>
                     {orders.map((order, index) => {
                       const Icon = serviceIcons[order.service_type];
                       const status = statusConfig[order.status];
+                      const isSelected = selectedOrder?.id === order.id;
                       return (
                         <motion.div
                           key={order.id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.1 }}
-                          className="flex items-center justify-between p-4 border-4 border-foreground bg-background hover:bg-secondary transition-colors"
+                          onClick={() => setSelectedOrder(isSelected ? null : order)}
+                          className={`flex items-center justify-between p-4 border-4 cursor-pointer transition-colors ${
+                            isSelected 
+                              ? "border-primary bg-primary/5" 
+                              : "border-foreground bg-background hover:bg-secondary"
+                          }`}
                           whileHover={{ x: -4, boxShadow: "8px 0px 0px 0px hsl(var(--foreground))" }}
                         >
                           <div className="flex items-center gap-4">
@@ -390,24 +444,33 @@ const Dashboard = () => {
                               <p className="text-sm text-muted-foreground capitalize">{order.service_type}</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className={`inline-flex items-center gap-2 px-3 py-1 ${status.color} border-2 border-foreground`}>
-                              <span className="font-display text-sm uppercase">{status.label}</span>
+                          <div className="text-right flex items-center gap-3">
+                            <div>
+                              <div className={`inline-flex items-center gap-2 px-3 py-1 ${status.color} border-2 border-foreground`}>
+                                <span className="font-display text-sm uppercase">{status.label}</span>
+                              </div>
+                              <p className="text-lg font-display mt-1">£{order.plan_price}/mo</p>
                             </div>
-                            <p className="text-lg font-display mt-1">£{order.plan_price}/mo</p>
+                            <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${isSelected ? "rotate-90" : ""}`} />
                           </div>
                         </motion.div>
                       );
                     })}
                     {guestOrders.map((order, index) => {
                       const Icon = serviceIcons[order.service_type as keyof typeof serviceIcons] || Package;
+                      const isSelected = selectedOrder?.id === order.id;
                       return (
                         <motion.div
                           key={order.id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: (orders.length + index) * 0.1 }}
-                          className="flex items-center justify-between p-4 border-4 border-foreground bg-background hover:bg-secondary transition-colors"
+                          onClick={() => setSelectedOrder(isSelected ? null : order)}
+                          className={`flex items-center justify-between p-4 border-4 cursor-pointer transition-colors ${
+                            isSelected 
+                              ? "border-primary bg-primary/5" 
+                              : "border-foreground bg-background hover:bg-secondary"
+                          }`}
                           whileHover={{ x: -4, boxShadow: "8px 0px 0px 0px hsl(var(--foreground))" }}
                         >
                           <div className="flex items-center gap-4">
@@ -420,11 +483,14 @@ const Dashboard = () => {
                               <p className="text-xs text-muted-foreground">Order #{order.order_number}</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-warning border-2 border-foreground">
-                              <span className="font-display text-sm uppercase">Processing</span>
+                          <div className="text-right flex items-center gap-3">
+                            <div>
+                              <div className="inline-flex items-center gap-2 px-3 py-1 bg-warning border-2 border-foreground">
+                                <span className="font-display text-sm uppercase">{order.status || 'Processing'}</span>
+                              </div>
+                              <p className="text-lg font-display mt-1">£{order.plan_price}/mo</p>
                             </div>
-                            <p className="text-lg font-display mt-1">£{order.plan_price}/mo</p>
+                            <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${isSelected ? "rotate-90" : ""}`} />
                           </div>
                         </motion.div>
                       );

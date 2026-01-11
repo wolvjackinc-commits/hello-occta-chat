@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
@@ -7,6 +7,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
 import CheckoutSkeleton from "@/components/loading/CheckoutSkeleton";
+import { useFormAutosave } from "@/hooks/useFormAutosave";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,6 +126,51 @@ const PreCheckout = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+
+  // Autosave form data
+  const formDataToSave = useMemo(() => ({
+    customerData,
+    selectedAddons,
+    additionalNotes,
+    marketingConsent,
+  }), [customerData, selectedAddons, additionalNotes, marketingConsent]);
+
+  const { loadSavedData, clearSavedData, hasSavedData } = useFormAutosave({
+    key: `checkout-form-${planIds.join(",")}`,
+    data: formDataToSave,
+  });
+
+  // Check for saved form data on mount
+  useEffect(() => {
+    if (hasSavedData()) {
+      setShowRestorePrompt(true);
+    }
+  }, [hasSavedData]);
+
+  const handleRestoreData = () => {
+    const saved = loadSavedData();
+    if (saved) {
+      const { data } = saved;
+      if (data.customerData) {
+        // Restore customer data, but handle preferredSwitchDate specially
+        const restoredData = { ...data.customerData };
+        if (restoredData.preferredSwitchDate) {
+          restoredData.preferredSwitchDate = new Date(restoredData.preferredSwitchDate);
+        }
+        setCustomerData(restoredData);
+      }
+      if (data.selectedAddons) setSelectedAddons(data.selectedAddons);
+      if (data.additionalNotes) setAdditionalNotes(data.additionalNotes);
+      if (data.marketingConsent !== undefined) setMarketingConsent(data.marketingConsent);
+    }
+    setShowRestorePrompt(false);
+  };
+
+  const handleDiscardSavedData = () => {
+    clearSavedData();
+    setShowRestorePrompt(false);
+  };
 
   useEffect(() => {
     if (planIds.length === 0) {
@@ -302,6 +348,10 @@ const PreCheckout = () => {
       };
       
       sessionStorage.setItem('pendingOrder', JSON.stringify(orderData));
+      
+      // Clear autosaved form data on successful submission
+      clearSavedData();
+      
       navigate('/thank-you');
     } catch (error) {
       logError('PreCheckout.handleSubmit', error);
@@ -350,6 +400,46 @@ const PreCheckout = () => {
           </Link>
 
           <h1 className="text-display-md mb-8">COMPLETE YOUR ORDER</h1>
+
+          {/* Restore Saved Form Prompt */}
+          <AnimatePresence>
+            {showRestorePrompt && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-6 p-4 border-4 border-accent bg-accent/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              >
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-display uppercase text-accent">Saved Progress Found</h4>
+                    <p className="text-sm text-muted-foreground">
+                      We saved your form from earlier. Would you like to continue where you left off?
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDiscardSavedData}
+                    className="border-2 border-foreground flex-1 sm:flex-none"
+                  >
+                    Start Fresh
+                  </Button>
+                  <Button
+                    variant="hero"
+                    size="sm"
+                    onClick={handleRestoreData}
+                    className="flex-1 sm:flex-none"
+                  >
+                    Restore
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Form - Left Side */}

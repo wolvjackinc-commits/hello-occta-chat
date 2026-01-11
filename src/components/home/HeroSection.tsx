@@ -50,7 +50,7 @@ const HeroSection = () => {
             {/* Headline - Large and Prominent */}
             <motion.h1 
               variants={itemVariants} 
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display uppercase leading-[0.9] tracking-tight"
+              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display uppercase leading-[0.9] tracking-tight text-foreground"
             >
               Internet That
               <br />

@@ -8,6 +8,7 @@ import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
 import CheckoutSkeleton from "@/components/loading/CheckoutSkeleton";
 import { useFormAutosave } from "@/hooks/useFormAutosave";
+import { InstallationSlotPicker } from "@/components/scheduling/InstallationSlotPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,8 +53,17 @@ import {
   Voicemail,
   User,
   Loader2,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface InstallationSlot {
+  id: string;
+  slot_date: string;
+  slot_time: string;
+  capacity: number;
+  booked_count: number;
+}
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   wifi: Wifi,
@@ -127,6 +137,7 @@ const PreCheckout = () => {
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+  const [selectedInstallationSlot, setSelectedInstallationSlot] = useState<InstallationSlot | null>(null);
 
   // Autosave form data
   const formDataToSave = useMemo(() => ({
@@ -288,7 +299,7 @@ const PreCheckout = () => {
       }).filter(Boolean);
       
       // Save to database
-      const { error } = await supabase.from('guest_orders').insert({
+      const { data: insertedOrder, error } = await supabase.from('guest_orders').insert({
         order_number: orderNumber,
         email: customerData.email,
         full_name: `${customerData.firstName} ${customerData.lastName}`,
@@ -300,7 +311,9 @@ const PreCheckout = () => {
         current_provider: customerData.currentProvider,
         in_contract: customerData.inContract !== 'no' && customerData.inContract !== 'new-connection',
         contract_end_date: null,
-        preferred_switch_date: customerData.preferredSwitchDate ? format(customerData.preferredSwitchDate, 'yyyy-MM-dd') : null,
+        preferred_switch_date: selectedInstallationSlot 
+          ? selectedInstallationSlot.slot_date 
+          : (customerData.preferredSwitchDate ? format(customerData.preferredSwitchDate, 'yyyy-MM-dd') : null),
         additional_notes: additionalNotes || null,
         gdpr_consent: gdprConsent,
         marketing_consent: marketingConsent,
@@ -308,9 +321,27 @@ const PreCheckout = () => {
         plan_price: totalPrice,
         service_type: selectedPlans.map(p => p.serviceType).join(','),
         selected_addons: selectedAddonDetails as unknown as Json,
-      });
+      }).select('id').single();
       
       if (error) throw error;
+      
+      // Create installation booking if slot was selected
+      if (selectedInstallationSlot && insertedOrder) {
+        try {
+          await supabase.from('installation_bookings').insert({
+            slot_id: selectedInstallationSlot.id,
+            order_id: insertedOrder.id,
+            order_type: 'guest_order',
+            customer_name: `${customerData.firstName} ${customerData.lastName}`,
+            customer_email: customerData.email,
+            customer_phone: customerData.phone,
+            notes: additionalNotes || null,
+          });
+        } catch (bookingError) {
+          logError('PreCheckout.handleSubmit.createBooking', bookingError);
+          // Don't fail the order if booking creation fails
+        }
+      }
       
       // Send confirmation email (with orderNumber for guest verification)
       try {
@@ -635,6 +666,18 @@ const PreCheckout = () => {
                     <p className="text-muted-foreground text-sm mt-1">We need at least 7 days to arrange your switch</p>
                   </div>
                 </div>
+              </motion.div>
+
+              {/* Installation Scheduling */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <InstallationSlotPicker
+                  onSlotSelected={setSelectedInstallationSlot}
+                  selectedSlot={selectedInstallationSlot}
+                />
               </motion.div>
 
               {/* GDPR & Consent */}

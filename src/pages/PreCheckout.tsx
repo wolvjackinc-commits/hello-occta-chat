@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { logError } from "@/lib/logger";
 import Layout from "@/components/layout/Layout";
+import CheckoutSkeleton from "@/components/loading/CheckoutSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -332,7 +333,7 @@ const PreCheckout = () => {
   }, {} as Record<string, Addon[]>);
 
   if (selectedPlans.length === 0) {
-    return null;
+    return <CheckoutSkeleton />;
   }
 
   return (

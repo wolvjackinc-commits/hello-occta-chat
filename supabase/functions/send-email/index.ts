@@ -105,12 +105,16 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
         <li>A technician will arrive on the scheduled date to set everything up</li>
       </ol>
       
-      <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/auth" class="cta">Create an Account to Track Your Order</a>
+      <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/track-order" class="cta">Track Your Order</a>
+      
+      <p style="text-align: center; color: #666; font-size: 14px;">
+        Use your order number <strong>${escapeHtml(data.order_number)}</strong> and email to track your order anytime.
+      </p>
       
       <p>If you have any questions, our support team is here to help.</p>
     </div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} Your Telecom Company. All rights reserved.</p>
+      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -162,6 +166,7 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
 
 const getStatusUpdateHtml = (data: Record<string, unknown>) => {
   const statusMessages: Record<string, string> = {
+    pending: "We've received your order and it's being reviewed.",
     processing: "We're processing your order and preparing everything for installation.",
     dispatched: "Your equipment has been dispatched and is on its way!",
     installed: "Great news! Your service has been installed. Welcome aboard!",
@@ -171,6 +176,7 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
 
   const safeStatus = escapeHtml(data.status);
   const statusMessage = statusMessages[data.status as string] || "Your order status has been updated.";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://example.com";
 
   return `
 <!DOCTYPE html>
@@ -185,6 +191,7 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
     .status-badge { display: inline-block; background: #000; color: white; padding: 8px 16px; text-transform: uppercase; font-weight: bold; margin: 16px 0; }
     .order-box { background: #f9f9f9; border: 2px solid #000; padding: 20px; margin: 20px 0; }
     .cta { display: block; background: #000; color: white; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 24px 0; }
+    .cta-secondary { display: block; background: #fff; color: #000; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 12px 0; border: 2px solid #000; }
     .footer { background: #f4f4f4; padding: 24px; text-align: center; color: #666; font-size: 14px; }
   </style>
 </head>
@@ -207,12 +214,13 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
         <p><strong>Service:</strong> ${escapeHtml(data.service_type)}</p>
       </div>
       
-      <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/dashboard" class="cta">View Order Details</a>
+      <a href="${siteUrl}/track-order" class="cta">Track Your Order</a>
+      <a href="${siteUrl}/auth" class="cta-secondary">Create Account for More Features</a>
       
       <p>Questions? Our support team is always here to help.</p>
     </div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} Your Telecom Company. All rights reserved.</p>
+      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
     </div>
   </div>
 </body>

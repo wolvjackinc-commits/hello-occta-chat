@@ -20,6 +20,7 @@ import Support from "./pages/Support";
 import About from "./pages/About";
 import Install from "./pages/Install";
 import Offline from "./pages/Offline";
+import OrderLookup from "./pages/OrderLookup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,7 @@ const AnimatedRoutes = () => {
             <Route path="/about" element={<About />} />
             <Route path="/install" element={<Install />} />
             <Route path="/offline" element={<Offline />} />
+            <Route path="/track-order" element={<OrderLookup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

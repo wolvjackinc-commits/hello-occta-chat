@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Phone, Wifi, Smartphone, PhoneCall, ShieldCheck, User, LogOut } from "lucide-react";
+import { Menu, X, Phone, Wifi, Smartphone, PhoneCall, ShieldCheck, User, LogOut, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
@@ -134,6 +134,12 @@ const Header = () => {
               </Link>
             ) : (
               <>
+                <Link to="/track-order">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <Search className="w-4 h-4" />
+                    Track Order
+                  </Button>
+                </Link>
                 <Link to="/auth">
                   <Button variant="outline" size="sm">Sign In</Button>
                 </Link>
@@ -203,6 +209,12 @@ const Header = () => {
                   </Link>
                 ) : (
                   <>
+                    <Link to="/track-order" onClick={() => setIsOpen(false)}>
+                      <Button variant="ghost" className="w-full gap-2">
+                        <Search className="w-4 h-4" />
+                        Track Order
+                      </Button>
+                    </Link>
                     <Link to="/auth" onClick={() => setIsOpen(false)}>
                       <Button variant="outline" className="w-full">Sign In</Button>
                     </Link>

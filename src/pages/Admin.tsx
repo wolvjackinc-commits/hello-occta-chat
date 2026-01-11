@@ -35,7 +35,8 @@ import {
   Mail,
   Phone,
   Eye,
-  Settings
+  Settings,
+  CalendarDays
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -43,6 +44,7 @@ import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
 import { UserManageDialog } from "@/components/admin/UserManageDialog";
 import { TicketReplyDialog } from "@/components/admin/TicketReplyDialog";
 import { UserPackagesDialog } from "@/components/admin/UserPackagesDialog";
+import { InstallationSlotsManager } from "@/components/admin/InstallationSlotsManager";
 
 type Order = {
   id: string;
@@ -420,7 +422,7 @@ const Admin = () => {
           {/* Tabs */}
           <motion.div variants={itemVariants}>
             <Tabs defaultValue="guest-orders" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 border-4 border-foreground bg-background h-auto p-0">
+              <TabsList className="grid w-full grid-cols-5 border-4 border-foreground bg-background h-auto p-0">
                 <TabsTrigger value="orders" className="font-display uppercase py-3 data-[state=active]:bg-foreground data-[state=active]:text-background border-r-4 border-foreground">
                   <Package className="w-4 h-4 mr-2" />
                   Orders ({orders.length})
@@ -433,9 +435,13 @@ const Admin = () => {
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Tickets ({tickets.length})
                 </TabsTrigger>
-                <TabsTrigger value="users" className="font-display uppercase py-3 data-[state=active]:bg-foreground data-[state=active]:text-background">
+                <TabsTrigger value="users" className="font-display uppercase py-3 data-[state=active]:bg-foreground data-[state=active]:text-background border-r-4 border-foreground">
                   <Users className="w-4 h-4 mr-2" />
                   Users ({profiles.length})
+                </TabsTrigger>
+                <TabsTrigger value="scheduling" className="font-display uppercase py-3 data-[state=active]:bg-foreground data-[state=active]:text-background">
+                  <CalendarDays className="w-4 h-4 mr-2" />
+                  Scheduling
                 </TabsTrigger>
               </TabsList>
 
@@ -778,6 +784,11 @@ const Admin = () => {
                     <p className="font-display text-lg">NO USERS YET</p>
                   </div>
                 )}
+              </TabsContent>
+
+              {/* Scheduling Tab */}
+              <TabsContent value="scheduling">
+                <InstallationSlotsManager />
               </TabsContent>
             </Tabs>
           </motion.div>

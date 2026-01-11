@@ -107,6 +107,89 @@ export type Database = {
         }
         Relationships: []
       }
+      installation_bookings: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          notes: string | null
+          order_id: string
+          order_type: string
+          slot_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          order_type: string
+          slot_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          order_type?: string
+          slot_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "installation_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installation_slots: {
+        Row: {
+          booked_count: number
+          capacity: number
+          created_at: string
+          id: string
+          is_active: boolean
+          slot_date: string
+          slot_time: string
+          updated_at: string
+        }
+        Insert: {
+          booked_count?: number
+          capacity?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slot_date: string
+          slot_time: string
+          updated_at?: string
+        }
+        Update: {
+          booked_count?: number
+          capacity?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slot_date?: string
+          slot_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_messages: {
         Row: {
           created_at: string

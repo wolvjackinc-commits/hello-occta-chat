@@ -141,8 +141,11 @@ export function OrderDetailDialog({ order, open, onOpenChange, onUpdate }: Order
   };
 
   const handleSave = async () => {
-    if (!editedOrder) return;
+    if (!editedOrder || !order) return;
     setIsSaving(true);
+
+    const statusChanged = order.status !== editedOrder.status;
+    const previousStatus = order.status;
 
     try {
       const { error } = await supabase
@@ -164,7 +167,38 @@ export function OrderDetailDialog({ order, open, onOpenChange, onUpdate }: Order
 
       if (error) throw error;
 
-      toast({ title: "Order updated successfully" });
+      // Send status update email if status changed
+      if (statusChanged && editedOrder.email) {
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              type: "status_update",
+              to: editedOrder.email,
+              data: {
+                full_name: editedOrder.full_name,
+                order_number: editedOrder.order_number,
+                status: editedOrder.status,
+                plan_name: editedOrder.plan_name,
+                service_type: editedOrder.service_type,
+              },
+            },
+          });
+          toast({ 
+            title: "Order updated successfully",
+            description: `Status changed from ${previousStatus} to ${editedOrder.status}. Customer notified via email.`
+          });
+        } catch (emailError) {
+          logError("OrderDetailDialog.sendStatusEmail", emailError);
+          toast({ 
+            title: "Order updated, but email failed",
+            description: "The order was updated but we couldn't send the notification email.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({ title: "Order updated successfully" });
+      }
+
       onUpdate({ ...editedOrder, admin_notes: adminNotes });
     } catch (error) {
       logError("OrderDetailDialog.handleSave", error);

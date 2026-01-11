@@ -117,8 +117,11 @@ export type Database = {
           notes: string | null
           order_id: string
           order_type: string
+          reminder_sent: boolean
+          reminder_sent_at: string | null
           slot_id: string
           status: string
+          technician_id: string | null
           updated_at: string
         }
         Insert: {
@@ -130,8 +133,11 @@ export type Database = {
           notes?: string | null
           order_id: string
           order_type: string
+          reminder_sent?: boolean
+          reminder_sent_at?: string | null
           slot_id: string
           status?: string
+          technician_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -143,8 +149,11 @@ export type Database = {
           notes?: string | null
           order_id?: string
           order_type?: string
+          reminder_sent?: boolean
+          reminder_sent_at?: string | null
           slot_id?: string
           status?: string
+          technician_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -153,6 +162,13 @@ export type Database = {
             columns: ["slot_id"]
             isOneToOne: false
             referencedRelation: "installation_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installation_bookings_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
             referencedColumns: ["id"]
           },
         ]
@@ -379,6 +395,42 @@ export type Database = {
           subject?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      technicians: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          phone: string
+          specializations: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone: string
+          specializations?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone?: string
+          specializations?: string[] | null
+          updated_at?: string
         }
         Relationships: []
       }

@@ -45,6 +45,8 @@ import { UserManageDialog } from "@/components/admin/UserManageDialog";
 import { TicketReplyDialog } from "@/components/admin/TicketReplyDialog";
 import { UserPackagesDialog } from "@/components/admin/UserPackagesDialog";
 import { InstallationSlotsManager } from "@/components/admin/InstallationSlotsManager";
+import { TechnicianManager } from "@/components/admin/TechnicianManager";
+import { InstallationScheduleView } from "@/components/admin/InstallationScheduleView";
 
 type Order = {
   id: string;
@@ -787,8 +789,12 @@ const Admin = () => {
               </TabsContent>
 
               {/* Scheduling Tab */}
-              <TabsContent value="scheduling">
-                <InstallationSlotsManager />
+              <TabsContent value="scheduling" className="space-y-6">
+                <InstallationScheduleView />
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <InstallationSlotsManager />
+                  <TechnicianManager />
+                </div>
               </TabsContent>
             </Tabs>
           </motion.div>

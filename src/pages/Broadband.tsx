@@ -55,7 +55,7 @@ const Broadband = () => {
                 <Zap className="w-4 h-4 inline mr-2" />
                 Free installation until March
               </div>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4 text-foreground">
                 BROADBAND
                 <br />
                 <span className="text-gradient">THAT WORKS</span>

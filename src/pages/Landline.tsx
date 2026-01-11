@@ -1,12 +1,15 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
+import AppLayout from "@/components/app/AppLayout";
 import { Button } from "@/components/ui/button";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
 import { Check, PhoneCall, VoicemailIcon, Shield, ArrowRight, X } from "lucide-react";
 import { landlinePlans } from "@/lib/plans";
+import { useAppMode } from "@/hooks/useAppMode";
 
 const Landline = () => {
+  const { isAppMode } = useAppMode();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -32,9 +35,10 @@ const Landline = () => {
     { icon: VoicemailIcon, text: "Free Voicemail" },
     { icon: X, text: "No Contracts" },
   ];
+  const LayoutComponent = isAppMode ? AppLayout : Layout;
 
   return (
-    <Layout>
+    <LayoutComponent>
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
@@ -50,7 +54,7 @@ const Landline = () => {
                 <PhoneCall className="w-4 h-4 inline mr-2" />
                 Crystal clear digital voice
               </div>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4 text-foreground">
                 LANDLINES
                 <br />
                 <span className="text-gradient">STILL EXIST</span>
@@ -204,8 +208,8 @@ const Landline = () => {
       </section>
 
       {/* Bundle Builder */}
-      <BundleBuilder currentService="landline" />
-    </Layout>
+      {!isAppMode && <BundleBuilder currentService="landline" />}
+    </LayoutComponent>
   );
 };
 

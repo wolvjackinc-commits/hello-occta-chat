@@ -55,7 +55,7 @@ const SimPlans = () => {
                 <Signal className="w-4 h-4 inline mr-2" />
                 5G in 500+ UK towns
               </div>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4 text-foreground">
                 SIM PLANS
                 <br />
                 <span className="text-gradient">THAT DON'T</span>

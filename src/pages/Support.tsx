@@ -189,7 +189,7 @@ const Support = () => {
           <div className="grid lg:grid-cols-2 gap-8 items-start">
             {/* Left - Search & FAQs */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <h1 className="text-5xl sm:text-6xl font-display uppercase leading-[0.9] mb-4">
+              <h1 className="text-5xl sm:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
                 HOW CAN WE
                 <br />
                 <span className="text-gradient">HELP?</span>

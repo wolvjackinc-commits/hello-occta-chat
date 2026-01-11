@@ -1,14 +1,23 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
 import { Button } from "@/components/ui/button";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
+import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Check, Smartphone, Signal, Globe, ArrowRight, X } from "lucide-react";
 import { simPlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 
 const SimPlans = () => {
+  const [isReady, setIsReady] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+  
   const { isAppMode } = useAppMode();
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -37,6 +46,14 @@ const SimPlans = () => {
   ];
 
   const LayoutComponent = isAppMode ? AppLayout : Layout;
+
+  if (!isReady) {
+    return (
+      <LayoutComponent>
+        <ServicePageSkeleton />
+      </LayoutComponent>
+    );
+  }
 
   return (
     <LayoutComponent>

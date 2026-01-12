@@ -748,7 +748,28 @@ const PreCheckout = () => {
                 </div>
               </motion.div>
 
-              {/* Switching Timeline */}
+              {/* Submit Button */}
+              <Button
+                variant="hero"
+                className="w-full"
+                size="lg"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Submit Order
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </Button>
+
+              {/* Switching Timeline - Below Submit Button */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -789,17 +810,6 @@ const PreCheckout = () => {
                   </div>
                 </div>
               </motion.div>
-
-              {/* Submit Button */}
-              <Button
-                variant="hero"
-                className="w-full"
-                size="lg"
-                onClick={handleSubmit}
-              >
-                Submit Order
-                <ArrowRight className="w-5 h-5" />
-              </Button>
             </div>
 
             {/* Right Sidebar - Order Summary & Add-ons */}

@@ -249,6 +249,10 @@ const Admin = () => {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    const order = orders.find(o => o.id === orderId);
+    const profile = order ? getProfileForUser(order.user_id) : undefined;
+    const previousStatus = order?.status;
+
     const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })
@@ -266,6 +270,35 @@ const Admin = () => {
         description: "Order status updated successfully.",
       });
       setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+
+      if (order && profile?.email && previousStatus !== newStatus) {
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              type: "status_update",
+              to: profile.email,
+              data: {
+                full_name: profile.full_name || "Customer",
+                order_number: order.id,
+                status: newStatus,
+                plan_name: order.plan_name,
+                service_type: order.service_type,
+              },
+            },
+          });
+          toast({
+            title: "Customer notified",
+            description: `Status change email sent to ${profile.email}.`,
+          });
+        } catch (emailError) {
+          logError("Admin.updateOrderStatus.sendEmail", emailError);
+          toast({
+            title: "Order updated, email failed",
+            description: "We couldn't send the status update email.",
+            variant: "destructive",
+          });
+        }
+      }
     }
   };
 

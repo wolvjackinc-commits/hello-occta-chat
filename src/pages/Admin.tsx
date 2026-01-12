@@ -36,7 +36,8 @@ import {
   Phone,
   Eye,
   Settings,
-  CalendarDays
+  CalendarDays,
+  Search
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -47,6 +48,7 @@ import { UserPackagesDialog } from "@/components/admin/UserPackagesDialog";
 import { InstallationSlotsManager } from "@/components/admin/InstallationSlotsManager";
 import { TechnicianManager } from "@/components/admin/TechnicianManager";
 import { InstallationScheduleView } from "@/components/admin/InstallationScheduleView";
+import { CustomerLookup } from "@/components/admin/CustomerLookup";
 
 type Order = {
   id: string;
@@ -706,90 +708,115 @@ const Admin = () => {
               </TabsContent>
 
               {/* Users Tab */}
-              <TabsContent value="users" className="border-4 border-foreground bg-card">
-                {isDataLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-6 h-6 animate-spin" />
+              <TabsContent value="users" className="space-y-6">
+                {/* Customer Lookup */}
+                <div className="border-4 border-foreground bg-card p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-primary text-primary-foreground flex items-center justify-center">
+                      <Search className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-lg">CUSTOMER LOOKUP</h3>
+                      <p className="text-sm text-muted-foreground">Search customers by account number</p>
+                    </div>
                   </div>
-                ) : profiles.length > 0 ? (
-                  <div className="overflow-x-auto">
-                     <Table>
-                      <TableHeader>
-                        <TableRow className="border-b-4 border-foreground bg-secondary">
-                          <TableHead className="font-display uppercase">Account #</TableHead>
-                          <TableHead className="font-display uppercase">Name</TableHead>
-                          <TableHead className="font-display uppercase">Email</TableHead>
-                          <TableHead className="font-display uppercase">DOB</TableHead>
-                          <TableHead className="font-display uppercase">Phone</TableHead>
-                          <TableHead className="font-display uppercase">Joined</TableHead>
-                          <TableHead className="font-display uppercase">Orders</TableHead>
-                          <TableHead className="font-display uppercase">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {profiles.map((profile) => {
-                          const userOrders = orders.filter(o => o.user_id === profile.id);
-                          return (
-                            <TableRow key={profile.id} className="border-b-2 border-foreground/20">
-                              <TableCell className="font-mono text-sm font-bold text-primary">
-                                {profile.account_number || '—'}
-                              </TableCell>
-                              <TableCell className="font-display">{profile.full_name || 'Not set'}</TableCell>
-                              <TableCell>{profile.email || 'Not set'}</TableCell>
-                              <TableCell className="text-sm">
-                                {profile.date_of_birth 
-                                  ? format(new Date(profile.date_of_birth), 'dd MMM yyyy')
-                                  : '—'}
-                              </TableCell>
-                              <TableCell>{profile.phone || '—'}</TableCell>
-                              <TableCell className="text-sm">
-                                {format(new Date(profile.created_at), 'dd MMM yyyy')}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="border-2 border-foreground">
-                                  {userOrders.length}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-2 border-foreground"
-                                    onClick={() => {
-                                      setPackagesProfile(profile);
-                                      setPackagesDialogOpen(true);
-                                    }}
-                                  >
-                                    <Package className="w-4 h-4 mr-1" />
-                                    Packages
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-2 border-foreground"
-                                    onClick={() => {
-                                      setSelectedProfile(profile);
-                                      setUserDialogOpen(true);
-                                    }}
-                                  >
-                                    <Settings className="w-4 h-4 mr-1" />
-                                    Manage
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                  <CustomerLookup 
+                    onSelectCustomer={(profile) => {
+                      setSelectedProfile(profile);
+                      setUserDialogOpen(true);
+                    }}
+                  />
+                </div>
+
+                {/* All Users Table */}
+                <div className="border-4 border-foreground bg-card">
+                  <div className="p-4 border-b-4 border-foreground bg-secondary">
+                    <h3 className="font-display text-lg">ALL USERS ({profiles.length})</h3>
                   </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="font-display text-lg">NO USERS YET</p>
-                  </div>
-                )}
+                  {isDataLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    </div>
+                  ) : profiles.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-b-4 border-foreground bg-secondary/50">
+                            <TableHead className="font-display uppercase">Account #</TableHead>
+                            <TableHead className="font-display uppercase">Name</TableHead>
+                            <TableHead className="font-display uppercase">Email</TableHead>
+                            <TableHead className="font-display uppercase">DOB</TableHead>
+                            <TableHead className="font-display uppercase">Phone</TableHead>
+                            <TableHead className="font-display uppercase">Joined</TableHead>
+                            <TableHead className="font-display uppercase">Orders</TableHead>
+                            <TableHead className="font-display uppercase">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {profiles.map((profile) => {
+                            const userOrders = orders.filter(o => o.user_id === profile.id);
+                            return (
+                              <TableRow key={profile.id} className="border-b-2 border-foreground/20">
+                                <TableCell className="font-mono text-sm font-bold text-primary">
+                                  {profile.account_number || '—'}
+                                </TableCell>
+                                <TableCell className="font-display">{profile.full_name || 'Not set'}</TableCell>
+                                <TableCell>{profile.email || 'Not set'}</TableCell>
+                                <TableCell className="text-sm">
+                                  {profile.date_of_birth 
+                                    ? format(new Date(profile.date_of_birth), 'dd MMM yyyy')
+                                    : '—'}
+                                </TableCell>
+                                <TableCell>{profile.phone || '—'}</TableCell>
+                                <TableCell className="text-sm">
+                                  {format(new Date(profile.created_at), 'dd MMM yyyy')}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="border-2 border-foreground">
+                                    {userOrders.length}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-2 border-foreground"
+                                      onClick={() => {
+                                        setPackagesProfile(profile);
+                                        setPackagesDialogOpen(true);
+                                      }}
+                                    >
+                                      <Package className="w-4 h-4 mr-1" />
+                                      Packages
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-2 border-foreground"
+                                      onClick={() => {
+                                        setSelectedProfile(profile);
+                                        setUserDialogOpen(true);
+                                      }}
+                                    >
+                                      <Settings className="w-4 h-4 mr-1" />
+                                      Manage
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="font-display text-lg">NO USERS YET</p>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               {/* Scheduling Tab */}

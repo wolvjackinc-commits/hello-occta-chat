@@ -64,16 +64,27 @@ export default function OrderLookup() {
     setOrder(null);
 
     try {
+      // Use secure RPC function that requires both order_number AND email to match
       const { data, error } = await supabase
-        .from("guest_orders")
-        .select("id, order_number, full_name, email, service_type, plan_name, plan_price, status, created_at, address_line1, city, postcode")
-        .eq("order_number", orderNumber.trim().toUpperCase())
-        .eq("email", email.trim().toLowerCase())
-        .maybeSingle();
+        .rpc("lookup_guest_order", {
+          _order_number: orderNumber.trim(),
+          _email: email.trim()
+        });
 
-      if (error) throw error;
+      if (error) {
+        // Handle rate limiting error
+        if (error.message?.includes('Too many lookup attempts')) {
+          toast({
+            title: "Too many attempts",
+            description: "Please wait a few minutes before trying again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
 
-      if (!data) {
+      if (!data || data.length === 0) {
         setNotFound(true);
         toast({
           title: "Order not found",
@@ -81,7 +92,7 @@ export default function OrderLookup() {
           variant: "destructive",
         });
       } else {
-        setOrder(data);
+        setOrder(data[0]);
       }
     } catch (error) {
       console.error("Order lookup error:", error);

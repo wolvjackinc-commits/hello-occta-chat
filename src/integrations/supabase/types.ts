@@ -548,6 +548,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      lookup_guest_order: {
+        Args: { _email: string; _order_number: string }
+        Returns: {
+          address_line1: string
+          city: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          order_number: string
+          plan_name: string
+          plan_price: number
+          postcode: string
+          service_type: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"

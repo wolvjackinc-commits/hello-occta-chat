@@ -138,6 +138,7 @@ const PreCheckout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRestorePrompt, setShowRestorePrompt] = useState(false);
   const [selectedInstallationSlot, setSelectedInstallationSlot] = useState<InstallationSlot | null>(null);
+  const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
 
   // Autosave form data
   const formDataToSave = useMemo(() => ({
@@ -419,7 +420,7 @@ const PreCheckout = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 pb-28 lg:pb-12">
         <div className="max-w-6xl mx-auto">
           {/* Back Link */}
           <Link
@@ -938,6 +939,62 @@ const PreCheckout = () => {
             </div>
           </div>
         </div>
+      </div>
+      {/* Mobile Order Summary */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t-4 border-foreground bg-background">
+        <button
+          type="button"
+          onClick={() => setIsMobileSummaryOpen((prev) => !prev)}
+          className="w-full flex items-center justify-between px-4 py-3"
+        >
+          <div className="text-left">
+            <p className="font-display uppercase tracking-wider text-xs text-muted-foreground">Order Summary</p>
+            <p className="font-display text-lg">£{monthlyTotal.toFixed(2)}/mo</p>
+          </div>
+          <span className="font-display uppercase text-sm text-primary">
+            {isMobileSummaryOpen ? "Hide" : "View"}
+          </span>
+        </button>
+        <AnimatePresence>
+          {isMobileSummaryOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden border-t-4 border-foreground bg-card"
+            >
+              <div className="px-4 pb-4 pt-2 space-y-3">
+                <div className="space-y-2">
+                  {selectedPlans.map((plan) => (
+                    <div key={plan.id} className="flex items-center justify-between text-sm">
+                      <div>
+                        <p className="font-display">{plan.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{plan.serviceType}</p>
+                      </div>
+                      <span className="font-display">£{plan.price}</span>
+                    </div>
+                  ))}
+                  {addonsTotal > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Add-ons</span>
+                      <span className="font-display">+£{addonsTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {bundleCalc.discountPercentage > 0 && (
+                    <div className="flex items-center justify-between text-sm text-primary">
+                      <span>Bundle discount ({bundleCalc.discountPercentage}%)</span>
+                      <span className="font-display">-£{bundleCalc.savings.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="border-t-2 border-foreground/20 pt-3 flex items-center justify-between">
+                  <span className="font-display uppercase tracking-wider text-sm">Monthly Total</span>
+                  <span className="font-display text-lg">£{monthlyTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </Layout>
   );

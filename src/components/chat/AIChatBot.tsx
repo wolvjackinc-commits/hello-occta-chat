@@ -18,8 +18,10 @@ import {
 } from "lucide-react";
 
 type Message = {
+  id: string;
   role: "user" | "assistant";
   content: string;
+  createdAt: string;
 };
 
 interface AIChatBotProps {
@@ -37,6 +39,8 @@ const quickActions = [
   { label: "Bundle discount", message: "How do bundle discounts work?" },
 ];
 
+const STORAGE_KEY = "occta-ai-chat";
+
 const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(embedded);
@@ -45,12 +49,46 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pendingMessageRef = useRef<string | null>(null);
+  const isFreshChat = messages.length <= 1 && messages[0]?.role === "assistant";
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Restore persisted chat history
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as Message[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } else {
+      setMessages([
+        {
+          id: "welcome",
+          role: "assistant",
+          content: "Hi! I’m OCCTA’s AI assistant. Ask me about plans, billing, orders, or anything else.",
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    }
+  }, []);
+
+  // Persist chat history
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
   }, [messages]);
 
   // Get current user
@@ -76,7 +114,14 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
   const sendMessage = useCallback(async (messageText: string) => {
     if (!messageText.trim() || isLoading) return;
 
-    const userMessage: Message = { role: "user", content: messageText.trim() };
+    const userMessage: Message = { 
+      id: crypto.randomUUID(),
+      role: "user", 
+      content: messageText.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    pendingMessageRef.current = userMessage.content;
+    setLastFailedMessage(null);
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
@@ -89,9 +134,9 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
-          userId: user?.id 
+          userId: user?.id,
         }),
       });
 
@@ -101,6 +146,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
           description: "Please wait a moment before sending another message.",
           variant: "destructive"
         });
+        setLastFailedMessage(userMessage.content);
         return;
       }
 
@@ -110,6 +156,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
           description: "Please call us at 0800 260 6627 for assistance.",
           variant: "destructive"
         });
+        setLastFailedMessage(userMessage.content);
         return;
       }
 
@@ -121,23 +168,32 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
 
       if (data.error) {
         setMessages(prev => [...prev, { 
+          id: crypto.randomUUID(),
           role: "assistant", 
-          content: data.error 
+          content: data.error,
+          createdAt: new Date().toISOString(),
         }]);
+        setLastFailedMessage(userMessage.content);
       } else {
         setMessages(prev => [...prev, { 
+          id: crypto.randomUUID(),
           role: "assistant", 
-          content: data.content 
+          content: data.content,
+          createdAt: new Date().toISOString(),
         }]);
       }
     } catch (error) {
       console.error("Chat error:", error);
       setMessages(prev => [...prev, { 
+        id: crypto.randomUUID(),
         role: "assistant", 
-        content: "Sorry, I'm having trouble right now. Please try again or call us at 0800 260 6627." 
+        content: "Sorry, I'm having trouble right now. Please try again or call us at 0800 260 6627.",
+        createdAt: new Date().toISOString(),
       }]);
+      setLastFailedMessage(userMessage.content);
     } finally {
       setIsLoading(false);
+      pendingMessageRef.current = null;
     }
   }, [messages, user?.id, isLoading, toast]);
 
@@ -149,6 +205,28 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
   const handleQuickAction = (message: string) => {
     sendMessage(message);
   };
+
+  const handleRetry = () => {
+    if (lastFailedMessage) {
+      sendMessage(lastFailedMessage);
+    }
+  };
+
+  const handleClearChat = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setMessages([
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Fresh start! What can I help you with?",
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    setLastFailedMessage(null);
+  };
+
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
   // Floating bubble version
   if (!embedded) {
@@ -192,6 +270,12 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                 </div>
                 <div className="flex items-center gap-1">
                   <button
+                    onClick={handleClearChat}
+                    className="px-2 py-1 text-xs font-display uppercase text-primary-foreground/80 hover:text-primary-foreground"
+                  >
+                    New chat
+                  </button>
+                  <button
                     onClick={() => setIsMinimized(!isMinimized)}
                     className="p-1.5 hover:bg-primary-foreground/10 transition-colors"
                     aria-label={isMinimized ? "Maximize" : "Minimize"}
@@ -217,7 +301,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                 <>
                   {/* Messages */}
                   <ScrollArea className="flex-1 p-4">
-                    {messages.length === 0 ? (
+                    {isFreshChat ? (
                       <div className="space-y-4">
                         <div className="text-center">
                           <Bot className="w-12 h-12 mx-auto mb-3 text-primary" />
@@ -240,9 +324,9 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {messages.map((message, i) => (
+                        {messages.map((message) => (
                           <div
-                            key={i}
+                            key={message.id}
                             className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}
                           >
                             {message.role === "assistant" && (
@@ -258,6 +342,9 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                               }`}
                             >
                               <p className="whitespace-pre-wrap">{message.content}</p>
+                              <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                                {formatTime(message.createdAt)}
+                              </p>
                             </div>
                             {message.role === "user" && (
                               <div className="w-7 h-7 bg-accent flex items-center justify-center shrink-0 border-2 border-foreground">
@@ -272,8 +359,18 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                               <Bot className="w-4 h-4 text-primary-foreground" />
                             </div>
                             <div className="bg-secondary border-2 border-foreground/50 px-4 py-3">
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Thinking…
+                              </div>
                             </div>
+                          </div>
+                        )}
+                        {lastFailedMessage && (
+                          <div className="flex justify-center">
+                            <Button variant="outline" size="sm" onClick={handleRetry}>
+                              Retry last message
+                            </Button>
                           </div>
                         )}
                         <div ref={messagesEndRef} />
@@ -321,14 +418,22 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
   return (
     <div className={`bg-card border-4 border-foreground flex flex-col h-[500px] ${className}`}>
       {/* Header */}
-      <div className="bg-primary px-4 py-3 flex items-center gap-2 border-b-4 border-foreground">
-        <Bot className="w-5 h-5 text-primary-foreground" />
-        <span className="font-display text-primary-foreground uppercase text-sm">AI Assistant</span>
+      <div className="bg-primary px-4 py-3 flex items-center justify-between gap-2 border-b-4 border-foreground">
+        <div className="flex items-center gap-2">
+          <Bot className="w-5 h-5 text-primary-foreground" />
+          <span className="font-display text-primary-foreground uppercase text-sm">AI Assistant</span>
+        </div>
+        <button
+          onClick={handleClearChat}
+          className="text-xs font-display uppercase text-primary-foreground/80 hover:text-primary-foreground"
+        >
+          New chat
+        </button>
       </div>
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">
-        {messages.length === 0 ? (
+        {isFreshChat ? (
           <div className="space-y-4">
             <div className="text-center">
               <Bot className="w-10 h-10 mx-auto mb-2 text-primary" />
@@ -350,9 +455,9 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
           </div>
         ) : (
           <div className="space-y-3">
-            {messages.map((message, i) => (
+            {messages.map((message) => (
               <div
-                key={i}
+                key={message.id}
                 className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {message.role === "assistant" && (
@@ -368,6 +473,9 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
+                  <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {formatTime(message.createdAt)}
+                  </p>
                 </div>
                 {message.role === "user" && (
                   <div className="w-6 h-6 bg-accent flex items-center justify-center shrink-0 border-2 border-foreground">
@@ -382,8 +490,18 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                   <Bot className="w-3 h-3 text-primary-foreground" />
                 </div>
                 <div className="bg-secondary border-2 border-foreground/50 px-3 py-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Thinking…
+                  </div>
                 </div>
+              </div>
+            )}
+            {lastFailedMessage && (
+              <div className="flex justify-center">
+                <Button variant="outline" size="sm" onClick={handleRetry}>
+                  Retry last message
+                </Button>
               </div>
             )}
             <div ref={messagesEndRef} />

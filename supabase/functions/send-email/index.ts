@@ -476,8 +476,10 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error(`Unknown email type: ${type}`);
     }
 
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+    
     const emailResponse = await resend.emails.send({
-      from: "Orders <onboarding@resend.dev>",
+      from: `OCCTA Telecom <${fromEmail}>`,
       to: [to],
       subject,
       html,

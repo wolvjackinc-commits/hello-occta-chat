@@ -183,8 +183,9 @@ const handler = async (req: Request): Promise<Response> => {
 
         // Send email reminder
         const slotTime = booking.installation_slots?.slot_time || "scheduled time";
+        const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
         const emailResult = await resend.emails.send({
-          from: "OCCTA <onboarding@resend.dev>",
+          from: `OCCTA Telecom <${fromEmail}>`,
           to: [booking.customer_email],
           subject: `⏰ Installation Reminder - Tomorrow ${slotTime}`,
           html: getReminderEmailHtml(booking, orderDetails),

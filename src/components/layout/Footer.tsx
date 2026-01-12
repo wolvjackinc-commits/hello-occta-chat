@@ -18,7 +18,7 @@ const Footer = () => {
       { name: "FAQs", path: "/support#faqs" },
     ],
     legal: [
-      { name: "Privacy Policy", path: "/privacy" },
+      { name: "Privacy Policy", path: "/privacy-policy" },
       { name: "Terms of Service", path: "/terms" },
       { name: "Cookie Policy", path: "/cookies" },
       { name: "Complaints", path: "/complaints" },

@@ -9,6 +9,7 @@ import AppLayout from "@/components/app/AppLayout";
 import AppDashboard from "@/components/app/AppDashboard";
 import { Button } from "@/components/ui/button";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
+import { IdentityVerification } from "@/components/dashboard/IdentityVerification";
 import { OrderTracking } from "@/components/dashboard/OrderTracking";
 import { useAppMode } from "@/hooks/useAppMode";
 import { 
@@ -29,6 +30,8 @@ import {
   Download,
   File,
   Receipt,
+  Shield,
+  CreditCard,
   ChevronRight,
   User as UserIcon,
 } from "lucide-react";
@@ -124,6 +127,7 @@ const Dashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | GuestOrder | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
+  const [isIdentityVerified, setIsIdentityVerified] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -358,12 +362,32 @@ const Dashboard = () => {
                   <p className="font-display">{format(new Date(profile.date_of_birth), 'dd MMMM yyyy')}</p>
                 </div>
               )}
-              <div className="text-sm text-muted-foreground bg-secondary/50 px-4 py-2 border-2 border-foreground/20">
-                <p className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  Use your account number + DOB for identity verification
-                </p>
+              <div className="flex items-center gap-2">
+                {isIdentityVerified ? (
+                  <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 px-4 py-2 border-2 border-primary/30">
+                    <Shield className="w-4 h-4" />
+                    Identity Verified
+                  </div>
+                ) : (
+                  <IdentityVerification
+                    accountNumber={profile?.account_number || null}
+                    dateOfBirth={profile?.date_of_birth || null}
+                    onVerified={() => setIsIdentityVerified(true)}
+                    actionLabel="sensitive account actions"
+                  >
+                    <Button variant="outline" size="sm" className="border-2 border-foreground">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Verify Identity
+                    </Button>
+                  </IdentityVerification>
+                )}
               </div>
+            </div>
+            <div className="mt-4 text-sm text-muted-foreground bg-secondary/50 px-4 py-2 border-2 border-foreground/20">
+              <p className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Use your account number + DOB for identity verification
+              </p>
             </div>
           </motion.div>
 
@@ -606,6 +630,51 @@ const Dashboard = () => {
                     </Link>
                   </div>
                 )}
+              </div>
+
+              {/* Sensitive Actions - Require Verification */}
+              <div className="card-brutal bg-card p-6">
+                <h3 className="font-display text-lg mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  SENSITIVE ACTIONS
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  These actions require identity verification for your security.
+                </p>
+                <div className="space-y-2">
+                  <IdentityVerification
+                    accountNumber={profile?.account_number || null}
+                    dateOfBirth={profile?.date_of_birth || null}
+                    onVerified={() => {
+                      toast({
+                        title: "Payment Methods",
+                        description: "You can now manage your payment methods.",
+                      });
+                    }}
+                    actionLabel="payment methods"
+                  >
+                    <Button variant="outline" className="w-full justify-start border-2 border-foreground">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Manage Payment Methods
+                    </Button>
+                  </IdentityVerification>
+                  <IdentityVerification
+                    accountNumber={profile?.account_number || null}
+                    dateOfBirth={profile?.date_of_birth || null}
+                    onVerified={() => {
+                      toast({
+                        title: "Download Invoices",
+                        description: "You can now download your invoices.",
+                      });
+                    }}
+                    actionLabel="invoice downloads"
+                  >
+                    <Button variant="outline" className="w-full justify-start border-2 border-foreground">
+                      <Receipt className="w-4 h-4 mr-2" />
+                      Download Invoices
+                    </Button>
+                  </IdentityVerification>
+                </div>
               </div>
 
               {/* Invoices Section */}

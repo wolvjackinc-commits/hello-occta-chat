@@ -82,6 +82,7 @@ type Profile = {
   city?: string | null;
   postcode?: string | null;
   date_of_birth?: string | null;
+  account_number?: string | null;
   created_at: string;
 };
 
@@ -712,26 +713,34 @@ const Admin = () => {
                   </div>
                 ) : profiles.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <Table>
+                     <Table>
                       <TableHeader>
                         <TableRow className="border-b-4 border-foreground bg-secondary">
+                          <TableHead className="font-display uppercase">Account #</TableHead>
                           <TableHead className="font-display uppercase">Name</TableHead>
                           <TableHead className="font-display uppercase">Email</TableHead>
+                          <TableHead className="font-display uppercase">DOB</TableHead>
                           <TableHead className="font-display uppercase">Phone</TableHead>
                           <TableHead className="font-display uppercase">Joined</TableHead>
                           <TableHead className="font-display uppercase">Orders</TableHead>
-                          <TableHead className="font-display uppercase">Tickets</TableHead>
                           <TableHead className="font-display uppercase">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {profiles.map((profile) => {
                           const userOrders = orders.filter(o => o.user_id === profile.id);
-                          const userTickets = tickets.filter(t => t.user_id === profile.id);
                           return (
                             <TableRow key={profile.id} className="border-b-2 border-foreground/20">
+                              <TableCell className="font-mono text-sm font-bold text-primary">
+                                {profile.account_number || '—'}
+                              </TableCell>
                               <TableCell className="font-display">{profile.full_name || 'Not set'}</TableCell>
                               <TableCell>{profile.email || 'Not set'}</TableCell>
+                              <TableCell className="text-sm">
+                                {profile.date_of_birth 
+                                  ? format(new Date(profile.date_of_birth), 'dd MMM yyyy')
+                                  : '—'}
+                              </TableCell>
                               <TableCell>{profile.phone || '—'}</TableCell>
                               <TableCell className="text-sm">
                                 {format(new Date(profile.created_at), 'dd MMM yyyy')}
@@ -739,11 +748,6 @@ const Admin = () => {
                               <TableCell>
                                 <Badge variant="outline" className="border-2 border-foreground">
                                   {userOrders.length}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="border-2 border-foreground">
-                                  {userTickets.length}
                                 </Badge>
                               </TableCell>
                               <TableCell>

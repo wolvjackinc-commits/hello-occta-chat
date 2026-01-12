@@ -30,6 +30,7 @@ import {
   File,
   Receipt,
   ChevronRight,
+  User as UserIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +74,8 @@ type Profile = {
   id: string;
   full_name: string | null;
   email: string | null;
+  account_number: string | null;
+  date_of_birth: string | null;
 };
 
 type UserFile = {
@@ -331,6 +334,36 @@ const Dashboard = () => {
                 <LogOut className="w-4 h-4" />
                 Sign Out
               </Button>
+            </div>
+          </motion.div>
+
+          {/* Account Info Card */}
+          <motion.div
+            variants={itemVariants}
+            className="mb-8 p-6 border-4 border-foreground bg-card"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-primary text-primary-foreground flex items-center justify-center border-4 border-foreground">
+                  <UserIcon className="w-8 h-8" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground font-display uppercase tracking-wider">Account Number</p>
+                  <p className="text-display-sm font-mono">{profile?.account_number || 'Loading...'}</p>
+                </div>
+              </div>
+              {profile?.date_of_birth && (
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground font-display uppercase tracking-wider">Date of Birth</p>
+                  <p className="font-display">{format(new Date(profile.date_of_birth), 'dd MMMM yyyy')}</p>
+                </div>
+              )}
+              <div className="text-sm text-muted-foreground bg-secondary/50 px-4 py-2 border-2 border-foreground/20">
+                <p className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  Use your account number + DOB for identity verification
+                </p>
+              </div>
             </div>
           </motion.div>
 

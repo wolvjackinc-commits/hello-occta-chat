@@ -295,6 +295,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_number: string | null
           address_line1: string | null
           address_line2: string | null
           city: string | null
@@ -308,6 +309,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_number?: string | null
           address_line1?: string | null
           address_line2?: string | null
           city?: string | null
@@ -321,6 +323,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_number?: string | null
           address_line1?: string | null
           address_line2?: string | null
           city?: string | null
@@ -541,6 +544,7 @@ export type Database = {
         Returns: boolean
       }
       generate_account_number: { Args: never; Returns: string }
+      generate_user_account_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

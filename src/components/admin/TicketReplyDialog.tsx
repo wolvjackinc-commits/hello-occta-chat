@@ -153,7 +153,7 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
 
       // Send email notification if we have user email
       if (profile?.email) {
-        await supabase.functions.invoke("send-email", {
+        const { error: emailError } = await supabase.functions.invoke("send-email", {
           body: {
             type: "ticket_reply",
             to: profile.email,
@@ -164,6 +164,7 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
             },
           },
         });
+        if (emailError) throw emailError;
       }
 
       toast({ title: "Reply sent successfully" });

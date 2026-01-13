@@ -346,7 +346,7 @@ const PreCheckout = () => {
       
       // Send confirmation email (with orderNumber for guest verification)
       try {
-        await supabase.functions.invoke('send-email', {
+        const { error: emailError } = await supabase.functions.invoke('send-email', {
           body: {
             type: 'order_confirmation',
             to: customerData.email,
@@ -364,6 +364,8 @@ const PreCheckout = () => {
             }
           }
         });
+
+        if (emailError) throw emailError;
       } catch (emailError) {
         logError('PreCheckout.handleSubmit.sendEmail', emailError);
         // Don't block the order if email fails

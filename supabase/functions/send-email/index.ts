@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,11 +11,18 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: "order_confirmation" | "welcome" | "status_update" | "order_message" | "ticket_reply";
+  type:
+    | "order_confirmation"
+    | "welcome"
+    | "status_update"
+    | "order_message"
+    | "ticket_reply"
+    | "password_reset";
   to: string;
   data: Record<string, unknown>;
   // For guest order confirmations - order verification data
   orderNumber?: string;
+  redirectTo?: string;
 }
 
 // HTML escape helper to prevent injection attacks
@@ -40,30 +48,34 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
 <html>
 <head>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-    .container { max-width: 600px; margin: 0 auto; background: white; }
-    .header { background: #000; color: white; padding: 24px; text-align: center; }
-    .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-    .content { padding: 32px 24px; }
-    .order-box { background: #f9f9f9; border: 2px solid #000; padding: 20px; margin: 20px 0; }
-    .order-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
+    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
+    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
+    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
+    .card { background: #f8fafc; border: 2px solid #0f172a; padding: 20px; margin: 20px 0; }
+    .order-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; gap: 16px; }
     .order-row:last-child { border-bottom: none; }
-    .label { color: #666; }
-    .value { font-weight: bold; }
-    .cta { display: block; background: #000; color: white; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 24px 0; }
-    .footer { background: #f4f4f4; padding: 24px; text-align: center; color: #666; font-size: 14px; }
+    .label { color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+    .value { font-weight: 600; text-align: right; }
+    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
+    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
   </style>
 </head>
 <body>
+  <div class="preheader">Your OCCTA order is confirmed. Track status and next steps inside.</div>
   <div class="container">
-    <div class="header">
-      <h1>Order Confirmed!</h1>
+    <div class="brand">
+      <span>OCCTA Telecom</span>
+      <h1>Order Confirmed</h1>
     </div>
     <div class="content">
       <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
-      <p>Thank you for your order! We've received your request and will be in touch shortly to confirm your installation date.</p>
+      <p>Thanks for choosing OCCTA. We’ve received your order and we’re already getting things ready for you.</p>
       
-      <div class="order-box">
+      <div class="card">
         <div class="order-row">
           <span class="label">Order Number:</span>
           <span class="value">${escapeHtml(data.order_number)}</span>
@@ -86,7 +98,7 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
         </div>
       </div>
       
-      <p><strong>What happens next?</strong></p>
+      <p><strong>What happens next</strong></p>
       <ol>
         <li>Our team will review your order within 24 hours</li>
         <li>We'll contact you to confirm your preferred installation date</li>
@@ -114,23 +126,27 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
 <html>
 <head>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-    .container { max-width: 600px; margin: 0 auto; background: white; }
-    .header { background: #000; color: white; padding: 24px; text-align: center; }
-    .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-    .content { padding: 32px 24px; }
-    .cta { display: block; background: #000; color: white; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 24px 0; }
-    .footer { background: #f4f4f4; padding: 24px; text-align: center; color: #666; font-size: 14px; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
+    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
+    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
+    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
+    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
+    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
   </style>
 </head>
 <body>
+  <div class="preheader">Welcome to OCCTA. Your account is ready.</div>
   <div class="container">
-    <div class="header">
-      <h1>Welcome!</h1>
+    <div class="brand">
+      <span>OCCTA Telecom</span>
+      <h1>Welcome</h1>
     </div>
     <div class="content">
       <p>Hi <strong>${escapeHtml(data.full_name) || "there"}</strong>,</p>
-      <p>Welcome to our service! Your account has been created successfully.</p>
+      <p>Welcome to OCCTA! Your account has been created successfully.</p>
       
       <p>With your account, you can:</p>
       <ul>
@@ -145,7 +161,7 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
       <p>If you have any questions, we're here to help!</p>
     </div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} Your Telecom Company. All rights reserved.</p>
+      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -171,21 +187,25 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
 <html>
 <head>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-    .container { max-width: 600px; margin: 0 auto; background: white; }
-    .header { background: #000; color: white; padding: 24px; text-align: center; }
-    .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-    .content { padding: 32px 24px; }
-    .status-badge { display: inline-block; background: #000; color: white; padding: 8px 16px; text-transform: uppercase; font-weight: bold; margin: 16px 0; }
-    .order-box { background: #f9f9f9; border: 2px solid #000; padding: 20px; margin: 20px 0; }
-    .cta { display: block; background: #000; color: white; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 24px 0; }
-    .cta-secondary { display: block; background: #fff; color: #000; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 12px 0; border: 2px solid #000; }
-    .footer { background: #f4f4f4; padding: 24px; text-align: center; color: #666; font-size: 14px; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
+    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
+    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
+    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
+    .status-badge { display: inline-block; background: #0f172a; color: #ffffff; padding: 8px 16px; text-transform: uppercase; font-weight: 700; margin: 16px 0; letter-spacing: 1px; }
+    .card { background: #f8fafc; border: 2px solid #0f172a; padding: 20px; margin: 20px 0; }
+    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
+    .cta-secondary { display: block; background: #ffffff; color: #0f172a; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 12px 0; border: 2px solid #0f172a; }
+    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
   </style>
 </head>
 <body>
+  <div class="preheader">An update on your OCCTA order is ready.</div>
   <div class="container">
-    <div class="header">
+    <div class="brand">
+      <span>OCCTA Telecom</span>
       <h1>Order Update</h1>
     </div>
     <div class="content">
@@ -197,7 +217,7 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
       
       <p>${statusMessage}</p>
       
-      <div class="order-box">
+      <div class="card">
         <p><strong>Plan:</strong> ${escapeHtml(data.plan_name)}</p>
         <p><strong>Service:</strong> ${escapeHtml(data.service_type)}</p>
       </div>
@@ -221,20 +241,24 @@ const getOrderMessageHtml = (data: Record<string, unknown>) => `
 <html>
 <head>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-    .container { max-width: 600px; margin: 0 auto; background: white; }
-    .header { background: #000; color: white; padding: 24px; text-align: center; }
-    .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-    .content { padding: 32px 24px; }
-    .message-box { background: #f9f9f9; border: 2px solid #000; padding: 20px; margin: 20px 0; }
-    .cta { display: block; background: #000; color: white; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 24px 0; }
-    .footer { background: #f4f4f4; padding: 24px; text-align: center; color: #666; font-size: 14px; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
+    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
+    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
+    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
+    .message-box { background: #f8fafc; border: 2px solid #0f172a; padding: 20px; margin: 20px 0; }
+    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
+    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
   </style>
 </head>
 <body>
+  <div class="preheader">A message about your OCCTA order is waiting.</div>
   <div class="container">
-    <div class="header">
-      <h1>Message About Your Order</h1>
+    <div class="brand">
+      <span>OCCTA Telecom</span>
+      <h1>Order Message</h1>
     </div>
     <div class="content">
       <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
@@ -250,7 +274,7 @@ const getOrderMessageHtml = (data: Record<string, unknown>) => `
       <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/dashboard" class="cta">View Your Order</a>
     </div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} Your Telecom Company. All rights reserved.</p>
+      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -262,21 +286,25 @@ const getTicketReplyHtml = (data: Record<string, unknown>) => `
 <html>
 <head>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-    .container { max-width: 600px; margin: 0 auto; background: white; }
-    .header { background: #000; color: white; padding: 24px; text-align: center; }
-    .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-    .content { padding: 32px 24px; }
-    .ticket-subject { background: #f9f9f9; border-left: 4px solid #000; padding: 12px 16px; margin: 16px 0; font-weight: bold; }
-    .message-box { background: #f9f9f9; border: 2px solid #000; padding: 20px; margin: 20px 0; }
-    .cta { display: block; background: #000; color: white; text-align: center; padding: 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; margin: 24px 0; }
-    .footer { background: #f4f4f4; padding: 24px; text-align: center; color: #666; font-size: 14px; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
+    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
+    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
+    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
+    .ticket-subject { background: #f8fafc; border-left: 4px solid #0f172a; padding: 12px 16px; margin: 16px 0; font-weight: 600; }
+    .message-box { background: #f8fafc; border: 2px solid #0f172a; padding: 20px; margin: 20px 0; }
+    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
+    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
   </style>
 </head>
 <body>
+  <div class="preheader">Your OCCTA support ticket has a new reply.</div>
   <div class="container">
-    <div class="header">
-      <h1>Support Ticket Reply</h1>
+    <div class="brand">
+      <span>OCCTA Telecom</span>
+      <h1>Support Reply</h1>
     </div>
     <div class="content">
       <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
@@ -296,7 +324,51 @@ const getTicketReplyHtml = (data: Record<string, unknown>) => `
       <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/dashboard" class="cta">View Ticket</a>
     </div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} Your Telecom Company. All rights reserved.</p>
+      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+const getPasswordResetHtml = (data: Record<string, unknown>) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
+    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
+    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
+    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
+    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
+    .note { background: #f8fafc; border: 2px solid #0f172a; padding: 16px; margin: 16px 0; font-size: 14px; color: #475569; }
+    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="preheader">Reset your OCCTA account password.</div>
+  <div class="container">
+    <div class="brand">
+      <span>OCCTA Telecom</span>
+      <h1>Password Reset</h1>
+    </div>
+    <div class="content">
+      <p>Hi <strong>${escapeHtml(data.full_name) || "there"}</strong>,</p>
+      <p>We received a request to reset your OCCTA password. Click the button below to choose a new one.</p>
+
+      <a href="${escapeHtml(data.reset_link)}" class="cta">Reset My Password</a>
+
+      <div class="note">
+        If you didn’t request this, you can safely ignore this email. For security, this link will expire shortly.
+      </div>
+
+      <p>Need help? Reply to this email or reach out via your dashboard.</p>
+    </div>
+    <div class="footer">
+      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -331,7 +403,15 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     // Parse request body first to determine auth requirements
-    const { type, to, data, orderNumber }: EmailRequest = await req.json();
+    const { type, to, data, orderNumber, redirectTo }: EmailRequest = await req.json();
+
+    if (!resendApiKey) {
+      console.error("Missing RESEND_API_KEY");
+      return new Response(
+        JSON.stringify({ error: "Email service is not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
     
     // Validate email format
     if (!isValidEmail(to)) {
@@ -407,7 +487,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`Authenticated user: ${userId}`);
 
       // Authorization checks based on email type
-      if (type === "status_update" || type === "order_message" || type === "ticket_reply") {
+      if (type === "status_update" || type === "order_message" || type === "ticket_reply" || type === "password_reset") {
         // Only admins can send these email types
         const userIsAdmin = await isAdmin(supabase, userId);
         if (!userIsAdmin) {
@@ -450,40 +530,83 @@ const handler = async (req: Request): Promise<Response> => {
 
     let subject: string;
     let html: string;
+    let emailData: Record<string, unknown> = { ...data };
+
+    if (type === "password_reset") {
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: "recovery",
+        email: to,
+        options: redirectTo ? { redirectTo } : undefined,
+      });
+
+      const resetLink = linkData?.properties?.action_link;
+
+      if (linkError || !resetLink) {
+        console.error("Failed to generate password reset link", linkError?.message);
+        return new Response(
+          JSON.stringify({ error: "Unable to generate password reset link" }),
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      emailData = { ...emailData, reset_link: resetLink };
+    }
 
     switch (type) {
       case "order_confirmation":
         subject = `Order Confirmed - ${data.order_number}`;
-        html = getOrderConfirmationHtml(data);
+        html = getOrderConfirmationHtml(emailData);
         break;
       case "welcome":
-        subject = "Welcome to Our Service!";
-        html = getWelcomeHtml(data);
+        subject = "Welcome to OCCTA!";
+        html = getWelcomeHtml(emailData);
         break;
       case "status_update":
         subject = `Order Update - ${data.order_number}: ${(data.status as string).toUpperCase()}`;
-        html = getStatusUpdateHtml(data);
+        html = getStatusUpdateHtml(emailData);
         break;
       case "order_message":
         subject = `Message About Your Order - ${data.order_number}`;
-        html = getOrderMessageHtml(data);
+        html = getOrderMessageHtml(emailData);
         break;
       case "ticket_reply":
         subject = `Support Ticket Reply: ${data.ticket_subject}`;
-        html = getTicketReplyHtml(data);
+        html = getTicketReplyHtml(emailData);
+        break;
+      case "password_reset":
+        subject = "Reset your OCCTA password";
+        html = getPasswordResetHtml(emailData);
         break;
       default:
         throw new Error(`Unknown email type: ${type}`);
     }
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+    const defaultFromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+    const fromEmail = type === "order_confirmation"
+      ? "hello@occta.co.uk"
+      : type === "password_reset"
+        ? "no-reply@occta.co.uk"
+        : defaultFromEmail;
+    const bccList = type === "order_confirmation" ? ["admin@occta.co.uk"] : undefined;
     
     const emailResponse = await resend.emails.send({
       from: `OCCTA Telecom <${fromEmail}>`,
       to: [to],
+      bcc: bccList,
       subject,
       html,
     });
+
+    if ("error" in emailResponse && emailResponse.error) {
+      console.error("Resend email error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ error: emailResponse.error.message || "Email send failed" }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
 
     console.log("Email sent successfully:", emailResponse);
 

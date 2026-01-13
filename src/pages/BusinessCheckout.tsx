@@ -213,22 +213,45 @@ const BusinessCheckout = () => {
     <LayoutComponent>
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl space-y-4"
-          >
-            <h1 className="text-5xl sm:text-6xl font-display uppercase leading-[0.9]">
-              BUSINESS CHECKOUT
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              Build your plan, confirm your details, and send it to our business team.
-              We’ll follow up with contract options and installation availability.
-            </p>
-            <Link to="/business-offers" className="text-primary font-semibold">
-              ← Back to plan builder
-            </Link>
-          </motion.div>
+          <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              <h1 className="text-5xl sm:text-6xl font-display uppercase leading-[0.9]">
+                BUSINESS CHECKOUT
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Build your plan, confirm your details, and send it to our business team.
+                We’ll follow up with contract options and installation availability.
+              </p>
+              <Link to="/business-offers" className="text-primary font-semibold">
+                ← Back to plan builder
+              </Link>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
+            >
+              <div className="card-brutal bg-card p-5">
+                <h3 className="font-display text-lg uppercase mb-3">You’ll confirm</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>✅ Business contact and installation address.</li>
+                  <li>✅ Preferred plan and add-on services.</li>
+                  <li>✅ Any notes for multi-site or compliance needs.</li>
+                </ul>
+              </div>
+              <div className="card-brutal bg-card p-5">
+                <h3 className="font-display text-lg uppercase mb-3">After submit</h3>
+                <p className="text-sm text-muted-foreground">
+                  We’ll confirm availability and send your final quote. Install dates are
+                  scheduled once you approve the proposal.
+                </p>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

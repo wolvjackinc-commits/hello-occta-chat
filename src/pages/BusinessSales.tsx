@@ -202,21 +202,43 @@ const BusinessSales = () => {
     <LayoutComponent>
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl space-y-4"
-          >
-            <h1 className="text-5xl sm:text-6xl font-display uppercase leading-[0.9]">
-              TALK TO SALES
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              Tell us what you’re looking for and we’ll build the right business bundle.
-            </p>
-            <Link to="/business-offers" className="text-primary font-semibold">
-              ← Back to plan builder
-            </Link>
-          </motion.div>
+          <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              <h1 className="text-5xl sm:text-6xl font-display uppercase leading-[0.9]">
+                TALK TO SALES
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Tell us what you’re looking for and we’ll build the right business bundle.
+              </p>
+              <Link to="/business-offers" className="text-primary font-semibold">
+                ← Back to plan builder
+              </Link>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
+            >
+              <div className="card-brutal bg-card p-5">
+                <h3 className="font-display text-lg uppercase mb-3">What we’ll cover</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>✅ Current provider review and switch timeline.</li>
+                  <li>✅ Bundle recommendations for phones, WiFi, and security.</li>
+                  <li>✅ SLA options for uptime and rapid fix targets.</li>
+                </ul>
+              </div>
+              <div className="card-brutal bg-card p-5">
+                <h3 className="font-display text-lg uppercase mb-3">Response time</h3>
+                <p className="text-sm text-muted-foreground">
+                  Business team responds within 1 working day with a tailored quote and next steps.
+                </p>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

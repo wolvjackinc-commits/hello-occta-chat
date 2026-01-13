@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
 import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   BadgePercent,
   Check,
-  PoundSterling,
+  CirclePoundSterling,
   Clock,
   Headset,
   ShieldCheck,
@@ -152,9 +153,11 @@ const Business = () => {
                   </div>
                 ))}
               </div>
-              <Button size="lg" variant="hero">
-                Build My Business Plan
-              </Button>
+              <Link to="/support#contact">
+                <Button size="lg" variant="hero">
+                  Build My Business Plan
+                </Button>
+              </Link>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 30 }}
@@ -222,7 +225,7 @@ const Business = () => {
                     <h3 className="font-display text-2xl uppercase">{plan.name}</h3>
                     <p className="text-sm text-muted-foreground">Up to {plan.speed}</p>
                   </div>
-                  <PoundSterling className="w-6 h-6 text-primary" />
+                  <CirclePoundSterling className="w-6 h-6 text-primary" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">{plan.summary}</p>
                 <div className="flex items-end gap-2 mb-4">
@@ -241,9 +244,11 @@ const Business = () => {
                     </span>
                   ))}
                 </div>
-                <Button variant="outline" className="mt-auto">
-                  Talk to Sales
-                </Button>
+                <Link to="/support#contact" className="mt-auto">
+                  <Button variant="outline" className="w-full">
+                    Talk to Sales
+                  </Button>
+                </Link>
               </div>
             ))}
           </div>
@@ -294,9 +299,11 @@ const Business = () => {
             that keeps you £1 ahead of market rates with the support your customers
             never notice because everything just works.
           </p>
-          <Button size="lg" variant="hero">
-            Get My Business Quote
-          </Button>
+          <Link to="/support#contact">
+            <Button size="lg" variant="hero">
+              Get My Business Quote
+            </Button>
+          </Link>
         </div>
       </section>
     </LayoutComponent>

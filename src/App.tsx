@@ -26,6 +26,7 @@ import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 import ServiceStatus from "./pages/ServiceStatus";
 import Business from "./pages/Business";
+import BusinessOffers from "./pages/BusinessOffers";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +106,7 @@ const AnimatedRoutes = () => {
             <Route path="/offline" element={<Offline />} />
             <Route path="/track-order" element={<OrderLookup />} />
             <Route path="/business" element={<Business />} />
+            <Route path="/business-offers" element={<BusinessOffers />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

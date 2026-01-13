@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   BadgePercent,
   Check,
-  PoundSterling,
+  CirclePoundSterling,
   Clock,
   Headset,
   ShieldCheck,
@@ -225,7 +225,7 @@ const Business = () => {
                     <h3 className="font-display text-2xl uppercase">{plan.name}</h3>
                     <p className="text-sm text-muted-foreground">Up to {plan.speed}</p>
                   </div>
-                  <PoundSterling className="w-6 h-6 text-primary" />
+                  <CirclePoundSterling className="w-6 h-6 text-primary" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">{plan.summary}</p>
                 <div className="flex items-end gap-2 mb-4">
@@ -244,7 +244,7 @@ const Business = () => {
                     </span>
                   ))}
                 </div>
-                <Link to="/support#contact" className="mt-auto">
+                <Link to="/business-sales" className="mt-auto">
                   <Button variant="outline" className="w-full">
                     Talk to Sales
                   </Button>
@@ -299,7 +299,7 @@ const Business = () => {
             that keeps you £1 ahead of market rates with the support your customers
             never notice because everything just works.
           </p>
-          <Link to="/support#contact">
+          <Link to="/business-sales">
             <Button size="lg" variant="hero">
               Get My Business Quote
             </Button>

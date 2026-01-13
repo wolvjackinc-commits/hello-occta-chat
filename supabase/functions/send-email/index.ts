@@ -581,13 +581,12 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error(`Unknown email type: ${type}`);
     }
 
-    const defaultFromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
-    const fromEmail = type === "order_confirmation"
-      ? "hello@occta.co.uk"
-      : type === "password_reset"
-        ? "no-reply@occta.co.uk"
-        : defaultFromEmail;
-    const bccList = type === "order_confirmation" ? ["admin@occta.co.uk"] : undefined;
+    // Use RESEND_FROM_EMAIL for all emails - this must be a verified domain in Resend
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+    
+    // Get admin email for BCC (if configured)
+    const adminEmail = Deno.env.get("ADMIN_EMAIL");
+    const bccList = type === "order_confirmation" && adminEmail ? [adminEmail] : undefined;
     
     const emailResponse = await resend.emails.send({
       from: `OCCTA Telecom <${fromEmail}>`,

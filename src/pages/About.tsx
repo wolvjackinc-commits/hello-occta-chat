@@ -119,7 +119,7 @@ const About = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center text-sm text-muted-foreground">
             <p>
-              <strong className="text-foreground">OCCTA LIMITED</strong> is registered in England and Wales (Company No. XXXXXXXX) 
+              <strong className="text-foreground">OCCTA LIMITED</strong> is registered in England and Wales (Company No. 13828933) 
               at 22 Pavilion View, Huddersfield, HD3 3WU. We comply with GDPR and all UK telecommunications regulations.
             </p>
           </div>

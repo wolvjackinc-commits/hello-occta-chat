@@ -24,6 +24,10 @@ import OrderLookup from "./pages/OrderLookup";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import ServiceStatus from "./pages/ServiceStatus";
+import Business from "./pages/Business";
+import BusinessOffers from "./pages/BusinessOffers";
+import BusinessCheckout from "./pages/BusinessCheckout";
+import BusinessSales from "./pages/BusinessSales";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +105,10 @@ const AnimatedRoutes = () => {
             <Route path="/status" element={<ServiceStatus />} />
             <Route path="/offline" element={<Offline />} />
             <Route path="/track-order" element={<OrderLookup />} />
+            <Route path="/business" element={<Business />} />
+            <Route path="/business-offers" element={<BusinessOffers />} />
+            <Route path="/business-checkout" element={<BusinessCheckout />} />
+            <Route path="/business-sales" element={<BusinessSales />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

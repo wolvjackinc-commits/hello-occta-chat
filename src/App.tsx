@@ -22,6 +22,7 @@ import Install from "./pages/Install";
 import Offline from "./pages/Offline";
 import OrderLookup from "./pages/OrderLookup";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 import ServiceStatus from "./pages/ServiceStatus";
 import Business from "./pages/Business";
@@ -100,6 +101,7 @@ const AnimatedRoutes = () => {
             <Route path="/install" element={<Install />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/status" element={<ServiceStatus />} />
             <Route path="/offline" element={<Offline />} />
             <Route path="/track-order" element={<OrderLookup />} />

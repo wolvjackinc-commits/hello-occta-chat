@@ -47,74 +47,163 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
-    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
-    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
-    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
-    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
-    .card { background: #f8fafc; border: 2px solid #0f172a; padding: 20px; margin: 20px 0; }
-    .order-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; gap: 16px; }
-    .order-row:last-child { border-bottom: none; }
-    .label { color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-    .value { font-weight: 600; text-align: right; }
-    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
-    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; max-height: 0; max-width: 0; overflow: hidden; }
+    
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    
+    /* Header with brutalist styling */
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    
+    /* Title banner */
+    .title-banner { background: #facc15; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #0d0d0d; }
+    
+    /* Content area */
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    
+    /* Order details card */
+    .order-card { background: #f5f4ef; border: 3px solid #0d0d0d; margin: 24px 0; }
+    .order-header { background: #0d0d0d; color: #fff; padding: 12px 20px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
+    .order-body { padding: 20px; }
+    .order-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #ccc; }
+    .order-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .order-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #666; font-weight: 600; }
+    .order-value { font-size: 15px; font-weight: 700; text-align: right; max-width: 60%; }
+    .order-highlight { background: #facc15; padding: 2px 8px; display: inline-block; }
+    
+    /* Steps section */
+    .steps { margin: 28px 0; padding: 24px; background: linear-gradient(135deg, #f5f4ef 0%, #fff 100%); border-left: 4px solid #facc15; }
+    .steps-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+    .step { display: flex; align-items: flex-start; margin: 12px 0; }
+    .step-num { background: #0d0d0d; color: #facc15; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; margin-right: 12px; flex-shrink: 0; }
+    .step-text { font-size: 14px; line-height: 1.5; padding-top: 4px; }
+    
+    /* CTA Button */
+    .cta-wrap { text-align: center; margin: 32px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; transition: all 0.15s; }
+    .cta:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 0 #facc15; }
+    
+    /* Order number callout */
+    .order-callout { text-align: center; background: #f5f4ef; border: 2px dashed #0d0d0d; padding: 16px; margin: 24px 0; }
+    .order-callout-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #666; }
+    .order-callout-number { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 3px; margin-top: 4px; }
+    
+    /* Footer */
+    .footer { background: #0d0d0d; padding: 28px 32px; }
+    .footer-content { text-align: center; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
+    .footer-links { margin: 16px 0; }
+    .footer-link { color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+    .footer-address { color: #666; font-size: 11px; margin-top: 8px; line-height: 1.6; }
   </style>
 </head>
 <body>
-  <div class="preheader">Your OCCTA order is confirmed. Track status and next steps inside.</div>
-  <div class="container">
-    <div class="brand">
-      <span>OCCTA Telecom</span>
-      <h1>Order Confirmed</h1>
-    </div>
-    <div class="content">
-      <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
-      <p>Thanks for choosing OCCTA. We’ve received your order and we’re already getting things ready for you.</p>
-      
-      <div class="card">
-        <div class="order-row">
-          <span class="label">Order Number:</span>
-          <span class="value">${escapeHtml(data.order_number)}</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Service:</span>
-          <span class="value">${escapeHtml(data.service_type)}</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Plan:</span>
-          <span class="value">${escapeHtml(data.plan_name)}</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Monthly Price:</span>
-          <span class="value">£${sanitizeNumber(data.plan_price)}/mo</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Installation Address:</span>
-          <span class="value">${escapeHtml(data.address_line1)}, ${escapeHtml(data.city)}, ${escapeHtml(data.postcode)}</span>
-        </div>
+  <div class="preheader">Your OCCTA order #${escapeHtml(data.order_number)} is confirmed! We're getting everything ready for you.</div>
+  
+  <div class="wrapper">
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
       </div>
       
-      <p><strong>What happens next</strong></p>
-      <ol>
-        <li>Our team will review your order within 24 hours</li>
-        <li>We'll contact you to confirm your preferred installation date</li>
-        <li>A technician will arrive on the scheduled date to set everything up</li>
-      </ol>
+      <!-- Title Banner -->
+      <div class="title-banner">
+        <h1 class="title">✓ Order Confirmed</h1>
+      </div>
       
-      <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/track-order" class="cta">Track Your Order</a>
+      <!-- Content -->
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.full_name)},</p>
+        <p class="text">Brilliant news! Your order is locked in and we're already on it. Here's everything you need to know:</p>
+        
+        <!-- Order Details Card -->
+        <div class="order-card">
+          <div class="order-header">Order Details</div>
+          <div class="order-body">
+            <div class="order-row">
+              <span class="order-label">Order Number</span>
+              <span class="order-value"><span class="order-highlight">${escapeHtml(data.order_number)}</span></span>
+            </div>
+            <div class="order-row">
+              <span class="order-label">Service</span>
+              <span class="order-value">${escapeHtml(data.service_type)}</span>
+            </div>
+            <div class="order-row">
+              <span class="order-label">Plan</span>
+              <span class="order-value">${escapeHtml(data.plan_name)}</span>
+            </div>
+            <div class="order-row">
+              <span class="order-label">Monthly Price</span>
+              <span class="order-value">£${sanitizeNumber(data.plan_price)}/mo</span>
+            </div>
+            <div class="order-row">
+              <span class="order-label">Installation Address</span>
+              <span class="order-value">${escapeHtml(data.address_line1)}, ${escapeHtml(data.city)}, ${escapeHtml(data.postcode)}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- What Happens Next -->
+        <div class="steps">
+          <div class="steps-title">What Happens Next</div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">We'll review your order within 24 hours and confirm all details.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Our team will reach out to schedule your installation at a time that works for you.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">A certified technician will arrive to set everything up — quick and hassle-free.</div>
+          </div>
+        </div>
+        
+        <!-- CTA -->
+        <div class="cta-wrap">
+          <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/track-order" class="cta">Track Your Order →</a>
+        </div>
+        
+        <!-- Order Number Callout -->
+        <div class="order-callout">
+          <div class="order-callout-label">Your Order Reference</div>
+          <div class="order-callout-number">${escapeHtml(data.order_number)}</div>
+        </div>
+        
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
+          Keep this number handy — you'll need it to track your order or contact support.
+        </p>
+      </div>
       
-      <p style="text-align: center; color: #666; font-size: 14px;">
-        Use your order number <strong>${escapeHtml(data.order_number)}</strong> and email to track your order anytime.
-      </p>
-      
-      <p>If you have any questions, our support team is here to help.</p>
-    </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-logo">OCCTA</div>
+          <div class="footer-links">
+            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/support" class="footer-link">Support</a>
+            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/track-order" class="footer-link">Track Order</a>
+            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}" class="footer-link">Website</a>
+          </div>
+          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
+          <div class="footer-address">Questions? Reply to this email or call us at 0800 XXX XXXX</div>
+        </div>
+      </div>
     </div>
   </div>
 </body>
@@ -125,43 +214,109 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
-    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
-    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
-    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
-    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
-    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
-    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; max-height: 0; max-width: 0; overflow: hidden; }
+    
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    
+    .title-banner { background: #facc15; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #0d0d0d; }
+    
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    
+    .features { margin: 28px 0; }
+    .feature { display: flex; align-items: flex-start; margin: 16px 0; padding: 16px; background: #f5f4ef; border-left: 4px solid #facc15; }
+    .feature-icon { width: 40px; height: 40px; background: #0d0d0d; color: #facc15; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-right: 16px; flex-shrink: 0; }
+    .feature-text { flex: 1; }
+    .feature-title { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .feature-desc { font-size: 13px; color: #666; }
+    
+    .cta-wrap { text-align: center; margin: 32px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; }
+    
+    .footer { background: #0d0d0d; padding: 28px 32px; }
+    .footer-content { text-align: center; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
+    .footer-links { margin: 16px 0; }
+    .footer-link { color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
   </style>
 </head>
 <body>
-  <div class="preheader">Welcome to OCCTA. Your account is ready.</div>
-  <div class="container">
-    <div class="brand">
-      <span>OCCTA Telecom</span>
-      <h1>Welcome</h1>
-    </div>
-    <div class="content">
-      <p>Hi <strong>${escapeHtml(data.full_name) || "there"}</strong>,</p>
-      <p>Welcome to OCCTA! Your account has been created successfully.</p>
+  <div class="preheader">Welcome to OCCTA! Your account is ready — let's get you connected.</div>
+  
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
+      </div>
       
-      <p>With your account, you can:</p>
-      <ul>
-        <li>Track your order status in real-time</li>
-        <li>Manage your services and add-ons</li>
-        <li>View and pay bills online</li>
-        <li>Get priority customer support</li>
-      </ul>
+      <div class="title-banner">
+        <h1 class="title">Welcome Aboard! 🎉</h1>
+      </div>
       
-      <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/dashboard" class="cta">Go to Your Dashboard</a>
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.full_name) || "there"},</p>
+        <p class="text">You're officially part of the OCCTA family! Your account is all set up and ready to go.</p>
+        
+        <div class="features">
+          <div class="feature">
+            <div class="feature-icon">📍</div>
+            <div class="feature-text">
+              <div class="feature-title">Track Orders</div>
+              <div class="feature-desc">Real-time updates on your order and installation status.</div>
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-text">
+              <div class="feature-title">Manage Services</div>
+              <div class="feature-desc">Add, upgrade, or modify your services anytime.</div>
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">💬</div>
+            <div class="feature-text">
+              <div class="feature-title">Priority Support</div>
+              <div class="feature-desc">Get faster responses from our dedicated support team.</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="cta-wrap">
+          <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/dashboard" class="cta">Go to Dashboard →</a>
+        </div>
+        
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
+          Need help getting started? Our support team is just a click away.
+        </p>
+      </div>
       
-      <p>If you have any questions, we're here to help!</p>
-    </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-logo">OCCTA</div>
+          <div class="footer-links">
+            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/support" class="footer-link">Support</a>
+            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/dashboard" class="footer-link">Dashboard</a>
+            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}" class="footer-link">Website</a>
+          </div>
+          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
+        </div>
+      </div>
     </div>
   </div>
 </body>
@@ -169,66 +324,123 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
 `;
 
 const getStatusUpdateHtml = (data: Record<string, unknown>) => {
-  const statusMessages: Record<string, string> = {
-    pending: "We've received your order and it's being reviewed.",
-    processing: "We're processing your order and preparing everything for installation.",
-    dispatched: "Your equipment has been dispatched and is on its way!",
-    installed: "Great news! Your service has been installed. Welcome aboard!",
-    active: "Your service is now fully active. Enjoy!",
-    cancelled: "Your order has been cancelled. If you didn't request this, please contact support.",
+  const statusConfig: Record<string, { message: string; color: string; icon: string }> = {
+    pending: { message: "We've received your order and it's being reviewed by our team.", color: "#facc15", icon: "⏳" },
+    confirmed: { message: "Your order has been confirmed! We'll be in touch about installation.", color: "#22c55e", icon: "✓" },
+    processing: { message: "We're processing your order and preparing everything for installation.", color: "#3b82f6", icon: "⚙️" },
+    dispatched: { message: "Your equipment has been dispatched and is on its way!", color: "#8b5cf6", icon: "📦" },
+    installed: { message: "Great news! Your service has been installed. Welcome aboard!", color: "#22c55e", icon: "🏠" },
+    active: { message: "Your service is now fully active. Enjoy blazing-fast connectivity!", color: "#22c55e", icon: "🚀" },
+    cancelled: { message: "Your order has been cancelled. If you didn't request this, please contact support immediately.", color: "#ef4444", icon: "✕" },
   };
 
+  const config = statusConfig[data.status as string] || { message: "Your order status has been updated.", color: "#facc15", icon: "📋" };
   const safeStatus = escapeHtml(data.status);
-  const statusMessage = statusMessages[data.status as string] || "Your order status has been updated.";
-  const siteUrl = Deno.env.get("SITE_URL") || "https://example.com";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
 
   return `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
-    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
-    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
-    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
-    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
-    .status-badge { display: inline-block; background: #0f172a; color: #ffffff; padding: 8px 16px; text-transform: uppercase; font-weight: 700; margin: 16px 0; letter-spacing: 1px; }
-    .card { background: #f8fafc; border: 2px solid #0f172a; padding: 20px; margin: 20px 0; }
-    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
-    .cta-secondary { display: block; background: #ffffff; color: #0f172a; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 12px 0; border: 2px solid #0f172a; }
-    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; overflow: hidden; }
+    
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    
+    .title-banner { background: ${config.color}; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #0d0d0d; }
+    
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    
+    .status-card { text-align: center; background: #f5f4ef; border: 3px solid #0d0d0d; padding: 28px; margin: 24px 0; }
+    .status-icon { font-size: 48px; margin-bottom: 12px; }
+    .status-badge { display: inline-block; background: #0d0d0d; color: #fff; padding: 8px 24px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; }
+    .status-message { font-size: 15px; color: #333; margin-top: 16px; line-height: 1.6; }
+    
+    .order-info { display: flex; justify-content: space-between; background: #fff; border: 2px solid #0d0d0d; margin: 20px 0; }
+    .order-info-item { flex: 1; padding: 16px; text-align: center; border-right: 2px solid #0d0d0d; }
+    .order-info-item:last-child { border-right: none; }
+    .order-info-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #666; }
+    .order-info-value { font-weight: 700; font-size: 14px; margin-top: 4px; }
+    
+    .cta-wrap { text-align: center; margin: 32px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; margin: 8px; }
+    .cta-secondary { display: inline-block; background: #ffffff; color: #0d0d0d; padding: 14px 32px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; margin: 8px; }
+    
+    .footer { background: #0d0d0d; padding: 28px 32px; }
+    .footer-content { text-align: center; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
+    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
   </style>
 </head>
 <body>
-  <div class="preheader">An update on your OCCTA order is ready.</div>
-  <div class="container">
-    <div class="brand">
-      <span>OCCTA Telecom</span>
-      <h1>Order Update</h1>
-    </div>
-    <div class="content">
-      <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
-      
-      <p>Your order <strong>${escapeHtml(data.order_number)}</strong> has been updated:</p>
-      
-      <span class="status-badge">${safeStatus}</span>
-      
-      <p>${statusMessage}</p>
-      
-      <div class="card">
-        <p><strong>Plan:</strong> ${escapeHtml(data.plan_name)}</p>
-        <p><strong>Service:</strong> ${escapeHtml(data.service_type)}</p>
+  <div class="preheader">Order Update: Your OCCTA order #${escapeHtml(data.order_number)} is now ${safeStatus}.</div>
+  
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
       </div>
       
-      <a href="${siteUrl}/track-order" class="cta">Track Your Order</a>
-      <a href="${siteUrl}/auth" class="cta-secondary">Create Account for More Features</a>
+      <div class="title-banner">
+        <h1 class="title">${config.icon} Order Update</h1>
+      </div>
       
-      <p>Questions? Our support team is always here to help.</p>
-    </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.full_name)},</p>
+        <p class="text">Here's the latest on your order:</p>
+        
+        <div class="status-card">
+          <div class="status-icon">${config.icon}</div>
+          <div class="status-badge">${safeStatus}</div>
+          <p class="status-message">${config.message}</p>
+        </div>
+        
+        <div class="order-info">
+          <div class="order-info-item">
+            <div class="order-info-label">Order</div>
+            <div class="order-info-value">${escapeHtml(data.order_number)}</div>
+          </div>
+          <div class="order-info-item">
+            <div class="order-info-label">Plan</div>
+            <div class="order-info-value">${escapeHtml(data.plan_name)}</div>
+          </div>
+          <div class="order-info-item">
+            <div class="order-info-label">Service</div>
+            <div class="order-info-value">${escapeHtml(data.service_type)}</div>
+          </div>
+        </div>
+        
+        <div class="cta-wrap">
+          <a href="${siteUrl}/track-order" class="cta">Track Order →</a>
+          <a href="${siteUrl}/auth" class="cta-secondary">Create Account</a>
+        </div>
+        
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
+          Questions about your order? We're here to help.
+        </p>
+      </div>
+      
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-logo">OCCTA</div>
+          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
+        </div>
+      </div>
     </div>
   </div>
 </body>
@@ -240,41 +452,79 @@ const getOrderMessageHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
-    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
-    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
-    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
-    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
-    .message-box { background: #f8fafc; border: 2px solid #0f172a; padding: 20px; margin: 20px 0; }
-    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
-    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; overflow: hidden; }
+    
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    
+    .title-banner { background: #3b82f6; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
+    
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    
+    .order-ref { display: inline-block; background: #facc15; padding: 4px 12px; font-weight: 700; font-size: 14px; }
+    
+    .message-box { background: #f5f4ef; border: 3px solid #0d0d0d; padding: 24px; margin: 24px 0; position: relative; }
+    .message-box::before { content: '"'; font-family: 'Bebas Neue', sans-serif; font-size: 64px; color: #facc15; position: absolute; top: -10px; left: 16px; line-height: 1; }
+    .message-content { font-size: 15px; line-height: 1.7; padding-left: 40px; font-style: italic; }
+    
+    .cta-wrap { text-align: center; margin: 32px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; }
+    
+    .footer { background: #0d0d0d; padding: 28px 32px; }
+    .footer-content { text-align: center; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
+    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
   </style>
 </head>
 <body>
-  <div class="preheader">A message about your OCCTA order is waiting.</div>
-  <div class="container">
-    <div class="brand">
-      <span>OCCTA Telecom</span>
-      <h1>Order Message</h1>
-    </div>
-    <div class="content">
-      <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
-      
-      <p>We have a message regarding your order <strong>${escapeHtml(data.order_number)}</strong>:</p>
-      
-      <div class="message-box">
-        <p>${escapeHtml(data.message)}</p>
+  <div class="preheader">New message about your OCCTA order #${escapeHtml(data.order_number)}</div>
+  
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
       </div>
       
-      <p>If you have any questions or need to respond, please log in to your account or contact our support team.</p>
+      <div class="title-banner">
+        <h1 class="title">💬 New Message</h1>
+      </div>
       
-      <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/dashboard" class="cta">View Your Order</a>
-    </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.full_name)},</p>
+        <p class="text">We have an update regarding your order <span class="order-ref">${escapeHtml(data.order_number)}</span>:</p>
+        
+        <div class="message-box">
+          <p class="message-content">${escapeHtml(data.message)}</p>
+        </div>
+        
+        <p class="text">Have questions or need to respond? Log in to your dashboard or get in touch with our support team.</p>
+        
+        <div class="cta-wrap">
+          <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/dashboard" class="cta">View Order →</a>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-logo">OCCTA</div>
+          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
+        </div>
+      </div>
     </div>
   </div>
 </body>
@@ -285,46 +535,87 @@ const getTicketReplyHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
-    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
-    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
-    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
-    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
-    .ticket-subject { background: #f8fafc; border-left: 4px solid #0f172a; padding: 12px 16px; margin: 16px 0; font-weight: 600; }
-    .message-box { background: #f8fafc; border: 2px solid #0f172a; padding: 20px; margin: 20px 0; }
-    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
-    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; overflow: hidden; }
+    
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    
+    .title-banner { background: #22c55e; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
+    
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    
+    .ticket-subject { background: #0d0d0d; color: #fff; padding: 16px 20px; margin: 20px 0; }
+    .ticket-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #facc15; margin-bottom: 4px; }
+    .ticket-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; }
+    
+    .message-box { background: #f5f4ef; border: 3px solid #0d0d0d; padding: 24px; margin: 20px 0; }
+    .message-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #666; margin-bottom: 12px; font-weight: 600; }
+    .message-content { font-size: 15px; line-height: 1.7; }
+    
+    .cta-wrap { text-align: center; margin: 32px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; }
+    
+    .footer { background: #0d0d0d; padding: 28px 32px; }
+    .footer-content { text-align: center; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
+    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
   </style>
 </head>
 <body>
-  <div class="preheader">Your OCCTA support ticket has a new reply.</div>
-  <div class="container">
-    <div class="brand">
-      <span>OCCTA Telecom</span>
-      <h1>Support Reply</h1>
-    </div>
-    <div class="content">
-      <p>Hi <strong>${escapeHtml(data.full_name)}</strong>,</p>
-      
-      <p>Our support team has replied to your ticket:</p>
-      
-      <div class="ticket-subject">
-        RE: ${escapeHtml(data.ticket_subject)}
+  <div class="preheader">Our support team has replied to your ticket: ${escapeHtml(data.ticket_subject)}</div>
+  
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
       </div>
       
-      <div class="message-box">
-        <p>${escapeHtml(data.message)}</p>
+      <div class="title-banner">
+        <h1 class="title">✓ Support Reply</h1>
       </div>
       
-      <p>You can reply to this ticket from your dashboard.</p>
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.full_name)},</p>
+        <p class="text">Good news! Our support team has replied to your ticket:</p>
+        
+        <div class="ticket-subject">
+          <div class="ticket-label">Ticket Subject</div>
+          <div class="ticket-title">RE: ${escapeHtml(data.ticket_subject)}</div>
+        </div>
+        
+        <div class="message-box">
+          <div class="message-label">Support Response</div>
+          <p class="message-content">${escapeHtml(data.message)}</p>
+        </div>
+        
+        <p class="text">You can continue the conversation from your dashboard.</p>
+        
+        <div class="cta-wrap">
+          <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/dashboard" class="cta">View Ticket →</a>
+        </div>
+      </div>
       
-      <a href="${Deno.env.get("SITE_URL") || "https://example.com"}/dashboard" class="cta">View Ticket</a>
-    </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-logo">OCCTA</div>
+          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
+        </div>
+      </div>
     </div>
   </div>
 </body>
@@ -335,40 +626,82 @@ const getPasswordResetHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6f4ef; color: #0f172a; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #0f172a; }
-    .brand { background: #0f172a; color: #ffffff; padding: 24px 28px; }
-    .brand span { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; }
-    .brand h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
-    .content { padding: 32px 28px; font-size: 16px; line-height: 1.6; }
-    .cta { display: block; background: #0f172a; color: #ffffff; text-align: center; padding: 14px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0; }
-    .note { background: #f8fafc; border: 2px solid #0f172a; padding: 16px; margin: 16px 0; font-size: 14px; color: #475569; }
-    .footer { background: #0f172a; padding: 20px 24px; text-align: center; color: #e2e8f0; font-size: 12px; }
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; overflow: hidden; }
+    
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    
+    .title-banner { background: #ef4444; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
+    
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    
+    .cta-wrap { text-align: center; margin: 32px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 18px 48px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; }
+    
+    .security-note { background: #fef3c7; border: 3px solid #facc15; padding: 20px; margin: 24px 0; }
+    .security-icon { font-size: 24px; margin-bottom: 8px; }
+    .security-title { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .security-text { font-size: 13px; color: #666; line-height: 1.6; }
+    
+    .footer { background: #0d0d0d; padding: 28px 32px; }
+    .footer-content { text-align: center; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
+    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
   </style>
 </head>
 <body>
-  <div class="preheader">Reset your OCCTA account password.</div>
-  <div class="container">
-    <div class="brand">
-      <span>OCCTA Telecom</span>
-      <h1>Password Reset</h1>
-    </div>
-    <div class="content">
-      <p>Hi <strong>${escapeHtml(data.full_name) || "there"}</strong>,</p>
-      <p>We received a request to reset your OCCTA password. Click the button below to choose a new one.</p>
-
-      <a href="${escapeHtml(data.reset_link)}" class="cta">Reset My Password</a>
-
-      <div class="note">
-        If you didn’t request this, you can safely ignore this email. For security, this link will expire shortly.
+  <div class="preheader">Reset your OCCTA account password — this link expires soon.</div>
+  
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
       </div>
-
-      <p>Need help? Reply to this email or reach out via your dashboard.</p>
-    </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
+      
+      <div class="title-banner">
+        <h1 class="title">🔐 Password Reset</h1>
+      </div>
+      
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.full_name) || "there"},</p>
+        <p class="text">We received a request to reset your OCCTA account password. Click the button below to choose a new one:</p>
+        
+        <div class="cta-wrap">
+          <a href="${escapeHtml(data.reset_link)}" class="cta">Reset Password →</a>
+        </div>
+        
+        <div class="security-note">
+          <div class="security-icon">🛡️</div>
+          <div class="security-title">Security Notice</div>
+          <p class="security-text">If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged. For security, this link will expire in 1 hour.</p>
+        </div>
+        
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
+          Need help? Contact our support team anytime.
+        </p>
+      </div>
+      
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-logo">OCCTA</div>
+          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
+        </div>
+      </div>
     </div>
   </div>
 </body>

@@ -554,19 +554,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (type) {
       case "order_confirmation":
-        subject = `Order Confirmed - ${data.order_number}`;
-        html = getOrderConfirmationHtml(emailData);
+        subject = `Order Confirmed - ${data?.order_number || orderNumber || 'N/A'}`;
+        html = getOrderConfirmationHtml({ ...emailData, order_number: data?.order_number || orderNumber });
         break;
       case "welcome":
         subject = "Welcome to OCCTA!";
         html = getWelcomeHtml(emailData);
         break;
       case "status_update":
-        subject = `Order Update - ${data.order_number}: ${(data.status as string).toUpperCase()}`;
+        subject = `Order Update - ${data?.order_number || orderNumber || 'N/A'}: ${(data?.status as string || 'UPDATED').toUpperCase()}`;
         html = getStatusUpdateHtml(emailData);
         break;
       case "order_message":
-        subject = `Message About Your Order - ${data.order_number}`;
+        subject = `Message About Your Order - ${data?.order_number || orderNumber || 'N/A'}`;
         html = getOrderMessageHtml(emailData);
         break;
       case "ticket_reply":

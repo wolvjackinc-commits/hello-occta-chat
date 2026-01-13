@@ -133,9 +133,7 @@ const Footer = () => {
               © {currentYear} OCCTA Limited. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-sm text-background/50">
-              <span>Company No. XXXXXXXX</span>
-              <span>•</span>
-              <span>VAT No. XXXXXXXXX</span>
+              <span>Company No. 13828933</span>
               <span>•</span>
               <span>UK Registered</span>
             </div>

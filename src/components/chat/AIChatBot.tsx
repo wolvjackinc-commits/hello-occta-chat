@@ -14,14 +14,23 @@ import {
   User as UserIcon, 
   Loader2,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Paperclip
 } from "lucide-react";
+
+type AttachmentMeta = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+};
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
   createdAt: string;
+  attachments?: AttachmentMeta[];
 };
 
 interface AIChatBotProps {
@@ -50,8 +59,10 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<AttachmentMeta[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingMessageRef = useRef<string | null>(null);
   const isFreshChat = messages.length <= 1 && messages[0]?.role === "assistant";
 
@@ -111,22 +122,48 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
     }
   }, [isOpen, isMinimized]);
 
-  const sendMessage = useCallback(async (messageText: string) => {
-    if (!messageText.trim() || isLoading) return;
+  const formatAttachmentSize = (size: number) => {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const formatAttachmentSummary = (attachments: AttachmentMeta[]) => {
+    if (!attachments.length) return "";
+    return attachments
+      .map((file) => `- ${file.name} (${file.type || "unknown"}, ${formatAttachmentSize(file.size)})`)
+      .join("\n");
+  };
+
+  const sendMessage = useCallback(async (messageText: string, attachments: AttachmentMeta[] = []) => {
+    const trimmedMessage = messageText.trim();
+    if ((!trimmedMessage && attachments.length === 0) || isLoading) return;
+    const effectiveMessage = trimmedMessage || "Shared attachment(s).";
 
     const userMessage: Message = { 
       id: crypto.randomUUID(),
       role: "user", 
-      content: messageText.trim(),
+      content: effectiveMessage,
       createdAt: new Date().toISOString(),
+      attachments: attachments.length ? attachments : undefined,
     };
     pendingMessageRef.current = userMessage.content;
     setLastFailedMessage(null);
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
+    setPendingAttachments([]);
     setIsLoading(true);
 
     try {
+      const messagesForApi = [...messages, userMessage].map((message) => {
+        if (message.role === "user" && message.attachments?.length) {
+          return {
+            role: message.role,
+            content: `${message.content}\n\nAttachments:\n${formatAttachmentSummary(message.attachments)}`,
+          };
+        }
+        return { role: message.role, content: message.content };
+      });
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -135,7 +172,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
+          messages: messagesForApi,
           userId: user?.id,
         }),
       });
@@ -199,7 +236,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendMessage(inputValue);
+    sendMessage(inputValue, pendingAttachments);
   };
 
   const handleQuickAction = (message: string) => {
@@ -227,6 +264,27 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  const handleAttachmentsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+    const newAttachments = files.map((file) => ({
+      id: crypto.randomUUID(),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    }));
+    setPendingAttachments((prev) => [...prev, ...newAttachments]);
+    event.target.value = "";
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setPendingAttachments((prev) => prev.filter((file) => file.id !== id));
+  };
+
+  const handleSendToAdvisor = () => {
+    sendMessage("Please send my attachments to an advisor/admin for further help.", pendingAttachments);
+  };
 
   // Floating bubble version
   if (!embedded) {
@@ -342,6 +400,19 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                               }`}
                             >
                               <p className="whitespace-pre-wrap">{message.content}</p>
+                              {message.attachments?.length && (
+                                <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                                  <p className="font-semibold uppercase tracking-wide">Attachments</p>
+                                  <ul className="space-y-1">
+                                    {message.attachments.map((file) => (
+                                      <li key={file.id} className="flex items-center justify-between gap-2">
+                                        <span className="truncate">{file.name}</span>
+                                        <span className="shrink-0">{formatAttachmentSize(file.size)}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                               <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                                 {formatTime(message.createdAt)}
                               </p>
@@ -381,6 +452,23 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                   {/* Input */}
                   <form onSubmit={handleSubmit} className="p-3 border-t-4 border-foreground bg-background">
                     <div className="flex gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        onChange={handleAttachmentsChange}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0 border-2 border-foreground"
+                        onClick={() => fileInputRef.current?.click()}
+                        aria-label="Add attachment"
+                      >
+                        <Paperclip className="w-4 h-4" />
+                      </Button>
                       <Input
                         ref={inputRef}
                         value={inputValue}
@@ -393,12 +481,46 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                         type="submit" 
                         size="icon" 
                         variant="hero"
-                        disabled={!inputValue.trim() || isLoading}
+                        disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading}
                         className="shrink-0"
                       >
                         <Send className="w-4 h-4" />
                       </Button>
                     </div>
+                    {pendingAttachments.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {pendingAttachments.map((file) => (
+                            <div
+                              key={file.id}
+                              className="flex items-center gap-2 rounded-full border border-foreground/40 px-3 py-1 text-xs"
+                            >
+                              <span className="max-w-[140px] truncate">{file.name}</span>
+                              <span className="text-muted-foreground">{formatAttachmentSize(file.size)}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAttachment(file.id)}
+                                className="text-muted-foreground hover:text-foreground"
+                                aria-label={`Remove ${file.name}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>AI will review attachments first, then offer to involve an advisor.</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSendToAdvisor}
+                          >
+                            Send to advisor
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     {user && (
                       <p className="text-xs text-muted-foreground mt-2 text-center">
                         Signed in as {user.email?.split("@")[0]}
@@ -473,6 +595,19 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
+                  {message.attachments?.length && (
+                    <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      <p className="font-semibold uppercase tracking-wide">Attachments</p>
+                      <ul className="space-y-1">
+                        {message.attachments.map((file) => (
+                          <li key={file.id} className="flex items-center justify-between gap-2">
+                            <span className="truncate">{file.name}</span>
+                            <span className="shrink-0">{formatAttachmentSize(file.size)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                     {formatTime(message.createdAt)}
                   </p>
@@ -512,6 +647,23 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
       {/* Input */}
       <form onSubmit={handleSubmit} className="p-3 border-t-4 border-foreground bg-background">
         <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleAttachmentsChange}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="shrink-0 border-2 border-foreground"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Add attachment"
+          >
+            <Paperclip className="w-4 h-4" />
+          </Button>
           <Input
             ref={inputRef}
             value={inputValue}
@@ -524,12 +676,46 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
             type="submit" 
             size="icon" 
             variant="hero"
-            disabled={!inputValue.trim() || isLoading}
+            disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading}
             className="shrink-0"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
+        {pendingAttachments.length > 0 && (
+          <div className="mt-2 space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {pendingAttachments.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex items-center gap-2 rounded-full border border-foreground/40 px-3 py-1 text-xs"
+                >
+                  <span className="max-w-[140px] truncate">{file.name}</span>
+                  <span className="text-muted-foreground">{formatAttachmentSize(file.size)}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAttachment(file.id)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label={`Remove ${file.name}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>AI will review attachments first, then offer to involve an advisor.</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSendToAdvisor}
+              >
+                Send to advisor
+              </Button>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   );

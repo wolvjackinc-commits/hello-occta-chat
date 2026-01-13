@@ -137,8 +137,15 @@ export function UserManageDialog({ profile, open, onOpenChange, onUpdate }: User
     setIsSendingReset(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(editedProfile.email, {
-        redirectTo: `${window.location.origin}/auth?mode=reset`,
+      const { error } = await supabase.functions.invoke("send-email", {
+        body: {
+          type: "password_reset",
+          to: editedProfile.email,
+          redirectTo: `${window.location.origin}/auth?mode=reset`,
+          data: {
+            full_name: editedProfile.full_name || editedProfile.email?.split("@")[0] || "there",
+          },
+        },
       });
 
       if (error) throw error;

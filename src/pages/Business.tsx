@@ -153,8 +153,8 @@ const Business = () => {
                   </div>
                 ))}
               </div>
-              <Link to="/business-offers">
-                <Button size="lg" variant="hero">
+              <Link to="/business-offers" className="inline-block mt-2">
+                <Button size="lg" variant="hero" className="w-full sm:w-auto">
                   Build My Business Plan
                 </Button>
               </Link>
@@ -244,7 +244,7 @@ const Business = () => {
                     </span>
                   ))}
                 </div>
-                <Link to="/support#contact" className="mt-auto">
+                <Link to="/business-sales" className="mt-auto">
                   <Button variant="outline" className="w-full">
                     Talk to Sales
                   </Button>
@@ -299,7 +299,7 @@ const Business = () => {
             that keeps you £1 ahead of market rates with the support your customers
             never notice because everything just works.
           </p>
-          <Link to="/support#contact">
+          <Link to="/business-sales">
             <Button size="lg" variant="hero">
               Get My Business Quote
             </Button>

@@ -24,6 +24,7 @@ import OrderLookup from "./pages/OrderLookup";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import ServiceStatus from "./pages/ServiceStatus";
+import Business from "./pages/Business";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,7 @@ const AnimatedRoutes = () => {
             <Route path="/status" element={<ServiceStatus />} />
             <Route path="/offline" element={<Offline />} />
             <Route path="/track-order" element={<OrderLookup />} />
+            <Route path="/business" element={<Business />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

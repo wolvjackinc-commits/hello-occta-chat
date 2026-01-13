@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -403,6 +404,14 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // Parse request body first to determine auth requirements
     const { type, to, data, orderNumber, redirectTo }: EmailRequest = await req.json();
+
+    if (!resendApiKey) {
+      console.error("Missing RESEND_API_KEY");
+      return new Response(
+        JSON.stringify({ error: "Email service is not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
     
     // Validate email format
     if (!isValidEmail(to)) {
@@ -572,7 +581,7 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error(`Unknown email type: ${type}`);
     }
 
-    const defaultFromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "no-reply@occta.co.uk";
+    const defaultFromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
     const fromEmail = type === "order_confirmation"
       ? "hello@occta.co.uk"
       : type === "password_reset"
@@ -587,6 +596,17 @@ const handler = async (req: Request): Promise<Response> => {
       subject,
       html,
     });
+
+    if ("error" in emailResponse && emailResponse.error) {
+      console.error("Resend email error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ error: emailResponse.error.message || "Email send failed" }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
 
     console.log("Email sent successfully:", emailResponse);
 

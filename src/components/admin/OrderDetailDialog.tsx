@@ -170,7 +170,7 @@ export function OrderDetailDialog({ order, open, onOpenChange, onUpdate }: Order
       // Send status update email if status changed
       if (statusChanged && editedOrder.email) {
         try {
-          await supabase.functions.invoke("send-email", {
+          const { error: emailError } = await supabase.functions.invoke("send-email", {
             body: {
               type: "status_update",
               to: editedOrder.email,
@@ -183,6 +183,7 @@ export function OrderDetailDialog({ order, open, onOpenChange, onUpdate }: Order
               },
             },
           });
+          if (emailError) throw emailError;
           toast({ 
             title: "Order updated successfully",
             description: `Status changed from ${previousStatus} to ${editedOrder.status}. Customer notified via email.`
@@ -230,7 +231,7 @@ export function OrderDetailDialog({ order, open, onOpenChange, onUpdate }: Order
 
       // Send email notification to customer
       if (editedOrder.email) {
-        await supabase.functions.invoke("send-email", {
+        const { error: emailError } = await supabase.functions.invoke("send-email", {
           body: {
             type: "order_message",
             to: editedOrder.email,
@@ -241,6 +242,7 @@ export function OrderDetailDialog({ order, open, onOpenChange, onUpdate }: Order
             },
           },
         });
+        if (emailError) throw emailError;
       }
 
       toast({ title: "Message sent to customer" });

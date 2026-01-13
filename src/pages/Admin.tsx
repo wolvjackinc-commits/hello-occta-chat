@@ -273,7 +273,7 @@ const Admin = () => {
 
       if (order && profile?.email && previousStatus !== newStatus) {
         try {
-          await supabase.functions.invoke("send-email", {
+          const { error: emailError } = await supabase.functions.invoke("send-email", {
             body: {
               type: "status_update",
               to: profile.email,
@@ -286,6 +286,7 @@ const Admin = () => {
               },
             },
           });
+          if (emailError) throw emailError;
           toast({
             title: "Customer notified",
             description: `Status change email sent to ${profile.email}.`,
@@ -347,7 +348,7 @@ const Admin = () => {
       // Send status update email
       if (order && newStatus !== 'pending') {
         try {
-          await supabase.functions.invoke('send-email', {
+          const { error: emailError } = await supabase.functions.invoke('send-email', {
             body: {
               type: 'status_update',
               to: order.email,
@@ -360,6 +361,7 @@ const Admin = () => {
               }
             }
           });
+          if (emailError) throw emailError;
         } catch (emailError) {
           logError('Admin.updateGuestOrderStatus.sendEmail', emailError);
         }

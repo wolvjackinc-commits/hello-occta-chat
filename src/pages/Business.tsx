@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   BadgePercent,
   Check,
-  CirclePoundSterling,
+  PoundSterling,
   Clock,
   Headset,
   ShieldCheck,
@@ -222,7 +222,7 @@ const Business = () => {
                     <h3 className="font-display text-2xl uppercase">{plan.name}</h3>
                     <p className="text-sm text-muted-foreground">Up to {plan.speed}</p>
                   </div>
-                  <CirclePoundSterling className="w-6 h-6 text-primary" />
+                  <PoundSterling className="w-6 h-6 text-primary" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">{plan.summary}</p>
                 <div className="flex items-end gap-2 mb-4">

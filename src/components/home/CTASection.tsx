@@ -99,7 +99,7 @@ const CTASection = () => {
           {/* Subtext */}
           <motion.p
             variants={itemVariants}
-            className="text-xl text-background/70 max-w-xl mb-10"
+            className="text-xl text-background/85 max-w-xl mb-10"
           >
             Join the growing number of sensible people who've had enough of the big providers. 
             We'll even handle the switch for you — no hassle, no downtime, no drama.
@@ -151,7 +151,7 @@ const CTASection = () => {
           {/* Trust Note */}
           <motion.p
             variants={itemVariants}
-            className="mt-8 text-sm text-background/50 font-display uppercase tracking-wider"
+            className="mt-8 text-sm text-background/70 font-display uppercase tracking-wider"
           >
             No contracts longer than 30 days • Cancel anytime • We're confident, not desperate
           </motion.p>

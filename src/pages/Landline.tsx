@@ -9,6 +9,7 @@ import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Check, PhoneCall, VoicemailIcon, Shield, ArrowRight, X } from "lucide-react";
 import { landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
+import { SEO, StructuredData, createServiceSchema } from "@/components/seo";
 
 const Landline = () => {
   const [isReady, setIsReady] = useState(false);
@@ -54,8 +55,21 @@ const Landline = () => {
     );
   }
 
+  const landlineServiceSchema = createServiceSchema({
+    name: 'OCCTA Landline',
+    description: 'Reliable UK landline phone service with fraud protection and free voicemail.',
+    url: '/landline',
+    price: '7.99',
+  });
+
   return (
     <LayoutComponent>
+      <SEO 
+        title="Landline Plans"
+        description="UK landline phone plans from £7.99/mo. Crystal clear digital voice, fraud protection, free voicemail. No contracts."
+        canonical="/landline"
+      />
+      <StructuredData customSchema={landlineServiceSchema} type="localBusiness" />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
 import AIChatBot from "@/components/chat/AIChatBot";
 import { useAppMode } from "@/hooks/useAppMode";
+import { SEO, StructuredData, createFAQSchema } from "@/components/seo";
 import { 
   Search, 
   Wifi, 
@@ -217,8 +218,18 @@ const Support = () => {
     );
   }
 
+  // Generate FAQ schema for top 10 FAQs
+  const topFaqs = faqs.slice(0, 10).map(f => ({ question: f.question, answer: f.answer }));
+  const faqSchema = createFAQSchema(topFaqs);
+
   return (
     <Layout>
+      <SEO 
+        title="Support & Help Centre"
+        description="Get help with your OCCTA services. Search FAQs, submit support tickets, or call us on 0800 260 6627. We're here to help."
+        canonical="/support"
+      />
+      <StructuredData customSchema={faqSchema} type="localBusiness" />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

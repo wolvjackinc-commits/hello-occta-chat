@@ -9,6 +9,7 @@ import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Check, Smartphone, Signal, Globe, ArrowRight, X } from "lucide-react";
 import { simPlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
+import { SEO, StructuredData, createServiceSchema } from "@/components/seo";
 
 const SimPlans = () => {
   const [isReady, setIsReady] = useState(false);
@@ -55,8 +56,21 @@ const SimPlans = () => {
     );
   }
 
+  const simServiceSchema = createServiceSchema({
+    name: 'OCCTA SIM Plans',
+    description: 'UK SIM-only mobile plans with 5G, EU roaming, and no contracts.',
+    url: '/sim-plans',
+    price: '7.99',
+  });
+
   return (
     <LayoutComponent>
+      <SEO 
+        title="SIM Plans"
+        description="UK SIM-only mobile plans from £7.99/mo. Full 5G network, EU roaming included, no credit checks, no contracts. Order your SIM today."
+        canonical="/sim-plans"
+      />
+      <StructuredData customSchema={simServiceSchema} type="localBusiness" />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

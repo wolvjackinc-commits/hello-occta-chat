@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Users, Award, Heart, ArrowRight, Phone, X } from "lucide-react";
+import { SEO } from "@/components/seo";
 
 const About = () => {
   const stats = [
@@ -21,6 +22,11 @@ const About = () => {
 
   return (
     <Layout>
+      <SEO 
+        title="About Us"
+        description="OCCTA is a Yorkshire-based telecom company providing honest, affordable broadband, SIM, and landline services. No hidden fees, real customer support."
+        canonical="/about"
+      />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 hero-pattern">
         <div className="container mx-auto px-4">

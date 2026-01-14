@@ -10,6 +10,7 @@ import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X } from "lucide-react";
 import { broadbandPlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
+import { SEO, StructuredData, createServiceSchema } from "@/components/seo";
 
 const Broadband = () => {
   const [isReady, setIsReady] = useState(false);
@@ -56,8 +57,21 @@ const Broadband = () => {
     );
   }
 
+  const broadbandServiceSchema = createServiceSchema({
+    name: 'OCCTA Broadband',
+    description: 'Fast, reliable fibre broadband with speeds up to 900Mbps. No contracts, no price rises.',
+    url: '/broadband',
+    price: '22.99',
+  });
+
   return (
     <LayoutComponent>
+      <SEO 
+        title="Broadband Plans"
+        description="Fast, reliable UK fibre broadband from £22.99/mo. Speeds up to 900Mbps, no contracts, no hidden fees. Check availability now."
+        canonical="/broadband"
+      />
+      <StructuredData customSchema={broadbandServiceSchema} type="localBusiness" />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

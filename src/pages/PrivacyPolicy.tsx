@@ -1,4 +1,5 @@
 import Layout from "@/components/layout/Layout";
+import { SEO } from "@/components/seo";
 
 const sections = [
   {
@@ -127,6 +128,11 @@ const sections = [
 const PrivacyPolicy = () => {
   return (
     <Layout>
+      <SEO 
+        title="Privacy Policy"
+        description="OCCTA's Privacy Policy. Learn how we collect, use, and protect your personal data in compliance with UK GDPR and Data Protection Act 2018."
+        canonical="/privacy"
+      />
       <section className="min-h-[calc(100vh-80px)] py-12 bg-secondary/30">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">

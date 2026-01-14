@@ -1,4 +1,5 @@
 import Layout from "@/components/layout/Layout";
+import { SEO } from "@/components/seo";
 
 const sections = [
   {
@@ -104,6 +105,11 @@ const sections = [
 const CookiePolicy = () => {
   return (
     <Layout>
+      <SEO 
+        title="Cookie Policy"
+        description="OCCTA Cookie Policy. How we use cookies on our website. Compliant with UK GDPR and PECR regulations."
+        canonical="/cookies"
+      />
       <section className="min-h-[calc(100vh-80px)] py-12 bg-secondary/30">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">

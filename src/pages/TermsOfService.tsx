@@ -1,4 +1,5 @@
 import Layout from "@/components/layout/Layout";
+import { SEO } from "@/components/seo";
 
 const sections = [
   {
@@ -237,6 +238,11 @@ const sections = [
 const TermsOfService = () => {
   return (
     <Layout>
+      <SEO 
+        title="Terms of Service"
+        description="OCCTA Terms of Service. Legal agreement covering our broadband, SIM, and landline services. Compliant with UK Communications Act 2003."
+        canonical="/terms"
+      />
       <section className="min-h-[calc(100vh-80px)] py-12 bg-secondary/30">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">

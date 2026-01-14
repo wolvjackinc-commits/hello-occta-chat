@@ -15,6 +15,7 @@ import {
   Wifi,
 } from "lucide-react";
 import { useAppMode } from "@/hooks/useAppMode";
+import { SEO, StructuredData, createServiceSchema } from "@/components/seo";
 
 const planHighlights = [
   {
@@ -115,8 +116,21 @@ const Business = () => {
     );
   }
 
+  const businessServiceSchema = createServiceSchema({
+    name: 'OCCTA Business Broadband',
+    description: 'Business fibre broadband with priority support, static IPs, and no contracts.',
+    url: '/business',
+    price: '24',
+  });
+
   return (
     <LayoutComponent>
+      <SEO 
+        title="Business Broadband"
+        description="Business fibre broadband from £24/mo. Static IPs, priority support, no contracts. Trusted by 5,000+ UK businesses."
+        canonical="/business"
+      />
+      <StructuredData customSchema={businessServiceSchema} type="localBusiness" />
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-10 items-center">

@@ -9,6 +9,7 @@ import AppHome from "@/components/app/AppHome";
 import AppWelcome from "@/components/app/AppWelcome";
 import { useAppMode } from "@/hooks/useAppMode";
 import { supabase } from "@/integrations/supabase/client";
+import { SEO } from "@/components/seo";
 
 const Index = () => {
   const { isAppMode } = useAppMode();
@@ -47,6 +48,11 @@ const Index = () => {
   // Browser mode: show full website
   return (
     <Layout>
+      <SEO 
+        title="Home"
+        description="OCCTA provides affordable broadband, SIM plans, and landline services across the UK. Check availability and get connected today with speeds up to 900Mbps."
+        canonical="/"
+      />
       <HeroSection />
       <ServicesSection />
       <WhyUsSection />

@@ -38,28 +38,28 @@ const Footer = () => {
               </div>
               <div>
                 <span className="font-display text-3xl">OCCTA</span>
-                <p className="text-xs text-background/50 uppercase tracking-widest">Limited</p>
+                <p className="text-xs text-background/70 uppercase tracking-widest">Limited</p>
               </div>
             </Link>
-            <p className="text-background/70 mb-6 max-w-xs">
+            <p className="text-background/80 mb-6 max-w-xs">
               Proper British telecom. No robots, no rubbish, no regrets.
             </p>
             
             {/* Contact Info */}
             <div className="space-y-3">
-              <a href="tel:08002606627" className="flex items-center gap-3 text-background/70 hover:text-primary transition-colors">
+              <a href="tel:08002606627" className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
                 <div className="p-2 bg-primary/20">
                   <Phone className="w-4 h-4" />
                 </div>
                 <span className="font-display">0800 260 6627</span>
               </a>
-              <a href="mailto:hello@occtatele.com" className="flex items-center gap-3 text-background/70 hover:text-primary transition-colors">
+              <a href="mailto:hello@occtatele.com" className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
                 <div className="p-2 bg-primary/20">
                   <Mail className="w-4 h-4" />
                 </div>
                 <span>hello@occtatele.com</span>
               </a>
-              <div className="flex items-start gap-3 text-background/70">
+              <div className="flex items-start gap-3 text-background/80">
                 <div className="p-2 bg-primary/20">
                   <MapPin className="w-4 h-4" />
                 </div>
@@ -80,7 +80,7 @@ const Footer = () => {
                 <li key={link.name}>
                   <Link 
                     to={link.path} 
-                    className="text-background/70 hover:text-primary transition-colors font-medium"
+                    className="text-background/80 hover:text-primary transition-colors font-medium"
                   >
                     {link.name}
                   </Link>
@@ -97,7 +97,7 @@ const Footer = () => {
                 <li key={link.name}>
                   <Link 
                     to={link.path} 
-                    className="text-background/70 hover:text-primary transition-colors font-medium"
+                    className="text-background/80 hover:text-primary transition-colors font-medium"
                   >
                     {link.name}
                   </Link>
@@ -114,7 +114,7 @@ const Footer = () => {
                 <li key={link.name}>
                   <Link 
                     to={link.path} 
-                    className="text-background/70 hover:text-primary transition-colors font-medium"
+                    className="text-background/80 hover:text-primary transition-colors font-medium"
                   >
                     {link.name}
                   </Link>
@@ -129,16 +129,16 @@ const Footer = () => {
       <div className="border-t-4 border-primary/20">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-background/50 text-sm">
+            <p className="text-background/70 text-sm">
               © {currentYear} OCCTA Limited. All rights reserved.
             </p>
-            <div className="flex items-center gap-6 text-sm text-background/50">
+            <div className="flex items-center gap-6 text-sm text-background/70">
               <span>Company No. 13828933</span>
               <span>•</span>
               <span>UK Registered</span>
             </div>
           </div>
-          <p className="text-center text-xs text-background/30 mt-4">
+          <p className="text-center text-xs text-background/60 mt-4">
             OCCTA Limited complies with all UK telecommunications regulations and GDPR requirements. 98% of our customers recommend us.
           </p>
         </div>

@@ -93,7 +93,7 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
             CREATE YOUR
             <span className="text-primary ml-3">PERFECT BUNDLE</span>
           </h2>
-          <p className="text-background/70 text-lg max-w-2xl mx-auto">
+          <p className="text-background/85 text-lg max-w-2xl mx-auto">
             Mix and match our services to get exactly what you need. 
             <span className="text-primary font-bold"> Save 10% with 2 services, 15% with all 3!</span>
           </p>
@@ -299,7 +299,7 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
         {/* Empty State */}
         {selectedPlans.length === 0 && (
           <motion.p 
-            className="text-center text-background/50 text-lg"
+            className="text-center text-background/70 text-lg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >

@@ -52,7 +52,7 @@ const AppWelcome = () => {
           <h1 className="text-3xl font-bold text-accent-foreground mb-3">
             Switch to Better<br />Broadband Today
           </h1>
-          <p className="text-accent-foreground/80 text-sm mb-8">
+          <p className="text-accent-foreground/90 text-sm mb-8">
             No contracts, no hassle. Fast, reliable internet for your home.
           </p>
 
@@ -156,7 +156,7 @@ const AppWelcome = () => {
           className="bg-accent rounded-2xl p-5 text-center mb-8"
         >
           <h3 className="font-bold text-accent-foreground text-lg mb-2">Ready to Switch?</h3>
-          <p className="text-accent-foreground/80 text-sm mb-4">
+          <p className="text-accent-foreground/90 text-sm mb-4">
             Join thousands of happy customers
           </p>
           <Link to="/broadband">

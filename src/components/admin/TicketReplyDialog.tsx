@@ -342,10 +342,6 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
 
           {/* Reply Input */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
-              <span>Internal note (not sent to customer)</span>
-              <Switch checked={isInternalMessage} onCheckedChange={setIsInternalMessage} />
-            </div>
             <Select
               onValueChange={(value) => {
                 const canned = cannedReplies.find((reply) => reply.label === value);

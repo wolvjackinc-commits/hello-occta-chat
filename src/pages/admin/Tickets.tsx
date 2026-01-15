@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 
 const statusOptions = ["open", "in_progress", "resolved", "closed"] as const;
+type TicketStatus = typeof statusOptions[number];
 
 export const AdminTickets = () => {
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
@@ -26,7 +27,7 @@ export const AdminTickets = () => {
     queryFn: async () => {
       const { data: tickets } = await supabase
         .from("support_tickets")
-        .select("id, user_id, subject, description, status, priority, created_at, assigned_to, internal_notes")
+        .select("id, user_id, subject, description, status, priority, category, created_at")
         .order("created_at", { ascending: false });
 
       const userIds = tickets?.map((ticket) => ticket.user_id) ?? [];
@@ -45,7 +46,7 @@ export const AdminTickets = () => {
     return map;
   }, [data?.profiles]);
 
-  const handleStatusChange = async (ticketId: string, status: string) => {
+  const handleStatusChange = async (ticketId: string, status: TicketStatus) => {
     await supabase.from("support_tickets").update({ status }).eq("id", ticketId);
     refetch();
   };
@@ -54,7 +55,7 @@ export const AdminTickets = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display">Ticket inbox</h1>
-        <p className="text-muted-foreground">Respond quickly to breaches and manage replies.</p>
+        <p className="text-muted-foreground">Respond quickly to issues and manage replies.</p>
       </div>
 
       <div className="grid gap-4">
@@ -67,22 +68,22 @@ export const AdminTickets = () => {
                   {profileMap.get(ticket.user_id)?.full_name || "Customer"}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  SLA timer: {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
+                  Created: {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
                 </div>
-                {ticket.assigned_to && (
-                  <div className="text-xs text-muted-foreground">Assigned: {ticket.assigned_to}</div>
-                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">{ticket.priority}</Badge>
-                <Select value={ticket.status} onValueChange={(value) => handleStatusChange(ticket.id, value)}>
+                <Select 
+                  value={ticket.status} 
+                  onValueChange={(value: TicketStatus) => handleStatusChange(ticket.id, value)}
+                >
                   <SelectTrigger className="w-36">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map((status) => (
                       <SelectItem key={status} value={status}>
-                        {status}
+                        {status.replace('_', ' ')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -100,6 +101,11 @@ export const AdminTickets = () => {
             </div>
           </Card>
         ))}
+        {(!data?.tickets || data.tickets.length === 0) && (
+          <Card className="border-2 border-foreground p-8 text-center">
+            <p className="text-muted-foreground">No tickets found.</p>
+          </Card>
+        )}
       </div>
 
       <TicketReplyDialog

@@ -16,15 +16,11 @@ export const ProtectedAdminRoute = () => {
       if (!sessionData.session) {
         return { status: "no-session" } as const;
       }
-      const { data: rolesData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", sessionData.session.user.id);
-      const roles = rolesData?.map((role) => role.role) ?? [];
-      const allowed = roles.some((role) =>
-        ["admin", "billing", "support", "provisioning", "read_only"].includes(role)
-      );
-      return { status: allowed ? "admin" : "denied" } as const;
+      const { data: hasAdminRole } = await supabase.rpc("has_role", {
+        _user_id: sessionData.session.user.id,
+        _role: "admin",
+      });
+      return { status: hasAdminRole ? "admin" : "denied" } as const;
     },
     staleTime: 60_000,
   });

@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
 
 const orderStatuses = ["pending", "confirmed", "active", "cancelled"] as const;
+type OrderStatus = typeof orderStatuses[number];
+
 const guestStatuses = ["pending", "processing", "dispatched", "installed", "active", "cancelled"] as const;
 
 type GuestOrder = any;
@@ -24,7 +26,7 @@ type Order = {
   id: string;
   service_type: string;
   plan_name: string;
-  status: string;
+  status: OrderStatus;
   admin_notes?: string | null;
 };
 
@@ -46,13 +48,13 @@ export const AdminOrders = () => {
         orders: (orders.data || []).map((order) => ({
           ...order,
           admin_notes: order.notes ?? null,
-        })),
+        })) as Order[],
         guestOrders: guestOrders.data || [],
       };
     },
   });
 
-  const handleStatusChange = async (id: string, status: string) => {
+  const handleStatusChange = async (id: string, status: OrderStatus) => {
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);
     if (error) {
       toast({ title: "Failed to update status", variant: "destructive" });
@@ -107,7 +109,7 @@ export const AdminOrders = () => {
                   <div className="font-medium">{order.service_type} · {order.plan_name}</div>
                   <div className="text-xs text-muted-foreground">{order.id}</div>
                 </div>
-                <Select value={order.status} onValueChange={(value) => handleStatusChange(order.id, value)}>
+                <Select value={order.status} onValueChange={(value: OrderStatus) => handleStatusChange(order.id, value)}>
                   <SelectTrigger className="w-full md:w-48">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -132,6 +134,11 @@ export const AdminOrders = () => {
               </div>
             </Card>
           ))}
+          {orders.length === 0 && (
+            <Card className="border-2 border-foreground p-8 text-center">
+              <p className="text-muted-foreground">No orders found.</p>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="guest" className="space-y-4">
@@ -168,6 +175,11 @@ export const AdminOrders = () => {
               </div>
             </Card>
           ))}
+          {guestOrders.length === 0 && (
+            <Card className="border-2 border-foreground p-8 text-center">
+              <p className="text-muted-foreground">No guest orders found.</p>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 

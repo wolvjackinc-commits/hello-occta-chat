@@ -47,17 +47,14 @@ const navItems = [
 
 type SearchResult = {
   id: string;
-  type: "customer" | "order" | "service" | "guest_order";
+  type: "customer" | "order" | "guest_order";
   label: string;
   description?: string | null;
   href: string;
 };
 
 type QuickActionType =
-  | "invoice"
   | "ticket"
-  | "note"
-  | "suspend"
   | "installation"
   | "email"
   | null;
@@ -71,10 +68,7 @@ export const AdminLayout = () => {
     userId: "",
     subject: "",
     message: "",
-    invoiceNumber: "",
     orderId: "",
-    amount: "",
-    serviceId: "",
     slotId: "",
     customerName: "",
     customerEmail: "",
@@ -89,7 +83,7 @@ export const AdminLayout = () => {
     enabled: searchEnabled,
     queryFn: async () => {
       const term = searchTerm.trim();
-      const [profiles, guestOrders, services, orders] = await Promise.all([
+      const [profiles, guestOrders, orders] = await Promise.all([
         supabase
           .from("profiles")
           .select("id, full_name, email, phone, account_number")
@@ -101,13 +95,6 @@ export const AdminLayout = () => {
           .from("guest_orders")
           .select("id, order_number, full_name, email")
           .ilike("order_number", `%${term}%`)
-          .limit(5),
-        supabase
-          .from("services")
-          .select("id, user_id, service_type, identifiers, status")
-          .or(
-            `identifiers->>landline_number.ilike.%${term}%,identifiers->>msisdn.ilike.%${term}%,identifiers->>iccid.ilike.%${term}%,identifiers->>broadband_ref.ilike.%${term}%,identifiers->>account_number.ilike.%${term}%`
-          )
           .limit(5),
         supabase
           .from("orders")
@@ -138,17 +125,6 @@ export const AdminLayout = () => {
         });
       });
 
-      services.data?.forEach((service) => {
-        const identifiers = service.identifiers as Record<string, string> | null;
-        results.push({
-          id: service.id,
-          type: "service",
-          label: `${service.service_type} service`,
-          description: identifiers?.landline_number || identifiers?.msisdn || identifiers?.iccid || service.status,
-          href: `/admin/services?service=${service.id}`,
-        });
-      });
-
       orders.data?.forEach((order) => {
         results.push({
           id: order.id,
@@ -165,14 +141,8 @@ export const AdminLayout = () => {
 
   const actionTitle = useMemo(() => {
     switch (activeAction) {
-      case "invoice":
-        return "Create invoice";
       case "ticket":
         return "Create ticket";
-      case "note":
-        return "Add customer note";
-      case "suspend":
-        return "Suspend service";
       case "installation":
         return "Book installation";
       case "email":
@@ -184,24 +154,6 @@ export const AdminLayout = () => {
 
   const handleActionSubmit = async () => {
     try {
-      if (activeAction === "invoice") {
-        const totals = {
-          subtotal: Number(actionPayload.amount || 0),
-          vat: 0,
-          total: Number(actionPayload.amount || 0),
-        };
-        const { error } = await supabase.from("invoices").insert({
-          invoice_number: actionPayload.invoiceNumber,
-          user_id: actionPayload.userId,
-          order_id: actionPayload.orderId || null,
-          issue_date: new Date().toISOString(),
-          due_date: new Date(Date.now() + 14 * 86400000).toISOString(),
-          status: "draft",
-          totals,
-        });
-        if (error) throw error;
-      }
-
       if (activeAction === "ticket") {
         const { error } = await supabase.from("support_tickets").insert({
           user_id: actionPayload.userId,
@@ -210,25 +162,6 @@ export const AdminLayout = () => {
           status: "open",
           priority: "medium",
         });
-        if (error) throw error;
-      }
-
-      if (activeAction === "note") {
-        const { data: authData } = await supabase.auth.getUser();
-        const { error } = await supabase.from("customer_notes").insert({
-          user_id: actionPayload.userId,
-          note: actionPayload.message,
-          visibility: "internal",
-          created_by: authData?.user?.id,
-        });
-        if (error) throw error;
-      }
-
-      if (activeAction === "suspend") {
-        const { error } = await supabase
-          .from("services")
-          .update({ status: "suspended" })
-          .eq("id", actionPayload.serviceId);
         if (error) throw error;
       }
 
@@ -266,10 +199,7 @@ export const AdminLayout = () => {
         userId: "",
         subject: "",
         message: "",
-        invoiceNumber: "",
         orderId: "",
-        amount: "",
-        serviceId: "",
         slotId: "",
         customerName: "",
         customerEmail: "",
@@ -325,7 +255,7 @@ export const AdminLayout = () => {
                   <Input
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder="Search customers, orders, landline numbers"
+                    placeholder="Search customers, orders..."
                     className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                   {isSearching && <Zap className="h-4 w-4 animate-pulse text-muted-foreground" />}
@@ -357,17 +287,8 @@ export const AdminLayout = () => {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" onClick={() => setActiveAction("invoice")}>
-                  Create invoice
-                </Button>
                 <Button variant="outline" onClick={() => setActiveAction("ticket")}>
                   Create ticket
-                </Button>
-                <Button variant="outline" onClick={() => setActiveAction("note")}>
-                  Add note
-                </Button>
-                <Button variant="outline" onClick={() => setActiveAction("suspend")}>
-                  Suspend service
                 </Button>
                 <Button variant="outline" onClick={() => setActiveAction("installation")}>
                   Book installation
@@ -394,43 +315,15 @@ export const AdminLayout = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {(activeAction === "invoice" || activeAction === "ticket" || activeAction === "note") && (
-              <Input
-                placeholder="Customer user ID"
-                value={actionPayload.userId}
-                onChange={(event) =>
-                  setActionPayload((prev) => ({ ...prev, userId: event.target.value }))
-                }
-              />
-            )}
-            {activeAction === "invoice" && (
-              <>
-                <Input
-                  placeholder="Invoice number"
-                  value={actionPayload.invoiceNumber}
-                  onChange={(event) =>
-                    setActionPayload((prev) => ({ ...prev, invoiceNumber: event.target.value }))
-                  }
-                />
-                <Input
-                  placeholder="Order ID (optional)"
-                  value={actionPayload.orderId}
-                  onChange={(event) =>
-                    setActionPayload((prev) => ({ ...prev, orderId: event.target.value }))
-                  }
-                />
-                <Input
-                  placeholder="Total amount"
-                  type="number"
-                  value={actionPayload.amount}
-                  onChange={(event) =>
-                    setActionPayload((prev) => ({ ...prev, amount: event.target.value }))
-                  }
-                />
-              </>
-            )}
             {activeAction === "ticket" && (
               <>
+                <Input
+                  placeholder="Customer user ID"
+                  value={actionPayload.userId}
+                  onChange={(event) =>
+                    setActionPayload((prev) => ({ ...prev, userId: event.target.value }))
+                  }
+                />
                 <Input
                   placeholder="Subject"
                   value={actionPayload.subject}
@@ -446,24 +339,6 @@ export const AdminLayout = () => {
                   }
                 />
               </>
-            )}
-            {activeAction === "note" && (
-              <Textarea
-                placeholder="Internal note"
-                value={actionPayload.message}
-                onChange={(event) =>
-                  setActionPayload((prev) => ({ ...prev, message: event.target.value }))
-                }
-              />
-            )}
-            {activeAction === "suspend" && (
-              <Input
-                placeholder="Service ID"
-                value={actionPayload.serviceId}
-                onChange={(event) =>
-                  setActionPayload((prev) => ({ ...prev, serviceId: event.target.value }))
-                }
-              />
             )}
             {activeAction === "installation" && (
               <>
@@ -507,14 +382,14 @@ export const AdminLayout = () => {
             {activeAction === "email" && (
               <>
                 <Input
-                  placeholder="Recipient name"
+                  placeholder="Customer name"
                   value={actionPayload.customerName}
                   onChange={(event) =>
                     setActionPayload((prev) => ({ ...prev, customerName: event.target.value }))
                   }
                 />
                 <Input
-                  placeholder="Recipient email"
+                  placeholder="Customer email"
                   value={actionPayload.customerEmail}
                   onChange={(event) =>
                     setActionPayload((prev) => ({ ...prev, customerEmail: event.target.value }))
@@ -540,7 +415,7 @@ export const AdminLayout = () => {
               <Button variant="outline" onClick={() => setActiveAction(null)}>
                 Cancel
               </Button>
-              <Button onClick={handleActionSubmit}>Save</Button>
+              <Button onClick={handleActionSubmit}>Submit</Button>
             </div>
           </div>
         </DialogContent>

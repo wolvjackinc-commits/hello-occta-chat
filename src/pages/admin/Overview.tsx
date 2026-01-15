@@ -15,7 +15,7 @@ export const AdminOverview = () => {
   const { data: kpis } = useQuery({
     queryKey: ["admin-overview-kpis"],
     queryFn: async () => {
-      const [profiles, openTickets, pendingGuest, installsToday, installsWeek, urgentTickets, failedPayments] =
+      const [profiles, openTickets, pendingGuest, installsToday, installsWeek, urgentTickets] =
         await Promise.all([
           supabase.from("profiles").select("id", { count: "exact", head: true }),
           supabase
@@ -41,10 +41,6 @@ export const AdminOverview = () => {
             .select("id", { count: "exact", head: true })
             .eq("priority", "urgent")
             .neq("status", "closed"),
-          supabase
-            .from("payment_attempts")
-            .select("id", { count: "exact", head: true })
-            .eq("status", "failed"),
         ]);
 
       return {
@@ -53,7 +49,7 @@ export const AdminOverview = () => {
         pendingGuestOrders: pendingGuest.count || 0,
         installsToday: installsToday.count || 0,
         installsWeek: installsWeek.count || 0,
-        urgentItems: (urgentTickets.count || 0) + (failedPayments.count || 0),
+        urgentItems: urgentTickets.count || 0,
       };
     },
   });
@@ -119,7 +115,7 @@ export const AdminOverview = () => {
           <div className="text-3xl font-display">{kpis?.installsWeek ?? "—"}</div>
         </div>
         <div className={kpiCardClass}>
-          <div className="text-xs uppercase text-muted-foreground">Failed or urgent items</div>
+          <div className="text-xs uppercase text-muted-foreground">Urgent tickets</div>
           <div className="text-3xl font-display">{kpis?.urgentItems ?? "—"}</div>
         </div>
       </div>

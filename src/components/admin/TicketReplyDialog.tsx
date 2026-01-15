@@ -9,7 +9,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -37,6 +39,8 @@ type SupportTicket = {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   category: string | null;
   created_at: string;
+  assigned_to?: string | null;
+  internal_notes?: string | null;
 };
 
 type TicketMessage = {
@@ -45,6 +49,7 @@ type TicketMessage = {
   user_id: string;
   message: string;
   is_staff_reply: boolean;
+  is_internal: boolean;
   created_at: string;
 };
 
@@ -55,6 +60,20 @@ type Profile = {
 };
 
 const statusOptions = ['open', 'in_progress', 'resolved', 'closed'] as const;
+const cannedReplies = [
+  {
+    label: "Acknowledgement",
+    message: "Thanks for flagging this. We're investigating now and will update you shortly.",
+  },
+  {
+    label: "Awaiting info",
+    message: "We need a little more information to proceed. Please share any recent changes or error details.",
+  },
+  {
+    label: "Resolved",
+    message: "We've resolved the issue and confirmed services are stable. Let us know if anything else comes up.",
+  },
+];
 
 const statusColors: Record<string, string> = {
   open: "bg-warning text-warning-foreground",
@@ -83,12 +102,17 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentStatus, setCurrentStatus] = useState<SupportTicket['status']>('open');
+  const [assignedTo, setAssignedTo] = useState("");
+  const [internalNotes, setInternalNotes] = useState("");
+  const [isInternalMessage, setIsInternalMessage] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   useEffect(() => {
     if (ticket) {
       setCurrentStatus(ticket.status);
+      setAssignedTo(ticket.assigned_to || "");
+      setInternalNotes(ticket.internal_notes || "");
       fetchMessages();
     }
   }, [ticket]);
@@ -132,6 +156,22 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
     }
   };
 
+  const handleInternalUpdate = async () => {
+    if (!ticket) return;
+    try {
+      const { error } = await supabase
+        .from("support_tickets")
+        .update({ assigned_to: assignedTo || null, internal_notes: internalNotes || null })
+        .eq("id", ticket.id);
+      if (error) throw error;
+      onUpdate({ ...ticket, assigned_to: assignedTo || null, internal_notes: internalNotes || null });
+      toast({ title: "Internal notes updated" });
+    } catch (error) {
+      logError("TicketReplyDialog.handleInternalUpdate", error);
+      toast({ title: "Failed to update notes", variant: "destructive" });
+    }
+  };
+
   const handleSendReply = async () => {
     if (!ticket || !newMessage.trim()) return;
     setIsSending(true);
@@ -147,12 +187,13 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
           user_id: user.id,
           message: newMessage.trim(),
           is_staff_reply: true,
+          is_internal: isInternalMessage,
         });
 
       if (insertError) throw insertError;
 
       // Send email notification if we have user email
-      if (profile?.email) {
+      if (!isInternalMessage && profile?.email) {
         const { error: emailError } = await supabase.functions.invoke("send-email", {
           body: {
             type: "ticket_reply",
@@ -165,10 +206,19 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
           },
         });
         if (emailError) throw emailError;
+        await supabase.from("communications_log").insert({
+          user_id: ticket.user_id,
+          channel: "email",
+          template_key: "ticket_reply",
+          subject: `Support Ticket Reply: ${ticket.subject}`,
+          to_address: profile.email,
+          status: "sent",
+        });
       }
 
       toast({ title: "Reply sent successfully" });
       setNewMessage("");
+      setIsInternalMessage(false);
       fetchMessages();
     } catch (error) {
       logError("TicketReplyDialog.handleSendReply", error);
@@ -222,6 +272,28 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
             </div>
           </div>
 
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <div className="text-xs uppercase text-muted-foreground">Assigned to</div>
+              <Input
+                placeholder="Staff user ID"
+                value={assignedTo}
+                onChange={(event) => setAssignedTo(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="text-xs uppercase text-muted-foreground">Internal notes</div>
+              <Textarea
+                placeholder="Add internal context"
+                value={internalNotes}
+                onChange={(event) => setInternalNotes(event.target.value)}
+              />
+            </div>
+          </div>
+          <Button variant="outline" onClick={handleInternalUpdate}>
+            Save internal notes
+          </Button>
+
           {/* Original Description */}
           <div className="p-4 border-4 border-foreground bg-card">
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
@@ -254,6 +326,7 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
                       </span>
                       <span>•</span>
                       <span>{format(new Date(msg.created_at), "dd MMM HH:mm")}</span>
+                      {msg.is_internal && <Badge variant="outline">Internal</Badge>}
                     </div>
                     <p className="whitespace-pre-wrap">{msg.message}</p>
                   </div>
@@ -268,25 +341,50 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
           </ScrollArea>
 
           {/* Reply Input */}
-          <div className="flex gap-2">
-            <Textarea
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your reply..."
-              className="border-4 border-foreground"
-              rows={3}
-            />
-            <Button
-              variant="hero"
-              onClick={handleSendReply}
-              disabled={isSending || !newMessage.trim()}
-              className="px-6"
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
+              <span>Internal note (not sent to customer)</span>
+              <Switch checked={isInternalMessage} onCheckedChange={setIsInternalMessage} />
+            </div>
+            <Select
+              onValueChange={(value) => {
+                const canned = cannedReplies.find((reply) => reply.label === value);
+                if (canned) setNewMessage(canned.message);
+              }}
             >
-              {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-            </Button>
+              <SelectTrigger>
+                <SelectValue placeholder="Insert canned reply" />
+              </SelectTrigger>
+              <SelectContent>
+                {cannedReplies.map((reply) => (
+                  <SelectItem key={reply.label} value={reply.label}>
+                    {reply.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type your reply..."
+                className="border-4 border-foreground"
+                rows={3}
+              />
+              <Button
+                variant="hero"
+                onClick={handleSendReply}
+                disabled={isSending || !newMessage.trim()}
+                className="px-6"
+              >
+                {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+              </Button>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Customer will receive an email notification with your reply.
+            {isInternalMessage
+              ? "Internal note saved; customer will not be notified."
+              : "Customer will receive an email notification with your reply."}
           </p>
         </div>
       </DialogContent>

@@ -272,7 +272,7 @@ const Support = () => {
                 <a href="tel:08002606627" className="flex items-center gap-2 px-4 py-2 border-4 border-foreground bg-primary text-primary-foreground font-display text-sm">
                   <Phone className="w-4 h-4" /> Call Us
                 </a>
-                <a href="mailto:hello@occtatele.com" className="flex items-center gap-2 px-4 py-2 border-4 border-foreground bg-background font-display text-sm">
+                <a href="mailto:hello@occta.co.uk" className="flex items-center gap-2 px-4 py-2 border-4 border-foreground bg-background font-display text-sm">
                   <Mail className="w-4 h-4" /> Email
                 </a>
               </div>

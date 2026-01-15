@@ -8,7 +8,7 @@ const sections = [
       "OCCTA Limited is the data controller responsible for your personal data.",
       "Name: OCCTA Limited",
       "Registered address: 22 Pavilion View, Huddersfield, HD3 3WU, UK",
-      "Website: https://www.occtatele.com",
+      "Website: https://www.occta.co.uk",
       "Email: support@occta.co.uk",
     ],
   },
@@ -48,7 +48,7 @@ const sections = [
   {
     title: "4. Cookies and Tracking Technologies",
     content: [
-      "www.occtatele.com uses cookies and similar technologies.",
+      "www.occta.co.uk uses cookies and similar technologies.",
       "We follow PECR rules, which require consent for storage and access to information on devices. You can manage cookie consent via our cookie banner and browser settings.",
     ],
   },
@@ -111,7 +111,7 @@ const sections = [
   {
     title: "12. Changes to This Policy",
     content: [
-      "We may update this policy. The latest version will always be at www.occtatele.com/privacy-policy with the date updated.",
+      "We may update this policy. The latest version will always be at www.occta.co.uk/privacy-policy with the date updated.",
     ],
   },
   {
@@ -144,7 +144,7 @@ const PrivacyPolicy = () => {
                 OCCTA Limited (“OCCTA”, “we”, “us”, or “our”) is committed to protecting and
                 respecting your privacy. This Privacy Policy explains how we collect, use,
                 store, share, and protect your personal data when you visit or use our website
-                https://www.occtatele.com, our services, or communicate with us.
+                https://www.occta.co.uk, our services, or communicate with us.
               </p>
               <p className="text-muted-foreground mt-4">
                 This policy is designed to comply with UK General Data Protection Regulation

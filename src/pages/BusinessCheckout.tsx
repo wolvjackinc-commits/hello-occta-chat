@@ -18,7 +18,7 @@ import { logError } from "@/lib/logger";
 import { CheckCircle, Loader2 } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 
-const adminEmail = "hello@occtatele.com";
+const adminEmail = "hello@occta.co.uk";
 
 const checkoutSchema = z.object({
   businessName: z.string().min(2, "Business name is required").max(120, "Business name too long"),

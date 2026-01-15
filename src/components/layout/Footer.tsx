@@ -53,11 +53,11 @@ const Footer = () => {
                 </div>
                 <span className="font-display">0800 260 6627</span>
               </a>
-              <a href="mailto:hello@occtatele.com" className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
+              <a href="mailto:hello@occta.co.uk" className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
                 <div className="p-2 bg-primary/20">
                   <Mail className="w-4 h-4" />
                 </div>
-                <span>hello@occtatele.com</span>
+                <span>hello@occta.co.uk</span>
               </a>
               <div className="flex items-start gap-3 text-background/80">
                 <div className="p-2 bg-primary/20">

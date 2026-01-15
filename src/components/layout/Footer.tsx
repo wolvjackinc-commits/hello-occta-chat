@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin, Bot, LayoutDashboard, Ticket, Shield } from "lucide-react";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -12,10 +12,10 @@ const Footer = () => {
       { name: "Business", path: "/business" },
     ],
     support: [
-      { name: "Help Centre", path: "/support" },
-      { name: "Contact Us", path: "/support#contact" },
+      { name: "Help & Support Hub", path: "/support" },
+      { name: "AI Assistant", path: "/support#ai-help" },
+      { name: "My Dashboard", path: "/dashboard" },
       { name: "Service Status", path: "/status" },
-      { name: "FAQs", path: "/support#faqs" },
     ],
     legal: [
       { name: "Privacy Policy", path: "/privacy-policy" },
@@ -27,6 +27,34 @@ const Footer = () => {
 
   return (
     <footer className="bg-foreground text-background border-t-4 border-primary">
+      {/* Self-Service Support Banner */}
+      <div className="bg-primary/10 border-b border-primary/20">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
+            <div className="flex items-center gap-2">
+              <Bot className="w-5 h-5 text-primary" />
+              <span className="text-primary font-medium">Need help?</span>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+              <Link to="/support" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
+                <Bot className="w-4 h-4" />
+                Get instant help with our AI assistant
+              </Link>
+              <span className="hidden sm:inline text-background/40">•</span>
+              <Link to="/dashboard" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
+                <LayoutDashboard className="w-4 h-4" />
+                Manage your account
+              </Link>
+              <span className="hidden sm:inline text-background/40">•</span>
+              <Link to="/support#tickets" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
+                <Ticket className="w-4 h-4" />
+                Raise a ticket
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
@@ -45,14 +73,14 @@ const Footer = () => {
               Proper British telecom. No robots, no rubbish, no regrets.
             </p>
             
-            {/* Contact Info */}
+            {/* Contact Info - De-emphasised phone */}
             <div className="space-y-3">
-              <a href="tel:08002606627" className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
+              <Link to="/support" className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
                 <div className="p-2 bg-primary/20">
-                  <Phone className="w-4 h-4" />
+                  <Bot className="w-4 h-4" />
                 </div>
-                <span className="font-display">0800 260 6627</span>
-              </a>
+                <span className="font-display">Get Instant Help</span>
+              </Link>
               <a href="mailto:hello@occta.co.uk" className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
                 <div className="p-2 bg-primary/20">
                   <Mail className="w-4 h-4" />
@@ -68,6 +96,12 @@ const Footer = () => {
                   Huddersfield<br />
                   HD3 3WU
                 </span>
+              </div>
+              <div className="flex items-center gap-3 text-background/60 text-sm">
+                <div className="p-2 bg-background/10">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <span>0800 260 6627 (escalation only)</span>
               </div>
             </div>
           </div>
@@ -138,9 +172,12 @@ const Footer = () => {
               <span>UK Registered</span>
             </div>
           </div>
-          <p className="text-center text-xs text-background/60 mt-4">
-            OCCTA Limited complies with all UK telecommunications regulations and GDPR requirements. 98% of our customers recommend us.
-          </p>
+          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-background/60">
+            <Shield className="w-4 h-4" />
+            <p>
+              OCCTA Limited complies with UK telecommunications regulations and GDPR requirements. Self-service support ensures faster resolution and data protection.
+            </p>
+          </div>
         </div>
       </div>
     </footer>

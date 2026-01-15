@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -38,8 +37,6 @@ type SupportTicket = {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   category: string | null;
   created_at: string;
-  assigned_to?: string | null;
-  internal_notes?: string | null;
 };
 
 type TicketMessage = {
@@ -100,16 +97,12 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentStatus, setCurrentStatus] = useState<SupportTicket['status']>('open');
-  const [assignedTo, setAssignedTo] = useState("");
-  const [internalNotes, setInternalNotes] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   useEffect(() => {
     if (ticket) {
       setCurrentStatus(ticket.status);
-      setAssignedTo(ticket.assigned_to || "");
-      setInternalNotes(ticket.internal_notes || "");
       fetchMessages();
     }
   }, [ticket]);
@@ -150,22 +143,6 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
     } catch (error) {
       logError("TicketReplyDialog.handleStatusChange", error);
       toast({ title: "Failed to update status", variant: "destructive" });
-    }
-  };
-
-  const handleInternalUpdate = async () => {
-    if (!ticket) return;
-    try {
-      const { error } = await supabase
-        .from("support_tickets")
-        .update({ assigned_to: assignedTo || null, internal_notes: internalNotes || null })
-        .eq("id", ticket.id);
-      if (error) throw error;
-      onUpdate({ ...ticket, assigned_to: assignedTo || null, internal_notes: internalNotes || null });
-      toast({ title: "Internal notes updated" });
-    } catch (error) {
-      logError("TicketReplyDialog.handleInternalUpdate", error);
-      toast({ title: "Failed to update notes", variant: "destructive" });
     }
   };
 
@@ -258,28 +235,6 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
               </Select>
             </div>
           </div>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-2">
-              <div className="text-xs uppercase text-muted-foreground">Assigned to</div>
-              <Input
-                placeholder="Staff user ID"
-                value={assignedTo}
-                onChange={(event) => setAssignedTo(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="text-xs uppercase text-muted-foreground">Internal notes</div>
-              <Textarea
-                placeholder="Add internal context"
-                value={internalNotes}
-                onChange={(event) => setInternalNotes(event.target.value)}
-              />
-            </div>
-          </div>
-          <Button variant="outline" onClick={handleInternalUpdate}>
-            Save internal notes
-          </Button>
 
           {/* Original Description */}
           <div className="p-4 border-4 border-foreground bg-card">

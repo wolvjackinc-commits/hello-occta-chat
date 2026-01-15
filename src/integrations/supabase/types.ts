@@ -367,10 +367,12 @@ export type Database = {
       }
       support_tickets: {
         Row: {
+          assigned_to: string | null
           category: string | null
           created_at: string
           description: string
           id: string
+          internal_notes: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
           status: Database["public"]["Enums"]["ticket_status"]
           subject: string
@@ -378,10 +380,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_to?: string | null
           category?: string | null
           created_at?: string
           description: string
           id?: string
+          internal_notes?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           status?: Database["public"]["Enums"]["ticket_status"]
           subject: string
@@ -389,10 +393,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_to?: string | null
           category?: string | null
           created_at?: string
           description?: string
           id?: string
+          internal_notes?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           status?: Database["public"]["Enums"]["ticket_status"]
           subject?: string
@@ -529,6 +535,411 @@ export type Database = {
         }
         Relationships: []
       }
+      app_config: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          id: string
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      communications_log: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          provider_message_id: string | null
+          status: string | null
+          subject: string | null
+          template_key: string | null
+          to_address: string | null
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          provider_message_id?: string | null
+          status?: string | null
+          subject?: string | null
+          template_key?: string | null
+          to_address?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          provider_message_id?: string | null
+          status?: string | null
+          subject?: string | null
+          template_key?: string | null
+          to_address?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      customer_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string
+          user_id: string
+          visibility: Database["public"]["Enums"]["note_visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note: string
+          user_id: string
+          visibility?: Database["public"]["Enums"]["note_visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string
+          user_id?: string
+          visibility?: Database["public"]["Enums"]["note_visibility"]
+        }
+        Relationships: []
+      }
+      dd_mandates: {
+        Row: {
+          bank_last4: string | null
+          created_at: string
+          id: string
+          mandate_reference: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_last4?: string | null
+          created_at?: string
+          id?: string
+          mandate_reference?: string | null
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_last4?: string | null
+          created_at?: string
+          id?: string
+          mandate_reference?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      invoice_lines: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          line_total: number
+          qty: number
+          unit_price: number
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          line_total: number
+          qty: number
+          unit_price: number
+          vat_rate: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          line_total?: number
+          qty?: number
+          unit_price?: number
+          vat_rate?: number
+        }
+        Relationships: []
+      }
+      invoice_adjustments: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          order_id: string | null
+          pdf_url: string | null
+          status: string
+          totals: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          issue_date: string
+          order_id?: string | null
+          pdf_url?: string | null
+          status: string
+          totals?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          order_id?: string | null
+          pdf_url?: string | null
+          status?: string
+          totals?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      receipts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          method: string | null
+          received_at: string
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          method?: string | null
+          received_at?: string
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          method?: string | null
+          received_at?: string
+          reference?: string | null
+        }
+        Relationships: []
+      }
+      credit_notes: {
+        Row: {
+          amount: number
+          created_at: string
+          credit_number: string
+          id: string
+          invoice_id: string
+          reason: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          credit_number: string
+          id?: string
+          invoice_id: string
+          reason?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          credit_number?: string
+          id?: string
+          invoice_id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      payment_attempts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string | null
+          provider: string
+          reason: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          provider: string
+          reason?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          provider?: string
+          reason?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          created_at: string
+          effective_from: string | null
+          effective_to: string | null
+          id: string
+          name: string
+          plan_type: string
+          price: number
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          name: string
+          plan_type: string
+          price: number
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          name?: string
+          plan_type?: string
+          price?: number
+          version?: number
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          created_at: string
+          id: string
+          identifiers: Json | null
+          service_type: Database["public"]["Enums"]["service_type"]
+          status: string
+          supplier_ref: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          identifiers?: Json | null
+          service_type: Database["public"]["Enums"]["service_type"]
+          status: string
+          supplier_ref?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identifiers?: Json | null
+          service_type?: Database["public"]["Enums"]["service_type"]
+          status?: string
+          supplier_ref?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -571,7 +982,8 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "billing" | "support" | "provisioning" | "read_only"
+      note_visibility: "internal" | "customer"
       order_status: "pending" | "confirmed" | "active" | "cancelled"
       service_type: "broadband" | "sim" | "landline"
       ticket_priority: "low" | "medium" | "high" | "urgent"

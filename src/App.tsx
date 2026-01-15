@@ -4,14 +4,27 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { StructuredData } from "@/components/seo";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import Admin from "./pages/Admin";
+import { ProtectedAdminRoute } from "./components/admin/layout/ProtectedAdminRoute";
+import { AdminLayout } from "./components/admin/layout/AdminLayout";
+import { AdminOverview } from "./pages/admin/Overview";
+import { AdminCustomers } from "./pages/admin/Customers";
+import { AdminCustomerDetail } from "./pages/admin/CustomerDetail";
+import { AdminOrders } from "./pages/admin/Orders";
+import { AdminTickets } from "./pages/admin/Tickets";
+import { AdminBilling } from "./pages/admin/Billing";
+import { AdminServices } from "./pages/admin/Services";
+import { AdminPaymentsDD } from "./pages/admin/PaymentsDD";
+import { AdminInstallations } from "./pages/admin/Installations";
+import { AdminPlans } from "./pages/admin/Plans";
+import { AdminCompliance } from "./pages/admin/Compliance";
+import { AdminSettings } from "./pages/admin/Settings";
 import Broadband from "./pages/Broadband";
 import SimPlans from "./pages/SimPlans";
 import Landline from "./pages/Landline";
@@ -95,7 +108,23 @@ const AnimatedRoutes = () => {
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/*" element={<ProtectedAdminRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<Navigate to="overview" replace />} />
+                <Route path="overview" element={<AdminOverview />} />
+                <Route path="customers" element={<AdminCustomers />} />
+                <Route path="customers/:id" element={<AdminCustomerDetail />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="tickets" element={<AdminTickets />} />
+                <Route path="billing" element={<AdminBilling />} />
+                <Route path="services" element={<AdminServices />} />
+                <Route path="payments-dd" element={<AdminPaymentsDD />} />
+                <Route path="installations" element={<AdminInstallations />} />
+                <Route path="plans" element={<AdminPlans />} />
+                <Route path="compliance" element={<AdminCompliance />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+            </Route>
             <Route path="/broadband" element={<Broadband />} />
             <Route path="/sim-plans" element={<SimPlans />} />
             <Route path="/landline" element={<Landline />} />

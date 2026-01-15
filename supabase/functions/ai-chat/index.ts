@@ -46,7 +46,7 @@ function checkVerificationRateLimit(identifier: string): boolean {
 const businessInfo = {
   company: "OCCTA Telecom",
   phone: "0800 260 6627",
-  email: "hello@occtatele.com",
+  email: "hello@occta.co.uk",
   services: ["Broadband", "SIM/Mobile Plans", "Landline"],
   features: [
     "No contracts - cancel anytime",

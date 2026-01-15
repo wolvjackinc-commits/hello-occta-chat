@@ -5,9 +5,9 @@ const sections = [
   {
     title: "1. Introduction & Legal Status",
     content: [
-      "These Terms of Service (\"Terms\") govern the provision of telecommunications and related services by OCCTA Limited (\"OCCTA\", \"we\", \"us\", \"our\") through www.occtatele.com.",
+      "These Terms of Service (\"Terms\") govern the provision of telecommunications and related services by OCCTA Limited (\"OCCTA\", \"we\", \"us\", \"our\") through www.occta.co.uk.",
       "These Terms form a legally binding agreement between you (\"Customer\", \"you\") and OCCTA once you:",
-      "• Place an order on www.occtatele.com",
+      "• Place an order on www.occta.co.uk",
       "• Activate a service",
       "• Make a payment, or",
       "• Use any of our services.",
@@ -20,14 +20,14 @@ const sections = [
       "Company Name: OCCTA Limited",
       "Company Number: 13828933",
       "Registered Address: 22 Pavilion View, Huddersfield, HD3 3WU, United Kingdom",
-      "Website: https://www.occtatele.com",
-      "Contact Email: support@occtatele.com",
+      "Website: https://www.occta.co.uk",
+      "Contact Email: support@occta.co.uk",
     ],
   },
   {
     title: "3. Definitions",
     content: [
-      "Account – Your registered customer account on www.occtatele.com",
+      "Account – Your registered customer account on www.occta.co.uk",
       "Charges – All fees payable for Services, including recurring, usage-based, setup, suspension, reactivation, and termination charges",
       "Contract – These Terms, your Order, and any service-specific terms",
       "Equipment – Any SIM, router, modem, or hardware supplied",
@@ -52,7 +52,7 @@ const sections = [
   {
     title: "5. Orders, Acceptance & Activation",
     content: [
-      "All orders placed on www.occtatele.com are subject to acceptance by OCCTA.",
+      "All orders placed on www.occta.co.uk are subject to acceptance by OCCTA.",
       "We may refuse or delay orders where lawful, including for:",
       "• Credit or fraud checks",
       "• Network limitations",
@@ -75,7 +75,7 @@ const sections = [
   {
     title: "7. Charges, Billing & Payments",
     content: [
-      "You must pay all Charges in accordance with the billing terms shown on www.occtatele.com or your Order.",
+      "You must pay all Charges in accordance with the billing terms shown on www.occta.co.uk or your Order.",
       "Charges may include:",
       "• Installation or setup fees",
       "• Monthly recurring charges",
@@ -170,14 +170,14 @@ const sections = [
   {
     title: "16. Complaints & Dispute Resolution",
     content: [
-      "Complaints should be raised via support@occtatele.com.",
+      "Complaints should be raised via support@occta.co.uk.",
       "If unresolved, disputes may be escalated in line with UK telecom regulatory procedures.",
     ],
   },
   {
     title: "17. Data Protection & Privacy",
     content: [
-      "Use of Services is subject to our Privacy Policy, published on www.occtatele.com.",
+      "Use of Services is subject to our Privacy Policy, published on www.occta.co.uk.",
       "Personal data is processed in accordance with UK GDPR and PECR.",
     ],
   },
@@ -199,7 +199,7 @@ const sections = [
     title: "20. Changes to These Terms",
     content: [
       "We may update these Terms from time to time.",
-      "The latest version will always be published on www.occtatele.com.",
+      "The latest version will always be published on www.occta.co.uk.",
       "Continued use of Services constitutes acceptance.",
     ],
   },
@@ -229,8 +229,8 @@ const sections = [
       "22 Pavilion View",
       "Huddersfield, HD3 3WU",
       "United Kingdom",
-      "📧 support@occtatele.com",
-      "🌐 https://www.occtatele.com",
+      "📧 support@occta.co.uk",
+      "🌐 https://www.occta.co.uk",
     ],
   },
 ];
@@ -252,7 +252,7 @@ const TermsOfService = () => {
               <p className="text-muted-foreground mt-2">Effective date: 18 January 2026</p>
               <p className="text-muted-foreground mt-4">
                 These Terms of Service set out the terms on which OCCTA Limited provides
-                telecommunications and related services through https://www.occtatele.com. By
+                telecommunications and related services through https://www.occta.co.uk. By
                 ordering, activating, paying for, or using our services, you agree to be bound
                 by these Terms.
               </p>

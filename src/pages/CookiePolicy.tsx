@@ -5,7 +5,7 @@ const sections = [
   {
     title: "1. What This Policy Covers",
     content: [
-      "This Cookie Policy explains how OCCTA Limited (“OCCTA”, “we”, “us”, or “our”) uses cookies and similar technologies on https://www.occtatele.com.",
+      "This Cookie Policy explains how OCCTA Limited (“OCCTA”, “we”, “us”, or “our”) uses cookies and similar technologies on https://www.occta.co.uk.",
       "It sits alongside our Privacy Policy and applies to visitors, customers, and business users of our services.",
     ],
   },
@@ -88,7 +88,7 @@ const sections = [
     title: "10. Updates to This Policy",
     content: [
       "We may update this Cookie Policy from time to time.",
-      "The latest version will always be available at https://www.occtatele.com/cookies with the date updated.",
+      "The latest version will always be available at https://www.occta.co.uk/cookies with the date updated.",
     ],
   },
   {

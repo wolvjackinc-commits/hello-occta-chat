@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Worldpay Access Checkout API endpoints
+// Worldpay Hosted Payment Pages endpoints
 const WORLDPAY_TRY_URL = "https://try.access.worldpay.com";
 const WORLDPAY_LIVE_URL = "https://access.worldpay.com";
 
@@ -23,9 +23,8 @@ serve(async (req) => {
     const worldpayUsername = Deno.env.get('WORLDPAY_API_USERNAME');
     const worldpayPassword = Deno.env.get('WORLDPAY_API_PASSWORD');
     const worldpayEntityId = Deno.env.get('WORLDPAY_ENTITY_ID');
-    const worldpayCheckoutId = Deno.env.get('WORLDPAY_CHECKOUT_ID');
 
-    if (!worldpayUsername || !worldpayPassword || !worldpayEntityId || !worldpayCheckoutId) {
+    if (!worldpayUsername || !worldpayPassword || !worldpayEntityId) {
       throw new Error('Worldpay credentials not configured');
     }
 
@@ -36,149 +35,163 @@ serve(async (req) => {
     const { action, ...data } = await req.json();
 
     switch (action) {
-      case 'get-checkout-config': {
-        // Just return the checkout ID for the SDK initialization
-        // The SDK will handle session creation internally
+      case 'create-payment-session': {
+        // Create a Hosted Payment Page session
+        const { invoiceId, invoiceNumber, amount, currency, customerEmail, customerName, userId, returnUrl } = data;
+
+        if (!invoiceId || !amount || !returnUrl) {
+          throw new Error('Missing required data (invoiceId, amount, returnUrl)');
+        }
+
+        console.log('Creating HPP session for invoice:', invoiceId);
+
+        // Create the payment page session
+        const response = await fetch(`${baseUrl}/payment_pages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Accept': 'application/vnd.worldpay.payment_pages-v1.hal+json',
+            'Content-Type': 'application/vnd.worldpay.payment_pages-v1.hal+json',
+          },
+          body: JSON.stringify({
+            transactionReference: `INV-${invoiceId}-${Date.now()}`,
+            merchant: {
+              entity: worldpayEntityId,
+            },
+            narrative: {
+              line1: `Invoice ${invoiceNumber || 'Payment'}`,
+            },
+            value: {
+              currency: currency || 'GBP',
+              amount: Math.round(amount * 100), // Convert to minor units (pence)
+            },
+            resultURLs: {
+              successURL: `${returnUrl}?status=success&invoiceId=${invoiceId}`,
+              failureURL: `${returnUrl}?status=failed&invoiceId=${invoiceId}`,
+              cancelURL: `${returnUrl}?status=cancelled&invoiceId=${invoiceId}`,
+            },
+            billingAddress: customerEmail ? {
+              email: customerEmail,
+            } : undefined,
+          }),
+        });
+
+        const result = await response.json();
+        console.log('HPP session response status:', response.status);
+        console.log('HPP session result:', JSON.stringify(result, null, 2));
+
+        if (!response.ok) {
+          console.error('Failed to create HPP session:', result);
+          return new Response(JSON.stringify({
+            success: false,
+            error: result.message || result.errorName || 'Failed to create payment session',
+            details: result,
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Extract the checkout URL from the response
+        const checkoutUrl = result._links?.checkout?.href;
+
+        if (!checkoutUrl) {
+          console.error('No checkout URL in response:', result);
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'No checkout URL returned from Worldpay',
+            details: result,
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Log the payment attempt
+        await supabase.from('payment_attempts').insert({
+          user_id: userId,
+          invoice_id: invoiceId,
+          amount: amount,
+          status: 'pending',
+          provider: 'worldpay_hpp',
+          provider_ref: result.transactionReference || result._links?.self?.href,
+        });
+
         return new Response(JSON.stringify({
           success: true,
-          checkoutId: worldpayCheckoutId,
-          entityId: worldpayEntityId,
-          isTryMode: true,
+          checkoutUrl,
+          transactionReference: result.transactionReference,
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      case 'process-payment': {
-        const { cardSessionHref, cvvSessionHref, invoiceId, amount, currency, customerEmail, customerName, userId, invoiceNumber } = data;
+      case 'verify-payment': {
+        // Verify payment status after redirect
+        const { invoiceId, status } = data;
 
-        if (!cardSessionHref || !invoiceId || !amount) {
-          throw new Error('Missing required payment data (cardSessionHref, invoiceId, amount required)');
+        if (!invoiceId) {
+          throw new Error('Missing invoiceId');
         }
 
-        console.log('Processing payment with sessions:', { 
-          cardSession: cardSessionHref?.substring(0, 50) + '...', 
-          cvvSession: cvvSessionHref ? cvvSessionHref.substring(0, 50) + '...' : 'none'
-        });
+        console.log('Verifying payment for invoice:', invoiceId, 'status:', status);
 
-        // Create the payment using the sessions from Access Checkout
-        const paymentResponse = await fetch(`${baseUrl}/payments`, {
-          method: 'POST',
-          headers: {
-            'Authorization': authHeader,
-            'Content-Type': 'application/vnd.worldpay.payments-v6+json',
-            'Accept': 'application/vnd.worldpay.payments-v6+json',
-          },
-          body: JSON.stringify({
-            transactionReference: `INV-${invoiceId.substring(0, 8)}-${Date.now()}`,
-            merchant: {
-              entity: worldpayEntityId,
-            },
-            instruction: {
-              narrative: {
-                line1: `Invoice ${invoiceNumber || 'Payment'}`,
-              },
-              value: {
-                currency: currency || 'GBP',
-                amount: Math.round(amount * 100), // Convert to minor units (pence)
-              },
-              paymentInstrument: {
-                type: 'card/checkout+session',
-                sessionHref: cardSessionHref,
-                cvcHref: cvvSessionHref,
-              },
-            },
-          }),
-        });
+        if (status === 'success') {
+          // Update invoice status to paid
+          const { error: updateError } = await supabase
+            .from('invoices')
+            .update({ status: 'paid', updated_at: new Date().toISOString() })
+            .eq('id', invoiceId);
 
-        const paymentResult = await paymentResponse.json();
-        console.log('Payment response status:', paymentResponse.status);
-        console.log('Payment result:', JSON.stringify(paymentResult));
+          if (updateError) {
+            console.error('Failed to update invoice:', updateError);
+          }
 
-        if (!paymentResponse.ok) {
-          console.error('Payment failed:', paymentResult);
-          
-          // Log the failed payment attempt
-          await supabase.from('payment_attempts').insert({
-            user_id: userId,
-            invoice_id: invoiceId,
-            amount: amount,
-            status: 'failed',
-            provider: 'worldpay',
-            provider_ref: paymentResult.errorName || 'unknown',
-            reason: paymentResult.message || 'Payment failed',
+          // Update payment attempt
+          await supabase
+            .from('payment_attempts')
+            .update({ status: 'success' })
+            .eq('invoice_id', invoiceId)
+            .eq('status', 'pending');
+
+          return new Response(JSON.stringify({
+            success: true,
+            status: 'paid',
+            message: 'Payment verified successfully',
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
+        } else if (status === 'failed') {
+          // Update payment attempt as failed
+          await supabase
+            .from('payment_attempts')
+            .update({ status: 'failed', reason: 'Payment failed at Worldpay' })
+            .eq('invoice_id', invoiceId)
+            .eq('status', 'pending');
 
           return new Response(JSON.stringify({
             success: false,
-            error: paymentResult.message || 'Payment failed',
-            details: paymentResult,
+            status: 'failed',
+            message: 'Payment failed',
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } else {
+          // Cancelled
+          await supabase
+            .from('payment_attempts')
+            .update({ status: 'cancelled', reason: 'Payment cancelled by user' })
+            .eq('invoice_id', invoiceId)
+            .eq('status', 'pending');
+
+          return new Response(JSON.stringify({
+            success: false,
+            status: 'cancelled',
+            message: 'Payment was cancelled',
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-
-        // Payment successful - update invoice and create receipt
-        const paymentRef = paymentResult.outcome?.id || 
-                          paymentResult._links?.self?.href?.split('/').pop() || 
-                          `WP-${Date.now()}`;
-
-        // Update invoice status
-        await supabase
-          .from('invoices')
-          .update({ status: 'paid', updated_at: new Date().toISOString() })
-          .eq('id', invoiceId);
-
-        // Create receipt
-        await supabase.from('receipts').insert({
-          invoice_id: invoiceId,
-          user_id: userId,
-          amount: amount,
-          method: 'worldpay_card',
-          reference: paymentRef,
-          paid_at: new Date().toISOString(),
-        });
-
-        // Log successful payment
-        await supabase.from('payment_attempts').insert({
-          user_id: userId,
-          invoice_id: invoiceId,
-          amount: amount,
-          status: 'success',
-          provider: 'worldpay',
-          provider_ref: paymentRef,
-        });
-
-        // Send confirmation email
-        try {
-          await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${supabaseKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              to: customerEmail,
-              type: 'invoice_paid',
-              data: {
-                customerName,
-                invoiceNumber: invoiceNumber,
-                amount: `£${amount.toFixed(2)}`,
-                paymentReference: paymentRef,
-              },
-            }),
-          });
-        } catch (emailError) {
-          console.error('Email notification failed:', emailError);
-        }
-
-        return new Response(JSON.stringify({
-          success: true,
-          paymentRef,
-          message: 'Payment processed successfully',
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
       }
 
       default:

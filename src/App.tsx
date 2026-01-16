@@ -47,6 +47,7 @@ import BusinessCheckout from "./pages/BusinessCheckout";
 import BusinessSales from "./pages/BusinessSales";
 import Complaints from "./pages/Complaints";
 import PayInvoice from "./pages/PayInvoice";
+import PaymentResult from "./pages/PaymentResult";
 
 const queryClient = new QueryClient();
 
@@ -148,6 +149,7 @@ const AnimatedRoutes = () => {
             <Route path="/business-sales" element={<BusinessSales />} />
             <Route path="/complaints" element={<Complaints />} />
             <Route path="/pay-invoice" element={<PayInvoice />} />
+            <Route path="/payment-result" element={<PaymentResult />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

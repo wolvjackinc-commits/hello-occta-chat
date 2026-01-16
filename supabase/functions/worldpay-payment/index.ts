@@ -25,7 +25,7 @@ serve(async (req) => {
     const worldpayEntityId = Deno.env.get('WORLDPAY_ENTITY_ID');
     const worldpayCheckoutId = Deno.env.get('WORLDPAY_CHECKOUT_ID');
 
-    if (!worldpayUsername || !worldpayPassword || !worldpayEntityId) {
+    if (!worldpayUsername || !worldpayPassword || !worldpayEntityId || !worldpayCheckoutId) {
       throw new Error('Worldpay credentials not configured');
     }
 
@@ -36,84 +36,67 @@ serve(async (req) => {
     const { action, ...data } = await req.json();
 
     switch (action) {
-      case 'create-session': {
-        // Create a verified tokens session for Access Checkout
-        const sessionResponse = await fetch(`${baseUrl}/verifiedTokens/sessions`, {
-          method: 'POST',
-          headers: {
-            'Authorization': authHeader,
-            'Content-Type': 'application/vnd.worldpay.verified-tokens-v3.hal+json',
-            'Accept': 'application/vnd.worldpay.verified-tokens-v3.hal+json',
-          },
-          body: JSON.stringify({
-            merchant: {
-              entity: worldpayEntityId,
-            },
-            verificationCurrency: data.currency || 'GBP',
-          }),
-        });
-
-        if (!sessionResponse.ok) {
-          const errorText = await sessionResponse.text();
-          console.error('Session creation failed:', errorText);
-          throw new Error(`Failed to create session: ${sessionResponse.status}`);
-        }
-
-        const sessionData = await sessionResponse.json();
-        
+      case 'get-checkout-config': {
+        // Just return the checkout ID for the SDK initialization
+        // The SDK will handle session creation internally
         return new Response(JSON.stringify({
           success: true,
-          sessionHref: sessionData._links?.['verifiedTokens:session']?.href,
           checkoutId: worldpayCheckoutId,
+          entityId: worldpayEntityId,
+          isTryMode: true,
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       case 'process-payment': {
-        const { cvcHref, invoiceId, amount, currency, customerEmail, customerName } = data;
+        const { sessionHref, invoiceId, amount, currency, customerEmail, customerName, userId, invoiceNumber } = data;
 
-        if (!cvcHref || !invoiceId || !amount) {
+        if (!sessionHref || !invoiceId || !amount) {
           throw new Error('Missing required payment data');
         }
 
-        // Create the payment using the verified token
+        console.log('Processing payment with session href:', sessionHref);
+
+        // Create the payment using the session from Access Checkout
         const paymentResponse = await fetch(`${baseUrl}/payments`, {
           method: 'POST',
           headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/vnd.worldpay.payments-v7+json',
-            'Accept': 'application/vnd.worldpay.payments-v7+json',
+            'Content-Type': 'application/vnd.worldpay.payments-v6+json',
+            'Accept': 'application/vnd.worldpay.payments-v6+json',
           },
           body: JSON.stringify({
-            transactionReference: `INV-${invoiceId}-${Date.now()}`,
+            transactionReference: `INV-${invoiceId.substring(0, 8)}-${Date.now()}`,
             merchant: {
               entity: worldpayEntityId,
             },
             instruction: {
               narrative: {
-                line1: `Invoice Payment`,
+                line1: `Invoice ${invoiceNumber || 'Payment'}`,
               },
               value: {
                 currency: currency || 'GBP',
                 amount: Math.round(amount * 100), // Convert to minor units (pence)
               },
               paymentInstrument: {
-                type: 'card/checkout',
-                cvcHref: cvcHref,
+                type: 'card/checkout+session',
+                sessionHref: sessionHref,
               },
             },
           }),
         });
 
         const paymentResult = await paymentResponse.json();
+        console.log('Payment response status:', paymentResponse.status);
+        console.log('Payment result:', JSON.stringify(paymentResult));
 
         if (!paymentResponse.ok) {
           console.error('Payment failed:', paymentResult);
           
           // Log the failed payment attempt
           await supabase.from('payment_attempts').insert({
-            user_id: data.userId,
+            user_id: userId,
             invoice_id: invoiceId,
             amount: amount,
             status: 'failed',
@@ -125,14 +108,16 @@ serve(async (req) => {
           return new Response(JSON.stringify({
             success: false,
             error: paymentResult.message || 'Payment failed',
+            details: paymentResult,
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
 
         // Payment successful - update invoice and create receipt
-        const paymentRef = paymentResult._links?.self?.href?.split('/').pop() || 
-                          paymentResult.transactionReference;
+        const paymentRef = paymentResult.outcome?.id || 
+                          paymentResult._links?.self?.href?.split('/').pop() || 
+                          `WP-${Date.now()}`;
 
         // Update invoice status
         await supabase
@@ -143,7 +128,7 @@ serve(async (req) => {
         // Create receipt
         await supabase.from('receipts').insert({
           invoice_id: invoiceId,
-          user_id: data.userId,
+          user_id: userId,
           amount: amount,
           method: 'worldpay_card',
           reference: paymentRef,
@@ -152,7 +137,7 @@ serve(async (req) => {
 
         // Log successful payment
         await supabase.from('payment_attempts').insert({
-          user_id: data.userId,
+          user_id: userId,
           invoice_id: invoiceId,
           amount: amount,
           status: 'success',
@@ -173,7 +158,7 @@ serve(async (req) => {
               type: 'invoice_paid',
               data: {
                 customerName,
-                invoiceNumber: data.invoiceNumber,
+                invoiceNumber: invoiceNumber,
                 amount: `£${amount.toFixed(2)}`,
                 paymentReference: paymentRef,
               },

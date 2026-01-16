@@ -13,6 +13,7 @@ import {
   Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import occtaLogo from "@/assets/occta-logo.png";
 
 const benefits = [
   { icon: Shield, title: "No Contract", desc: "Cancel anytime, no hidden fees" },
@@ -42,11 +43,12 @@ const AppWelcome = () => {
           animate={{ opacity: 1, y: 0 }}
           className="relative z-10"
         >
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center">
-              <span className="font-bold text-accent text-lg">O</span>
-            </div>
-            <span className="font-bold text-accent-foreground text-xl">OCCTA</span>
+          <div className="mb-6">
+            <img 
+              src={occtaLogo} 
+              alt="OCCTA Limited" 
+              className="h-10 w-auto"
+            />
           </div>
           
           <h1 className="text-3xl font-bold text-accent-foreground mb-3">

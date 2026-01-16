@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, Bot, LayoutDashboard, Ticket, Shield } from "lucide-react";
+import occtaLogo from "@/assets/occta-logo.png";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -60,14 +61,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 bg-primary border-4 border-primary flex items-center justify-center">
-                <span className="font-display text-2xl text-primary-foreground">O</span>
-              </div>
-              <div>
-                <span className="font-display text-3xl">OCCTA</span>
-                <p className="text-xs text-background/70 uppercase tracking-widest">Limited</p>
-              </div>
+            <Link to="/" className="flex items-center mb-6">
+              <img 
+                src={occtaLogo} 
+                alt="OCCTA Limited" 
+                className="h-14 w-auto"
+              />
             </Link>
             <p className="text-background/80 mb-6 max-w-xs">
               Proper British telecom. No robots, no rubbish, no regrets.

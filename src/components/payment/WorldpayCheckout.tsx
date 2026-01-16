@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, CreditCard, Lock, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,11 +20,7 @@ interface WorldpayCheckoutProps {
 
 declare global {
   interface Window {
-    Worldpay: {
-      checkout: {
-        init: (config: any, callbacks: any) => Promise<any>;
-      };
-    };
+    Worldpay: any;
   }
 }
 
@@ -45,15 +40,23 @@ export function WorldpayCheckout({
   const [error, setError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [checkoutInstance, setCheckoutInstance] = useState<any>(null);
-  const [sessionData, setSessionData] = useState<{ sessionHref: string; checkoutId: string } | null>(null);
+  const [sdkReady, setSdkReady] = useState(false);
+  const initAttempted = useRef(false);
 
   // Load Worldpay SDK
   useEffect(() => {
+    // Check if already loaded
+    if (window.Worldpay) {
+      setSdkReady(true);
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://try.access.worldpay.com/access-checkout/v2/checkout.js';
     script.async = true;
     script.onload = () => {
-      initializeCheckout();
+      console.log('Worldpay SDK loaded');
+      setSdkReady(true);
     };
     script.onerror = () => {
       setError('Failed to load payment system');
@@ -62,43 +65,54 @@ export function WorldpayCheckout({
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      if (script.parentNode) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
+  // Initialize checkout when SDK is ready
+  useEffect(() => {
+    if (!sdkReady || initAttempted.current) return;
+    initAttempted.current = true;
+    initializeCheckout();
+  }, [sdkReady]);
+
   const initializeCheckout = async () => {
     try {
-      // Create session via edge function
+      console.log('Initializing Worldpay checkout...');
+      
+      // Get checkout configuration from edge function
       const { data, error: fnError } = await supabase.functions.invoke('worldpay-payment', {
-        body: { action: 'create-session', currency },
+        body: { action: 'get-checkout-config' },
       });
 
       if (fnError || !data?.success) {
-        throw new Error(data?.error || 'Failed to initialize payment session');
+        throw new Error(data?.error || 'Failed to get checkout configuration');
       }
 
-      setSessionData({
-        sessionHref: data.sessionHref,
-        checkoutId: data.checkoutId,
-      });
+      console.log('Got checkout config:', { checkoutId: data.checkoutId });
+
+      // Wait a moment for DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Initialize Access Checkout SDK
-      if (window.Worldpay && data.checkoutId) {
+      if (window.Worldpay?.checkout) {
         const checkout = await window.Worldpay.checkout.init(
           {
             id: data.checkoutId,
-            form: '#card-form',
+            form: '#worldpay-card-form',
             fields: {
               pan: {
-                selector: '#card-pan',
+                selector: '#worldpay-card-pan',
                 placeholder: '4444 3333 2222 1111',
               },
               expiry: {
-                selector: '#card-expiry',
+                selector: '#worldpay-card-expiry',
                 placeholder: 'MM/YY',
               },
               cvv: {
-                selector: '#card-cvv',
+                selector: '#worldpay-card-cvv',
                 placeholder: '123',
               },
             },
@@ -106,6 +120,7 @@ export function WorldpayCheckout({
               'input': {
                 'font-size': '16px',
                 'font-family': 'inherit',
+                'color': '#000',
               },
               'input.is-valid': {
                 'color': '#22c55e',
@@ -113,25 +128,37 @@ export function WorldpayCheckout({
               'input.is-invalid': {
                 'color': '#ef4444',
               },
+              'input::placeholder': {
+                'color': '#9ca3af',
+              },
             },
             enablePanFormatting: true,
           },
           {
             onReady: () => {
+              console.log('Worldpay checkout ready');
               setLoading(false);
             },
-            onSuccess: (cvcHref: string) => {
-              processPayment(cvcHref);
+            onSessionGenerated: (sessionHref: string) => {
+              console.log('Session generated:', sessionHref);
+              processPayment(sessionHref);
             },
             onError: (error: any) => {
               console.error('Checkout error:', error);
-              setError('Card validation failed. Please check your details.');
+              setError(error?.message || 'Card validation failed. Please check your details.');
               setProcessing(false);
             },
+            onFocus: () => {},
+            onBlur: () => {},
+            onFieldValid: () => {},
+            onFormValid: () => {},
           }
         );
 
         setCheckoutInstance(checkout);
+        console.log('Checkout instance created');
+      } else {
+        throw new Error('Worldpay SDK not available');
       }
     } catch (err: any) {
       console.error('Initialization error:', err);
@@ -140,15 +167,17 @@ export function WorldpayCheckout({
     }
   };
 
-  const processPayment = async (cvcHref: string) => {
+  const processPayment = async (sessionHref: string) => {
     setProcessing(true);
     setError(null);
 
     try {
+      console.log('Processing payment with session:', sessionHref);
+      
       const { data, error: fnError } = await supabase.functions.invoke('worldpay-payment', {
         body: {
           action: 'process-payment',
-          cvcHref,
+          sessionHref,
           invoiceId,
           invoiceNumber,
           amount,
@@ -181,7 +210,10 @@ export function WorldpayCheckout({
     if (checkoutInstance) {
       setProcessing(true);
       setError(null);
-      checkoutInstance.generateSessionState();
+      console.log('Generating session...');
+      checkoutInstance.generateSession();
+    } else {
+      setError('Payment form not ready. Please refresh and try again.');
     }
   };
 
@@ -220,36 +252,36 @@ export function WorldpayCheckout({
             <p className="text-muted-foreground">Loading secure payment form...</p>
           </div>
         ) : (
-          <form id="card-form" onSubmit={handleSubmit} className="space-y-4">
+          <form id="worldpay-card-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="card-pan">Card Number</Label>
+              <Label htmlFor="worldpay-card-pan">Card Number</Label>
               <div 
-                id="card-pan" 
-                className="h-10 px-3 py-2 border rounded-md bg-background"
+                id="worldpay-card-pan" 
+                className="h-10 px-3 py-2 border-2 border-foreground rounded-md bg-background"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="card-expiry">Expiry Date</Label>
+                <Label htmlFor="worldpay-card-expiry">Expiry Date</Label>
                 <div 
-                  id="card-expiry" 
-                  className="h-10 px-3 py-2 border rounded-md bg-background"
+                  id="worldpay-card-expiry" 
+                  className="h-10 px-3 py-2 border-2 border-foreground rounded-md bg-background"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="card-cvv">CVV</Label>
+                <Label htmlFor="worldpay-card-cvv">CVV</Label>
                 <div 
-                  id="card-cvv" 
-                  className="h-10 px-3 py-2 border rounded-md bg-background"
+                  id="worldpay-card-cvv" 
+                  className="h-10 px-3 py-2 border-2 border-foreground rounded-md bg-background"
                 />
               </div>
             </div>
 
             {error && (
               <div className="flex items-center gap-2 text-destructive text-sm p-3 bg-destructive/10 rounded-md">
-                <AlertCircle className="h-4 w-4" />
-                {error}
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
@@ -257,7 +289,7 @@ export function WorldpayCheckout({
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1"
+                className="flex-1 border-2 border-foreground"
                 onClick={onCancel}
                 disabled={processing}
               >

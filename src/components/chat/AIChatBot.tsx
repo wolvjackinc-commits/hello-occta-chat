@@ -59,6 +59,17 @@ const adminQuickActions = [
 ];
 
 const STORAGE_KEY = "occta-ai-chat";
+const SESSION_KEY = "occta-chat-session";
+
+// Get or create session ID for analytics
+const getSessionId = () => {
+  let sessionId = sessionStorage.getItem(SESSION_KEY);
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    sessionStorage.setItem(SESSION_KEY, sessionId);
+  }
+  return sessionId;
+};
 
 const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
   const { toast } = useToast();
@@ -75,6 +86,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingMessageRef = useRef<string | null>(null);
+  const sessionId = useRef(getSessionId());
   const isFreshChat = messages.length <= 1 && messages[0]?.role === "assistant";
 
   // Scroll to bottom when messages change
@@ -224,6 +236,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
         body: JSON.stringify({
           messages: messagesForApi,
           userId: user?.id,
+          sessionId: sessionId.current,
         }),
       });
 
@@ -368,10 +381,10 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                 opacity: 1, 
                 scale: 1, 
                 y: 0,
-                height: isMinimized ? "auto" : "min(600px, calc(100dvh - 8rem))"
+                height: isMinimized ? "auto" : "min(500px, calc(100dvh - 10rem))"
               }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`fixed bottom-4 sm:bottom-24 right-4 z-40 w-[360px] max-w-[calc(100vw-32px)] max-h-[calc(100dvh-2rem)] bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
+              className={`fixed bottom-20 sm:bottom-16 right-4 z-40 w-[360px] max-w-[calc(100vw-32px)] max-h-[calc(100dvh-6rem)] bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
             >
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">

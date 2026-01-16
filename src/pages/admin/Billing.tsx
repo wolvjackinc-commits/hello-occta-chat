@@ -49,7 +49,9 @@ import {
   Eye,
   Trash2,
   Download,
-  Mail
+  Mail,
+  Link as LinkIcon,
+  Copy
 } from "lucide-react";
 
 type Invoice = {
@@ -550,6 +552,21 @@ export const AdminBilling = () => {
                         )}
                         {invoice.status !== "paid" && invoice.status !== "cancelled" && (
                           <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const paymentLink = `${window.location.origin}/pay-invoice?id=${invoice.id}`;
+                                navigator.clipboard.writeText(paymentLink);
+                                toast({
+                                  title: "Payment link copied",
+                                  description: "Send this link to the customer to pay online.",
+                                });
+                              }}
+                              title="Copy payment link"
+                            >
+                              <LinkIcon className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"

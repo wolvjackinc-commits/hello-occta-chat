@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_notes: {
         Row: {
           amount: number
@@ -49,35 +87,9 @@ export type Database = {
           },
         ]
       }
-      customers: {
-        Row: {
-          account_number: string
-          created_at: string
-          email: string | null
-          full_name: string | null
-          phone: string | null
-          user_id: string
-        }
-        Insert: {
-          account_number: string
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          phone?: string | null
-          user_id: string
-        }
-        Update: {
-          account_number?: string
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          phone?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       dd_mandates: {
         Row: {
+          account_holder: string | null
           bank_last4: string | null
           created_at: string
           id: string
@@ -88,6 +100,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_holder?: string | null
           bank_last4?: string | null
           created_at?: string
           id?: string
@@ -98,6 +111,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_holder?: string | null
           bank_last4?: string | null
           created_at?: string
           id?: string
@@ -356,6 +370,7 @@ export type Database = {
           service_id: string | null
           status: string
           subtotal: number
+          tax: number | null
           total: number
           updated_at: string
           user_id: string
@@ -374,6 +389,7 @@ export type Database = {
           service_id?: string | null
           status?: string
           subtotal?: number
+          tax?: number | null
           total?: number
           updated_at?: string
           user_id: string
@@ -392,6 +408,7 @@ export type Database = {
           service_id?: string | null
           status?: string
           subtotal?: number
+          tax?: number | null
           total?: number
           updated_at?: string
           user_id?: string
@@ -502,6 +519,7 @@ export type Database = {
           id: string
           invoice_id: string | null
           provider: string | null
+          provider_ref: string | null
           reason: string | null
           status: string
           user_id: string
@@ -513,6 +531,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           provider?: string | null
+          provider_ref?: string | null
           reason?: string | null
           status: string
           user_id: string
@@ -524,6 +543,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           provider?: string | null
+          provider_ref?: string | null
           reason?: string | null
           status?: string
           user_id?: string
@@ -659,6 +679,7 @@ export type Database = {
           identifiers: Json
           service_type: string
           status: string
+          supplier_ref: string | null
           supplier_reference: string | null
           suspension_reason: string | null
           updated_at: string
@@ -671,6 +692,7 @@ export type Database = {
           identifiers?: Json
           service_type: string
           status?: string
+          supplier_ref?: string | null
           supplier_reference?: string | null
           suspension_reason?: string | null
           updated_at?: string
@@ -683,6 +705,7 @@ export type Database = {
           identifiers?: Json
           service_type?: string
           status?: string
+          supplier_ref?: string | null
           supplier_reference?: string | null
           suspension_reason?: string | null
           updated_at?: string
@@ -768,6 +791,7 @@ export type Database = {
           id: string
           is_staff_reply: boolean
           message: string
+          sender_role: string | null
           ticket_id: string
           user_id: string
         }
@@ -776,6 +800,7 @@ export type Database = {
           id?: string
           is_staff_reply?: boolean
           message: string
+          sender_role?: string | null
           ticket_id: string
           user_id: string
         }
@@ -784,6 +809,7 @@ export type Database = {
           id?: string
           is_staff_reply?: boolean
           message?: string
+          sender_role?: string | null
           ticket_id?: string
           user_id?: string
         }
@@ -876,6 +902,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
+      log_audit_action: {
+        Args: {
+          _action: string
+          _entity: string
+          _entity_id?: string
+          _metadata?: Json
+        }
+        Returns: string
       }
       lookup_guest_order: {
         Args: { _email: string; _order_number: string }

@@ -110,12 +110,15 @@ export const AddServiceDialog = ({
     let isActive = true;
     setIsLookingUpCustomer(true);
     setMatchedCustomer(null);
-    supabase
-      .from("profiles")
-      .select("id, account_number, email, full_name")
-      .eq("account_number", normalizedAccountNumber)
-      .maybeSingle()
-      .then(({ data, error }) => {
+    
+    const lookupCustomer = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, account_number, email, full_name")
+          .eq("account_number", normalizedAccountNumber)
+          .maybeSingle();
+        
         if (!isActive) return;
         if (error) {
           toast({ title: "Failed to find customer", description: error.message, variant: "destructive" });
@@ -123,10 +126,16 @@ export const AddServiceDialog = ({
           return;
         }
         setMatchedCustomer(data ?? null);
-      })
-      .finally(() => {
+      } catch (err) {
+        if (isActive) {
+          setMatchedCustomer(null);
+        }
+      } finally {
         if (isActive) setIsLookingUpCustomer(false);
-      });
+      }
+    };
+
+    lookupCustomer();
 
     return () => {
       isActive = false;

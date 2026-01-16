@@ -315,10 +315,10 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                 opacity: 1, 
                 scale: 1, 
                 y: 0,
-                height: isMinimized ? "auto" : "min(600px, 80vh)"
+                height: isMinimized ? "auto" : "min(600px, calc(100dvh - 8rem))"
               }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`fixed bottom-24 right-4 z-40 w-[360px] max-w-[calc(100vw-32px)] bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
+              className={`fixed bottom-4 sm:bottom-24 right-4 z-40 w-[360px] max-w-[calc(100vw-32px)] max-h-[calc(100dvh-2rem)] bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
             >
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">
@@ -538,7 +538,9 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
 
   // Embedded version (for Support page)
   return (
-    <div className={`bg-card border-4 border-foreground flex flex-col h-[500px] ${className}`}>
+    <div
+      className={`bg-card border-4 border-foreground flex flex-col min-h-0 h-[min(520px,calc(100dvh-10rem))] max-h-[calc(100dvh-4rem)] ${className}`}
+    >
       {/* Header */}
       <div className="bg-primary px-4 py-3 flex items-center justify-between gap-2 border-b-4 border-foreground">
         <div className="flex items-center gap-2">

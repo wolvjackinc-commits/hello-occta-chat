@@ -19,7 +19,8 @@ interface EmailRequest {
     | "ticket_reply"
     | "password_reset"
     | "invoice_sent"
-    | "invoice_paid";
+    | "invoice_paid"
+    | "payment_reminder";
   to: string;
   data: Record<string, unknown>;
   // For guest order confirmations - order verification data
@@ -863,6 +864,81 @@ const getInvoicePaidHtml = (data: Record<string, unknown>) => {
 </html>`;
 };
 
+const getPaymentReminderHtml = (data: Record<string, unknown>) => {
+  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const daysUntilDue = data.days_until_due as number;
+  const urgencyColor = daysUntilDue <= 1 ? '#ef4444' : daysUntilDue <= 3 ? '#f59e0b' : '#3b82f6';
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', sans-serif; }
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    .title-banner { background: ${urgencyColor}; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    .urgency-box { background: ${urgencyColor}10; border: 3px solid ${urgencyColor}; padding: 24px; margin: 24px 0; text-align: center; }
+    .urgency-days { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: ${urgencyColor}; }
+    .urgency-label { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: #666; margin-top: 4px; }
+    .invoice-details { background: #f5f4ef; border: 2px solid #0d0d0d; padding: 20px; margin: 24px 0; }
+    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: #666; font-size: 13px; }
+    .detail-value { font-weight: 600; }
+    .total-row { background: #0d0d0d; color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; font-family: 'Bebas Neue', sans-serif; font-size: 20px; }
+    .cta-wrap { text-align: center; margin: 32px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; box-shadow: 4px 4px 0 0 ${urgencyColor}; }
+    .footer { background: #0d0d0d; padding: 28px 32px; text-align: center; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
+    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header"><div class="logo">OCCTA</div><div class="tagline">Telecom • Connected</div></div>
+      <div class="title-banner"><h1 class="title">⏰ Payment Reminder</h1></div>
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.customer_name) || "there"},</p>
+        <p class="text">This is a friendly reminder that you have an outstanding invoice that requires your attention.</p>
+        
+        <div class="urgency-box">
+          <div class="urgency-days">${daysUntilDue <= 0 ? 'TODAY' : daysUntilDue}</div>
+          <div class="urgency-label">${daysUntilDue <= 0 ? 'Payment Due Today' : daysUntilDue === 1 ? 'Day Until Due' : 'Days Until Due'}</div>
+        </div>
+        
+        <div class="invoice-details">
+          <div class="detail-row"><span class="detail-label">Invoice Number</span><span class="detail-value">${escapeHtml(data.invoice_number)}</span></div>
+          <div class="detail-row"><span class="detail-label">Due Date</span><span class="detail-value">${escapeHtml(data.due_date)}</span></div>
+        </div>
+        <div class="total-row"><span>AMOUNT DUE</span><span>£${sanitizeNumber(data.total)}</span></div>
+        
+        <div class="cta-wrap"><a href="${siteUrl}/pay-invoice?id=${data.invoice_id}" class="cta">Pay Now →</a></div>
+        
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
+          To avoid service interruption, please ensure payment is made by the due date.<br>
+          If you've already paid, please disregard this reminder.
+        </p>
+      </div>
+      <div class="footer"><div class="footer-logo">OCCTA</div><div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom</div></div>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const isAdmin = async (supabase: any, userId: string): Promise<boolean> => {
@@ -1072,6 +1148,10 @@ const handler = async (req: Request): Promise<Response> => {
       case "invoice_paid":
         subject = `Payment Received - Invoice ${data.invoice_number}`;
         html = getInvoicePaidHtml(emailData);
+        break;
+      case "payment_reminder":
+        subject = `Payment Reminder - Invoice ${data.invoice_number} due ${data.due_date}`;
+        html = getPaymentReminderHtml(emailData);
         break;
       default:
         throw new Error(`Unknown email type: ${type}`);

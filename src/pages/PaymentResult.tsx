@@ -9,7 +9,6 @@ import {
   CheckCircle, 
   XCircle, 
   AlertCircle, 
-  ArrowLeft,
   Receipt,
   Calendar,
   CreditCard,
@@ -19,6 +18,8 @@ import {
 } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateReceiptPdf, type ReceiptData } from '@/lib/generateReceiptPdf';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaymentDetails {
   success: boolean;
@@ -35,16 +36,33 @@ interface PaymentDetails {
 export default function PaymentResult() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const status = searchParams.get('status');
   const invoiceId = searchParams.get('invoiceId');
   
   const [verifying, setVerifying] = useState(true);
   const [result, setResult] = useState<PaymentDetails | null>(null);
+  const [userProfile, setUserProfile] = useState<{ account_number?: string; full_name?: string; email?: string } | null>(null);
 
   useEffect(() => {
+    fetchUserProfile();
     verifyPayment();
   }, [status, invoiceId]);
+
+  const fetchUserProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('account_number, full_name, email')
+        .eq('id', user.id)
+        .single();
+      if (profile) {
+        setUserProfile(profile);
+      }
+    }
+  };
 
   const verifyPayment = async () => {
     if (!invoiceId || !status) {
@@ -115,6 +133,32 @@ export default function PaymentResult() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const handleDownloadReceipt = () => {
+    if (!result?.success || !result.invoice) {
+      toast({
+        title: "Cannot download receipt",
+        description: "Receipt is only available for successful payments.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const receiptData: ReceiptData = {
+      receiptNumber: `RCP-${invoiceId?.slice(0, 8).toUpperCase() || 'UNKNOWN'}`,
+      invoiceNumber: result.invoice.invoice_number,
+      customerName: userProfile?.full_name || 'Customer',
+      customerEmail: userProfile?.email || '',
+      accountNumber: userProfile?.account_number || 'N/A',
+      amount: result.invoice.total_amount,
+      currency: result.invoice.currency || 'GBP',
+      paidAt: result.invoice.paid_at || new Date().toISOString(),
+      paymentMethod: 'Card (Worldpay)',
+      transactionRef: invoiceId || undefined,
+    };
+
+    generateReceiptPdf(receiptData);
   };
 
   if (verifying) {
@@ -332,7 +376,7 @@ export default function PaymentResult() {
                   {result?.success && (
                     <Button 
                       variant="outline"
-                      onClick={() => navigate('/dashboard')}
+                      onClick={handleDownloadReceipt}
                       size="lg"
                       className="w-full font-display uppercase tracking-wider border-2 border-foreground"
                     >

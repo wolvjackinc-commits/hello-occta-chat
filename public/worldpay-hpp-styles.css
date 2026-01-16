@@ -1,0 +1,348 @@
+/**
+ * OCCTA Branded Stylesheet for Worldpay Hosted Payment Pages
+ * 
+ * Upload this file to Worldpay Dashboard > HPP Designer > Styles > Stylesheet
+ * 
+ * Brand Colors:
+ * - Primary Yellow: #FFEB00
+ * - Background Black: #0D0D0D
+ * - Text Light: #F5F5F5
+ * - Border/Accent: #FFFFFF
+ */
+
+/* =====================================================
+   BASE STYLES
+   ===================================================== */
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  background-color: #0D0D0D !important;
+  color: #F5F5F5 !important;
+}
+
+/* =====================================================
+   PAGE CONTAINER
+   ===================================================== */
+
+.page-container,
+.payment-page {
+  background-color: #0D0D0D !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+  padding: 2rem !important;
+}
+
+/* =====================================================
+   HEADER / LOGO AREA
+   ===================================================== */
+
+.header,
+.logo-container,
+.merchant-logo {
+  text-align: center !important;
+  margin-bottom: 2rem !important;
+}
+
+.header-title,
+.page-title {
+  font-family: 'Bebas Neue', 'Inter', sans-serif !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #FFEB00 !important;
+  font-size: 1.5rem !important;
+  margin-top: 1rem !important;
+}
+
+/* =====================================================
+   CARD / FORM CONTAINER
+   ===================================================== */
+
+.card,
+.form-container,
+.payment-form,
+.payment-details {
+  background-color: #1A1A1A !important;
+  border: 3px solid #FFFFFF !important;
+  box-shadow: 6px 6px 0 0 #FFEB00 !important;
+  padding: 2rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+/* =====================================================
+   FORM LABELS
+   ===================================================== */
+
+label,
+.form-label,
+.field-label {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.1em !important;
+  color: #F5F5F5 !important;
+  margin-bottom: 0.5rem !important;
+  display: block !important;
+}
+
+/* =====================================================
+   FORM INPUTS
+   ===================================================== */
+
+input,
+select,
+.form-control,
+.input-field,
+input[type="text"],
+input[type="number"],
+input[type="tel"],
+input[type="email"] {
+  font-family: 'Inter', sans-serif !important;
+  background-color: #0D0D0D !important;
+  border: 2px solid #FFFFFF !important;
+  color: #F5F5F5 !important;
+  padding: 0.875rem 1rem !important;
+  font-size: 1rem !important;
+  transition: all 0.15s ease !important;
+}
+
+input:focus,
+select:focus,
+.form-control:focus,
+.input-field:focus {
+  outline: none !important;
+  border-color: #FFEB00 !important;
+  box-shadow: 0 0 0 2px rgba(255, 235, 0, 0.25) !important;
+}
+
+input::placeholder,
+.form-control::placeholder {
+  color: #666666 !important;
+}
+
+/* =====================================================
+   PRIMARY BUTTON (PAY NOW)
+   ===================================================== */
+
+.btn-primary,
+.pay-button,
+.submit-button,
+button[type="submit"],
+.primary-action {
+  font-family: 'Bebas Neue', 'Inter', sans-serif !important;
+  background-color: #FFEB00 !important;
+  color: #000000 !important;
+  border: 3px solid #000000 !important;
+  box-shadow: 4px 4px 0 0 #000000 !important;
+  padding: 1rem 2rem !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  width: 100% !important;
+  display: block !important;
+  text-align: center !important;
+}
+
+.btn-primary:hover,
+.pay-button:hover,
+.submit-button:hover,
+button[type="submit"]:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 6px 6px 0 0 #000000 !important;
+}
+
+.btn-primary:active,
+.pay-button:active,
+.submit-button:active,
+button[type="submit"]:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 2px 2px 0 0 #000000 !important;
+}
+
+/* =====================================================
+   SECONDARY / CANCEL BUTTON
+   ===================================================== */
+
+.btn-secondary,
+.cancel-button,
+.back-button,
+.secondary-action {
+  font-family: 'Inter', sans-serif !important;
+  background-color: transparent !important;
+  color: #F5F5F5 !important;
+  border: 2px solid #FFFFFF !important;
+  padding: 0.75rem 1.5rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-secondary:hover,
+.cancel-button:hover,
+.back-button:hover {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* =====================================================
+   PAYMENT AMOUNT DISPLAY
+   ===================================================== */
+
+.amount,
+.payment-amount,
+.total-amount,
+.order-total {
+  font-family: 'Bebas Neue', 'Inter', sans-serif !important;
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  color: #FFEB00 !important;
+  text-align: center !important;
+  margin: 1rem 0 !important;
+}
+
+.currency-symbol {
+  font-size: 1.5rem !important;
+  color: #F5F5F5 !important;
+}
+
+/* =====================================================
+   CARD ICONS / PAYMENT METHOD ICONS
+   ===================================================== */
+
+.card-icons,
+.payment-icons,
+.accepted-cards {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 0.75rem !important;
+  margin: 1.5rem 0 !important;
+  opacity: 0.9 !important;
+}
+
+.card-icon,
+.payment-icon {
+  width: 48px !important;
+  height: auto !important;
+  filter: brightness(0.9) contrast(1.1) !important;
+}
+
+/* =====================================================
+   ERROR MESSAGES
+   ===================================================== */
+
+.error,
+.error-message,
+.validation-error,
+.field-error {
+  font-family: 'Inter', sans-serif !important;
+  background-color: rgba(220, 38, 38, 0.15) !important;
+  border: 2px solid #DC2626 !important;
+  color: #FCA5A5 !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
+  margin-top: 0.5rem !important;
+}
+
+/* =====================================================
+   SUCCESS MESSAGE
+   ===================================================== */
+
+.success,
+.success-message {
+  font-family: 'Inter', sans-serif !important;
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  border: 2px solid #22C55E !important;
+  color: #86EFAC !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
+}
+
+/* =====================================================
+   FOOTER / SECURITY BADGES
+   ===================================================== */
+
+.footer,
+.security-info,
+.secure-badge {
+  text-align: center !important;
+  margin-top: 2rem !important;
+  padding-top: 1.5rem !important;
+  border-top: 1px solid #333333 !important;
+}
+
+.security-text,
+.secure-text {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.75rem !important;
+  color: #888888 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.powered-by,
+.worldpay-logo {
+  opacity: 0.6 !important;
+  margin-top: 1rem !important;
+}
+
+/* =====================================================
+   LOADING SPINNER
+   ===================================================== */
+
+.spinner,
+.loading,
+.loader {
+  border-color: #FFEB00 transparent #FFEB00 transparent !important;
+}
+
+/* =====================================================
+   LINKS
+   ===================================================== */
+
+a,
+.link {
+  color: #FFEB00 !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+}
+
+a:hover,
+.link:hover {
+  text-decoration: underline !important;
+  opacity: 0.9 !important;
+}
+
+/* =====================================================
+   RESPONSIVE ADJUSTMENTS
+   ===================================================== */
+
+@media (max-width: 640px) {
+  .page-container,
+  .payment-page {
+    padding: 1rem !important;
+  }
+
+  .card,
+  .form-container,
+  .payment-form {
+    padding: 1.25rem !important;
+    box-shadow: 4px 4px 0 0 #FFEB00 !important;
+  }
+
+  .amount,
+  .payment-amount {
+    font-size: 2rem !important;
+  }
+
+  .btn-primary,
+  .pay-button {
+    padding: 0.875rem 1.5rem !important;
+    font-size: 1.125rem !important;
+  }
+}

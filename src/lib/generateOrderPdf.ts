@@ -271,7 +271,7 @@ export function generateOrderPdf(order: OrderData): void {
     
     <div class="footer">
       <p><strong>OCCTA Telecom</strong></p>
-      <p>Keeping Yorkshire connected since 2020</p>
+      <p>Keeping the UK connected since 2020</p>
       <p style="margin-top: 10px;">Call us: 0800 260 6627 | Email: hello@occta.co.uk</p>
       <p style="margin-top: 10px;">This document is your order confirmation. Please keep it for your records.</p>
     </div>

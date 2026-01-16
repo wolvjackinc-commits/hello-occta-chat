@@ -5,27 +5,27 @@ const reasons = [
   {
     icon: Phone,
     title: "HUMANS ANSWER",
-    description: "Ring us and a real person picks up. In Huddersfield. Speaking English. Mental, right?",
+    description: "Ring us and a real person picks up. UK-based support, plain English, no scripts.",
   },
   {
     icon: Clock,
     title: "30-DAY CONTRACTS",
-    description: "Because locking you in for 24 months is what scared companies do.",
+    description: "Monthly rolling plans only. No 24-month lock-ins, no exit fees, no drama.",
   },
   {
     icon: PoundSterling,
     title: "NO PRICE HIKES",
-    description: "The price you sign up for is the price you pay. Groundbreaking stuff.",
+    description: "No CPI-linked increases. The price you see is what you pay.",
   },
   {
     icon: Users,
     title: "SMALL BUSINESS, BIG CARE",
-    description: "We're not a faceless corporation. We're 22 people who actually give a toss.",
+    description: "We keep overheads low and pass the savings on. Same networks, lower prices.",
   },
   {
     icon: Zap,
     title: "QUICK SETUP",
-    description: "Most installs happen within 7 days. Life's too short to wait for internet.",
+    description: "Most installs happen within 7 days. Straightforward plans, zero fuss.",
   },
   {
     icon: ThumbsUp,
@@ -122,8 +122,8 @@ const WhyUsSection = () => {
             </motion.span>
           </h2>
           <p className="text-xl text-muted-foreground">
-            We're not reinventing the wheel. We're just doing the obvious things 
-            that big telecoms somehow forgot about.
+            Affordable telecom without contracts, hidden fees, or lock-ins. Simple plans,
+            transparent pricing, and freedom to leave anytime.
           </p>
         </motion.div>
 

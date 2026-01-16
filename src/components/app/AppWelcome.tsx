@@ -18,7 +18,7 @@ const benefits = [
   { icon: Shield, title: "No Contract", desc: "Cancel anytime, no hidden fees" },
   { icon: Zap, title: "Super Fast", desc: "Ultra-fast broadband speeds" },
   { icon: Clock, title: "24/7 Support", desc: "Always here to help you" },
-  { icon: Headphones, title: "UK Based", desc: "Local customer support team" },
+  { icon: Headphones, title: "UK Support", desc: "UK-based team, real humans" },
 ];
 
 const services = [
@@ -50,10 +50,10 @@ const AppWelcome = () => {
           </div>
           
           <h1 className="text-3xl font-bold text-accent-foreground mb-3">
-            Switch to Better<br />Broadband Today
+            Switch to Cheaper<br />UK Broadband Today
           </h1>
           <p className="text-accent-foreground/90 text-sm mb-8">
-            No contracts, no hassle. Fast, reliable internet for your home.
+            Affordable telecom without contracts, hidden fees, or lock-ins — available across the UK.
           </p>
 
           <div className="flex gap-3">

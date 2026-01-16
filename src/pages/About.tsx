@@ -7,7 +7,7 @@ import { SEO } from "@/components/seo";
 
 const About = () => {
   const stats = [
-    { icon: MapPin, label: "Based in Yorkshire", value: "Huddersfield" },
+    { icon: MapPin, label: "Serving the UK", value: "Nationwide" },
     { icon: Users, label: "Happy Customers", value: "5,000+" },
     { icon: Award, label: "Customer Rating", value: "4.8 Stars" },
     { icon: X, label: "Exit Fees", value: "None" },
@@ -17,14 +17,14 @@ const About = () => {
     { emoji: "🎯", title: "Honesty first", description: "No hidden fees. No sneaky price rises. If something costs money, we tell you upfront." },
     { emoji: "👋", title: "Humans over bots", description: "When you call us, a real person answers. They're probably drinking tea and genuinely want to help." },
     { emoji: "⚡", title: "Keep it simple", description: "If your nan can't understand it, we haven't done our job. Simple plans, simple prices." },
-    { emoji: "🌍", title: "Give a toss", description: "About our customers, our community, and the planet. We're carbon-neutral and sponsor local sports." },
+    { emoji: "🌍", title: "Give a toss", description: "About our customers, our communities, and the planet. We're carbon-neutral and back UK community projects." },
   ];
 
   return (
     <Layout>
       <SEO 
         title="About Us"
-        description="OCCTA is a Yorkshire-based telecom company providing honest, affordable broadband, SIM, and landline services. No hidden fees, real customer support."
+        description="OCCTA is a UK-wide telecom company providing honest, affordable broadband, SIM, and landline services. No hidden fees, real customer support."
         canonical="/about"
       />
       {/* Hero - Compact */}
@@ -43,8 +43,8 @@ const About = () => {
                 <span className="text-gradient">NICE TO MEET YOU.</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-lg">
-                A small team from Huddersfield who got fed up with rubbish telecoms. 
-                So we started our own. Bold move? Maybe. Working out? Absolutely.
+                We built OCCTA to be the cheaper, simpler alternative to the big brands.
+                Affordable telecom without contracts, hidden fees, or lock-ins — serving customers nationwide.
               </p>
               
               <div className="flex flex-wrap gap-3">
@@ -125,8 +125,8 @@ const About = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center text-sm text-muted-foreground">
             <p>
-              <strong className="text-foreground">OCCTA LIMITED</strong> is registered in England and Wales (Company No. 13828933) 
-              at 22 Pavilion View, Huddersfield, HD3 3WU. We comply with GDPR and all UK telecommunications regulations.
+              <strong className="text-foreground">OCCTA LIMITED</strong> is registered in England and Wales (Company No. 13828933).
+              We comply with GDPR and all UK telecommunications regulations.
             </p>
           </div>
         </div>

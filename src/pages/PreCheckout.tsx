@@ -565,7 +565,7 @@ const PreCheckout = () => {
                       <Input
                         value={customerData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
-                        placeholder="Huddersfield"
+                        placeholder="City/Town"
                         className="mt-1 border-4 border-foreground"
                       />
                       {errors.city && <p className="text-destructive text-sm mt-1">{errors.city}</p>}

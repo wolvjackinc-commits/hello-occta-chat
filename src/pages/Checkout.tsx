@@ -345,7 +345,7 @@ const Checkout = () => {
                           id="city"
                           value={addressData.city}
                           onChange={(e) => handleAddressChange("city", e.target.value)}
-                          placeholder="Huddersfield"
+                          placeholder="City/Town"
                           className="mt-1 border-4 border-foreground"
                         />
                         {errors.city && (

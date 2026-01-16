@@ -66,9 +66,9 @@ const Complaints = () => {
     {
       icon: MapPin,
       label: "Write to us",
-      detail: "OCCTA Complaints Team, 22 Pavilion View, Huddersfield, HD3 3WU",
+      detail: "OCCTA Complaints Team, 22 Pavilion View, HD3 3WU",
       actionLabel: "Copy address",
-      href: "https://maps.google.com/?q=22%20Pavilion%20View,%20Huddersfield,%20HD3%203WU",
+      href: "https://maps.google.com/?q=22%20Pavilion%20View,%20HD3%203WU",
       isExternal: true,
     },
   ];

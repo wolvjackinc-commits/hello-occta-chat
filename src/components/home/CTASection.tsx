@@ -85,14 +85,14 @@ const CTASection = () => {
           <motion.h2 variants={itemVariants} className="text-display-lg mb-6">
             READY TO SWITCH TO
             <br />
-            INTERNET THAT
+            CHEAPER UK
             <br />
             <motion.span 
               className="text-primary inline-block"
               whileHover={{ x: 10, scale: 1.02 }}
               transition={{ duration: 0.2 }}
             >
-              ACTUALLY WORKS?
+              BROADBAND &amp; SIM?
             </motion.span>
           </motion.h2>
 
@@ -101,8 +101,8 @@ const CTASection = () => {
             variants={itemVariants}
             className="text-xl text-background/85 max-w-xl mb-10"
           >
-            Join the growing number of sensible people who've had enough of the big providers. 
-            We'll even handle the switch for you — no hassle, no downtime, no drama.
+            Join the growing number of sensible people who've had enough of the big providers.
+            Affordable telecom without contracts, hidden fees, or lock-ins — available across the UK.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -153,7 +153,7 @@ const CTASection = () => {
             variants={itemVariants}
             className="mt-8 text-sm text-background/70 font-display uppercase tracking-wider"
           >
-            No contracts longer than 30 days • Cancel anytime • We're confident, not desperate
+            No CPI price rises • Cancel anytime • Same networks, lower prices
           </motion.p>
         </motion.div>
       </div>

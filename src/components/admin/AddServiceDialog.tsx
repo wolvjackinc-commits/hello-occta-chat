@@ -270,7 +270,7 @@ export const AddServiceDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="border-4 border-foreground">
+      <DialogContent className="border-4 border-foreground max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Add Service</DialogTitle>
           <DialogDescription>Provision a new service for a customer.</DialogDescription>

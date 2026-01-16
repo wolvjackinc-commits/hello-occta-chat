@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -34,7 +45,9 @@ import {
   Building,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Eye,
+  Ban
 } from "lucide-react";
 
 type DDMandate = {
@@ -71,10 +84,14 @@ const paymentStatusOptions = ["initiated", "succeeded", "failed"] as const;
 
 export const AdminPaymentsDD = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchText, setSearchText] = useState("");
   const [activeTab, setActiveTab] = useState("mandates");
   const [isCreatingMandate, setIsCreatingMandate] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [viewMandate, setViewMandate] = useState<DDMandate | null>(null);
+  const [cancelConfirmMandate, setCancelConfirmMandate] = useState<DDMandate | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   
   // New mandate form
   const [newMandate, setNewMandate] = useState({
@@ -267,6 +284,63 @@ export const AdminPaymentsDD = () => {
     }
   };
 
+  const handleCancelMandate = async () => {
+    if (!cancelConfirmMandate) return;
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase
+        .from("dd_mandates")
+        .update({ status: "cancelled" })
+        .eq("id", cancelConfirmMandate.id);
+
+      if (error) throw error;
+
+      await logAudit({
+        action: "cancel",
+        entity: "dd_mandate",
+        entityId: cancelConfirmMandate.id,
+        metadata: { 
+          mandate_reference: cancelConfirmMandate.mandate_reference,
+          previous_status: cancelConfirmMandate.status,
+        },
+      });
+
+      toast({ title: "Mandate cancelled" });
+      setCancelConfirmMandate(null);
+      refetchMandates();
+    } catch (err: any) {
+      toast({ title: "Failed to cancel mandate", description: err.message, variant: "destructive" });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleActivateMandate = async (mandate: DDMandate) => {
+    try {
+      const { error } = await supabase
+        .from("dd_mandates")
+        .update({ status: "active" })
+        .eq("id", mandate.id);
+
+      if (error) throw error;
+
+      await logAudit({
+        action: "activate",
+        entity: "dd_mandate",
+        entityId: mandate.id,
+        metadata: { 
+          mandate_reference: mandate.mandate_reference,
+          previous_status: mandate.status,
+        },
+      });
+
+      toast({ title: "Mandate activated" });
+      refetchMandates();
+    } catch (err: any) {
+      toast({ title: "Failed to activate mandate", description: err.message, variant: "destructive" });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -378,19 +452,36 @@ export const AdminPaymentsDD = () => {
                         </TableCell>
                         <TableCell>{format(new Date(mandate.created_at), "dd MMM yyyy")}</TableCell>
                         <TableCell className="text-right">
-                          <Select
-                            value={mandate.status}
-                            onValueChange={(value) => handleUpdateMandateStatus(mandate, value)}
-                          >
-                            <SelectTrigger className="w-[120px] border-2 border-foreground">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {mandateStatusOptions.map((s) => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setViewMandate(mandate)}
+                              title="View details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {mandate.status === "pending" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleActivateMandate(mandate)}
+                                title="Activate mandate"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {mandate.status !== "cancelled" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setCancelConfirmMandate(mandate)}
+                                title="Cancel mandate"
+                              >
+                                <Ban className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -542,6 +633,111 @@ export const AdminPaymentsDD = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* View Mandate Dialog */}
+      <Dialog open={!!viewMandate} onOpenChange={(open) => !open && setViewMandate(null)}>
+        <DialogContent className="border-4 border-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-display">DD Mandate Details</DialogTitle>
+          </DialogHeader>
+          {viewMandate && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Badge className={`${getStatusColor(viewMandate.status)} border gap-1`}>
+                  {getStatusIcon(viewMandate.status)}
+                  {viewMandate.status}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  Created {format(new Date(viewMandate.created_at), "dd MMM yyyy")}
+                </span>
+              </div>
+
+              <div className="grid gap-4 border-2 border-foreground rounded-lg p-4">
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Customer</div>
+                  <div className="font-medium">{formatAccountNumber(mandateProfileMap.get(viewMandate.user_id)?.account_number)}</div>
+                  <div className="text-sm text-muted-foreground">{mandateProfileMap.get(viewMandate.user_id)?.full_name || "Unknown"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Mandate Reference</div>
+                  <div className="font-mono">{viewMandate.mandate_reference || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Account Holder</div>
+                  <div>{viewMandate.account_holder || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Bank Account</div>
+                  <div>{viewMandate.bank_last4 ? `****${viewMandate.bank_last4}` : "—"}</div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {viewMandate.status === "pending" && (
+                  <Button
+                    onClick={() => {
+                      handleActivateMandate(viewMandate);
+                      setViewMandate(null);
+                    }}
+                    className="flex-1 gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Activate
+                  </Button>
+                )}
+                {viewMandate.status !== "cancelled" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setViewMandate(null);
+                      setCancelConfirmMandate(viewMandate);
+                    }}
+                    className="flex-1 gap-2 border-2 border-foreground"
+                  >
+                    <Ban className="h-4 w-4" />
+                    Cancel Mandate
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const profile = mandateProfileMap.get(viewMandate.user_id);
+                    if (profile?.account_number) {
+                      navigate(`/admin/customers/${profile.account_number}`);
+                    }
+                  }}
+                >
+                  View Customer
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Mandate Confirmation */}
+      <AlertDialog open={!!cancelConfirmMandate} onOpenChange={(open) => !open && setCancelConfirmMandate(null)}>
+        <AlertDialogContent className="border-4 border-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Cancel DD Mandate</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel mandate {cancelConfirmMandate?.mandate_reference}? 
+              This will stop all future Direct Debit payments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-2 border-foreground">Keep Mandate</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelMandate}
+              disabled={isCancelling}
+              className="bg-destructive text-destructive-foreground"
+            >
+              {isCancelling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Cancel Mandate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

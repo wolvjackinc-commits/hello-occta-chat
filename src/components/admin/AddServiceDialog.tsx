@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { logAudit } from "@/lib/audit";
 
 type Profile = {
   id: string;
@@ -221,14 +222,14 @@ export const AddServiceDialog = ({
     }
 
     setIsSaving(true);
-    const { error } = await supabase.from("services").insert({
+    const { data: insertedService, error } = await supabase.from("services").insert({
       user_id: customerId,
       service_type: formState.serviceType.trim(),
       identifiers,
       supplier_reference: formState.supplierReference.trim() || null,
       activation_date: formState.activationDate || null,
       status: formState.status || "active",
-    });
+    }).select().single();
 
     if (error) {
       toast({
@@ -239,6 +240,18 @@ export const AddServiceDialog = ({
       setIsSaving(false);
       return;
     }
+
+    // Log audit
+    await logAudit({
+      action: "create",
+      entity: "service",
+      entityId: insertedService?.id,
+      metadata: {
+        accountNumber: normalizedAccountNumber,
+        serviceType: formState.serviceType.trim(),
+        status: formState.status || "active",
+      },
+    });
 
     toast({ title: "Service added" });
     setIsSaving(false);

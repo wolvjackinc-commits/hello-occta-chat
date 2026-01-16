@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { logError } from "@/lib/logger";
+import { logAudit } from "@/lib/audit";
 import {
   Dialog,
   DialogContent,
@@ -130,6 +131,7 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
 
   const handleStatusChange = async (newStatus: SupportTicket['status']) => {
     if (!ticket) return;
+    const previousStatus = currentStatus;
 
     try {
       const { error } = await supabase
@@ -138,6 +140,18 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
         .eq("id", ticket.id);
 
       if (error) throw error;
+
+      // Log audit
+      await logAudit({
+        action: newStatus === 'closed' ? 'close' : newStatus === 'resolved' ? 'close' : 'update',
+        entity: 'support_ticket',
+        entityId: ticket.id,
+        metadata: {
+          previousStatus,
+          newStatus,
+          subject: ticket.subject,
+        },
+      });
 
       setCurrentStatus(newStatus);
       onUpdate({ ...ticket, status: newStatus });
@@ -167,6 +181,17 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
         });
 
       if (insertError) throw insertError;
+
+      // Log audit
+      await logAudit({
+        action: 'reply',
+        entity: 'support_ticket',
+        entityId: ticket.id,
+        metadata: {
+          subject: ticket.subject,
+          recipientEmail: profile?.email,
+        },
+      });
 
       // Send email notification if we have user email
       if (profile?.email) {

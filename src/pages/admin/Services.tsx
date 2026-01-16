@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -107,46 +107,13 @@ export const AdminServices = () => {
   const isServiceTypeValid = allowedServiceTypes.includes(
     formState.serviceType as (typeof allowedServiceTypes)[number],
   );
+  const accountNumber = formState.accountNumber;
   const accountNumberInput = formState.accountNumber;
-  const normalizedAccountNumber = (accountNumberInput ?? "")
+  const normalizedAccountNumber = (accountNumber ?? accountNumberInput ?? "")
     .toString()
     .trim()
     .toUpperCase();
   const isNormalizedAccountNumberValid = isAccountNumberValid(normalizedAccountNumber);
-
-  useEffect(() => {
-    const acct = (accountNumberInput ?? "").trim().toUpperCase();
-    if (!acct) {
-      setMatchedCustomer(null);
-      setIsLookingUpCustomer(false);
-      return;
-    }
-
-    setIsLookingUpCustomer(true);
-    let isActive = true;
-    const timer = setTimeout(async () => {
-      const { data: customer, error } = await supabase
-        .from("customers")
-        .select("user_id, account_number, full_name, email")
-        .eq("account_number", acct)
-        .maybeSingle();
-
-      if (!isActive) return;
-      if (error) {
-        setMatchedCustomer(null);
-        setIsLookingUpCustomer(false);
-        return;
-      }
-
-      setMatchedCustomer(customer ?? null);
-      setIsLookingUpCustomer(false);
-    }, 400);
-
-    return () => {
-      isActive = false;
-      clearTimeout(timer);
-    };
-  }, [accountNumberInput]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -379,7 +346,7 @@ export const AdminServices = () => {
                     Customer: {matchedCustomer.full_name || "Customer"} ({matchedCustomer.email || "no email"})
                   </p>
                 )}
-                {!matchedCustomer && normalizedAccountNumber && !isLookingUpCustomer && (
+                {!matchedCustomer && isNormalizedAccountNumberValid && !isLookingUpCustomer && (
                   <p className="mt-2 text-xs text-muted-foreground">
                     No customer found for {normalizedAccountNumber}.
                   </p>

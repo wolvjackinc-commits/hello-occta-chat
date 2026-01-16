@@ -17,7 +17,9 @@ interface EmailRequest {
     | "status_update"
     | "order_message"
     | "ticket_reply"
-    | "password_reset";
+    | "password_reset"
+    | "invoice_sent"
+    | "invoice_paid";
   to: string;
   data: Record<string, unknown>;
   // For guest order confirmations - order verification data
@@ -708,7 +710,160 @@ const getPasswordResetHtml = (data: Record<string, unknown>) => `
 </html>
 `;
 
-// Helper to verify user is admin
+const getInvoiceSentHtml = (data: Record<string, unknown>) => {
+  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const lines = (data.lines as Array<{ description: string; qty: number; line_total: number }>) || [];
+  
+  const linesHtml = lines.map(line => `
+    <tr>
+      <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">${escapeHtml(line.description)}</td>
+      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: center;">${line.qty}</td>
+      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right;">£${sanitizeNumber(line.line_total)}</td>
+    </tr>
+  `).join('');
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', sans-serif; }
+    .preheader { display: none !important; }
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    .title-banner { background: #3b82f6; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    .invoice-card { background: #f5f4ef; border: 3px solid #0d0d0d; margin: 24px 0; }
+    .invoice-header { background: #0d0d0d; color: #fff; padding: 12px 20px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; }
+    .invoice-body { padding: 0; }
+    .invoice-table { width: 100%; border-collapse: collapse; }
+    .invoice-table th { background: #f5f4ef; font-size: 12px; text-transform: uppercase; padding: 12px 16px; text-align: left; }
+    .totals-row { display: flex; justify-content: space-between; padding: 12px 16px; }
+    .totals-row.grand { background: #0d0d0d; color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 18px; }
+    .meta-row { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #eee; }
+    .meta-label { font-size: 12px; text-transform: uppercase; color: #666; }
+    .meta-value { font-weight: 600; }
+    .cta-wrap { text-align: center; margin: 32px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; box-shadow: 4px 4px 0 0 #facc15; }
+    .footer { background: #0d0d0d; padding: 28px 32px; text-align: center; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
+    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="preheader">Invoice ${escapeHtml(data.invoice_number)} — £${sanitizeNumber(data.total)} due</div>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
+      </div>
+      <div class="title-banner">
+        <h1 class="title">📄 Invoice ${escapeHtml(data.invoice_number)}</h1>
+      </div>
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.customer_name) || "there"},</p>
+        <p class="text">Please find your invoice below. Payment is due ${data.due_date ? `by ${escapeHtml(data.due_date)}` : 'upon receipt'}.</p>
+        <div class="invoice-card">
+          <div class="invoice-header">Invoice Details</div>
+          <div class="invoice-body">
+            <div class="meta-row"><span class="meta-label">Invoice Number</span><span class="meta-value">${escapeHtml(data.invoice_number)}</span></div>
+            <div class="meta-row"><span class="meta-label">Account Number</span><span class="meta-value">${escapeHtml(data.account_number)}</span></div>
+            <div class="meta-row"><span class="meta-label">Issue Date</span><span class="meta-value">${escapeHtml(data.issue_date)}</span></div>
+            ${data.due_date ? `<div class="meta-row"><span class="meta-label">Due Date</span><span class="meta-value">${escapeHtml(data.due_date)}</span></div>` : ''}
+          </div>
+        </div>
+        ${lines.length > 0 ? `<div class="invoice-card"><div class="invoice-header">Line Items</div><table class="invoice-table"><thead><tr><th>Description</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${linesHtml}</tbody></table></div>` : ''}
+        <div class="invoice-card">
+          <div class="totals-row"><span>Subtotal</span><span>£${sanitizeNumber(data.subtotal)}</span></div>
+          <div class="totals-row"><span>VAT (20%)</span><span>£${sanitizeNumber(data.vat_total)}</span></div>
+          <div class="totals-row grand"><span>TOTAL DUE</span><span>£${sanitizeNumber(data.total)}</span></div>
+        </div>
+        <div class="cta-wrap"><a href="${siteUrl}/dashboard" class="cta">View in Dashboard →</a></div>
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">Questions? Contact hello@occta.co.uk</p>
+      </div>
+      <div class="footer"><div class="footer-logo">OCCTA</div><div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom</div></div>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+const getInvoicePaidHtml = (data: Record<string, unknown>) => {
+  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', sans-serif; }
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    .title-banner { background: #22c55e; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    .receipt-box { background: #f0fdf4; border: 3px solid #22c55e; padding: 24px; margin: 24px 0; text-align: center; }
+    .receipt-icon { font-size: 48px; margin-bottom: 12px; }
+    .receipt-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #22c55e; }
+    .receipt-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #86efac; }
+    .receipt-row:last-child { border-bottom: none; }
+    .receipt-label { color: #666; font-size: 13px; }
+    .receipt-value { font-weight: 600; }
+    .cta-wrap { text-align: center; margin: 32px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; box-shadow: 4px 4px 0 0 #22c55e; }
+    .footer { background: #0d0d0d; padding: 28px 32px; text-align: center; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
+    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header"><div class="logo">OCCTA</div><div class="tagline">Telecom • Connected</div></div>
+      <div class="title-banner"><h1 class="title">✓ Payment Received</h1></div>
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.customer_name) || "there"},</p>
+        <p class="text">Great news! We've received your payment. Thank you for keeping your account up to date.</p>
+        <div class="receipt-box">
+          <div class="receipt-icon">✅</div>
+          <div class="receipt-title">Payment Confirmed</div>
+          <div style="margin-top: 16px;">
+            <div class="receipt-row"><span class="receipt-label">Invoice</span><span class="receipt-value">${escapeHtml(data.invoice_number)}</span></div>
+            <div class="receipt-row"><span class="receipt-label">Amount Paid</span><span class="receipt-value">£${sanitizeNumber(data.total)}</span></div>
+            <div class="receipt-row"><span class="receipt-label">Payment Date</span><span class="receipt-value">${escapeHtml(data.paid_date) || new Date().toLocaleDateString('en-GB')}</span></div>
+            ${data.receipt_reference ? `<div class="receipt-row"><span class="receipt-label">Receipt Ref</span><span class="receipt-value">${escapeHtml(data.receipt_reference)}</span></div>` : ''}
+          </div>
+        </div>
+        <div class="cta-wrap"><a href="${siteUrl}/dashboard" class="cta">View Receipt →</a></div>
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">This email serves as confirmation of your payment.</p>
+      </div>
+      <div class="footer"><div class="footer-logo">OCCTA</div><div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom</div></div>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const isAdmin = async (supabase: any, userId: string): Promise<boolean> => {
   const { data, error } = await supabase
@@ -909,6 +1064,14 @@ const handler = async (req: Request): Promise<Response> => {
       case "password_reset":
         subject = "Reset your OCCTA password";
         html = getPasswordResetHtml(emailData);
+        break;
+      case "invoice_sent":
+        subject = `Invoice ${data.invoice_number} from OCCTA Telecom`;
+        html = getInvoiceSentHtml(emailData);
+        break;
+      case "invoice_paid":
+        subject = `Payment Received - Invoice ${data.invoice_number}`;
+        html = getInvoicePaidHtml(emailData);
         break;
       default:
         throw new Error(`Unknown email type: ${type}`);

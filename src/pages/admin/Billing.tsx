@@ -36,6 +36,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
 import { formatAccountNumber } from "@/lib/account";
+import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
 import { format } from "date-fns";
 import { 
   FileText, 
@@ -46,7 +47,9 @@ import {
   Send,
   Ban,
   Eye,
-  Trash2
+  Trash2,
+  Download,
+  Mail
 } from "lucide-react";
 
 type Invoice = {
@@ -263,12 +266,13 @@ export const AdminBilling = () => {
       if (error) throw error;
 
       // Create receipt
+      const receiptRef = `RECEIPT-${Date.now().toString(36).toUpperCase()}`;
       await supabase.from("receipts").insert({
         invoice_id: invoice.id,
         user_id: invoice.user_id,
         amount: invoice.total,
         method: "manual",
-        reference: `RECEIPT-${Date.now().toString(36).toUpperCase()}`,
+        reference: receiptRef,
       });
 
       await logAudit({
@@ -278,7 +282,32 @@ export const AdminBilling = () => {
         metadata: { invoice_number: invoice.invoice_number, amount: invoice.total },
       });
 
-      toast({ title: "Invoice marked as paid" });
+      // Send payment confirmation email
+      const profile = profileMap.get(invoice.user_id);
+      if (profile?.email) {
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              type: "invoice_paid",
+              to: profile.email,
+              data: {
+                customer_name: profile.full_name || "Customer",
+                invoice_number: invoice.invoice_number,
+                total: invoice.total,
+                paid_date: format(new Date(), "dd MMM yyyy"),
+                receipt_reference: receiptRef,
+              },
+            },
+          });
+          toast({ title: "Invoice marked as paid", description: "Payment confirmation email sent" });
+        } catch (emailErr) {
+          console.error("Failed to send payment email:", emailErr);
+          toast({ title: "Invoice marked as paid", description: "Email notification failed" });
+        }
+      } else {
+        toast({ title: "Invoice marked as paid" });
+      }
+
       refetch();
     } catch (err: any) {
       toast({ title: "Failed to update invoice", description: err.message, variant: "destructive" });
@@ -290,6 +319,12 @@ export const AdminBilling = () => {
   const handleSendInvoice = async (invoice: Invoice) => {
     setIsSending(true);
     try {
+      // Fetch invoice lines for email
+      const { data: lines } = await supabase
+        .from("invoice_lines")
+        .select("*")
+        .eq("invoice_id", invoice.id);
+
       const { error } = await supabase
         .from("invoices")
         .update({ status: "sent" })
@@ -304,7 +339,40 @@ export const AdminBilling = () => {
         metadata: { invoice_number: invoice.invoice_number },
       });
 
-      toast({ title: "Invoice marked as sent" });
+      // Send invoice email
+      const profile = profileMap.get(invoice.user_id);
+      if (profile?.email) {
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              type: "invoice_sent",
+              to: profile.email,
+              data: {
+                customer_name: profile.full_name || "Customer",
+                account_number: profile.account_number || "",
+                invoice_number: invoice.invoice_number,
+                issue_date: format(new Date(invoice.issue_date), "dd MMM yyyy"),
+                due_date: invoice.due_date ? format(new Date(invoice.due_date), "dd MMM yyyy") : null,
+                subtotal: invoice.subtotal,
+                vat_total: invoice.vat_total,
+                total: invoice.total,
+                lines: (lines || []).map((l) => ({
+                  description: l.description,
+                  qty: l.qty,
+                  line_total: l.line_total,
+                })),
+              },
+            },
+          });
+          toast({ title: "Invoice sent", description: "Email notification sent to customer" });
+        } catch (emailErr) {
+          console.error("Failed to send invoice email:", emailErr);
+          toast({ title: "Invoice marked as sent", description: "Email notification failed" });
+        }
+      } else {
+        toast({ title: "Invoice marked as sent" });
+      }
+
       refetch();
     } catch (err: any) {
       toast({ title: "Failed to send invoice", description: err.message, variant: "destructive" });
@@ -613,7 +681,36 @@ export const AdminBilling = () => {
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const profile = profileMap.get(viewInvoice.user_id);
+                    generateInvoicePdf({
+                      invoiceNumber: viewInvoice.invoice_number,
+                      customerName: profile?.full_name || "Customer",
+                      customerEmail: profile?.email || "",
+                      accountNumber: profile?.account_number || "",
+                      issueDate: viewInvoice.issue_date,
+                      dueDate: viewInvoice.due_date || undefined,
+                      status: viewInvoice.status,
+                      lines: invoiceLines.map(l => ({
+                        description: l.description,
+                        qty: l.qty,
+                        unit_price: l.unit_price,
+                        line_total: l.line_total,
+                      })),
+                      subtotal: viewInvoice.subtotal,
+                      vatTotal: viewInvoice.vat_total,
+                      total: viewInvoice.total,
+                      notes: viewInvoice.notes || undefined,
+                    });
+                  }}
+                  className="gap-2 border-2 border-foreground"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </Button>
                 {viewInvoice.status === "draft" && (
                   <Button
                     onClick={() => {

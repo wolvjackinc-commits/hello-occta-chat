@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -90,6 +90,7 @@ export const AdminServices = () => {
   const [isLookingUpCustomer, setIsLookingUpCustomer] = useState(false);
   const [formState, setFormState] = useState({
     userId: "",
+    accountNumber: "",
     serviceType: "broadband",
     identifiers: "{}",
     supplierReference: "",
@@ -99,6 +100,13 @@ export const AdminServices = () => {
   const isServiceTypeValid = allowedServiceTypes.includes(
     formState.serviceType as (typeof allowedServiceTypes)[number],
   );
+  const accountNumber = formState.accountNumber;
+  const accountNumberInput = formState.accountNumber;
+  const normalizedAccountNumber = (accountNumber ?? accountNumberInput ?? "")
+    .toString()
+    .trim()
+    .toUpperCase();
+  const isNormalizedAccountNumberValid = isAccountNumberValid(normalizedAccountNumber);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -178,12 +186,8 @@ export const AdminServices = () => {
       toast({ title: "Account number and service type are required", variant: "destructive" });
       return;
     }
-    if (!isAccountNumberValid) {
+    if (!isNormalizedAccountNumberValid) {
       toast({ title: "Enter a valid account number (OCC########).", variant: "destructive" });
-      return;
-    }
-    if (!isServiceTypeValid) {
-      toast({ title: "Select a valid service type", variant: "destructive" });
       return;
     }
     if (!isServiceTypeValid) {
@@ -243,6 +247,7 @@ export const AdminServices = () => {
     setIsAddOpen(false);
     setFormState({
       userId: "",
+      accountNumber: "",
       serviceType: "broadband",
       identifiers: "{}",
       supplierReference: "",
@@ -328,7 +333,7 @@ export const AdminServices = () => {
                     {matchedCustomer.email ? `· ${matchedCustomer.email}` : ""}
                   </p>
                 )}
-                {!matchedCustomer && isAccountNumberValid && !isLookingUpCustomer && (
+                {!matchedCustomer && isNormalizedAccountNumberValid && !isLookingUpCustomer && (
                   <p className="mt-2 text-xs text-muted-foreground">
                     No customer found for {normalizedAccountNumber}.
                   </p>

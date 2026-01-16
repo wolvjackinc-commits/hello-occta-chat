@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 
 type Profile = {
   id: string;
-  user_id: string | null;
   full_name: string | null;
   email: string | null;
   account_number: string | null;
@@ -28,8 +27,7 @@ type AddServiceDialogProps = {
 
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
 const allowedServiceTypes = ["broadband", "landline", "sim", "mobile"] as const;
-const normalizeAccountNumber = (value?: string | null) => (value ?? "").trim().toUpperCase();
-const isAccountNumberValid = (value: string) => /^OCC\d{8}$/.test(normalizeAccountNumber(value));
+const isAccountNumberValid = (value: string) => /^OCC\d{8}$/.test(value);
 
 const isUkNumber = (value: string) => {
   const trimmed = value.trim();
@@ -76,7 +74,7 @@ export const AddServiceDialog = ({
   onSaved,
 }: AddServiceDialogProps) => {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
   const [isLookingUpCustomer, setIsLookingUpCustomer] = useState(false);
@@ -86,16 +84,16 @@ export const AddServiceDialog = ({
     formState.serviceType as (typeof allowedServiceTypes)[number],
   );
   const accountNumberInput = formState.accountNumber;
-  const normalizedAccountNumber = normalizeAccountNumber(accountNumberInput);
+  const normalizedAccountNumber = (accountNumberInput ?? "").trim().toUpperCase();
   const isNormalizedAccountNumberValid = isAccountNumberValid(normalizedAccountNumber);
-  const hasCustomer = Boolean(defaultCustomerId || matchedCustomer?.user_id);
+  const hasCustomer = Boolean(defaultCustomerId || matchedCustomer?.id);
 
   useEffect(() => {
-    if (!open) return;
+    if (!isOpen) return;
     setFormState(buildInitialFormState(defaultAccountNumber));
     setIdentifierFields(buildInitialIdentifierFields());
     setMatchedCustomer(null);
-  }, [defaultAccountNumber, open]);
+  }, [defaultAccountNumber, isOpen]);
 
   useEffect(() => {
     if (defaultCustomerId) {
@@ -114,7 +112,7 @@ export const AddServiceDialog = ({
     setMatchedCustomer(null);
     supabase
       .from("profiles")
-      .select("id, user_id, account_number, email, full_name")
+      .select("id, account_number, email, full_name")
       .eq("account_number", normalizedAccountNumber)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -204,7 +202,7 @@ export const AddServiceDialog = ({
       };
     }
 
-    const customerId = defaultCustomerId ?? matchedCustomer?.user_id;
+    const customerId = defaultCustomerId ?? matchedCustomer?.id;
     if (!customerId) {
       toast({
         title: `Customer not found for ${normalizedAccountNumber}`,
@@ -235,7 +233,7 @@ export const AddServiceDialog = ({
 
     toast({ title: "Service added" });
     setIsSaving(false);
-    setOpen(false);
+    setIsOpen(false);
     resetForm();
     onSaved?.();
   };
@@ -248,7 +246,7 @@ export const AddServiceDialog = ({
   }, [defaultCustomerId, matchedCustomer?.email, matchedCustomer?.full_name]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="border-4 border-foreground">
         <DialogHeader>

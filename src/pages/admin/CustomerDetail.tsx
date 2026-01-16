@@ -132,7 +132,7 @@ export const AdminCustomerDetail = () => {
                 trigger={<Button className="border-2 border-foreground">Add service</Button>}
                 defaultAccountNumber={overview.account_number}
                 readOnlyAccountNumber
-                defaultCustomerId={overview.user_id ?? overview.id}
+                defaultCustomerId={overview.id}
                 onSaved={refetch}
               />
             </div>
@@ -185,7 +185,7 @@ export const AdminCustomerDetail = () => {
               trigger={<Button className="border-2 border-foreground">Add service</Button>}
               defaultAccountNumber={overview.account_number}
               readOnlyAccountNumber
-              defaultCustomerId={overview.user_id ?? overview.id}
+              defaultCustomerId={overview.id}
               onSaved={refetch}
             />
           </div>

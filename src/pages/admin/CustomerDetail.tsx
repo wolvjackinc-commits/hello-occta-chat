@@ -7,18 +7,24 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import type { Json } from "@/integrations/supabase/types";
 import { Copy } from "lucide-react";
+import { format } from "date-fns";
+import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
 
 export const AdminCustomerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
+  const [updatingServiceId, setUpdatingServiceId] = useState<string | null>(null);
 
   const { data, refetch } = useQuery({
     queryKey: ["admin-customer", id],
     enabled: !!id,
     queryFn: async () => {
       if (!id) return null;
-      const [profile, orders, tickets, files] = await Promise.all([
+      const [profile, orders, tickets, files, services] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", id).maybeSingle(),
         supabase.from("orders").select("*").eq("user_id", id).order("created_at", { ascending: false }),
         supabase
@@ -27,6 +33,7 @@ export const AdminCustomerDetail = () => {
           .eq("user_id", id)
           .order("created_at", { ascending: false }),
         supabase.from("user_files").select("*").eq("user_id", id),
+        supabase.from("services").select("*").eq("user_id", id).order("updated_at", { ascending: false }),
       ]);
 
       return {
@@ -34,11 +41,13 @@ export const AdminCustomerDetail = () => {
         orders: orders.data ?? [],
         tickets: tickets.data ?? [],
         files: files.data ?? [],
+        services: services.data ?? [],
       };
     },
   });
 
   const overview = useMemo(() => data?.profile, [data?.profile]);
+  const services = useMemo(() => data?.services ?? [], [data?.services]);
 
   if (!overview) {
     return <p className="text-muted-foreground">Loading customer...</p>;
@@ -48,6 +57,43 @@ export const AdminCustomerDetail = () => {
     if (!value) return;
     await navigator.clipboard.writeText(value);
     toast({ title: `${label} copied` });
+  };
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return "—";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return format(parsed, "dd MMM yyyy");
+  };
+
+  const getServiceIdentifier = (serviceType: string, identifiers: Json | null) => {
+    if (!identifiers || typeof identifiers !== "object" || Array.isArray(identifiers)) return "—";
+    const record = identifiers as Record<string, unknown>;
+    if (serviceType === "landline") return record.number ? String(record.number) : "—";
+    if (serviceType === "sim") return record.msisdn ? String(record.msisdn) : "—";
+    if (serviceType === "broadband") return record.username ? String(record.username) : "—";
+    return "—";
+  };
+
+  const updateServiceStatus = async (serviceId: string, status: string) => {
+    setUpdatingServiceId(serviceId);
+    const { error } = await supabase
+      .from("services")
+      .update({
+        status,
+        suspension_reason: status === "suspended" ? "Suspended by admin" : null,
+      })
+      .eq("id", serviceId);
+
+    if (error) {
+      toast({ title: "Failed to update service", description: error.message, variant: "destructive" });
+      setUpdatingServiceId(null);
+      return;
+    }
+
+    toast({ title: "Service updated" });
+    setUpdatingServiceId(null);
+    refetch();
   };
 
   return (
@@ -73,6 +119,7 @@ export const AdminCustomerDetail = () => {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="tickets">Tickets</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -80,6 +127,15 @@ export const AdminCustomerDetail = () => {
 
         <TabsContent value="overview" className="mt-4">
           <div className="space-y-4">
+            <div className="flex justify-end">
+              <AddServiceDialog
+                trigger={<Button className="border-2 border-foreground">Add service</Button>}
+                defaultAccountNumber={overview.account_number}
+                readOnlyAccountNumber
+                defaultCustomerId={overview.user_id ?? overview.id}
+                onSaved={refetch}
+              />
+            </div>
             <Card className="border-2 border-foreground p-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
@@ -121,6 +177,82 @@ export const AdminCustomerDetail = () => {
               </AccordionItem>
             </Accordion>
           </div>
+        </TabsContent>
+
+        <TabsContent value="services" className="mt-4 space-y-4">
+          <div className="flex justify-end">
+            <AddServiceDialog
+              trigger={<Button className="border-2 border-foreground">Add service</Button>}
+              defaultAccountNumber={overview.account_number}
+              readOnlyAccountNumber
+              defaultCustomerId={overview.user_id ?? overview.id}
+              onSaved={refetch}
+            />
+          </div>
+          <Card className="border-2 border-foreground p-4">
+            {services.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No services found.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b-4 border-foreground">
+                    <TableHead className="font-display uppercase">Type</TableHead>
+                    <TableHead className="font-display uppercase">Status</TableHead>
+                    <TableHead className="font-display uppercase">Identifier</TableHead>
+                    <TableHead className="font-display uppercase">Supplier ref</TableHead>
+                    <TableHead className="font-display uppercase">Activation date</TableHead>
+                    <TableHead className="font-display uppercase">Updated</TableHead>
+                    <TableHead className="font-display uppercase text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {services.map((service) => (
+                    <TableRow key={service.id} className="border-b-2 border-foreground/20">
+                      <TableCell className="capitalize">{service.service_type}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="border-2 border-foreground capitalize">
+                          {service.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{getServiceIdentifier(service.service_type, service.identifiers)}</TableCell>
+                      <TableCell>{service.supplier_reference || "—"}</TableCell>
+                      <TableCell>{formatDate(service.activation_date)}</TableCell>
+                      <TableCell>{formatDate(service.updated_at)}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updatingServiceId === service.id}
+                          onClick={() => updateServiceStatus(service.id, "suspended")}
+                          className="border-2 border-foreground"
+                        >
+                          Suspend
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updatingServiceId === service.id}
+                          onClick={() => updateServiceStatus(service.id, "active")}
+                          className="border-2 border-foreground"
+                        >
+                          Reactivate
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updatingServiceId === service.id}
+                          onClick={() => updateServiceStatus(service.id, "cancelled")}
+                          className="border-2 border-foreground"
+                        >
+                          Cancel
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Card>
         </TabsContent>
 
         <TabsContent value="orders" className="mt-4 space-y-3">

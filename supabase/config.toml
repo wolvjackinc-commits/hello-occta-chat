@@ -11,3 +11,21 @@ verify_jwt = false
 
 [functions.installation-reminders]
 verify_jwt = false
+
+[functions.payment-reminders]
+verify_jwt = false
+
+[functions.process-late-fees]
+verify_jwt = false
+
+# Cron job: Run payment reminders daily at 9:00 AM UTC
+[[cron_jobs]]
+name = "daily-payment-reminders"
+schedule = "0 9 * * *"
+command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/payment-reminders"
+
+# Cron job: Process late fees daily at 2:00 AM UTC
+[[cron_jobs]]
+name = "daily-late-fee-processing"
+schedule = "0 2 * * *"
+command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/process-late-fees"

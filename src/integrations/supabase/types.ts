@@ -52,6 +52,36 @@ export type Database = {
           },
         ]
       }
+      billing_settings: {
+        Row: {
+          auto_pay_enabled: boolean
+          created_at: string
+          id: string
+          late_fee_grace_days: number | null
+          preferred_payment_method: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_pay_enabled?: boolean
+          created_at?: string
+          id?: string
+          late_fee_grace_days?: number | null
+          preferred_payment_method?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_pay_enabled?: boolean
+          created_at?: string
+          id?: string
+          late_fee_grace_days?: number | null
+          preferred_payment_method?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       credit_notes: {
         Row: {
           amount: number
@@ -364,8 +394,11 @@ export type Database = {
           id: string
           invoice_number: string
           issue_date: string
+          late_fee_amount: number | null
+          late_fee_applied_at: string | null
           notes: string | null
           order_id: string | null
+          overdue_notified_at: string | null
           pdf_url: string | null
           service_id: string | null
           status: string
@@ -383,8 +416,11 @@ export type Database = {
           id?: string
           invoice_number: string
           issue_date?: string
+          late_fee_amount?: number | null
+          late_fee_applied_at?: string | null
           notes?: string | null
           order_id?: string | null
+          overdue_notified_at?: string | null
           pdf_url?: string | null
           service_id?: string | null
           status?: string
@@ -402,8 +438,11 @@ export type Database = {
           id?: string
           invoice_number?: string
           issue_date?: string
+          late_fee_amount?: number | null
+          late_fee_applied_at?: string | null
           notes?: string | null
           order_id?: string | null
+          overdue_notified_at?: string | null
           pdf_url?: string | null
           service_id?: string | null
           status?: string

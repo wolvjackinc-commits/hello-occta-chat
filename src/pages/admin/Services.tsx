@@ -56,10 +56,11 @@ const getIdentifier = (identifiers: Json | null) => {
   if (Array.isArray(identifiers)) return identifiers.join(", ");
   if (typeof identifiers === "object") {
     const record = identifiers as Record<string, unknown>;
-    const preferredKeys = ["landline", "circuit_ref", "msisdn"];
+    const preferredKeys = ["landline", "msisdn", "circuit_ref"];
     for (const key of preferredKeys) {
       const value = record[key];
-      if (value) return `${value}`;
+      if (typeof value === "string" && value.trim()) return value.trim();
+      if (typeof value === "number") return `${value}`;
     }
     return JSON.stringify(record);
   }
@@ -81,6 +82,7 @@ export const AdminServices = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [suspendService, setSuspendService] = useState<Service | null>(null);
+  const [resumeService, setResumeService] = useState<Service | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [formState, setFormState] = useState({
     userId: "",
@@ -212,15 +214,10 @@ export const AdminServices = () => {
 
   const handleSuspend = async () => {
     if (!suspendService) return;
-    if (!suspendReason.trim()) {
-      toast({ title: "Suspension reason is required", variant: "destructive" });
-      return;
-    }
-
     setUpdatingId(suspendService.id);
     const { error } = await supabase
       .from("services")
-      .update({ status: "suspended", suspension_reason: suspendReason.trim() })
+      .update({ status: "suspended", suspension_reason: suspendReason.trim() || null })
       .eq("id", suspendService.id);
 
     if (error) {
@@ -236,12 +233,13 @@ export const AdminServices = () => {
     refetch();
   };
 
-  const handleResume = async (service: Service) => {
-    setUpdatingId(service.id);
+  const handleResume = async () => {
+    if (!resumeService) return;
+    setUpdatingId(resumeService.id);
     const { error } = await supabase
       .from("services")
       .update({ status: "active", suspension_reason: null })
-      .eq("id", service.id);
+      .eq("id", resumeService.id);
 
     if (error) {
       toast({ title: "Failed to resume service", variant: "destructive" });
@@ -251,6 +249,7 @@ export const AdminServices = () => {
 
     toast({ title: "Service resumed" });
     setUpdatingId(null);
+    setResumeService(null);
     refetch();
   };
 
@@ -440,7 +439,11 @@ export const AdminServices = () => {
                     </TableCell>
                     <TableCell className="capitalize">{service.service_type}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="border-2 border-foreground capitalize">
+                      <Badge
+                        variant="outline"
+                        className="border-2 border-foreground capitalize"
+                        title={service.suspension_reason || undefined}
+                      >
                         {service.status}
                       </Badge>
                     </TableCell>
@@ -455,7 +458,7 @@ export const AdminServices = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleResume(service)}
+                          onClick={() => setResumeService(service)}
                           disabled={updatingId === service.id}
                           className="border-2 border-foreground gap-2"
                         >
@@ -489,15 +492,23 @@ export const AdminServices = () => {
         )}
       </Card>
 
-      <Dialog open={!!suspendService} onOpenChange={(open) => !open && setSuspendService(null)}>
+      <Dialog
+        open={!!suspendService}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSuspendService(null);
+            setSuspendReason("");
+          }
+        }}
+      >
         <DialogContent className="border-4 border-foreground">
           <DialogHeader>
             <DialogTitle className="font-display">Suspend service</DialogTitle>
-            <DialogDescription>Provide a reason for suspending this service.</DialogDescription>
+            <DialogDescription>Are you sure you want to suspend this service?</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="font-display uppercase text-sm">Suspension reason</Label>
+              <Label className="font-display uppercase text-sm">Suspension reason (optional)</Label>
               <Textarea
                 value={suspendReason}
                 onChange={(event) => setSuspendReason(event.target.value)}
@@ -510,6 +521,29 @@ export const AdminServices = () => {
               className="w-full border-2 border-foreground"
             >
               {updatingId === suspendService?.id ? "Updating..." : "Confirm suspension"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!resumeService}
+        onOpenChange={(open) => {
+          if (!open) setResumeService(null);
+        }}
+      >
+        <DialogContent className="border-4 border-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-display">Resume service</DialogTitle>
+            <DialogDescription>Are you sure you want to resume this service?</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Button
+              onClick={handleResume}
+              disabled={!resumeService || updatingId === resumeService?.id}
+              className="w-full border-2 border-foreground"
+            >
+              {updatingId === resumeService?.id ? "Updating..." : "Confirm resume"}
             </Button>
           </div>
         </DialogContent>

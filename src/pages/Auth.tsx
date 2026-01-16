@@ -139,12 +139,12 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary grid-pattern p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-background hero-pattern p-4">
+      <div className="w-full max-w-md space-y-6">
         {/* Back to Home */}
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-sm font-display uppercase tracking-widest text-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to home
@@ -152,7 +152,7 @@ const Auth = () => {
 
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-warning flex items-center justify-center border-4 border-foreground shadow-brutal">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-warning flex items-center justify-center shadow-glow">
             <span className="text-primary-foreground font-display font-bold text-xl">O</span>
           </div>
           <div className="flex flex-col">
@@ -162,12 +162,12 @@ const Auth = () => {
         </div>
 
         {/* Auth Card */}
-        <Card className="card-brutal shadow-brutal-lg">
-          <CardHeader className="space-y-2">
-            <CardTitle className="text-3xl font-display uppercase tracking-tight">
+        <Card className="border-0 shadow-card">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-display">
               {activeTab === "signin" ? "Welcome back!" : "Join the club"}
             </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            <CardDescription>
               {activeTab === "signin" 
                 ? "Good to see you again. Let's get you logged in." 
                 : "Create an account to manage your services, view bills, and more."
@@ -177,13 +177,9 @@ const Auth = () => {
           
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <CardContent className="space-y-4">
-              <TabsList className="grid h-12 w-full grid-cols-2 border-4 border-foreground bg-muted shadow-brutal">
-                <TabsTrigger className="font-display uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-brutal data-[state=active]:rounded-none" value="signin">
-                  Sign In
-                </TabsTrigger>
-                <TabsTrigger className="font-display uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-brutal data-[state=active]:rounded-none" value="signup">
-                  Sign Up
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
 
               {/* Messages */}
@@ -214,7 +210,7 @@ const Auth = () => {
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-12 border-2 border-foreground pl-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="pl-10"
                       />
                     </div>
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
@@ -229,7 +225,7 @@ const Auth = () => {
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 border-2 border-foreground pl-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="pl-10"
                       />
                     </div>
                     {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
@@ -252,7 +248,7 @@ const Auth = () => {
                         placeholder="Your name"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="h-12 border-2 border-foreground pl-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="pl-10"
                       />
                     </div>
                     {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
@@ -267,7 +263,7 @@ const Auth = () => {
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-12 border-2 border-foreground pl-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="pl-10"
                       />
                     </div>
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
@@ -282,7 +278,7 @@ const Auth = () => {
                         placeholder="Min. 8 characters"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 border-2 border-foreground pl-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="pl-10"
                       />
                     </div>
                     {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}

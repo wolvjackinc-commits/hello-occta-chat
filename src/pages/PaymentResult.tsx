@@ -3,66 +3,26 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Loader2, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  Receipt,
-  Calendar,
-  CreditCard,
-  Mail,
-  Download,
-  Home
-} from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
-import { motion, AnimatePresence } from 'framer-motion';
-import { generateReceiptPdf, type ReceiptData } from '@/lib/generateReceiptPdf';
-import { useToast } from '@/hooks/use-toast';
-
-interface PaymentDetails {
-  success: boolean;
-  message: string;
-  status: string;
-  invoice?: {
-    invoice_number: string;
-    total_amount: number;
-    currency: string;
-    paid_at?: string;
-  };
-}
 
 export default function PaymentResult() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   const status = searchParams.get('status');
   const invoiceId = searchParams.get('invoiceId');
   
   const [verifying, setVerifying] = useState(true);
-  const [result, setResult] = useState<PaymentDetails | null>(null);
-  const [userProfile, setUserProfile] = useState<{ account_number?: string; full_name?: string; email?: string } | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    message: string;
+    status: string;
+  } | null>(null);
 
   useEffect(() => {
-    fetchUserProfile();
     verifyPayment();
   }, [status, invoiceId]);
-
-  const fetchUserProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('account_number, full_name, email')
-        .eq('id', user.id)
-        .single();
-      if (profile) {
-        setUserProfile(profile);
-      }
-    }
-  };
 
   const verifyPayment = async () => {
     if (!invoiceId || !status) {
@@ -96,7 +56,6 @@ export default function PaymentResult() {
           success: data.success,
           message: data.message,
           status: data.status,
-          invoice: data.invoice,
         });
       }
     } catch (err) {
@@ -111,105 +70,19 @@ export default function PaymentResult() {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = 'GBP') => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount);
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return new Date().toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const handleDownloadReceipt = () => {
-    if (!result?.success || !result.invoice) {
-      toast({
-        title: "Cannot download receipt",
-        description: "Receipt is only available for successful payments.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const receiptData: ReceiptData = {
-      receiptNumber: `RCP-${invoiceId?.slice(0, 8).toUpperCase() || 'UNKNOWN'}`,
-      invoiceNumber: result.invoice.invoice_number,
-      customerName: userProfile?.full_name || 'Customer',
-      customerEmail: userProfile?.email || '',
-      accountNumber: userProfile?.account_number || 'N/A',
-      amount: result.invoice.total_amount,
-      currency: result.invoice.currency || 'GBP',
-      paidAt: result.invoice.paid_at || new Date().toISOString(),
-      paymentMethod: 'Card (Worldpay)',
-      transactionRef: invoiceId || undefined,
-    };
-
-    generateReceiptPdf(receiptData);
-  };
-
   if (verifying) {
     return (
       <Layout>
-        <div className="container max-w-lg mx-auto py-16 px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="border-4 border-foreground shadow-[8px_8px_0_0_hsl(var(--foreground))]">
-              <CardContent className="pt-12 pb-12 text-center">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="inline-block"
-                >
-                  <Loader2 className="h-16 w-16 text-primary mx-auto" />
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <h3 className="text-xl font-bold mt-6 mb-2 font-display uppercase tracking-wide">
-                    Verifying Payment
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Please wait while we confirm your payment...
-                  </p>
-                </motion.div>
-                
-                {/* Progress dots */}
-                <div className="flex justify-center gap-2 mt-6">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      className="w-2 h-2 bg-primary rounded-full"
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        delay: i * 0.2,
-                      }}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+        <div className="container max-w-md mx-auto py-12 px-4">
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Verifying Payment</h3>
+              <p className="text-muted-foreground">
+                Please wait while we confirm your payment...
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </Layout>
     );
@@ -217,204 +90,52 @@ export default function PaymentResult() {
 
   return (
     <Layout>
-      <div className="container max-w-lg mx-auto py-16 px-4">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={result?.status}
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          >
-            <Card className="border-4 border-foreground shadow-[8px_8px_0_0_hsl(var(--foreground))] overflow-hidden">
-              {/* Status Banner */}
-              <motion.div
-                initial={{ x: "-100%" }}
-                animate={{ x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className={`py-4 px-6 ${
-                  result?.success 
-                    ? 'bg-green-500' 
-                    : result?.status === 'cancelled' 
-                    ? 'bg-yellow-500' 
-                    : 'bg-destructive'
-                }`}
-              >
-                <p className="text-white font-display text-sm uppercase tracking-widest">
-                  {result?.success ? 'Payment Successful' : result?.status === 'cancelled' ? 'Payment Cancelled' : 'Payment Failed'}
+      <div className="container max-w-md mx-auto py-12 px-4">
+        <Card>
+          <CardContent className="pt-6 text-center">
+            {result?.success ? (
+              <>
+                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Payment Successful!</h3>
+                <p className="text-muted-foreground mb-6">
+                  Your payment has been processed successfully. A confirmation email will be sent shortly.
                 </p>
-              </motion.div>
+              </>
+            ) : result?.status === 'cancelled' ? (
+              <>
+                <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Payment Cancelled</h3>
+                <p className="text-muted-foreground mb-6">
+                  You cancelled the payment. No charges have been made.
+                </p>
+              </>
+            ) : (
+              <>
+                <XCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Payment Failed</h3>
+                <p className="text-muted-foreground mb-6">
+                  {result?.message || 'Your payment could not be processed. Please try again.'}
+                </p>
+              </>
+            )}
 
-              <CardContent className="pt-8 pb-8">
-                {/* Icon Animation */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ 
-                    type: "spring",
-                    stiffness: 260,
-                    damping: 20,
-                    delay: 0.3
-                  }}
-                  className="text-center mb-6"
+            <div className="flex flex-col gap-3">
+              <Button onClick={() => navigate('/dashboard')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+              
+              {!result?.success && invoiceId && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate(`/pay-invoice?id=${invoiceId}`)}
                 >
-                  {result?.success ? (
-                    <div className="relative inline-block">
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: [0, 1.2, 1] }}
-                        transition={{ duration: 0.5, delay: 0.4 }}
-                        className="absolute inset-0 bg-green-100 rounded-full"
-                        style={{ transform: 'scale(1.5)' }}
-                      />
-                      <CheckCircle className="h-20 w-20 text-green-500 relative z-10" />
-                    </div>
-                  ) : result?.status === 'cancelled' ? (
-                    <AlertCircle className="h-20 w-20 text-yellow-500 mx-auto" />
-                  ) : (
-                    <XCircle className="h-20 w-20 text-destructive mx-auto" />
-                  )}
-                </motion.div>
-
-                {/* Title and Message */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-center mb-6"
-                >
-                  <h3 className="text-2xl font-bold font-display uppercase tracking-wide mb-2">
-                    {result?.success 
-                      ? 'Thank You!' 
-                      : result?.status === 'cancelled' 
-                      ? 'Payment Cancelled' 
-                      : 'Payment Failed'}
-                  </h3>
-                  <p className="text-muted-foreground">
-                    {result?.success 
-                      ? 'Your payment has been processed successfully.'
-                      : result?.status === 'cancelled'
-                      ? 'You cancelled the payment. No charges have been made.'
-                      : result?.message || 'Your payment could not be processed.'}
-                  </p>
-                </motion.div>
-
-                {/* Transaction Details */}
-                {result?.invoice && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="bg-muted/50 border-2 border-border p-5 mb-6"
-                  >
-                    <h4 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-                      <Receipt className="h-4 w-4" />
-                      Transaction Details
-                    </h4>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground flex items-center gap-2">
-                          <CreditCard className="h-4 w-4" />
-                          Invoice Number
-                        </span>
-                        <span className="font-mono font-bold">{result.invoice.invoice_number}</span>
-                      </div>
-                      
-                      <Separator />
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {result?.success ? 'Paid On' : 'Date'}
-                        </span>
-                        <span className="text-sm">{formatDate(result.invoice.paid_at)}</span>
-                      </div>
-                      
-                      <Separator />
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Amount</span>
-                        <span className="text-xl font-bold text-primary">
-                          {formatCurrency(result.invoice.total_amount, result.invoice.currency)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {result?.success && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.8 }}
-                        className="mt-4 pt-4 border-t border-border"
-                      >
-                        <div className="flex items-center gap-2 text-sm text-green-600">
-                          <Mail className="h-4 w-4" />
-                          <span>A confirmation email has been sent to your registered email address.</span>
-                        </div>
-                      </motion.div>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Action Buttons */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 }}
-                  className="flex flex-col gap-3"
-                >
-                  <Button 
-                    onClick={() => navigate('/dashboard')}
-                    size="lg"
-                    className="w-full font-display uppercase tracking-wider border-2 border-foreground shadow-[4px_4px_0_0_hsl(var(--foreground))] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
-                  >
-                    <Home className="h-4 w-4 mr-2" />
-                    Back to Dashboard
-                  </Button>
-                  
-                  {result?.success && (
-                    <Button 
-                      variant="outline"
-                      onClick={handleDownloadReceipt}
-                      size="lg"
-                      className="w-full font-display uppercase tracking-wider border-2 border-foreground"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Receipt
-                    </Button>
-                  )}
-                  
-                  {!result?.success && invoiceId && (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => navigate(`/pay-invoice?id=${invoiceId}`)}
-                      size="lg"
-                      className="w-full font-display uppercase tracking-wider border-2 border-foreground"
-                    >
-                      Try Again
-                    </Button>
-                  )}
-                </motion.div>
-
-                {/* Support Info */}
-                {!result?.success && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.9 }}
-                    className="text-center text-sm text-muted-foreground mt-6"
-                  >
-                    Need help? Contact our support team at{' '}
-                    <a href="mailto:support@occta.co.uk" className="text-primary underline">
-                      support@occta.co.uk
-                    </a>
-                  </motion.p>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </AnimatePresence>
+                  Try Again
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

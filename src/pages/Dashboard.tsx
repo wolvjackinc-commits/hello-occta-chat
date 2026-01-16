@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
 import { IdentityVerification } from "@/components/dashboard/IdentityVerification";
 import { OrderTracking } from "@/components/dashboard/OrderTracking";
-import { PaymentHistory } from "@/components/dashboard/PaymentHistory";
 import { useAppMode } from "@/hooks/useAppMode";
 import { 
   Wifi, 
@@ -729,16 +728,6 @@ const Dashboard = () => {
                     ))}
                   </div>
                 </div>
-              )}
-
-              {/* Payment History */}
-              {user && (
-                <PaymentHistory
-                  userId={user.id}
-                  accountNumber={profile?.account_number}
-                  customerName={profile?.full_name}
-                  customerEmail={profile?.email}
-                />
               )}
 
               {/* Invoice Files Section */}

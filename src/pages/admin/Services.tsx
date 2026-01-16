@@ -40,6 +40,7 @@ type Profile = {
 };
 
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
+const allowedServiceTypes = ["broadband", "landline", "sim", "mobile"] as const;
 
 const formatDate = (value?: string | null) => {
   if (!value) return "—";
@@ -55,10 +56,11 @@ const getIdentifier = (identifiers: Json | null) => {
   if (Array.isArray(identifiers)) return identifiers.join(", ");
   if (typeof identifiers === "object") {
     const record = identifiers as Record<string, unknown>;
-    const preferredKeys = ["landline", "circuit_ref", "msisdn"];
+    const preferredKeys = ["landline", "msisdn", "circuit_ref"];
     for (const key of preferredKeys) {
       const value = record[key];
-      if (value) return `${value}`;
+      if (typeof value === "string" && value.trim()) return value.trim();
+      if (typeof value === "number") return `${value}`;
     }
     return JSON.stringify(record);
   }
@@ -80,15 +82,19 @@ export const AdminServices = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [suspendService, setSuspendService] = useState<Service | null>(null);
+  const [resumeService, setResumeService] = useState<Service | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [formState, setFormState] = useState({
     userId: "",
-    serviceType: "",
+    serviceType: "broadband",
     identifiers: "{}",
     supplierReference: "",
     activationDate: "",
     status: "active",
   });
+  const isServiceTypeValid = allowedServiceTypes.includes(
+    formState.serviceType as (typeof allowedServiceTypes)[number],
+  );
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -159,6 +165,10 @@ export const AdminServices = () => {
       toast({ title: "User ID and service type are required", variant: "destructive" });
       return;
     }
+    if (!isServiceTypeValid) {
+      toast({ title: "Select a valid service type", variant: "destructive" });
+      return;
+    }
 
     let identifiers: Json = {};
     try {
@@ -179,7 +189,11 @@ export const AdminServices = () => {
     });
 
     if (error) {
-      toast({ title: "Failed to add service", variant: "destructive" });
+      toast({
+        title: "Failed to add service",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
       setIsSaving(false);
       return;
     }
@@ -189,7 +203,7 @@ export const AdminServices = () => {
     setIsAddOpen(false);
     setFormState({
       userId: "",
-      serviceType: "",
+      serviceType: "broadband",
       identifiers: "{}",
       supplierReference: "",
       activationDate: "",
@@ -200,15 +214,10 @@ export const AdminServices = () => {
 
   const handleSuspend = async () => {
     if (!suspendService) return;
-    if (!suspendReason.trim()) {
-      toast({ title: "Suspension reason is required", variant: "destructive" });
-      return;
-    }
-
     setUpdatingId(suspendService.id);
     const { error } = await supabase
       .from("services")
-      .update({ status: "suspended", suspension_reason: suspendReason.trim() })
+      .update({ status: "suspended", suspension_reason: suspendReason.trim() || null })
       .eq("id", suspendService.id);
 
     if (error) {
@@ -224,12 +233,13 @@ export const AdminServices = () => {
     refetch();
   };
 
-  const handleResume = async (service: Service) => {
-    setUpdatingId(service.id);
+  const handleResume = async () => {
+    if (!resumeService) return;
+    setUpdatingId(resumeService.id);
     const { error } = await supabase
       .from("services")
       .update({ status: "active", suspension_reason: null })
-      .eq("id", service.id);
+      .eq("id", resumeService.id);
 
     if (error) {
       toast({ title: "Failed to resume service", variant: "destructive" });
@@ -239,6 +249,7 @@ export const AdminServices = () => {
 
     toast({ title: "Service resumed" });
     setUpdatingId(null);
+    setResumeService(null);
     refetch();
   };
 
@@ -272,11 +283,21 @@ export const AdminServices = () => {
               </div>
               <div>
                 <Label className="font-display uppercase text-sm">Service type</Label>
-                <Input
+                <Select
                   value={formState.serviceType}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, serviceType: event.target.value }))}
-                  className="mt-1 border-2 border-foreground"
-                />
+                  onValueChange={(value) => setFormState((prev) => ({ ...prev, serviceType: value }))}
+                >
+                  <SelectTrigger className="mt-1 border-2 border-foreground">
+                    <SelectValue placeholder="Select service type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allowedServiceTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label className="font-display uppercase text-sm">Identifiers (JSON)</Label>
@@ -323,7 +344,11 @@ export const AdminServices = () => {
                   </Select>
                 </div>
               </div>
-              <Button onClick={handleAddService} disabled={isSaving} className="w-full border-2 border-foreground">
+              <Button
+                onClick={handleAddService}
+                disabled={isSaving || !isServiceTypeValid}
+                className="w-full border-2 border-foreground"
+              >
                 {isSaving ? "Saving..." : "Add service"}
               </Button>
             </div>
@@ -414,7 +439,11 @@ export const AdminServices = () => {
                     </TableCell>
                     <TableCell className="capitalize">{service.service_type}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="border-2 border-foreground capitalize">
+                      <Badge
+                        variant="outline"
+                        className="border-2 border-foreground capitalize"
+                        title={service.suspension_reason || undefined}
+                      >
                         {service.status}
                       </Badge>
                     </TableCell>
@@ -429,7 +458,7 @@ export const AdminServices = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleResume(service)}
+                          onClick={() => setResumeService(service)}
                           disabled={updatingId === service.id}
                           className="border-2 border-foreground gap-2"
                         >
@@ -463,15 +492,23 @@ export const AdminServices = () => {
         )}
       </Card>
 
-      <Dialog open={!!suspendService} onOpenChange={(open) => !open && setSuspendService(null)}>
+      <Dialog
+        open={!!suspendService}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSuspendService(null);
+            setSuspendReason("");
+          }
+        }}
+      >
         <DialogContent className="border-4 border-foreground">
           <DialogHeader>
             <DialogTitle className="font-display">Suspend service</DialogTitle>
-            <DialogDescription>Provide a reason for suspending this service.</DialogDescription>
+            <DialogDescription>Are you sure you want to suspend this service?</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="font-display uppercase text-sm">Suspension reason</Label>
+              <Label className="font-display uppercase text-sm">Suspension reason (optional)</Label>
               <Textarea
                 value={suspendReason}
                 onChange={(event) => setSuspendReason(event.target.value)}
@@ -484,6 +521,29 @@ export const AdminServices = () => {
               className="w-full border-2 border-foreground"
             >
               {updatingId === suspendService?.id ? "Updating..." : "Confirm suspension"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!resumeService}
+        onOpenChange={(open) => {
+          if (!open) setResumeService(null);
+        }}
+      >
+        <DialogContent className="border-4 border-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-display">Resume service</DialogTitle>
+            <DialogDescription>Are you sure you want to resume this service?</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Button
+              onClick={handleResume}
+              disabled={!resumeService || updatingId === resumeService?.id}
+              className="w-full border-2 border-foreground"
+            >
+              {updatingId === resumeService?.id ? "Updating..." : "Confirm resume"}
             </Button>
           </div>
         </DialogContent>

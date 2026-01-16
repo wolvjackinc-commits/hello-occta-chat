@@ -27,7 +27,7 @@ const ServiceStatus = () => {
     {
       name: "SIM & Mobile Data",
       status: "degraded",
-      detail: "Elevated latency in parts of West Yorkshire.",
+      detail: "Elevated latency in a small number of UK regions.",
     },
     {
       name: "Landline Voice",
@@ -48,7 +48,7 @@ const ServiceStatus = () => {
 
   const incidents = [
     {
-      title: "SIM data latency in Kirklees",
+      title: "SIM data latency in limited areas",
       status: "Monitoring",
       time: "Today · 09:12",
       description: "We applied a routing adjustment and are monitoring recovery for lingering latency spikes.",

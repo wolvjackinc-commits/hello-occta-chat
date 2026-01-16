@@ -353,7 +353,7 @@ const BusinessCheckout = () => {
                     id="city"
                     value={formData.city}
                     onChange={(event) => handleChange("city", event.target.value)}
-                    placeholder="Huddersfield"
+                    placeholder="City/Town"
                   />
                   {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                 </div>

@@ -10,13 +10,9 @@ const organizationSchema = {
   alternateName: 'OCCTA',
   url: BASE_URL,
   logo: `${BASE_URL}/pwa-512x512.png`,
-  description: 'Affordable broadband, SIM plans, and landline services across the UK',
+  description: 'Affordable broadband, SIM plans, and landline services available across the UK',
   address: {
     '@type': 'PostalAddress',
-    streetAddress: '20 Wensley Bank',
-    addressLocality: 'Huddersfield',
-    addressRegion: 'West Yorkshire',
-    postalCode: 'HD3 3WU',
     addressCountry: 'GB',
   },
   contactPoint: {
@@ -34,22 +30,9 @@ const localBusinessSchema = {
   '@context': 'https://schema.org',
   '@type': 'TelecommunicationsService',
   name: 'OCCTA',
-  description: 'UK broadband, SIM plans, and landline telephone services',
+  description: 'UK-wide broadband, SIM plans, and landline telephone services',
   url: BASE_URL,
   telephone: '+44-333-016-2016',
-  address: {
-    '@type': 'PostalAddress',
-    streetAddress: '20 Wensley Bank',
-    addressLocality: 'Huddersfield',
-    addressRegion: 'West Yorkshire',
-    postalCode: 'HD3 3WU',
-    addressCountry: 'GB',
-  },
-  geo: {
-    '@type': 'GeoCoordinates',
-    latitude: 53.6458,
-    longitude: -1.7854,
-  },
   priceRange: '£',
   areaServed: {
     '@type': 'Country',

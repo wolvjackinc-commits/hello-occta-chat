@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, X, Shield, Phone, Wifi } from "lucide-react";
+import { ArrowRight, X, Shield, Phone, Wifi, RefreshCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -24,8 +24,9 @@ const HeroSection = () => {
   const benefits = [
     { icon: X, text: "No Contracts" },
     { icon: Shield, text: "No Hidden Fees" },
-    { icon: Phone, text: "UK Human Support" },
-    { icon: Wifi, text: "Cancel Anytime" },
+    { icon: Phone, text: "UK-based Support" },
+    { icon: Wifi, text: "UK-wide Coverage" },
+    { icon: RefreshCcw, text: "Cancel Anytime" },
   ];
 
   const services = [
@@ -52,9 +53,11 @@ const HeroSection = () => {
               variants={itemVariants} 
               className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display uppercase leading-[0.9] tracking-tight text-foreground"
             >
-              Internet That
+              UK Broadband
               <br />
-              <span className="text-gradient">Works For You</span>
+              &amp; SIM Plans
+              <br />
+              <span className="text-gradient">Without Contracts</span>
             </motion.h1>
 
             {/* Subheadline */}
@@ -62,8 +65,8 @@ const HeroSection = () => {
               variants={itemVariants} 
               className="text-lg text-muted-foreground max-w-lg"
             >
-              Broadband, mobile & landline from <span className="text-foreground font-semibold">actual humans</span>. 
-              Leave anytime—we earn your loyalty, not lock you in.
+              Affordable telecom UK-wide without contracts, hidden fees, or lock-ins. Same UK networks,
+              lower prices, and available across the UK.
             </motion.p>
 
             {/* Benefits Row */}

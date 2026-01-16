@@ -50,43 +50,47 @@ export function WorldpayCheckout({
   const [sdkReady, setSdkReady] = useState(false);
   const initAttempted = useRef(false);
 
-  const processPayment = useCallback(async (sessionState: string) => {
-    setProcessing(true);
-    setError(null);
+  const processPayment = useCallback(
+    async (cardSessionHref: string, cvvSessionHref: string) => {
+      setProcessing(true);
+      setError(null);
 
-    try {
-      console.log('Processing payment with session state:', sessionState);
-      
-      const { data, error: fnError } = await supabase.functions.invoke('worldpay-payment', {
-        body: {
-          action: 'process-payment',
-          sessionHref: sessionState,
-          invoiceId,
-          invoiceNumber,
-          amount,
-          currency,
-          customerEmail,
-          customerName,
-          userId,
-        },
-      });
+      try {
+        console.log('Processing payment with sessions:', { cardSessionHref, cvvSessionHref });
 
-      if (fnError || !data?.success) {
-        throw new Error(data?.error || 'Payment failed');
+        const { data, error: fnError } = await supabase.functions.invoke('worldpay-payment', {
+          body: {
+            action: 'process-payment',
+            cardSessionHref,
+            cvvSessionHref,
+            invoiceId,
+            invoiceNumber,
+            amount,
+            currency,
+            customerEmail,
+            customerName,
+            userId,
+          },
+        });
+
+        if (fnError || !data?.success) {
+          throw new Error(data?.error || 'Payment failed');
+        }
+
+        setPaymentSuccess(true);
+        toast.success('Payment successful!');
+
+        setTimeout(() => {
+          onSuccess?.();
+        }, 2000);
+      } catch (err: any) {
+        console.error('Payment error:', err);
+        setError(err.message || 'Payment failed. Please try again.');
+        setProcessing(false);
       }
-
-      setPaymentSuccess(true);
-      toast.success('Payment successful!');
-      
-      setTimeout(() => {
-        onSuccess?.();
-      }, 2000);
-    } catch (err: any) {
-      console.error('Payment error:', err);
-      setError(err.message || 'Payment failed. Please try again.');
-      setProcessing(false);
-    }
-  }, [invoiceId, invoiceNumber, amount, currency, customerEmail, customerName, userId, onSuccess]);
+    },
+    [invoiceId, invoiceNumber, amount, currency, customerEmail, customerName, userId, onSuccess]
+  );
 
   // Load Worldpay SDK
   useEffect(() => {
@@ -152,35 +156,36 @@ export function WorldpayCheckout({
                 selector: '#worldpay-card-pan',
                 placeholder: '4444 3333 2222 1111',
               },
-              expiry: {
+              expiryDate: {
                 selector: '#worldpay-card-expiry',
                 placeholder: 'MM/YY',
               },
-              cvv: {
+              cvc: {
                 selector: '#worldpay-card-cvv',
                 placeholder: '123',
               },
             },
             styles: {
-              'input': {
+              input: {
                 'font-size': '16px',
                 'font-family': 'inherit',
-                'color': '#000',
+                color: '#000',
               },
               'input.is-valid': {
-                'color': 'green',
+                color: '#16a34a',
               },
               'input.is-invalid': {
-                'color': 'red',
+                color: '#dc2626',
               },
             },
             enablePanFormatting: true,
           },
-          // Callback function - this is the correct SDK pattern
-          function(initError: any, checkout: any) {
+          // Callback function
+          function (initError: any, checkout: any) {
             if (initError) {
               console.error('Checkout init error:', initError);
-              setError('Failed to initialize payment form');
+              const details = typeof initError === 'string' ? initError : JSON.stringify(initError);
+              setError(`Failed to initialize payment form: ${details}`);
               setLoading(false);
               return;
             }
@@ -210,10 +215,9 @@ export function WorldpayCheckout({
 
     setProcessing(true);
     setError(null);
-    console.log('Generating session state...');
+    console.log('Generating sessions...');
 
-    // Use generateSessionState with callback (correct SDK method)
-    checkoutInstance.generateSessionState(function(genError: any, sessionState: string) {
+    checkoutInstance.generateSessions(function (genError: any, sessions: { card: string; cvv: string }) {
       if (genError) {
         console.error('Session generation error:', genError);
         setError('Card validation failed. Please check your details.');
@@ -221,8 +225,7 @@ export function WorldpayCheckout({
         return;
       }
 
-      console.log('Session state generated:', sessionState);
-      processPayment(sessionState);
+      processPayment(sessions.card, sessions.cvv);
     });
   };
 

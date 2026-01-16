@@ -27,8 +27,15 @@ type AddServiceDialogProps = {
 };
 
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
-const allowedServiceTypes = ["broadband", "landline", "sim", "mobile"] as const;
-const isAccountNumberValid = (value: string) => /^OCC\d{8}$/.test(value);
+const allowedServiceTypes = ["broadband", "landline", "sim"] as const;
+
+function normalizeAccountNumber(value: string) {
+  return value.trim().toUpperCase();
+}
+
+function isAccountNumberValid(value: string) {
+  return /^OCC\d{8}$/.test(value);
+}
 
 const isUkNumber = (value: string) => {
   const trimmed = value.trim();
@@ -85,7 +92,7 @@ export const AddServiceDialog = ({
     formState.serviceType as (typeof allowedServiceTypes)[number],
   );
   const accountNumberInput = formState.accountNumber;
-  const normalizedAccountNumber = (accountNumberInput ?? "").trim().toUpperCase();
+  const normalizedAccountNumber = normalizeAccountNumber(accountNumberInput ?? "");
   const isNormalizedAccountNumberValid = isAccountNumberValid(normalizedAccountNumber);
   const hasCustomer = Boolean(defaultCustomerId || matchedCustomer?.id);
 
@@ -487,11 +494,6 @@ export const AddServiceDialog = ({
                   className="mt-1 border-2 border-foreground min-h-[96px]"
                 />
               </div>
-            </div>
-          )}
-          {formState.serviceType === "mobile" && (
-            <div className="rounded-lg border-2 border-dashed border-foreground/40 p-3 text-sm text-muted-foreground">
-              No identifiers required for mobile services.
             </div>
           )}
           <div>

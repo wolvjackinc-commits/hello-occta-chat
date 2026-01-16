@@ -12,10 +12,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { Copy } from "lucide-react";
 
 const PAGE_SIZE = 10;
 
 export const AdminCustomers = () => {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState("all");
@@ -58,6 +61,11 @@ export const AdminCustomers = () => {
   });
 
   const totalPages = Math.ceil((data?.count ?? 0) / PAGE_SIZE);
+  const handleCopyAccount = async (accountNumber?: string | null) => {
+    if (!accountNumber) return;
+    await navigator.clipboard.writeText(accountNumber);
+    toast({ title: "Account number copied" });
+  };
 
   return (
     <div className="space-y-6">
@@ -90,9 +98,21 @@ export const AdminCustomers = () => {
           <Card key={profile.id} className="border-2 border-foreground p-4">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
-                <div className="font-display text-lg">{profile.full_name || "Unknown customer"}</div>
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-lg">{profile.account_number || "Account —"}</div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleCopyAccount(profile.account_number)}
+                    disabled={!profile.account_number}
+                    aria-label="Copy account number"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="text-sm text-muted-foreground">{profile.full_name || "Unknown customer"}</div>
                 <div className="text-sm text-muted-foreground">{profile.email}</div>
-                <div className="text-xs text-muted-foreground">Account {profile.account_number || "—"}</div>
               </div>
               <Button asChild>
                 <Link to={`/admin/customers/${profile.id}`}>Open</Link>

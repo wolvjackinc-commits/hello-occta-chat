@@ -3,10 +3,15 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Copy } from "lucide-react";
 
 export const AdminCustomerDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
 
   const { data, refetch } = useQuery({
     queryKey: ["admin-customer", id],
@@ -39,10 +44,29 @@ export const AdminCustomerDetail = () => {
     return <p className="text-muted-foreground">Loading customer...</p>;
   }
 
+  const handleCopy = async (value?: string | null, label = "Value") => {
+    if (!value) return;
+    await navigator.clipboard.writeText(value);
+    toast({ title: `${label} copied` });
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-display">{overview.full_name || "Customer"}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-display">{overview.account_number || "Account —"}</h1>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => handleCopy(overview.account_number, "Account number")}
+            disabled={!overview.account_number}
+            aria-label="Copy account number"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
+        <p className="text-muted-foreground">{overview.full_name || "Customer"}</p>
         <p className="text-muted-foreground">{overview.email}</p>
       </div>
 
@@ -55,24 +79,48 @@ export const AdminCustomerDetail = () => {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <Card className="border-2 border-foreground p-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <div className="text-xs uppercase text-muted-foreground">Account number</div>
-                <div className="text-sm font-medium">{overview.account_number || "—"}</div>
-              </div>
-              <div>
-                <div className="text-xs uppercase text-muted-foreground">Phone</div>
-                <div className="text-sm font-medium">{overview.phone || "—"}</div>
-              </div>
-              <div>
-                <div className="text-xs uppercase text-muted-foreground">Address</div>
-                <div className="text-sm font-medium">
-                  {overview.address_line1 || "—"} {overview.city} {overview.postcode}
+          <div className="space-y-4">
+            <Card className="border-2 border-foreground p-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Account number</div>
+                  <div className="text-sm font-medium">{overview.account_number || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Phone</div>
+                  <div className="text-sm font-medium">{overview.phone || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Address</div>
+                  <div className="text-sm font-medium">
+                    {overview.address_line1 || "—"} {overview.city} {overview.postcode}
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+            <Accordion type="single" collapsible>
+              <AccordionItem value="advanced">
+                <AccordionTrigger>Advanced</AccordionTrigger>
+                <AccordionContent>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs uppercase text-muted-foreground">User ID</div>
+                      <div className="text-sm font-medium">{overview.id}</div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleCopy(overview.id, "User ID")}
+                      aria-label="Copy user ID"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
         </TabsContent>
 
         <TabsContent value="orders" className="mt-4 space-y-3">

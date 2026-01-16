@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -37,6 +37,7 @@ type Profile = {
   id: string;
   full_name: string | null;
   email: string | null;
+  account_number: string | null;
 };
 
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
@@ -84,6 +85,8 @@ export const AdminServices = () => {
   const [suspendService, setSuspendService] = useState<Service | null>(null);
   const [resumeService, setResumeService] = useState<Service | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
+  const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
+  const [isLookingUpCustomer, setIsLookingUpCustomer] = useState(false);
   const [formState, setFormState] = useState({
     userId: "",
     serviceType: "broadband",
@@ -113,7 +116,7 @@ export const AdminServices = () => {
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from("profiles")
-          .select("id, full_name, email")
+          .select("id, full_name, email, account_number")
           .in("id", userIds);
 
         profiles = (profilesData || []) as Profile[];
@@ -154,15 +157,32 @@ export const AdminServices = () => {
       if (!search) return true;
       const identifierValue = getIdentifier(service.identifiers).toLowerCase();
       const supplier = service.supplier_reference?.toLowerCase() || "";
-      const userId = service.user_id.toLowerCase();
+      const profile = profileMap.get(service.user_id);
+      const accountNumber = profile?.account_number?.toLowerCase() || "";
+      const name = profile?.full_name?.toLowerCase() || "";
+      const email = profile?.email?.toLowerCase() || "";
 
-      return identifierValue.includes(search) || supplier.includes(search) || userId.includes(search);
+      return (
+        identifierValue.includes(search) ||
+        supplier.includes(search) ||
+        accountNumber.includes(search) ||
+        name.includes(search) ||
+        email.includes(search)
+      );
     });
-  }, [services, serviceTypeFilter, statusFilter, searchText]);
+  }, [services, serviceTypeFilter, statusFilter, searchText, profileMap]);
 
   const handleAddService = async () => {
-    if (!formState.userId.trim() || !formState.serviceType.trim()) {
-      toast({ title: "User ID and service type are required", variant: "destructive" });
+    if (!normalizedAccountNumber || !formState.serviceType.trim()) {
+      toast({ title: "Account number and service type are required", variant: "destructive" });
+      return;
+    }
+    if (!isAccountNumberValid) {
+      toast({ title: "Enter a valid account number (OCC########).", variant: "destructive" });
+      return;
+    }
+    if (!isServiceTypeValid) {
+      toast({ title: "Select a valid service type", variant: "destructive" });
       return;
     }
     if (!isServiceTypeValid) {
@@ -178,9 +198,28 @@ export const AdminServices = () => {
       return;
     }
 
+    const { data: customer, error: customerError } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, account_number")
+      .eq("account_number", normalizedAccountNumber)
+      .maybeSingle();
+
+    if (customerError) {
+      toast({ title: "Failed to find customer", description: customerError.message, variant: "destructive" });
+      return;
+    }
+
+    if (!customer) {
+      toast({
+        title: `Customer not found for ${normalizedAccountNumber}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
     const { error } = await supabase.from("services").insert({
-      user_id: formState.userId.trim(),
+      user_id: customer.id,
       service_type: formState.serviceType.trim(),
       identifiers,
       supplier_reference: formState.supplierReference.trim() || null,
@@ -209,6 +248,7 @@ export const AdminServices = () => {
       activationDate: "",
       status: "active",
     });
+    setMatchedCustomer(null);
     refetch();
   };
 
@@ -274,12 +314,24 @@ export const AdminServices = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label className="font-display uppercase text-sm">User ID</Label>
+                <Label className="font-display uppercase text-sm">Account Number</Label>
                 <Input
-                  value={formState.userId}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, userId: event.target.value }))}
+                  placeholder="OCC12345678"
+                  value={formState.accountNumber}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, accountNumber: event.target.value }))}
                   className="mt-1 border-2 border-foreground"
                 />
+                {matchedCustomer && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Customer: {matchedCustomer.full_name || "Customer"}{" "}
+                    {matchedCustomer.email ? `· ${matchedCustomer.email}` : ""}
+                  </p>
+                )}
+                {!matchedCustomer && isAccountNumberValid && !isLookingUpCustomer && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    No customer found for {normalizedAccountNumber}.
+                  </p>
+                )}
               </div>
               <div>
                 <Label className="font-display uppercase text-sm">Service type</Label>
@@ -391,7 +443,7 @@ export const AdminServices = () => {
           <div>
             <Label className="font-display uppercase text-xs">Search</Label>
             <Input
-              placeholder="Identifier, supplier ref, or user ID"
+              placeholder="Identifier, supplier ref, or account number"
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               className="mt-1 border-2 border-foreground"
@@ -421,21 +473,15 @@ export const AdminServices = () => {
               {filteredServices.map((service) => {
                 const profile = profileMap.get(service.user_id);
                 const identifier = getIdentifier(service.identifiers);
+                const customerLabel = profile?.full_name || profile?.email || "Customer";
+                const accountNumber = profile?.account_number || "Account —";
                 return (
                   <TableRow key={service.id} className="border-b-2 border-foreground/20">
                     <TableCell>
-                      {profile ? (
-                        <div>
-                          <div className="font-medium">
-                            {profile.full_name || profile.email || "Customer"}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {profile.email || service.user_id}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-muted-foreground">{service.user_id}</div>
-                      )}
+                      <div>
+                        <div className="font-medium">{accountNumber}</div>
+                        <div className="text-xs text-muted-foreground">{customerLabel}</div>
+                      </div>
                     </TableCell>
                     <TableCell className="capitalize">{service.service_type}</TableCell>
                     <TableCell>

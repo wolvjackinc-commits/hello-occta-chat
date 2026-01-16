@@ -60,6 +60,8 @@ type QuickActionType =
   | "email"
   | null;
 
+const accountNumberPattern = /^OCC\d{8}$/;
+
 export const AdminLayout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -86,7 +88,7 @@ export const AdminLayout = () => {
 
   const searchEnabled = searchTerm.trim().length >= 2;
   const normalizedSearchTerm = searchTerm.trim().toUpperCase();
-  const isExactAccountNumber = isAccountNumberValid(normalizedSearchTerm);
+  const isExactAccountNumber = accountNumberPattern.test(normalizedSearchTerm);
 
   const { data: searchResults = [], isFetching: isSearching } = useQuery({
     queryKey: ["admin-search", searchTerm],
@@ -180,7 +182,7 @@ export const AdminLayout = () => {
       setIsLookingUpTicketCustomer(false);
       return;
     }
-    if (!isAccountNumberValid(normalizedAccountNumber)) {
+    if (!accountNumberPattern.test(normalizedAccountNumber)) {
       setMatchedTicketCustomer(null);
       setIsLookingUpTicketCustomer(false);
       return;
@@ -227,7 +229,7 @@ export const AdminLayout = () => {
     try {
       if (activeAction === "ticket") {
         const normalizedAccountNumber = actionPayload.accountNumber.trim().toUpperCase();
-        if (!isAccountNumberValid(normalizedAccountNumber)) {
+        if (!accountNumberPattern.test(normalizedAccountNumber)) {
           toast({ title: "Enter a valid account number (OCC########).", variant: "destructive" });
           return;
         }
@@ -421,7 +423,7 @@ export const AdminLayout = () => {
                   </p>
                 )}
                 {!matchedTicketCustomer &&
-                  isAccountNumberValid(actionPayload.accountNumber) &&
+                  accountNumberPattern.test(actionPayload.accountNumber.trim().toUpperCase()) &&
                   !isLookingUpTicketCustomer && (
                     <p className="text-xs text-muted-foreground">
                       No customer found for {actionPayload.accountNumber.trim().toUpperCase()}.

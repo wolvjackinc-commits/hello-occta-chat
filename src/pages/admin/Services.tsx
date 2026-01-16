@@ -89,54 +89,16 @@ export const AdminServices = () => {
   const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
   const [isLookingUpCustomer, setIsLookingUpCustomer] = useState(false);
   const [formState, setFormState] = useState({
-    accountNumber: "",
+    userId: "",
     serviceType: "broadband",
     identifiers: "{}",
     supplierReference: "",
     activationDate: "",
     status: "active",
   });
-  const normalizedAccountNumber = formState.accountNumber.trim().toUpperCase();
-  const accountNumberValid = isAccountNumberValid(normalizedAccountNumber);
   const isServiceTypeValid = allowedServiceTypes.includes(
     formState.serviceType as (typeof allowedServiceTypes)[number],
   );
-
-  useEffect(() => {
-    if (!normalizedAccountNumber) {
-      setMatchedCustomer(null);
-      setIsLookingUpCustomer(false);
-      return;
-    }
-    if (!accountNumberValid) {
-      setMatchedCustomer(null);
-      setIsLookingUpCustomer(false);
-      return;
-    }
-
-    let isActive = true;
-    setMatchedCustomer(null);
-    setIsLookingUpCustomer(true);
-    const timeoutId = window.setTimeout(async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, account_number")
-        .eq("account_number", normalizedAccountNumber)
-        .maybeSingle();
-      if (!isActive) return;
-      if (error) {
-        setMatchedCustomer(null);
-      } else {
-        setMatchedCustomer((data as Profile) || null);
-      }
-      setIsLookingUpCustomer(false);
-    }, 300);
-
-    return () => {
-      isActive = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [normalizedAccountNumber, accountNumberValid]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -216,8 +178,12 @@ export const AdminServices = () => {
       toast({ title: "Account number and service type are required", variant: "destructive" });
       return;
     }
-    if (!accountNumberValid) {
+    if (!isAccountNumberValid) {
       toast({ title: "Enter a valid account number (OCC########).", variant: "destructive" });
+      return;
+    }
+    if (!isServiceTypeValid) {
+      toast({ title: "Select a valid service type", variant: "destructive" });
       return;
     }
     if (!isServiceTypeValid) {
@@ -276,7 +242,7 @@ export const AdminServices = () => {
     setIsSaving(false);
     setIsAddOpen(false);
     setFormState({
-      accountNumber: "",
+      userId: "",
       serviceType: "broadband",
       identifiers: "{}",
       supplierReference: "",
@@ -362,7 +328,7 @@ export const AdminServices = () => {
                     {matchedCustomer.email ? `· ${matchedCustomer.email}` : ""}
                   </p>
                 )}
-                {!matchedCustomer && accountNumberValid && !isLookingUpCustomer && (
+                {!matchedCustomer && isAccountNumberValid && !isLookingUpCustomer && (
                   <p className="mt-2 text-xs text-muted-foreground">
                     No customer found for {normalizedAccountNumber}.
                   </p>
@@ -433,7 +399,7 @@ export const AdminServices = () => {
               </div>
               <Button
                 onClick={handleAddService}
-                disabled={isSaving || !isServiceTypeValid || !accountNumberValid || !matchedCustomer}
+                disabled={isSaving || !isServiceTypeValid}
                 className="w-full border-2 border-foreground"
               >
                 {isSaving ? "Saving..." : "Add service"}

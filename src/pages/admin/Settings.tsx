@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -24,9 +24,27 @@ export const AdminSettings = () => {
         .from("user_roles")
         .select("id, user_id, role")
         .order("created_at", { ascending: false });
-      return { roles: rolesData ?? [] };
+      const userIds = rolesData?.map((role) => role.user_id) ?? [];
+      let profiles: { id: string; account_number: string | null; full_name: string | null; email: string | null }[] =
+        [];
+      if (userIds.length) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, account_number, full_name, email")
+          .in("id", userIds);
+        profiles = profilesData ?? [];
+      }
+      return { roles: rolesData ?? [], profiles };
     },
   });
+
+  const profileMap = useMemo(() => {
+    const map = new Map<string, { account_number: string | null; full_name: string | null; email: string | null }>();
+    data?.profiles?.forEach((profile) => {
+      map.set(profile.id, profile);
+    });
+    return map;
+  }, [data?.profiles]);
 
   const handleRoleChange = async (roleId: string, role: "admin" | "user") => {
     const { error } = await supabase.from("user_roles").update({ role }).eq("id", roleId);
@@ -50,7 +68,16 @@ export const AdminSettings = () => {
         <div className="space-y-3">
           {data?.roles.map((role) => (
             <div key={role.id} className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div className="text-sm text-muted-foreground">User {role.user_id}</div>
+              <div>
+                <div className="text-sm font-medium">
+                  {profileMap.get(role.user_id)?.account_number || "Account —"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {profileMap.get(role.user_id)?.full_name ||
+                    profileMap.get(role.user_id)?.email ||
+                    "Customer"}
+                </div>
+              </div>
               <Select 
                 value={role.role} 
                 onValueChange={(value: "admin" | "user") => handleRoleChange(role.id, value)}

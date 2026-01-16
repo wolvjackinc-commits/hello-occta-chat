@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,10 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { PauseCircle, PlayCircle, Plus } from "lucide-react";
+import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
+import { useToast } from "@/hooks/use-toast";
 
 type Service = {
   id: string;
@@ -41,8 +40,6 @@ type Profile = {
 };
 
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
-const allowedServiceTypes = ["broadband", "landline", "sim", "mobile"] as const;
-const isAccountNumberValid = (value: string) => /^OCC\d{8}$/.test(value);
 
 const formatDate = (value?: string | null) => {
   if (!value) return "—";
@@ -58,7 +55,7 @@ const getIdentifier = (identifiers: Json | null) => {
   if (Array.isArray(identifiers)) return identifiers.join(", ");
   if (typeof identifiers === "object") {
     const record = identifiers as Record<string, unknown>;
-    const preferredKeys = ["landline", "msisdn", "circuit_ref"];
+    const preferredKeys = ["number", "msisdn", "username", "iccid", "circuit_ref"];
     for (const key of preferredKeys) {
       const value = record[key];
       if (typeof value === "string" && value.trim()) return value.trim();
@@ -69,72 +66,15 @@ const getIdentifier = (identifiers: Json | null) => {
   return "—";
 };
 
-const parseIdentifiers = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) return {};
-  return JSON.parse(trimmed) as Json;
-};
-
 export const AdminServices = () => {
   const { toast } = useToast();
   const [serviceTypeFilter, setServiceTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchText, setSearchText] = useState("");
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [suspendService, setSuspendService] = useState<Service | null>(null);
   const [resumeService, setResumeService] = useState<Service | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
-  const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
-  const [isLookingUpCustomer, setIsLookingUpCustomer] = useState(false);
-  const [formState, setFormState] = useState({
-    accountNumber: "",
-    serviceType: "broadband",
-    identifiers: "{}",
-    supplierReference: "",
-    activationDate: "",
-    status: "active",
-  });
-  const isServiceTypeValid = allowedServiceTypes.includes(
-    formState.serviceType as (typeof allowedServiceTypes)[number],
-  );
-  const accountNumberInput = formState.accountNumber;
-  const normalizedAccountNumber = (accountNumberInput ?? "").trim().toUpperCase();
-  const isNormalizedAccountNumberValid = isAccountNumberValid(normalizedAccountNumber);
-
-  useEffect(() => {
-    if (!normalizedAccountNumber || !isNormalizedAccountNumberValid) {
-      setMatchedCustomer(null);
-      setIsLookingUpCustomer(false);
-      return;
-    }
-
-    let isActive = true;
-    setIsLookingUpCustomer(true);
-    setMatchedCustomer(null);
-    supabase
-      .from("profiles")
-      .select("id, account_number, email, full_name")
-      .eq("account_number", normalizedAccountNumber)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (!isActive) return;
-        if (error) {
-          toast({ title: "Failed to find customer", description: error.message, variant: "destructive" });
-          setMatchedCustomer(null);
-          return;
-        }
-        setMatchedCustomer(data ?? null);
-      })
-      .finally(() => {
-        if (isActive) setIsLookingUpCustomer(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [isNormalizedAccountNumberValid, normalizedAccountNumber, toast]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -209,71 +149,6 @@ export const AdminServices = () => {
     });
   }, [services, serviceTypeFilter, statusFilter, searchText, profileMap]);
 
-  const handleAddService = async () => {
-    if (!normalizedAccountNumber || !formState.serviceType.trim()) {
-      toast({ title: "Account number and service type are required", variant: "destructive" });
-      return;
-    }
-    if (!isNormalizedAccountNumberValid) {
-      toast({ title: "Enter a valid account number (OCC########).", variant: "destructive" });
-      return;
-    }
-    if (!isServiceTypeValid) {
-      toast({ title: "Select a valid service type", variant: "destructive" });
-      return;
-    }
-
-    let identifiers: Json = {};
-    try {
-      identifiers = parseIdentifiers(formState.identifiers);
-    } catch (error) {
-      toast({ title: "Identifiers must be valid JSON", variant: "destructive" });
-      return;
-    }
-
-    if (!matchedCustomer) {
-      toast({
-        title: `Customer not found for ${normalizedAccountNumber}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    const { error } = await supabase.from("services").insert({
-      user_id: matchedCustomer.id,
-      service_type: formState.serviceType.trim(),
-      identifiers,
-      supplier_reference: formState.supplierReference.trim() || null,
-      activation_date: formState.activationDate || null,
-      status: formState.status || "active",
-    });
-
-    if (error) {
-      toast({
-        title: "Failed to add service",
-        description: error.message || "Please try again.",
-        variant: "destructive",
-      });
-      setIsSaving(false);
-      return;
-    }
-
-    toast({ title: "Service added" });
-    setIsSaving(false);
-    setIsAddOpen(false);
-    setFormState({
-      accountNumber: "",
-      serviceType: "broadband",
-      identifiers: "{}",
-      supplierReference: "",
-      activationDate: "",
-      status: "active",
-    });
-    setMatchedCustomer(null);
-    refetch();
-  };
-
   const handleSuspend = async () => {
     if (!suspendService) return;
     setUpdatingId(suspendService.id);
@@ -322,111 +197,15 @@ export const AdminServices = () => {
           <h1 className="text-2xl font-display">Services</h1>
           <p className="text-muted-foreground">Track provisioned services and supplier references.</p>
         </div>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild>
+        <AddServiceDialog
+          trigger={(
             <Button className="border-2 border-foreground gap-2">
               <Plus className="h-4 w-4" />
               Add service
             </Button>
-          </DialogTrigger>
-          <DialogContent className="border-4 border-foreground">
-            <DialogHeader>
-              <DialogTitle className="font-display">Add Service</DialogTitle>
-              <DialogDescription>Provision a new service for a customer.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label className="font-display uppercase text-sm">Account Number (OCC…)</Label>
-                <Input
-                  placeholder="OCC12345678"
-                  value={formState.accountNumber}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, accountNumber: event.target.value }))}
-                  className="mt-1 border-2 border-foreground"
-                />
-                {matchedCustomer && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Customer: {matchedCustomer.full_name ?? matchedCustomer.email ?? "Customer"}
-                  </p>
-                )}
-                {!matchedCustomer && isNormalizedAccountNumberValid && !isLookingUpCustomer && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    No customer found for {normalizedAccountNumber}.
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label className="font-display uppercase text-sm">Service type</Label>
-                <Select
-                  value={formState.serviceType}
-                  onValueChange={(value) => setFormState((prev) => ({ ...prev, serviceType: value }))}
-                >
-                  <SelectTrigger className="mt-1 border-2 border-foreground">
-                    <SelectValue placeholder="Select service type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allowedServiceTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="font-display uppercase text-sm">Identifiers (JSON)</Label>
-                <Textarea
-                  value={formState.identifiers}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, identifiers: event.target.value }))}
-                  className="mt-1 border-2 border-foreground min-h-[120px]"
-                />
-              </div>
-              <div>
-                <Label className="font-display uppercase text-sm">Supplier reference</Label>
-                <Input
-                  value={formState.supplierReference}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, supplierReference: event.target.value }))}
-                  className="mt-1 border-2 border-foreground"
-                />
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="font-display uppercase text-sm">Activation date</Label>
-                  <Input
-                    type="date"
-                    value={formState.activationDate}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, activationDate: event.target.value }))}
-                    className="mt-1 border-2 border-foreground"
-                  />
-                </div>
-                <div>
-                  <Label className="font-display uppercase text-sm">Initial status</Label>
-                  <Select
-                    value={formState.status}
-                    onValueChange={(value) => setFormState((prev) => ({ ...prev, status: value }))}
-                  >
-                    <SelectTrigger className="mt-1 border-2 border-foreground">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button
-                onClick={handleAddService}
-                disabled={isSaving || !isServiceTypeValid || !matchedCustomer}
-                className="w-full border-2 border-foreground"
-              >
-                {isSaving ? "Saving..." : "Add service"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+          )}
+          onSaved={refetch}
+        />
       </div>
 
       <Card className="border-2 border-foreground p-4">

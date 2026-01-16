@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
@@ -32,8 +43,10 @@ import {
   Search, 
   Loader2, 
   CheckCircle, 
-  AlertCircle,
-  Download
+  Send,
+  Ban,
+  Eye,
+  Trash2
 } from "lucide-react";
 
 type Invoice = {
@@ -49,6 +62,16 @@ type Invoice = {
   notes: string | null;
 };
 
+type InvoiceLine = {
+  id: string;
+  invoice_id: string;
+  description: string;
+  qty: number;
+  unit_price: number;
+  line_total: number;
+  vat_rate: number;
+};
+
 type Profile = {
   id: string;
   full_name: string | null;
@@ -60,11 +83,18 @@ const statusOptions = ["draft", "sent", "paid", "overdue", "cancelled"] as const
 
 export const AdminBilling = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
+  const [invoiceLines, setInvoiceLines] = useState<InvoiceLine[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [isMarkingPaid, setIsMarkingPaid] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isVoiding, setIsVoiding] = useState(false);
+  const [voidConfirmInvoice, setVoidConfirmInvoice] = useState<Invoice | null>(null);
+  const [isLoadingLines, setIsLoadingLines] = useState(false);
 
   // New invoice form state
   const [newInvoice, setNewInvoice] = useState({
@@ -257,6 +287,76 @@ export const AdminBilling = () => {
     }
   };
 
+  const handleSendInvoice = async (invoice: Invoice) => {
+    setIsSending(true);
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ status: "sent" })
+        .eq("id", invoice.id);
+
+      if (error) throw error;
+
+      await logAudit({
+        action: "send",
+        entity: "invoice",
+        entityId: invoice.id,
+        metadata: { invoice_number: invoice.invoice_number },
+      });
+
+      toast({ title: "Invoice marked as sent" });
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Failed to send invoice", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleVoidInvoice = async () => {
+    if (!voidConfirmInvoice) return;
+    setIsVoiding(true);
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ status: "cancelled" })
+        .eq("id", voidConfirmInvoice.id);
+
+      if (error) throw error;
+
+      await logAudit({
+        action: "void",
+        entity: "invoice",
+        entityId: voidConfirmInvoice.id,
+        metadata: { invoice_number: voidConfirmInvoice.invoice_number },
+      });
+
+      toast({ title: "Invoice voided" });
+      setVoidConfirmInvoice(null);
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Failed to void invoice", description: err.message, variant: "destructive" });
+    } finally {
+      setIsVoiding(false);
+    }
+  };
+
+  const handleViewInvoice = async (invoice: Invoice) => {
+    setViewInvoice(invoice);
+    setIsLoadingLines(true);
+    try {
+      const { data: lines } = await supabase
+        .from("invoice_lines")
+        .select("*")
+        .eq("invoice_id", invoice.id);
+      setInvoiceLines((lines || []) as InvoiceLine[]);
+    } catch (err) {
+      setInvoiceLines([]);
+    } finally {
+      setIsLoadingLines(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "paid": return "bg-green-500/10 text-green-600 border-green-500";
@@ -360,18 +460,48 @@ export const AdminBilling = () => {
                     </TableCell>
                     <TableCell className="text-right font-bold">£{invoice.total?.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
-                      {invoice.status !== "paid" && invoice.status !== "cancelled" && (
+                      <div className="flex items-center justify-end gap-1">
                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleMarkPaid(invoice)}
-                          disabled={isMarkingPaid}
-                          className="border-2 border-foreground gap-1"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleViewInvoice(invoice)}
+                          title="View invoice"
                         >
-                          <CheckCircle className="h-3 w-3" />
-                          Mark Paid
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      )}
+                        {invoice.status === "draft" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSendInvoice(invoice)}
+                            disabled={isSending}
+                            title="Send invoice"
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {invoice.status !== "paid" && invoice.status !== "cancelled" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleMarkPaid(invoice)}
+                              disabled={isMarkingPaid}
+                              title="Mark as paid"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setVoidConfirmInvoice(invoice)}
+                              title="Void invoice"
+                            >
+                              <Ban className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -386,6 +516,169 @@ export const AdminBilling = () => {
           </div>
         )}
       </Card>
+
+      {/* View Invoice Dialog */}
+      <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
+        <DialogContent className="border-4 border-foreground max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display">Invoice {viewInvoice?.invoice_number}</DialogTitle>
+            <DialogDescription>
+              {viewInvoice && (
+                <Badge className={`${getStatusColor(viewInvoice.status)} border mt-2`}>
+                  {viewInvoice.status}
+                </Badge>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {viewInvoice && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-muted-foreground">Customer</div>
+                  <div className="font-medium">
+                    {formatAccountNumber(profileMap.get(viewInvoice.user_id)?.account_number)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {profileMap.get(viewInvoice.user_id)?.full_name}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-muted-foreground">Issue Date</div>
+                  <div className="font-medium">{format(new Date(viewInvoice.issue_date), "dd MMM yyyy")}</div>
+                  {viewInvoice.due_date && (
+                    <>
+                      <div className="text-muted-foreground mt-2">Due Date</div>
+                      <div className="font-medium">{format(new Date(viewInvoice.due_date), "dd MMM yyyy")}</div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="border-2 border-foreground rounded-lg p-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Unit Price</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingLines ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center">
+                          <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ) : invoiceLines.length > 0 ? (
+                      invoiceLines.map((line) => (
+                        <TableRow key={line.id}>
+                          <TableCell>{line.description}</TableCell>
+                          <TableCell className="text-right">{line.qty}</TableCell>
+                          <TableCell className="text-right">£{Number(line.unit_price).toFixed(2)}</TableCell>
+                          <TableCell className="text-right">£{Number(line.line_total).toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          No line items
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="border-t-2 border-foreground pt-4 space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>£{Number(viewInvoice.subtotal).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>VAT (20%)</span>
+                  <span>£{Number(viewInvoice.vat_total).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>£{Number(viewInvoice.total).toFixed(2)}</span>
+                </div>
+              </div>
+
+              {viewInvoice.notes && (
+                <div className="border-t pt-4">
+                  <div className="text-sm text-muted-foreground">Notes</div>
+                  <p className="text-sm">{viewInvoice.notes}</p>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                {viewInvoice.status === "draft" && (
+                  <Button
+                    onClick={() => {
+                      handleSendInvoice(viewInvoice);
+                      setViewInvoice(null);
+                    }}
+                    disabled={isSending}
+                    className="flex-1 gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    Send Invoice
+                  </Button>
+                )}
+                {viewInvoice.status !== "paid" && viewInvoice.status !== "cancelled" && (
+                  <Button
+                    onClick={() => {
+                      handleMarkPaid(viewInvoice);
+                      setViewInvoice(null);
+                    }}
+                    disabled={isMarkingPaid}
+                    className="flex-1 gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Mark Paid
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const profile = profileMap.get(viewInvoice.user_id);
+                    if (profile?.account_number) {
+                      navigate(`/admin/customers/${profile.account_number}`);
+                    }
+                  }}
+                >
+                  View Customer
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Void Confirmation */}
+      <AlertDialog open={!!voidConfirmInvoice} onOpenChange={(open) => !open && setVoidConfirmInvoice(null)}>
+        <AlertDialogContent className="border-4 border-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Void Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to void invoice {voidConfirmInvoice?.invoice_number}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-2 border-foreground">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleVoidInvoice}
+              disabled={isVoiding}
+              className="bg-destructive text-destructive-foreground"
+            >
+              {isVoiding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Void Invoice
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Create Invoice Dialog */}
       <Dialog open={!!selectedInvoice && !selectedInvoice.id} onOpenChange={(open) => !open && setSelectedInvoice(null)}>

@@ -91,6 +91,15 @@ type UserFile = {
   created_at: string;
 };
 
+type Invoice = {
+  id: string;
+  invoice_number: string;
+  total: number;
+  status: string;
+  due_date: string | null;
+  issue_date: string;
+};
+
 const serviceIcons = {
   broadband: Wifi,
   sim: Smartphone,
@@ -122,6 +131,7 @@ const Dashboard = () => {
   const [guestOrders, setGuestOrders] = useState<GuestOrder[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [userFiles, setUserFiles] = useState<UserFile[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
@@ -165,12 +175,13 @@ const Dashboard = () => {
     
     try {
       // Fetch all data in parallel
-      const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult] = await Promise.all([
+      const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult, invoicesResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
         supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("guest_orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
         supabase.from("user_files").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("invoices").select("id, invoice_number, total, status, due_date, issue_date").eq("user_id", userId).in("status", ["draft", "sent", "overdue"]).order("due_date", { ascending: true }),
       ]);
 
       if (profileResult.data) {
@@ -191,6 +202,10 @@ const Dashboard = () => {
 
       if (filesResult.data) {
         setUserFiles(filesResult.data);
+      }
+
+      if (invoicesResult.data) {
+        setInvoices(invoicesResult.data);
       }
     } catch (error) {
       logError("Dashboard.fetchUserData", error);
@@ -272,15 +287,18 @@ const Dashboard = () => {
   const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
   const allOrders = [...orders, ...guestOrders.map(g => ({ ...g, status: 'pending' as const, service_type: g.service_type as 'broadband' | 'sim' | 'landline' }))];
   
-  // Filter invoices from user files
-  const invoices = userFiles.filter(f => 
+  // Filter invoice files from user files (for document download section)
+  const invoiceFiles = userFiles.filter(f => 
     f.file_type.includes('pdf') || 
     f.file_name.toLowerCase().includes('invoice') ||
     f.description?.toLowerCase().includes('invoice')
   );
   
-  // Group invoices by month
-  const groupedInvoices = invoices.reduce((acc, file) => {
+  // Outstanding invoices needing payment
+  const outstandingInvoices = invoices.filter(inv => inv.status !== 'paid' && inv.status !== 'cancelled');
+  
+  // Group invoice files by month
+  const groupedInvoiceFiles = invoiceFiles.reduce((acc, file) => {
     const monthKey = format(new Date(file.created_at), "MMMM yyyy");
     if (!acc[monthKey]) acc[monthKey] = [];
     acc[monthKey].push(file);
@@ -677,15 +695,50 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Invoices Section */}
-              {Object.keys(groupedInvoices).length > 0 && (
+              {/* Outstanding Invoices - Pay Now */}
+              {outstandingInvoices.length > 0 && (
+                <div className="card-brutal bg-warning/10 border-warning p-6">
+                  <h3 className="font-display text-lg mb-4 flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-warning" />
+                    OUTSTANDING BILLS
+                  </h3>
+                  <div className="space-y-3">
+                    {outstandingInvoices.map((inv) => (
+                      <motion.div
+                        key={inv.id}
+                        className="flex items-center justify-between p-3 border-2 border-foreground bg-background"
+                        whileHover={{ x: -2, boxShadow: "4px 0px 0px 0px hsl(var(--foreground))" }}
+                      >
+                        <div>
+                          <p className="font-display text-sm">{inv.invoice_number}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Due: {inv.due_date ? format(new Date(inv.due_date), "dd MMM yyyy") : "N/A"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-display text-lg">£{inv.total.toFixed(2)}</span>
+                          <Link to={`/pay-invoice?id=${inv.id}`}>
+                            <Button size="sm" variant="hero">
+                              <CreditCard className="w-4 h-4 mr-1" />
+                              Pay Now
+                            </Button>
+                          </Link>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Invoice Files Section */}
+              {Object.keys(groupedInvoiceFiles).length > 0 && (
                 <div className="card-brutal bg-card p-6">
                   <h3 className="font-display text-lg mb-4 flex items-center gap-2">
                     <Receipt className="w-5 h-5" />
-                    INVOICES
+                    INVOICE HISTORY
                   </h3>
                   <div className="space-y-4">
-                    {Object.entries(groupedInvoices).map(([month, files]) => (
+                    {Object.entries(groupedInvoiceFiles).map(([month, files]) => (
                       <div key={month}>
                         <p className="text-xs text-muted-foreground uppercase font-display mb-2">{month}</p>
                         <div className="space-y-2">
@@ -714,11 +767,11 @@ const Dashboard = () => {
               )}
 
               {/* User Files (non-invoices) */}
-              {userFiles.filter(f => !invoices.includes(f)).length > 0 && (
+              {userFiles.filter(f => !invoiceFiles.includes(f)).length > 0 && (
                 <div className="card-brutal bg-card p-6">
                   <h3 className="font-display text-lg mb-4">YOUR DOCUMENTS</h3>
                   <div className="space-y-2">
-                    {userFiles.filter(f => !invoices.includes(f)).slice(0, 5).map((file) => (
+                    {userFiles.filter(f => !invoiceFiles.includes(f)).slice(0, 5).map((file) => (
                       <motion.div
                         key={file.id}
                         className="flex items-center gap-3 p-3 border-2 border-foreground bg-background cursor-pointer"

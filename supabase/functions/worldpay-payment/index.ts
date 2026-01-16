@@ -154,6 +154,13 @@ serve(async (req) => {
         console.log('Verifying payment for invoice:', invoiceId, 'status:', status);
 
         if (status === 'success') {
+          // Get invoice details for receipt
+          const { data: invoice } = await supabase
+            .from('invoices')
+            .select('invoice_number, total, user_id')
+            .eq('id', invoiceId)
+            .single();
+
           // Update invoice status to paid
           const { error: updateError } = await supabase
             .from('invoices')
@@ -165,11 +172,26 @@ serve(async (req) => {
           }
 
           // Update payment attempt
-          await supabase
+          const { data: paymentAttempt } = await supabase
             .from('payment_attempts')
             .update({ status: 'success' })
             .eq('invoice_id', invoiceId)
-            .eq('status', 'pending');
+            .eq('status', 'pending')
+            .select()
+            .single();
+
+          // Create receipt record
+          if (invoice) {
+            const receiptRef = `RCP-${Date.now().toString(36).toUpperCase()}`;
+            await supabase.from('receipts').insert({
+              invoice_id: invoiceId,
+              user_id: invoice.user_id,
+              amount: invoice.total,
+              method: 'card',
+              reference: receiptRef,
+              paid_at: new Date().toISOString(),
+            });
+          }
 
           return new Response(JSON.stringify({
             success: true,

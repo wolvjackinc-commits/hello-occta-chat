@@ -50,15 +50,18 @@ serve(async (req) => {
       }
 
       case 'process-payment': {
-        const { sessionHref, invoiceId, amount, currency, customerEmail, customerName, userId, invoiceNumber } = data;
+        const { cardSessionHref, cvvSessionHref, invoiceId, amount, currency, customerEmail, customerName, userId, invoiceNumber } = data;
 
-        if (!sessionHref || !invoiceId || !amount) {
-          throw new Error('Missing required payment data');
+        if (!cardSessionHref || !invoiceId || !amount) {
+          throw new Error('Missing required payment data (cardSessionHref, invoiceId, amount required)');
         }
 
-        console.log('Processing payment with session href:', sessionHref);
+        console.log('Processing payment with sessions:', { 
+          cardSession: cardSessionHref?.substring(0, 50) + '...', 
+          cvvSession: cvvSessionHref ? cvvSessionHref.substring(0, 50) + '...' : 'none'
+        });
 
-        // Create the payment using the session from Access Checkout
+        // Create the payment using the sessions from Access Checkout
         const paymentResponse = await fetch(`${baseUrl}/payments`, {
           method: 'POST',
           headers: {
@@ -81,7 +84,8 @@ serve(async (req) => {
               },
               paymentInstrument: {
                 type: 'card/checkout+session',
-                sessionHref: sessionHref,
+                sessionHref: cardSessionHref,
+                cvcHref: cvvSessionHref,
               },
             },
           }),

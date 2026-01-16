@@ -200,8 +200,35 @@ export function WorldpayCheckout({
           function (initError: any, checkout: any) {
             if (initError) {
               console.error('Checkout init error:', initError);
-              const details = typeof initError === 'string' ? initError : JSON.stringify(initError);
-              setError(`Failed to initialize payment form: ${details}`);
+              console.log('Current origin:', window.location.origin);
+              console.log('Error type:', typeof initError);
+              console.log('Error constructor:', initError?.constructor?.name);
+              
+              // Try to extract the actual error message
+              let errorMsg = 'Unknown initialization error';
+              
+              if (typeof initError === 'string') {
+                errorMsg = initError;
+              } else if (initError?.message) {
+                errorMsg = initError.message;
+              } else if (initError?.errorName) {
+                errorMsg = initError.errorName;
+              } else if (initError?.error) {
+                errorMsg = initError.error;
+              } else if (initError?.name) {
+                errorMsg = initError.name;
+              } else if (initError?.code) {
+                errorMsg = `Error code: ${initError.code}`;
+              } else {
+                // Try to get all properties including non-enumerable ones
+                const props = Object.getOwnPropertyNames(initError);
+                console.log('Error properties:', props);
+                if (props.length > 0) {
+                  errorMsg = props.map(k => `${k}: ${initError[k]}`).join(', ');
+                }
+              }
+              
+              setError(`Failed to initialize: ${errorMsg} (Origin: ${window.location.origin})`);
               setLoading(false);
               return;
             }
@@ -312,6 +339,15 @@ export function WorldpayCheckout({
                 <span>{error}</span>
               </div>
             )}
+
+            {/* Debug info panel */}
+            <div className="p-3 bg-muted rounded-md text-xs font-mono space-y-1">
+              <p><strong>Debug:</strong></p>
+              <p>Origin: {window.location.origin}</p>
+              <p>SDK Loaded: {sdkReady ? 'Yes' : 'No'}</p>
+              <p>Checkout Ready: {checkoutInstance ? 'Yes' : 'No'}</p>
+              <p>Worldpay Available: {typeof window !== 'undefined' && window.Worldpay?.checkout ? 'Yes' : 'No'}</p>
+            </div>
 
             <div className="flex gap-3 pt-2">
               <Button

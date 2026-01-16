@@ -445,15 +445,13 @@ export const AdminBilling = () => {
           <h1 className="text-2xl font-display">Billing</h1>
           <p className="text-muted-foreground">Manage invoices, receipts, and payments.</p>
         </div>
-        <Dialog>
-          <Button 
-            className="border-2 border-foreground gap-2"
-            onClick={() => setSelectedInvoice({} as Invoice)}
-          >
-            <Plus className="h-4 w-4" />
-            Create Invoice
-          </Button>
-        </Dialog>
+        <Button 
+          className="border-2 border-foreground gap-2"
+          onClick={() => setSelectedInvoice({} as Invoice)}
+        >
+          <Plus className="h-4 w-4" />
+          Create Invoice
+        </Button>
       </div>
 
       {/* Filters */}

@@ -42,7 +42,6 @@ type Profile = {
 
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
 const allowedServiceTypes = ["broadband", "landline", "sim", "mobile"] as const;
-const accountNumberPattern = /^OCC\d{8}$/;
 
 const formatDate = (value?: string | null) => {
   if (!value) return "—";
@@ -89,54 +88,16 @@ export const AdminServices = () => {
   const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
   const [isLookingUpCustomer, setIsLookingUpCustomer] = useState(false);
   const [formState, setFormState] = useState({
-    accountNumber: "",
+    userId: "",
     serviceType: "broadband",
     identifiers: "{}",
     supplierReference: "",
     activationDate: "",
     status: "active",
   });
-  const normalizedAccountNumber = formState.accountNumber.trim().toUpperCase();
-  const isAccountNumberValid = accountNumberPattern.test(normalizedAccountNumber);
   const isServiceTypeValid = allowedServiceTypes.includes(
     formState.serviceType as (typeof allowedServiceTypes)[number],
   );
-
-  useEffect(() => {
-    if (!normalizedAccountNumber) {
-      setMatchedCustomer(null);
-      setIsLookingUpCustomer(false);
-      return;
-    }
-    if (!isAccountNumberValid) {
-      setMatchedCustomer(null);
-      setIsLookingUpCustomer(false);
-      return;
-    }
-
-    let isActive = true;
-    setMatchedCustomer(null);
-    setIsLookingUpCustomer(true);
-    const timeoutId = window.setTimeout(async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, account_number")
-        .eq("account_number", normalizedAccountNumber)
-        .maybeSingle();
-      if (!isActive) return;
-      if (error) {
-        setMatchedCustomer(null);
-      } else {
-        setMatchedCustomer((data as Profile) || null);
-      }
-      setIsLookingUpCustomer(false);
-    }, 300);
-
-    return () => {
-      isActive = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [normalizedAccountNumber, isAccountNumberValid]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -224,6 +185,10 @@ export const AdminServices = () => {
       toast({ title: "Select a valid service type", variant: "destructive" });
       return;
     }
+    if (!isServiceTypeValid) {
+      toast({ title: "Select a valid service type", variant: "destructive" });
+      return;
+    }
 
     let identifiers: Json = {};
     try {
@@ -276,7 +241,7 @@ export const AdminServices = () => {
     setIsSaving(false);
     setIsAddOpen(false);
     setFormState({
-      accountNumber: "",
+      userId: "",
       serviceType: "broadband",
       identifiers: "{}",
       supplierReference: "",
@@ -433,7 +398,7 @@ export const AdminServices = () => {
               </div>
               <Button
                 onClick={handleAddService}
-                disabled={isSaving || !isServiceTypeValid || !isAccountNumberValid || !matchedCustomer}
+                disabled={isSaving || !isServiceTypeValid}
                 className="w-full border-2 border-foreground"
               >
                 {isSaving ? "Saving..." : "Add service"}

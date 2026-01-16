@@ -127,9 +127,11 @@ export function WorldpayCheckout({
     initializeCheckout();
   }, [sdkReady]);
 
-  const initializeCheckout = async () => {
+  const initializeCheckout = async (retryCount = 0) => {
+    const maxRetries = 3;
+    
     try {
-      console.log('Initializing Worldpay checkout...');
+      console.log(`Initializing Worldpay checkout (attempt ${retryCount + 1})...`);
       
       // Get checkout configuration from edge function
       const { data, error: fnError } = await supabase.functions.invoke('worldpay-payment', {
@@ -142,8 +144,22 @@ export function WorldpayCheckout({
 
       console.log('Got checkout config:', { checkoutId: data.checkoutId });
 
-      // Wait for DOM elements to be ready
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Wait for DOM elements to be ready with exponential backoff
+      const delay = 500 * (retryCount + 1);
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      // Check if DOM elements exist
+      const panEl = document.getElementById('worldpay-card-pan');
+      const expiryEl = document.getElementById('worldpay-card-expiry');
+      const cvvEl = document.getElementById('worldpay-card-cvv');
+      
+      if (!panEl || !expiryEl || !cvvEl) {
+        if (retryCount < maxRetries) {
+          console.log('DOM elements not ready, retrying...');
+          return initializeCheckout(retryCount + 1);
+        }
+        throw new Error('Payment form elements not found');
+      }
 
       // Initialize Access Checkout SDK with callback pattern (correct SDK format)
       if (window.Worldpay?.checkout) {
@@ -156,11 +172,11 @@ export function WorldpayCheckout({
                 selector: '#worldpay-card-pan',
                 placeholder: '4444 3333 2222 1111',
               },
-              expiryDate: {
+              expiry: {
                 selector: '#worldpay-card-expiry',
                 placeholder: 'MM/YY',
               },
-              cvc: {
+              cvv: {
                 selector: '#worldpay-card-cvv',
                 placeholder: '123',
               },

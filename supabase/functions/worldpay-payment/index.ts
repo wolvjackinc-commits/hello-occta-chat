@@ -153,6 +153,17 @@ serve(async (req) => {
 
         console.log('Verifying payment for invoice:', invoiceId, 'status:', status);
 
+        // Fetch invoice details for response and email
+        const { data: invoice, error: fetchError } = await supabase
+          .from('invoices')
+          .select('*, profiles:user_id(email, full_name)')
+          .eq('id', invoiceId)
+          .single();
+
+        if (fetchError) {
+          console.error('Failed to fetch invoice:', fetchError);
+        }
+
         if (status === 'success') {
           // Update invoice status to paid
           const { error: updateError } = await supabase
@@ -165,16 +176,51 @@ serve(async (req) => {
           }
 
           // Update payment attempt
-          await supabase
+          const { data: paymentAttempt } = await supabase
             .from('payment_attempts')
             .update({ status: 'success' })
             .eq('invoice_id', invoiceId)
-            .eq('status', 'pending');
+            .eq('status', 'pending')
+            .select()
+            .single();
+
+          // Send payment confirmation email
+          if (invoice?.profiles?.email) {
+            try {
+              const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supabaseKey}`,
+                },
+                body: JSON.stringify({
+                  type: 'invoice_paid',
+                  to: invoice.profiles.email,
+                  data: {
+                    customer_name: invoice.profiles.full_name || 'Customer',
+                    invoice_number: invoice.invoice_number,
+                    total: invoice.total_amount,
+                    paid_date: new Date().toLocaleDateString('en-GB'),
+                    receipt_reference: paymentAttempt?.provider_ref || invoiceId,
+                  },
+                }),
+              });
+              console.log('Payment confirmation email sent:', await emailResponse.json());
+            } catch (emailError) {
+              console.error('Failed to send payment confirmation email:', emailError);
+            }
+          }
 
           return new Response(JSON.stringify({
             success: true,
             status: 'paid',
             message: 'Payment verified successfully',
+            invoice: invoice ? {
+              invoice_number: invoice.invoice_number,
+              total_amount: invoice.total_amount,
+              currency: invoice.currency || 'GBP',
+              paid_at: new Date().toISOString(),
+            } : null,
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
@@ -190,6 +236,10 @@ serve(async (req) => {
             success: false,
             status: 'failed',
             message: 'Payment failed',
+            invoice: invoice ? {
+              invoice_number: invoice.invoice_number,
+              total_amount: invoice.total_amount,
+            } : null,
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
@@ -205,6 +255,10 @@ serve(async (req) => {
             success: false,
             status: 'cancelled',
             message: 'Payment was cancelled',
+            invoice: invoice ? {
+              invoice_number: invoice.invoice_number,
+              total_amount: invoice.total_amount,
+            } : null,
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });

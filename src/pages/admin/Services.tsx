@@ -40,6 +40,7 @@ type Profile = {
 };
 
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
+const allowedServiceTypes = ["broadband", "landline", "sim", "mobile"] as const;
 
 const formatDate = (value?: string | null) => {
   if (!value) return "—";
@@ -83,12 +84,15 @@ export const AdminServices = () => {
   const [suspendReason, setSuspendReason] = useState("");
   const [formState, setFormState] = useState({
     userId: "",
-    serviceType: "",
+    serviceType: "broadband",
     identifiers: "{}",
     supplierReference: "",
     activationDate: "",
     status: "active",
   });
+  const isServiceTypeValid = allowedServiceTypes.includes(
+    formState.serviceType as (typeof allowedServiceTypes)[number],
+  );
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -159,6 +163,10 @@ export const AdminServices = () => {
       toast({ title: "User ID and service type are required", variant: "destructive" });
       return;
     }
+    if (!isServiceTypeValid) {
+      toast({ title: "Select a valid service type", variant: "destructive" });
+      return;
+    }
 
     let identifiers: Json = {};
     try {
@@ -179,7 +187,11 @@ export const AdminServices = () => {
     });
 
     if (error) {
-      toast({ title: "Failed to add service", variant: "destructive" });
+      toast({
+        title: "Failed to add service",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
       setIsSaving(false);
       return;
     }
@@ -189,7 +201,7 @@ export const AdminServices = () => {
     setIsAddOpen(false);
     setFormState({
       userId: "",
-      serviceType: "",
+      serviceType: "broadband",
       identifiers: "{}",
       supplierReference: "",
       activationDate: "",
@@ -272,11 +284,21 @@ export const AdminServices = () => {
               </div>
               <div>
                 <Label className="font-display uppercase text-sm">Service type</Label>
-                <Input
+                <Select
                   value={formState.serviceType}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, serviceType: event.target.value }))}
-                  className="mt-1 border-2 border-foreground"
-                />
+                  onValueChange={(value) => setFormState((prev) => ({ ...prev, serviceType: value }))}
+                >
+                  <SelectTrigger className="mt-1 border-2 border-foreground">
+                    <SelectValue placeholder="Select service type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allowedServiceTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label className="font-display uppercase text-sm">Identifiers (JSON)</Label>
@@ -323,7 +345,11 @@ export const AdminServices = () => {
                   </Select>
                 </div>
               </div>
-              <Button onClick={handleAddService} disabled={isSaving} className="w-full border-2 border-foreground">
+              <Button
+                onClick={handleAddService}
+                disabled={isSaving || !isServiceTypeValid}
+                className="w-full border-2 border-foreground"
+              >
                 {isSaving ? "Saving..." : "Add service"}
               </Button>
             </div>

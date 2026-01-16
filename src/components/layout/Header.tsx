@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Phone, Wifi, Smartphone, PhoneCall, ShieldCheck, User, LogOut, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
-import occtaLogo from "@/assets/occta-logo.png";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -70,12 +69,18 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center group">
-            <img 
-              src={occtaLogo} 
-              alt="OCCTA Limited" 
-              className="h-12 md:h-14 w-auto group-hover:-translate-y-0.5 transition-transform duration-150"
-            />
+          <Link to="/" className="flex items-center gap-4 group">
+            <div className="relative">
+              <div className="w-14 h-14 bg-primary border-4 border-foreground shadow-brutal flex items-center justify-center group-hover:-translate-y-0.5 group-hover:-translate-x-0.5 group-hover:shadow-brutal-lg transition-all duration-150">
+                <span className="font-display text-2xl text-primary-foreground">O</span>
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-display text-3xl tracking-tight">OCCTA</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+                Telecom That Gets It
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}

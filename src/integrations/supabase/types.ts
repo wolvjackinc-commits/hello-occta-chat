@@ -82,6 +82,48 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_analytics: {
+        Row: {
+          created_at: string
+          detected_category: string | null
+          detected_intent: string | null
+          id: string
+          message_content: string
+          message_type: string
+          response_time_ms: number | null
+          session_id: string
+          tool_used: string | null
+          user_id: string | null
+          was_helpful: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          detected_category?: string | null
+          detected_intent?: string | null
+          id?: string
+          message_content: string
+          message_type: string
+          response_time_ms?: number | null
+          session_id: string
+          tool_used?: string | null
+          user_id?: string | null
+          was_helpful?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          detected_category?: string | null
+          detected_intent?: string | null
+          id?: string
+          message_content?: string
+          message_type?: string
+          response_time_ms?: number | null
+          session_id?: string
+          tool_used?: string | null
+          user_id?: string | null
+          was_helpful?: boolean | null
+        }
+        Relationships: []
+      }
       credit_notes: {
         Row: {
           amount: number
@@ -921,7 +963,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      chat_analytics_summary: {
+        Row: {
+          assistant_messages: number | null
+          avg_response_time_ms: number | null
+          date: string | null
+          detected_category: string | null
+          detected_intent: string | null
+          helpful_count: number | null
+          unhelpful_count: number | null
+          unique_sessions: number | null
+          user_messages: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_rate_limit: {

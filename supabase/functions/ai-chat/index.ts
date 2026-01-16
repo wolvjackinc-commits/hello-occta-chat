@@ -81,7 +81,7 @@ const businessInfo = {
   ],
 };
 
-// Tools definitions for the AI
+// Tools definitions for the AI - includes customer tools and admin tools
 const tools = [
   {
     type: "function",
@@ -200,6 +200,94 @@ const tools = [
           sim_plan: { type: "string", description: "Name of SIM plan (optional)" },
           landline_plan: { type: "string", description: "Name of landline plan (optional)" },
         },
+        required: [],
+      },
+    },
+  },
+];
+
+// Admin-only tools - only provided when user is an admin
+const adminTools = [
+  {
+    type: "function",
+    function: {
+      name: "admin_search_customer",
+      description: "ADMIN ONLY: Search for a customer by account number, email, or name. No DOB verification required for admins.",
+      parameters: {
+        type: "object",
+        properties: {
+          search_term: { type: "string", description: "Account number (OCC...), email, or customer name to search" },
+          search_type: { 
+            type: "string", 
+            enum: ["account_number", "email", "name"],
+            description: "Type of search to perform" 
+          },
+        },
+        required: ["search_term", "search_type"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "admin_get_customer_services",
+      description: "ADMIN ONLY: Get all services for a customer by their user ID or account number.",
+      parameters: {
+        type: "object",
+        properties: {
+          identifier: { type: "string", description: "Customer's user ID or account number" },
+        },
+        required: ["identifier"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "admin_get_customer_invoices",
+      description: "ADMIN ONLY: Get all invoices for a customer.",
+      parameters: {
+        type: "object",
+        properties: {
+          identifier: { type: "string", description: "Customer's user ID, email, or account number" },
+          limit: { type: "number", description: "Maximum number of invoices to return (default 10)" },
+        },
+        required: ["identifier"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "admin_get_open_tickets",
+      description: "ADMIN ONLY: Get all open support tickets, optionally filtered by category or priority.",
+      parameters: {
+        type: "object",
+        properties: {
+          category: { 
+            type: "string", 
+            enum: ["broadband", "mobile", "landline", "billing", "payments", "account"],
+            description: "Filter by category (optional)" 
+          },
+          priority: { 
+            type: "string", 
+            enum: ["low", "medium", "high", "urgent"],
+            description: "Filter by priority (optional)" 
+          },
+          limit: { type: "number", description: "Maximum number of tickets to return (default 10)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "admin_get_system_stats",
+      description: "ADMIN ONLY: Get system statistics like total customers, active services, open tickets, and recent orders.",
+      parameters: {
+        type: "object",
+        properties: {},
         required: [],
       },
     },
@@ -654,9 +742,233 @@ async function executeTool(
       });
     }
 
+    // ADMIN TOOLS
+    case "admin_search_customer": {
+      const { search_term, search_type } = args as { search_term: string; search_type: string };
+      
+      console.log(`ADMIN: Searching customer by ${search_type}: ${search_term}`);
+      
+      let results: unknown[] = [];
+      
+      if (search_type === "account_number") {
+        const { data, error } = await supabaseServiceClient
+          .from("guest_orders")
+          .select("account_number, full_name, email, phone, status, plan_name, service_type, created_at")
+          .ilike("account_number", `%${search_term}%`)
+          .limit(10);
+        
+        if (!error && data) results = data;
+      } else if (search_type === "email") {
+        // Search both profiles and guest_orders
+        const { data: profileData } = await supabaseServiceClient
+          .from("profiles")
+          .select("id, full_name, email, phone, account_number, created_at")
+          .ilike("email", `%${search_term}%`)
+          .limit(5);
+        
+        const { data: guestData } = await supabaseServiceClient
+          .from("guest_orders")
+          .select("account_number, full_name, email, phone, status, plan_name, service_type, created_at")
+          .ilike("email", `%${search_term}%`)
+          .limit(5);
+        
+        results = [...(profileData || []), ...(guestData || [])];
+      } else if (search_type === "name") {
+        const { data: profileData } = await supabaseServiceClient
+          .from("profiles")
+          .select("id, full_name, email, phone, account_number, created_at")
+          .ilike("full_name", `%${search_term}%`)
+          .limit(5);
+        
+        const { data: guestData } = await supabaseServiceClient
+          .from("guest_orders")
+          .select("account_number, full_name, email, phone, status, plan_name, service_type, created_at")
+          .ilike("full_name", `%${search_term}%`)
+          .limit(5);
+        
+        results = [...(profileData || []), ...(guestData || [])];
+      }
+      
+      if (results.length === 0) {
+        return JSON.stringify({ success: false, message: "No customers found matching your search." });
+      }
+      
+      return JSON.stringify({ success: true, customers: results, count: results.length });
+    }
+
+    case "admin_get_customer_services": {
+      const { identifier } = args as { identifier: string };
+      
+      console.log(`ADMIN: Getting services for: ${identifier}`);
+      
+      // Try to find by account number first
+      const isAccountNumber = identifier.toUpperCase().startsWith("OCC");
+      
+      if (isAccountNumber) {
+        const { data: orderData } = await supabaseServiceClient
+          .from("guest_orders")
+          .select("*")
+          .eq("account_number", identifier.toUpperCase());
+        
+        const { data: servicesData } = await supabaseServiceClient
+          .from("services")
+          .select("*")
+          .eq("identifiers->>account_number", identifier.toUpperCase());
+        
+        return JSON.stringify({ 
+          success: true, 
+          orders: orderData || [], 
+          services: servicesData || [] 
+        });
+      } else {
+        // Assume it's a user ID
+        const { data: servicesData } = await supabaseServiceClient
+          .from("services")
+          .select("*")
+          .eq("user_id", identifier);
+        
+        return JSON.stringify({ success: true, services: servicesData || [] });
+      }
+    }
+
+    case "admin_get_customer_invoices": {
+      const { identifier, limit = 10 } = args as { identifier: string; limit?: number };
+      
+      console.log(`ADMIN: Getting invoices for: ${identifier}`);
+      
+      // Find user by email or account number
+      let userId: string | null = null;
+      
+      if (identifier.includes("@")) {
+        const { data: profile } = await supabaseServiceClient
+          .from("profiles")
+          .select("id")
+          .eq("email", identifier.toLowerCase())
+          .single();
+        userId = profile?.id || null;
+      } else if (identifier.toUpperCase().startsWith("OCC")) {
+        const { data: order } = await supabaseServiceClient
+          .from("guest_orders")
+          .select("user_id")
+          .eq("account_number", identifier.toUpperCase())
+          .single();
+        userId = order?.user_id || null;
+      } else {
+        userId = identifier;
+      }
+      
+      if (!userId) {
+        return JSON.stringify({ success: false, message: "Customer not found." });
+      }
+      
+      const { data: invoices } = await supabaseServiceClient
+        .from("invoices")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      
+      return JSON.stringify({ success: true, invoices: invoices || [] });
+    }
+
+    case "admin_get_open_tickets": {
+      const { category, priority, limit = 10 } = args as { category?: string; priority?: string; limit?: number };
+      
+      console.log(`ADMIN: Getting open tickets`);
+      
+      let query = supabaseServiceClient
+        .from("support_tickets")
+        .select("*, profiles(full_name, email)")
+        .in("status", ["open", "in_progress"])
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      
+      if (category) {
+        query = query.eq("category", category);
+      }
+      if (priority) {
+        query = query.eq("priority", priority);
+      }
+      
+      const { data: tickets } = await query;
+      
+      return JSON.stringify({ 
+        success: true, 
+        tickets: tickets || [], 
+        count: tickets?.length || 0 
+      });
+    }
+
+    case "admin_get_system_stats": {
+      console.log(`ADMIN: Getting system stats`);
+      
+      const [
+        { count: profilesCount },
+        { count: servicesCount },
+        { count: openTicketsCount },
+        { count: ordersCount },
+        { count: guestOrdersCount },
+      ] = await Promise.all([
+        supabaseServiceClient.from("profiles").select("*", { count: "exact", head: true }),
+        supabaseServiceClient.from("services").select("*", { count: "exact", head: true }).eq("status", "active"),
+        supabaseServiceClient.from("support_tickets").select("*", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
+        supabaseServiceClient.from("orders").select("*", { count: "exact", head: true }),
+        supabaseServiceClient.from("guest_orders").select("*", { count: "exact", head: true }).eq("status", "active"),
+      ]);
+      
+      // Get recent orders (last 7 days)
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      
+      const { count: recentOrdersCount } = await supabaseServiceClient
+        .from("guest_orders")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", weekAgo.toISOString());
+      
+      return JSON.stringify({
+        success: true,
+        stats: {
+          totalCustomers: profilesCount || 0,
+          activeServices: servicesCount || 0,
+          openTickets: openTicketsCount || 0,
+          totalOrders: (ordersCount || 0) + (guestOrdersCount || 0),
+          activeGuestOrders: guestOrdersCount || 0,
+          recentOrders7Days: recentOrdersCount || 0,
+        }
+      });
+    }
+
     default:
       return JSON.stringify({ error: "Unknown tool" });
   }
+}
+
+// Helper function to detect intent from user message
+function detectIntent(message: string): { intent: string; category: string } {
+  const lowerMsg = message.toLowerCase();
+  
+  if (lowerMsg.includes("bill") || lowerMsg.includes("invoice") || lowerMsg.includes("payment")) {
+    return { intent: "billing_inquiry", category: "billing" };
+  }
+  if (lowerMsg.includes("switch") || lowerMsg.includes("change provider") || lowerMsg.includes("move to")) {
+    return { intent: "switching_inquiry", category: "sales" };
+  }
+  if (lowerMsg.includes("compare") || lowerMsg.includes("plan") || lowerMsg.includes("broadband") || lowerMsg.includes("sim")) {
+    return { intent: "plan_comparison", category: "sales" };
+  }
+  if (lowerMsg.includes("order") || lowerMsg.includes("track")) {
+    return { intent: "order_inquiry", category: "support" };
+  }
+  if (lowerMsg.includes("problem") || lowerMsg.includes("issue") || lowerMsg.includes("help") || lowerMsg.includes("support")) {
+    return { intent: "support_request", category: "support" };
+  }
+  if (lowerMsg.includes("account") || lowerMsg.includes("login") || lowerMsg.includes("password")) {
+    return { intent: "account_inquiry", category: "account" };
+  }
+  if (lowerMsg.includes("cancel") || lowerMsg.includes("stop")) {
+    return { intent: "cancellation_inquiry", category: "retention" };
+  }
+  return { intent: "general_inquiry", category: "general" };
 }
 
 serve(async (req) => {
@@ -667,8 +979,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+
   try {
-    const { messages, userId } = await req.json();
+    const { messages, userId, sessionId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -682,6 +996,25 @@ serve(async (req) => {
     
     const supabaseServiceClient = createClient(supabaseUrl, supabaseServiceKey);
     const supabaseAnonClient = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Check if user is an admin
+    let isAdmin = false;
+    if (userId) {
+      const { data: roleData } = await supabaseServiceClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .single();
+      isAdmin = !!roleData;
+    }
+
+    // Get the last user message for analytics
+    const lastUserMessage = messages.filter((m: { role: string }) => m.role === "user").pop();
+    const { intent, category } = lastUserMessage ? detectIntent(lastUserMessage.content) : { intent: "unknown", category: "unknown" };
+
+    // Build available tools based on user role
+    const availableTools = isAdmin ? [...tools, ...adminTools] : tools;
 
     // IRA System Prompt - Intelligent Reliable Assistant for OCCTA
     const systemPrompt = `You are IRA (Intelligent Reliable Assistant) — the official AI chatbot for OCCTA, a UK-wide telecommunications company.
@@ -832,7 +1165,7 @@ IRA's success is clarity + trust, not conversion at all costs.`;
       ...messages,
     ];
 
-    // Call AI with tools
+    // Call AI with available tools (includes admin tools if admin)
     let response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -842,7 +1175,7 @@ IRA's success is clarity + trust, not conversion at all costs.`;
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: currentMessages,
-        tools,
+        tools: availableTools,
         tool_choice: "auto",
       }),
     });
@@ -907,7 +1240,7 @@ IRA's success is clarity + trust, not conversion at all costs.`;
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: currentMessages,
-          tools,
+          tools: availableTools,
           tool_choice: "auto",
         }),
       });
@@ -918,6 +1251,42 @@ IRA's success is clarity + trust, not conversion at all costs.`;
 
       data = await response.json();
       assistantMessage = data.choices[0].message;
+    }
+
+    const responseTime = Date.now() - startTime;
+
+    // Track analytics (non-blocking, fire-and-forget)
+    if (sessionId && lastUserMessage) {
+      (async () => {
+        try {
+          await supabaseServiceClient
+            .from("chat_analytics")
+            .insert([
+              {
+                session_id: sessionId,
+                user_id: userId || null,
+                message_type: "user",
+                message_content: lastUserMessage.content.substring(0, 500),
+                detected_intent: intent,
+                detected_category: category,
+                created_at: new Date().toISOString(),
+              },
+              {
+                session_id: sessionId,
+                user_id: userId || null,
+                message_type: "assistant",
+                message_content: assistantMessage.content?.substring(0, 500) || "",
+                detected_intent: intent,
+                detected_category: category,
+                response_time_ms: responseTime,
+                created_at: new Date().toISOString(),
+              },
+            ]);
+          console.log("Analytics tracked");
+        } catch (err) {
+          console.error("Analytics error:", err);
+        }
+      })();
     }
 
     return new Response(

@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TicketReplyDialog } from "@/components/admin/TicketReplyDialog";
+import { logAudit } from "@/lib/audit";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -18,6 +20,7 @@ const statusOptions = ["open", "in_progress", "resolved", "closed"] as const;
 type TicketStatus = typeof statusOptions[number];
 
 export const AdminTickets = () => {
+  const { toast } = useToast();
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<any | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -46,8 +49,29 @@ export const AdminTickets = () => {
     return map;
   }, [data?.profiles]);
 
-  const handleStatusChange = async (ticketId: string, status: TicketStatus) => {
-    await supabase.from("support_tickets").update({ status }).eq("id", ticketId);
+  const handleStatusChange = async (ticketId: string, status: TicketStatus, ticketSubject?: string) => {
+    const ticket = data?.tickets.find(t => t.id === ticketId);
+    const previousStatus = ticket?.status;
+    
+    const { error } = await supabase.from("support_tickets").update({ status }).eq("id", ticketId);
+    
+    if (error) {
+      toast({ title: "Failed to update status", variant: "destructive" });
+      return;
+    }
+
+    // Log audit
+    await logAudit({
+      action: status === 'closed' ? 'close' : 'update',
+      entity: 'support_ticket',
+      entityId: ticketId,
+      metadata: {
+        previousStatus,
+        newStatus: status,
+        subject: ticketSubject,
+      },
+    });
+
     refetch();
   };
 
@@ -75,7 +99,7 @@ export const AdminTickets = () => {
                 <Badge variant="outline">{ticket.priority}</Badge>
                 <Select 
                   value={ticket.status} 
-                  onValueChange={(value: TicketStatus) => handleStatusChange(ticket.id, value)}
+                  onValueChange={(value: TicketStatus) => handleStatusChange(ticket.id, value, ticket.subject)}
                 >
                   <SelectTrigger className="w-36">
                     <SelectValue placeholder="Status" />

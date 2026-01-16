@@ -113,7 +113,7 @@ const AnimatedRoutes = () => {
                 <Route index element={<Navigate to="overview" replace />} />
                 <Route path="overview" element={<AdminOverview />} />
                 <Route path="customers" element={<AdminCustomers />} />
-                <Route path="customers/:id" element={<AdminCustomerDetail />} />
+                <Route path="customers/:accountNumber" element={<AdminCustomerDetail />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="tickets" element={<AdminTickets />} />
                 <Route path="billing" element={<AdminBilling />} />

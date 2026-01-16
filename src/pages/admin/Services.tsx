@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { Card } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import { format } from "date-fns";
 import { PauseCircle, PlayCircle, Plus } from "lucide-react";
 import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
 import { useToast } from "@/hooks/use-toast";
+import { logAudit } from "@/lib/audit";
 
 type Service = {
   id: string;
@@ -76,6 +78,7 @@ const getIdentifier = (identifiers: Json | null) => {
 
 export const AdminServices = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [serviceTypeFilter, setServiceTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchText, setSearchText] = useState("");
@@ -160,6 +163,8 @@ export const AdminServices = () => {
   const handleSuspend = async () => {
     if (!suspendService) return;
     setUpdatingId(suspendService.id);
+    const profile = profileMap.get(suspendService.user_id);
+    
     const { error } = await supabase
       .from("services")
       .update({ status: "suspended", suspension_reason: suspendReason.trim() || null })
@@ -171,6 +176,19 @@ export const AdminServices = () => {
       return;
     }
 
+    // Log audit
+    await logAudit({
+      action: "suspend",
+      entity: "service",
+      entityId: suspendService.id,
+      metadata: {
+        previousStatus: suspendService.status,
+        reason: suspendReason.trim() || null,
+        accountNumber: profile?.account_number,
+        serviceType: suspendService.service_type,
+      },
+    });
+
     toast({ title: "Service suspended" });
     setUpdatingId(null);
     setSuspendService(null);
@@ -181,6 +199,8 @@ export const AdminServices = () => {
   const handleResume = async () => {
     if (!resumeService) return;
     setUpdatingId(resumeService.id);
+    const profile = profileMap.get(resumeService.user_id);
+    
     const { error } = await supabase
       .from("services")
       .update({ status: "active", suspension_reason: null })
@@ -191,6 +211,18 @@ export const AdminServices = () => {
       setUpdatingId(null);
       return;
     }
+
+    // Log audit
+    await logAudit({
+      action: "resume",
+      entity: "service",
+      entityId: resumeService.id,
+      metadata: {
+        previousStatus: resumeService.status,
+        accountNumber: profile?.account_number,
+        serviceType: resumeService.service_type,
+      },
+    });
 
     toast({ title: "Service resumed" });
     setUpdatingId(null);
@@ -286,10 +318,14 @@ export const AdminServices = () => {
                 return (
                   <TableRow key={service.id} className="border-b-2 border-foreground/20">
                     <TableCell>
-                      <div>
+                      <button
+                        type="button"
+                        className="text-left hover:underline"
+                        onClick={() => profile?.account_number && navigate(`/admin/customers/${profile.account_number}`)}
+                      >
                         <div className="font-medium">{accountNumber}</div>
                         <div className="text-xs text-muted-foreground">{customerLabel}</div>
-                      </div>
+                      </button>
                     </TableCell>
                     <TableCell className="capitalize">{service.service_type}</TableCell>
                     <TableCell>

@@ -4,6 +4,7 @@ import AppLayout from "@/components/app/AppLayout";
 import HeroSection from "@/components/home/HeroSection";
 import ServicesSection from "@/components/home/ServicesSection";
 import WhyUsSection from "@/components/home/WhyUsSection";
+import CustomerLoveSection from "@/components/home/CustomerLoveSection";
 import CTASection from "@/components/home/CTASection";
 import AppHome from "@/components/app/AppHome";
 import AppWelcome from "@/components/app/AppWelcome";
@@ -56,6 +57,7 @@ const Index = () => {
       <HeroSection />
       <ServicesSection />
       <WhyUsSection />
+      <CustomerLoveSection />
       <CTASection />
     </Layout>
   );

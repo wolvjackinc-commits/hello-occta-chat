@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -59,13 +59,15 @@ type QuickActionType =
   | "email"
   | null;
 
+const accountNumberPattern = /^OCC\d{8}$/;
+
 export const AdminLayout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeAction, setActiveAction] = useState<QuickActionType>(null);
   const [actionPayload, setActionPayload] = useState({
-    userId: "",
+    accountNumber: "",
     subject: "",
     message: "",
     orderId: "",
@@ -75,8 +77,17 @@ export const AdminLayout = () => {
     customerPhone: "",
     orderNumber: "",
   });
+  const [matchedTicketCustomer, setMatchedTicketCustomer] = useState<{
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    account_number: string | null;
+  } | null>(null);
+  const [isLookingUpTicketCustomer, setIsLookingUpTicketCustomer] = useState(false);
 
   const searchEnabled = searchTerm.trim().length >= 2;
+  const normalizedSearchTerm = searchTerm.trim().toUpperCase();
+  const isExactAccountNumber = accountNumberPattern.test(normalizedSearchTerm);
 
   const { data: searchResults = [], isFetching: isSearching } = useQuery({
     queryKey: ["admin-search", searchTerm],
@@ -139,6 +150,67 @@ export const AdminLayout = () => {
     },
   });
 
+  useEffect(() => {
+    if (!isExactAccountNumber) return;
+    let isActive = true;
+    const lookupCustomer = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("account_number", normalizedSearchTerm)
+        .maybeSingle();
+      if (!isActive || !data) return;
+      navigate(`/admin/customers/${data.id}`);
+      setSearchTerm("");
+    };
+    lookupCustomer();
+    return () => {
+      isActive = false;
+    };
+  }, [isExactAccountNumber, normalizedSearchTerm, navigate]);
+
+  useEffect(() => {
+    if (activeAction !== "ticket") {
+      setMatchedTicketCustomer(null);
+      setIsLookingUpTicketCustomer(false);
+      return;
+    }
+    const normalizedAccountNumber = actionPayload.accountNumber.trim().toUpperCase();
+    if (!normalizedAccountNumber) {
+      setMatchedTicketCustomer(null);
+      setIsLookingUpTicketCustomer(false);
+      return;
+    }
+    if (!accountNumberPattern.test(normalizedAccountNumber)) {
+      setMatchedTicketCustomer(null);
+      setIsLookingUpTicketCustomer(false);
+      return;
+    }
+
+    let isActive = true;
+    setMatchedTicketCustomer(null);
+    setIsLookingUpTicketCustomer(true);
+    const timeoutId = window.setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, account_number")
+        .eq("account_number", normalizedAccountNumber)
+        .maybeSingle();
+      if (!isActive) return;
+      if (error) {
+        setMatchedTicketCustomer(null);
+      } else {
+        setMatchedTicketCustomer(data || null);
+      }
+      setIsLookingUpTicketCustomer(false);
+    }, 300);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeAction, actionPayload.accountNumber]);
+
   const actionTitle = useMemo(() => {
     switch (activeAction) {
       case "ticket":
@@ -155,8 +227,26 @@ export const AdminLayout = () => {
   const handleActionSubmit = async () => {
     try {
       if (activeAction === "ticket") {
+        const normalizedAccountNumber = actionPayload.accountNumber.trim().toUpperCase();
+        if (!accountNumberPattern.test(normalizedAccountNumber)) {
+          toast({ title: "Enter a valid account number (OCC########).", variant: "destructive" });
+          return;
+        }
+        const { data: customer, error: customerError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, account_number")
+          .eq("account_number", normalizedAccountNumber)
+          .maybeSingle();
+        if (customerError) throw customerError;
+        if (!customer) {
+          toast({
+            title: `Customer not found for ${normalizedAccountNumber}`,
+            variant: "destructive",
+          });
+          return;
+        }
         const { error } = await supabase.from("support_tickets").insert({
-          user_id: actionPayload.userId,
+          user_id: customer.id,
           subject: actionPayload.subject,
           description: actionPayload.message,
           status: "open",
@@ -196,7 +286,7 @@ export const AdminLayout = () => {
       toast({ title: "Action completed" });
       setActiveAction(null);
       setActionPayload({
-        userId: "",
+        accountNumber: "",
         subject: "",
         message: "",
         orderId: "",
@@ -206,6 +296,7 @@ export const AdminLayout = () => {
         customerPhone: "",
         orderNumber: "",
       });
+      setMatchedTicketCustomer(null);
     } catch (error) {
       toast({
         title: "Action failed",
@@ -318,12 +409,25 @@ export const AdminLayout = () => {
             {activeAction === "ticket" && (
               <>
                 <Input
-                  placeholder="Customer user ID"
-                  value={actionPayload.userId}
+                  placeholder="Account number (OCC12345678)"
+                  value={actionPayload.accountNumber}
                   onChange={(event) =>
-                    setActionPayload((prev) => ({ ...prev, userId: event.target.value }))
+                    setActionPayload((prev) => ({ ...prev, accountNumber: event.target.value }))
                   }
                 />
+                {matchedTicketCustomer && (
+                  <p className="text-xs text-muted-foreground">
+                    Customer: {matchedTicketCustomer.full_name || "Customer"}{" "}
+                    {matchedTicketCustomer.email ? `· ${matchedTicketCustomer.email}` : ""}
+                  </p>
+                )}
+                {!matchedTicketCustomer &&
+                  accountNumberPattern.test(actionPayload.accountNumber.trim().toUpperCase()) &&
+                  !isLookingUpTicketCustomer && (
+                    <p className="text-xs text-muted-foreground">
+                      No customer found for {actionPayload.accountNumber.trim().toUpperCase()}.
+                    </p>
+                  )}
                 <Input
                   placeholder="Subject"
                   value={actionPayload.subject}

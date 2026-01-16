@@ -41,6 +41,13 @@ type Profile = {
   account_number: string | null;
 };
 
+type Customer = {
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  account_number: string;
+};
+
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
 const allowedServiceTypes = ["broadband", "landline", "sim", "mobile"] as const;
 
@@ -86,10 +93,11 @@ export const AdminServices = () => {
   const [suspendService, setSuspendService] = useState<Service | null>(null);
   const [resumeService, setResumeService] = useState<Service | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
-  const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
+  const [matchedCustomer, setMatchedCustomer] = useState<Customer | null>(null);
   const [isLookingUpCustomer, setIsLookingUpCustomer] = useState(false);
   const [formState, setFormState] = useState({
     userId: "",
+    accountNumber: "",
     serviceType: "broadband",
     identifiers: "{}",
     supplierReference: "",
@@ -99,6 +107,46 @@ export const AdminServices = () => {
   const isServiceTypeValid = allowedServiceTypes.includes(
     formState.serviceType as (typeof allowedServiceTypes)[number],
   );
+  const accountNumberInput = formState.accountNumber;
+  const normalizedAccountNumber = (accountNumberInput ?? "")
+    .toString()
+    .trim()
+    .toUpperCase();
+  const isNormalizedAccountNumberValid = isAccountNumberValid(normalizedAccountNumber);
+
+  useEffect(() => {
+    const acct = (accountNumberInput ?? "").trim().toUpperCase();
+    if (!acct) {
+      setMatchedCustomer(null);
+      setIsLookingUpCustomer(false);
+      return;
+    }
+
+    setIsLookingUpCustomer(true);
+    let isActive = true;
+    const timer = setTimeout(async () => {
+      const { data: customer, error } = await supabase
+        .from("customers")
+        .select("user_id, account_number, full_name, email")
+        .eq("account_number", acct)
+        .maybeSingle();
+
+      if (!isActive) return;
+      if (error) {
+        setMatchedCustomer(null);
+        setIsLookingUpCustomer(false);
+        return;
+      }
+
+      setMatchedCustomer(customer ?? null);
+      setIsLookingUpCustomer(false);
+    }, 400);
+
+    return () => {
+      isActive = false;
+      clearTimeout(timer);
+    };
+  }, [accountNumberInput]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -178,12 +226,8 @@ export const AdminServices = () => {
       toast({ title: "Account number and service type are required", variant: "destructive" });
       return;
     }
-    if (!isAccountNumberValid) {
+    if (!isNormalizedAccountNumberValid) {
       toast({ title: "Enter a valid account number (OCC########).", variant: "destructive" });
-      return;
-    }
-    if (!isServiceTypeValid) {
-      toast({ title: "Select a valid service type", variant: "destructive" });
       return;
     }
     if (!isServiceTypeValid) {
@@ -199,15 +243,22 @@ export const AdminServices = () => {
       return;
     }
 
-    const { data: customer, error: customerError } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, account_number")
-      .eq("account_number", normalizedAccountNumber)
-      .maybeSingle();
+    const currentCustomer =
+      matchedCustomer?.account_number === normalizedAccountNumber ? matchedCustomer : null;
+    let customer = currentCustomer;
+    if (!customer) {
+      const { data: customerData, error: customerError } = await supabase
+        .from("customers")
+        .select("user_id, account_number, full_name, email")
+        .eq("account_number", normalizedAccountNumber)
+        .maybeSingle();
 
-    if (customerError) {
-      toast({ title: "Failed to find customer", description: customerError.message, variant: "destructive" });
-      return;
+      if (customerError) {
+        toast({ title: "Failed to find customer", description: customerError.message, variant: "destructive" });
+        return;
+      }
+
+      customer = customerData ?? null;
     }
 
     if (!customer) {
@@ -220,7 +271,7 @@ export const AdminServices = () => {
 
     setIsSaving(true);
     const { error } = await supabase.from("services").insert({
-      user_id: customer.id,
+      user_id: customer.user_id,
       service_type: formState.serviceType.trim(),
       identifiers,
       supplier_reference: formState.supplierReference.trim() || null,
@@ -243,6 +294,7 @@ export const AdminServices = () => {
     setIsAddOpen(false);
     setFormState({
       userId: "",
+      accountNumber: "",
       serviceType: "broadband",
       identifiers: "{}",
       supplierReference: "",
@@ -315,7 +367,7 @@ export const AdminServices = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label className="font-display uppercase text-sm">Account Number</Label>
+                <Label className="font-display uppercase text-sm">Account Number (OCC…)</Label>
                 <Input
                   placeholder="OCC12345678"
                   value={formState.accountNumber}
@@ -324,11 +376,10 @@ export const AdminServices = () => {
                 />
                 {matchedCustomer && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Customer: {matchedCustomer.full_name || "Customer"}{" "}
-                    {matchedCustomer.email ? `· ${matchedCustomer.email}` : ""}
+                    Customer: {matchedCustomer.full_name || "Customer"} ({matchedCustomer.email || "no email"})
                   </p>
                 )}
-                {!matchedCustomer && isAccountNumberValid && !isLookingUpCustomer && (
+                {!matchedCustomer && normalizedAccountNumber && !isLookingUpCustomer && (
                   <p className="mt-2 text-xs text-muted-foreground">
                     No customer found for {normalizedAccountNumber}.
                   </p>

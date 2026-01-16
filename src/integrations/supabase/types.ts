@@ -49,6 +49,33 @@ export type Database = {
           },
         ]
       }
+      customers: {
+        Row: {
+          account_number: string
+          created_at: string
+          email: string | null
+          full_name: string | null
+          phone: string | null
+          user_id: string
+        }
+        Insert: {
+          account_number: string
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          phone?: string | null
+          user_id: string
+        }
+        Update: {
+          account_number?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          phone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       dd_mandates: {
         Row: {
           bank_last4: string | null

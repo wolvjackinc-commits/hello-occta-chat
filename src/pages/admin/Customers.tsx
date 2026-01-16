@@ -31,8 +31,8 @@ export const AdminCustomers = () => {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       let query = supabase
-        .from("profiles")
-        .select("id, full_name, email, phone, account_number, created_at", { count: "exact" })
+        .from("customers")
+        .select("user_id, full_name, email, phone, account_number, created_at", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -51,7 +51,7 @@ export const AdminCustomers = () => {
         if (!ids.length) {
           return { profiles: [], count: 0 };
         }
-        query = query.in("id", ids);
+        query = query.in("user_id", ids);
       }
 
       const { data: profiles, error, count } = await query;
@@ -94,32 +94,35 @@ export const AdminCustomers = () => {
       </Card>
 
       <div className="grid gap-4">
-        {data?.profiles?.map((profile) => (
-          <Card key={profile.id} className="border-2 border-foreground p-4">
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="font-display text-lg">{profile.account_number || "Account —"}</div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCopyAccount(profile.account_number)}
-                    disabled={!profile.account_number}
-                    aria-label="Copy account number"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
+        {data?.profiles?.map((profile) => {
+          const accountNumber = profile.account_number?.toUpperCase() || "Account —";
+          return (
+            <Card key={profile.user_id} className="border-2 border-foreground p-4">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="font-display text-lg">{accountNumber}</div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleCopyAccount(accountNumber === "Account —" ? null : accountNumber)}
+                      disabled={accountNumber === "Account —"}
+                      aria-label="Copy account number"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="text-sm text-muted-foreground">{profile.full_name || "Unknown customer"}</div>
+                  <div className="text-sm text-muted-foreground">{profile.email}</div>
                 </div>
-                <div className="text-sm text-muted-foreground">{profile.full_name || "Unknown customer"}</div>
-                <div className="text-sm text-muted-foreground">{profile.email}</div>
+                <Button asChild>
+                  <Link to={`/admin/customers/${profile.user_id}`}>Open</Link>
+                </Button>
               </div>
-              <Button asChild>
-                <Link to={`/admin/customers/${profile.id}`}>Open</Link>
-              </Button>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
         {isFetching && <p className="text-sm text-muted-foreground">Loading customers...</p>}
       </div>
 

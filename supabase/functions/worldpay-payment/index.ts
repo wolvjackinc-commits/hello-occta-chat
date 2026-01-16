@@ -69,10 +69,21 @@ serve(async (req) => {
               successURL: `${returnUrl}?status=success&invoiceId=${invoiceId}`,
               failureURL: `${returnUrl}?status=failed&invoiceId=${invoiceId}`,
               cancelURL: `${returnUrl}?status=cancelled&invoiceId=${invoiceId}`,
+              // Optional extras to avoid user dead-ends (Worldpay may ignore if not supported on account)
+              errorURL: `${returnUrl}?status=failed&invoiceId=${invoiceId}`,
+              pendingURL: `${returnUrl}?status=pending&invoiceId=${invoiceId}`,
+              expiryURL: `${returnUrl}?status=failed&invoiceId=${invoiceId}`,
             },
-            billingAddress: customerEmail ? {
-              email: customerEmail,
-            } : undefined,
+            // HPP schema does not allow billingAddress.email; email belongs in riskData
+            ...(customerEmail
+              ? {
+                  riskData: {
+                    account: {
+                      email: customerEmail,
+                    },
+                  },
+                }
+              : {}),
           }),
         });
 
@@ -82,29 +93,35 @@ serve(async (req) => {
 
         if (!response.ok) {
           console.error('Failed to create HPP session:', result);
-          return new Response(JSON.stringify({
-            success: false,
-            error: result.message || result.errorName || 'Failed to create payment session',
-            details: result,
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: result.message || result.errorName || 'Failed to create payment session',
+              details: result,
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
         }
 
-        // Extract the checkout URL from the response
-        const checkoutUrl = result._links?.checkout?.href;
+        // Extract the checkout URL from the response (docs: `url` OR HAL link)
+        const checkoutUrl = result.url ?? result._links?.checkout?.href;
 
         if (!checkoutUrl) {
           console.error('No checkout URL in response:', result);
-          return new Response(JSON.stringify({
-            success: false,
-            error: 'No checkout URL returned from Worldpay',
-            details: result,
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'No checkout URL returned from Worldpay',
+              details: result,
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
         }
 
         // Log the payment attempt

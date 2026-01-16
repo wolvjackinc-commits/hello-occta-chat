@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin, Bot, LayoutDashboard, Ticket, Shield } from "lucide-react";
+import { Phone, Mail, Bot, LayoutDashboard, Ticket, Shield } from "lucide-react";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -87,16 +87,6 @@ const Footer = () => {
                 </div>
                 <span>hello@occta.co.uk</span>
               </a>
-              <div className="flex items-start gap-3 text-background/80">
-                <div className="p-2 bg-primary/20">
-                  <MapPin className="w-4 h-4" />
-                </div>
-                <span className="text-sm">
-                  22 Pavilion View<br />
-                  Huddersfield<br />
-                  HD3 3WU
-                </span>
-              </div>
               <div className="flex items-center gap-3 text-background/60 text-sm">
                 <div className="p-2 bg-background/10">
                   <Phone className="w-4 h-4" />
@@ -171,6 +161,9 @@ const Footer = () => {
               <span>•</span>
               <span>UK Registered</span>
             </div>
+          </div>
+          <div className="mt-2 text-xs text-background/60 text-center md:text-left">
+            Registered address: 22 Pavilion View, Huddersfield, HD3 3WU, United Kingdom.
           </div>
           <div className="flex items-center justify-center gap-2 mt-4 text-xs text-background/60">
             <Shield className="w-4 h-4" />

@@ -40,12 +40,22 @@ interface AIChatBotProps {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
-const quickActions = [
-  { label: "📄 Get my latest bill", message: "I'd like to get my latest bill" },
-  { label: "Compare broadband plans", message: "Help me choose a broadband plan" },
-  { label: "View my orders", message: "I'd like to check my orders" },
-  { label: "SIM plan options", message: "What SIM plans do you offer?" },
-  { label: "Bundle discount", message: "How do bundle discounts work?" },
+// Default quick actions for customers
+const defaultQuickActions = [
+  { label: "🔍 Compare Plans", message: "Help me compare your broadband and SIM plans" },
+  { label: "📱 SIM Only", message: "What SIM-only plans do you offer?" },
+  { label: "🌐 Broadband", message: "Tell me about your broadband plans" },
+  { label: "👤 My OCCTA Account", message: "I'd like help with my OCCTA account" },
+  { label: "🔄 Switching Help", message: "How do I switch to OCCTA from my current provider?" },
+  { label: "💬 Speak to Support", message: "I need to speak to human support" },
+];
+
+// Admin quick actions
+const adminQuickActions = [
+  { label: "🧾 Find Customer", message: "I need to look up a customer account" },
+  { label: "📦 Add Service", message: "Help me add a new service for a customer" },
+  { label: "🎟 Open Ticket", message: "I need to create a support ticket" },
+  { label: "⚙ System Status", message: "What's the current system status?" },
 ];
 
 const STORAGE_KEY = "occta-ai-chat";
@@ -58,6 +68,7 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentMeta[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -83,16 +94,8 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
-    } else {
-      setMessages([
-        {
-          id: "welcome",
-          role: "assistant",
-          content: "Hi! I’m OCCTA’s AI assistant. Ask me about plans, billing, orders, or anything else.",
-          createdAt: new Date().toISOString(),
-        },
-      ]);
     }
+    // Welcome message is set in the userState useEffect
   }, []);
 
   // Persist chat history
@@ -102,18 +105,65 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
     }
   }, [messages]);
 
-  // Get current user
+  // Get current user and check admin status
   useEffect(() => {
+    const checkAdminStatus = async (userId: string) => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .single();
+      setIsAdmin(!!data);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
+      if (session?.user?.id) {
+        checkAdminStatus(session.user.id);
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user?.id) {
+        checkAdminStatus(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Set welcome message based on user state
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) return; // Already have messages
+
+    let welcomeContent: string;
+    if (isAdmin) {
+      welcomeContent = "🔐 Admin mode active.\nHi! I'm IRA, ready to help with customers, services, tickets, or system checks.";
+    } else if (user) {
+      welcomeContent = `Welcome back! 😊\nI'm IRA — want help with your services, billing, or something else today?`;
+    } else {
+      welcomeContent = "👋 Hey! I'm IRA, your Intelligent Reliable Assistant.\nI can help you compare broadband & SIM plans, explain how switching works, or answer questions — no pressure, no contracts 🙂";
+    }
+
+    setMessages([
+      {
+        id: "welcome",
+        role: "assistant",
+        content: welcomeContent,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+  }, [user, isAdmin]);
+
+  // Get the appropriate quick actions based on user role
+  const quickActions = isAdmin 
+    ? [...adminQuickActions, ...defaultQuickActions.slice(0, 2)] 
+    : defaultQuickActions;
 
   // Focus input when chat opens
   useEffect(() => {
@@ -251,11 +301,14 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
 
   const handleClearChat = () => {
     localStorage.removeItem(STORAGE_KEY);
+    const resetMessage = isAdmin 
+      ? "🔐 Fresh start! What would you like help with?"
+      : "Fresh start! 😊 What can I help you with today?";
     setMessages([
       {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: "Fresh start! What can I help you with?",
+        content: resetMessage,
         createdAt: new Date().toISOString(),
       },
     ]);
@@ -324,7 +377,9 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">
                 <div className="flex items-center gap-2">
                   <Bot className="w-5 h-5 text-primary-foreground" />
-                  <span className="font-display text-primary-foreground uppercase text-sm">OCCTA Assistant</span>
+                  <span className="font-display text-primary-foreground uppercase text-sm">
+                    {isAdmin ? "IRA Admin" : "IRA"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
@@ -363,9 +418,13 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
                       <div className="space-y-4">
                         <div className="text-center">
                           <Bot className="w-12 h-12 mx-auto mb-3 text-primary" />
-                          <h3 className="font-display text-lg mb-1">Hi there! 👋</h3>
+                          <h3 className="font-display text-lg mb-1">
+                            {isAdmin ? "🔐 Admin Mode" : "Hey there! 👋"}
+                          </h3>
                           <p className="text-sm text-muted-foreground">
-                            I'm OCCTA's AI assistant. How can I help you today?
+                            {isAdmin 
+                              ? "I'm IRA, ready to help with customers, services, or tickets."
+                              : "I'm IRA — no pressure, no contracts, just honest help 🙂"}
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -545,7 +604,9 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
       <div className="bg-primary px-4 py-3 flex items-center justify-between gap-2 border-b-4 border-foreground">
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5 text-primary-foreground" />
-          <span className="font-display text-primary-foreground uppercase text-sm">AI Assistant</span>
+          <span className="font-display text-primary-foreground uppercase text-sm">
+            {isAdmin ? "IRA Admin" : "IRA"}
+          </span>
         </div>
         <button
           onClick={handleClearChat}
@@ -562,7 +623,9 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
             <div className="text-center">
               <Bot className="w-10 h-10 mx-auto mb-2 text-primary" />
               <p className="text-sm text-muted-foreground">
-                Ask me anything about our services, your account, or get help choosing a plan!
+                {isAdmin 
+                  ? "I'm IRA, ready to help with customers, services, or tickets."
+                  : "I'm IRA — ask about plans, switching, or your account. No pressure! 🙂"}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">

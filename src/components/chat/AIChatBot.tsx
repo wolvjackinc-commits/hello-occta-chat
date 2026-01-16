@@ -314,14 +314,11 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
               animate={{ 
                 opacity: 1, 
                 scale: 1, 
-                y: 0
+                y: 0,
+                height: isMinimized ? "auto" : "min(600px, calc(100dvh - 8rem))"
               }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`fixed right-4 left-4 z-40 w-full max-w-[calc(100vw-32px)] bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden ${
-                isMinimized
-                  ? "bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:bottom-24 h-auto"
-                  : "bottom-[calc(1rem+env(safe-area-inset-bottom))] top-[calc(1rem+env(safe-area-inset-top))] h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:top-auto sm:bottom-24 sm:h-[min(600px,calc(100dvh-8rem))]"
-              } sm:left-auto sm:w-[360px] ${className}`}
+              className={`fixed bottom-4 sm:bottom-24 right-4 z-40 w-[360px] max-w-[calc(100vw-32px)] max-h-[calc(100dvh-2rem)] bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
             >
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">

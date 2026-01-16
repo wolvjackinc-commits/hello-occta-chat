@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -18,7 +18,6 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { isAccountNumberValid } from "@/lib/validators";
 import { format } from "date-fns";
 import { PauseCircle, PlayCircle, Plus } from "lucide-react";
 
@@ -41,15 +40,9 @@ type Profile = {
   account_number: string | null;
 };
 
-type Customer = {
-  user_id: string;
-  full_name: string | null;
-  email: string | null;
-  account_number: string;
-};
-
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
 const allowedServiceTypes = ["broadband", "landline", "sim", "mobile"] as const;
+const isAccountNumberValid = (value: string) => /^OCC\d{8}$/.test(value);
 
 const formatDate = (value?: string | null) => {
   if (!value) return "—";
@@ -93,10 +86,9 @@ export const AdminServices = () => {
   const [suspendService, setSuspendService] = useState<Service | null>(null);
   const [resumeService, setResumeService] = useState<Service | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
-  const [matchedCustomer, setMatchedCustomer] = useState<Customer | null>(null);
+  const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
   const [isLookingUpCustomer, setIsLookingUpCustomer] = useState(false);
   const [formState, setFormState] = useState({
-    userId: "",
     accountNumber: "",
     serviceType: "broadband",
     identifiers: "{}",
@@ -107,13 +99,42 @@ export const AdminServices = () => {
   const isServiceTypeValid = allowedServiceTypes.includes(
     formState.serviceType as (typeof allowedServiceTypes)[number],
   );
-  const accountNumber = formState.accountNumber;
   const accountNumberInput = formState.accountNumber;
-  const normalizedAccountNumber = (accountNumber ?? accountNumberInput ?? "")
-    .toString()
-    .trim()
-    .toUpperCase();
+  const normalizedAccountNumber = (accountNumberInput ?? "").trim().toUpperCase();
   const isNormalizedAccountNumberValid = isAccountNumberValid(normalizedAccountNumber);
+
+  useEffect(() => {
+    if (!normalizedAccountNumber || !isNormalizedAccountNumberValid) {
+      setMatchedCustomer(null);
+      setIsLookingUpCustomer(false);
+      return;
+    }
+
+    let isActive = true;
+    setIsLookingUpCustomer(true);
+    setMatchedCustomer(null);
+    supabase
+      .from("profiles")
+      .select("id, account_number, email, full_name")
+      .eq("account_number", normalizedAccountNumber)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!isActive) return;
+        if (error) {
+          toast({ title: "Failed to find customer", description: error.message, variant: "destructive" });
+          setMatchedCustomer(null);
+          return;
+        }
+        setMatchedCustomer(data ?? null);
+      })
+      .finally(() => {
+        if (isActive) setIsLookingUpCustomer(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [isNormalizedAccountNumberValid, normalizedAccountNumber, toast]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -210,25 +231,7 @@ export const AdminServices = () => {
       return;
     }
 
-    const currentCustomer =
-      matchedCustomer?.account_number === normalizedAccountNumber ? matchedCustomer : null;
-    let customer = currentCustomer;
-    if (!customer) {
-      const { data: customerData, error: customerError } = await supabase
-        .from("customers")
-        .select("user_id, account_number, full_name, email")
-        .eq("account_number", normalizedAccountNumber)
-        .maybeSingle();
-
-      if (customerError) {
-        toast({ title: "Failed to find customer", description: customerError.message, variant: "destructive" });
-        return;
-      }
-
-      customer = customerData ?? null;
-    }
-
-    if (!customer) {
+    if (!matchedCustomer) {
       toast({
         title: `Customer not found for ${normalizedAccountNumber}`,
         variant: "destructive",
@@ -238,7 +241,7 @@ export const AdminServices = () => {
 
     setIsSaving(true);
     const { error } = await supabase.from("services").insert({
-      user_id: customer.user_id,
+      user_id: matchedCustomer.id,
       service_type: formState.serviceType.trim(),
       identifiers,
       supplier_reference: formState.supplierReference.trim() || null,
@@ -260,7 +263,6 @@ export const AdminServices = () => {
     setIsSaving(false);
     setIsAddOpen(false);
     setFormState({
-      userId: "",
       accountNumber: "",
       serviceType: "broadband",
       identifiers: "{}",
@@ -343,7 +345,7 @@ export const AdminServices = () => {
                 />
                 {matchedCustomer && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Customer: {matchedCustomer.full_name || "Customer"} ({matchedCustomer.email || "no email"})
+                    Customer: {matchedCustomer.full_name ?? matchedCustomer.email ?? "Customer"}
                   </p>
                 )}
                 {!matchedCustomer && isNormalizedAccountNumberValid && !isLookingUpCustomer && (
@@ -417,7 +419,7 @@ export const AdminServices = () => {
               </div>
               <Button
                 onClick={handleAddService}
-                disabled={isSaving || !isServiceTypeValid}
+                disabled={isSaving || !isServiceTypeValid || !matchedCustomer}
                 className="w-full border-2 border-foreground"
               >
                 {isSaving ? "Saving..." : "Add service"}

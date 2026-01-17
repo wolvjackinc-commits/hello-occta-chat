@@ -5,7 +5,7 @@
                             http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   <!-- Homepage -->
   <url>
-    <loc>https://hello-occta-chat.lovable.app/</loc>
+    <loc>https://www.occta.co.uk/</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -13,19 +13,19 @@
   
   <!-- Main Service Pages -->
   <url>
-    <loc>https://hello-occta-chat.lovable.app/broadband</loc>
+    <loc>https://www.occta.co.uk/broadband</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://hello-occta-chat.lovable.app/sim-plans</loc>
+    <loc>https://www.occta.co.uk/sim-plans</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://hello-occta-chat.lovable.app/landline</loc>
+    <loc>https://www.occta.co.uk/landline</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
@@ -33,13 +33,13 @@
   
   <!-- Business Pages -->
   <url>
-    <loc>https://hello-occta-chat.lovable.app/business</loc>
+    <loc>https://www.occta.co.uk/business</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://hello-occta-chat.lovable.app/business-offers</loc>
+    <loc>https://www.occta.co.uk/business-offers</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
@@ -47,13 +47,13 @@
   
   <!-- Information Pages -->
   <url>
-    <loc>https://hello-occta-chat.lovable.app/about</loc>
+    <loc>https://www.occta.co.uk/about</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
-    <loc>https://hello-occta-chat.lovable.app/support</loc>
+    <loc>https://www.occta.co.uk/support</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
@@ -61,19 +61,19 @@
   
   <!-- Utility Pages -->
   <url>
-    <loc>https://hello-occta-chat.lovable.app/track-order</loc>
+    <loc>https://www.occta.co.uk/track-order</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.60</priority>
   </url>
   <url>
-    <loc>https://hello-occta-chat.lovable.app/status</loc>
+    <loc>https://www.occta.co.uk/status</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.65</priority>
   </url>
   <url>
-    <loc>https://hello-occta-chat.lovable.app/complaints</loc>
+    <loc>https://www.occta.co.uk/complaints</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
@@ -81,19 +81,19 @@
   
   <!-- Legal Pages -->
   <url>
-    <loc>https://hello-occta-chat.lovable.app/privacy</loc>
+    <loc>https://www.occta.co.uk/privacy</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.30</priority>
   </url>
   <url>
-    <loc>https://hello-occta-chat.lovable.app/terms</loc>
+    <loc>https://www.occta.co.uk/terms</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.30</priority>
   </url>
   <url>
-    <loc>https://hello-occta-chat.lovable.app/cookies</loc>
+    <loc>https://www.occta.co.uk/cookies</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.30</priority>
@@ -101,7 +101,7 @@
   
   <!-- Authentication -->
   <url>
-    <loc>https://hello-occta-chat.lovable.app/auth</loc>
+    <loc>https://www.occta.co.uk/auth</loc>
     <lastmod>2025-01-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.50</priority>

@@ -42,15 +42,22 @@ const organizationSchema = {
   sameAs: [],
 };
 
-// Local Business Schema with ratings
+// Local Business Schema with ratings - using LocalBusiness which supports aggregateRating and review
 const localBusinessSchema = {
   '@context': 'https://schema.org',
-  '@type': 'TelecommunicationsService',
+  '@type': 'LocalBusiness',
+  '@id': `${BASE_URL}/#localbusiness`,
   name: 'OCCTA',
   description: 'Cheap UK broadband, SIM plans, and landline services. No contracts, no hidden fees, cancel anytime.',
   url: BASE_URL,
   telephone: '+44-800-260-6627',
   priceRange: '£',
+  image: `${BASE_URL}/pwa-512x512.png`,
+  address: {
+    '@type': 'PostalAddress',
+    addressCountry: 'GB',
+    addressRegion: 'England',
+  },
   areaServed: {
     '@type': 'Country',
     name: 'United Kingdom',

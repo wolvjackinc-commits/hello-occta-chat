@@ -10,6 +10,9 @@ const corsHeaders = {
 const WORLDPAY_TRY_URL = "https://try.access.worldpay.com";
 const WORLDPAY_LIVE_URL = "https://access.worldpay.com";
 
+// Environment toggle - set WORLDPAY_LIVE_MODE=true in production
+const isLiveMode = Deno.env.get('WORLDPAY_LIVE_MODE') === 'true';
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,9 +31,11 @@ serve(async (req) => {
       throw new Error('Worldpay credentials not configured');
     }
 
-    // Using Try mode URL for testing
-    const baseUrl = WORLDPAY_TRY_URL;
+    // Select endpoint based on mode
+    const baseUrl = isLiveMode ? WORLDPAY_LIVE_URL : WORLDPAY_TRY_URL;
     const authHeader = 'Basic ' + btoa(`${worldpayUsername}:${worldpayPassword}`);
+
+    console.log(`Worldpay mode: ${isLiveMode ? 'LIVE' : 'TEST'}`);
 
     const { action, ...data } = await req.json();
 
@@ -43,7 +48,7 @@ serve(async (req) => {
           throw new Error('Missing required data (invoiceId, amount, returnUrl)');
         }
 
-        console.log('Creating HPP session for invoice:', invoiceId);
+        console.log('Creating HPP session for invoice:', invoiceId, 'mode:', isLiveMode ? 'LIVE' : 'TEST');
 
         // Create the payment page session
         const response = await fetch(`${baseUrl}/payment_pages`, {
@@ -130,7 +135,7 @@ serve(async (req) => {
           invoice_id: invoiceId,
           amount: amount,
           status: 'pending',
-          provider: 'worldpay_hpp',
+          provider: isLiveMode ? 'worldpay_hpp_live' : 'worldpay_hpp_test',
           provider_ref: result.transactionReference || result._links?.self?.href,
         });
 
@@ -138,6 +143,7 @@ serve(async (req) => {
           success: true,
           checkoutUrl,
           transactionReference: result.transactionReference,
+          mode: isLiveMode ? 'live' : 'test',
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -190,6 +196,19 @@ serve(async (req) => {
               method: 'card',
               reference: receiptRef,
               paid_at: new Date().toISOString(),
+            });
+
+            // Log audit
+            await supabase.from('audit_logs').insert({
+              actor_user_id: invoice.user_id,
+              action: 'payment_received',
+              entity: 'invoice',
+              entity_id: invoiceId,
+              metadata: {
+                amount: invoice.total,
+                method: 'worldpay_hpp',
+                receipt_ref: receiptRef,
+              },
             });
           }
 

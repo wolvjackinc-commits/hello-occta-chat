@@ -80,7 +80,138 @@ const getLateFeeEmailHtml = (data: {
           <a href="${siteUrl}/dashboard" class="cta">Pay Now →</a>
         </div>
         
-        <p style="color: #666; font-size: 13px; text-align: center;">Questions? Contact hello@occta.co.uk</p>
+        <p style="color: #666; font-size: 13px; text-align: center;">Questions? Contact hello@occta.co.uk or call 0333 772 1190</p>
+      </div>
+      <div class="footer">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+const getSuspensionWarningEmailHtml = (data: {
+  customer_name: string;
+  invoice_number: string;
+  amount: number;
+  days_until_suspension: number;
+}) => {
+  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');
+    body { margin: 0; padding: 0; background: #f5f4ef; font-family: 'Inter', sans-serif; }
+    .wrapper { padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    .header { background: #0d0d0d; padding: 32px; }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #fff; letter-spacing: 4px; }
+    .banner { background: #dc2626; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #fff; margin: 0; }
+    .content { padding: 32px; }
+    .warning-box { background: #fef2f2; border: 4px solid #dc2626; padding: 24px; margin: 24px 0; text-align: center; }
+    .countdown { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: #dc2626; }
+    .cta { display: inline-block; background: #dc2626; color: #fff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; }
+    .footer { background: #0d0d0d; padding: 28px; text-align: center; color: #888; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header"><div class="logo">OCCTA</div></div>
+      <div class="banner"><h1 class="title">🚨 FINAL WARNING - Service Suspension</h1></div>
+      <div class="content">
+        <p style="font-size: 18px; font-weight: 700;">Hi ${escapeHtml(data.customer_name)},</p>
+        <p style="margin: 16px 0; color: #333;">Your invoice <strong>${escapeHtml(data.invoice_number)}</strong> remains unpaid and your services are at risk of suspension.</p>
+        
+        <div class="warning-box">
+          <p style="margin: 0 0 12px 0; font-weight: 600;">SERVICE SUSPENSION IN</p>
+          <div class="countdown">${data.days_until_suspension} DAYS</div>
+          <p style="margin: 12px 0 0 0; font-size: 14px; color: #666;">Amount Due: <strong>£${data.amount.toFixed(2)}</strong></p>
+        </div>
+        
+        <p style="color: #333; font-size: 14px; line-height: 1.6;">
+          <strong>What happens if services are suspended:</strong><br>
+          • Your broadband/phone service will be disconnected<br>
+          • A reconnection fee may apply<br>
+          • Your account may be sent to collections
+        </p>
+        
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${siteUrl}/dashboard" class="cta">PAY NOW TO AVOID SUSPENSION →</a>
+        </div>
+        
+        <p style="color: #666; font-size: 13px; text-align: center;">
+          Need to discuss payment options? Contact us at hello@occta.co.uk or call 0333 772 1190
+        </p>
+      </div>
+      <div class="footer">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+const getServiceSuspendedEmailHtml = (data: {
+  customer_name: string;
+  service_type: string;
+  amount_owed: number;
+}) => {
+  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');
+    body { margin: 0; padding: 0; background: #f5f4ef; font-family: 'Inter', sans-serif; }
+    .wrapper { padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    .header { background: #0d0d0d; padding: 32px; }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #fff; letter-spacing: 4px; }
+    .banner { background: #7f1d1d; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #fff; margin: 0; }
+    .content { padding: 32px; }
+    .suspended-box { background: #1f2937; color: #fff; padding: 24px; margin: 24px 0; text-align: center; }
+    .suspended-icon { font-size: 48px; margin-bottom: 12px; }
+    .cta { display: inline-block; background: #16a34a; color: #fff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; }
+    .footer { background: #0d0d0d; padding: 28px; text-align: center; color: #888; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header"><div class="logo">OCCTA</div></div>
+      <div class="banner"><h1 class="title">⛔ Service Suspended</h1></div>
+      <div class="content">
+        <p style="font-size: 18px; font-weight: 700;">Hi ${escapeHtml(data.customer_name)},</p>
+        <p style="margin: 16px 0; color: #333;">Due to non-payment of your account, your ${escapeHtml(data.service_type)} service has been suspended.</p>
+        
+        <div class="suspended-box">
+          <div class="suspended-icon">⛔</div>
+          <p style="font-family: 'Bebas Neue', sans-serif; font-size: 24px; margin: 0;">SERVICE SUSPENDED</p>
+          <p style="margin: 12px 0 0 0; font-size: 14px; opacity: 0.8;">Outstanding Balance: £${data.amount_owed.toFixed(2)}</p>
+        </div>
+        
+        <p style="color: #333; font-size: 14px; line-height: 1.6;">
+          <strong>To restore your service:</strong><br>
+          1. Pay your outstanding balance in full<br>
+          2. A reconnection fee of £25 may apply<br>
+          3. Service will be restored within 24 hours of payment
+        </p>
+        
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${siteUrl}/dashboard" class="cta">PAY NOW TO RESTORE SERVICE →</a>
+        </div>
+        
+        <p style="color: #666; font-size: 13px; text-align: center;">
+          Contact us at hello@occta.co.uk or call 0333 772 1190 to discuss payment options.
+        </p>
       </div>
       <div class="footer">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
     </div>
@@ -110,8 +241,11 @@ serve(async (req) => {
       statusUpdates: 0,
       lateFeesApplied: 0,
       suspensionWarnings: 0,
+      servicesSuspended: 0,
       errors: [] as string[],
     };
+
+    console.log('Starting late fee processing...');
 
     // 1. Update overdue status for invoices past due date
     const overdueThreshold = new Date(today);
@@ -194,6 +328,14 @@ serve(async (req) => {
             });
           }
 
+          // Log audit
+          await supabase.from('audit_logs').insert({
+            action: 'late_fee_applied',
+            entity: 'invoice',
+            entity_id: invoice.id,
+            metadata: { amount: LATE_FEE_AMOUNT, days_overdue: daysOverdue },
+          });
+
           results.lateFeesApplied++;
           console.log(`Applied late fee to invoice ${invoice.invoice_number}`);
         } catch (err) {
@@ -213,42 +355,144 @@ serve(async (req) => {
         id,
         invoice_number,
         total,
-        user_id
+        user_id,
+        due_date
       `)
       .eq('status', 'overdue')
-      .lt('due_date', suspensionWarningThreshold.toISOString().split('T')[0])
-      .gte('due_date', new Date(suspensionWarningThreshold.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      .is('overdue_notified_at', null)
+      .lte('due_date', suspensionWarningThreshold.toISOString().split('T')[0]);
 
     if (warningInvoices && warningInvoices.length > 0) {
       for (const invoice of warningInvoices) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email')
-          .eq('id', invoice.user_id)
-          .single();
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', invoice.user_id)
+            .single();
 
-        if (profile?.email) {
-          await resend.emails.send({
-            from: 'OCCTA Billing <billing@occta.co.uk>',
-            to: [profile.email],
-            subject: `🚨 Final Warning - Service Suspension in 9 days`,
-            html: `
-              <p>Hi ${profile.full_name || 'Customer'},</p>
-              <p>Your invoice ${invoice.invoice_number} is 21 days overdue.</p>
-              <p><strong>Your service will be suspended in 9 days if payment is not received.</strong></p>
-              <p>Amount due: £${invoice.total.toFixed(2)}</p>
-              <p>Please pay immediately to avoid service interruption.</p>
-            `,
-          });
-          results.suspensionWarnings++;
+          const daysOverdue = Math.floor((today.getTime() - new Date(invoice.due_date!).getTime()) / (1000 * 60 * 60 * 24));
+          const daysUntilSuspension = SUSPENSION_DAYS - daysOverdue;
+
+          if (profile?.email && daysUntilSuspension > 0) {
+            await resend.emails.send({
+              from: 'OCCTA Billing <billing@occta.co.uk>',
+              to: [profile.email],
+              subject: `🚨 FINAL WARNING - Service Suspension in ${daysUntilSuspension} days`,
+              html: getSuspensionWarningEmailHtml({
+                customer_name: profile.full_name || 'Customer',
+                invoice_number: invoice.invoice_number,
+                amount: invoice.total,
+                days_until_suspension: daysUntilSuspension,
+              }),
+            });
+
+            // Mark as warned
+            await supabase
+              .from('invoices')
+              .update({ overdue_notified_at: new Date().toISOString() })
+              .eq('id', invoice.id);
+
+            results.suspensionWarnings++;
+            console.log(`Sent suspension warning for invoice ${invoice.invoice_number}`);
+          }
+        } catch (err) {
+          console.error(`Error sending suspension warning for ${invoice.invoice_number}:`, err);
         }
       }
     }
 
+    // 4. SUSPEND SERVICES at 30 days overdue
+    const suspensionThreshold = new Date(today);
+    suspensionThreshold.setDate(suspensionThreshold.getDate() - SUSPENSION_DAYS);
+
+    const { data: suspensionInvoices } = await supabase
+      .from('invoices')
+      .select(`
+        id,
+        invoice_number,
+        total,
+        user_id,
+        service_id
+      `)
+      .eq('status', 'overdue')
+      .lte('due_date', suspensionThreshold.toISOString().split('T')[0]);
+
+    if (suspensionInvoices && suspensionInvoices.length > 0) {
+      for (const invoice of suspensionInvoices) {
+        try {
+          // Get user's active services
+          const { data: services } = await supabase
+            .from('services')
+            .select('id, service_type, status')
+            .eq('user_id', invoice.user_id)
+            .eq('status', 'active');
+
+          if (services && services.length > 0) {
+            // Suspend all active services for this user
+            for (const service of services) {
+              await supabase
+                .from('services')
+                .update({
+                  status: 'suspended',
+                  suspension_reason: `Non-payment - Invoice ${invoice.invoice_number} overdue 30+ days`,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', service.id);
+
+              console.log(`Suspended service ${service.id} (${service.service_type}) for user ${invoice.user_id}`);
+            }
+
+            // Get customer details and notify
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', invoice.user_id)
+              .single();
+
+            if (profile?.email) {
+              const serviceTypes = services.map(s => s.service_type).join(', ');
+              
+              await resend.emails.send({
+                from: 'OCCTA Billing <billing@occta.co.uk>',
+                to: [profile.email],
+                subject: `⛔ Your OCCTA Service Has Been Suspended`,
+                html: getServiceSuspendedEmailHtml({
+                  customer_name: profile.full_name || 'Customer',
+                  service_type: serviceTypes,
+                  amount_owed: invoice.total,
+                }),
+              });
+            }
+
+            // Log audit
+            await supabase.from('audit_logs').insert({
+              action: 'service_suspended',
+              entity: 'user',
+              entity_id: invoice.user_id,
+              metadata: {
+                invoice_id: invoice.id,
+                invoice_number: invoice.invoice_number,
+                services_suspended: services.length,
+                reason: 'non_payment_30_days',
+              },
+            });
+
+            results.servicesSuspended += services.length;
+          }
+        } catch (err) {
+          console.error(`Error suspending services for invoice ${invoice.invoice_number}:`, err);
+          results.errors.push(`Failed to suspend for ${invoice.invoice_number}`);
+        }
+      }
+    }
+
+    console.log('Late fee processing complete:', results);
+
     return new Response(JSON.stringify({
       success: true,
       ...results,
-      message: `Processed: ${results.statusUpdates} status updates, ${results.lateFeesApplied} late fees, ${results.suspensionWarnings} warnings`,
+      message: `Processed: ${results.statusUpdates} status updates, ${results.lateFeesApplied} late fees, ${results.suspensionWarnings} warnings, ${results.servicesSuspended} services suspended`,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

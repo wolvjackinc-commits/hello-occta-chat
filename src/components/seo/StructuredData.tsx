@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 
-const BASE_URL = 'https://hello-occta-chat.lovable.app';
+const BASE_URL = 'https://www.occta.co.uk';
 
 // Organization Schema with enhanced details
 const organizationSchema = {

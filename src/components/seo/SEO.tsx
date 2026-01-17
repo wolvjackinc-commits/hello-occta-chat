@@ -12,7 +12,7 @@ interface SEOProps {
   priceCurrency?: string;
 }
 
-const BASE_URL = 'https://hello-occta-chat.lovable.app';
+const BASE_URL = 'https://www.occta.co.uk';
 const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
 const SITE_NAME = 'OCCTA';
 const DEFAULT_KEYWORDS = 'cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband, fibre broadband no contract, unlimited broadband UK, OCCTA';

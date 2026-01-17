@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletions: {
+        Row: {
+          account_number: string | null
+          deleted_at: string
+          deleted_by: string
+          email: string
+          full_name: string | null
+          id: string
+          original_user_id: string
+          reason: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          deleted_at?: string
+          deleted_by?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          original_user_id: string
+          reason?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          deleted_at?: string
+          deleted_by?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          original_user_id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -644,6 +677,7 @@ export type Database = {
           account_number: string | null
           address_line1: string | null
           address_line2: string | null
+          admin_notes: string | null
           city: string | null
           created_at: string
           date_of_birth: string | null
@@ -658,6 +692,7 @@ export type Database = {
           account_number?: string | null
           address_line1?: string | null
           address_line2?: string | null
+          admin_notes?: string | null
           city?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -672,6 +707,7 @@ export type Database = {
           account_number?: string | null
           address_line1?: string | null
           address_line2?: string | null
+          admin_notes?: string | null
           city?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -758,6 +794,7 @@ export type Database = {
           created_at: string
           id: string
           identifiers: Json
+          provisioned_at: string | null
           service_type: string
           status: string
           supplier_ref: string | null
@@ -771,6 +808,7 @@ export type Database = {
           created_at?: string
           id?: string
           identifiers?: Json
+          provisioned_at?: string | null
           service_type: string
           status?: string
           supplier_ref?: string | null
@@ -784,6 +822,7 @@ export type Database = {
           created_at?: string
           id?: string
           identifiers?: Json
+          provisioned_at?: string | null
           service_type?: string
           status?: string
           supplier_ref?: string | null
@@ -796,6 +835,7 @@ export type Database = {
       }
       support_tickets: {
         Row: {
+          assigned_to: string | null
           category: string | null
           created_at: string
           description: string
@@ -807,6 +847,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_to?: string | null
           category?: string | null
           created_at?: string
           description: string
@@ -818,6 +859,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_to?: string | null
           category?: string | null
           created_at?: string
           description?: string

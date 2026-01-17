@@ -203,7 +203,7 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
             <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}" class="footer-link">Website</a>
           </div>
           <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
-          <div class="footer-address">Questions? Reply to this email or call us at 0800 XXX XXXX</div>
+          <div class="footer-address">Questions? Reply to this email or call us at 0333 772 1190</div>
         </div>
       </div>
     </div>

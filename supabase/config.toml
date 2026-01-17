@@ -18,6 +18,15 @@ verify_jwt = false
 [functions.process-late-fees]
 verify_jwt = false
 
+[functions.worldpay-payment]
+verify_jwt = false
+
+[functions.worldpay-webhook]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
 # Cron job: Run payment reminders daily at 9:00 AM UTC
 [[cron_jobs]]
 name = "daily-payment-reminders"

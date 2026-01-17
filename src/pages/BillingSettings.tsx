@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { AccountDeletion } from "@/components/dashboard/AccountDeletion";
 import {
   Select,
   SelectContent,
@@ -402,6 +403,11 @@ export default function BillingSettings() {
                 Save Settings
               </Button>
             </motion.div>
+          </motion.div>
+
+          {/* Account Deletion */}
+          <motion.div variants={itemVariants}>
+            {user?.email && <AccountDeletion userEmail={user.email} />}
           </motion.div>
         </motion.div>
       </div>

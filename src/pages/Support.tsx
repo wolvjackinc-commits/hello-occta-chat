@@ -278,9 +278,10 @@ const Support = () => {
   return (
     <Layout>
       <SEO 
-        title="Help & Support Hub"
-        description="Get instant help with OCCTA services. Use our AI assistant, browse FAQs, or manage everything from your account dashboard. Self-service solutions available 24/7."
+        title="Help & Support - 24/7 Customer Service"
+        description="OCCTA Support Hub – UK-based help for broadband, SIM and landline. AI chat, FAQs, ticket system. Fast resolution guaranteed."
         canonical="/support"
+        keywords="OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, landline help"
       />
       <StructuredData customSchema={faqSchema} type="localBusiness" />
       

@@ -50,9 +50,11 @@ const Index = () => {
   return (
     <Layout>
       <SEO 
-        title="Home"
-        description="OCCTA provides affordable broadband, SIM plans, and landline services across the UK. Check availability and get connected today with speeds up to 900Mbps."
+        title="Cheap UK Broadband & SIM Plans"
+        description="Cheap broadband UK from £22.99/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £7.99, landline from £7.99. No credit check, cancel anytime. Get connected today!"
         canonical="/"
+        keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband"
+        price="22.99"
       />
       <HeroSection />
       <ServicesSection />

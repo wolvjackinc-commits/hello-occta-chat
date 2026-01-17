@@ -65,9 +65,11 @@ const Landline = () => {
   return (
     <LayoutComponent>
       <SEO 
-        title="Landline Plans"
-        description="UK landline phone plans from £7.99/mo. Crystal clear digital voice, fraud protection, free voicemail. No contracts."
+        title="Cheap Landline Deals UK - No Contract"
+        description="Cheap landline UK from £7.99/mo. No contract home phone, fraud protection, free voicemail. Digital voice clarity. Cancel anytime."
         canonical="/landline"
+        keywords="cheap landline UK, no contract landline, home phone deals, cheap home phone UK, landline no contract, budget landline, affordable landline UK"
+        price="7.99"
       />
       <StructuredData customSchema={landlineServiceSchema} type="localBusiness" />
       {/* Hero - Compact */}

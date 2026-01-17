@@ -48,25 +48,25 @@ const HeroSection = () => {
             initial="hidden"
             animate="visible"
           >
-            {/* Headline - Large and Prominent */}
+            {/* Headline - Large and Prominent with Keywords */}
             <motion.h1 
               variants={itemVariants} 
               className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display uppercase leading-[0.9] tracking-tight text-foreground"
             >
-              UK Broadband
+              Cheap UK
               <br />
-              &amp; SIM Plans
+              Broadband
               <br />
-              <span className="text-gradient">Without Contracts</span>
+              <span className="text-gradient">No Contracts</span>
             </motion.h1>
 
-            {/* Subheadline */}
+            {/* Subheadline with Keywords */}
             <motion.p 
               variants={itemVariants} 
               className="text-lg text-muted-foreground max-w-lg"
             >
-              Affordable telecom UK-wide without contracts, hidden fees, or lock-ins. Same UK networks,
-              lower prices, and available across the UK.
+              Cheap broadband UK from £22.99/mo. Cancel anytime broadband with no hidden fees or lock-ins. 
+              5G SIM plans and landline available UK-wide.
             </motion.p>
 
             {/* Benefits Row */}

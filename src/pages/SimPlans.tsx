@@ -66,9 +66,11 @@ const SimPlans = () => {
   return (
     <LayoutComponent>
       <SEO 
-        title="SIM Plans"
-        description="UK SIM-only mobile plans from £7.99/mo. Full 5G network, EU roaming included, no credit checks, no contracts. Order your SIM today."
+        title="Cheap SIM Only Deals UK - 5G No Contract"
+        description="Cheap SIM deals UK from £7.99/mo. 5G SIM no credit check, no contracts, EU roaming included. Best budget SIM plans 2025. Unlimited calls & texts."
         canonical="/sim-plans"
+        keywords="cheap SIM deals UK, 5G SIM no credit check, no contract SIM, cheap mobile plans UK, SIM only deals, budget SIM UK, unlimited SIM UK, PAYG SIM cheap, best SIM deals 2025"
+        price="7.99"
       />
       <StructuredData customSchema={simServiceSchema} type="localBusiness" />
       {/* Hero - Compact */}

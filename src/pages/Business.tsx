@@ -126,9 +126,11 @@ const Business = () => {
   return (
     <LayoutComponent>
       <SEO 
-        title="Business Broadband"
-        description="Business fibre broadband from £24/mo. Static IPs, priority support, no contracts. Trusted by 5,000+ UK businesses."
+        title="Business Broadband UK - No Contract"
+        description="Cheap business broadband UK from £24/mo. Static IP, priority support, no contracts. Trusted by 5,000+ UK businesses. WiFi 6 routers included."
         canonical="/business"
+        keywords="business broadband UK, cheap business internet, no contract business broadband, static IP broadband, SME broadband, business fibre UK, affordable business internet"
+        price="24"
       />
       <StructuredData customSchema={businessServiceSchema} type="localBusiness" />
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">

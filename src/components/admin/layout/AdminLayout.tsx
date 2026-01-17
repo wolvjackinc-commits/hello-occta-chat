@@ -16,6 +16,7 @@ import {
   Wrench,
   Search,
   Zap,
+  ScrollText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ const navItems = [
   { label: "Installations", to: "/admin/installations", icon: CalendarDays },
   { label: "Plans", to: "/admin/plans", icon: FileText },
   { label: "Compliance", to: "/admin/compliance", icon: Shield },
+  { label: "Audit Log", to: "/admin/audit-log", icon: ScrollText },
   { label: "Settings", to: "/admin/settings", icon: Settings },
 ];
 

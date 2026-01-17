@@ -10,9 +10,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Json } from "@/integrations/supabase/types";
-import { Copy, ArrowLeft } from "lucide-react";
+import { Copy, ArrowLeft, Pencil, StickyNote } from "lucide-react";
 import { format } from "date-fns";
 import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
+import { CustomerEditDialog } from "@/components/admin/CustomerEditDialog";
 import { logAudit } from "@/lib/audit";
 import { normalizeAccountNumber, isAccountNumberValid } from "@/lib/account";
 
@@ -163,22 +164,34 @@ export const AdminCustomerDetail = () => {
         <ArrowLeft className="h-4 w-4" />
         Back to customers
       </Button>
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-display">{overview.account_number || "Account —"}</h1>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => handleCopy(overview.account_number, "Account number")}
-            disabled={!overview.account_number}
-            aria-label="Copy account number"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-display">{overview.account_number || "Account —"}</h1>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => handleCopy(overview.account_number, "Account number")}
+              disabled={!overview.account_number}
+              aria-label="Copy account number"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-muted-foreground">{overview.full_name || "Customer"}</p>
+          <p className="text-muted-foreground">{overview.email}</p>
         </div>
-        <p className="text-muted-foreground">{overview.full_name || "Customer"}</p>
-        <p className="text-muted-foreground">{overview.email}</p>
+        <CustomerEditDialog
+          customer={overview}
+          onSaved={refetch}
+          trigger={
+            <Button variant="outline" className="border-2 border-foreground">
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit Customer
+            </Button>
+          }
+        />
       </div>
 
       <Tabs defaultValue="overview">
@@ -220,6 +233,17 @@ export const AdminCustomerDetail = () => {
                 </div>
               </div>
             </Card>
+            {overview.admin_notes && (
+              <Card className="border-2 border-warning/50 bg-warning/10 p-4">
+                <div className="flex items-start gap-3">
+                  <StickyNote className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs uppercase text-muted-foreground font-display mb-1">Internal Notes</div>
+                    <p className="text-sm whitespace-pre-wrap">{overview.admin_notes}</p>
+                  </div>
+                </div>
+              </Card>
+            )}
             <Accordion type="single" collapsible>
               <AccordionItem value="advanced">
                 <AccordionTrigger>Advanced</AccordionTrigger>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { TicketReplyDialog } from "@/components/admin/TicketReplyDialog";
 import { logAudit } from "@/lib/audit";
 import { useToast } from "@/hooks/use-toast";
+import { UserCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -30,7 +31,7 @@ export const AdminTickets = () => {
     queryFn: async () => {
       const { data: tickets } = await supabase
         .from("support_tickets")
-        .select("id, user_id, subject, description, status, priority, category, created_at")
+        .select("id, user_id, subject, description, status, priority, category, assigned_to, created_at")
         .order("created_at", { ascending: false });
 
       const userIds = tickets?.map((ticket) => ticket.user_id) ?? [];
@@ -39,7 +40,23 @@ export const AdminTickets = () => {
         .select("id, full_name, email")
         .in("id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]);
 
-      return { tickets: tickets ?? [], profiles: profiles ?? [] };
+      // Get admin users for assignment dropdown
+      const { data: adminRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      
+      const adminIds = adminRoles?.map((r) => r.user_id) ?? [];
+      let adminProfiles: { id: string; full_name: string | null; email: string | null }[] = [];
+      if (adminIds.length > 0) {
+        const { data: admins } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", adminIds);
+        adminProfiles = admins ?? [];
+      }
+
+      return { tickets: tickets ?? [], profiles: profiles ?? [], adminProfiles };
     },
   });
 
@@ -48,6 +65,12 @@ export const AdminTickets = () => {
     data?.profiles.forEach((profile) => map.set(profile.id, profile));
     return map;
   }, [data?.profiles]);
+
+  const adminProfileMap = useMemo(() => {
+    const map = new Map<string, { full_name: string | null; email: string | null }>();
+    data?.adminProfiles?.forEach((p) => map.set(p.id, p));
+    return map;
+  }, [data?.adminProfiles]);
 
   const handleStatusChange = async (ticketId: string, status: TicketStatus, ticketSubject?: string) => {
     const ticket = data?.tickets.find(t => t.id === ticketId);
@@ -60,18 +83,36 @@ export const AdminTickets = () => {
       return;
     }
 
-    // Log audit
     await logAudit({
       action: status === 'closed' ? 'close' : 'update',
       entity: 'support_ticket',
       entityId: ticketId,
-      metadata: {
-        previousStatus,
-        newStatus: status,
-        subject: ticketSubject,
-      },
+      metadata: { previousStatus, newStatus: status, subject: ticketSubject },
     });
 
+    refetch();
+  };
+
+  const handleAssign = async (ticketId: string, assignedTo: string | null) => {
+    const { error } = await supabase
+      .from("support_tickets")
+      .update({ assigned_to: assignedTo })
+      .eq("id", ticketId);
+
+    if (error) {
+      toast({ title: "Failed to assign ticket", variant: "destructive" });
+      return;
+    }
+
+    const assigneeName = assignedTo ? (adminProfileMap.get(assignedTo)?.full_name || "Admin") : "Unassigned";
+    await logAudit({
+      action: "update",
+      entity: "support_ticket",
+      entityId: ticketId,
+      metadata: { assigned_to: assigneeName },
+    });
+
+    toast({ title: assignedTo ? `Assigned to ${assigneeName}` : "Unassigned" });
     refetch();
   };
 
@@ -108,6 +149,23 @@ export const AdminTickets = () => {
                     {statusOptions.map((status) => (
                       <SelectItem key={status} value={status}>
                         {status.replace('_', ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select 
+                  value={ticket.assigned_to || "unassigned"} 
+                  onValueChange={(value) => handleAssign(ticket.id, value === "unassigned" ? null : value)}
+                >
+                  <SelectTrigger className="w-40">
+                    <UserCircle className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Assign" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {data?.adminProfiles?.map((admin) => (
+                      <SelectItem key={admin.id} value={admin.id}>
+                        {admin.full_name || admin.email?.split("@")[0] || "Admin"}
                       </SelectItem>
                     ))}
                   </SelectContent>

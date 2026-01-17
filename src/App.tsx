@@ -25,6 +25,7 @@ import { AdminInstallations } from "./pages/admin/Installations";
 import { AdminPlans } from "./pages/admin/Plans";
 import { AdminCompliance } from "./pages/admin/Compliance";
 import { AdminSettings } from "./pages/admin/Settings";
+import { AdminAuditLog } from "./pages/admin/AuditLog";
 import Broadband from "./pages/Broadband";
 import SimPlans from "./pages/SimPlans";
 import Landline from "./pages/Landline";
@@ -126,6 +127,7 @@ const AnimatedRoutes = () => {
                 <Route path="plans" element={<AdminPlans />} />
                 <Route path="compliance" element={<AdminCompliance />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="audit-log" element={<AdminAuditLog />} />
               </Route>
             </Route>
             <Route path="/broadband" element={<Broadband />} />

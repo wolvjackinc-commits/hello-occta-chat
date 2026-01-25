@@ -48,7 +48,7 @@ const getStandardFooter = (accentColor: string = '#facc15') => {
         
         <div style="margin: 24px 0; padding-top: 20px; border-top: 1px solid #333;">
           <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.6;">
-            Need help? Call <strong style="color: #fff;">0333 772 1190</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
+            Need help? Call <strong style="color: #fff;">0800 260 6627</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
           </p>
           <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
             Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm
@@ -60,8 +60,8 @@ const getStandardFooter = (accentColor: string = '#facc15') => {
             © ${currentYear} OCCTA Limited. All rights reserved.
           </p>
           <p style="color: #555; font-size: 9px; margin: 0; line-height: 1.5;">
-            OCCTA Limited is a company registered in England and Wales.<br>
-            Registered office: 128 City Road, London, EC1V 2NX
+            OCCTA Limited is a company registered in England and Wales (Company No. 13828933).<br>
+            Registered office: 22 Pavilion View, Huddersfield, HD3 3WU, United Kingdom
           </p>
         </div>
       </div>
@@ -235,7 +235,7 @@ const getSuspensionWarningEmailHtml = (data: {
         </div>
         
         <p style="color: #666; font-size: 13px; text-align: center;">
-          Need to discuss payment options? Contact us urgently on <strong>0333 772 1190</strong>.
+          Need to discuss payment options? Contact us urgently on <strong>0800 260 6627</strong>.
         </p>
       </div>
       
@@ -319,7 +319,7 @@ const getServiceSuspendedEmailHtml = (data: {
         </div>
         
         <p style="color: #666; font-size: 13px; text-align: center;">
-          Contact us to discuss payment options on <strong>0333 772 1190</strong>.
+          Contact us to discuss payment options on <strong>0800 260 6627</strong>.
         </p>
       </div>
       

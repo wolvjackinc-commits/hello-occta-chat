@@ -391,7 +391,7 @@ export function generateInvoicePdf(invoice: InvoiceData): void {
       <p><strong>OCCTA Telecom</strong></p>
       <p>Keeping the UK connected since 2020</p>
       <p style="margin-top: 10px;">Call us: 0800 260 6627 | Email: hello@occta.co.uk</p>
-      <p style="margin-top: 10px;">Company Number: 12345678 | VAT Registration: GB 123 4567 89</p>
+      <p style="margin-top: 10px;">Company Number: 13828933 | Registered: 22 Pavilion View, Huddersfield, HD3 3WU</p>
     </div>
   </div>
   

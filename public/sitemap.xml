@@ -99,6 +99,14 @@
     <priority>0.30</priority>
   </url>
   
+  <!-- SEO Landing Pages -->
+  <url>
+    <loc>https://www.occta.co.uk/no-contract-broadband-uk</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  
   <!-- Authentication -->
   <url>
     <loc>https://www.occta.co.uk/auth</loc>

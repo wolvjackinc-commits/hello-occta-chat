@@ -134,7 +134,7 @@ const Broadband = () => {
                 >
                   <Link
                     to={`/pre-checkout?plans=${plan.id}`}
-                    className={`block p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-accent/10 transition-colors group`}
+                    className={`block p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-secondary transition-colors group`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -149,7 +149,7 @@ const Broadband = () => {
                       <div className="text-right flex items-center gap-3">
                         <div>
                           <p className="font-display text-2xl text-primary">£{plan.price}</p>
-                          <p className="text-xs text-muted-foreground">/month</p>
+                          <p className="text-xs text-foreground/70">/month</p>
                         </div>
                         <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
@@ -211,12 +211,12 @@ const Broadband = () => {
                   
                   <div className="flex items-baseline gap-1 mb-2">
                     <span className="font-display text-4xl">£{plan.price}</span>
-                    <span className="text-muted-foreground text-sm">/mo</span>
+                    <span className="text-foreground/70 text-sm font-medium">/mo</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-accent/10 border-2 border-accent inline-block">
-                    <Wifi className="w-3 h-3 text-accent" />
-                    <span className="font-display text-accent text-sm">Up to {plan.speed}Mbps</span>
+                  <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-accent border-2 border-foreground inline-block">
+                    <Wifi className="w-3 h-3 text-accent-foreground" />
+                    <span className="font-display text-accent-foreground text-sm">Up to {plan.speed}Mbps</span>
                   </div>
                   
                   <ul className="space-y-1.5 mb-4 flex-grow">

@@ -146,7 +146,7 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
                       <p className="font-display text-2xl text-primary mb-1">{selectedPlan.name}</p>
                       <p className="text-lg">
                         <span className="font-display text-3xl">£{selectedPlan.price}</span>
-                        <span className="text-muted-foreground">/mo</span>
+                        <span className="text-foreground/70 font-medium">/mo</span>
                       </p>
                       {selectedPlan.speed && (
                         <p className="text-sm text-muted-foreground mt-1">{selectedPlan.speed}Mbps</p>
@@ -178,8 +178,8 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
                       {service.plans.map((plan) => (
                         <motion.button
                           key={plan.id}
-                          className={`w-full p-4 text-left border-b-2 border-muted hover:bg-muted/50 transition-colors ${
-                            selectedPlan?.id === plan.id ? 'bg-primary/10' : ''
+                          className={`w-full p-4 text-left border-b-2 border-muted hover:bg-secondary transition-colors ${
+                            selectedPlan?.id === plan.id ? 'bg-primary/20' : ''
                           }`}
                           onClick={() => handleSelectPlan(plan)}
                           whileHover={{ x: 4 }}
@@ -193,7 +193,7 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
                             </div>
                             <div className="text-right">
                               <p className="font-display text-xl">£{plan.price}</p>
-                              <p className="text-xs text-muted-foreground">/mo</p>
+                              <p className="text-xs text-foreground/70">/mo</p>
                             </div>
                           </div>
                           {selectedPlan?.id === plan.id && (

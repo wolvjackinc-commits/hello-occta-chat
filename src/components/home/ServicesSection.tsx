@@ -144,7 +144,7 @@ const ServicesSection = () => {
                 className={`inline-block self-start px-4 py-2 ${service.color} border-4 border-foreground mb-6`}
                 whileHover={{ scale: 1.05 }}
               >
-                <span className="font-display text-lg">{service.price}</span>
+                <span className="font-display text-lg text-foreground">{service.price}</span>
               </motion.div>
 
               {/* CTA */}

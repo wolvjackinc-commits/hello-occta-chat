@@ -37,7 +37,7 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-[calc(100vh-80px)] flex items-center bg-gradient-to-br from-background via-background to-muted/30">
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 translate-x-20 hidden lg:block" />
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/20 -skew-x-12 translate-x-20 hidden lg:block" />
       
       <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
@@ -126,7 +126,7 @@ const HeroSection = () => {
               >
                 <Link
                   to={service.link}
-                  className="flex items-center justify-between p-4 bg-card border-4 border-foreground hover:bg-accent/10 transition-colors group"
+                  className="flex items-center justify-between p-4 bg-card border-4 border-foreground hover:bg-secondary transition-colors group"
                 >
                   <div>
                     <h3 className="font-display text-lg uppercase">{service.name}</h3>
@@ -135,7 +135,7 @@ const HeroSection = () => {
                   <div className="text-right flex items-center gap-3">
                     <div>
                       <p className="font-display text-2xl text-primary">{service.price}</p>
-                      <p className="text-xs text-muted-foreground">/month</p>
+                      <p className="text-xs text-foreground/70">/month</p>
                     </div>
                     <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>

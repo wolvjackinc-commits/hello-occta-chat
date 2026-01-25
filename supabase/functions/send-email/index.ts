@@ -671,7 +671,7 @@ const getInvoiceSentHtml = (data: Record<string, unknown>) => {
         </div>
         
         <div class="payment-note">
-          <strong>💳 Payment Methods:</strong> Pay online via your dashboard, or call 0333 772 1190 to pay by card. Bank transfers accepted to OCCTA Ltd.
+          <strong>💳 Payment Methods:</strong> Pay online via your dashboard, or call 0800 260 6627 to pay by card. Bank transfers accepted to OCCTA Ltd.
         </div>
         
         <div class="cta-wrap">

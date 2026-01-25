@@ -26,7 +26,10 @@ import { AdminPlans } from "./pages/admin/Plans";
 import { AdminCompliance } from "./pages/admin/Compliance";
 import { AdminSettings } from "./pages/admin/Settings";
 import { AdminAuditLog } from "./pages/admin/AuditLog";
+import { AdminPaymentRequests } from "./pages/admin/PaymentRequests";
 import Broadband from "./pages/Broadband";
+import Pay from "./pages/Pay";
+import DDSetup from "./pages/DDSetup";
 import SimPlans from "./pages/SimPlans";
 import Landline from "./pages/Landline";
 import Checkout from "./pages/Checkout";
@@ -129,6 +132,7 @@ const AnimatedRoutes = () => {
                 <Route path="compliance" element={<AdminCompliance />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="audit-log" element={<AdminAuditLog />} />
+                <Route path="payment-requests" element={<AdminPaymentRequests />} />
               </Route>
             </Route>
             <Route path="/broadband" element={<Broadband />} />
@@ -156,6 +160,8 @@ const AnimatedRoutes = () => {
             <Route path="/payment-result" element={<PaymentResult />} />
             <Route path="/billing-settings" element={<BillingSettings />} />
             <Route path="/no-contract-broadband-uk" element={<NoContractBroadband />} />
+            <Route path="/pay" element={<Pay />} />
+            <Route path="/dd/setup" element={<DDSetup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

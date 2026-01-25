@@ -202,38 +202,73 @@ export type Database = {
       dd_mandates: {
         Row: {
           account_holder: string | null
+          account_holder_name: string | null
+          account_number_full: string | null
           bank_last4: string | null
+          billing_address: string | null
+          consent_ip: string | null
+          consent_timestamp: string | null
+          consent_user_agent: string | null
           created_at: string
           id: string
           mandate_reference: string | null
+          payment_request_id: string | null
           provider: string | null
+          signature_name: string | null
+          sort_code: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           account_holder?: string | null
+          account_holder_name?: string | null
+          account_number_full?: string | null
           bank_last4?: string | null
+          billing_address?: string | null
+          consent_ip?: string | null
+          consent_timestamp?: string | null
+          consent_user_agent?: string | null
           created_at?: string
           id?: string
           mandate_reference?: string | null
+          payment_request_id?: string | null
           provider?: string | null
+          signature_name?: string | null
+          sort_code?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           account_holder?: string | null
+          account_holder_name?: string | null
+          account_number_full?: string | null
           bank_last4?: string | null
+          billing_address?: string | null
+          consent_ip?: string | null
+          consent_timestamp?: string | null
+          consent_user_agent?: string | null
           created_at?: string
           id?: string
           mandate_reference?: string | null
+          payment_request_id?: string | null
           provider?: string | null
+          signature_name?: string | null
+          sort_code?: string | null
           status?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dd_mandates_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guest_orders: {
         Row: {
@@ -675,6 +710,146 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_request_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          request_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          request_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_request_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_requests: {
+        Row: {
+          account_number: string | null
+          amount: number | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_email: string
+          customer_name: string
+          due_date: string | null
+          expires_at: string | null
+          id: string
+          invoice_id: string | null
+          last_opened_at: string | null
+          notes: string | null
+          provider: string | null
+          provider_reference: string | null
+          status: string
+          token_hash: string | null
+          type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          amount?: number | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_email: string
+          customer_name: string
+          due_date?: string | null
+          expires_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          last_opened_at?: string | null
+          notes?: string | null
+          provider?: string | null
+          provider_reference?: string | null
+          status?: string
+          token_hash?: string | null
+          type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          amount?: number | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_email?: string
+          customer_name?: string
+          due_date?: string | null
+          expires_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          last_opened_at?: string | null
+          notes?: string | null
+          provider?: string | null
+          provider_reference?: string | null
+          status?: string
+          token_hash?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

@@ -172,7 +172,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <StructuredData type="all" />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AnimatedRoutes />
         </BrowserRouter>
       </TooltipProvider>

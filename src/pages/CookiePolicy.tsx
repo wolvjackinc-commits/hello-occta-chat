@@ -1,11 +1,12 @@
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
+import { companyConfig } from "@/lib/companyConfig";
 
 const sections = [
   {
     title: "1. What This Policy Covers",
     content: [
-      "This Cookie Policy explains how OCCTA Limited (“OCCTA”, “we”, “us”, or “our”) uses cookies and similar technologies on https://www.occta.co.uk.",
+      `This Cookie Policy explains how ${companyConfig.name} ("${companyConfig.tradingName}", "we", "us", or "our") uses cookies and similar technologies on ${companyConfig.website.url}.`,
       "It sits alongside our Privacy Policy and applies to visitors, customers, and business users of our services.",
     ],
   },
@@ -80,7 +81,7 @@ const sections = [
   {
     title: "9. Do Not Track and Global Privacy Controls",
     content: [
-      "Some browsers offer ‘Do Not Track’ or global privacy signals.",
+      "Some browsers offer 'Do Not Track' or global privacy signals.",
       "We consider these signals as part of our consent tools, but they may not replace a specific opt-in or opt-out choice.",
     ],
   },
@@ -88,16 +89,16 @@ const sections = [
     title: "10. Updates to This Policy",
     content: [
       "We may update this Cookie Policy from time to time.",
-      "The latest version will always be available at https://www.occta.co.uk/cookies with the date updated.",
+      `The latest version will always be available at ${companyConfig.website.url}/cookies with the date updated.`,
     ],
   },
   {
     title: "11. Contact Us",
     content: [
-      "OCCTA Limited",
-      "22 Pavilion View",
-      "Huddersfield, HD3 3WU",
-      "📧 support@occta.co.uk",
+      companyConfig.name,
+      companyConfig.address.street,
+      `${companyConfig.address.city}, ${companyConfig.address.postcode}`,
+      `📧 ${companyConfig.email.support}`,
     ],
   },
 ];
@@ -115,7 +116,7 @@ const CookiePolicy = () => {
           <div className="max-w-4xl mx-auto">
             <div className="mb-10 card-brutal bg-card p-8">
               <p className="font-display uppercase text-primary text-sm">Cookie Policy</p>
-              <h1 className="text-display-md mt-2">OCCTA Limited</h1>
+              <h1 className="text-display-md mt-2">{companyConfig.name}</h1>
               <p className="text-muted-foreground mt-2">Last updated: 18 January 2026</p>
               <p className="text-muted-foreground mt-4">
                 This Cookie Policy explains how we use cookies and similar technologies to make

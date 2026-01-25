@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { companyConfig } from "@/lib/companyConfig";
 
 const Complaints = () => {
   const steps = [
@@ -44,16 +45,16 @@ const Complaints = () => {
     {
       icon: Phone,
       label: "Call us",
-      detail: "0800 260 6627 (Mon–Fri, 8am–6pm)",
+      detail: `${companyConfig.phone.display} (${companyConfig.supportHours.phone})`,
       actionLabel: "Call now",
-      href: "tel:08002606627",
+      href: companyConfig.phone.href,
     },
     {
       icon: Mail,
       label: "Email",
-      detail: "complaints@occta.co.uk",
+      detail: companyConfig.email.complaints,
       actionLabel: "Send email",
-      href: "mailto:complaints@occta.co.uk",
+      href: `mailto:${companyConfig.email.complaints}`,
     },
     {
       icon: FileText,
@@ -66,9 +67,9 @@ const Complaints = () => {
     {
       icon: MapPin,
       label: "Write to us",
-      detail: "OCCTA Complaints Team, 22 Pavilion View, HD3 3WU",
+      detail: `OCCTA Complaints Team, ${companyConfig.address.street}, ${companyConfig.address.postcode}`,
       actionLabel: "Copy address",
-      href: "https://maps.google.com/?q=22%20Pavilion%20View,%20HD3%203WU",
+      href: companyConfig.address.mapsUrl,
       isExternal: true,
     },
   ];
@@ -129,10 +130,10 @@ const Complaints = () => {
                     <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
-                <a href="tel:08002606627">
+                <a href={companyConfig.phone.href}>
                   <Button size="lg" variant="outline">
                     <Phone className="w-5 h-5" />
-                    0800 260 6627
+                    {companyConfig.phone.display}
                   </Button>
                 </a>
               </div>

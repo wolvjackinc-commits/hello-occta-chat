@@ -1,31 +1,32 @@
 import { Helmet } from 'react-helmet-async';
+import { companyConfig } from '@/lib/companyConfig';
 
-const BASE_URL = 'https://www.occta.co.uk';
+const BASE_URL = companyConfig.website.url;
 
 // Organization Schema with enhanced details
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'OCCTA Limited',
-  alternateName: 'OCCTA',
+  name: companyConfig.name,
+  alternateName: companyConfig.tradingName,
   url: BASE_URL,
   logo: `${BASE_URL}/pwa-512x512.png`,
   description: 'Cheap UK broadband, SIM plans, and landline services with no contracts. Affordable internet from £22.99/month.',
-  foundingDate: '2021',
+  foundingDate: String(companyConfig.foundingYear),
   address: {
     '@type': 'PostalAddress',
-    streetAddress: '22 Pavilion View',
-    addressLocality: 'Huddersfield',
-    postalCode: 'HD3 3WU',
-    addressCountry: 'GB',
-    addressRegion: 'England',
+    streetAddress: companyConfig.address.street,
+    addressLocality: companyConfig.address.city,
+    postalCode: companyConfig.address.postcode,
+    addressCountry: companyConfig.address.countryCode,
+    addressRegion: companyConfig.address.region,
   },
   contactPoint: [
     {
       '@type': 'ContactPoint',
-      telephone: '+44-800-260-6627',
+      telephone: companyConfig.phone.international,
       contactType: 'customer service',
-      areaServed: 'GB',
+      areaServed: companyConfig.address.countryCode,
       availableLanguage: ['English'],
       hoursAvailable: {
         '@type': 'OpeningHoursSpecification',
@@ -36,9 +37,9 @@ const organizationSchema = {
     },
     {
       '@type': 'ContactPoint',
-      telephone: '+44-800-260-6627',
+      telephone: companyConfig.phone.international,
       contactType: 'sales',
-      areaServed: 'GB',
+      areaServed: companyConfig.address.countryCode,
       availableLanguage: ['English'],
     },
   ],
@@ -50,23 +51,23 @@ const localBusinessSchema = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   '@id': `${BASE_URL}/#localbusiness`,
-  name: 'OCCTA',
+  name: companyConfig.tradingName,
   description: 'Cheap UK broadband, SIM plans, and landline services. No contracts, no hidden fees, cancel anytime.',
   url: BASE_URL,
-  telephone: '+44-800-260-6627',
+  telephone: companyConfig.phone.international,
   priceRange: '£',
   image: `${BASE_URL}/pwa-512x512.png`,
   address: {
     '@type': 'PostalAddress',
-    streetAddress: '22 Pavilion View',
-    addressLocality: 'Huddersfield',
-    postalCode: 'HD3 3WU',
-    addressCountry: 'GB',
-    addressRegion: 'England',
+    streetAddress: companyConfig.address.street,
+    addressLocality: companyConfig.address.city,
+    postalCode: companyConfig.address.postcode,
+    addressCountry: companyConfig.address.countryCode,
+    addressRegion: companyConfig.address.region,
   },
   areaServed: {
     '@type': 'Country',
-    name: 'United Kingdom',
+    name: companyConfig.address.country,
   },
 };
 
@@ -74,8 +75,8 @@ const localBusinessSchema = {
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'OCCTA',
-  alternateName: 'OCCTA Limited',
+  name: companyConfig.tradingName,
+  alternateName: companyConfig.name,
   url: BASE_URL,
   description: 'Cheap UK broadband, SIM plans, and landline services with no contracts.',
   potentialAction: {
@@ -107,12 +108,12 @@ export const createServiceSchema = ({
   url: `${BASE_URL}${url}`,
   provider: {
     '@type': 'Organization',
-    name: 'OCCTA',
+    name: companyConfig.tradingName,
     url: BASE_URL,
   },
   areaServed: {
     '@type': 'Country',
-    name: 'United Kingdom',
+    name: companyConfig.address.country,
   },
   ...(price && {
     offers: {
@@ -123,7 +124,7 @@ export const createServiceSchema = ({
       priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
       seller: {
         '@type': 'Organization',
-        name: 'OCCTA',
+        name: companyConfig.tradingName,
       },
     },
   }),
@@ -150,7 +151,7 @@ export const createProductSchema = ({
   url: `${BASE_URL}${url}`,
   brand: {
     '@type': 'Brand',
-    name: 'OCCTA',
+    name: companyConfig.tradingName,
   },
   offers: {
     '@type': 'Offer',
@@ -160,7 +161,7 @@ export const createProductSchema = ({
     priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
     seller: {
       '@type': 'Organization',
-      name: 'OCCTA',
+      name: companyConfig.tradingName,
     },
     itemCondition: 'https://schema.org/NewCondition',
     ...(speed && { description: `Up to ${speed} download speed` }),

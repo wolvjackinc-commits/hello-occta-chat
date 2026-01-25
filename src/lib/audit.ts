@@ -15,7 +15,8 @@ type AuditAction =
   | "void"
   | "reply"
   | "close"
-  | "reopen";
+  | "reopen"
+  | "view_sensitive";
 
 type AuditEntity =
   | "service"
@@ -27,7 +28,8 @@ type AuditEntity =
   | "support_ticket"
   | "ticket_message"
   | "profile"
-  | "user_role";
+  | "user_role"
+  | "customer_dob";
 
 interface LogAuditParams {
   action: AuditAction;

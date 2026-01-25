@@ -1025,30 +1025,6 @@ export type Database = {
           phone: string | null
           updated_at: string | null
         }
-        Insert: {
-          account_number?: string | null
-          created_at?: string | null
-          date_of_birth?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          latest_postcode?: never
-          latest_postcode_normalized?: never
-          phone?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          account_number?: string | null
-          created_at?: string | null
-          date_of_birth?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          latest_postcode?: never
-          latest_postcode_normalized?: never
-          phone?: string | null
-          updated_at?: string | null
-        }
         Relationships: []
       }
       chat_analytics_summary: {

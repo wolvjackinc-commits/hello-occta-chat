@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,15 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Eye, EyeOff, Loader2, MapPin, Search, User, Calendar } from "lucide-react";
+import { Eye, EyeOff, Loader2, MapPin, Search, User, Calendar, Mail, Phone } from "lucide-react";
 import { formatAccountNumber } from "@/lib/account";
 import { normalizePostcode } from "@/lib/utils";
+import { logAudit } from "@/lib/audit";
 import { format } from "date-fns";
 import CustomerAdvancedSearch, {
   type AdvancedSearchFilters,
 } from "@/components/admin/CustomerAdvancedSearch";
+import CustomerQuickActions from "@/components/admin/CustomerQuickActions";
 
 const PAGE_SIZE = 10;
 
@@ -42,6 +43,22 @@ const defaultFilters: AdvancedSearchFilters = {
   matchMode: "all",
 };
 
+// Check if input looks like an account number (OCC followed by digits)
+const isAccountNumberSearch = (term: string): boolean => {
+  return /^OCC\d+$/i.test(term.trim());
+};
+
+// Check if input looks like a phone number (digits, possibly with spaces/dashes)
+const isPhoneSearch = (term: string): boolean => {
+  const cleaned = term.replace(/[\s\-\(\)]/g, '');
+  return /^\d{4,}$/.test(cleaned);
+};
+
+// Check if input looks like an email
+const isEmailSearch = (term: string): boolean => {
+  return term.includes('@') || /^[a-zA-Z0-9._]+$/.test(term);
+};
+
 export const AdminCustomers = () => {
   const { toast } = useToast();
   const [quickSearch, setQuickSearch] = useState("");
@@ -50,8 +67,24 @@ export const AdminCustomers = () => {
   const [showDob, setShowDob] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedSearchFilters>(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState<AdvancedSearchFilters>(defaultFilters);
+  const dobRevealLogged = useRef(false);
 
   const hasAdvancedFilters = appliedFilters.name || appliedFilters.postcode || appliedFilters.dob;
+
+  // Log DOB reveal for audit trail (only once per session toggle)
+  const handleToggleDob = async () => {
+    const newShowDob = !showDob;
+    setShowDob(newShowDob);
+    
+    if (newShowDob && !dobRevealLogged.current) {
+      dobRevealLogged.current = true;
+      await logAudit({
+        action: "view_sensitive",
+        entity: "customer_dob",
+        metadata: { context: "customers_list", revealed: true },
+      });
+    }
+  };
 
   const queryKey = useMemo(
     () => ["admin-customers", quickSearch, page, filter, appliedFilters],
@@ -71,12 +104,29 @@ export const AdminCustomers = () => {
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      // Quick search (searches name, email, phone, account_number)
+      // Quick search with smart detection
       if (quickSearch.trim() && !hasAdvancedFilters) {
         const term = quickSearch.trim();
-        query = query.or(
-          `full_name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%,account_number.ilike.%${term}%`
-        );
+        
+        // Priority 1: Exact account number match (OCC pattern)
+        if (isAccountNumberSearch(term)) {
+          query = query.ilike("account_number", `${term.toUpperCase()}%`);
+        }
+        // Priority 2: Phone search (last 4 digits or full number)
+        else if (isPhoneSearch(term)) {
+          const cleaned = term.replace(/[\s\-\(\)]/g, '');
+          query = query.ilike("phone", `%${cleaned}%`);
+        }
+        // Priority 3: Email search
+        else if (isEmailSearch(term)) {
+          query = query.ilike("email", `%${term}%`);
+        }
+        // Default: Search across name, email, phone, account
+        else {
+          query = query.or(
+            `full_name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%,account_number.ilike.%${term}%`
+          );
+        }
       }
 
       // Advanced search filters
@@ -133,12 +183,6 @@ export const AdminCustomers = () => {
 
   const totalPages = Math.ceil((data?.count ?? 0) / PAGE_SIZE);
 
-  const handleCopyAccount = async (accountNumber?: string | null) => {
-    if (!accountNumber) return;
-    await navigator.clipboard.writeText(accountNumber);
-    toast({ title: "Account number copied" });
-  };
-
   const handleAdvancedSearch = () => {
     setAppliedFilters(advancedFilters);
     setQuickSearch(""); // Clear quick search when using advanced
@@ -150,6 +194,18 @@ export const AdminCustomers = () => {
     setAppliedFilters(defaultFilters);
     setPage(0);
   };
+
+  // Get search hint based on input
+  const getSearchHint = () => {
+    const term = quickSearch.trim();
+    if (!term) return null;
+    if (isAccountNumberSearch(term)) return "Searching by account number...";
+    if (isPhoneSearch(term)) return "Searching by phone number...";
+    if (isEmailSearch(term)) return "Searching by email...";
+    return null;
+  };
+
+  const searchHint = getSearchHint();
 
   return (
     <div className="space-y-6">
@@ -163,7 +219,7 @@ export const AdminCustomers = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setShowDob(!showDob)}
+          onClick={handleToggleDob}
           className="flex items-center gap-1"
         >
           {showDob ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -177,7 +233,7 @@ export const AdminCustomers = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Quick search: name, email, phone, account..."
+              placeholder="Search: account (OCC...), name, email, phone, last 4 digits..."
               value={quickSearch}
               onChange={(event) => {
                 setQuickSearch(event.target.value);
@@ -191,6 +247,11 @@ export const AdminCustomers = () => {
               className="pl-10 border-2 border-foreground"
               disabled={!!hasAdvancedFilters}
             />
+            {searchHint && (
+              <p className="absolute -bottom-5 left-0 text-xs text-muted-foreground">
+                {searchHint}
+              </p>
+            )}
           </div>
           <Select
             value={filter}
@@ -256,7 +317,6 @@ export const AdminCustomers = () => {
       <div className="grid gap-4">
         {data?.customers?.map((customer) => {
           const accountNumber = formatAccountNumber(customer.account_number);
-          const hasAccountNumber = accountNumber !== "—";
           return (
             <Card
               key={customer.id}
@@ -269,35 +329,33 @@ export const AdminCustomers = () => {
                   </div>
                   <div className="space-y-1">
                     {/* Account Number - Prominent */}
-                    <div className="flex items-center gap-2">
-                      <div className="font-display text-lg font-bold">
-                        {accountNumber}
-                      </div>
-                      {hasAccountNumber && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => handleCopyAccount(customer.account_number)}
-                          aria-label="Copy account number"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      )}
+                    <div className="font-display text-lg font-bold">
+                      {accountNumber}
                     </div>
 
-                    {/* Name + Email */}
+                    {/* Name */}
                     <div className="text-sm font-medium">
                       {customer.full_name || "Unknown customer"}
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {customer.email || "No email"}
+
+                    {/* Contact info row */}
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      {customer.email && (
+                        <span className="flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          {customer.email}
+                        </span>
+                      )}
+                      {customer.phone && (
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {customer.phone}
+                        </span>
+                      )}
                     </div>
 
-                    {/* Extra info row: Phone, Postcode, DOB */}
+                    {/* Location + DOB row */}
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      {customer.phone && <span>{customer.phone}</span>}
                       {customer.latest_postcode && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
@@ -313,13 +371,13 @@ export const AdminCustomers = () => {
                     </div>
                   </div>
                 </div>
-                <Button asChild className="border-2 border-foreground">
-                  <Link
-                    to={`/admin/customers/${customer.account_number || customer.id}`}
-                  >
-                    View details
-                  </Link>
-                </Button>
+
+                {/* Quick Actions */}
+                <CustomerQuickActions
+                  customerId={customer.id}
+                  accountNumber={customer.account_number}
+                  customerName={customer.full_name}
+                />
               </div>
             </Card>
           );

@@ -172,9 +172,9 @@ const AppHome = () => {
                 </div>
               </div>
 
-              <div className="bg-muted/50 rounded-xl p-3 mb-4">
+              <div className="bg-secondary rounded-xl p-3 mb-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Monthly Bill</span>
+                  <span className="text-sm text-foreground/70">Monthly Bill</span>
                   <span className="font-bold text-lg">£{activeService.plan_price}/mo</span>
                 </div>
               </div>

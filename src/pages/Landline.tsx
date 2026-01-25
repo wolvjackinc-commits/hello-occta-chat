@@ -137,7 +137,7 @@ const Landline = () => {
                 >
                   <Link
                     to={`/pre-checkout?plans=${plan.id}`}
-                    className={`block p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-accent/10 transition-colors group`}
+                    className={`block p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-secondary transition-colors group`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ const Landline = () => {
                       <div className="text-right flex items-center gap-3">
                         <div>
                           <p className="font-display text-2xl text-primary">£{plan.price}</p>
-                          <p className="text-xs text-muted-foreground">/month</p>
+                          <p className="text-xs text-foreground/70">/month</p>
                         </div>
                         <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
@@ -211,11 +211,11 @@ const Landline = () => {
                   
                   <div className="flex items-baseline gap-1 mb-2">
                     <span className="font-display text-4xl">£{plan.price}</span>
-                    <span className="text-muted-foreground text-sm">/mo</span>
+                    <span className="text-foreground/70 text-sm font-medium">/mo</span>
                   </div>
                   
                   <div className="inline-block px-2 py-1 bg-warning border-2 border-foreground mb-3">
-                    <span className="font-display text-xs">{plan.callRate}</span>
+                    <span className="font-display text-xs text-warning-foreground">{plan.callRate}</span>
                   </div>
                   
                   <ul className="space-y-1.5 mb-4 flex-grow">

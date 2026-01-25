@@ -38,9 +38,9 @@
     --secondary: 45 20% 93%;
     --secondary-foreground: 0 0% 10%;
 
-    /* Muted - Newsprint grey */
+    /* Muted - Newsprint grey - IMPROVED CONTRAST */
     --muted: 40 5% 88%;
-    --muted-foreground: 0 0% 28%;
+    --muted-foreground: 0 0% 35%;
 
     /* Accent - Electric blue for pops */
     --accent: 220 90% 56%;
@@ -102,7 +102,7 @@
     --secondary-foreground: 60 5% 90%;
 
     --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 70%;
+    --muted-foreground: 0 0% 75%;
 
     --accent: 220 90% 56%;
     --accent-foreground: 0 0% 100%;

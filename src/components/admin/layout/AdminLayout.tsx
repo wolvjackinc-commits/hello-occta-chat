@@ -41,6 +41,7 @@ const navItems = [
   { label: "Billing", to: "/admin/billing", icon: BadgeDollarSign },
   { label: "Services", to: "/admin/services", icon: Wrench },
   { label: "Payments & DD", to: "/admin/payments-dd", icon: Activity },
+  { label: "Payment Requests", to: "/admin/payment-requests", icon: Mail },
   { label: "Installations", to: "/admin/installations", icon: CalendarDays },
   { label: "Plans", to: "/admin/plans", icon: FileText },
   { label: "Compliance", to: "/admin/compliance", icon: Shield },

@@ -11,12 +11,91 @@ const WORLDPAY_TRY_URL = "https://try.access.worldpay.com";
 const WORLDPAY_LIVE_URL = "https://access.worldpay.com";
 const isLiveMode = Deno.env.get('WORLDPAY_LIVE_MODE') === 'true';
 
+// Rate limit configuration
+const MAX_INVALID_ATTEMPTS = 5;
+const RATE_LIMIT_WINDOW_MINUTES = 15;
+const LOCKOUT_MINUTES = 60;
+
 async function hashToken(token: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(token);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Check rate limit for token validation attempts
+async function checkRateLimit(supabase: any, identifier: string): Promise<{ allowed: boolean; locked: boolean }> {
+  const action = 'payment_token_validation';
+  
+  // Check if locked out
+  const { data: lockCheck } = await supabase
+    .from('rate_limits')
+    .select('request_count, window_start')
+    .eq('action', `${action}_lockout`)
+    .eq('identifier', identifier)
+    .single();
+  
+  if (lockCheck) {
+    const lockoutEnd = new Date(lockCheck.window_start);
+    lockoutEnd.setMinutes(lockoutEnd.getMinutes() + LOCKOUT_MINUTES);
+    if (new Date() < lockoutEnd) {
+      return { allowed: false, locked: true };
+    }
+  }
+
+  // Check current rate limit
+  const windowStart = new Date();
+  windowStart.setMinutes(windowStart.getMinutes() - RATE_LIMIT_WINDOW_MINUTES);
+
+  const { data: rateData } = await supabase
+    .from('rate_limits')
+    .select('id, request_count')
+    .eq('action', action)
+    .eq('identifier', identifier)
+    .gte('window_start', windowStart.toISOString())
+    .single();
+
+  if (rateData && rateData.request_count >= MAX_INVALID_ATTEMPTS) {
+    // Lock out the user
+    await supabase.from('rate_limits').upsert({
+      action: `${action}_lockout`,
+      identifier,
+      request_count: 1,
+      window_start: new Date().toISOString(),
+    }, { onConflict: 'action,identifier' });
+
+    return { allowed: false, locked: true };
+  }
+
+  return { allowed: true, locked: false };
+}
+
+// Record invalid attempt
+async function recordInvalidAttempt(supabase: any, identifier: string): Promise<void> {
+  const action = 'payment_token_validation';
+  
+  // Upsert rate limit record
+  const { data: existing } = await supabase
+    .from('rate_limits')
+    .select('id, request_count')
+    .eq('action', action)
+    .eq('identifier', identifier)
+    .single();
+
+  if (existing) {
+    await supabase
+      .from('rate_limits')
+      .update({ request_count: existing.request_count + 1 })
+      .eq('id', existing.id);
+  } else {
+    await supabase.from('rate_limits').insert({
+      action,
+      identifier,
+      request_count: 1,
+      window_start: new Date().toISOString(),
+    });
+  }
 }
 
 serve(async (req) => {
@@ -28,13 +107,18 @@ serve(async (req) => {
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
+  // Get client IP for rate limiting
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                   req.headers.get('cf-connecting-ip') || 
+                   'unknown';
+
   try {
     const { action, ...data } = await req.json();
     console.log(`Payment request action: ${action}`);
 
     switch (action) {
       // ==========================================
-      // VALIDATE TOKEN
+      // VALIDATE TOKEN (with security enhancements)
       // ==========================================
       case 'validate-token': {
         const { token, type } = data;
@@ -42,6 +126,21 @@ serve(async (req) => {
         if (!token) {
           return new Response(JSON.stringify({ success: false, error: 'Token required' }), {
             status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Rate limit check
+        const rateCheck = await checkRateLimit(supabase, clientIp);
+        if (!rateCheck.allowed) {
+          console.log(`Rate limit exceeded for IP: ${clientIp}`);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: rateCheck.locked 
+              ? 'Too many invalid attempts. Please try again later.' 
+              : 'Rate limit exceeded' 
+          }), {
+            status: 429,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
@@ -57,6 +156,7 @@ serve(async (req) => {
 
         if (error || !request) {
           console.log('Token lookup failed:', error);
+          await recordInvalidAttempt(supabase, clientIp);
           return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
             status: 404,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -71,11 +171,27 @@ serve(async (req) => {
           });
         }
 
-        // Check status
+        // SECURITY: Reject completed/cancelled/failed tokens (one-time use)
+        if (['completed', 'cancelled', 'failed'].includes(request.status)) {
+          const statusMessages: Record<string, string> = {
+            completed: 'This request has already been completed',
+            cancelled: 'This request has been cancelled',
+            failed: 'This request is no longer valid',
+          };
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: statusMessages[request.status] || 'Invalid request status'
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Only allow sent or opened status
         if (!['sent', 'opened'].includes(request.status)) {
           return new Response(JSON.stringify({ 
             success: false, 
-            error: request.status === 'completed' ? 'This request has already been completed' : 'Invalid request status'
+            error: 'This request is not available'
           }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -91,7 +207,7 @@ serve(async (req) => {
         await supabase.from('payment_request_events').insert({
           request_id: request.id,
           event_type: 'opened',
-          metadata: {},
+          metadata: { client_ip: clientIp },
         });
 
         // Get invoice number if linked
@@ -154,6 +270,7 @@ serve(async (req) => {
           });
         }
 
+        // SECURITY: Only allow sent/opened status
         if (!['sent', 'opened'].includes(request.status)) {
           return new Response(JSON.stringify({ success: false, error: 'Request not active' }), {
             status: 400,
@@ -246,7 +363,10 @@ serve(async (req) => {
         // Update request with provider reference
         await supabase
           .from('payment_requests')
-          .update({ provider_reference: transactionRef })
+          .update({ 
+            provider: 'worldpay',
+            provider_reference: transactionRef 
+          })
           .eq('id', request.id);
 
         return new Response(JSON.stringify({
@@ -259,7 +379,7 @@ serve(async (req) => {
       }
 
       // ==========================================
-      // SUBMIT DD MANDATE
+      // SUBMIT DD MANDATE (keep pending until verified)
       // ==========================================
       case 'submit-dd-mandate': {
         const { token, mandateData } = data;
@@ -267,6 +387,18 @@ serve(async (req) => {
         if (!token || !mandateData) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
             status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Rate limit check
+        const rateCheck = await checkRateLimit(supabase, clientIp);
+        if (!rateCheck.allowed) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Too many attempts. Please try again later.' 
+          }), {
+            status: 429,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
@@ -281,12 +413,14 @@ serve(async (req) => {
           .single();
 
         if (error || !request) {
+          await recordInvalidAttempt(supabase, clientIp);
           return new Response(JSON.stringify({ success: false, error: 'Invalid request' }), {
             status: 404,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
 
+        // SECURITY: Only allow sent/opened status
         if (!['sent', 'opened'].includes(request.status)) {
           return new Response(JSON.stringify({ success: false, error: 'Request not active' }), {
             status: 400,
@@ -297,12 +431,12 @@ serve(async (req) => {
         // Generate mandate reference
         const mandateRef = `DD-${request.account_number || 'OCC'}-${Date.now().toString(36).toUpperCase()}`;
 
-        // Create DD mandate record
+        // Create DD mandate record with status 'pending' (NOT 'active' until provider/admin verifies)
         const { data: mandate, error: mandateError } = await supabase
           .from('dd_mandates')
           .insert({
             user_id: request.user_id,
-            status: 'pending',
+            status: 'pending', // Keep pending until admin/provider verifies
             mandate_reference: mandateRef,
             bank_last4: mandateData.accountNumber.slice(-4),
             account_holder: mandateData.accountHolderName,
@@ -311,7 +445,7 @@ serve(async (req) => {
             account_number_full: mandateData.accountNumber,
             billing_address: mandateData.billingAddress,
             consent_timestamp: new Date().toISOString(),
-            consent_ip: req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || null,
+            consent_ip: clientIp,
             consent_user_agent: mandateData.consentUserAgent,
             signature_name: mandateData.signatureName,
             payment_request_id: request.id,
@@ -327,17 +461,26 @@ serve(async (req) => {
           });
         }
 
-        // Update payment request as completed
+        // Update payment request to 'opened' (NOT completed - awaiting verification)
+        // Use a special status to indicate submission received but pending verification
         await supabase
           .from('payment_requests')
-          .update({ status: 'completed', completed_at: new Date().toISOString() })
+          .update({ 
+            status: 'opened', // Keep as opened, not completed
+            provider: 'direct_debit',
+            provider_reference: mandateRef,
+          })
           .eq('id', request.id);
 
         // Log events
         await supabase.from('payment_request_events').insert({
           request_id: request.id,
-          event_type: 'completed',
-          metadata: { mandate_id: mandate.id, mandate_reference: mandateRef },
+          event_type: 'dd_submitted',
+          metadata: { 
+            mandate_id: mandate.id, 
+            mandate_reference: mandateRef,
+            awaiting_verification: true,
+          },
         });
 
         // Audit log
@@ -345,20 +488,245 @@ serve(async (req) => {
           action: 'create',
           entity: 'dd_mandate',
           entity_id: mandate.id,
-          metadata: { mandate_reference: mandateRef, payment_request_id: request.id },
+          metadata: { 
+            mandate_reference: mandateRef, 
+            payment_request_id: request.id,
+            status: 'pending',
+            consent_ip: clientIp,
+          },
         });
 
         return new Response(JSON.stringify({
           success: true,
           mandateId: mandate.id,
           mandateReference: mandateRef,
+          status: 'pending', // Explicitly indicate pending verification
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       // ==========================================
-      // SEND EMAIL
+      // VERIFY DD MANDATE (admin action)
+      // ==========================================
+      case 'verify-dd-mandate': {
+        const { mandateId, status, adminUserId } = data;
+
+        if (!mandateId || !status) {
+          return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const validStatuses = ['verified', 'active', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+          return new Response(JSON.stringify({ success: false, error: 'Invalid status' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: mandate, error } = await supabase
+          .from('dd_mandates')
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq('id', mandateId)
+          .select('*, payment_request_id')
+          .single();
+
+        if (error || !mandate) {
+          return new Response(JSON.stringify({ success: false, error: 'Mandate not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // If verified/active, mark payment request as completed
+        if (['verified', 'active'].includes(status) && mandate.payment_request_id) {
+          await supabase
+            .from('payment_requests')
+            .update({ status: 'completed', completed_at: new Date().toISOString() })
+            .eq('id', mandate.payment_request_id);
+
+          await supabase.from('payment_request_events').insert({
+            request_id: mandate.payment_request_id,
+            event_type: 'completed',
+            metadata: { mandate_status: status, verified_by: adminUserId },
+          });
+        }
+
+        // Audit log
+        await supabase.from('audit_logs').insert({
+          actor_user_id: adminUserId,
+          action: 'update',
+          entity: 'dd_mandate',
+          entity_id: mandateId,
+          metadata: { new_status: status },
+        });
+
+        return new Response(JSON.stringify({ success: true, mandate }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // ==========================================
+      // VIEW DD BANK DETAILS (with audit logging)
+      // ==========================================
+      case 'view-dd-bank-details': {
+        const { mandateId, adminUserId } = data;
+
+        if (!mandateId || !adminUserId) {
+          return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: mandate, error } = await supabase
+          .from('dd_mandates')
+          .select('id, sort_code, account_number_full, account_holder_name, billing_address, consent_timestamp, signature_name')
+          .eq('id', mandateId)
+          .single();
+
+        if (error || !mandate) {
+          return new Response(JSON.stringify({ success: false, error: 'Mandate not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // AUDIT LOG: Record sensitive data access
+        await supabase.from('audit_logs').insert({
+          actor_user_id: adminUserId,
+          action: 'view_sensitive',
+          entity: 'dd_mandate',
+          entity_id: mandateId,
+          metadata: { 
+            fields_viewed: ['sort_code', 'account_number_full', 'account_holder_name'],
+            client_ip: clientIp,
+          },
+        });
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          bankDetails: {
+            sortCode: mandate.sort_code,
+            accountNumber: mandate.account_number_full,
+            accountHolderName: mandate.account_holder_name,
+            billingAddress: mandate.billing_address,
+            consentTimestamp: mandate.consent_timestamp,
+            signatureName: mandate.signature_name,
+          }
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // ==========================================
+      // RECORD PHONE PAYMENT (admin action)
+      // ==========================================
+      case 'record-phone-payment': {
+        const { invoiceId, amount, reference, notes, adminUserId } = data;
+
+        if (!invoiceId || !amount || !adminUserId) {
+          return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Get invoice details
+        const { data: invoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .select('id, user_id, invoice_number, total, status')
+          .eq('id', invoiceId)
+          .single();
+
+        if (invoiceError || !invoice) {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (invoice.status === 'paid') {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice already paid' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const receiptRef = reference || `TEL-${Date.now().toString(36).toUpperCase()}`;
+
+        // Create receipt
+        const { data: receipt, error: receiptError } = await supabase
+          .from('receipts')
+          .insert({
+            invoice_id: invoiceId,
+            user_id: invoice.user_id,
+            amount: parseFloat(amount),
+            method: 'phone',
+            reference: receiptRef,
+            paid_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (receiptError) {
+          console.error('Failed to create receipt:', receiptError);
+          return new Response(JSON.stringify({ success: false, error: 'Failed to create receipt' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Mark invoice as paid
+        await supabase
+          .from('invoices')
+          .update({ status: 'paid', updated_at: new Date().toISOString() })
+          .eq('id', invoiceId);
+
+        // Create payment attempt record
+        await supabase.from('payment_attempts').insert({
+          user_id: invoice.user_id,
+          invoice_id: invoiceId,
+          amount: parseFloat(amount),
+          status: 'success',
+          provider: 'phone',
+          provider_ref: receiptRef,
+          reason: notes || 'Phone payment recorded by admin',
+        });
+
+        // Audit log
+        await supabase.from('audit_logs').insert({
+          actor_user_id: adminUserId,
+          action: 'payment_received',
+          entity: 'invoice',
+          entity_id: invoiceId,
+          metadata: {
+            amount,
+            method: 'phone',
+            receipt_id: receipt.id,
+            receipt_ref: receiptRef,
+            invoice_number: invoice.invoice_number,
+            notes,
+          },
+        });
+
+        return new Response(JSON.stringify({
+          success: true,
+          receipt: {
+            id: receipt.id,
+            reference: receiptRef,
+            amount,
+          },
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // ==========================================
+      // SEND EMAIL (improved templates)
       // ==========================================
       case 'send-email': {
         const { requestId, rawToken } = data;
@@ -387,10 +755,7 @@ serve(async (req) => {
         const path = request.type === 'card_payment' ? '/pay' : '/dd/setup';
         const paymentLink = `${siteUrl}${path}?token=${rawToken}`;
 
-        // Send email via existing send-email function
-        const emailType = request.type === 'card_payment' ? 'payment_request_card' : 'payment_request_dd';
-        
-        // Call the Resend API directly
+        // Send email via Resend API
         const resendApiKey = Deno.env.get('RESEND_API_KEY');
         if (!resendApiKey) {
           console.log('RESEND_API_KEY not configured, skipping email');
@@ -399,8 +764,8 @@ serve(async (req) => {
           });
         }
 
-        const emailHtml = request.type === 'card_payment' 
-          ? getCardPaymentEmailHtml({
+        const emailContent = request.type === 'card_payment' 
+          ? getCardPaymentEmail({
               customerName: request.customer_name,
               amount: request.amount,
               accountNumber: request.account_number,
@@ -408,7 +773,7 @@ serve(async (req) => {
               paymentLink,
               expiresAt: request.expires_at,
             })
-          : getDDSetupEmailHtml({
+          : getDDSetupEmail({
               customerName: request.customer_name,
               accountNumber: request.account_number,
               setupLink: paymentLink,
@@ -426,10 +791,11 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'OCCTA <noreply@occta.co.uk>',
+            from: 'OCCTA Billing <billing@occta.co.uk>',
             to: [request.customer_email],
             subject,
-            html: emailHtml,
+            html: emailContent.html,
+            text: emailContent.text,
           }),
         });
 
@@ -513,6 +879,8 @@ serve(async (req) => {
               metadata: {
                 amount: request.amount,
                 method: 'payment_request',
+                provider: 'worldpay',
+                provider_reference: request.provider_reference,
                 receipt_ref: receiptRef,
                 payment_request_id: requestId,
               },
@@ -523,7 +891,10 @@ serve(async (req) => {
           await supabase.from('payment_request_events').insert({
             request_id: requestId,
             event_type: 'completed',
-            metadata: { status: 'success' },
+            metadata: { 
+              status: 'success',
+              provider_reference: request.provider_reference,
+            },
           });
 
           return new Response(JSON.stringify({ success: true, status: 'paid' }), {
@@ -531,24 +902,29 @@ serve(async (req) => {
           });
         } else {
           // Failed or cancelled
+          const newStatus = status === 'cancelled' ? 'cancelled' : 'failed';
+          
           await supabase
             .from('payment_requests')
-            .update({ status: status === 'cancelled' ? 'cancelled' : 'failed' })
+            .update({ status: newStatus })
             .eq('id', requestId);
 
           await supabase
             .from('payment_attempts')
-            .update({ status, reason: status === 'cancelled' ? 'Cancelled by user' : 'Payment failed' })
+            .update({ 
+              status: newStatus, 
+              reason: status === 'cancelled' ? 'Cancelled by user' : 'Payment failed' 
+            })
             .eq('provider_ref', request.provider_reference)
             .eq('status', 'pending');
 
           await supabase.from('payment_request_events').insert({
             request_id: requestId,
-            event_type: status === 'cancelled' ? 'cancelled' : 'failed',
-            metadata: {},
+            event_type: newStatus,
+            metadata: { provider_reference: request.provider_reference },
           });
 
-          return new Response(JSON.stringify({ success: false, status }), {
+          return new Response(JSON.stringify({ success: false, status: newStatus }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
@@ -571,20 +947,25 @@ serve(async (req) => {
 });
 
 // ==========================================
-// EMAIL TEMPLATES
+// EMAIL TEMPLATES (improved with plain-text)
 // ==========================================
 
-function getCardPaymentEmailHtml(data: {
+function getCardPaymentEmail(data: {
   customerName: string;
   amount: number;
   accountNumber: string | null;
   dueDate: string | null;
   paymentLink: string;
   expiresAt: string | null;
-}) {
-  const expiryDate = data.expiresAt ? new Date(data.expiresAt).toLocaleDateString('en-GB') : '7 days';
+}): { html: string; text: string } {
+  const expiryDate = data.expiresAt 
+    ? new Date(data.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) 
+    : '7 days from now';
+  const dueDateFormatted = data.dueDate 
+    ? new Date(data.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
   
-  return `
+  const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -603,6 +984,7 @@ function getCardPaymentEmailHtml(data: {
     .amount-box { background: #f5f4ef; border: 3px solid #0d0d0d; padding: 24px; text-align: center; margin: 24px 0; }
     .amount { font-size: 36px; font-weight: bold; }
     .cta { display: inline-block; background: #0d0d0d; color: #fff; padding: 16px 40px; text-decoration: none; font-size: 16px; font-weight: 600; letter-spacing: 1px; margin: 24px 0; }
+    .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; margin: 24px 0; font-size: 13px; color: #92400e; }
     .footer { background: #0d0d0d; padding: 24px; text-align: center; color: #888; font-size: 12px; }
   </style>
 </head>
@@ -619,7 +1001,7 @@ function getCardPaymentEmailHtml(data: {
         <div class="amount-box">
           <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Amount Due</div>
           <div class="amount">£${data.amount?.toFixed(2)}</div>
-          ${data.dueDate ? `<div style="font-size: 14px; color: #666; margin-top: 8px;">Due: ${new Date(data.dueDate).toLocaleDateString('en-GB')}</div>` : ''}
+          ${dueDateFormatted ? `<div style="font-size: 14px; color: #666; margin-top: 8px;">Due: ${dueDateFormatted}</div>` : ''}
         </div>
         
         <p class="text">Click the button below to make your payment securely via our payment partner.</p>
@@ -628,27 +1010,67 @@ function getCardPaymentEmailHtml(data: {
           <a href="${data.paymentLink}" class="cta">Pay Now →</a>
         </div>
         
-        <p class="text" style="font-size: 13px; color: #666;">This link expires on ${expiryDate}. If you have any questions, call us on 0800 260 6627.</p>
+        <p class="text" style="font-size: 13px; color: #666;">
+          <strong>This link expires on ${expiryDate}.</strong>
+        </p>
+        
+        <div class="warning">
+          <strong>Didn't request this?</strong> If you didn't expect this payment request, please ignore this email or contact us immediately on 0800 260 6627.
+        </div>
+        
+        <p class="text" style="font-size: 13px; color: #666;">
+          If you have any questions, call us on <strong>0800 260 6627</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+        </p>
       </div>
       <div class="footer">
         <p>© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.</p>
         <p>OCCTA Limited is registered in England and Wales (Company No. 13828933)</p>
+        <p style="margin-top: 12px; font-size: 11px;">This is an automated message. Please do not reply directly to this email.</p>
       </div>
     </div>
   </div>
 </body>
 </html>`;
+
+  const text = `
+OCCTA Payment Request
+
+Hi ${data.customerName},
+
+You have a payment due on your OCCTA account${data.accountNumber ? ` (${data.accountNumber})` : ''}.
+
+Amount Due: £${data.amount?.toFixed(2)}
+${dueDateFormatted ? `Due Date: ${dueDateFormatted}` : ''}
+
+To make your payment securely, please visit:
+${data.paymentLink}
+
+This link expires on ${expiryDate}.
+
+DIDN'T REQUEST THIS?
+If you didn't expect this payment request, please ignore this email or contact us immediately on 0800 260 6627.
+
+Questions? Call us on 0800 260 6627 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+
+---
+© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
+OCCTA Limited is registered in England and Wales (Company No. 13828933)
+`;
+
+  return { html, text };
 }
 
-function getDDSetupEmailHtml(data: {
+function getDDSetupEmail(data: {
   customerName: string;
   accountNumber: string | null;
   setupLink: string;
   expiresAt: string | null;
-}) {
-  const expiryDate = data.expiresAt ? new Date(data.expiresAt).toLocaleDateString('en-GB') : '7 days';
+}): { html: string; text: string } {
+  const expiryDate = data.expiresAt 
+    ? new Date(data.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) 
+    : '7 days from now';
   
-  return `
+  const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -666,6 +1088,7 @@ function getDDSetupEmailHtml(data: {
     .text { font-size: 15px; line-height: 1.6; color: #333; margin: 16px 0; }
     .info-box { background: #f5f4ef; border-left: 4px solid #facc15; padding: 16px; margin: 24px 0; }
     .cta { display: inline-block; background: #0d0d0d; color: #fff; padding: 16px 40px; text-decoration: none; font-size: 16px; font-weight: 600; letter-spacing: 1px; margin: 24px 0; }
+    .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; margin: 24px 0; font-size: 13px; color: #92400e; }
     .footer { background: #0d0d0d; padding: 24px; text-align: center; color: #888; font-size: 12px; }
   </style>
 </head>
@@ -694,14 +1117,54 @@ function getDDSetupEmailHtml(data: {
           <a href="${data.setupLink}" class="cta">Set Up Direct Debit →</a>
         </div>
         
-        <p class="text" style="font-size: 13px; color: #666;">This link expires on ${expiryDate}. If you have any questions, call us on 0800 260 6627.</p>
+        <p class="text" style="font-size: 13px; color: #666;">
+          <strong>This link expires on ${expiryDate}.</strong>
+        </p>
+        
+        <div class="warning">
+          <strong>Didn't request this?</strong> If you didn't expect this Direct Debit setup request, please ignore this email or contact us immediately on 0800 260 6627.
+        </div>
+        
+        <p class="text" style="font-size: 13px; color: #666;">
+          If you have any questions, call us on <strong>0800 260 6627</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+        </p>
       </div>
       <div class="footer">
         <p>© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.</p>
         <p>OCCTA Limited is registered in England and Wales (Company No. 13828933)</p>
+        <p style="margin-top: 12px; font-size: 11px;">This is an automated message. Please do not reply directly to this email.</p>
       </div>
     </div>
   </div>
 </body>
 </html>`;
+
+  const text = `
+OCCTA Direct Debit Setup
+
+Hi ${data.customerName},
+
+We'd like to set up a Direct Debit for your OCCTA account${data.accountNumber ? ` (${data.accountNumber})` : ''} to make your future payments hassle-free.
+
+Benefits of Direct Debit:
+- Never miss a payment
+- Protected by the Direct Debit Guarantee
+- Easy to cancel at any time
+
+To set up your Direct Debit securely, please visit:
+${data.setupLink}
+
+This link expires on ${expiryDate}.
+
+DIDN'T REQUEST THIS?
+If you didn't expect this Direct Debit setup request, please ignore this email or contact us immediately on 0800 260 6627.
+
+Questions? Call us on 0800 260 6627 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+
+---
+© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
+OCCTA Limited is registered in England and Wales (Company No. 13828933)
+`;
+
+  return { html, text };
 }

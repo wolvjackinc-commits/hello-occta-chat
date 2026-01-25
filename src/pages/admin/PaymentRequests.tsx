@@ -17,6 +17,8 @@ import {
   Clock,
   AlertTriangle,
   Eye,
+  Phone,
+  Shield,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -49,6 +51,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,6 +60,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
 import { isAccountNumberValid } from "@/lib/validators";
+import { DDMandateDetailDialog } from "@/components/admin/DDMandateDetailDialog";
+import { RecordPhonePaymentDialog } from "@/components/admin/RecordPhonePaymentDialog";
 
 type PaymentRequest = {
   id: string;
@@ -128,6 +133,13 @@ export const AdminPaymentRequests = () => {
 
   // View dialog
   const [viewRequest, setViewRequest] = useState<PaymentRequest | null>(null);
+  
+  // DD Mandate detail dialog
+  const [selectedDDMandate, setSelectedDDMandate] = useState<any>(null);
+  const [showDDMandateDialog, setShowDDMandateDialog] = useState(false);
+  
+  // Phone payment dialog
+  const [showPhonePaymentDialog, setShowPhonePaymentDialog] = useState(false);
 
   // Fetch payment requests
   const { data: requests = [], isLoading, refetch } = useQuery({
@@ -401,6 +413,23 @@ export const AdminPaymentRequests = () => {
     });
   };
 
+  // Handle viewing DD mandate details
+  const handleViewDDMandate = async (request: PaymentRequest) => {
+    // Fetch the DD mandate linked to this payment request
+    const { data: mandate } = await supabase
+      .from("dd_mandates")
+      .select("*")
+      .eq("payment_request_id", request.id)
+      .maybeSingle();
+    
+    if (mandate) {
+      setSelectedDDMandate(mandate);
+      setShowDDMandateDialog(true);
+    } else {
+      toast({ title: "No DD mandate found for this request", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -410,10 +439,16 @@ export const AdminPaymentRequests = () => {
             Send secure payment links to customers
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Request
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowPhonePaymentDialog(true)} className="gap-2">
+            <Phone className="h-4 w-4" />
+            Record Phone Payment
+          </Button>
+          <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Request
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -576,14 +611,27 @@ export const AdminPaymentRequests = () => {
                                 Open Customer
                               </DropdownMenuItem>
                             )}
+                            {/* DD Mandate details for DD setup requests */}
+                            {request.type === "dd_setup" && ["opened", "completed"].includes(request.status) && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleViewDDMandate(request)}>
+                                  <Shield className="mr-2 h-4 w-4" />
+                                  View DD Mandate
+                                </DropdownMenuItem>
+                              </>
+                            )}
                             {["draft", "sent", "opened"].includes(request.status) && (
-                              <DropdownMenuItem
-                                onClick={() => handleCancelRequest(request)}
-                                className="text-destructive"
-                              >
-                                <XCircle className="mr-2 h-4 w-4" />
-                                Cancel Request
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleCancelRequest(request)}
+                                  className="text-destructive"
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Cancel Request
+                                </DropdownMenuItem>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -812,6 +860,24 @@ export const AdminPaymentRequests = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* DD Mandate Detail Dialog */}
+      <DDMandateDetailDialog
+        mandate={selectedDDMandate}
+        open={showDDMandateDialog}
+        onOpenChange={setShowDDMandateDialog}
+        onUpdate={() => {
+          refetch();
+          setShowDDMandateDialog(false);
+        }}
+      />
+
+      {/* Phone Payment Dialog */}
+      <RecordPhonePaymentDialog
+        open={showPhonePaymentDialog}
+        onOpenChange={setShowPhonePaymentDialog}
+        onSuccess={refetch}
+      />
     </div>
   );
 };

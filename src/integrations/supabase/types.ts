@@ -1216,6 +1216,62 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_mandates_list: {
+        Row: {
+          account_holder: string | null
+          account_number_masked: string | null
+          bank_last4: string | null
+          consent_timestamp: string | null
+          created_at: string | null
+          has_bank_details: boolean | null
+          id: string | null
+          mandate_reference: string | null
+          payment_request_id: string | null
+          sort_code_masked: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          account_holder?: string | null
+          account_number_masked?: never
+          bank_last4?: string | null
+          consent_timestamp?: string | null
+          created_at?: string | null
+          has_bank_details?: never
+          id?: string | null
+          mandate_reference?: string | null
+          payment_request_id?: string | null
+          sort_code_masked?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          account_holder?: string | null
+          account_number_masked?: never
+          bank_last4?: string | null
+          consent_timestamp?: string | null
+          created_at?: string | null
+          has_bank_details?: never
+          id?: string | null
+          mandate_reference?: string | null
+          payment_request_id?: string | null
+          sort_code_masked?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_mandates_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       check_rate_limit: {
@@ -1229,6 +1285,7 @@ export type Database = {
       }
       generate_account_number: { Args: never; Returns: string }
       generate_user_account_number: { Args: never; Returns: string }
+      has_billing_access: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

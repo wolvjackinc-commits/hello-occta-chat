@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Phone, Loader2 } from "lucide-react";
+import { Phone, Loader2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -20,13 +21,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { isAccountNumberValid } from "@/lib/validators";
+import { CustomerPicker } from "./CustomerPicker";
 
 type Invoice = {
   id: string;
   invoice_number: string;
   total: number;
   status: string;
+};
+
+type Customer = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  account_number: string | null;
+  date_of_birth: string | null;
+  latest_postcode: string | null;
+  latest_postcode_normalized: string | null;
+  created_at: string | null;
 };
 
 interface RecordPhonePaymentDialogProps {
@@ -46,12 +59,7 @@ export function RecordPhonePaymentDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
 
-  const [accountNumber, setAccountNumber] = useState("");
-  const [matchedCustomer, setMatchedCustomer] = useState<{
-    id: string;
-    full_name: string | null;
-    email: string | null;
-  } | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(preSelectedInvoiceId || "");
   const [amount, setAmount] = useState("");
@@ -63,10 +71,8 @@ export function RecordPhonePaymentDialog({
     if (open) {
       if (preSelectedInvoiceId) {
         setSelectedInvoiceId(preSelectedInvoiceId);
-        // TODO: Could pre-load invoice details
       } else {
-        setAccountNumber("");
-        setMatchedCustomer(null);
+        setSelectedCustomer(null);
         setInvoices([]);
         setSelectedInvoiceId("");
         setAmount("");
@@ -76,44 +82,33 @@ export function RecordPhonePaymentDialog({
     }
   }, [open, preSelectedInvoiceId]);
 
-  // Lookup customer by account number
+  // Load invoices when customer is selected
   useEffect(() => {
-    if (!isAccountNumberValid(accountNumber.trim().toUpperCase())) {
-      setMatchedCustomer(null);
+    if (!selectedCustomer) {
       setInvoices([]);
       return;
     }
 
-    const lookup = async () => {
+    const loadInvoices = async () => {
       setIsLoadingInvoices(true);
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .eq("account_number", accountNumber.trim().toUpperCase())
-        .maybeSingle();
-
-      if (profile) {
-        setMatchedCustomer(profile);
-
-        // Load unpaid invoices
+      try {
         const { data: invoiceData } = await supabase
           .from("invoices")
           .select("id, invoice_number, total, status")
-          .eq("user_id", profile.id)
+          .eq("user_id", selectedCustomer.id)
           .in("status", ["draft", "sent", "overdue"])
           .order("created_at", { ascending: false });
 
         setInvoices(invoiceData || []);
-      } else {
-        setMatchedCustomer(null);
-        setInvoices([]);
+      } catch (err) {
+        console.error("Failed to load invoices:", err);
+      } finally {
+        setIsLoadingInvoices(false);
       }
-      setIsLoadingInvoices(false);
     };
 
-    const timeoutId = setTimeout(lookup, 300);
-    return () => clearTimeout(timeoutId);
-  }, [accountNumber]);
+    loadInvoices();
+  }, [selectedCustomer]);
 
   // Auto-fill amount when invoice selected
   useEffect(() => {
@@ -181,22 +176,25 @@ export function RecordPhonePaymentDialog({
 
           {!preSelectedInvoiceId && (
             <div className="space-y-2">
-              <Label>Account Number</Label>
-              <Input
-                placeholder="OCC12345678"
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value.toUpperCase())}
+              <Label>Select Customer</Label>
+              <CustomerPicker
+                value={selectedCustomer}
+                onSelect={(customer) => {
+                  setSelectedCustomer(customer);
+                  setSelectedInvoiceId("");
+                }}
+                placeholder="Search by name, account, email, phone, postcode..."
               />
-              {isLoadingInvoices && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Loading...
-                </p>
-              )}
-              {matchedCustomer && (
-                <p className="text-xs text-primary">
-                  ✓ {matchedCustomer.full_name} • {matchedCustomer.email}
-                </p>
+              {selectedCustomer && (
+                <div className="flex items-center gap-2 p-2 bg-primary/5 border-2 border-primary/20 rounded">
+                  <User className="w-4 h-4 text-primary" />
+                  <div className="text-sm">
+                    <span className="font-medium">{selectedCustomer.full_name || "Customer"}</span>
+                    <Badge variant="outline" className="ml-2 font-mono text-xs">
+                      {selectedCustomer.account_number}
+                    </Badge>
+                  </div>
+                </div>
               )}
             </div>
           )}

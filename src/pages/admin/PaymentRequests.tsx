@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   CreditCard,
@@ -59,9 +59,21 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
-import { isAccountNumberValid } from "@/lib/validators";
 import { DDMandateDetailDialog } from "@/components/admin/DDMandateDetailDialog";
 import { RecordPhonePaymentDialog } from "@/components/admin/RecordPhonePaymentDialog";
+import { CustomerPicker } from "@/components/admin/CustomerPicker";
+
+type Customer = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  account_number: string | null;
+  date_of_birth: string | null;
+  latest_postcode: string | null;
+  latest_postcode_normalized: string | null;
+  created_at: string | null;
+};
 
 type PaymentRequest = {
   id: string;
@@ -104,7 +116,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secon
 
 export const AdminPaymentRequests = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -121,13 +133,7 @@ export const AdminPaymentRequests = () => {
     notes: "",
     dueDate: "",
   });
-  const [matchedCustomer, setMatchedCustomer] = useState<{
-    id: string;
-    full_name: string | null;
-    email: string | null;
-    account_number: string | null;
-  } | null>(null);
-  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
@@ -170,14 +176,14 @@ export const AdminPaymentRequests = () => {
 
   // Fetch invoices for linking
   const { data: invoices = [] } = useQuery({
-    queryKey: ["unpaid-invoices", matchedCustomer?.id],
-    enabled: !!matchedCustomer && createForm.type === "card_payment",
+    queryKey: ["unpaid-invoices", selectedCustomer?.id],
+    enabled: !!selectedCustomer && createForm.type === "card_payment",
     queryFn: async () => {
-      if (!matchedCustomer) return [];
+      if (!selectedCustomer) return [];
       const { data, error } = await supabase
         .from("invoices")
         .select("id, invoice_number, total, status")
-        .eq("user_id", matchedCustomer.id)
+        .eq("user_id", selectedCustomer.id)
         .in("status", ["draft", "sent", "overdue"])
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -185,36 +191,11 @@ export const AdminPaymentRequests = () => {
     },
   });
 
-  // Lookup customer by account number
-  useEffect(() => {
-    const normalizedAccountNumber = createForm.accountNumber.trim().toUpperCase();
-    if (!isAccountNumberValid(normalizedAccountNumber)) {
-      setMatchedCustomer(null);
-      return;
-    }
-
-    setIsLookingUp(true);
-    const timeoutId = setTimeout(async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, account_number")
-        .eq("account_number", normalizedAccountNumber)
-        .maybeSingle();
-      
-      if (!error && data) {
-        setMatchedCustomer(data);
-      } else {
-        setMatchedCustomer(null);
-      }
-      setIsLookingUp(false);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [createForm.accountNumber]);
+  // CustomerPicker handles lookup - no useEffect needed
 
   const handleCreateRequest = async (sendImmediately: boolean) => {
-    if (!matchedCustomer) {
-      toast({ title: "Please enter a valid customer account number", variant: "destructive" });
+    if (!selectedCustomer) {
+      toast({ title: "Please select a customer", variant: "destructive" });
       return;
     }
 
@@ -223,7 +204,7 @@ export const AdminPaymentRequests = () => {
       return;
     }
 
-    if (!matchedCustomer.email) {
+    if (!selectedCustomer.email) {
       toast({ title: "Customer does not have an email address", variant: "destructive" });
       return;
     }
@@ -249,16 +230,16 @@ export const AdminPaymentRequests = () => {
 
       const insertData = {
         created_by: currentUser?.user?.id || null,
-        user_id: matchedCustomer.id,
-        account_number: matchedCustomer.account_number,
+        user_id: selectedCustomer.id,
+        account_number: selectedCustomer.account_number,
         type: createForm.type,
         status: sendImmediately ? "sent" : "draft",
         amount: createForm.type === "card_payment" ? parseFloat(createForm.amount) : null,
         currency: "GBP",
         invoice_id: createForm.invoiceId || null,
         due_date: createForm.dueDate || null,
-        customer_email: matchedCustomer.email,
-        customer_name: matchedCustomer.full_name || "Customer",
+        customer_email: selectedCustomer.email,
+        customer_name: selectedCustomer.full_name || "Customer",
         notes: createForm.notes || null,
         token_hash: sendImmediately ? tokenHash : null,
         expires_at: sendImmediately ? expiresAt.toISOString() : null,
@@ -282,9 +263,9 @@ export const AdminPaymentRequests = () => {
 
       await logAudit({
         action: "create",
-        entity: "invoice",
+        entity: "payment_request",
         entityId: newRequest.id,
-        metadata: { type: createForm.type, account_number: matchedCustomer.account_number },
+        metadata: { type: createForm.type, account_number: selectedCustomer.account_number },
       });
 
       if (sendImmediately) {
@@ -303,7 +284,7 @@ export const AdminPaymentRequests = () => {
           await supabase.from("payment_request_events").insert({
             request_id: newRequest.id,
             event_type: "sent",
-            metadata: { email: matchedCustomer.email },
+            metadata: { email: selectedCustomer.email },
           });
           toast({ title: "Payment request sent successfully" });
         }
@@ -313,7 +294,7 @@ export const AdminPaymentRequests = () => {
 
       setShowCreateDialog(false);
       setCreateForm({ accountNumber: "", type: "card_payment", amount: "", invoiceId: "", notes: "", dueDate: "" });
-      setMatchedCustomer(null);
+      setSelectedCustomer(null);
       refetch();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -655,27 +636,16 @@ export const AdminPaymentRequests = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Account Number *</Label>
-              <Input
-                placeholder="OCC12345678"
-                value={createForm.accountNumber}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({ ...prev, accountNumber: e.target.value.toUpperCase() }))
-                }
+              <Label>Customer *</Label>
+              <CustomerPicker
+                value={selectedCustomer}
+                onSelect={setSelectedCustomer}
+                placeholder="Search by name, account, email, phone, postcode..."
               />
-              {isLookingUp && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Looking up customer...
-                </p>
-              )}
-              {matchedCustomer && (
+              {selectedCustomer && (
                 <p className="text-xs text-primary">
-                  ✓ {matchedCustomer.full_name} • {matchedCustomer.email}
+                  ✓ {selectedCustomer.full_name} • {selectedCustomer.email}
                 </p>
-              )}
-              {!matchedCustomer && isAccountNumberValid(createForm.accountNumber) && !isLookingUp && (
-                <p className="text-xs text-destructive">Customer not found</p>
               )}
             </div>
 
@@ -771,14 +741,14 @@ export const AdminPaymentRequests = () => {
             <Button
               variant="outline"
               onClick={() => handleCreateRequest(false)}
-              disabled={isCreating || !matchedCustomer}
+              disabled={isCreating || !selectedCustomer}
             >
               {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Save Draft
             </Button>
             <Button
               onClick={() => handleCreateRequest(true)}
-              disabled={isCreating || !matchedCustomer}
+              disabled={isCreating || !selectedCustomer}
               className="gap-2"
             >
               {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

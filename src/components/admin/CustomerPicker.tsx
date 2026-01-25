@@ -74,6 +74,8 @@ export function CustomerPicker({
       const isAccountNumber = /^OCC/i.test(q);
       const isPhone = /^\d{4,}$/.test(q.replace(/\D/g, ''));
       const isEmail = q.includes('@');
+      // Check if DOB format (dd/mm/yyyy or yyyy-mm-dd)
+      const isDob = /^\d{2}\/\d{2}\/\d{4}$/.test(q) || /^\d{4}-\d{2}-\d{2}$/.test(q);
 
       let queryBuilder = supabase
         .from("admin_customer_search_view")
@@ -88,13 +90,23 @@ export function CustomerPicker({
       } else if (isPhone) {
         const digits = q.replace(/\D/g, '');
         queryBuilder = queryBuilder.ilike("phone", `%${digits}%`);
+      } else if (isDob) {
+        // Convert dd/mm/yyyy to yyyy-mm-dd for DB query
+        let dobForQuery = q;
+        if (q.includes('/')) {
+          const parts = q.split('/');
+          if (parts.length === 3) {
+            dobForQuery = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          }
+        }
+        queryBuilder = queryBuilder.eq("date_of_birth", dobForQuery);
       } else if (normalizedPostcode.length >= 3) {
-        // Try postcode match
+        // Try postcode match OR name search
         queryBuilder = queryBuilder.or(
           `latest_postcode_normalized.ilike.%${normalizedPostcode}%,full_name.ilike.%${q}%`
         );
       } else {
-        // Name search
+        // Name search (supports partial matches)
         queryBuilder = queryBuilder.ilike("full_name", `%${q}%`);
       }
 

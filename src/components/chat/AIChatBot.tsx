@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -71,7 +71,7 @@ const getSessionId = () => {
   return sessionId;
 };
 
-const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
+const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(({ embedded = false, className = "" }, ref) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(embedded);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -797,6 +797,8 @@ const AIChatBot = ({ embedded = false, className = "" }: AIChatBotProps) => {
       </form>
     </div>
   );
-};
+});
+
+AIChatBot.displayName = "AIChatBot";
 
 export default AIChatBot;

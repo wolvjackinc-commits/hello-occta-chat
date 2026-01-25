@@ -47,6 +47,7 @@ const Header = () => {
 
   const navItems = [
     { name: "Broadband", path: "/broadband", icon: Wifi },
+    { name: "No Contract", path: "/no-contract-broadband-uk", icon: Wifi },
     { name: "SIM Plans", path: "/sim-plans", icon: Smartphone },
     { name: "Landline", path: "/landline", icon: PhoneCall },
     { name: "About", path: "/about" },
@@ -61,7 +62,7 @@ const Header = () => {
       <div className="bg-foreground text-background overflow-hidden">
         <div className="py-2 flex whitespace-nowrap">
           <span className="marquee font-display tracking-wider text-sm">
-            🇬🇧 PROPER BRITISH BROADBAND • NO ROBOT SUPPORT LINES • ACTUAL HUMANS IN HUDDERSFIELD • FREE INSTALLATION • 30-DAY CONTRACTS • 
+            🇬🇧 PROPER BRITISH BROADBAND • NO ROBOT SUPPORT LINES • ACTUAL HUMANS • UK-BASED SUPPORT • FREE INSTALLATION • 30-DAY CONTRACTS • 
           </span>
         </div>
       </div>

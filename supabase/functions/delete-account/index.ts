@@ -279,7 +279,7 @@ serve(async (req) => {
         <div style="background: #fef3c7; border: 2px solid #facc15; padding: 16px; margin: 24px 0;">
           <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.6;">
             <strong>⚠️ Didn't request this?</strong><br>
-            If you did not request this deletion, please contact us immediately at <strong>hello@occta.co.uk</strong> or call <strong>0333 772 1190</strong>.
+            If you did not request this deletion, please contact us immediately at <strong>hello@occta.co.uk</strong> or call <strong>0800 260 6627</strong>.
           </p>
         </div>
         
@@ -304,7 +304,7 @@ serve(async (req) => {
           
           <div style="margin: 24px 0; padding-top: 20px; border-top: 1px solid #333;">
             <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.6;">
-              Need help? Call <strong style="color: #fff;">0333 772 1190</strong> or email <a href="mailto:hello@occta.co.uk" style="color: #facc15; text-decoration: none;">hello@occta.co.uk</a>
+              Need help? Call <strong style="color: #fff;">0800 260 6627</strong> or email <a href="mailto:hello@occta.co.uk" style="color: #facc15; text-decoration: none;">hello@occta.co.uk</a>
             </p>
           </div>
           
@@ -313,8 +313,8 @@ serve(async (req) => {
               © ${currentYear} OCCTA Limited. All rights reserved.
             </p>
             <p style="color: #555; font-size: 9px; margin: 0; line-height: 1.5;">
-              OCCTA Limited is a company registered in England and Wales.<br>
-              Registered office: 128 City Road, London, EC1V 2NX
+              OCCTA Limited is a company registered in England and Wales (Company No. 13828933).<br>
+              Registered office: 22 Pavilion View, Huddersfield, HD3 3WU, United Kingdom
             </p>
           </div>
         </div>

@@ -15,14 +15,12 @@ import {
   Users,
   Wrench,
   Search,
-  Zap,
   ScrollText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { isAccountNumberValid } from "@/lib/validators";
+import { GlobalSearch, useGlobalSearch } from "@/components/admin/GlobalSearch";
 
 const navItems = [
   { label: "Overview", to: "/admin/overview", icon: LayoutGrid },
@@ -68,6 +66,7 @@ const accountNumberPattern = /^OCC\d{8}$/;
 export const AdminLayout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { open: globalSearchOpen, setOpen: setGlobalSearchOpen } = useGlobalSearch();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeAction, setActiveAction] = useState<QuickActionType>(null);
   const [actionPayload, setActionPayload] = useState({
@@ -345,40 +344,17 @@ export const AdminLayout = () => {
           <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur">
             <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative w-full max-w-xl">
-                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder="Search customers, orders..."
-                    className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-                  />
-                  {isSearching && <Zap className="h-4 w-4 animate-pulse text-muted-foreground" />}
-                </div>
-                {searchEnabled && searchResults.length > 0 && (
-                  <Card className="absolute left-0 right-0 mt-2 max-h-80 overflow-auto border-2 border-foreground bg-background p-2 shadow-xl">
-                    <div className="space-y-2">
-                      {searchResults.map((result) => (
-                        <button
-                          key={`${result.type}-${result.id}`}
-                          type="button"
-                          className="flex w-full items-start justify-between gap-3 rounded-md border border-transparent px-3 py-2 text-left text-sm hover:border-foreground hover:bg-secondary/60"
-                          onClick={() => navigate(result.href)}
-                        >
-                          <div>
-                            <div className="font-medium">{result.label}</div>
-                            {result.description && (
-                              <div className="text-xs text-muted-foreground">{result.description}</div>
-                            )}
-                          </div>
-                          <Badge variant="outline" className="text-[10px] uppercase">
-                            {result.type.replace("_", " ")}
-                          </Badge>
-                        </button>
-                      ))}
-                    </div>
-                  </Card>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={() => setGlobalSearchOpen(true)}
+                  className="w-full justify-start gap-2 border-2 border-foreground text-muted-foreground"
+                >
+                  <Search className="h-4 w-4" />
+                  <span className="flex-1 text-left">Search customers, orders...</span>
+                  <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
+                </Button>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -528,6 +504,9 @@ export const AdminLayout = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Global Search (Ctrl+K) */}
+      <GlobalSearch open={globalSearchOpen} onOpenChange={setGlobalSearchOpen} />
     </div>
   );
 };

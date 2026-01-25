@@ -14,6 +14,7 @@ import { Copy, ArrowLeft, Pencil, StickyNote } from "lucide-react";
 import { format } from "date-fns";
 import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
 import { CustomerEditDialog } from "@/components/admin/CustomerEditDialog";
+import { CustomerDDSection } from "@/components/admin/CustomerDDSection";
 import { logAudit } from "@/lib/audit";
 import { normalizeAccountNumber, isAccountNumberValid } from "@/lib/account";
 
@@ -244,6 +245,10 @@ export const AdminCustomerDetail = () => {
                 </div>
               </Card>
             )}
+
+            {/* Direct Debit Section */}
+            <CustomerDDSection userId={overview.id} accountNumber={overview.account_number} />
+
             <Accordion type="single" collapsible>
               <AccordionItem value="advanced">
                 <AccordionTrigger>Advanced</AccordionTrigger>

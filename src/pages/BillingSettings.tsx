@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AccountDeletion } from "@/components/dashboard/AccountDeletion";
+import { DirectDebitStatus } from "@/components/dashboard/DirectDebitStatus";
 import {
   Select,
   SelectContent,
@@ -192,81 +193,9 @@ export default function BillingSettings() {
             </p>
           </motion.div>
 
-          {/* Payment Methods */}
-          <motion.div
-            variants={itemVariants}
-            className="card-brutal bg-card p-6 mb-6"
-          >
-            <h2 className="font-display text-xl mb-4 flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
-              PAYMENT METHODS
-            </h2>
-
-            {/* Direct Debit */}
-            <div className="border-4 border-foreground p-4 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-foreground text-background flex items-center justify-center">
-                    <Building2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-display text-lg">Direct Debit</h3>
-                    {mandate ? (
-                      <p className="text-sm text-muted-foreground">
-                        •••• {mandate.bank_last4 || "****"} • {mandate.account_holder}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No active mandate
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {mandate ? (
-                    <Badge className="bg-primary border-2 border-foreground">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Active
-                    </Badge>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-2 border-foreground"
-                      onClick={() => {
-                        toast({
-                          title: "Direct Debit Setup",
-                          description: "Please contact support to set up Direct Debit.",
-                        });
-                      }}
-                    >
-                      Set Up
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Card Payment */}
-            <div className="border-4 border-foreground p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-foreground text-background flex items-center justify-center">
-                    <CreditCard className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-display text-lg">Card Payment</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Pay invoices with debit or credit card
-                    </p>
-                  </div>
-                </div>
-                <Badge className="bg-secondary border-2 border-foreground">
-                  <Wallet className="w-3 h-3 mr-1" />
-                  Manual
-                </Badge>
-              </div>
-            </div>
+          {/* Direct Debit Status - Using secure masked view */}
+          <motion.div variants={itemVariants}>
+            {user && <DirectDebitStatus userId={user.id} />}
           </motion.div>
 
           {/* Auto-Pay Settings */}

@@ -9,36 +9,37 @@ const corsHeaders = {
 
 const getCorsHeaders = (_origin: string | null) => corsHeaders;
 
-
-// In-memory rate limiting for verification attempts (per account/IP)
-const verificationAttempts = new Map<string, { count: number; firstAttempt: number }>();
+// Rate limit configuration
 const VERIFICATION_RATE_LIMIT = 5; // Max attempts
-const VERIFICATION_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const VERIFICATION_WINDOW_MINUTES = 15; // 15 minutes window
 
-function checkVerificationRateLimit(identifier: string): boolean {
-  const now = Date.now();
-  const record = verificationAttempts.get(identifier);
-  
-  if (!record) {
-    verificationAttempts.set(identifier, { count: 1, firstAttempt: now });
-    return true;
+// Database-based rate limiting for verification attempts (persistent across cold starts)
+async function checkVerificationRateLimitDb(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  identifier: string
+): Promise<boolean> {
+  try {
+    // Use the database check_rate_limit function for persistent rate limiting
+    const { data, error } = await supabase.rpc('check_rate_limit', {
+      _action: 'ai_chat_verification',
+      _identifier: identifier,
+      _max_requests: VERIFICATION_RATE_LIMIT,
+      _window_minutes: VERIFICATION_WINDOW_MINUTES
+    });
+    
+    if (error) {
+      console.error('Rate limit check error:', error);
+      // Fall back to allowing the request if rate limit check fails
+      return true;
+    }
+    
+    // data is true if request is allowed, false if rate limited
+    return data === true;
+  } catch (err) {
+    console.error('Rate limit exception:', err);
+    return true; // Fail open to not break functionality
   }
-  
-  // Reset if window has passed
-  if (now - record.firstAttempt > VERIFICATION_WINDOW_MS) {
-    verificationAttempts.set(identifier, { count: 1, firstAttempt: now });
-    return true;
-  }
-  
-  // Check if limit exceeded
-  if (record.count >= VERIFICATION_RATE_LIMIT) {
-    console.log(`Rate limit exceeded for: ${identifier}`);
-    return false;
-  }
-  
-  // Increment count
-  record.count++;
-  return true;
 }
 
 
@@ -342,9 +343,10 @@ async function executeTool(
         return JSON.stringify({ success: false, message: "Please provide your date of birth in YYYY-MM-DD format." });
       }
       
-      // Rate limit check
+      // Rate limit check using database function (persistent across cold starts)
       const rateLimitKey = `email:${email.toLowerCase()}`;
-      if (!checkVerificationRateLimit(rateLimitKey)) {
+      const isAllowed = await checkVerificationRateLimitDb(supabaseServiceClient, rateLimitKey);
+      if (!isAllowed) {
         console.log(`SECURITY: Rate limit exceeded for email verification: ${email}`);
         return JSON.stringify({ 
           success: false, 
@@ -410,9 +412,10 @@ async function executeTool(
         });
       }
       
-      // Rate limit check for account number verification
+      // Rate limit check for account number verification (using database function)
       const rateLimitKey = `account:${account_number.toUpperCase()}`;
-      if (!checkVerificationRateLimit(rateLimitKey)) {
+      const isAllowed = await checkVerificationRateLimitDb(supabaseServiceClient, rateLimitKey);
+      if (!isAllowed) {
         console.log(`SECURITY: Rate limit exceeded for account verification: ${account_number}`);
         return JSON.stringify({ 
           success: false, 

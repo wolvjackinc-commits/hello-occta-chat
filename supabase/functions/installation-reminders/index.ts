@@ -4,9 +4,24 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
+// Cron job secret for protecting scheduled endpoints
+const CRON_SECRET = Deno.env.get("CRON_JOB_SECRET");
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
+};
+
+// HTML escape helper to prevent injection attacks
+const escapeHtml = (unsafe: unknown): string => {
+  if (unsafe === null || unsafe === undefined) return '';
+  const str = String(unsafe);
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 };
 
 interface InstallationBooking {
@@ -34,9 +49,9 @@ const TIME_SLOT_LABELS: Record<string, string> = {
 };
 
 const getReminderEmailHtml = (booking: InstallationBooking, orderDetails: any) => {
-  const slotTime = TIME_SLOT_LABELS[booking.installation_slots.slot_time] || booking.installation_slots.slot_time;
+  const slotTime = TIME_SLOT_LABELS[booking.installation_slots.slot_time] || escapeHtml(booking.installation_slots.slot_time);
   const technicianInfo = booking.technicians 
-    ? `<p><strong>Technician:</strong> ${booking.technicians.full_name} (${booking.technicians.phone})</p>`
+    ? `<p><strong>Technician:</strong> ${escapeHtml(booking.technicians.full_name)} (${escapeHtml(booking.technicians.phone)})</p>`
     : '';
 
   return `
@@ -66,7 +81,7 @@ const getReminderEmailHtml = (booking: InstallationBooking, orderDetails: any) =
       <h1>⏰ Installation Tomorrow!</h1>
     </div>
     <div class="content">
-      <p>Hi <strong>${booking.customer_name}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(booking.customer_name)}</strong>,</p>
       
       <p>This is a friendly reminder that your installation is scheduled for <strong>tomorrow</strong>!</p>
       
@@ -81,10 +96,10 @@ const getReminderEmailHtml = (booking: InstallationBooking, orderDetails: any) =
       
       <div class="details">
         <p><strong>Installation Address:</strong></p>
-        <p>${orderDetails?.address_line1 || 'N/A'}<br>
-        ${orderDetails?.city || ''}, ${orderDetails?.postcode || ''}</p>
+        <p>${escapeHtml(orderDetails?.address_line1) || 'N/A'}<br>
+        ${escapeHtml(orderDetails?.city) || ''}, ${escapeHtml(orderDetails?.postcode) || ''}</p>
         
-        <p><strong>Service:</strong> ${orderDetails?.plan_name || 'N/A'}</p>
+        <p><strong>Service:</strong> ${escapeHtml(orderDetails?.plan_name) || 'N/A'}</p>
         ${technicianInfo}
       </div>
       
@@ -117,6 +132,16 @@ const handler = async (req: Request): Promise<Response> => {
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Verify cron job secret for protection
+  const cronSecret = req.headers.get("x-cron-secret");
+  if (CRON_SECRET && cronSecret !== CRON_SECRET) {
+    console.log("SECURITY: Unauthorized cron job request - invalid or missing secret");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
   }
 
   try {

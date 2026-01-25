@@ -19,6 +19,12 @@ const getCorsHeaders = (origin: string | null) => {
 interface LinkOrderRequest {
   orderNumber: string;
   email: string;
+  postcode: string; // Added postcode for additional verification
+}
+
+// Normalize postcode for comparison (remove spaces, uppercase)
+function normalizePostcode(postcode: string): string {
+  return postcode.replace(/\s+/g, '').toUpperCase();
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -66,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Authenticated user: ${userId}`);
 
     // Parse request body
-    const { orderNumber, email }: LinkOrderRequest = await req.json();
+    const { orderNumber, email, postcode }: LinkOrderRequest = await req.json();
 
     // Validate inputs
     if (!orderNumber || typeof orderNumber !== 'string' || orderNumber.length < 5 || orderNumber.length > 50) {
@@ -83,6 +89,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // SECURITY: Require postcode for additional verification
+    if (!postcode || typeof postcode !== 'string' || postcode.length < 5 || postcode.length > 10) {
+      return new Response(
+        JSON.stringify({ error: "Postcode is required for verification" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Use service role client to access guest_orders (bypasses RLS)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -92,7 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Find the order - must be unlinked and email must match
     const { data: order, error: orderError } = await supabaseAdmin
       .from("guest_orders")
-      .select("id, email, user_id")
+      .select("id, email, user_id, postcode")
       .eq("order_number", orderNumber)
       .single();
 
@@ -107,8 +121,45 @@ const handler = async (req: Request): Promise<Response> => {
     // Verify email matches (case-insensitive)
     if (order.email.toLowerCase() !== email.toLowerCase()) {
       console.error("Email mismatch for order linking");
+      
+      // Log failed attempt for security monitoring
+      await supabaseAdmin.from('audit_logs').insert({
+        action: 'order_link_failed',
+        entity: 'guest_orders',
+        entity_id: order.id,
+        actor_user_id: userId,
+        metadata: {
+          reason: 'email_mismatch',
+          orderNumber,
+          timestamp: new Date().toISOString(),
+        },
+      });
+      
       return new Response(
-        JSON.stringify({ error: "Email does not match order" }),
+        JSON.stringify({ error: "Verification failed - details do not match order" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // SECURITY: Verify postcode matches (normalized comparison)
+    if (normalizePostcode(order.postcode) !== normalizePostcode(postcode)) {
+      console.error("Postcode mismatch for order linking");
+      
+      // Log failed attempt for security monitoring
+      await supabaseAdmin.from('audit_logs').insert({
+        action: 'order_link_failed',
+        entity: 'guest_orders',
+        entity_id: order.id,
+        actor_user_id: userId,
+        metadata: {
+          reason: 'postcode_mismatch',
+          orderNumber,
+          timestamp: new Date().toISOString(),
+        },
+      });
+      
+      return new Response(
+        JSON.stringify({ error: "Verification failed - details do not match order" }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -138,6 +189,18 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // Log successful link
+    await supabaseAdmin.from('audit_logs').insert({
+      action: 'order_linked',
+      entity: 'guest_orders',
+      entity_id: order.id,
+      actor_user_id: userId,
+      metadata: {
+        orderNumber,
+        timestamp: new Date().toISOString(),
+      },
+    });
 
     console.log(`Successfully linked order ${orderNumber} to user ${userId}`);
     

@@ -146,6 +146,7 @@ const ThankYou = () => {
           body: {
             orderNumber: orderData.orderNumber,
             email: orderData.customerData.email,
+            postcode: orderData.customerData.postcode,
           }
         });
 

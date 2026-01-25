@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,32 +10,29 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
+import { CustomerPicker } from "./CustomerPicker";
 
-type Profile = {
+type Customer = {
   id: string;
   full_name: string | null;
   email: string | null;
   account_number: string | null;
+  phone: string | null;
+  date_of_birth: string | null;
+  latest_postcode: string | null;
+  latest_postcode_normalized: string | null;
+  created_at: string | null;
 };
 
 type AddServiceDialogProps = {
   trigger: ReactNode;
-  defaultAccountNumber?: string | null;
-  readOnlyAccountNumber?: boolean;
-  defaultCustomerId?: string | null;
+  defaultCustomer?: Customer | null;
+  readOnlyCustomer?: boolean;
   onSaved?: () => void;
 };
 
 const statusOptions = ["active", "suspended", "pending", "cancelled"] as const;
 const allowedServiceTypes = ["broadband", "landline", "sim"] as const;
-
-function normalizeAccountNumber(value: string) {
-  return value.trim().toUpperCase();
-}
-
-function isAccountNumberValid(value: string) {
-  return /^OCC\d{8}$/.test(value);
-}
 
 const isUkNumber = (value: string) => {
   const trimmed = value.trim();
@@ -45,8 +42,7 @@ const isUkNumber = (value: string) => {
   return /^(\+44|0)\d{9,10}$/.test(normalized);
 };
 
-const buildInitialFormState = (accountNumber?: string | null) => ({
-  accountNumber: accountNumber?.trim() || "",
+const buildInitialFormState = () => ({
   serviceType: "broadband",
   supplierReference: "",
   activationDate: "",
@@ -76,93 +72,36 @@ const buildInitialIdentifierFields = () => ({
 
 export const AddServiceDialog = ({
   trigger,
-  defaultAccountNumber,
-  readOnlyAccountNumber = false,
-  defaultCustomerId,
+  defaultCustomer,
+  readOnlyCustomer = false,
   onSaved,
 }: AddServiceDialogProps) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
-  const [isLookingUpCustomer, setIsLookingUpCustomer] = useState(false);
-  const [formState, setFormState] = useState(() => buildInitialFormState(defaultAccountNumber));
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(defaultCustomer || null);
+  const [formState, setFormState] = useState(buildInitialFormState);
   const [identifierFields, setIdentifierFields] = useState(buildInitialIdentifierFields);
   const isServiceTypeValid = allowedServiceTypes.includes(
     formState.serviceType as (typeof allowedServiceTypes)[number],
   );
-  const accountNumberInput = formState.accountNumber;
-  const normalizedAccountNumber = normalizeAccountNumber(accountNumberInput ?? "");
-  const isNormalizedAccountNumberValid = isAccountNumberValid(normalizedAccountNumber);
-  const hasCustomer = Boolean(defaultCustomerId || matchedCustomer?.id);
 
   useEffect(() => {
     if (!isOpen) return;
-    setFormState(buildInitialFormState(defaultAccountNumber));
+    setFormState(buildInitialFormState());
     setIdentifierFields(buildInitialIdentifierFields());
-    setMatchedCustomer(null);
-  }, [defaultAccountNumber, isOpen]);
-
-  useEffect(() => {
-    if (defaultCustomerId) {
-      setMatchedCustomer(null);
-      setIsLookingUpCustomer(false);
-      return;
-    }
-    if (!normalizedAccountNumber || !isNormalizedAccountNumberValid) {
-      setMatchedCustomer(null);
-      setIsLookingUpCustomer(false);
-      return;
-    }
-
-    let isActive = true;
-    setIsLookingUpCustomer(true);
-    setMatchedCustomer(null);
-    
-    const lookupCustomer = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, account_number, email, full_name")
-          .eq("account_number", normalizedAccountNumber)
-          .maybeSingle();
-        
-        if (!isActive) return;
-        if (error) {
-          toast({ title: "Failed to find customer", description: error.message, variant: "destructive" });
-          setMatchedCustomer(null);
-          return;
-        }
-        setMatchedCustomer(data ?? null);
-      } catch (err) {
-        if (isActive) {
-          setMatchedCustomer(null);
-        }
-      } finally {
-        if (isActive) setIsLookingUpCustomer(false);
-      }
-    };
-
-    lookupCustomer();
-
-    return () => {
-      isActive = false;
-    };
-  }, [defaultCustomerId, isNormalizedAccountNumberValid, normalizedAccountNumber, toast]);
+    setSelectedCustomer(defaultCustomer || null);
+  }, [defaultCustomer, isOpen]);
 
   const resetForm = () => {
-    setFormState(buildInitialFormState(defaultAccountNumber));
+    setFormState(buildInitialFormState());
     setIdentifierFields(buildInitialIdentifierFields());
-    setMatchedCustomer(null);
+    setSelectedCustomer(defaultCustomer || null);
   };
 
   const handleAddService = async () => {
-    if (!normalizedAccountNumber || !formState.serviceType.trim()) {
-      toast({ title: "Account number and service type are required", variant: "destructive" });
-      return;
-    }
-    if (!isNormalizedAccountNumberValid) {
-      toast({ title: "Enter a valid account number (OCC########).", variant: "destructive" });
+    if (!selectedCustomer) {
+      toast({ title: "Please select a customer", variant: "destructive" });
       return;
     }
     if (!isServiceTypeValid) {
@@ -219,18 +158,9 @@ export const AddServiceDialog = ({
       };
     }
 
-    const customerId = defaultCustomerId ?? matchedCustomer?.id;
-    if (!customerId) {
-      toast({
-        title: `Customer not found for ${normalizedAccountNumber}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSaving(true);
     const { data: insertedService, error } = await supabase.from("services").insert({
-      user_id: customerId,
+      user_id: selectedCustomer.id,
       service_type: formState.serviceType.trim(),
       identifiers,
       supplier_reference: formState.supplierReference.trim() || null,
@@ -254,7 +184,7 @@ export const AddServiceDialog = ({
       entity: "service",
       entityId: insertedService?.id,
       metadata: {
-        accountNumber: normalizedAccountNumber,
+        accountNumber: selectedCustomer.account_number,
         serviceType: formState.serviceType.trim(),
         status: formState.status || "active",
       },
@@ -267,13 +197,6 @@ export const AddServiceDialog = ({
     onSaved?.();
   };
 
-  const customerLabel = useMemo(() => {
-    if (defaultCustomerId) return "Customer selected";
-    if (matchedCustomer?.full_name) return matchedCustomer.full_name;
-    if (matchedCustomer?.email) return matchedCustomer.email;
-    return null;
-  }, [defaultCustomerId, matchedCustomer?.email, matchedCustomer?.full_name]);
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -284,24 +207,15 @@ export const AddServiceDialog = ({
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label className="font-display uppercase text-sm">Account Number (OCC…)</Label>
-            <Input
-              placeholder="OCC12345678"
-              value={formState.accountNumber}
-              readOnly={readOnlyAccountNumber}
-              onChange={(event) => setFormState((prev) => ({ ...prev, accountNumber: event.target.value }))}
-              className="mt-1 border-2 border-foreground"
-            />
-            {customerLabel && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Customer: {customerLabel}
-              </p>
-            )}
-            {!customerLabel && !defaultCustomerId && isNormalizedAccountNumberValid && !isLookingUpCustomer && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                No customer found for {normalizedAccountNumber}.
-              </p>
-            )}
+            <Label className="font-display uppercase text-sm">Customer</Label>
+            <div className="mt-1">
+              <CustomerPicker
+                value={selectedCustomer}
+                onSelect={setSelectedCustomer}
+                disabled={readOnlyCustomer}
+                placeholder="Search by name, account, email, phone, or postcode..."
+              />
+            </div>
           </div>
           <div>
             <Label className="font-display uppercase text-sm">Service type</Label>
@@ -535,7 +449,7 @@ export const AddServiceDialog = ({
           </div>
           <Button
             onClick={handleAddService}
-            disabled={isSaving || !isServiceTypeValid || !hasCustomer}
+            disabled={isSaving || !isServiceTypeValid || !selectedCustomer}
             className="w-full border-2 border-foreground"
           >
             {isSaving ? "Saving..." : "Add service"}

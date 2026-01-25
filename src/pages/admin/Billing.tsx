@@ -38,6 +38,7 @@ import { logAudit } from "@/lib/audit";
 import { formatAccountNumber } from "@/lib/account";
 import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
 import { format } from "date-fns";
+import { CustomerPicker } from "@/components/admin/CustomerPicker";
 import { 
   FileText, 
   Plus, 
@@ -47,12 +48,21 @@ import {
   Send,
   Ban,
   Eye,
-  Trash2,
   Download,
-  Mail,
   Link as LinkIcon,
-  Copy
 } from "lucide-react";
+
+type Customer = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  account_number: string | null;
+  phone: string | null;
+  date_of_birth: string | null;
+  latest_postcode: string | null;
+  latest_postcode_normalized: string | null;
+  created_at: string | null;
+};
 
 type Invoice = {
   id: string;
@@ -103,13 +113,11 @@ export const AdminBilling = () => {
 
   // New invoice form state
   const [newInvoice, setNewInvoice] = useState({
-    accountNumber: "",
     lineItems: [{ description: "", qty: 1, unitPrice: 0 }],
     notes: "",
     dueDate: "",
   });
-  const [lookingUpCustomer, setLookingUpCustomer] = useState(false);
-  const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-invoices"],
@@ -162,31 +170,9 @@ export const AdminBilling = () => {
     });
   }, [data?.invoices, statusFilter, searchText, profileMap]);
 
-  const lookupCustomer = async (accountNumber: string) => {
-    if (!accountNumber.trim()) {
-      setMatchedCustomer(null);
-      return;
-    }
-    setLookingUpCustomer(true);
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, account_number, email, full_name")
-        .eq("account_number", accountNumber.trim().toUpperCase())
-        .maybeSingle();
-      
-      if (error) throw error;
-      setMatchedCustomer(data);
-    } catch (err) {
-      setMatchedCustomer(null);
-    } finally {
-      setLookingUpCustomer(false);
-    }
-  };
-
   const handleCreateInvoice = async () => {
-    if (!matchedCustomer) {
-      toast({ title: "Please enter a valid account number", variant: "destructive" });
+    if (!selectedCustomer) {
+      toast({ title: "Please select a customer", variant: "destructive" });
       return;
     }
 
@@ -206,7 +192,7 @@ export const AdminBilling = () => {
       const { data: invoice, error } = await supabase
         .from("invoices")
         .insert({
-          user_id: matchedCustomer.id,
+          user_id: selectedCustomer.id,
           invoice_number: invoiceNumber,
           status: "draft",
           issue_date: new Date().toISOString().split('T')[0],
@@ -243,12 +229,11 @@ export const AdminBilling = () => {
       toast({ title: "Invoice created successfully" });
       setSelectedInvoice(null);
       setNewInvoice({
-        accountNumber: "",
         lineItems: [{ description: "", qty: 1, unitPrice: 0 }],
         notes: "",
         dueDate: "",
       });
-      setMatchedCustomer(null);
+      setSelectedCustomer(null);
       refetch();
     } catch (err: any) {
       toast({ title: "Failed to create invoice", description: err.message, variant: "destructive" });
@@ -801,28 +786,14 @@ export const AdminBilling = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="font-display uppercase text-sm">Account Number</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  placeholder="OCC12345678"
-                  value={newInvoice.accountNumber}
-                  onChange={(e) => setNewInvoice(prev => ({ ...prev, accountNumber: e.target.value }))}
-                  className="border-2 border-foreground"
+              <Label className="font-display uppercase text-sm">Customer</Label>
+              <div className="mt-1">
+                <CustomerPicker
+                  value={selectedCustomer}
+                  onSelect={setSelectedCustomer}
+                  placeholder="Search by name, account, email, phone, or postcode..."
                 />
-                <Button
-                  variant="outline"
-                  onClick={() => lookupCustomer(newInvoice.accountNumber)}
-                  disabled={lookingUpCustomer}
-                  className="border-2 border-foreground"
-                >
-                  {lookingUpCustomer ? <Loader2 className="h-4 w-4 animate-spin" /> : "Find"}
-                </Button>
               </div>
-              {matchedCustomer && (
-                <p className="text-sm text-green-600 mt-1">
-                  ✓ {matchedCustomer.full_name || matchedCustomer.email}
-                </p>
-              )}
             </div>
 
             <div>
@@ -918,7 +889,7 @@ export const AdminBilling = () => {
 
             <Button
               onClick={handleCreateInvoice}
-              disabled={isCreating || !matchedCustomer}
+              disabled={isCreating || !selectedCustomer}
               className="w-full border-2 border-foreground"
             >
               {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

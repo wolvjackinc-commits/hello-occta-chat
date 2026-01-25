@@ -10,6 +10,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// HTML escape helper to prevent injection attacks
+const escapeHtml = (unsafe: unknown): string => {
+  if (unsafe === null || unsafe === undefined) return '';
+  const str = String(unsafe);
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -228,7 +240,7 @@ serve(async (req) => {
 <body>
   <div class="container">
     <h1>Account Deleted</h1>
-    <p>Hi ${profile?.full_name || 'there'},</p>
+    <p>Hi ${escapeHtml(profile?.full_name) || 'there'},</p>
     <p>Your OCCTA account has been successfully deleted as requested.</p>
     <p>All your personal data has been removed from our systems in accordance with GDPR requirements.</p>
     <p>If you did not request this deletion, please contact us immediately at <strong>hello@occta.co.uk</strong> or call <strong>0333 772 1190</strong>.</p>

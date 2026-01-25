@@ -1,15 +1,16 @@
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
+import { companyConfig } from "@/lib/companyConfig";
 
 const sections = [
   {
     title: "1. Who We Are",
     content: [
-      "OCCTA Limited is the data controller responsible for your personal data.",
-      "Name: OCCTA Limited",
-      "Registered address: 22 Pavilion View, Huddersfield, HD3 3WU, UK",
-      "Website: https://www.occta.co.uk",
-      "Email: support@occta.co.uk",
+      `${companyConfig.name} is the data controller responsible for your personal data.`,
+      `Name: ${companyConfig.name}`,
+      `Registered address: ${companyConfig.address.full}`,
+      `Website: ${companyConfig.website.url}`,
+      `Email: ${companyConfig.email.support}`,
     ],
   },
   {
@@ -48,7 +49,7 @@ const sections = [
   {
     title: "4. Cookies and Tracking Technologies",
     content: [
-      "www.occta.co.uk uses cookies and similar technologies.",
+      `${companyConfig.website.domain} uses cookies and similar technologies.`,
       "We follow PECR rules, which require consent for storage and access to information on devices. You can manage cookie consent via our cookie banner and browser settings.",
     ],
   },
@@ -91,7 +92,7 @@ const sections = [
       "• Object to processing",
       "• Data portability",
       "• Withdraw consent",
-      "• Lodge a complaint with the Information Commissioner’s Office (ICO)",
+      "• Lodge a complaint with the Information Commissioner's Office (ICO)",
       "",
       "ICO: https://www.ico.org.uk",
     ],
@@ -111,16 +112,16 @@ const sections = [
   {
     title: "12. Changes to This Policy",
     content: [
-      "We may update this policy. The latest version will always be at www.occta.co.uk/privacy-policy with the date updated.",
+      `We may update this policy. The latest version will always be at ${companyConfig.website.domain}/privacy-policy with the date updated.`,
     ],
   },
   {
     title: "13. Contact Us",
     content: [
-      "OCCTA Limited",
-      "22 Pavilion View",
-      "Huddersfield, HD3 3WU",
-      "📧 support@occta.co.uk",
+      companyConfig.name,
+      companyConfig.address.street,
+      `${companyConfig.address.city}, ${companyConfig.address.postcode}`,
+      `📧 ${companyConfig.email.support}`,
     ],
   },
 ];
@@ -138,13 +139,12 @@ const PrivacyPolicy = () => {
           <div className="max-w-4xl mx-auto">
             <div className="mb-10 card-brutal bg-card p-8">
               <p className="font-display uppercase text-primary text-sm">Privacy Policy</p>
-              <h1 className="text-display-md mt-2">OCCTA Limited</h1>
+              <h1 className="text-display-md mt-2">{companyConfig.name}</h1>
               <p className="text-muted-foreground mt-2">Last updated: 18 January 2026</p>
               <p className="text-muted-foreground mt-4">
-                OCCTA Limited (“OCCTA”, “we”, “us”, or “our”) is committed to protecting and
+                {companyConfig.name} ("{companyConfig.tradingName}", "we", "us", or "our") is committed to protecting and
                 respecting your privacy. This Privacy Policy explains how we collect, use,
-                store, share, and protect your personal data when you visit or use our website
-                https://www.occta.co.uk, our services, or communicate with us.
+                store, share, and protect your personal data when you visit or use our website {companyConfig.website.url}, our services, or communicate with us.
               </p>
               <p className="text-muted-foreground mt-4">
                 This policy is designed to comply with UK General Data Protection Regulation

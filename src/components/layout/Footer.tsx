@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, Bot, LayoutDashboard, Ticket, Shield } from "lucide-react";
+import { companyConfig } from "@/lib/companyConfig";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -81,17 +82,17 @@ const Footer = () => {
                 </div>
                 <span className="font-display">Get Instant Help</span>
               </Link>
-              <a href="mailto:hello@occta.co.uk" className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
+              <a href={`mailto:${companyConfig.email.general}`} className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
                 <div className="p-2 bg-primary/20">
                   <Mail className="w-4 h-4" />
                 </div>
-                <span>hello@occta.co.uk</span>
+                <span>{companyConfig.email.general}</span>
               </a>
               <div className="flex items-center gap-3 text-background/60 text-sm">
                 <div className="p-2 bg-background/10">
                   <Phone className="w-4 h-4" />
                 </div>
-                <span>0800 260 6627 (escalation only)</span>
+                <span>{companyConfig.phone.display} (escalation only)</span>
               </div>
             </div>
           </div>
@@ -154,21 +155,21 @@ const Footer = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-background/70 text-sm">
-              © {currentYear} OCCTA Limited. All rights reserved.
+              © {currentYear} {companyConfig.name}. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-sm text-background/70">
-              <span>Company No. 13828933</span>
+              <span>Company No. {companyConfig.companyNumber}</span>
               <span>•</span>
               <span>UK Registered</span>
             </div>
           </div>
           <div className="mt-2 text-xs text-background/60 text-center md:text-left">
-            Registered address: 22 Pavilion View, Huddersfield, HD3 3WU, United Kingdom.
+            Registered address: {companyConfig.address.full}.
           </div>
           <div className="flex items-center justify-center gap-2 mt-4 text-xs text-background/60">
             <Shield className="w-4 h-4" />
             <p>
-              OCCTA Limited complies with UK telecommunications regulations and GDPR requirements. Self-service support ensures faster resolution and data protection.
+              {companyConfig.compliance} Self-service support ensures faster resolution and data protection.
             </p>
           </div>
         </div>

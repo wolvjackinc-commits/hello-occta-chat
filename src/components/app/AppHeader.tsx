@@ -46,10 +46,16 @@ const AppHeader = () => {
         </motion.h1>
         
         <div className="flex items-center gap-2">
-          <button className="w-10 h-10 rounded-full flex items-center justify-center">
+          <button 
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            aria-label="Search"
+          >
             <Search className="w-5 h-5 text-accent-foreground" />
           </button>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center">
+          <button 
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            aria-label="More options"
+          >
             <MoreHorizontal className="w-5 h-5 text-accent-foreground" />
           </button>
         </div>

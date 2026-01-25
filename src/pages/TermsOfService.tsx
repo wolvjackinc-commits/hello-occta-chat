@@ -1,13 +1,14 @@
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
+import { companyConfig } from "@/lib/companyConfig";
 
 const sections = [
   {
     title: "1. Introduction & Legal Status",
     content: [
-      "These Terms of Service (\"Terms\") govern the provision of telecommunications and related services by OCCTA Limited (\"OCCTA\", \"we\", \"us\", \"our\") through www.occta.co.uk.",
+      `These Terms of Service ("Terms") govern the provision of telecommunications and related services by ${companyConfig.name} ("${companyConfig.tradingName}", "we", "us", "our") through ${companyConfig.website.url}.`,
       "These Terms form a legally binding agreement between you (\"Customer\", \"you\") and OCCTA once you:",
-      "• Place an order on www.occta.co.uk",
+      `• Place an order on ${companyConfig.website.url}`,
       "• Activate a service",
       "• Make a payment, or",
       "• Use any of our services.",
@@ -17,11 +18,11 @@ const sections = [
   {
     title: "2. Company Information",
     content: [
-      "Company Name: OCCTA Limited",
-      "Company Number: 13828933",
-      "Registered Address: 22 Pavilion View, Huddersfield, HD3 3WU, United Kingdom",
-      "Website: https://www.occta.co.uk",
-      "Contact Email: support@occta.co.uk",
+      `Company Name: ${companyConfig.name}`,
+      `Company Number: ${companyConfig.companyNumber}`,
+      `Registered Address: ${companyConfig.address.full}`,
+      `Website: ${companyConfig.website.url}`,
+      `Contact Email: ${companyConfig.email.support}`,
     ],
   },
   {
@@ -170,14 +171,14 @@ const sections = [
   {
     title: "16. Complaints & Dispute Resolution",
     content: [
-      "Complaints should be raised via support@occta.co.uk.",
+      `Complaints should be raised via ${companyConfig.email.support}.`,
       "If unresolved, disputes may be escalated in line with UK telecom regulatory procedures.",
     ],
   },
   {
     title: "17. Data Protection & Privacy",
     content: [
-      "Use of Services is subject to our Privacy Policy, published on www.occta.co.uk.",
+      `Use of Services is subject to our Privacy Policy, published on ${companyConfig.website.url}.`,
       "Personal data is processed in accordance with UK GDPR and PECR.",
     ],
   },
@@ -199,7 +200,7 @@ const sections = [
     title: "20. Changes to These Terms",
     content: [
       "We may update these Terms from time to time.",
-      "The latest version will always be published on www.occta.co.uk.",
+      `The latest version will always be published on ${companyConfig.website.url}.`,
       "Continued use of Services constitutes acceptance.",
     ],
   },
@@ -219,18 +220,18 @@ const sections = [
   {
     title: "23. Entire Agreement",
     content: [
-      "These Terms constitute the entire agreement between you and OCCTA.",
+      `These Terms constitute the entire agreement between you and ${companyConfig.tradingName}.`,
     ],
   },
   {
     title: "24. Contact Details",
     content: [
-      "OCCTA Limited",
-      "22 Pavilion View",
-      "Huddersfield, HD3 3WU",
-      "United Kingdom",
-      "📧 support@occta.co.uk",
-      "🌐 https://www.occta.co.uk",
+      companyConfig.name,
+      companyConfig.address.street,
+      `${companyConfig.address.city}, ${companyConfig.address.postcode}`,
+      companyConfig.address.country,
+      `📧 ${companyConfig.email.support}`,
+      `🌐 ${companyConfig.website.url}`,
     ],
   },
 ];
@@ -248,11 +249,11 @@ const TermsOfService = () => {
           <div className="max-w-4xl mx-auto">
             <div className="mb-10 card-brutal bg-card p-8">
               <p className="font-display uppercase text-primary text-sm">Terms of Service</p>
-              <h1 className="text-display-md mt-2">OCCTA Limited</h1>
+              <h1 className="text-display-md mt-2">{companyConfig.name}</h1>
               <p className="text-muted-foreground mt-2">Effective date: 18 January 2026</p>
               <p className="text-muted-foreground mt-4">
-                These Terms of Service set out the terms on which OCCTA Limited provides
-                telecommunications and related services through https://www.occta.co.uk. By
+                These Terms of Service set out the terms on which {companyConfig.name} provides
+                telecommunications and related services through {companyConfig.website.url}. By
                 ordering, activating, paying for, or using our services, you agree to be bound
                 by these Terms.
               </p>

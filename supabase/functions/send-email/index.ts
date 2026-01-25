@@ -22,7 +22,6 @@ interface EmailRequest {
     | "invoice_paid";
   to: string;
   data: Record<string, unknown>;
-  // For guest order confirmations - order verification data
   orderNumber?: string;
   redirectTo?: string;
 }
@@ -45,37 +44,90 @@ const sanitizeNumber = (value: unknown): string => {
   return isNaN(num) ? '0.00' : num.toFixed(2);
 };
 
+// UK Companies Act 2006 compliant footer - GDPR & Professional Standards
+const getStandardFooter = (options?: { showUnsubscribe?: boolean; accentColor?: string }) => {
+  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const accentColor = options?.accentColor || '#facc15';
+  const currentYear = new Date().getFullYear();
+  
+  return `
+    <div class="footer" style="background: #0d0d0d; padding: 32px;">
+      <div class="footer-content" style="text-align: center;">
+        <div class="footer-logo" style="font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 4px; color: ${accentColor};">OCCTA</div>
+        
+        <div class="footer-links" style="margin: 20px 0;">
+          <a href="${siteUrl}/support" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Support</a>
+          <a href="${siteUrl}/dashboard" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Dashboard</a>
+          <a href="${siteUrl}/privacy-policy" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Privacy Policy</a>
+          <a href="${siteUrl}/terms-of-service" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Terms</a>
+        </div>
+        
+        <div style="margin: 24px 0; padding-top: 20px; border-top: 1px solid #333;">
+          <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.6;">
+            Need help? Call <strong style="color: #fff;">0333 772 1190</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
+          </p>
+          <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
+            Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm
+          </p>
+        </div>
+        
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #333;">
+          <p style="color: #666; font-size: 10px; margin: 0 0 6px 0; line-height: 1.6;">
+            © ${currentYear} OCCTA Limited. All rights reserved.
+          </p>
+          <p style="color: #555; font-size: 9px; margin: 0; line-height: 1.5;">
+            OCCTA Limited is a company registered in England and Wales.<br>
+            Registered office: 128 City Road, London, EC1V 2NX
+          </p>
+        </div>
+        
+        ${options?.showUnsubscribe ? `
+        <div style="margin-top: 16px;">
+          <a href="${siteUrl}/dashboard" style="color: #666; font-size: 10px; text-decoration: underline;">Manage email preferences</a>
+        </div>
+        ` : ''}
+      </div>
+    </div>`;
+};
+
+// Common email styles shared across all templates
+const getCommonStyles = () => `
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+  
+  body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+  .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; max-height: 0; max-width: 0; overflow: hidden; }
+  
+  .wrapper { background: #f5f4ef; padding: 40px 20px; }
+  .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+  
+  .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+  .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
+  .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+  
+  .content { padding: 32px; }
+  .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #0d0d0d; }
+  .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+  
+  .cta-wrap { text-align: center; margin: 32px 0; }
+  .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; }
+`;
+
 const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>Order Confirmed - OCCTA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    ${getCommonStyles()}
     
-    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; max-height: 0; max-width: 0; overflow: hidden; }
-    
-    .wrapper { background: #f5f4ef; padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
-    
-    /* Header with brutalist styling */
-    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
-    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
-    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
-    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
-    
-    /* Title banner */
     .title-banner { background: #facc15; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
     .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #0d0d0d; }
     
-    /* Content area */
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
-    
-    /* Order details card */
     .order-card { background: #f5f4ef; border: 3px solid #0d0d0d; margin: 24px 0; }
     .order-header { background: #0d0d0d; color: #fff; padding: 12px 20px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
     .order-body { padding: 20px; }
@@ -85,31 +137,15 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
     .order-value { font-size: 15px; font-weight: 700; text-align: right; max-width: 60%; }
     .order-highlight { background: #facc15; padding: 2px 8px; display: inline-block; }
     
-    /* Steps section */
     .steps { margin: 28px 0; padding: 24px; background: linear-gradient(135deg, #f5f4ef 0%, #fff 100%); border-left: 4px solid #facc15; }
     .steps-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
     .step { display: flex; align-items: flex-start; margin: 12px 0; }
     .step-num { background: #0d0d0d; color: #facc15; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; margin-right: 12px; flex-shrink: 0; }
     .step-text { font-size: 14px; line-height: 1.5; padding-top: 4px; }
     
-    /* CTA Button */
-    .cta-wrap { text-align: center; margin: 32px 0; }
-    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; transition: all 0.15s; }
-    .cta:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 0 #facc15; }
-    
-    /* Order number callout */
     .order-callout { text-align: center; background: #f5f4ef; border: 2px dashed #0d0d0d; padding: 16px; margin: 24px 0; }
     .order-callout-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #666; }
     .order-callout-number { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 3px; margin-top: 4px; }
-    
-    /* Footer */
-    .footer { background: #0d0d0d; padding: 28px 32px; }
-    .footer-content { text-align: center; }
-    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
-    .footer-links { margin: 16px 0; }
-    .footer-link { color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px; }
-    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
-    .footer-address { color: #666; font-size: 11px; margin-top: 8px; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -117,23 +153,19 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
   
   <div class="wrapper">
     <div class="container">
-      <!-- Header -->
       <div class="header">
         <div class="logo">OCCTA</div>
         <div class="tagline">Telecom • Connected</div>
       </div>
       
-      <!-- Title Banner -->
       <div class="title-banner">
         <h1 class="title">✓ Order Confirmed</h1>
       </div>
       
-      <!-- Content -->
       <div class="content">
         <p class="greeting">Hi ${escapeHtml(data.full_name)},</p>
         <p class="text">Brilliant news! Your order is locked in and we're already on it. Here's everything you need to know:</p>
         
-        <!-- Order Details Card -->
         <div class="order-card">
           <div class="order-header">Order Details</div>
           <div class="order-body">
@@ -160,7 +192,6 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
           </div>
         </div>
         
-        <!-- What Happens Next -->
         <div class="steps">
           <div class="steps-title">What Happens Next</div>
           <div class="step">
@@ -177,12 +208,10 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
           </div>
         </div>
         
-        <!-- CTA -->
         <div class="cta-wrap">
           <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/track-order" class="cta">Track Your Order →</a>
         </div>
         
-        <!-- Order Number Callout -->
         <div class="order-callout">
           <div class="order-callout-label">Your Order Reference</div>
           <div class="order-callout-number">${escapeHtml(data.order_number)}</div>
@@ -193,19 +222,7 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
         </p>
       </div>
       
-      <!-- Footer -->
-      <div class="footer">
-        <div class="footer-content">
-          <div class="footer-logo">OCCTA</div>
-          <div class="footer-links">
-            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/support" class="footer-link">Support</a>
-            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/track-order" class="footer-link">Track Order</a>
-            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}" class="footer-link">Website</a>
-          </div>
-          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
-          <div class="footer-address">Questions? Reply to this email or call us at 0333 772 1190</div>
-        </div>
-      </div>
+      ${getStandardFooter()}
     </div>
   </div>
 </body>
@@ -214,30 +231,17 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
 
 const getWelcomeHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Welcome to OCCTA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
-    
-    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; max-height: 0; max-width: 0; overflow: hidden; }
-    
-    .wrapper { background: #f5f4ef; padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
-    
-    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
-    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
-    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
-    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    ${getCommonStyles()}
     
     .title-banner { background: #facc15; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
     .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #0d0d0d; }
-    
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
     
     .features { margin: 28px 0; }
     .feature { display: flex; align-items: flex-start; margin: 16px 0; padding: 16px; background: #f5f4ef; border-left: 4px solid #facc15; }
@@ -245,16 +249,6 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
     .feature-text { flex: 1; }
     .feature-title { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
     .feature-desc { font-size: 13px; color: #666; }
-    
-    .cta-wrap { text-align: center; margin: 32px 0; }
-    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; }
-    
-    .footer { background: #0d0d0d; padding: 28px 32px; }
-    .footer-content { text-align: center; }
-    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
-    .footer-links { margin: 16px 0; }
-    .footer-link { color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px; }
-    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
   </style>
 </head>
 <body>
@@ -274,6 +268,7 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
       <div class="content">
         <p class="greeting">Hi ${escapeHtml(data.full_name) || "there"},</p>
         <p class="text">You're officially part of the OCCTA family! Your account is all set up and ready to go.</p>
+        <p class="text">No contracts, no hidden fees, no nonsense — just proper British broadband that works.</p>
         
         <div class="features">
           <div class="feature">
@@ -287,14 +282,14 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
             <div class="feature-icon">⚡</div>
             <div class="feature-text">
               <div class="feature-title">Manage Services</div>
-              <div class="feature-desc">Add, upgrade, or modify your services anytime.</div>
+              <div class="feature-desc">Add, upgrade, or modify your services anytime — no lock-ins.</div>
             </div>
           </div>
           <div class="feature">
             <div class="feature-icon">💬</div>
             <div class="feature-text">
-              <div class="feature-title">Priority Support</div>
-              <div class="feature-desc">Get faster responses from our dedicated support team.</div>
+              <div class="feature-title">UK-Based Support</div>
+              <div class="feature-desc">Real humans ready to help, not robots reading scripts.</div>
             </div>
           </div>
         </div>
@@ -308,17 +303,7 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
         </p>
       </div>
       
-      <div class="footer">
-        <div class="footer-content">
-          <div class="footer-logo">OCCTA</div>
-          <div class="footer-links">
-            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/support" class="footer-link">Support</a>
-            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/dashboard" class="footer-link">Dashboard</a>
-            <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}" class="footer-link">Website</a>
-          </div>
-          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
-        </div>
-      </div>
+      ${getStandardFooter()}
     </div>
   </div>
 </body>
@@ -342,54 +327,28 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Order Update - OCCTA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
-    
-    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; overflow: hidden; }
-    
-    .wrapper { background: #f5f4ef; padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
-    
-    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
-    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
-    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
-    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    ${getCommonStyles()}
     
     .title-banner { background: ${config.color}; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
-    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
     
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
-    
-    .status-card { text-align: center; background: #f5f4ef; border: 3px solid #0d0d0d; padding: 28px; margin: 24px 0; }
+    .status-box { background: #f5f4ef; border: 3px solid #0d0d0d; padding: 24px; margin: 24px 0; text-align: center; }
     .status-icon { font-size: 48px; margin-bottom: 12px; }
-    .status-badge { display: inline-block; background: #0d0d0d; color: #fff; padding: 8px 24px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; }
-    .status-message { font-size: 15px; color: #333; margin-top: 16px; line-height: 1.6; }
+    .status-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #666; margin-bottom: 4px; }
+    .status-value { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; color: ${config.color}; }
     
-    .order-info { display: flex; justify-content: space-between; background: #fff; border: 2px solid #0d0d0d; margin: 20px 0; }
-    .order-info-item { flex: 1; padding: 16px; text-align: center; border-right: 2px solid #0d0d0d; }
-    .order-info-item:last-child { border-right: none; }
-    .order-info-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #666; }
-    .order-info-value { font-weight: 700; font-size: 14px; margin-top: 4px; }
-    
-    .cta-wrap { text-align: center; margin: 32px 0; }
-    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; margin: 8px; }
-    .cta-secondary { display: inline-block; background: #ffffff; color: #0d0d0d; padding: 14px 32px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; margin: 8px; }
-    
-    .footer { background: #0d0d0d; padding: 28px 32px; }
-    .footer-content { text-align: center; }
-    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
-    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+    .order-ref { background: #0d0d0d; color: #facc15; padding: 2px 8px; font-family: monospace; }
   </style>
 </head>
 <body>
-  <div class="preheader">Order Update: Your OCCTA order #${escapeHtml(data.order_number)} is now ${safeStatus}.</div>
+  <div class="preheader">Order #${escapeHtml(data.order_number)} status update: ${safeStatus}</div>
   
   <div class="wrapper">
     <div class="container">
@@ -404,32 +363,25 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
       
       <div class="content">
         <p class="greeting">Hi ${escapeHtml(data.full_name)},</p>
-        <p class="text">Here's the latest on your order:</p>
+        <p class="text">We have an update on your order <span class="order-ref">${escapeHtml(data.order_number)}</span>:</p>
         
-        <div class="status-card">
+        <div class="status-box">
           <div class="status-icon">${config.icon}</div>
-          <div class="status-badge">${safeStatus}</div>
-          <p class="status-message">${config.message}</p>
+          <div class="status-label">Current Status</div>
+          <div class="status-value">${safeStatus}</div>
         </div>
         
-        <div class="order-info">
-          <div class="order-info-item">
-            <div class="order-info-label">Order</div>
-            <div class="order-info-value">${escapeHtml(data.order_number)}</div>
-          </div>
-          <div class="order-info-item">
-            <div class="order-info-label">Plan</div>
-            <div class="order-info-value">${escapeHtml(data.plan_name)}</div>
-          </div>
-          <div class="order-info-item">
-            <div class="order-info-label">Service</div>
-            <div class="order-info-value">${escapeHtml(data.service_type)}</div>
-          </div>
+        <p class="text">${config.message}</p>
+        
+        ${data.admin_notes ? `
+        <div style="background: #fef3c7; border: 2px solid #facc15; padding: 16px; margin: 20px 0;">
+          <p style="font-weight: 600; margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Note from our team:</p>
+          <p style="margin: 0; color: #333;">${escapeHtml(data.admin_notes)}</p>
         </div>
+        ` : ''}
         
         <div class="cta-wrap">
-          <a href="${siteUrl}/track-order" class="cta">Track Order →</a>
-          <a href="${siteUrl}/auth" class="cta-secondary">Create Account</a>
+          <a href="${siteUrl}/track-order" class="cta">Track Your Order →</a>
         </div>
         
         <p class="text" style="text-align: center; color: #666; font-size: 13px;">
@@ -437,12 +389,7 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
         </p>
       </div>
       
-      <div class="footer">
-        <div class="footer-content">
-          <div class="footer-logo">OCCTA</div>
-          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
-        </div>
-      </div>
+      ${getStandardFooter({ accentColor: config.color })}
     </div>
   </div>
 </body>
@@ -452,48 +399,27 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
 
 const getOrderMessageHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>New Message - OCCTA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
-    
-    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; overflow: hidden; }
-    
-    .wrapper { background: #f5f4ef; padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
-    
-    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
-    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
-    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
-    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    ${getCommonStyles()}
     
     .title-banner { background: #3b82f6; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
     .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
     
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    .order-ref { background: #0d0d0d; color: #facc15; padding: 2px 8px; font-family: monospace; }
     
-    .order-ref { display: inline-block; background: #facc15; padding: 4px 12px; font-weight: 700; font-size: 14px; }
-    
-    .message-box { background: #f5f4ef; border: 3px solid #0d0d0d; padding: 24px; margin: 24px 0; position: relative; }
-    .message-box::before { content: '"'; font-family: 'Bebas Neue', sans-serif; font-size: 64px; color: #facc15; position: absolute; top: -10px; left: 16px; line-height: 1; }
-    .message-content { font-size: 15px; line-height: 1.7; padding-left: 40px; font-style: italic; }
-    
-    .cta-wrap { text-align: center; margin: 32px 0; }
-    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; }
-    
-    .footer { background: #0d0d0d; padding: 28px 32px; }
-    .footer-content { text-align: center; }
-    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
-    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+    .message-box { background: #f5f4ef; border: 3px solid #0d0d0d; padding: 24px; margin: 24px 0; }
+    .message-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #666; margin-bottom: 12px; font-weight: 600; }
+    .message-content { font-size: 15px; line-height: 1.7; white-space: pre-wrap; }
   </style>
 </head>
 <body>
-  <div class="preheader">New message about your OCCTA order #${escapeHtml(data.order_number)}</div>
+  <div class="preheader">New message regarding your OCCTA order #${escapeHtml(data.order_number)}</div>
   
   <div class="wrapper">
     <div class="container">
@@ -511,6 +437,7 @@ const getOrderMessageHtml = (data: Record<string, unknown>) => `
         <p class="text">We have an update regarding your order <span class="order-ref">${escapeHtml(data.order_number)}</span>:</p>
         
         <div class="message-box">
+          <div class="message-label">Message from OCCTA</div>
           <p class="message-content">${escapeHtml(data.message)}</p>
         </div>
         
@@ -521,12 +448,7 @@ const getOrderMessageHtml = (data: Record<string, unknown>) => `
         </div>
       </div>
       
-      <div class="footer">
-        <div class="footer-content">
-          <div class="footer-logo">OCCTA</div>
-          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
-        </div>
-      </div>
+      ${getStandardFooter({ accentColor: '#3b82f6' })}
     </div>
   </div>
 </body>
@@ -535,30 +457,17 @@ const getOrderMessageHtml = (data: Record<string, unknown>) => `
 
 const getTicketReplyHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Support Reply - OCCTA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
-    
-    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; overflow: hidden; }
-    
-    .wrapper { background: #f5f4ef; padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
-    
-    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
-    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
-    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
-    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    ${getCommonStyles()}
     
     .title-banner { background: #22c55e; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
     .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
-    
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
     
     .ticket-subject { background: #0d0d0d; color: #fff; padding: 16px 20px; margin: 20px 0; }
     .ticket-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #facc15; margin-bottom: 4px; }
@@ -566,15 +475,7 @@ const getTicketReplyHtml = (data: Record<string, unknown>) => `
     
     .message-box { background: #f5f4ef; border: 3px solid #0d0d0d; padding: 24px; margin: 20px 0; }
     .message-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #666; margin-bottom: 12px; font-weight: 600; }
-    .message-content { font-size: 15px; line-height: 1.7; }
-    
-    .cta-wrap { text-align: center; margin: 32px 0; }
-    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; }
-    
-    .footer { background: #0d0d0d; padding: 28px 32px; }
-    .footer-content { text-align: center; }
-    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
-    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+    .message-content { font-size: 15px; line-height: 1.7; white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -605,19 +506,14 @@ const getTicketReplyHtml = (data: Record<string, unknown>) => `
           <p class="message-content">${escapeHtml(data.message)}</p>
         </div>
         
-        <p class="text">You can continue the conversation from your dashboard.</p>
+        <p class="text">You can continue the conversation from your dashboard. If your issue is resolved, you can close the ticket there.</p>
         
         <div class="cta-wrap">
           <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/dashboard" class="cta">View Ticket →</a>
         </div>
       </div>
       
-      <div class="footer">
-        <div class="footer-content">
-          <div class="footer-logo">OCCTA</div>
-          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
-        </div>
-      </div>
+      ${getStandardFooter({ accentColor: '#22c55e' })}
     </div>
   </div>
 </body>
@@ -626,47 +522,26 @@ const getTicketReplyHtml = (data: Record<string, unknown>) => `
 
 const getPasswordResetHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Password Reset - OCCTA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
-    
-    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-    .preheader { display: none !important; visibility: hidden; opacity: 0; height: 0; width: 0; overflow: hidden; }
-    
-    .wrapper { background: #f5f4ef; padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
-    
-    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
-    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
-    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
-    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    ${getCommonStyles()}
     
     .title-banner { background: #ef4444; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
     .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
     
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
-    
-    .cta-wrap { text-align: center; margin: 32px 0; }
-    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 18px 48px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15; }
-    
     .security-note { background: #fef3c7; border: 3px solid #facc15; padding: 20px; margin: 24px 0; }
     .security-icon { font-size: 24px; margin-bottom: 8px; }
     .security-title { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-    .security-text { font-size: 13px; color: #666; line-height: 1.6; }
-    
-    .footer { background: #0d0d0d; padding: 28px 32px; }
-    .footer-content { text-align: center; }
-    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
-    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+    .security-text { font-size: 13px; color: #666; line-height: 1.6; margin: 0; }
   </style>
 </head>
 <body>
-  <div class="preheader">Reset your OCCTA account password — this link expires soon.</div>
+  <div class="preheader">Reset your OCCTA account password — this link expires in 1 hour.</div>
   
   <div class="wrapper">
     <div class="container">
@@ -684,7 +559,7 @@ const getPasswordResetHtml = (data: Record<string, unknown>) => `
         <p class="text">We received a request to reset your OCCTA account password. Click the button below to choose a new one:</p>
         
         <div class="cta-wrap">
-          <a href="${escapeHtml(data.reset_link)}" class="cta">Reset Password →</a>
+          <a href="${escapeHtml(data.reset_link)}" class="cta" style="box-shadow: 4px 4px 0 0 #ef4444;">Reset Password →</a>
         </div>
         
         <div class="security-note">
@@ -698,12 +573,7 @@ const getPasswordResetHtml = (data: Record<string, unknown>) => `
         </p>
       </div>
       
-      <div class="footer">
-        <div class="footer-content">
-          <div class="footer-logo">OCCTA</div>
-          <div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</div>
-        </div>
-      </div>
+      ${getStandardFooter({ accentColor: '#ef4444' })}
     </div>
   </div>
 </body>
@@ -716,83 +586,104 @@ const getInvoiceSentHtml = (data: Record<string, unknown>) => {
   
   const linesHtml = lines.map(line => `
     <tr>
-      <td style="padding: 10px 16px; border-bottom: 1px solid #eee;">${escapeHtml(line.description)}</td>
-      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: center;">${line.qty}</td>
-      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right;">£${sanitizeNumber(line.line_total)}</td>
+      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; font-size: 14px;">${escapeHtml(line.description)}</td>
+      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: center; font-size: 14px;">${line.qty}</td>
+      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right; font-size: 14px; font-weight: 600;">£${sanitizeNumber(line.line_total)}</td>
     </tr>
   `).join('');
   
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Invoice ${escapeHtml(data.invoice_number)} - OCCTA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
-    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', sans-serif; }
-    .preheader { display: none !important; }
-    .wrapper { background: #f5f4ef; padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
-    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
-    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
-    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; text-transform: uppercase; position: relative; z-index: 1; }
-    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    ${getCommonStyles()}
+    
     .title-banner { background: #3b82f6; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
     .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    
     .invoice-card { background: #f5f4ef; border: 3px solid #0d0d0d; margin: 24px 0; }
     .invoice-header { background: #0d0d0d; color: #fff; padding: 12px 20px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; }
     .invoice-body { padding: 0; }
     .invoice-table { width: 100%; border-collapse: collapse; }
-    .invoice-table th { background: #f5f4ef; font-size: 12px; text-transform: uppercase; padding: 12px 16px; text-align: left; }
-    .totals-row { display: flex; justify-content: space-between; padding: 12px 16px; }
-    .totals-row.grand { background: #0d0d0d; color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 18px; }
+    .invoice-table th { background: #f5f4ef; font-size: 11px; text-transform: uppercase; padding: 12px 16px; text-align: left; letter-spacing: 1px; color: #666; }
+    .totals-row { display: flex; justify-content: space-between; padding: 12px 16px; font-size: 14px; }
+    .totals-row.grand { background: #0d0d0d; color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; }
     .meta-row { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #eee; }
-    .meta-label { font-size: 12px; text-transform: uppercase; color: #666; }
-    .meta-value { font-weight: 600; }
-    .cta-wrap { text-align: center; margin: 32px 0; }
-    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; box-shadow: 4px 4px 0 0 #facc15; }
-    .footer { background: #0d0d0d; padding: 28px 32px; text-align: center; }
-    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
-    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+    .meta-label { font-size: 11px; text-transform: uppercase; color: #666; letter-spacing: 1px; }
+    .meta-value { font-weight: 600; font-size: 14px; }
+    
+    .payment-note { background: #fef3c7; border: 2px solid #facc15; padding: 16px; margin: 24px 0; font-size: 13px; }
   </style>
 </head>
 <body>
-  <div class="preheader">Invoice ${escapeHtml(data.invoice_number)} — £${sanitizeNumber(data.total)} due</div>
+  <div class="preheader">Invoice ${escapeHtml(data.invoice_number)} — £${sanitizeNumber(data.total)} due ${data.due_date ? `by ${escapeHtml(data.due_date)}` : 'upon receipt'}</div>
+  
   <div class="wrapper">
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
         <div class="tagline">Telecom • Connected</div>
       </div>
+      
       <div class="title-banner">
         <h1 class="title">📄 Invoice ${escapeHtml(data.invoice_number)}</h1>
       </div>
+      
       <div class="content">
         <p class="greeting">Hi ${escapeHtml(data.customer_name) || "there"},</p>
-        <p class="text">Please find your invoice below. Payment is due ${data.due_date ? `by ${escapeHtml(data.due_date)}` : 'upon receipt'}.</p>
+        <p class="text">Please find your invoice below. Payment is due ${data.due_date ? `by <strong>${escapeHtml(data.due_date)}</strong>` : 'upon receipt'}.</p>
+        
         <div class="invoice-card">
           <div class="invoice-header">Invoice Details</div>
           <div class="invoice-body">
             <div class="meta-row"><span class="meta-label">Invoice Number</span><span class="meta-value">${escapeHtml(data.invoice_number)}</span></div>
             <div class="meta-row"><span class="meta-label">Account Number</span><span class="meta-value">${escapeHtml(data.account_number)}</span></div>
             <div class="meta-row"><span class="meta-label">Issue Date</span><span class="meta-value">${escapeHtml(data.issue_date)}</span></div>
-            ${data.due_date ? `<div class="meta-row"><span class="meta-label">Due Date</span><span class="meta-value">${escapeHtml(data.due_date)}</span></div>` : ''}
+            ${data.due_date ? `<div class="meta-row"><span class="meta-label">Due Date</span><span class="meta-value" style="color: #ef4444; font-weight: 700;">${escapeHtml(data.due_date)}</span></div>` : ''}
           </div>
         </div>
-        ${lines.length > 0 ? `<div class="invoice-card"><div class="invoice-header">Line Items</div><table class="invoice-table"><thead><tr><th>Description</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${linesHtml}</tbody></table></div>` : ''}
+        
+        ${lines.length > 0 ? `
+        <div class="invoice-card">
+          <div class="invoice-header">Line Items</div>
+          <table class="invoice-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>${linesHtml}</tbody>
+          </table>
+        </div>
+        ` : ''}
+        
         <div class="invoice-card">
           <div class="totals-row"><span>Subtotal</span><span>£${sanitizeNumber(data.subtotal)}</span></div>
           <div class="totals-row"><span>VAT (20%)</span><span>£${sanitizeNumber(data.vat_total)}</span></div>
           <div class="totals-row grand"><span>TOTAL DUE</span><span>£${sanitizeNumber(data.total)}</span></div>
         </div>
-        <div class="cta-wrap"><a href="${siteUrl}/dashboard" class="cta">View in Dashboard →</a></div>
-        <p class="text" style="text-align: center; color: #666; font-size: 13px;">Questions? Contact hello@occta.co.uk</p>
+        
+        <div class="payment-note">
+          <strong>💳 Payment Methods:</strong> Pay online via your dashboard, or call 0333 772 1190 to pay by card. Bank transfers accepted to OCCTA Ltd.
+        </div>
+        
+        <div class="cta-wrap">
+          <a href="${siteUrl}/pay-invoice?id=${escapeHtml(data.invoice_id)}" class="cta" style="box-shadow: 4px 4px 0 0 #3b82f6;">Pay Now →</a>
+        </div>
+        
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
+          Questions about your invoice? Contact hello@occta.co.uk
+        </p>
       </div>
-      <div class="footer"><div class="footer-logo">OCCTA</div><div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom</div></div>
+      
+      ${getStandardFooter({ accentColor: '#3b82f6' })}
     </div>
   </div>
 </body>
@@ -803,60 +694,67 @@ const getInvoicePaidHtml = (data: Record<string, unknown>) => {
   const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Payment Confirmed - OCCTA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
-    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', sans-serif; }
-    .wrapper { background: #f5f4ef; padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
-    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
-    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
-    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; position: relative; z-index: 1; }
-    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
+    ${getCommonStyles()}
+    
     .title-banner { background: #22c55e; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
     .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .text { font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0; }
+    
     .receipt-box { background: #f0fdf4; border: 3px solid #22c55e; padding: 24px; margin: 24px 0; text-align: center; }
     .receipt-icon { font-size: 48px; margin-bottom: 12px; }
-    .receipt-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #22c55e; }
-    .receipt-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #86efac; }
+    .receipt-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #22c55e; letter-spacing: 2px; }
+    .receipt-details { margin-top: 20px; text-align: left; }
+    .receipt-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #86efac; }
     .receipt-row:last-child { border-bottom: none; }
     .receipt-label { color: #666; font-size: 13px; }
-    .receipt-value { font-weight: 600; }
-    .cta-wrap { text-align: center; margin: 32px 0; }
-    .cta { display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; box-shadow: 4px 4px 0 0 #22c55e; }
-    .footer { background: #0d0d0d; padding: 28px 32px; text-align: center; }
-    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #facc15; }
-    .footer-text { color: #888; font-size: 11px; margin-top: 16px; }
+    .receipt-value { font-weight: 600; font-size: 14px; }
   </style>
 </head>
 <body>
+  <div class="preheader">Payment received! Invoice ${escapeHtml(data.invoice_number)} has been paid in full.</div>
+  
   <div class="wrapper">
     <div class="container">
-      <div class="header"><div class="logo">OCCTA</div><div class="tagline">Telecom • Connected</div></div>
-      <div class="title-banner"><h1 class="title">✓ Payment Received</h1></div>
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
+      </div>
+      
+      <div class="title-banner">
+        <h1 class="title">✓ Payment Received</h1>
+      </div>
+      
       <div class="content">
         <p class="greeting">Hi ${escapeHtml(data.customer_name) || "there"},</p>
         <p class="text">Great news! We've received your payment. Thank you for keeping your account up to date.</p>
+        
         <div class="receipt-box">
           <div class="receipt-icon">✅</div>
           <div class="receipt-title">Payment Confirmed</div>
-          <div style="margin-top: 16px;">
-            <div class="receipt-row"><span class="receipt-label">Invoice</span><span class="receipt-value">${escapeHtml(data.invoice_number)}</span></div>
-            <div class="receipt-row"><span class="receipt-label">Amount Paid</span><span class="receipt-value">£${sanitizeNumber(data.total)}</span></div>
-            <div class="receipt-row"><span class="receipt-label">Payment Date</span><span class="receipt-value">${escapeHtml(data.paid_date) || new Date().toLocaleDateString('en-GB')}</span></div>
-            ${data.receipt_reference ? `<div class="receipt-row"><span class="receipt-label">Receipt Ref</span><span class="receipt-value">${escapeHtml(data.receipt_reference)}</span></div>` : ''}
+          <div class="receipt-details">
+            <div class="receipt-row"><span class="receipt-label">Invoice Number</span><span class="receipt-value">${escapeHtml(data.invoice_number)}</span></div>
+            <div class="receipt-row"><span class="receipt-label">Amount Paid</span><span class="receipt-value" style="color: #22c55e;">£${sanitizeNumber(data.total)}</span></div>
+            <div class="receipt-row"><span class="receipt-label">Payment Date</span><span class="receipt-value">${escapeHtml(data.paid_date) || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
+            ${data.receipt_reference ? `<div class="receipt-row"><span class="receipt-label">Receipt Reference</span><span class="receipt-value">${escapeHtml(data.receipt_reference)}</span></div>` : ''}
           </div>
         </div>
-        <div class="cta-wrap"><a href="${siteUrl}/dashboard" class="cta">View Receipt →</a></div>
-        <p class="text" style="text-align: center; color: #666; font-size: 13px;">This email serves as confirmation of your payment.</p>
+        
+        <div class="cta-wrap">
+          <a href="${siteUrl}/dashboard" class="cta" style="box-shadow: 4px 4px 0 0 #22c55e;">View Receipt →</a>
+        </div>
+        
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
+          This email serves as confirmation of your payment. A receipt is available in your dashboard.
+        </p>
       </div>
-      <div class="footer"><div class="footer-logo">OCCTA</div><div class="footer-text">© ${new Date().getFullYear()} OCCTA Telecom</div></div>
+      
+      ${getStandardFooter({ accentColor: '#22c55e' })}
     </div>
   </div>
 </body>
@@ -890,8 +788,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Parse request body first to determine auth requirements
-    const { type, to, data, orderNumber, redirectTo }: EmailRequest = await req.json();
+    const { type, to, data, orderNumber }: EmailRequest = await req.json();
 
     if (!resendApiKey) {
       console.error("Missing RESEND_API_KEY");
@@ -901,7 +798,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
-    // Validate email format
     if (!isValidEmail(to)) {
       console.error("Invalid email format:", to);
       return new Response(
@@ -910,7 +806,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Create unauthenticated Supabase client for verification
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -918,7 +813,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Handle order_confirmation for guest orders (no auth required, but verify order exists)
     if (type === "order_confirmation" && orderNumber) {
-      // Verify the order exists and email matches
       const { data: guestOrder, error: orderError } = await supabaseAdmin
         .from("guest_orders")
         .select("email, order_number")
@@ -943,142 +837,86 @@ const handler = async (req: Request): Promise<Response> => {
       
       console.log(`Verified guest order confirmation for ${orderNumber}`);
     } else {
-      // All other email types require authentication
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
         console.error("No authorization header provided");
         return new Response(
-          JSON.stringify({ error: "Unauthorized - No authorization header" }),
+          JSON.stringify({ error: "Unauthorized" }),
           { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        { global: { headers: { Authorization: authHeader } } }
-      );
-
-      // Verify JWT token
       const token = authHeader.replace("Bearer ", "");
-      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
       
-      if (claimsError || !claimsData?.claims) {
-        console.error("Invalid token:", claimsError?.message);
+      if (authError || !user) {
+        console.error("Auth verification failed:", authError);
         return new Response(
-          JSON.stringify({ error: "Unauthorized - Invalid token" }),
+          JSON.stringify({ error: "Unauthorized" }),
           { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
-      const userId = claimsData.claims.sub as string;
-      console.log(`Authenticated user: ${userId}`);
-
-      // Authorization checks based on email type
-      if (type === "status_update" || type === "order_message" || type === "ticket_reply" || type === "password_reset") {
-        // Only admins can send these email types
-        const userIsAdmin = await isAdmin(supabase, userId);
+      // For admin-only actions like ticket_reply, order_message, invoice_sent/paid, verify admin role
+      const adminOnlyTypes = ["ticket_reply", "order_message", "invoice_sent", "invoice_paid"];
+      if (adminOnlyTypes.includes(type)) {
+        const userIsAdmin = await isAdmin(supabaseAdmin, user.id);
         if (!userIsAdmin) {
-          console.error("User is not admin, cannot send this email type");
+          console.error("User is not an admin:", user.id);
           return new Response(
             JSON.stringify({ error: "Forbidden - Admin access required" }),
             { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
-        console.log(`Admin verified for ${type} email`);
-      } else if (type === "order_confirmation") {
-        // For authenticated order confirmations, verify the email matches the order recipient
-        const orderEmail = data.email as string | undefined;
-        if (orderEmail && orderEmail.toLowerCase() !== to.toLowerCase()) {
-          console.error("Email mismatch: order email vs recipient");
-          return new Response(
-            JSON.stringify({ error: "Forbidden - Email recipient mismatch" }),
-            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
-          );
-        }
-      } else if (type === "welcome") {
-        // Welcome emails should only be sent to the authenticated user's email
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("id", userId)
-          .single();
-        
-        if (profile?.email && profile.email.toLowerCase() !== to.toLowerCase()) {
-          console.error("Welcome email can only be sent to user's own email");
-          return new Response(
-            JSON.stringify({ error: "Forbidden - Can only send welcome email to own address" }),
-            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
-          );
-        }
       }
     }
 
-    console.log(`Sending ${type} email to ${to}`);
-
-    let subject: string;
+    // Generate HTML based on type
     let html: string;
-    let emailData: Record<string, unknown> = { ...data };
-
-    if (type === "password_reset") {
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: "recovery",
-        email: to,
-        options: redirectTo ? { redirectTo } : undefined,
-      });
-
-      const resetLink = linkData?.properties?.action_link;
-
-      if (linkError || !resetLink) {
-        console.error("Failed to generate password reset link", linkError?.message);
-        return new Response(
-          JSON.stringify({ error: "Unable to generate password reset link" }),
-          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      emailData = { ...emailData, reset_link: resetLink };
-    }
+    let subject: string;
 
     switch (type) {
       case "order_confirmation":
-        subject = `Order Confirmed - ${data?.order_number || orderNumber || 'N/A'}`;
-        html = getOrderConfirmationHtml({ ...emailData, order_number: data?.order_number || orderNumber });
+        html = getOrderConfirmationHtml(data);
+        subject = `Order Confirmed - #${escapeHtml(data.order_number)}`;
         break;
       case "welcome":
-        subject = "Welcome to OCCTA!";
-        html = getWelcomeHtml(emailData);
+        html = getWelcomeHtml(data);
+        subject = "Welcome to OCCTA! 🎉";
         break;
       case "status_update":
-        subject = `Order Update - ${data?.order_number || orderNumber || 'N/A'}: ${(data?.status as string || 'UPDATED').toUpperCase()}`;
-        html = getStatusUpdateHtml(emailData);
+        html = getStatusUpdateHtml(data);
+        subject = `Order Update - #${escapeHtml(data.order_number)} is now ${escapeHtml(data.status)}`;
         break;
       case "order_message":
-        subject = `Message About Your Order - ${data?.order_number || orderNumber || 'N/A'}`;
-        html = getOrderMessageHtml(emailData);
+        html = getOrderMessageHtml(data);
+        subject = `New Message - Order #${escapeHtml(data.order_number)}`;
         break;
       case "ticket_reply":
-        subject = `Support Ticket Reply: ${data.ticket_subject}`;
-        html = getTicketReplyHtml(emailData);
+        html = getTicketReplyHtml(data);
+        subject = `Support Reply: ${escapeHtml(data.ticket_subject)}`;
         break;
       case "password_reset":
-        subject = "Reset your OCCTA password";
-        html = getPasswordResetHtml(emailData);
+        html = getPasswordResetHtml(data);
+        subject = "Reset Your OCCTA Password";
         break;
       case "invoice_sent":
-        subject = `Invoice ${data.invoice_number} from OCCTA Telecom`;
-        html = getInvoiceSentHtml(emailData);
+        html = getInvoiceSentHtml(data);
+        subject = `Invoice ${escapeHtml(data.invoice_number)} - £${sanitizeNumber(data.total)} Due`;
         break;
       case "invoice_paid":
-        subject = `Payment Received - Invoice ${data.invoice_number}`;
-        html = getInvoicePaidHtml(emailData);
+        html = getInvoicePaidHtml(data);
+        subject = `Payment Received - Invoice ${escapeHtml(data.invoice_number)}`;
         break;
       default:
-        throw new Error(`Unknown email type: ${type}`);
+        return new Response(
+          JSON.stringify({ error: "Unknown email type" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
     }
 
     // Use RESEND_FROM_EMAIL for all emails - this must be a verified domain in Resend
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk";
     
     // Get admin email for BCC (if configured)
     const adminEmail = Deno.env.get("ADMIN_EMAIL");
@@ -1092,32 +930,18 @@ const handler = async (req: Request): Promise<Response> => {
       html,
     });
 
-    if ("error" in emailResponse && emailResponse.error) {
-      console.error("Resend email error:", emailResponse.error);
-      return new Response(
-        JSON.stringify({ error: emailResponse.error.message || "Email send failed" }),
-        {
-          status: 502,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
+    console.log(`Email sent successfully: ${type} to ${to}`);
 
-    console.log("Email sent successfully:", emailResponse);
-
-    return new Response(JSON.stringify(emailResponse), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error in send-email function:", errorMessage);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      JSON.stringify({ success: true, data: emailResponse }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+
+  } catch (error) {
+    console.error("Error in email function:", error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };

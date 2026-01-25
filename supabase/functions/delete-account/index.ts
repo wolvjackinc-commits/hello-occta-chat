@@ -219,33 +219,107 @@ serve(async (req) => {
       // Continue anyway - data is already deleted
     }
 
-    // 6. Send confirmation email
+    // 6. Send confirmation email - UK Professional Template
     if (resendApiKey && user.email) {
       try {
+        const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+        const currentYear = new Date().getFullYear();
+        const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk";
+        
         await resend.emails.send({
-          from: 'OCCTA <noreply@occta.co.uk>',
+          from: `OCCTA Telecom <${fromEmail}>`,
           to: [user.email],
           subject: 'Your OCCTA Account Has Been Deleted',
           html: `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Account Deleted - OCCTA</title>
   <style>
-    body { font-family: 'Inter', sans-serif; background: #f5f4ef; margin: 0; padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #fff; border: 4px solid #0d0d0d; padding: 32px; }
-    h1 { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');
+    body { margin: 0; padding: 0; background: #f5f4ef; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .wrapper { padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #fff; letter-spacing: 4px; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Account Deleted</h1>
-    <p>Hi ${escapeHtml(profile?.full_name) || 'there'},</p>
-    <p>Your OCCTA account has been successfully deleted as requested.</p>
-    <p>All your personal data has been removed from our systems in accordance with GDPR requirements.</p>
-    <p>If you did not request this deletion, please contact us immediately at <strong>hello@occta.co.uk</strong> or call <strong>0333 772 1190</strong>.</p>
-    <p>We're sorry to see you go. If you ever want to return, we'll be here.</p>
-    <p>Best regards,<br>The OCCTA Team</p>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
+      </div>
+      
+      <div style="background: #6b7280; padding: 16px 32px; border-bottom: 4px solid #0d0d0d;">
+        <h1 style="font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #fff; margin: 0; letter-spacing: 2px;">
+          Account Deleted
+        </h1>
+      </div>
+      
+      <div style="padding: 32px;">
+        <p style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Hi ${escapeHtml(profile?.full_name) || 'there'},</p>
+        
+        <p style="margin: 16px 0; color: #333; font-size: 15px; line-height: 1.7;">
+          Your OCCTA account has been successfully deleted as requested.
+        </p>
+        
+        <div style="background: #f0fdf4; border: 3px solid #22c55e; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0; font-size: 14px; color: #166534; line-height: 1.6;">
+            ✓ All your personal data has been removed from our systems in accordance with <strong>GDPR requirements</strong>.
+          </p>
+        </div>
+        
+        <div style="background: #fef3c7; border: 2px solid #facc15; padding: 16px; margin: 24px 0;">
+          <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.6;">
+            <strong>⚠️ Didn't request this?</strong><br>
+            If you did not request this deletion, please contact us immediately at <strong>hello@occta.co.uk</strong> or call <strong>0333 772 1190</strong>.
+          </p>
+        </div>
+        
+        <p style="margin: 24px 0 0 0; color: #333; font-size: 15px; line-height: 1.7;">
+          We're sorry to see you go. If you ever want to return, we'll be here — no hard feelings!
+        </p>
+        
+        <p style="margin: 24px 0 0 0; color: #333; font-size: 15px; line-height: 1.7;">
+          Best regards,<br>
+          <strong>The OCCTA Team</strong>
+        </p>
+      </div>
+      
+      <div style="background: #0d0d0d; padding: 32px;">
+        <div style="text-align: center;">
+          <div style="font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 4px; color: #facc15;">OCCTA</div>
+          
+          <div style="margin: 20px 0;">
+            <a href="${siteUrl}" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Website</a>
+            <a href="${siteUrl}/privacy-policy" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Privacy</a>
+          </div>
+          
+          <div style="margin: 24px 0; padding-top: 20px; border-top: 1px solid #333;">
+            <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.6;">
+              Need help? Call <strong style="color: #fff;">0333 772 1190</strong> or email <a href="mailto:hello@occta.co.uk" style="color: #facc15; text-decoration: none;">hello@occta.co.uk</a>
+            </p>
+          </div>
+          
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #333;">
+            <p style="color: #666; font-size: 10px; margin: 0 0 6px 0; line-height: 1.6;">
+              © ${currentYear} OCCTA Limited. All rights reserved.
+            </p>
+            <p style="color: #555; font-size: 9px; margin: 0; line-height: 1.5;">
+              OCCTA Limited is a company registered in England and Wales.<br>
+              Registered office: 128 City Road, London, EC1V 2NX
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 </html>`,

@@ -43,83 +43,156 @@ interface InstallationBooking {
 }
 
 const TIME_SLOT_LABELS: Record<string, string> = {
-  "09:00-12:00": "Morning (9am - 12pm)",
-  "12:00-15:00": "Afternoon (12pm - 3pm)",
-  "15:00-18:00": "Evening (3pm - 6pm)",
+  "09:00-12:00": "Morning (9am – 12pm)",
+  "12:00-15:00": "Afternoon (12pm – 3pm)",
+  "15:00-18:00": "Evening (3pm – 6pm)",
 };
 
-const getReminderEmailHtml = (booking: InstallationBooking, orderDetails: any) => {
+// UK Companies Act 2006 compliant footer
+const getStandardFooter = () => {
+  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const currentYear = new Date().getFullYear();
+  
+  return `
+    <div style="background: #0d0d0d; padding: 32px;">
+      <div style="text-align: center;">
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 4px; color: #facc15;">OCCTA</div>
+        
+        <div style="margin: 20px 0;">
+          <a href="${siteUrl}/support" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Support</a>
+          <a href="${siteUrl}/dashboard" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Dashboard</a>
+          <a href="${siteUrl}/privacy-policy" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Privacy</a>
+        </div>
+        
+        <div style="margin: 24px 0; padding-top: 20px; border-top: 1px solid #333;">
+          <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.6;">
+            Need help? Call <strong style="color: #fff;">0333 772 1190</strong> or email <a href="mailto:hello@occta.co.uk" style="color: #facc15; text-decoration: none;">hello@occta.co.uk</a>
+          </p>
+          <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
+            Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm
+          </p>
+        </div>
+        
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #333;">
+          <p style="color: #666; font-size: 10px; margin: 0 0 6px 0; line-height: 1.6;">
+            © ${currentYear} OCCTA Limited. All rights reserved.
+          </p>
+          <p style="color: #555; font-size: 9px; margin: 0; line-height: 1.5;">
+            OCCTA Limited is a company registered in England and Wales.<br>
+            Registered office: 128 City Road, London, EC1V 2NX
+          </p>
+        </div>
+      </div>
+    </div>`;
+};
+
+const getReminderEmailHtml = (booking: InstallationBooking, orderDetails: { address_line1?: string; city?: string; postcode?: string; plan_name?: string } | null) => {
   const slotTime = TIME_SLOT_LABELS[booking.installation_slots.slot_time] || escapeHtml(booking.installation_slots.slot_time);
-  const technicianInfo = booking.technicians 
-    ? `<p><strong>Technician:</strong> ${escapeHtml(booking.technicians.full_name)} (${escapeHtml(booking.technicians.phone)})</p>`
-    : '';
+  const slotDate = new Date(booking.installation_slots.slot_date).toLocaleDateString('en-GB', { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  });
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Installation Tomorrow - OCCTA</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-    .container { max-width: 600px; margin: 0 auto; background: white; }
-    .header { background: #000; color: white; padding: 24px; text-align: center; }
-    .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-    .content { padding: 32px 24px; }
-    .highlight-box { background: #f9f9f9; border: 4px solid #000; padding: 20px; margin: 20px 0; }
-    .date-time { font-size: 24px; font-weight: bold; text-align: center; margin: 16px 0; }
-    .details { margin: 16px 0; }
-    .details p { margin: 8px 0; }
-    .checklist { background: #fffbeb; border: 2px solid #fbbf24; padding: 16px; margin: 20px 0; }
-    .checklist h3 { margin: 0 0 12px 0; color: #92400e; }
-    .checklist ul { margin: 0; padding-left: 20px; }
-    .checklist li { margin: 4px 0; }
-    .footer { background: #f4f4f4; padding: 24px; text-align: center; color: #666; font-size: 14px; }
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+    body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .wrapper { background: #f5f4ef; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 4px solid #0d0d0d; box-shadow: 8px 8px 0 0 #0d0d0d; }
+    .header { background: #0d0d0d; padding: 32px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: #facc15; transform: translate(30%, -30%) rotate(45deg); }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: #ffffff; position: relative; z-index: 1; }
+    .tagline { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #facc15; margin-top: 4px; font-weight: 600; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>⏰ Installation Tomorrow!</h1>
-    </div>
-    <div class="content">
-      <p>Hi <strong>${escapeHtml(booking.customer_name)}</strong>,</p>
-      
-      <p>This is a friendly reminder that your installation is scheduled for <strong>tomorrow</strong>!</p>
-      
-      <div class="highlight-box">
-        <div class="date-time">
-          📅 ${new Date(booking.installation_slots.slot_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </div>
-        <div class="date-time">
-          🕐 ${slotTime}
-        </div>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
       </div>
       
-      <div class="details">
-        <p><strong>Installation Address:</strong></p>
-        <p>${escapeHtml(orderDetails?.address_line1) || 'N/A'}<br>
-        ${escapeHtml(orderDetails?.city) || ''}, ${escapeHtml(orderDetails?.postcode) || ''}</p>
+      <div style="background: #22c55e; padding: 16px 32px; border-bottom: 4px solid #0d0d0d;">
+        <h1 style="font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff;">
+          📅 Installation Tomorrow!
+        </h1>
+      </div>
+      
+      <div style="padding: 32px;">
+        <p style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Hi ${escapeHtml(booking.customer_name)},</p>
         
-        <p><strong>Service:</strong> ${escapeHtml(orderDetails?.plan_name) || 'N/A'}</p>
-        ${technicianInfo}
+        <p style="font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0;">
+          This is a friendly reminder that your installation is scheduled for <strong>tomorrow</strong>! Our engineer will arrive during your chosen time slot.
+        </p>
+        
+        <div style="background: #f5f4ef; border: 4px solid #0d0d0d; padding: 24px; margin: 24px 0; text-align: center;">
+          <p style="font-family: 'Bebas Neue', sans-serif; font-size: 28px; margin: 0 0 8px 0; letter-spacing: 2px;">
+            📅 ${slotDate}
+          </p>
+          <p style="font-family: 'Bebas Neue', sans-serif; font-size: 24px; margin: 0; color: #22c55e; letter-spacing: 2px;">
+            🕐 ${slotTime}
+          </p>
+        </div>
+        
+        <div style="background: #f5f4ef; border: 3px solid #0d0d0d; margin: 24px 0;">
+          <div style="background: #0d0d0d; color: #fff; padding: 12px 20px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px;">
+            Appointment Details
+          </div>
+          <div style="padding: 20px;">
+            <div style="padding: 10px 0; border-bottom: 1px dashed #ccc;">
+              <span style="font-size: 12px; text-transform: uppercase; color: #666; display: block; margin-bottom: 4px;">Installation Address</span>
+              <span style="font-weight: 600;">${escapeHtml(orderDetails?.address_line1) || 'N/A'}, ${escapeHtml(orderDetails?.city) || ''} ${escapeHtml(orderDetails?.postcode) || ''}</span>
+            </div>
+            <div style="padding: 10px 0; border-bottom: 1px dashed #ccc;">
+              <span style="font-size: 12px; text-transform: uppercase; color: #666; display: block; margin-bottom: 4px;">Service</span>
+              <span style="font-weight: 600;">${escapeHtml(orderDetails?.plan_name) || 'Broadband Installation'}</span>
+            </div>
+            ${booking.technicians ? `
+            <div style="padding: 10px 0;">
+              <span style="font-size: 12px; text-transform: uppercase; color: #666; display: block; margin-bottom: 4px;">Engineer</span>
+              <span style="font-weight: 600;">${escapeHtml(booking.technicians.full_name)}</span>
+              <span style="color: #666; font-size: 13px;"> • ${escapeHtml(booking.technicians.phone)}</span>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+        
+        <div style="background: #fef3c7; border: 3px solid #facc15; padding: 20px; margin: 24px 0;">
+          <h3 style="margin: 0 0 12px 0; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: #92400e;">
+            📋 Before Your Installation
+          </h3>
+          <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.8;">
+            <li>Ensure someone over 18 will be home during the appointment window</li>
+            <li>Clear access to where you'd like the router installed</li>
+            <li>Know where your main telephone socket is located</li>
+            <li>Have a valid photo ID ready for the engineer</li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0;">
+          If you need to reschedule, please contact us as soon as possible on <strong>0333 772 1190</strong>.
+        </p>
+        
+        <p style="font-size: 15px; line-height: 1.7; color: #333; margin: 24px 0 0 0;">
+          We look forward to getting you connected!
+        </p>
+        
+        <p style="font-size: 15px; line-height: 1.7; color: #333; margin: 8px 0 0 0;">
+          <strong>The OCCTA Team</strong>
+        </p>
       </div>
       
-      <div class="checklist">
-        <h3>📋 Before Your Installation</h3>
-        <ul>
-          <li>Ensure someone over 18 will be home during the appointment window</li>
-          <li>Clear access to where you'd like the router installed</li>
-          <li>Know where your main telephone socket is located</li>
-          <li>Have a valid ID ready for the technician</li>
-        </ul>
-      </div>
-      
-      <p>If you need to reschedule, please contact us as soon as possible.</p>
-      
-      <p>We look forward to getting you connected!</p>
-    </div>
-    <div class="footer">
-      <p>Need help? Call us at 0800 260 6627</p>
-      <p>© ${new Date().getFullYear()} OCCTA Telecom. All rights reserved.</p>
+      ${getStandardFooter()}
     </div>
   </div>
 </body>
@@ -207,12 +280,13 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         // Send email reminder
-        const slotTime = booking.installation_slots?.slot_time || "scheduled time";
-        const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+        const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "hello@occta.co.uk";
+        const slotTime = TIME_SLOT_LABELS[booking.installation_slots?.slot_time] || booking.installation_slots?.slot_time || "scheduled time";
+        
         const emailResult = await resend.emails.send({
           from: `OCCTA Telecom <${fromEmail}>`,
           to: [booking.customer_email],
-          subject: `⏰ Installation Reminder - Tomorrow ${slotTime}`,
+          subject: `📅 Installation Tomorrow – ${slotTime}`,
           html: getReminderEmailHtml(booking, orderDetails),
         });
 

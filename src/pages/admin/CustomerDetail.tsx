@@ -210,9 +210,18 @@ export const AdminCustomerDetail = () => {
             <div className="flex justify-end">
               <AddServiceDialog
                 trigger={<Button className="border-2 border-foreground">Add service</Button>}
-                defaultAccountNumber={overview.account_number}
-                readOnlyAccountNumber
-                defaultCustomerId={overview.id}
+                defaultCustomer={{
+                  id: overview.id,
+                  full_name: overview.full_name,
+                  email: overview.email,
+                  account_number: overview.account_number,
+                  phone: overview.phone,
+                  date_of_birth: overview.date_of_birth,
+                  latest_postcode: overview.postcode,
+                  latest_postcode_normalized: null,
+                  created_at: overview.created_at,
+                }}
+                readOnlyCustomer
                 onSaved={refetch}
               />
             </div>
@@ -278,9 +287,18 @@ export const AdminCustomerDetail = () => {
           <div className="flex justify-end">
             <AddServiceDialog
               trigger={<Button className="border-2 border-foreground">Add service</Button>}
-              defaultAccountNumber={overview.account_number}
-              readOnlyAccountNumber
-              defaultCustomerId={overview.id}
+              defaultCustomer={{
+                id: overview.id,
+                full_name: overview.full_name,
+                email: overview.email,
+                account_number: overview.account_number,
+                phone: overview.phone,
+                date_of_birth: overview.date_of_birth,
+                latest_postcode: overview.postcode,
+                latest_postcode_normalized: null,
+                created_at: overview.created_at,
+              }}
+              readOnlyCustomer
               onSaved={refetch}
             />
           </div>

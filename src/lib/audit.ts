@@ -17,7 +17,8 @@ type AuditAction =
   | "close"
   | "reopen"
   | "view_sensitive"
-  | "payment_received";
+  | "payment_received"
+  | "phone_payment";
 
 type AuditEntity =
   | "service"

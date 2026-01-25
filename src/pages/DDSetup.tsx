@@ -172,17 +172,23 @@ export default function DDSetup() {
             <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="h-8 w-8 text-primary-foreground" />
             </div>
-            <h1 className="font-display text-3xl mb-2">Direct Debit Set Up</h1>
+            <h1 className="font-display text-3xl mb-2">Direct Debit Submitted</h1>
             <p className="text-muted-foreground mb-6">
-              Thank you! Your Direct Debit instruction has been received. We'll send a confirmation email shortly.
+              Thank you! Your Direct Debit instruction has been received and is awaiting verification.
             </p>
             <div className="bg-muted p-4 rounded-lg text-left text-sm">
               <p className="font-medium mb-2">What happens next?</p>
               <ul className="space-y-1 text-muted-foreground">
-                <li>• We'll verify your bank details</li>
-                <li>• You'll receive a confirmation letter</li>
+                <li>• We'll verify your bank details (1-2 business days)</li>
+                <li>• You'll receive a confirmation email once verified</li>
                 <li>• Your first payment will be collected as agreed</li>
               </ul>
+            </div>
+            <div className="mt-4 p-3 bg-primary/10 rounded-lg text-sm">
+              <p className="text-primary font-medium">Status: Pending Verification</p>
+              <p className="text-muted-foreground text-xs mt-1">
+                An admin will review and verify your mandate shortly.
+              </p>
             </div>
           </CardContent>
         </Card>

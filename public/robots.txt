@@ -1,5 +1,5 @@
 # OCCTA Robots.txt
-# https://hello-occta-chat.lovable.app
+# https://www.occta.co.uk
 
 User-agent: *
 Allow: /
@@ -15,7 +15,7 @@ Disallow: /offline
 Disallow: /install
 
 # Sitemap location
-Sitemap: https://hello-occta-chat.lovable.app/sitemap.xml
+Sitemap: https://www.occta.co.uk/sitemap.xml
 
 # Crawl-delay for polite crawling
 Crawl-delay: 1

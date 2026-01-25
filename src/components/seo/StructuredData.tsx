@@ -14,6 +14,9 @@ const organizationSchema = {
   foundingDate: '2021',
   address: {
     '@type': 'PostalAddress',
+    streetAddress: '22 Pavilion View',
+    addressLocality: 'Huddersfield',
+    postalCode: 'HD3 3WU',
     addressCountry: 'GB',
     addressRegion: 'England',
   },
@@ -33,7 +36,7 @@ const organizationSchema = {
     },
     {
       '@type': 'ContactPoint',
-      telephone: '+44-333-016-2016',
+      telephone: '+44-800-260-6627',
       contactType: 'sales',
       areaServed: 'GB',
       availableLanguage: ['English'],
@@ -55,6 +58,9 @@ const localBusinessSchema = {
   image: `${BASE_URL}/pwa-512x512.png`,
   address: {
     '@type': 'PostalAddress',
+    streetAddress: '22 Pavilion View',
+    addressLocality: 'Huddersfield',
+    postalCode: 'HD3 3WU',
     addressCountry: 'GB',
     addressRegion: 'England',
   },

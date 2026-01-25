@@ -42,7 +42,7 @@ const organizationSchema = {
   sameAs: [],
 };
 
-// Local Business Schema with ratings - using LocalBusiness which supports aggregateRating and review
+// Local Business Schema - basic info without reviews
 const localBusinessSchema = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
@@ -62,42 +62,6 @@ const localBusinessSchema = {
     '@type': 'Country',
     name: 'United Kingdom',
   },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.7',
-    bestRating: '5',
-    worstRating: '1',
-    ratingCount: '2847',
-    reviewCount: '1523',
-  },
-  review: [
-    {
-      '@type': 'Review',
-      reviewRating: {
-        '@type': 'Rating',
-        ratingValue: '5',
-        bestRating: '5',
-      },
-      author: {
-        '@type': 'Person',
-        name: 'Sarah M.',
-      },
-      reviewBody: 'Finally broadband without the corporate nonsense. Setup was quick, speeds are exactly as promised, and the price hasn\'t changed in 2 years.',
-    },
-    {
-      '@type': 'Review',
-      reviewRating: {
-        '@type': 'Rating',
-        ratingValue: '5',
-        bestRating: '5',
-      },
-      author: {
-        '@type': 'Person',
-        name: 'James T.',
-      },
-      reviewBody: 'Best cheap broadband I\'ve found. No contract means I can leave anytime but honestly why would I? Great service.',
-    },
-  ],
 };
 
 // Website Schema with SearchAction
@@ -157,13 +121,6 @@ export const createServiceSchema = ({
       },
     },
   }),
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.7',
-    bestRating: '5',
-    worstRating: '1',
-    ratingCount: '2847',
-  },
 });
 
 // Product Schema for broadband plans
@@ -201,14 +158,6 @@ export const createProductSchema = ({
     },
     itemCondition: 'https://schema.org/NewCondition',
     ...(speed && { description: `Up to ${speed} download speed` }),
-  },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.7',
-    bestRating: '5',
-    worstRating: '1',
-    ratingCount: '2847',
-    reviewCount: '1523',
   },
 });
 

@@ -5,13 +5,15 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const resend = new Resend(resendApiKey);
 
-// Cron job secret for protecting scheduled endpoints
 const CRON_SECRET = Deno.env.get("CRON_JOB_SECRET");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
 };
+
+// Template types for invoice reminders
+type ReminderTemplate = 'due_soon' | 'due_today' | 'overdue_7';
 
 const escapeHtml = (unsafe: unknown): string => {
   if (unsafe === null || unsafe === undefined) return '';
@@ -29,7 +31,6 @@ const sanitizeNumber = (value: unknown): string => {
   return isNaN(num) ? '0.00' : num.toFixed(2);
 };
 
-// UK Companies Act 2006 compliant footer
 const getStandardFooter = (accentColor: string = '#facc15') => {
   const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
   const currentYear = new Date().getFullYear();
@@ -67,24 +68,45 @@ const getStandardFooter = (accentColor: string = '#facc15') => {
     </div>`;
 };
 
-const getPaymentReminderHtml = (data: {
+const getTemplateConfig = (template: ReminderTemplate): { subject: string; urgencyColor: string; icon: string; title: string; bodyText: string } => {
+  switch (template) {
+    case 'due_soon':
+      return {
+        subject: '📅 Payment Due in 3 Days',
+        urgencyColor: '#3b82f6',
+        icon: '📅',
+        title: 'Payment Due Soon',
+        bodyText: 'Your invoice is due in 3 days. Please ensure payment is made on time to avoid any late fees or service interruptions.',
+      };
+    case 'due_today':
+      return {
+        subject: '⏰ Payment Due Today',
+        urgencyColor: '#f59e0b',
+        icon: '⏰',
+        title: 'Payment Due Today',
+        bodyText: 'Your payment is due today. Please complete your payment now to avoid any late fees.',
+      };
+    case 'overdue_7':
+      return {
+        subject: '⚠️ Payment 7 Days Overdue',
+        urgencyColor: '#ef4444',
+        icon: '⚠️',
+        title: 'Payment Overdue',
+        bodyText: 'Your payment is now 7 days overdue. Please settle this invoice immediately to avoid additional late fees and potential service suspension.',
+      };
+  }
+};
+
+const getReminderHtml = (data: {
   customer_name: string;
   invoice_number: string;
   total: number;
   due_date: string;
-  days_until_due: number;
-  is_overdue: boolean;
   pay_url: string;
+  template: ReminderTemplate;
 }) => {
-  const urgencyColor = data.is_overdue ? '#ef4444' : data.days_until_due <= 3 ? '#f59e0b' : '#3b82f6';
-  const urgencyText = data.is_overdue 
-    ? 'OVERDUE' 
-    : data.days_until_due === 0 
-      ? 'DUE TODAY' 
-      : data.days_until_due === 1 
-        ? 'DUE TOMORROW' 
-        : `DUE IN ${data.days_until_due} DAYS`;
-
+  const config = getTemplateConfig(data.template);
+  
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -92,7 +114,7 @@ const getPaymentReminderHtml = (data: {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
-  <title>Payment Reminder - OCCTA</title>
+  <title>${config.title} - OCCTA</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
     body { margin: 0; padding: 0; background: #f5f4ef; color: #0d0d0d; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -112,9 +134,9 @@ const getPaymentReminderHtml = (data: {
         <div class="tagline">Telecom • Connected</div>
       </div>
       
-      <div style="background: ${urgencyColor}; padding: 16px 32px; border-bottom: 4px solid #0d0d0d;">
+      <div style="background: ${config.urgencyColor}; padding: 16px 32px; border-bottom: 4px solid #0d0d0d;">
         <h1 style="font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff;">
-          ${data.is_overdue ? '⚠️' : '⏰'} Payment ${data.is_overdue ? 'Overdue' : 'Reminder'}
+          ${config.icon} ${config.title}
         </h1>
       </div>
       
@@ -122,9 +144,7 @@ const getPaymentReminderHtml = (data: {
         <p style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Hi ${escapeHtml(data.customer_name)},</p>
         
         <p style="font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0;">
-          ${data.is_overdue 
-            ? 'Your payment is now overdue. Please settle this invoice as soon as possible to avoid any service interruptions or late fees.' 
-            : 'This is a friendly reminder that you have an upcoming payment due soon.'}
+          ${config.bodyText}
         </p>
         
         <div style="background: #f5f4ef; border: 3px solid #0d0d0d; margin: 24px 0;">
@@ -138,30 +158,26 @@ const getPaymentReminderHtml = (data: {
             </div>
             <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #ccc;">
               <span style="font-size: 12px; text-transform: uppercase; color: #666;">Amount Due</span>
-              <span style="font-weight: 700; font-size: 18px; color: ${urgencyColor};">£${sanitizeNumber(data.total)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #ccc;">
-              <span style="font-size: 12px; text-transform: uppercase; color: #666;">Due Date</span>
-              <span style="font-weight: 700;">${escapeHtml(data.due_date)}</span>
+              <span style="font-weight: 700; font-size: 18px; color: ${config.urgencyColor};">£${sanitizeNumber(data.total)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 12px 0;">
-              <span style="font-size: 12px; text-transform: uppercase; color: #666;">Status</span>
-              <span style="display: inline-block; background: ${urgencyColor}; color: white; padding: 4px 12px; font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 1px;">${urgencyText}</span>
+              <span style="font-size: 12px; text-transform: uppercase; color: #666;">Due Date</span>
+              <span style="font-weight: 700;">${escapeHtml(data.due_date)}</span>
             </div>
           </div>
         </div>
         
-        ${data.is_overdue ? `
+        ${data.template === 'overdue_7' ? `
         <div style="background: #fef2f2; border: 2px solid #ef4444; padding: 16px; margin: 24px 0;">
           <p style="margin: 0; font-size: 13px; color: #991b1b; line-height: 1.6;">
-            <strong>⚠️ Important:</strong> Late payments may incur a £5.00 fee after 7 days. Services may be suspended after 30 days of non-payment.
+            <strong>⚠️ Important:</strong> Late payments may incur a £5.00 fee. Services may be suspended after 30 days of non-payment.
           </p>
         </div>
         ` : ''}
         
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${escapeHtml(data.pay_url)}" style="display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; box-shadow: 4px 4px 0 0 ${urgencyColor};">
-            Pay Now →
+          <a href="${escapeHtml(data.pay_url)}" style="display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; box-shadow: 4px 4px 0 0 ${config.urgencyColor};">
+            Pay Now — £${sanitizeNumber(data.total)} →
           </a>
         </div>
         
@@ -170,12 +186,25 @@ const getPaymentReminderHtml = (data: {
         </p>
       </div>
       
-      ${getStandardFooter(urgencyColor)}
+      ${getStandardFooter(config.urgencyColor)}
     </div>
   </div>
 </body>
 </html>`;
 };
+
+interface InvoiceWithProfile {
+  id: string;
+  invoice_number: string;
+  total: number;
+  due_date: string;
+  status: string;
+  user_id: string;
+  profile?: {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -205,22 +234,26 @@ serve(async (req) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Find invoices that are:
-    // 1. Due in 7 days
-    // 2. Due in 3 days
-    // 3. Due today
-    // 4. 1 day overdue
-    // 5. 7 days overdue
-    const reminderDays = [7, 3, 0, -1, -7];
+    // Define reminder schedule: [dayOffset, templateName]
+    // T-3 = 3 days before due, T+0 = due today, T+7 = 7 days overdue
+    const reminderSchedule: { dayOffset: number; template: ReminderTemplate }[] = [
+      { dayOffset: 3, template: 'due_soon' },    // 3 days before due
+      { dayOffset: 0, template: 'due_today' },   // Due today
+      { dayOffset: -7, template: 'overdue_7' },  // 7 days overdue
+    ];
+    
     const emailsSent: string[] = [];
+    const skipped: string[] = [];
     const errors: string[] = [];
 
-    for (const dayOffset of reminderDays) {
+    for (const { dayOffset, template } of reminderSchedule) {
       const targetDate = new Date(today);
       targetDate.setDate(targetDate.getDate() + dayOffset);
       const dateStr = targetDate.toISOString().split('T')[0];
 
-      // Get unpaid invoices with this due date
+      console.log(`Processing ${template} reminders for due_date=${dateStr}`);
+
+      // Get unpaid invoices with this due date (outstanding balance)
       const { data: invoices, error: invError } = await supabase
         .from('invoices')
         .select(`
@@ -241,11 +274,12 @@ serve(async (req) => {
       }
 
       if (!invoices || invoices.length === 0) {
+        console.log(`No invoices found for ${template} on ${dateStr}`);
         continue;
       }
 
       for (const invoice of invoices) {
-        // Fetch profile separately
+        // Fetch profile for customer name and email
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name, email')
@@ -253,22 +287,94 @@ serve(async (req) => {
           .single();
 
         if (!profile?.email) {
-          console.log(`Skipping invoice ${invoice.invoice_number} - no email`);
+          console.log(`Skipping invoice ${invoice.invoice_number} - no email found`);
+          skipped.push(`${invoice.invoice_number}: no email`);
           continue;
         }
 
-        const isOverdue = dayOffset < 0;
-        const daysUntilDue = Math.abs(dayOffset);
-        
+        // Check for duplicate: has this invoice+template been sent already?
+        const { data: existingLog, error: logCheckError } = await supabase
+          .from('communications_log')
+          .select('id')
+          .eq('invoice_id', invoice.id)
+          .eq('template_name', template)
+          .limit(1)
+          .maybeSingle();
+
+        if (logCheckError) {
+          console.error(`Error checking communications_log for ${invoice.invoice_number}:`, logCheckError);
+        }
+
+        if (existingLog) {
+          console.log(`Skipping ${invoice.invoice_number} - ${template} already sent`);
+          skipped.push(`${invoice.invoice_number}: ${template} already sent`);
+          continue;
+        }
+
         // Update status to overdue if applicable
-        if (isOverdue && invoice.status !== 'overdue') {
+        if (dayOffset < 0 && invoice.status !== 'overdue') {
           await supabase
             .from('invoices')
             .update({ status: 'overdue' })
             .eq('id', invoice.id);
         }
 
-        const html = getPaymentReminderHtml({
+        // Get or create active payment_request for this invoice
+        let paymentToken: string;
+        let paymentRequestId: string;
+
+        const { data: existingPaymentRequest } = await supabase
+          .from('payment_requests')
+          .select('id, token_hash')
+          .eq('invoice_id', invoice.id)
+          .eq('status', 'sent')
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existingPaymentRequest && existingPaymentRequest.token_hash) {
+          // Reuse existing active payment request
+          paymentToken = existingPaymentRequest.token_hash;
+          paymentRequestId = existingPaymentRequest.id;
+          console.log(`Reusing payment request ${paymentRequestId} for ${invoice.invoice_number}`);
+        } else {
+          // Create new payment request
+          const newToken = crypto.randomUUID();
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
+
+          const { data: newPaymentRequest, error: prError } = await supabase
+            .from('payment_requests')
+            .insert({
+              type: 'card_payment',
+              invoice_id: invoice.id,
+              user_id: invoice.user_id,
+              customer_name: profile.full_name || 'Customer',
+              customer_email: profile.email,
+              amount: invoice.total,
+              currency: 'GBP',
+              status: 'sent',
+              token_hash: newToken,
+              expires_at: expiresAt.toISOString(),
+            })
+            .select('id')
+            .single();
+
+          if (prError || !newPaymentRequest) {
+            console.error(`Failed to create payment request for ${invoice.invoice_number}:`, prError);
+            errors.push(`Failed to create payment request for ${invoice.invoice_number}`);
+            continue;
+          }
+
+          paymentToken = newToken;
+          paymentRequestId = newPaymentRequest.id;
+          console.log(`Created new payment request ${paymentRequestId} for ${invoice.invoice_number}`);
+        }
+
+        const payUrl = `${siteUrl}/pay?token=${paymentToken}`;
+
+        const html = getReminderHtml({
           customer_name: profile.full_name || 'Customer',
           invoice_number: invoice.invoice_number,
           total: invoice.total,
@@ -277,37 +383,63 @@ serve(async (req) => {
             month: 'long',
             year: 'numeric'
           }),
-          days_until_due: daysUntilDue,
-          is_overdue: isOverdue,
-          pay_url: `${siteUrl}/pay-invoice?id=${invoice.id}`,
+          pay_url: payUrl,
+          template,
         });
 
-        const subject = isOverdue
-          ? `⚠️ Overdue: Invoice ${invoice.invoice_number} - £${invoice.total.toFixed(2)}`
-          : dayOffset === 0
-            ? `⏰ Due Today: Invoice ${invoice.invoice_number}`
-            : `📅 Reminder: Invoice ${invoice.invoice_number} due in ${daysUntilDue} days`;
+        const config = getTemplateConfig(template);
+        const subject = `${config.subject} - Invoice ${invoice.invoice_number} (£${invoice.total.toFixed(2)})`;
 
         try {
           const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "billing@occta.co.uk";
-          await resend.emails.send({
+          const emailResponse = await resend.emails.send({
             from: `OCCTA Billing <${fromEmail}>`,
             to: [profile.email],
             subject,
             html,
           });
-          emailsSent.push(`${invoice.invoice_number} -> ${profile.email}`);
-          console.log(`Sent reminder for ${invoice.invoice_number} to ${profile.email}`);
+
+          // Log to communications_log
+          await supabase.from('communications_log').insert({
+            invoice_id: invoice.id,
+            user_id: invoice.user_id,
+            payment_request_id: paymentRequestId,
+            template_name: template,
+            recipient_email: profile.email,
+            status: 'sent',
+            provider_message_id: (emailResponse as { id?: string })?.id || null,
+            sent_at: new Date().toISOString(),
+            metadata: { subject, pay_url: payUrl },
+          });
+
+          emailsSent.push(`${invoice.invoice_number} (${template}) -> ${profile.email}`);
+          console.log(`Sent ${template} reminder for ${invoice.invoice_number} to ${profile.email}`);
         } catch (emailErr) {
           console.error(`Failed to send email for ${invoice.invoice_number}:`, emailErr);
-          errors.push(`Failed to send to ${profile.email}`);
+          
+          // Log failed attempt
+          await supabase.from('communications_log').insert({
+            invoice_id: invoice.id,
+            user_id: invoice.user_id,
+            payment_request_id: paymentRequestId,
+            template_name: template,
+            recipient_email: profile.email,
+            status: 'failed',
+            error_message: emailErr instanceof Error ? emailErr.message : 'Unknown error',
+            metadata: { subject },
+          });
+          
+          errors.push(`Failed to send ${template} to ${profile.email}`);
         }
       }
     }
 
+    console.log(`Payment reminders complete: ${emailsSent.length} sent, ${skipped.length} skipped, ${errors.length} errors`);
+
     return new Response(JSON.stringify({
       success: true,
       emailsSent,
+      skipped,
       errors,
       message: `Sent ${emailsSent.length} payment reminders`,
     }), {

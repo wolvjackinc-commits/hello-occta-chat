@@ -705,33 +705,65 @@ const Dashboard = () => {
                   <h3 className="font-display text-lg mb-4 flex items-center gap-2">
                     <Receipt className="w-5 h-5 text-warning" />
                     OUTSTANDING BILLS
+                    <span className="ml-auto text-sm font-normal text-muted-foreground">
+                      {outstandingInvoices.length} unpaid
+                    </span>
                   </h3>
                   <div className="space-y-3">
-                    {outstandingInvoices.map((inv) => (
-                      <motion.div
-                        key={inv.id}
-                        className="flex items-center justify-between p-3 border-2 border-foreground bg-background"
-                        whileHover={{ x: -2, boxShadow: "4px 0px 0px 0px hsl(var(--foreground))" }}
-                      >
-                        <div>
-                          <p className="font-display text-sm">{inv.invoice_number}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Due: {inv.due_date ? format(new Date(inv.due_date), "dd MMM yyyy") : "N/A"}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-display text-lg">£{inv.total.toFixed(2)}</span>
-                          <Link to={`/pay-invoice?id=${inv.id}`}>
-                            <Button size="sm" variant="hero">
-                              <CreditCard className="w-4 h-4 mr-1" />
-                              Pay Now
-                            </Button>
-                          </Link>
-                        </div>
-                      </motion.div>
-                    ))}
+                    {outstandingInvoices.map((inv) => {
+                      const isOverdue = inv.due_date && new Date(inv.due_date) < new Date();
+                      const isDueSoon = inv.due_date && !isOverdue && 
+                        (new Date(inv.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24) <= 3;
+                      
+                      return (
+                        <motion.div
+                          key={inv.id}
+                          className={`flex items-center justify-between p-4 border-4 bg-background ${
+                            isOverdue ? 'border-destructive' : isDueSoon ? 'border-warning' : 'border-foreground'
+                          }`}
+                          whileHover={{ y: -2, boxShadow: "4px 4px 0px 0px hsl(var(--foreground))" }}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-display text-sm">{inv.invoice_number}</p>
+                              {isOverdue && (
+                                <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 font-display">
+                                  OVERDUE
+                                </span>
+                              )}
+                              {isDueSoon && !isOverdue && (
+                                <span className="text-xs bg-warning text-warning-foreground px-2 py-0.5 font-display">
+                                  DUE SOON
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <span>Due: {inv.due_date ? format(new Date(inv.due_date), "dd MMM yyyy") : "N/A"}</span>
+                              <span className="capitalize">{inv.status === 'overdue' ? 'Awaiting Payment' : inv.status}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="font-display text-xl">£{inv.total.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground">Outstanding</p>
+                            </div>
+                            <Link to={`/pay-invoice?id=${inv.id}`}>
+                              <Button size="sm" variant={isOverdue ? "destructive" : "hero"} className="font-display">
+                                <CreditCard className="w-4 h-4 mr-1" />
+                                Pay Now
+                              </Button>
+                            </Link>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
+              )}
+
+              {/* Payment History */}
+              {user && (
+                <PaymentHistory userId={user.id} limit={5} />
               )}
 
               {/* Invoice Files Section */}

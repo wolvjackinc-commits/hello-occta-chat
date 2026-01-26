@@ -164,7 +164,7 @@ function InlineCustomerSearch({
           <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0" align="start">
+      <PopoverContent className="w-[400px] p-0 z-[100]" align="start" sideOffset={4}>
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search by account, name, email, phone, postcode..."

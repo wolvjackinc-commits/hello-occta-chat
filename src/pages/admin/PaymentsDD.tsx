@@ -42,6 +42,7 @@ import {
   Ban
 } from "lucide-react";
 import { DDMandateDetailDialog } from "@/components/admin/DDMandateDetailDialog";
+import { CustomerPicker } from "@/components/admin/CustomerPicker";
 
 type DDMandate = {
   id: string;
@@ -78,6 +79,18 @@ type Profile = {
   account_number: string | null;
 };
 
+type SelectedCustomer = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  account_number: string | null;
+  date_of_birth: string | null;
+  latest_postcode: string | null;
+  latest_postcode_normalized: string | null;
+  created_at: string | null;
+};
+
 // Status options removed - unused
 
 export const AdminPaymentsDD = () => {
@@ -90,15 +103,13 @@ export const AdminPaymentsDD = () => {
   const [cancelConfirmMandate, setCancelConfirmMandate] = useState<DDMandate | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   
-  // New mandate form
+  // New mandate form - using CustomerPicker
+  const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer | null>(null);
   const [newMandate, setNewMandate] = useState({
-    accountNumber: "",
     accountHolder: "",
     bankLast4: "",
     mandateReference: "",
   });
-  const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
-  const [lookingUpCustomer, setLookingUpCustomer] = useState(false);
 
   // Fetch DD Mandates using the dd_mandates_list view (includes masked fields)
   const { data: mandatesData, isLoading: mandatesLoading, refetch: refetchMandates } = useQuery({
@@ -193,31 +204,9 @@ export const AdminPaymentsDD = () => {
     });
   }, [paymentsData?.payments, searchText, paymentProfileMap]);
 
-  const lookupCustomer = async (accountNumber: string) => {
-    if (!accountNumber.trim()) {
-      setMatchedCustomer(null);
-      return;
-    }
-    setLookingUpCustomer(true);
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, account_number, email, full_name")
-        .eq("account_number", accountNumber.trim().toUpperCase())
-        .maybeSingle();
-      
-      if (error) throw error;
-      setMatchedCustomer(data);
-    } catch {
-      setMatchedCustomer(null);
-    } finally {
-      setLookingUpCustomer(false);
-    }
-  };
-
   const handleCreateMandate = async () => {
-    if (!matchedCustomer) {
-      toast({ title: "Please enter a valid account number", variant: "destructive" });
+    if (!selectedCustomer) {
+      toast({ title: "Please select a customer", variant: "destructive" });
       return;
     }
 
@@ -228,11 +217,11 @@ export const AdminPaymentsDD = () => {
       const { data: mandate, error } = await supabase
         .from("dd_mandates")
         .insert({
-          user_id: matchedCustomer.id,
+          user_id: selectedCustomer.id,
           status: "pending",
           mandate_reference: mandateRef,
           bank_last4: newMandate.bankLast4 || null,
-          account_holder: newMandate.accountHolder || null,
+          account_holder: newMandate.accountHolder || selectedCustomer.full_name || null,
         })
         .select()
         .single();
@@ -243,13 +232,16 @@ export const AdminPaymentsDD = () => {
         action: "create",
         entity: "dd_mandate",
         entityId: mandate.id,
-        metadata: { mandate_reference: mandateRef },
+        metadata: { 
+          mandate_reference: mandateRef,
+          account_number: selectedCustomer.account_number,
+        },
       });
 
       toast({ title: "DD Mandate created successfully" });
       setShowCreateDialog(false);
-      setNewMandate({ accountNumber: "", accountHolder: "", bankLast4: "", mandateReference: "" });
-      setMatchedCustomer(null);
+      setNewMandate({ accountHolder: "", bankLast4: "", mandateReference: "" });
+      setSelectedCustomer(null);
       refetchMandates();
     } catch (err: any) {
       toast({ title: "Failed to create mandate", description: err.message, variant: "destructive" });
@@ -535,7 +527,13 @@ export const AdminPaymentsDD = () => {
       </Tabs>
 
       {/* Create DD Mandate Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        setShowCreateDialog(open);
+        if (!open) {
+          setSelectedCustomer(null);
+          setNewMandate({ accountHolder: "", bankLast4: "", mandateReference: "" });
+        }
+      }}>
         <DialogContent className="border-4 border-foreground">
           <DialogHeader>
             <DialogTitle className="font-display">Create DD Mandate</DialogTitle>
@@ -543,26 +541,23 @@ export const AdminPaymentsDD = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="font-display uppercase text-sm">Account Number</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  placeholder="OCC12345678"
-                  value={newMandate.accountNumber}
-                  onChange={(e) => setNewMandate(prev => ({ ...prev, accountNumber: e.target.value }))}
-                  className="border-2 border-foreground"
+              <Label className="font-display uppercase text-sm">Customer</Label>
+              <div className="mt-1">
+                <CustomerPicker
+                  value={selectedCustomer}
+                  onSelect={(customer) => {
+                    setSelectedCustomer(customer);
+                    // Auto-fill account holder name from customer
+                    if (customer?.full_name && !newMandate.accountHolder) {
+                      setNewMandate(prev => ({ ...prev, accountHolder: customer.full_name || "" }));
+                    }
+                  }}
+                  placeholder="Search by name, account, email, phone, postcode..."
                 />
-                <Button
-                  variant="outline"
-                  onClick={() => lookupCustomer(newMandate.accountNumber)}
-                  disabled={lookingUpCustomer}
-                  className="border-2 border-foreground"
-                >
-                  {lookingUpCustomer ? <Loader2 className="h-4 w-4 animate-spin" /> : "Find"}
-                </Button>
               </div>
-              {matchedCustomer && (
-                <p className="text-sm text-green-600 mt-1">
-                  ✓ {matchedCustomer.full_name || matchedCustomer.email}
+              {selectedCustomer && (
+                <p className="text-sm text-primary mt-2">
+                  ✓ {selectedCustomer.full_name || "Customer"} • {selectedCustomer.account_number} • {selectedCustomer.email}
                 </p>
               )}
             </div>
@@ -600,7 +595,7 @@ export const AdminPaymentsDD = () => {
 
             <Button
               onClick={handleCreateMandate}
-              disabled={isCreatingMandate || !matchedCustomer}
+              disabled={isCreatingMandate || !selectedCustomer}
               className="w-full border-2 border-foreground"
             >
               {isCreatingMandate ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

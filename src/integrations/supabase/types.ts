@@ -297,6 +297,7 @@ export type Database = {
           mandate_reference: string | null
           payment_request_id: string | null
           provider: string | null
+          provider_reference: string | null
           signature_name: string | null
           sort_code: string | null
           status: string
@@ -317,6 +318,7 @@ export type Database = {
           mandate_reference?: string | null
           payment_request_id?: string | null
           provider?: string | null
+          provider_reference?: string | null
           signature_name?: string | null
           sort_code?: string | null
           status?: string
@@ -337,6 +339,7 @@ export type Database = {
           mandate_reference?: string | null
           payment_request_id?: string | null
           provider?: string | null
+          provider_reference?: string | null
           signature_name?: string | null
           sort_code?: string | null
           status?: string

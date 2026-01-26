@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,13 +23,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +41,7 @@ import {
   Eye,
   Ban
 } from "lucide-react";
+import { DDMandateDetailDialog } from "@/components/admin/DDMandateDetailDialog";
 
 type DDMandate = {
   id: string;
@@ -57,7 +50,13 @@ type DDMandate = {
   mandate_reference: string | null;
   bank_last4: string | null;
   account_holder: string | null;
+  consent_timestamp: string | null;
+  payment_request_id: string | null;
   created_at: string;
+  updated_at: string;
+  has_bank_details?: boolean;
+  sort_code_masked?: string;
+  account_number_masked?: string;
 };
 
 type PaymentAttempt = {
@@ -79,12 +78,10 @@ type Profile = {
   account_number: string | null;
 };
 
-const mandateStatusOptions = ["pending", "active", "cancelled", "failed"] as const;
-const paymentStatusOptions = ["initiated", "succeeded", "failed"] as const;
+// Status options removed - unused
 
 export const AdminPaymentsDD = () => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [searchText, setSearchText] = useState("");
   const [activeTab, setActiveTab] = useState("mandates");
   const [isCreatingMandate, setIsCreatingMandate] = useState(false);
@@ -103,12 +100,12 @@ export const AdminPaymentsDD = () => {
   const [matchedCustomer, setMatchedCustomer] = useState<Profile | null>(null);
   const [lookingUpCustomer, setLookingUpCustomer] = useState(false);
 
-  // Fetch DD Mandates
+  // Fetch DD Mandates using the dd_mandates_list view (includes masked fields)
   const { data: mandatesData, isLoading: mandatesLoading, refetch: refetchMandates } = useQuery({
     queryKey: ["admin-dd-mandates"],
     queryFn: async () => {
       const { data: mandates, error } = await supabase
-        .from("dd_mandates")
+        .from("dd_mandates_list")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -211,7 +208,7 @@ export const AdminPaymentsDD = () => {
       
       if (error) throw error;
       setMatchedCustomer(data);
-    } catch (err) {
+    } catch {
       setMatchedCustomer(null);
     } finally {
       setLookingUpCustomer(false);
@@ -261,28 +258,7 @@ export const AdminPaymentsDD = () => {
     }
   };
 
-  const handleUpdateMandateStatus = async (mandate: DDMandate, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from("dd_mandates")
-        .update({ status: newStatus })
-        .eq("id", mandate.id);
-
-      if (error) throw error;
-
-      await logAudit({
-        action: "update",
-        entity: "dd_mandate",
-        entityId: mandate.id,
-        metadata: { old_status: mandate.status, new_status: newStatus },
-      });
-
-      toast({ title: "Mandate status updated" });
-      refetchMandates();
-    } catch (err: any) {
-      toast({ title: "Failed to update mandate", description: err.message, variant: "destructive" });
-    }
-  };
+  // handleUpdateMandateStatus removed - status updates are done via DDMandateDetailDialog
 
   const handleCancelMandate = async () => {
     if (!cancelConfirmMandate) return;
@@ -634,86 +610,29 @@ export const AdminPaymentsDD = () => {
         </DialogContent>
       </Dialog>
 
-      {/* View Mandate Dialog */}
-      <Dialog open={!!viewMandate} onOpenChange={(open) => !open && setViewMandate(null)}>
-        <DialogContent className="border-4 border-foreground">
-          <DialogHeader>
-            <DialogTitle className="font-display">DD Mandate Details</DialogTitle>
-          </DialogHeader>
-          {viewMandate && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Badge className={`${getStatusColor(viewMandate.status)} border gap-1`}>
-                  {getStatusIcon(viewMandate.status)}
-                  {viewMandate.status}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  Created {format(new Date(viewMandate.created_at), "dd MMM yyyy")}
-                </span>
-              </div>
-
-              <div className="grid gap-4 border-2 border-foreground rounded-lg p-4">
-                <div>
-                  <div className="text-xs uppercase text-muted-foreground">Customer</div>
-                  <div className="font-medium">{formatAccountNumber(mandateProfileMap.get(viewMandate.user_id)?.account_number)}</div>
-                  <div className="text-sm text-muted-foreground">{mandateProfileMap.get(viewMandate.user_id)?.full_name || "Unknown"}</div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase text-muted-foreground">Mandate Reference</div>
-                  <div className="font-mono">{viewMandate.mandate_reference || "—"}</div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase text-muted-foreground">Account Holder</div>
-                  <div>{viewMandate.account_holder || "—"}</div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase text-muted-foreground">Bank Account</div>
-                  <div>{viewMandate.bank_last4 ? `****${viewMandate.bank_last4}` : "—"}</div>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                {viewMandate.status === "pending" && (
-                  <Button
-                    onClick={() => {
-                      handleActivateMandate(viewMandate);
-                      setViewMandate(null);
-                    }}
-                    className="flex-1 gap-2"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Activate
-                  </Button>
-                )}
-                {viewMandate.status !== "cancelled" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setViewMandate(null);
-                      setCancelConfirmMandate(viewMandate);
-                    }}
-                    className="flex-1 gap-2 border-2 border-foreground"
-                  >
-                    <Ban className="h-4 w-4" />
-                    Cancel Mandate
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    const profile = mandateProfileMap.get(viewMandate.user_id);
-                    if (profile?.account_number) {
-                      navigate(`/admin/customers/${profile.account_number}`);
-                    }
-                  }}
-                >
-                  View Customer
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* View Mandate Dialog - Full Details with Reveal Flow */}
+      {viewMandate && (
+        <DDMandateDetailDialog
+          open={!!viewMandate}
+          onOpenChange={(open) => !open && setViewMandate(null)}
+          mandate={{
+            id: viewMandate.id,
+            user_id: viewMandate.user_id,
+            status: viewMandate.status,
+            mandate_reference: viewMandate.mandate_reference,
+            bank_last4: viewMandate.bank_last4,
+            account_holder: viewMandate.account_holder,
+            consent_timestamp: viewMandate.consent_timestamp,
+            payment_request_id: viewMandate.payment_request_id,
+            created_at: viewMandate.created_at,
+            updated_at: viewMandate.updated_at || viewMandate.created_at,
+            has_bank_details: viewMandate.has_bank_details,
+            sort_code_masked: viewMandate.sort_code_masked,
+            account_number_masked: viewMandate.account_number_masked,
+          }}
+          onUpdate={() => refetchMandates()}
+        />
+      )}
 
       {/* Cancel Mandate Confirmation */}
       <AlertDialog open={!!cancelConfirmMandate} onOpenChange={(open) => !open && setCancelConfirmMandate(null)}>

@@ -510,7 +510,7 @@ serve(async (req) => {
       // VERIFY DD MANDATE (admin action) with email notification
       // ==========================================
       case 'verify-dd-mandate': {
-        const { mandateId, status, adminUserId } = data;
+        const { mandateId, status, adminUserId, provider, providerReference } = data;
 
         if (!mandateId || !status) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
@@ -519,9 +519,17 @@ serve(async (req) => {
           });
         }
 
-        const validStatuses = ['verified', 'active', 'cancelled', 'submitted_to_provider'];
+        const validStatuses = ['verified', 'active', 'cancelled', 'submitted_to_provider', 'failed'];
         if (!validStatuses.includes(status)) {
           return new Response(JSON.stringify({ success: false, error: 'Invalid status' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // For submitted_to_provider, require provider details
+        if (status === 'submitted_to_provider' && (!provider || !providerReference)) {
+          return new Response(JSON.stringify({ success: false, error: 'Provider and provider reference required for submitted_to_provider status' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
@@ -543,10 +551,21 @@ serve(async (req) => {
 
         const previousStatus = currentMandate.status;
 
+        // Build update payload - include provider fields if submitting to provider
+        const updatePayload: Record<string, unknown> = { 
+          status, 
+          updated_at: new Date().toISOString() 
+        };
+        
+        if (status === 'submitted_to_provider' && provider && providerReference) {
+          updatePayload.provider = provider;
+          updatePayload.provider_reference = providerReference;
+        }
+
         // Update mandate status
         const { data: mandate, error } = await supabase
           .from('dd_mandates')
-          .update({ status, updated_at: new Date().toISOString() })
+          .update(updatePayload)
           .eq('id', mandateId)
           .select('*, payment_request_id')
           .single();
@@ -572,16 +591,21 @@ serve(async (req) => {
           });
         }
 
-        // Audit log
+        // Audit log with detailed action type
+        const actionType = status === 'cancelled' ? 'cancel' : 
+                          status === 'active' ? 'activate' : 'update';
+        
         await supabase.from('audit_logs').insert({
           actor_user_id: adminUserId,
-          action: 'update',
+          action: actionType,
           entity: 'dd_mandate',
           entity_id: mandateId,
           metadata: { 
             previous_status: previousStatus,
             new_status: status,
             mandate_reference: mandate.mandate_reference,
+            ...(provider && { provider }),
+            ...(providerReference && { provider_reference: providerReference }),
           },
         });
 

@@ -5,8 +5,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
-import { logAudit } from "@/lib/audit";
 import { format } from "date-fns";
 import {
   Building2,
@@ -16,19 +14,10 @@ import {
   AlertCircle,
   XCircle,
   ExternalLink,
-  Loader2,
+  AlertTriangle,
 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { DDMandateDetailDialog } from "./DDMandateDetailDialog";
+import { DDWorkflowDialog } from "./DDWorkflowDialog";
 
 type DDMandateView = {
   id: string;
@@ -46,16 +35,16 @@ type DDMandateView = {
   updated_at: string;
 };
 
+type WorkflowAction = "verify" | "submit_to_provider" | "mark_active" | "mark_failed" | "cancel";
+
 interface CustomerDDSectionProps {
   userId: string;
   accountNumber: string | null;
 }
 
-export function CustomerDDSection({ userId, accountNumber }: CustomerDDSectionProps) {
-  const { toast } = useToast();
+export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
   const [selectedMandate, setSelectedMandate] = useState<DDMandateView | null>(null);
-  const [statusAction, setStatusAction] = useState<{ mandate: DDMandateView; newStatus: string } | null>(null);
-  const [updating, setUpdating] = useState(false);
+  const [workflowAction, setWorkflowAction] = useState<{ mandate: DDMandateView; action: WorkflowAction } | null>(null);
 
   const { data: mandates, isLoading, refetch } = useQuery({
     queryKey: ["customer-dd-mandates", userId],
@@ -70,41 +59,6 @@ export function CustomerDDSection({ userId, accountNumber }: CustomerDDSectionPr
       return (data || []) as DDMandateView[];
     },
   });
-
-  const handleStatusUpdate = async () => {
-    if (!statusAction) return;
-    
-    setUpdating(true);
-    try {
-      const { mandate, newStatus } = statusAction;
-      
-      const { error } = await supabase
-        .from("dd_mandates")
-        .update({ status: newStatus })
-        .eq("id", mandate.id);
-
-      if (error) throw error;
-
-      await logAudit({
-        action: "update",
-        entity: "dd_mandate",
-        entityId: mandate.id,
-        metadata: {
-          previous_status: mandate.status,
-          new_status: newStatus,
-          account_number: accountNumber,
-        },
-      });
-
-      toast({ title: `Mandate status updated to ${newStatus}` });
-      refetch();
-    } catch {
-      toast({ title: "Failed to update status", variant: "destructive" });
-    } finally {
-      setUpdating(false);
-      setStatusAction(null);
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ReactNode; className: string }> = {
@@ -124,6 +78,10 @@ export function CustomerDDSection({ userId, accountNumber }: CustomerDDSectionPr
         {status.replace(/_/g, " ")}
       </Badge>
     );
+  };
+
+  const openWorkflow = (mandate: DDMandateView, action: WorkflowAction) => {
+    setWorkflowAction({ mandate, action });
   };
 
   if (isLoading) {
@@ -214,51 +172,93 @@ export function CustomerDDSection({ userId, accountNumber }: CustomerDDSectionPr
                   </div>
                 </div>
 
-                {/* Admin Actions */}
-                {mandate.status !== "cancelled" && (
+                {/* Admin Workflow Actions */}
+                {!["cancelled", "failed"].includes(mandate.status) && (
                   <div className="mt-3 pt-3 border-t border-foreground/10 flex flex-wrap gap-2">
+                    {/* Verify: pending → verified */}
                     {mandate.status === "pending" && (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setStatusAction({ mandate, newStatus: "verified" })}
-                        className="border-2 border-foreground text-xs"
+                        onClick={() => openWorkflow(mandate, "verify")}
+                        className="border-2 border-foreground text-xs gap-1"
                       >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Mark Verified
+                        <CheckCircle className="w-3 h-3" />
+                        Verify
                       </Button>
                     )}
+
+                    {/* Submit to Provider: verified → submitted_to_provider */}
                     {mandate.status === "verified" && (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setStatusAction({ mandate, newStatus: "submitted_to_provider" })}
-                        className="border-2 border-foreground text-xs"
+                        onClick={() => openWorkflow(mandate, "submit_to_provider")}
+                        className="border-2 border-foreground text-xs gap-1"
                       >
-                        <ExternalLink className="w-3 h-3 mr-1" />
-                        Mark Submitted
+                        <ExternalLink className="w-3 h-3" />
+                        Submit to Provider
                       </Button>
                     )}
+
+                    {/* Mark Active: submitted_to_provider → active */}
                     {mandate.status === "submitted_to_provider" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openWorkflow(mandate, "mark_active")}
+                          className="border-2 border-foreground text-xs gap-1"
+                        >
+                          <CheckCircle className="w-3 h-3" />
+                          Mark Active
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openWorkflow(mandate, "mark_failed")}
+                          className="border-2 border-destructive text-destructive text-xs gap-1"
+                        >
+                          <AlertTriangle className="w-3 h-3" />
+                          Mark Failed
+                        </Button>
+                      </>
+                    )}
+
+                    {/* Cancel: any non-terminal status */}
+                    {!["active", "cancelled", "failed"].includes(mandate.status) && (
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        onClick={() => setStatusAction({ mandate, newStatus: "active" })}
-                        className="border-2 border-foreground text-xs"
+                        onClick={() => openWorkflow(mandate, "cancel")}
+                        className="text-destructive text-xs gap-1"
                       >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Mark Active
+                        <XCircle className="w-3 h-3" />
+                        Cancel
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setStatusAction({ mandate, newStatus: "cancelled" })}
-                      className="text-destructive text-xs"
-                    >
-                      <XCircle className="w-3 h-3 mr-1" />
-                      Cancel
-                    </Button>
+
+                    {/* For active mandates, only allow cancel */}
+                    {mandate.status === "active" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openWorkflow(mandate, "cancel")}
+                        className="text-destructive text-xs gap-1"
+                      >
+                        <XCircle className="w-3 h-3" />
+                        Cancel Mandate
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Terminal status indicator */}
+                {["cancelled", "failed"].includes(mandate.status) && (
+                  <div className="mt-3 pt-3 border-t border-foreground/10">
+                    <p className="text-xs text-muted-foreground italic">
+                      This mandate is {mandate.status} and cannot be modified.
+                    </p>
                   </div>
                 )}
               </div>
@@ -291,37 +291,18 @@ export function CustomerDDSection({ userId, accountNumber }: CustomerDDSectionPr
         />
       )}
 
-      {/* Status Update Confirmation */}
-      <AlertDialog open={!!statusAction} onOpenChange={() => setStatusAction(null)}>
-        <AlertDialogContent className="border-4 border-foreground">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-display">
-              Update Mandate Status
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to change the mandate status from "{statusAction?.mandate.status}" to "{statusAction?.newStatus}"?
-              {statusAction?.newStatus === "cancelled" && (
-                <span className="block mt-2 text-destructive font-medium">
-                  This action cannot be undone.
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-2 border-foreground">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleStatusUpdate}
-              disabled={updating}
-              className={statusAction?.newStatus === "cancelled" ? "bg-destructive" : ""}
-            >
-              {updating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Confirm
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Workflow Dialog */}
+      {workflowAction && (
+        <DDWorkflowDialog
+          open={!!workflowAction}
+          onOpenChange={() => setWorkflowAction(null)}
+          mandateId={workflowAction.mandate.id}
+          mandateRef={workflowAction.mandate.mandate_reference}
+          currentStatus={workflowAction.mandate.status}
+          action={workflowAction.action}
+          onSuccess={() => refetch()}
+        />
+      )}
     </>
   );
 }

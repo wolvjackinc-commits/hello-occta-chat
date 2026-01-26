@@ -24,10 +24,7 @@ type DDMandateCustomerView = {
   status: string;
   mandate_reference: string | null;
   bank_last4: string | null;
-  sort_code_masked: string | null;
-  account_number_masked: string | null;
   account_holder: string | null;
-  consent_timestamp: string | null;
   created_at: string;
 };
 
@@ -57,10 +54,10 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
     setLoading(true);
     try {
       // Customer can only see their own mandates via RLS
-      // Using the secure view that only shows masked fields
+      // Only fetch safe fields - no full account numbers, sort codes, addresses, or consent details
       const { data, error } = await supabase
         .from("dd_mandates_list")
-        .select("id, status, mandate_reference, bank_last4, sort_code_masked, account_number_masked, account_holder, consent_timestamp, created_at")
+        .select("id, status, mandate_reference, bank_last4, account_holder, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -172,20 +169,12 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Bank Account</p>
-                  <p className="font-mono">
-                    {mandate.sort_code_masked || "—"} / {mandate.account_number_masked || `****${mandate.bank_last4 || "****"}`}
-                  </p>
+                  <p className="font-mono">****{mandate.bank_last4 || "****"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Set Up</p>
                   <p>{format(new Date(mandate.created_at), "dd MMM yyyy")}</p>
                 </div>
-                {mandate.consent_timestamp && (
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase">Consented</p>
-                    <p>{format(new Date(mandate.consent_timestamp), "dd MMM yyyy")}</p>
-                  </div>
-                )}
               </div>
 
               {mandate.status === "pending" && (

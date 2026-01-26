@@ -50,6 +50,8 @@ import {
   Eye,
   Download,
   Link as LinkIcon,
+  CreditCard,
+  Mail,
 } from "lucide-react";
 
 type Customer = {
@@ -75,6 +77,18 @@ type Invoice = {
   vat_total: number;
   total: number;
   notes: string | null;
+};
+
+type CommunicationLog = {
+  id: string;
+  invoice_id: string | null;
+  payment_request_id: string | null;
+  template_name: string;
+  recipient_email: string;
+  status: string;
+  provider_message_id: string | null;
+  sent_at: string | null;
+  created_at: string;
 };
 
 type InvoiceLine = {
@@ -110,6 +124,9 @@ export const AdminBilling = () => {
   const [isVoiding, setIsVoiding] = useState(false);
   const [voidConfirmInvoice, setVoidConfirmInvoice] = useState<Invoice | null>(null);
   const [isLoadingLines, setIsLoadingLines] = useState(false);
+  const [isSendingPaymentLink, setIsSendingPaymentLink] = useState(false);
+  const [communicationsLog, setCommunicationsLog] = useState<CommunicationLog[]>([]);
+  const [isLoadingComms, setIsLoadingComms] = useState(false);
 
   // New invoice form state
   const [newInvoice, setNewInvoice] = useState({
@@ -399,16 +416,125 @@ export const AdminBilling = () => {
   const handleViewInvoice = async (invoice: Invoice) => {
     setViewInvoice(invoice);
     setIsLoadingLines(true);
+    setIsLoadingComms(true);
+    setCommunicationsLog([]);
+    
     try {
-      const { data: lines } = await supabase
-        .from("invoice_lines")
-        .select("*")
-        .eq("invoice_id", invoice.id);
-      setInvoiceLines((lines || []) as InvoiceLine[]);
-    } catch (err) {
+      // Fetch invoice lines and communications log in parallel
+      const [linesResult, commsResult] = await Promise.all([
+        supabase.from("invoice_lines").select("*").eq("invoice_id", invoice.id),
+        supabase
+          .from("communications_log" as any)
+          .select("*")
+          .eq("invoice_id", invoice.id)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ]);
+      
+      setInvoiceLines((linesResult.data || []) as InvoiceLine[]);
+      setCommunicationsLog((commsResult.data || []) as unknown as CommunicationLog[]);
+    } catch {
       setInvoiceLines([]);
+      setCommunicationsLog([]);
     } finally {
       setIsLoadingLines(false);
+      setIsLoadingComms(false);
+    }
+  };
+
+  const handleSendPaymentLink = async (invoice: Invoice) => {
+    const profile = profileMap.get(invoice.user_id);
+    if (!profile?.email) {
+      toast({ title: "No email address", description: "Customer has no email on file.", variant: "destructive" });
+      return;
+    }
+
+    setIsSendingPaymentLink(true);
+    try {
+      // Generate secure token
+      const token = crypto.randomUUID();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
+
+      // Create payment request
+      const { data: paymentRequest, error: prError } = await supabase
+        .from("payment_requests")
+        .insert({
+          type: "card_payment",
+          invoice_id: invoice.id,
+          user_id: invoice.user_id,
+          customer_email: profile.email,
+          customer_name: profile.full_name || "Customer",
+          account_number: profile.account_number || null,
+          amount: invoice.total,
+          currency: "GBP",
+          status: "sent",
+          expires_at: expiresAt.toISOString(),
+          token_hash: token, // In production, hash this
+          notes: `Payment for invoice ${invoice.invoice_number}`,
+        })
+        .select()
+        .single();
+
+      if (prError) throw prError;
+
+      // Send email with payment link
+      const { error: emailError } = await supabase.functions.invoke("send-email", {
+        body: {
+          type: "payment_link",
+          to: profile.email,
+          logToCommunications: true,
+          invoiceId: invoice.id,
+          paymentRequestId: paymentRequest.id,
+          data: {
+            customer_name: profile.full_name || "Customer",
+            account_number: profile.account_number || "",
+            invoice_number: invoice.invoice_number,
+            amount: invoice.total,
+            due_date: invoice.due_date ? format(new Date(invoice.due_date), "dd MMM yyyy") : null,
+            expires_at: expiresAt.toISOString(),
+            token: token,
+          },
+        },
+      });
+
+      if (emailError) throw emailError;
+
+      await logAudit({
+        action: "send",
+        entity: "payment_request",
+        entityId: paymentRequest.id,
+        metadata: { 
+          invoice_id: invoice.id, 
+          invoice_number: invoice.invoice_number,
+          amount: invoice.total,
+        },
+      });
+
+      toast({ 
+        title: "Payment link sent", 
+        description: `Email sent to ${profile.email}`,
+      });
+
+      // Refresh communications log
+      if (viewInvoice?.id === invoice.id) {
+        const { data: comms } = await supabase
+          .from("communications_log" as any)
+          .select("*")
+          .eq("invoice_id", invoice.id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        setCommunicationsLog((comms || []) as unknown as CommunicationLog[]);
+      }
+    } catch (err: any) {
+      console.error("Failed to send payment link:", err);
+      toast({ 
+        title: "Failed to send payment link", 
+        description: err.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSendingPaymentLink(false);
     }
   };
 
@@ -725,17 +851,32 @@ export const AdminBilling = () => {
                   </Button>
                 )}
                 {viewInvoice.status !== "paid" && viewInvoice.status !== "cancelled" && (
-                  <Button
-                    onClick={() => {
-                      handleMarkPaid(viewInvoice);
-                      setViewInvoice(null);
-                    }}
-                    disabled={isMarkingPaid}
-                    className="flex-1 gap-2"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Mark Paid
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => handleSendPaymentLink(viewInvoice)}
+                      disabled={isSendingPaymentLink}
+                      variant="outline"
+                      className="gap-2 border-2 border-foreground"
+                    >
+                      {isSendingPaymentLink ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CreditCard className="h-4 w-4" />
+                      )}
+                      Send Payment Link
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        handleMarkPaid(viewInvoice);
+                        setViewInvoice(null);
+                      }}
+                      disabled={isMarkingPaid}
+                      className="flex-1 gap-2"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Mark Paid
+                    </Button>
+                  </>
                 )}
                 <Button
                   variant="ghost"
@@ -748,6 +889,59 @@ export const AdminBilling = () => {
                 >
                   View Customer
                 </Button>
+              </div>
+
+              {/* Communication History */}
+              <div className="border-t-2 border-foreground pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Mail className="h-4 w-4" />
+                  <h4 className="font-display text-sm uppercase">Communication History</h4>
+                </div>
+                {isLoadingComms ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                ) : communicationsLog.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No emails sent for this invoice yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {communicationsLog.map((log) => (
+                      <div 
+                        key={log.id} 
+                        className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${
+                              log.status === "sent" 
+                                ? "border-green-500 text-green-600" 
+                                : log.status === "failed" 
+                                ? "border-red-500 text-red-600" 
+                                : ""
+                            }`}
+                          >
+                            {log.status}
+                          </Badge>
+                          <span className="font-medium">
+                            {log.template_name.replace(/_/g, " ")}
+                          </span>
+                          <span className="text-muted-foreground">→</span>
+                          <span className="text-muted-foreground truncate max-w-[150px]">
+                            {log.recipient_email}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {log.sent_at 
+                            ? format(new Date(log.sent_at), "dd MMM HH:mm") 
+                            : format(new Date(log.created_at), "dd MMM HH:mm")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

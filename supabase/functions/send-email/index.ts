@@ -19,11 +19,15 @@ interface EmailRequest {
     | "ticket_reply"
     | "password_reset"
     | "invoice_sent"
-    | "invoice_paid";
+    | "invoice_paid"
+    | "payment_link";
   to: string;
   data: Record<string, unknown>;
   orderNumber?: string;
   redirectTo?: string;
+  logToCommunications?: boolean;
+  invoiceId?: string;
+  paymentRequestId?: string;
 }
 
 // HTML escape helper to prevent injection attacks
@@ -690,6 +694,95 @@ const getInvoiceSentHtml = (data: Record<string, unknown>) => {
 </html>`;
 };
 
+const getPaymentLinkHtml = (data: Record<string, unknown>) => {
+  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const expiresAt = data.expires_at ? new Date(data.expires_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+  
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Payment Request - OCCTA</title>
+  <style>
+    ${getCommonStyles()}
+    
+    .title-banner { background: #facc15; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #0d0d0d; }
+    
+    .payment-card { background: #f5f4ef; border: 3px solid #0d0d0d; margin: 24px 0; }
+    .payment-header { background: #0d0d0d; color: #fff; padding: 12px 20px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; }
+    .payment-body { padding: 20px; }
+    .payment-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #ccc; }
+    .payment-row:last-child { border-bottom: none; }
+    .payment-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #666; font-weight: 600; }
+    .payment-value { font-size: 15px; font-weight: 700; text-align: right; }
+    
+    .amount-highlight { background: #0d0d0d; color: #facc15; padding: 24px; text-align: center; margin: 24px 0; }
+    .amount-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #888; margin-bottom: 8px; }
+    .amount-value { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 2px; }
+    
+    .expiry-note { background: #fef3c7; border: 2px solid #facc15; padding: 12px 16px; margin: 20px 0; font-size: 13px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="preheader">Payment requested — £${sanitizeNumber(data.amount)} due${data.invoice_number ? ` for invoice ${escapeHtml(data.invoice_number)}` : ''}</div>
+  
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
+      </div>
+      
+      <div class="title-banner">
+        <h1 class="title">💳 Payment Request</h1>
+      </div>
+      
+      <div class="content">
+        <p class="greeting">Hi ${escapeHtml(data.customer_name) || "there"},</p>
+        <p class="text">We've prepared a secure payment link for you. Click the button below to complete your payment online.</p>
+        
+        <div class="amount-highlight">
+          <div class="amount-label">Amount Due</div>
+          <div class="amount-value">£${sanitizeNumber(data.amount)}</div>
+        </div>
+        
+        <div class="payment-card">
+          <div class="payment-header">Payment Details</div>
+          <div class="payment-body">
+            ${data.account_number ? `<div class="payment-row"><span class="payment-label">Account Number</span><span class="payment-value">${escapeHtml(data.account_number)}</span></div>` : ''}
+            ${data.invoice_number ? `<div class="payment-row"><span class="payment-label">Invoice</span><span class="payment-value">${escapeHtml(data.invoice_number)}</span></div>` : ''}
+            ${data.due_date ? `<div class="payment-row"><span class="payment-label">Due Date</span><span class="payment-value" style="color: #ef4444;">${escapeHtml(data.due_date)}</span></div>` : ''}
+            ${data.notes ? `<div class="payment-row"><span class="payment-label">Reference</span><span class="payment-value">${escapeHtml(data.notes)}</span></div>` : ''}
+          </div>
+        </div>
+        
+        ${expiresAt ? `
+        <div class="expiry-note">
+          ⏰ This payment link expires on <strong>${expiresAt}</strong>
+        </div>
+        ` : ''}
+        
+        <div class="cta-wrap">
+          <a href="${siteUrl}/pay?token=${escapeHtml(data.token)}" class="cta">Pay Now — £${sanitizeNumber(data.amount)} →</a>
+        </div>
+        
+        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
+          Prefer to pay by phone? Call us on <strong>0800 260 6627</strong><br>
+          Lines open Monday–Friday 9am–6pm
+        </p>
+      </div>
+      
+      ${getStandardFooter()}
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
 const getInvoicePaidHtml = (data: Record<string, unknown>) => {
   const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
   return `
@@ -857,8 +950,8 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      // For admin-only actions like ticket_reply, order_message, invoice_sent/paid, verify admin role
-      const adminOnlyTypes = ["ticket_reply", "order_message", "invoice_sent", "invoice_paid"];
+      // For admin-only actions like ticket_reply, order_message, invoice_sent/paid, payment_link, verify admin role
+      const adminOnlyTypes = ["ticket_reply", "order_message", "invoice_sent", "invoice_paid", "payment_link"];
       if (adminOnlyTypes.includes(type)) {
         const userIsAdmin = await isAdmin(supabaseAdmin, user.id);
         if (!userIsAdmin) {
@@ -908,6 +1001,10 @@ const handler = async (req: Request): Promise<Response> => {
         html = getInvoicePaidHtml(data);
         subject = `Payment Received - Invoice ${escapeHtml(data.invoice_number)}`;
         break;
+      case "payment_link":
+        html = getPaymentLinkHtml(data);
+        subject = `Payment Request - £${sanitizeNumber(data.amount)} Due${data.invoice_number ? ` (Invoice ${escapeHtml(data.invoice_number)})` : ''}`;
+        break;
       default:
         return new Response(
           JSON.stringify({ error: "Unknown email type" }),
@@ -931,6 +1028,37 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     console.log(`Email sent successfully: ${type} to ${to}`);
+
+    // Log to communications_log if requested
+    const { logToCommunications, invoiceId, paymentRequestId }: EmailRequest = await req.clone().json().catch(() => ({}));
+    if (logToCommunications) {
+      try {
+        // Get user_id from invoice or payment_request
+        let userId = null;
+        if (invoiceId) {
+          const { data: inv } = await supabaseAdmin.from("invoices").select("user_id").eq("id", invoiceId).single();
+          userId = inv?.user_id;
+        } else if (paymentRequestId) {
+          const { data: pr } = await supabaseAdmin.from("payment_requests").select("user_id").eq("id", paymentRequestId).single();
+          userId = pr?.user_id;
+        }
+
+        await supabaseAdmin.from("communications_log").insert({
+          invoice_id: invoiceId || null,
+          payment_request_id: paymentRequestId || null,
+          user_id: userId,
+          template_name: type,
+          recipient_email: to,
+          status: "sent",
+          provider_message_id: (emailResponse as { id?: string })?.id || null,
+          sent_at: new Date().toISOString(),
+          metadata: { subject },
+        });
+        console.log("Logged to communications_log");
+      } catch (logErr) {
+        console.error("Failed to log to communications_log:", logErr);
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: emailResponse }),

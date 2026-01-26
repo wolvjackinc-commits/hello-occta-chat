@@ -971,6 +971,7 @@ serve(async (req) => {
             .eq('provider_ref', request.provider_reference)
             .eq('status', 'pending');
 
+          let receiptRef = '';
           // If linked to invoice, mark invoice as paid and create receipt
           if (request.invoice_id) {
             await supabase
@@ -978,7 +979,7 @@ serve(async (req) => {
               .update({ status: 'paid', updated_at: new Date().toISOString() })
               .eq('id', request.invoice_id);
 
-            const receiptRef = `RCP-${Date.now().toString(36).toUpperCase()}`;
+            receiptRef = `RCP-${Date.now().toString(36).toUpperCase()}`;
             await supabase.from('receipts').insert({
               invoice_id: request.invoice_id,
               user_id: request.user_id,
@@ -1015,6 +1016,40 @@ serve(async (req) => {
             },
           });
 
+          // Send payment confirmation email
+          const resendApiKey = Deno.env.get('RESEND_API_KEY');
+          if (resendApiKey && request.customer_email) {
+            try {
+              const invoiceNumber = request.invoices?.invoice_number || null;
+              const emailContent = getPaymentConfirmationEmail({
+                customerName: request.customer_name,
+                amount: request.amount,
+                accountNumber: request.account_number,
+                invoiceNumber,
+                receiptReference: receiptRef,
+                paidAt: new Date().toISOString(),
+              });
+
+              await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${resendApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  from: 'OCCTA Billing <billing@occta.co.uk>',
+                  to: [request.customer_email],
+                  subject: emailContent.subject,
+                  html: emailContent.html,
+                  text: emailContent.text,
+                }),
+              });
+              console.log(`Payment confirmation email sent to ${request.customer_email}`);
+            } catch (emailError) {
+              console.error('Failed to send payment confirmation email:', emailError);
+            }
+          }
+
           return new Response(JSON.stringify({ success: true, status: 'paid' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
@@ -1041,6 +1076,37 @@ serve(async (req) => {
             event_type: newStatus,
             metadata: { provider_reference: request.provider_reference },
           });
+
+          // Send payment cancellation/failure email
+          const resendApiKey = Deno.env.get('RESEND_API_KEY');
+          if (resendApiKey && request.customer_email) {
+            try {
+              const emailContent = getPaymentCancelledEmail({
+                customerName: request.customer_name,
+                amount: request.amount,
+                accountNumber: request.account_number,
+                status: newStatus,
+              });
+
+              await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${resendApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  from: 'OCCTA Billing <billing@occta.co.uk>',
+                  to: [request.customer_email],
+                  subject: emailContent.subject,
+                  html: emailContent.html,
+                  text: emailContent.text,
+                }),
+              });
+              console.log(`Payment ${newStatus} email sent to ${request.customer_email}`);
+            } catch (emailError) {
+              console.error(`Failed to send payment ${newStatus} email:`, emailError);
+            }
+          }
 
           return new Response(JSON.stringify({ success: false, status: newStatus }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1442,4 +1508,218 @@ OCCTA Limited is registered in England and Wales (Company No. 13828933)
 `;
 
   return { html, text, subject: statusInfo.subject };
+}
+
+// ==========================================
+// PAYMENT CONFIRMATION EMAIL TEMPLATE
+// ==========================================
+function getPaymentConfirmationEmail(data: {
+  customerName: string;
+  amount: number;
+  accountNumber: string | null;
+  invoiceNumber: string | null;
+  receiptReference: string;
+  paidAt: string;
+}): { html: string; text: string; subject: string } {
+  const paidDate = new Date(data.paidAt).toLocaleDateString('en-GB', { 
+    day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+  });
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Confirmed</title>
+  <style>
+    body { margin: 0; padding: 0; background: #f5f4ef; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .wrapper { padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border: 4px solid #0d0d0d; }
+    .header { background: #0d0d0d; padding: 24px; text-align: center; }
+    .logo { color: #fff; font-size: 28px; letter-spacing: 4px; font-weight: bold; }
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.6; color: #333; margin: 16px 0; }
+    .success-box { background: #dcfce7; border: 3px solid #16a34a; padding: 24px; text-align: center; margin: 24px 0; }
+    .success-title { font-size: 20px; font-weight: bold; color: #15803d; }
+    .amount { font-size: 36px; font-weight: bold; color: #0d0d0d; margin-top: 12px; }
+    .details-box { background: #f5f4ef; border-left: 4px solid #0d0d0d; padding: 16px; margin: 24px 0; }
+    .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    .detail-label { color: #666; }
+    .detail-value { font-weight: 600; color: #0d0d0d; }
+    .footer { background: #0d0d0d; padding: 24px; text-align: center; color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+      </div>
+      <div class="content">
+        <p class="greeting">Hi ${data.customerName},</p>
+        
+        <div class="success-box">
+          <div class="success-title">✓ Payment Successful</div>
+          <div class="amount">£${data.amount?.toFixed(2)}</div>
+        </div>
+        
+        <p class="text">Thank you for your payment. Your transaction has been processed successfully.</p>
+        
+        <div class="details-box">
+          <div style="font-weight: 600; margin-bottom: 12px;">Payment Details</div>
+          ${data.accountNumber ? `<div class="detail-row"><span class="detail-label">Account:</span><span class="detail-value">${data.accountNumber}</span></div>` : ''}
+          ${data.invoiceNumber ? `<div class="detail-row"><span class="detail-label">Invoice:</span><span class="detail-value">${data.invoiceNumber}</span></div>` : ''}
+          <div class="detail-row"><span class="detail-label">Receipt:</span><span class="detail-value">${data.receiptReference}</span></div>
+          <div class="detail-row"><span class="detail-label">Paid:</span><span class="detail-value">${paidDate}</span></div>
+        </div>
+        
+        <p class="text" style="font-size: 13px; color: #666;">
+          If you have any questions about this payment, call us on <strong>0800 260 6627</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+        </p>
+      </div>
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.</p>
+        <p>OCCTA Limited is registered in England and Wales (Company No. 13828933)</p>
+        <p style="margin-top: 12px; font-size: 11px;">This is an automated message. Please do not reply directly to this email.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const text = `
+OCCTA Payment Confirmation
+
+Hi ${data.customerName},
+
+✓ Payment Successful: £${data.amount?.toFixed(2)}
+
+Thank you for your payment. Your transaction has been processed successfully.
+
+Payment Details:
+${data.accountNumber ? `Account: ${data.accountNumber}` : ''}
+${data.invoiceNumber ? `Invoice: ${data.invoiceNumber}` : ''}
+Receipt: ${data.receiptReference}
+Paid: ${paidDate}
+
+Questions? Call us on 0800 260 6627 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+
+---
+© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
+OCCTA Limited is registered in England and Wales (Company No. 13828933)
+`;
+
+  return { html, text, subject: 'Payment Confirmed - OCCTA' };
+}
+
+// ==========================================
+// PAYMENT CANCELLED/FAILED EMAIL TEMPLATE
+// ==========================================
+function getPaymentCancelledEmail(data: {
+  customerName: string;
+  amount: number;
+  accountNumber: string | null;
+  status: 'cancelled' | 'failed';
+}): { html: string; text: string; subject: string } {
+  const isCancelled = data.status === 'cancelled';
+  const title = isCancelled ? 'Payment Cancelled' : 'Payment Failed';
+  const message = isCancelled 
+    ? 'Your payment was cancelled. No money has been taken from your account.'
+    : 'Unfortunately, your payment could not be processed. Please try again or use a different payment method.';
+  const subject = isCancelled ? 'Payment Cancelled - OCCTA' : 'Payment Failed - OCCTA';
+  const statusColor = isCancelled ? '#fef3c7' : '#fee2e2';
+  const titleColor = isCancelled ? '#92400e' : '#dc2626';
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <style>
+    body { margin: 0; padding: 0; background: #f5f4ef; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .wrapper { padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border: 4px solid #0d0d0d; }
+    .header { background: #0d0d0d; padding: 24px; text-align: center; }
+    .logo { color: #fff; font-size: 28px; letter-spacing: 4px; font-weight: bold; }
+    .content { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.6; color: #333; margin: 16px 0; }
+    .status-box { background: ${statusColor}; border: 3px solid #0d0d0d; padding: 24px; text-align: center; margin: 24px 0; }
+    .status-title { font-size: 20px; font-weight: bold; color: ${titleColor}; }
+    .amount { font-size: 28px; font-weight: bold; color: #0d0d0d; margin-top: 12px; }
+    .next-steps { background: #f5f4ef; border-left: 4px solid #0d0d0d; padding: 16px; margin: 24px 0; }
+    .cta { display: inline-block; background: #0d0d0d; color: #fff; padding: 16px 40px; text-decoration: none; font-size: 16px; font-weight: 600; letter-spacing: 1px; margin: 16px 0; }
+    .footer { background: #0d0d0d; padding: 24px; text-align: center; color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+      </div>
+      <div class="content">
+        <p class="greeting">Hi ${data.customerName},</p>
+        
+        <div class="status-box">
+          <div class="status-title">${isCancelled ? '⚠' : '✗'} ${title}</div>
+          <div class="amount">£${data.amount?.toFixed(2)}</div>
+          ${data.accountNumber ? `<div style="font-size: 14px; color: #666; margin-top: 8px;">Account: ${data.accountNumber}</div>` : ''}
+        </div>
+        
+        <p class="text">${message}</p>
+        
+        ${!isCancelled ? `
+        <div class="next-steps">
+          <strong>What you can do:</strong>
+          <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #666;">
+            <li>Try paying again with the same or different card</li>
+            <li>Contact your bank to ensure your card isn't blocked</li>
+            <li>Call us on 0800 260 6627 for alternative payment options</li>
+          </ul>
+        </div>
+        ` : ''}
+        
+        <p class="text" style="font-size: 13px; color: #666;">
+          If you need assistance or would like to make a payment over the phone, call us on <strong>0800 260 6627</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+        </p>
+      </div>
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.</p>
+        <p>OCCTA Limited is registered in England and Wales (Company No. 13828933)</p>
+        <p style="margin-top: 12px; font-size: 11px;">This is an automated message. Please do not reply directly to this email.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const text = `
+OCCTA ${title}
+
+Hi ${data.customerName},
+
+${isCancelled ? '⚠' : '✗'} ${title}: £${data.amount?.toFixed(2)}
+${data.accountNumber ? `Account: ${data.accountNumber}` : ''}
+
+${message}
+
+${!isCancelled ? `What you can do:
+- Try paying again with the same or different card
+- Contact your bank to ensure your card isn't blocked
+- Call us on 0800 260 6627 for alternative payment options
+` : ''}
+
+Questions? Call us on 0800 260 6627 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+
+---
+© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
+OCCTA Limited is registered in England and Wales (Company No. 13828933)
+`;
+
+  return { html, text, subject };
 }

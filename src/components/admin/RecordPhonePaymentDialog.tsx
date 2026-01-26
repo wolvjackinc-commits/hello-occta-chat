@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
-import { Phone, Loader2, User } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Phone, Loader2, User, Search, Mail, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -20,8 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
-import { CustomerPicker } from "./CustomerPicker";
+import { normalizePostcode } from "@/lib/utils";
 
 type Invoice = {
   id: string;
@@ -47,6 +61,176 @@ interface RecordPhonePaymentDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   preSelectedInvoiceId?: string;
+}
+
+// Inline customer search using Popover (avoids nested dialog issue)
+function InlineCustomerSearch({
+  value,
+  onSelect,
+  disabled = false,
+}: {
+  value: Customer | null;
+  onSelect: (customer: Customer | null) => void;
+  disabled?: boolean;
+}) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const searchCustomers = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setCustomers([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const q = query.trim();
+      const normalizedPostcode = normalizePostcode(q);
+      const isAccountNumber = /^OCC/i.test(q);
+      const isPhone = /^\d{4,}$/.test(q.replace(/\D/g, ''));
+      const isEmail = q.includes('@');
+
+      let queryBuilder = supabase
+        .from("admin_customer_search_view")
+        .select("*")
+        .limit(20);
+
+      if (isAccountNumber) {
+        queryBuilder = queryBuilder.ilike("account_number", `${q.toUpperCase()}%`);
+      } else if (isEmail) {
+        queryBuilder = queryBuilder.ilike("email", `%${q}%`);
+      } else if (isPhone) {
+        const digits = q.replace(/\D/g, '');
+        queryBuilder = queryBuilder.ilike("phone", `%${digits}%`);
+      } else if (normalizedPostcode.length >= 3) {
+        queryBuilder = queryBuilder.or(
+          `latest_postcode_normalized.ilike.%${normalizedPostcode}%,full_name.ilike.%${q}%`
+        );
+      } else {
+        queryBuilder = queryBuilder.ilike("full_name", `%${q}%`);
+      }
+
+      const { data, error } = await queryBuilder.order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCustomers((data || []) as Customer[]);
+    } catch (err) {
+      console.error("Customer search error:", err);
+      toast({ title: "Search failed", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      if (searchQuery) {
+        searchCustomers(searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, searchCustomers]);
+
+  const handleSelect = (customer: Customer) => {
+    onSelect(customer);
+    setOpen(false);
+    setSearchQuery("");
+    setCustomers([]);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild disabled={disabled}>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between border-2 border-foreground"
+          disabled={disabled}
+        >
+          {value ? (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="font-mono">
+                {value.account_number || "—"}
+              </Badge>
+              <span className="truncate">{value.full_name || value.email || "Customer"}</span>
+            </div>
+          ) : (
+            <span className="text-muted-foreground">Search customer...</span>
+          )}
+          <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[400px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search by account, name, email, phone, postcode..."
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
+          <CommandList className="max-h-[300px]">
+            {loading && (
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            )}
+            {!loading && searchQuery.length < 2 && (
+              <CommandEmpty>Type at least 2 characters...</CommandEmpty>
+            )}
+            {!loading && searchQuery.length >= 2 && customers.length === 0 && (
+              <CommandEmpty>No customers found.</CommandEmpty>
+            )}
+            {!loading && customers.length > 0 && (
+              <CommandGroup>
+                {customers.map((customer) => (
+                  <CommandItem
+                    key={customer.id}
+                    value={customer.id}
+                    onSelect={() => handleSelect(customer)}
+                    className="p-2 cursor-pointer"
+                  >
+                    <div className="flex items-start gap-2 w-full">
+                      <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-display font-bold text-primary text-sm">
+                            {customer.account_number || "No Account"}
+                          </span>
+                          {customer.full_name && (
+                            <span className="text-foreground text-sm truncate">{customer.full_name}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                          {customer.email && (
+                            <span className="flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {customer.email}
+                            </span>
+                          )}
+                          {customer.latest_postcode && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {customer.latest_postcode}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export function RecordPhonePaymentDialog({
@@ -177,13 +361,12 @@ export function RecordPhonePaymentDialog({
           {!preSelectedInvoiceId && (
             <div className="space-y-2">
               <Label>Select Customer</Label>
-              <CustomerPicker
+              <InlineCustomerSearch
                 value={selectedCustomer}
                 onSelect={(customer) => {
                   setSelectedCustomer(customer);
                   setSelectedInvoiceId("");
                 }}
-                placeholder="Search by name, account, email, phone, postcode..."
               />
               {selectedCustomer && (
                 <div className="flex items-center gap-2 p-2 bg-primary/5 border-2 border-primary/20 rounded">

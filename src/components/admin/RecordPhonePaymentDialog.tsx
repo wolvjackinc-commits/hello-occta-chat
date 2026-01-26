@@ -164,7 +164,7 @@ function InlineCustomerSearch({
           <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0 z-[100]" align="start" sideOffset={4}>
+      <PopoverContent className="w-[400px] p-0 !z-[60] bg-background border" align="start" sideOffset={4}>
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search by account, name, email, phone, postcode..."
@@ -344,8 +344,8 @@ export function RecordPhonePaymentDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+      <DialogContent className="max-w-md bg-background">
         <DialogHeader>
           <DialogTitle className="font-display text-xl flex items-center gap-2">
             <Phone className="h-5 w-5" />

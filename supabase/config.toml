@@ -30,6 +30,9 @@ verify_jwt = false
 [functions.payment-request]
 verify_jwt = false
 
+[functions.dd-status-notify]
+verify_jwt = false
+
 # Cron job: Run payment reminders daily at 9:00 AM UTC
 [[cron_jobs]]
 name = "daily-payment-reminders"

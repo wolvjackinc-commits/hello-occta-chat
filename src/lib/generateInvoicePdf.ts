@@ -24,6 +24,9 @@ interface InvoiceData {
   vatTotal: number;
   total: number;
   notes?: string;
+  vatEnabled?: boolean;
+  vatRate?: number;
+  paymentUrl?: string;
 }
 
 // HTML escape function to prevent XSS attacks
@@ -38,6 +41,9 @@ function escapeHtml(unsafe: string): string {
 }
 
 export function generateInvoicePdf(invoice: InvoiceData): void {
+  const vatEnabled = invoice.vatEnabled !== false; // Default true for backward compat
+  const vatRate = invoice.vatRate ?? 20;
+  
   const safeInvoice = {
     invoiceNumber: escapeHtml(invoice.invoiceNumber),
     customerName: escapeHtml(invoice.customerName),
@@ -54,12 +60,15 @@ export function generateInvoicePdf(invoice: InvoiceData): void {
       qty: line.qty,
       unit_price: line.unit_price,
       line_total: line.line_total,
-      vat_rate: line.vat_rate || 20,
+      vat_rate: line.vat_rate || vatRate,
     })),
     subtotal: invoice.subtotal,
     vatTotal: invoice.vatTotal,
     total: invoice.total,
     notes: escapeHtml(invoice.notes || ""),
+    vatEnabled,
+    vatRate,
+    paymentUrl: invoice.paymentUrl || "",
   };
 
   const linesHtml = safeInvoice.lines
@@ -364,16 +373,37 @@ export function generateInvoicePdf(invoice: InvoiceData): void {
             <span>Subtotal</span>
             <span>£${safeInvoice.subtotal.toFixed(2)}</span>
           </div>
+          ${
+            safeInvoice.vatEnabled
+              ? `
           <div class="total-row">
-            <span>VAT (20%)</span>
+            <span>VAT (${safeInvoice.vatRate}%)</span>
             <span>£${safeInvoice.vatTotal.toFixed(2)}</span>
           </div>
+          `
+              : ""
+          }
           <div class="total-row grand">
             <span>TOTAL</span>
             <span>£${safeInvoice.total.toFixed(2)}</span>
           </div>
         </div>
       </div>
+      
+      ${
+        safeInvoice.paymentUrl
+          ? `
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${safeInvoice.paymentUrl}" style="display: inline-block; background: #facc15; color: #0d0d0d; padding: 16px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border: 4px solid #0d0d0d; text-transform: uppercase; letter-spacing: 1px;">
+          Pay Now →
+        </a>
+        <p style="margin-top: 10px; font-size: 12px; color: #666;">
+          Or visit: ${safeInvoice.paymentUrl}
+        </p>
+      </div>
+      `
+          : ""
+      }
       
       ${
         safeInvoice.notes
@@ -389,9 +419,10 @@ export function generateInvoicePdf(invoice: InvoiceData): void {
     
     <div class="footer">
       <p><strong>OCCTA Telecom</strong></p>
-      <p>Keeping the UK connected since 2020</p>
-      <p style="margin-top: 10px;">Call us: 0800 260 6627 | Email: hello@occta.co.uk</p>
-      <p style="margin-top: 10px;">Company Number: 13828933 | Registered: 22 Pavilion View, Huddersfield, HD3 3WU</p>
+      <p>Keeping the UK connected</p>
+      <p style="margin-top: 10px;">Call us: 0800 260 6627 | Email: billing@occta.co.uk</p>
+      <p style="margin-top: 10px;">OCCTA Limited | Company No. 13828933 | Registered in England & Wales</p>
+      <p>22 Pavilion View, Huddersfield, HD3 3WU</p>
     </div>
   </div>
   

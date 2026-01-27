@@ -95,30 +95,48 @@ export type Database = {
       billing_settings: {
         Row: {
           auto_pay_enabled: boolean
+          billing_day: number | null
+          billing_mode: string
           created_at: string
           id: string
           late_fee_grace_days: number | null
+          next_invoice_date: string | null
+          payment_terms_days: number
           preferred_payment_method: string | null
           updated_at: string
           user_id: string
+          vat_enabled_default: boolean
+          vat_rate_default: number
         }
         Insert: {
           auto_pay_enabled?: boolean
+          billing_day?: number | null
+          billing_mode?: string
           created_at?: string
           id?: string
           late_fee_grace_days?: number | null
+          next_invoice_date?: string | null
+          payment_terms_days?: number
           preferred_payment_method?: string | null
           updated_at?: string
           user_id: string
+          vat_enabled_default?: boolean
+          vat_rate_default?: number
         }
         Update: {
           auto_pay_enabled?: boolean
+          billing_day?: number | null
+          billing_mode?: string
           created_at?: string
           id?: string
           late_fee_grace_days?: number | null
+          next_invoice_date?: string | null
+          payment_terms_days?: number
           preferred_payment_method?: string | null
           updated_at?: string
           user_id?: string
+          vat_enabled_default?: boolean
+          vat_rate_default?: number
         }
         Relationships: []
       }
@@ -591,6 +609,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          billing_period_end: string | null
+          billing_period_start: string | null
           created_at: string
           currency: string
           due_date: string | null
@@ -610,9 +630,13 @@ export type Database = {
           total: number
           updated_at: string
           user_id: string
+          vat_enabled: boolean
+          vat_rate: number
           vat_total: number
         }
         Insert: {
+          billing_period_end?: string | null
+          billing_period_start?: string | null
           created_at?: string
           currency?: string
           due_date?: string | null
@@ -632,9 +656,13 @@ export type Database = {
           total?: number
           updated_at?: string
           user_id: string
+          vat_enabled?: boolean
+          vat_rate?: number
           vat_total?: number
         }
         Update: {
+          billing_period_end?: string | null
+          billing_period_start?: string | null
           created_at?: string
           currency?: string
           due_date?: string | null
@@ -654,6 +682,8 @@ export type Database = {
           total?: number
           updated_at?: string
           user_id?: string
+          vat_enabled?: boolean
+          vat_rate?: number
           vat_total?: number
         }
         Relationships: [
@@ -1062,6 +1092,8 @@ export type Database = {
           created_at: string
           id: string
           identifiers: Json
+          plan_name: string | null
+          price_monthly: number
           provisioned_at: string | null
           service_type: string
           status: string
@@ -1076,6 +1108,8 @@ export type Database = {
           created_at?: string
           id?: string
           identifiers?: Json
+          plan_name?: string | null
+          price_monthly?: number
           provisioned_at?: string | null
           service_type: string
           status?: string
@@ -1090,6 +1124,8 @@ export type Database = {
           created_at?: string
           id?: string
           identifiers?: Json
+          plan_name?: string | null
+          price_monthly?: number
           provisioned_at?: string | null
           service_type?: string
           status?: string
@@ -1360,6 +1396,14 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_next_invoice_date: {
+        Args: {
+          p_billing_day: number
+          p_billing_mode: string
+          p_current_date?: string
+        }
+        Returns: string
+      }
       check_rate_limit: {
         Args: {
           _action: string
@@ -1370,6 +1414,7 @@ export type Database = {
         Returns: boolean
       }
       generate_account_number: { Args: never; Returns: string }
+      generate_invoice_number: { Args: never; Returns: string }
       generate_user_account_number: { Args: never; Returns: string }
       has_billing_access: { Args: never; Returns: boolean }
       has_role: {

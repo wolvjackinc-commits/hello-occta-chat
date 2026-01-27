@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
 import { formatAccountNumber } from "@/lib/account";
@@ -77,6 +78,8 @@ type Invoice = {
   vat_total: number;
   total: number;
   notes: string | null;
+  vat_enabled?: boolean;
+  vat_rate?: number;
 };
 
 type CommunicationLog = {
@@ -133,6 +136,8 @@ export const AdminBilling = () => {
     lineItems: [{ description: "", qty: 1, unitPrice: 0 }],
     notes: "",
     dueDate: "",
+    vatEnabled: true,
+    vatRate: 20,
   });
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -202,7 +207,8 @@ export const AdminBilling = () => {
     setIsCreating(true);
     try {
       const subtotal = validLines.reduce((sum, l) => sum + (l.qty * l.unitPrice), 0);
-      const vatTotal = subtotal * 0.2; // 20% VAT
+      const vatRate = newInvoice.vatEnabled ? newInvoice.vatRate : 0;
+      const vatTotal = subtotal * (vatRate / 100);
       const total = subtotal + vatTotal;
       const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
 
@@ -217,6 +223,8 @@ export const AdminBilling = () => {
           subtotal,
           vat_total: vatTotal,
           total,
+          vat_enabled: newInvoice.vatEnabled,
+          vat_rate: vatRate,
           notes: newInvoice.notes || null,
         })
         .select()
@@ -231,7 +239,7 @@ export const AdminBilling = () => {
         qty: l.qty,
         unit_price: l.unitPrice,
         line_total: l.qty * l.unitPrice,
-        vat_rate: 20,
+        vat_rate: newInvoice.vatEnabled ? newInvoice.vatRate : 0,
       }));
 
       await supabase.from("invoice_lines").insert(lineInserts);
@@ -240,7 +248,7 @@ export const AdminBilling = () => {
         action: "create",
         entity: "invoice",
         entityId: invoice.id,
-        metadata: { invoice_number: invoiceNumber, total },
+        metadata: { invoice_number: invoiceNumber, total, vat_enabled: newInvoice.vatEnabled },
       });
 
       toast({ title: "Invoice created successfully" });
@@ -249,6 +257,8 @@ export const AdminBilling = () => {
         lineItems: [{ description: "", qty: 1, unitPrice: 0 }],
         notes: "",
         dueDate: "",
+        vatEnabled: true,
+        vatRate: 20,
       });
       setSelectedCustomer(null);
       refetch();
@@ -790,10 +800,12 @@ export const AdminBilling = () => {
                   <span>Subtotal</span>
                   <span>£{Number(viewInvoice.subtotal).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>VAT (20%)</span>
-                  <span>£{Number(viewInvoice.vat_total).toFixed(2)}</span>
-                </div>
+                {(viewInvoice.vat_enabled !== false && viewInvoice.vat_total > 0) && (
+                  <div className="flex justify-between text-sm">
+                    <span>VAT ({viewInvoice.vat_rate || 20}%)</span>
+                    <span>£{Number(viewInvoice.vat_total).toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
                   <span>£{Number(viewInvoice.total).toFixed(2)}</span>
@@ -830,6 +842,8 @@ export const AdminBilling = () => {
                       vatTotal: viewInvoice.vat_total,
                       total: viewInvoice.total,
                       notes: viewInvoice.notes || undefined,
+                      vatEnabled: viewInvoice.vat_enabled,
+                      vatRate: viewInvoice.vat_rate,
                     });
                   }}
                   className="gap-2 border-2 border-foreground"
@@ -1066,18 +1080,47 @@ export const AdminBilling = () => {
               />
             </div>
 
+            {/* VAT Toggle */}
+            <div className="flex items-center justify-between p-3 border-2 border-foreground bg-muted/30">
+              <div>
+                <Label className="font-display text-sm">Add VAT</Label>
+                <p className="text-xs text-muted-foreground">
+                  Apply {newInvoice.vatRate}% VAT to this invoice
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {newInvoice.vatEnabled && (
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.5}
+                    value={newInvoice.vatRate}
+                    onChange={(e) => setNewInvoice(prev => ({ ...prev, vatRate: parseFloat(e.target.value) || 0 }))}
+                    className="w-20 border-2 border-foreground text-center"
+                  />
+                )}
+                <Switch
+                  checked={newInvoice.vatEnabled}
+                  onCheckedChange={(checked) => setNewInvoice(prev => ({ ...prev, vatEnabled: checked }))}
+                />
+              </div>
+            </div>
+
             <div className="border-t pt-4">
               <div className="flex justify-between text-sm">
                 <span>Subtotal</span>
                 <span>£{newInvoice.lineItems.reduce((s, l) => s + l.qty * l.unitPrice, 0).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>VAT (20%)</span>
-                <span>£{(newInvoice.lineItems.reduce((s, l) => s + l.qty * l.unitPrice, 0) * 0.2).toFixed(2)}</span>
-              </div>
+              {newInvoice.vatEnabled && (
+                <div className="flex justify-between text-sm">
+                  <span>VAT ({newInvoice.vatRate}%)</span>
+                  <span>£{(newInvoice.lineItems.reduce((s, l) => s + l.qty * l.unitPrice, 0) * (newInvoice.vatRate / 100)).toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>£{(newInvoice.lineItems.reduce((s, l) => s + l.qty * l.unitPrice, 0) * 1.2).toFixed(2)}</span>
+                <span>£{(newInvoice.lineItems.reduce((s, l) => s + l.qty * l.unitPrice, 0) * (1 + (newInvoice.vatEnabled ? newInvoice.vatRate / 100 : 0))).toFixed(2)}</span>
               </div>
             </div>
 

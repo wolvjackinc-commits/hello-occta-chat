@@ -34,7 +34,8 @@ type AuditEntity =
   | "profile"
   | "user_role"
   | "customer_dob"
-  | "payment_request";
+  | "payment_request"
+  | "billing_settings";
 
 interface LogAuditParams {
   action: AuditAction;

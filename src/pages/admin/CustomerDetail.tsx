@@ -16,6 +16,7 @@ import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
 import { CustomerEditDialog } from "@/components/admin/CustomerEditDialog";
 import { CustomerDDSection } from "@/components/admin/CustomerDDSection";
 import { CustomerCommunicationsTimeline } from "@/components/admin/CustomerCommunicationsTimeline";
+import { CustomerBillingSettings } from "@/components/admin/CustomerBillingSettings";
 import { logAudit } from "@/lib/audit";
 import { normalizeAccountNumber, isAccountNumberValid } from "@/lib/account";
 
@@ -373,6 +374,14 @@ export const AdminCustomerDetail = () => {
         </TabsContent>
 
         <TabsContent value="billing" className="mt-4 space-y-4">
+          {/* Billing Settings */}
+          <CustomerBillingSettings 
+            userId={overview.id} 
+            accountNumber={overview.account_number} 
+            onUpdate={refetch}
+          />
+
+          {/* Invoices */}
           <Card className="border-2 border-foreground p-4">
             <h3 className="font-display text-lg mb-4">Invoices</h3>
             {invoices.length === 0 ? (

@@ -47,6 +47,8 @@ const buildInitialFormState = () => ({
   supplierReference: "",
   activationDate: "",
   status: "active",
+  planName: "",
+  priceMonthly: "",
 });
 
 const buildInitialIdentifierFields = () => ({
@@ -166,6 +168,8 @@ export const AddServiceDialog = ({
       supplier_reference: formState.supplierReference.trim() || null,
       activation_date: formState.activationDate || null,
       status: formState.status || "active",
+      plan_name: formState.planName.trim() || null,
+      price_monthly: parseFloat(formState.priceMonthly) || 0,
     }).select().single();
 
     if (error) {
@@ -410,6 +414,34 @@ export const AddServiceDialog = ({
               </div>
             </div>
           )}
+          {/* Billing Fields */}
+          <div className="border-t-2 border-foreground pt-4 mt-4">
+            <h4 className="font-display text-sm uppercase mb-3">Billing</h4>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label className="font-display uppercase text-sm">Plan Name</Label>
+                <Input
+                  value={formState.planName}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, planName: event.target.value }))}
+                  placeholder="e.g. Superfast 100Mbps"
+                  className="mt-1 border-2 border-foreground"
+                />
+              </div>
+              <div>
+                <Label className="font-display uppercase text-sm">Monthly Price (£)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formState.priceMonthly}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, priceMonthly: event.target.value }))}
+                  placeholder="0.00"
+                  className="mt-1 border-2 border-foreground"
+                />
+              </div>
+            </div>
+          </div>
+
           <div>
             <Label className="font-display uppercase text-sm">Supplier reference</Label>
             <Input

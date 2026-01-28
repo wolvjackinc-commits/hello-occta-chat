@@ -3,14 +3,16 @@ import { companyConfig } from '@/lib/companyConfig';
 
 const BASE_URL = companyConfig.website.url;
 
-// Organization Schema with enhanced details
-const organizationSchema = {
+// Organization Schema with enhanced details - for homepage
+export const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: companyConfig.name,
+  name: companyConfig.tradingName,
+  legalName: companyConfig.name,
   alternateName: companyConfig.tradingName,
   url: BASE_URL,
   logo: `${BASE_URL}/pwa-512x512.png`,
+  image: `${BASE_URL}/og-image.png`,
   description: 'Cheap UK broadband, SIM plans, and landline services with no contracts. Affordable internet from £22.99/month.',
   foundingDate: String(companyConfig.foundingYear),
   address: {
@@ -26,6 +28,7 @@ const organizationSchema = {
       '@type': 'ContactPoint',
       telephone: companyConfig.phone.international,
       contactType: 'customer service',
+      email: companyConfig.email.support,
       areaServed: companyConfig.address.countryCode,
       availableLanguage: ['English'],
       hoursAvailable: {
@@ -39,10 +42,15 @@ const organizationSchema = {
       '@type': 'ContactPoint',
       telephone: companyConfig.phone.international,
       contactType: 'sales',
+      email: companyConfig.email.general,
       areaServed: companyConfig.address.countryCode,
       availableLanguage: ['English'],
     },
   ],
+  areaServed: {
+    '@type': 'Country',
+    name: companyConfig.address.country,
+  },
   sameAs: [],
 };
 
@@ -52,9 +60,11 @@ const localBusinessSchema = {
   '@type': 'LocalBusiness',
   '@id': `${BASE_URL}/#localbusiness`,
   name: companyConfig.tradingName,
+  legalName: companyConfig.name,
   description: 'Cheap UK broadband, SIM plans, and landline services. No contracts, no hidden fees, cancel anytime.',
   url: BASE_URL,
   telephone: companyConfig.phone.international,
+  email: companyConfig.email.support,
   priceRange: '£',
   image: `${BASE_URL}/pwa-512x512.png`,
   address: {
@@ -79,6 +89,14 @@ const websiteSchema = {
   alternateName: companyConfig.name,
   url: BASE_URL,
   description: 'Cheap UK broadband, SIM plans, and landline services with no contracts.',
+  publisher: {
+    '@type': 'Organization',
+    name: companyConfig.tradingName,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${BASE_URL}/pwa-512x512.png`,
+    },
+  },
   potentialAction: {
     '@type': 'SearchAction',
     target: `${BASE_URL}/broadband?search={search_term_string}`,
@@ -115,6 +133,7 @@ export const createServiceSchema = ({
     '@type': 'Country',
     name: companyConfig.address.country,
   },
+  termsOfService: `${BASE_URL}/terms-of-service`,
   ...(price && {
     offers: {
       '@type': 'Offer',
@@ -122,12 +141,67 @@ export const createServiceSchema = ({
       priceCurrency,
       availability: 'https://schema.org/InStock',
       priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      eligibleRegion: {
+        '@type': 'Country',
+        name: companyConfig.address.country,
+      },
       seller: {
         '@type': 'Organization',
         name: companyConfig.tradingName,
       },
     },
   }),
+});
+
+// Offer schema for individual product/plan offerings
+interface OfferSchemaProps {
+  name: string;
+  description: string;
+  price: string;
+  url: string;
+  sku?: string;
+  availability?: 'InStock' | 'OutOfStock' | 'PreOrder';
+  category?: string;
+}
+
+export const createOfferSchema = ({
+  name,
+  description,
+  price,
+  url,
+  sku,
+  availability = 'InStock',
+  category,
+}: OfferSchemaProps) => ({
+  '@context': 'https://schema.org',
+  '@type': 'Offer',
+  name,
+  description,
+  price,
+  priceCurrency: 'GBP',
+  url: `${BASE_URL}${url}`,
+  availability: `https://schema.org/${availability}`,
+  priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+  eligibleRegion: {
+    '@type': 'Country',
+    name: companyConfig.address.country,
+  },
+  seller: {
+    '@type': 'Organization',
+    name: companyConfig.tradingName,
+    url: BASE_URL,
+  },
+  itemOffered: {
+    '@type': 'Service',
+    name,
+    description,
+    ...(sku && { sku }),
+    ...(category && { category }),
+    provider: {
+      '@type': 'Organization',
+      name: companyConfig.tradingName,
+    },
+  },
 });
 
 // Product Schema for broadband plans

@@ -10,7 +10,7 @@ import AppHome from "@/components/app/AppHome";
 import AppWelcome from "@/components/app/AppWelcome";
 import { useAppMode } from "@/hooks/useAppMode";
 import { supabase } from "@/integrations/supabase/client";
-import { SEO, StructuredData } from "@/components/seo";
+import { SEO } from "@/components/seo";
 
 const Index = () => {
   const { isAppMode } = useAppMode();
@@ -56,7 +56,6 @@ const Index = () => {
         keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband"
         price="22.99"
       />
-      <StructuredData type="all" />
       <HeroSection />
       <ServicesSection />
       <WhyUsSection />

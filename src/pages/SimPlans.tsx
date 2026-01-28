@@ -9,7 +9,7 @@ import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Check, Smartphone, Signal, Globe, ArrowRight, X } from "lucide-react";
 import { simPlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
-import { SEO, StructuredData, createServiceSchema, createOfferSchema, createFAQSchema } from "@/components/seo";
+import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
 
 const SimPlans = () => {
   const [isReady, setIsReady] = useState(false);
@@ -74,33 +74,12 @@ const SimPlans = () => {
     category: 'Mobile SIM',
   }));
 
-  // FAQ schema for SIM-related questions
-  const simFAQs = createFAQSchema([
-    {
-      question: 'Do I need a credit check for an OCCTA SIM?',
-      answer: 'No. OCCTA SIM plans require no credit check. Simply order and we\'ll post your SIM within 2-3 working days.',
-    },
-    {
-      question: 'Can I keep my existing phone number?',
-      answer: 'Yes, you can transfer your existing number to OCCTA. Request a PAC code from your current provider and we\'ll handle the rest.',
-    },
-    {
-      question: 'Is 5G included in OCCTA SIM plans?',
-      answer: 'Yes, all OCCTA SIM plans include 5G at no extra cost where coverage is available.',
-    },
-    {
-      question: 'Can I use my OCCTA SIM abroad?',
-      answer: 'Yes, EU roaming is included in all plans. Use your allowance in 40+ European destinations at no extra charge.',
-    },
-  ]);
-
   // Combined schemas
   const combinedSchemas = {
     '@context': 'https://schema.org',
     '@graph': [
       simServiceSchema,
       ...planOfferSchemas,
-      simFAQs,
     ],
   };
 

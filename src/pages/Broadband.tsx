@@ -10,7 +10,7 @@ import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X } from "lucide-react";
 import { broadbandPlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
-import { SEO, StructuredData, createServiceSchema, createOfferSchema, createFAQSchema } from "@/components/seo";
+import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
 
 const Broadband = () => {
   const [isReady, setIsReady] = useState(false);
@@ -75,33 +75,12 @@ const Broadband = () => {
     category: 'Broadband',
   }));
 
-  // FAQ schema for broadband-related questions
-  const broadbandFAQs = createFAQSchema([
-    {
-      question: 'Is OCCTA broadband available in my area?',
-      answer: 'OCCTA broadband is available across the UK wherever Openreach fibre infrastructure exists. Use our postcode checker to verify availability at your address.',
-    },
-    {
-      question: 'Are there any contracts with OCCTA broadband?',
-      answer: 'No, all OCCTA broadband plans are rolling monthly with no minimum term. You can cancel anytime without penalty.',
-    },
-    {
-      question: 'How long does broadband installation take?',
-      answer: 'Typical installation is completed within 7 working days. If you already have an Openreach line, it can be as quick as 2-3 days.',
-    },
-    {
-      question: 'Will my broadband price increase mid-contract?',
-      answer: 'No. OCCTA does not have contracts, so there are no mid-contract price rises. Your price stays the same until you choose to change plans.',
-    },
-  ]);
-
   // Combined schemas
   const combinedSchemas = {
     '@context': 'https://schema.org',
     '@graph': [
       broadbandServiceSchema,
       ...planOfferSchemas,
-      broadbandFAQs,
     ],
   };
 

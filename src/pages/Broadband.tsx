@@ -10,7 +10,7 @@ import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X } from "lucide-react";
 import { broadbandPlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
-import { SEO, StructuredData, createServiceSchema } from "@/components/seo";
+import { SEO, StructuredData, createServiceSchema, createOfferSchema, createFAQSchema } from "@/components/seo";
 
 const Broadband = () => {
   const [isReady, setIsReady] = useState(false);
@@ -57,12 +57,53 @@ const Broadband = () => {
     );
   }
 
+  // Service schema for the overall broadband service
   const broadbandServiceSchema = createServiceSchema({
     name: 'OCCTA Broadband',
     description: 'Fast, reliable fibre broadband with speeds up to 900Mbps. No contracts, no price rises.',
     url: '/broadband',
     price: '22.99',
   });
+
+  // Offer schemas for each broadband plan
+  const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
+    name: `OCCTA ${plan.name}`,
+    description: `Fibre broadband up to ${plan.speed}Mbps. No contract, cancel anytime. ${plan.features.slice(0, 3).join(', ')}.`,
+    price: plan.price.toString(),
+    url: `/pre-checkout?plans=${plan.id}`,
+    sku: plan.id,
+    category: 'Broadband',
+  }));
+
+  // FAQ schema for broadband-related questions
+  const broadbandFAQs = createFAQSchema([
+    {
+      question: 'Is OCCTA broadband available in my area?',
+      answer: 'OCCTA broadband is available across the UK wherever Openreach fibre infrastructure exists. Use our postcode checker to verify availability at your address.',
+    },
+    {
+      question: 'Are there any contracts with OCCTA broadband?',
+      answer: 'No, all OCCTA broadband plans are rolling monthly with no minimum term. You can cancel anytime without penalty.',
+    },
+    {
+      question: 'How long does broadband installation take?',
+      answer: 'Typical installation is completed within 7 working days. If you already have an Openreach line, it can be as quick as 2-3 days.',
+    },
+    {
+      question: 'Will my broadband price increase mid-contract?',
+      answer: 'No. OCCTA does not have contracts, so there are no mid-contract price rises. Your price stays the same until you choose to change plans.',
+    },
+  ]);
+
+  // Combined schemas
+  const combinedSchemas = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      broadbandServiceSchema,
+      ...planOfferSchemas,
+      broadbandFAQs,
+    ],
+  };
 
   return (
     <LayoutComponent>
@@ -73,7 +114,7 @@ const Broadband = () => {
         keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
         price="22.99"
       />
-      <StructuredData customSchema={broadbandServiceSchema} type="localBusiness" />
+      <StructuredData customSchema={combinedSchemas} type="localBusiness" />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

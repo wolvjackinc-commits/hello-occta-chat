@@ -9,7 +9,7 @@ import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Check, PhoneCall, VoicemailIcon, Shield, ArrowRight, X } from "lucide-react";
 import { landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
-import { SEO, StructuredData, createServiceSchema } from "@/components/seo";
+import { SEO, StructuredData, createServiceSchema, createOfferSchema, createFAQSchema } from "@/components/seo";
 
 const Landline = () => {
   const [isReady, setIsReady] = useState(false);
@@ -55,12 +55,49 @@ const Landline = () => {
     );
   }
 
+  // Service schema for the overall landline service
   const landlineServiceSchema = createServiceSchema({
     name: 'OCCTA Landline',
     description: 'Reliable UK landline phone service with fraud protection and free voicemail.',
     url: '/landline',
     price: '7.99',
   });
+
+  // Offer schemas for each landline plan
+  const planOfferSchemas = landlinePlans.map(plan => createOfferSchema({
+    name: `OCCTA ${plan.name}`,
+    description: `Landline plan with ${plan.callRate}. ${plan.features.slice(0, 3).join(', ')}.`,
+    price: plan.price.toString(),
+    url: `/pre-checkout?plans=${plan.id}`,
+    sku: plan.id,
+    category: 'Landline',
+  }));
+
+  // FAQ schema for landline-related questions
+  const landlineFAQs = createFAQSchema([
+    {
+      question: 'Do I need broadband to have an OCCTA landline?',
+      answer: 'No, OCCTA landline works independently of broadband. However, bundling with broadband can save you money.',
+    },
+    {
+      question: 'Are there any contracts for OCCTA landline?',
+      answer: 'No, all OCCTA landline plans are rolling monthly. Cancel anytime with no penalties.',
+    },
+    {
+      question: 'What is included in the landline call packages?',
+      answer: 'Plans include UK landline calls, with options for evening/weekend unlimited or anytime unlimited. International calls are available as add-ons.',
+    },
+  ]);
+
+  // Combined schemas
+  const combinedSchemas = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      landlineServiceSchema,
+      ...planOfferSchemas,
+      landlineFAQs,
+    ],
+  };
 
   return (
     <LayoutComponent>
@@ -71,7 +108,7 @@ const Landline = () => {
         keywords="cheap landline UK, no contract landline, home phone deals, cheap home phone UK, landline no contract, budget landline, affordable landline UK"
         price="7.99"
       />
-      <StructuredData customSchema={landlineServiceSchema} type="localBusiness" />
+      <StructuredData customSchema={combinedSchemas} type="localBusiness" />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

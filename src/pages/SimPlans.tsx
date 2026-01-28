@@ -9,7 +9,7 @@ import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Check, Smartphone, Signal, Globe, ArrowRight, X } from "lucide-react";
 import { simPlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
-import { SEO, StructuredData, createServiceSchema } from "@/components/seo";
+import { SEO, StructuredData, createServiceSchema, createOfferSchema, createFAQSchema } from "@/components/seo";
 
 const SimPlans = () => {
   const [isReady, setIsReady] = useState(false);
@@ -56,12 +56,53 @@ const SimPlans = () => {
     );
   }
 
+  // Service schema for the overall SIM service
   const simServiceSchema = createServiceSchema({
     name: 'OCCTA SIM Plans',
     description: 'UK SIM-only mobile plans with 5G, EU roaming, and no contracts.',
     url: '/sim-plans',
     price: '7.99',
   });
+
+  // Offer schemas for each SIM plan
+  const planOfferSchemas = simPlans.map(plan => createOfferSchema({
+    name: `OCCTA ${plan.name}`,
+    description: `${plan.data} data with 5G, unlimited calls & texts, EU roaming included. No contract, no credit check.`,
+    price: plan.price.toString(),
+    url: `/pre-checkout?plans=${plan.id}`,
+    sku: plan.id,
+    category: 'Mobile SIM',
+  }));
+
+  // FAQ schema for SIM-related questions
+  const simFAQs = createFAQSchema([
+    {
+      question: 'Do I need a credit check for an OCCTA SIM?',
+      answer: 'No. OCCTA SIM plans require no credit check. Simply order and we\'ll post your SIM within 2-3 working days.',
+    },
+    {
+      question: 'Can I keep my existing phone number?',
+      answer: 'Yes, you can transfer your existing number to OCCTA. Request a PAC code from your current provider and we\'ll handle the rest.',
+    },
+    {
+      question: 'Is 5G included in OCCTA SIM plans?',
+      answer: 'Yes, all OCCTA SIM plans include 5G at no extra cost where coverage is available.',
+    },
+    {
+      question: 'Can I use my OCCTA SIM abroad?',
+      answer: 'Yes, EU roaming is included in all plans. Use your allowance in 40+ European destinations at no extra charge.',
+    },
+  ]);
+
+  // Combined schemas
+  const combinedSchemas = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      simServiceSchema,
+      ...planOfferSchemas,
+      simFAQs,
+    ],
+  };
 
   return (
     <LayoutComponent>
@@ -72,7 +113,7 @@ const SimPlans = () => {
         keywords="cheap SIM deals UK, 5G SIM no credit check, no contract SIM, cheap mobile plans UK, SIM only deals, budget SIM UK, unlimited SIM UK, PAYG SIM cheap, best SIM deals 2025"
         price="7.99"
       />
-      <StructuredData customSchema={simServiceSchema} type="localBusiness" />
+      <StructuredData customSchema={combinedSchemas} type="localBusiness" />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

@@ -10,7 +10,7 @@ export const organizationSchema = {
   name: companyConfig.tradingName,
   legalName: companyConfig.name,
   alternateName: companyConfig.tradingName,
-  url: BASE_URL,
+  url: `${BASE_URL}/`,
   logo: `${BASE_URL}/pwa-512x512.png`,
   image: `${BASE_URL}/og-image.png`,
   description: 'Cheap UK broadband, SIM plans, and landline services with no contracts. Affordable internet from £22.99/month.',
@@ -26,7 +26,7 @@ export const organizationSchema = {
   contactPoint: [
     {
       '@type': 'ContactPoint',
-      telephone: companyConfig.phone.international,
+      telephone: companyConfig.phone.display,
       contactType: 'customer service',
       email: companyConfig.email.support,
       areaServed: companyConfig.address.countryCode,
@@ -40,7 +40,7 @@ export const organizationSchema = {
     },
     {
       '@type': 'ContactPoint',
-      telephone: companyConfig.phone.international,
+      telephone: companyConfig.phone.display,
       contactType: 'sales',
       email: companyConfig.email.general,
       areaServed: companyConfig.address.countryCode,

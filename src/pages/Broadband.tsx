@@ -42,7 +42,7 @@ const Broadband = () => {
   };
 
   const features = [
-    { icon: X, text: "No Contracts" },
+    { icon: X, text: "Cancel Anytime", link: "/no-contract-broadband-uk" },
     { icon: Shield, text: "No Hidden Fees" },
     { icon: Clock, text: "7-Day Setup" },
   ];
@@ -127,7 +127,13 @@ const Broadband = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border-2 border-foreground/20 bg-background"
                   >
                     <feature.icon className="w-3.5 h-3.5" />
-                    {feature.text}
+                    {feature.link ? (
+                      <Link to={feature.link} className="hover:text-accent transition-colors">
+                        {feature.text}
+                      </Link>
+                    ) : (
+                      <span>{feature.text}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -189,6 +195,24 @@ const Broadband = () => {
                 View all plans ↓
               </Link>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-12 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="card-brutal bg-card p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-display uppercase mb-2">
+                Cancel anytime / No fixed term
+              </h2>
+              <p className="text-muted-foreground max-w-2xl">
+                Need broadband without a long tie-in? See how our rolling plans keep you flexible with no fixed term commitments.
+              </p>
+            </div>
+            <Link to="/no-contract-broadband-uk" className="font-display uppercase tracking-wider text-accent hover:text-accent/80 transition-colors">
+              Learn about no-contract broadband →
+            </Link>
           </div>
         </div>
       </section>

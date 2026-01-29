@@ -47,7 +47,6 @@ const Header = () => {
 
   const navItems = [
     { name: "Broadband", path: "/broadband", icon: Wifi },
-    { name: "No Contract", path: "/no-contract-broadband-uk", icon: Wifi },
     { name: "SIM Plans", path: "/sim-plans", icon: Smartphone },
     { name: "Landline", path: "/landline", icon: PhoneCall },
     { name: "About", path: "/about" },
@@ -62,7 +61,7 @@ const Header = () => {
       <div className="bg-foreground text-background overflow-hidden">
         <div className="py-2 flex whitespace-nowrap">
           <span className="marquee font-display tracking-wider text-sm">
-            🇬🇧 PROPER BRITISH BROADBAND • NO ROBOT SUPPORT LINES • ACTUAL HUMANS • UK-BASED SUPPORT • FREE INSTALLATION • 30-DAY CONTRACTS • 
+            🇬🇧 PROPER BRITISH BROADBAND • NO ROBOT SUPPORT LINES • ACTUAL HUMANS • UK-BASED SUPPORT • FREE INSTALLATION • 30-DAY ROLLING • 
           </span>
         </div>
       </div>
@@ -92,7 +91,7 @@ const Header = () => {
                 to={item.path}
                 className={`px-4 py-2 font-display text-lg tracking-wide transition-all duration-150 flex items-center gap-2 border-4 ${
                   isActive(item.path)
-                    ? "bg-primary text-primary-foreground border-foreground shadow-brutal -translate-y-0.5"
+                    ? "bg-secondary text-foreground border-foreground shadow-brutal -translate-y-0.5"
                     : "border-transparent hover:border-foreground hover:bg-secondary"
                 }`}
               >
@@ -172,7 +171,7 @@ const Header = () => {
                   onClick={() => setIsOpen(false)}
                   className={`px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
                     isActive(item.path)
-                      ? "bg-primary text-primary-foreground border-foreground shadow-brutal"
+                      ? "bg-secondary text-foreground border-foreground shadow-brutal"
                       : "border-transparent hover:border-foreground hover:bg-secondary"
                   }`}
                 >

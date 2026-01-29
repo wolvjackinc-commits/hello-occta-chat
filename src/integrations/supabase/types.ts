@@ -1396,6 +1396,7 @@ export type Database = {
       }
     }
     Functions: {
+      anonymize_old_account_deletions: { Args: never; Returns: number }
       calculate_next_invoice_date: {
         Args: {
           p_billing_day: number

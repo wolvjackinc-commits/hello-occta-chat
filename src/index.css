@@ -146,7 +146,7 @@
 @layer components {
   /* Brutalist text styling */
   .text-gradient {
-    @apply bg-primary px-2 inline-block -skew-x-3 text-primary-foreground;
+    @apply bg-accent px-2 inline-block -skew-x-3 text-accent-foreground;
   }
 
   /* Raw card with thick borders */

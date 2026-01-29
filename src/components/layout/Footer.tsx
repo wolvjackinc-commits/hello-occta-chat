@@ -8,6 +8,7 @@ const Footer = () => {
   const footerLinks = {
     services: [
       { name: "Broadband", path: "/broadband" },
+      { name: "No-contract broadband (cancel anytime)", path: "/no-contract-broadband-uk" },
       { name: "SIM Plans", path: "/sim-plans" },
       { name: "Landline", path: "/landline" },
       { name: "Business", path: "/business" },

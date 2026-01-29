@@ -42,7 +42,7 @@ const Broadband = () => {
   };
 
   const features = [
-    { icon: X, text: "Cancel Anytime", link: "/no-contract-broadband-uk" },
+    { icon: X, text: "Cancel Anytime" },
     { icon: Shield, text: "No Hidden Fees" },
     { icon: Clock, text: "7-Day Setup" },
   ];
@@ -118,6 +118,13 @@ const Broadband = () => {
                 From £22.99/month with no price rises mid-contract — cheap broadband UK
                 that stays no contract broadband and cancel anytime broadband.
               </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                Want flexible terms?{" "}
+                <Link to="/no-contract-broadband-uk" className="font-medium text-accent hover:text-accent/80 transition-colors">
+                  Explore no-contract broadband options
+                </Link>
+                .
+              </p>
               
               {/* Benefits */}
               <div className="flex flex-wrap gap-2 mb-6">
@@ -127,13 +134,7 @@ const Broadband = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border-2 border-foreground/20 bg-background"
                   >
                     <feature.icon className="w-3.5 h-3.5" />
-                    {feature.link ? (
-                      <Link to={feature.link} className="hover:text-accent transition-colors">
-                        {feature.text}
-                      </Link>
-                    ) : (
-                      <span>{feature.text}</span>
-                    )}
+                    <span>{feature.text}</span>
                   </div>
                 ))}
               </div>

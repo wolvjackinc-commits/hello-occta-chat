@@ -173,6 +173,7 @@ const Support = () => {
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   
   const [formData, setFormData] = useState({ subject: "", description: "", category: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -317,23 +318,34 @@ const Support = () => {
             transition={{ delay: 0.1 }}
             className="max-w-4xl mx-auto mb-12"
           >
-            <div className="bg-primary/5 border-4 border-primary p-6 sm:p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-primary flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-primary-foreground" />
+            <div className="bg-card border-4 border-foreground p-6 sm:p-8">
+              {!isChatOpen ? (
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-foreground flex items-center justify-center">
+                      <Bot className="w-6 h-6 text-background" />
+                    </div>
+                    <div>
+                      <h2 className="font-display text-2xl uppercase">Instant Help (IRA)</h2>
+                      <p className="text-sm text-muted-foreground">Solve issues in seconds — 24/7</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="hero"
+                    size="lg"
+                    onClick={() => setIsChatOpen(true)}
+                  >
+                    Start chat
+                  </Button>
                 </div>
-                <div>
-                  <h2 className="font-display text-2xl uppercase text-primary">Instant Help</h2>
-                  <p className="text-sm text-muted-foreground">Solve Issues in Seconds — 24/7</p>
-                </div>
-                <div className="ml-auto">
-                  <span className="px-3 py-1 bg-primary text-primary-foreground font-display text-xs uppercase">Fastest</span>
-                </div>
-              </div>
-              <p className="text-muted-foreground mb-6">
-                Our AI assistant can instantly help you with billing, services, outages, plan changes, and account queries — available around the clock.
-              </p>
-              <AIChatBot embedded className="h-[400px]" />
+              ) : (
+                <AIChatBot
+                  embedded
+                  autoFocusInput={isChatOpen}
+                  onClose={() => setIsChatOpen(false)}
+                  className="h-[400px]"
+                />
+              )}
             </div>
           </motion.div>
 

@@ -66,7 +66,7 @@ const getStandardFooter = () => {
         
         <div style="margin: 24px 0; padding-top: 20px; border-top: 1px solid #333;">
           <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.6;">
-            Need help? Call <strong style="color: #fff;">0800 260 6627</strong> or email <a href="mailto:hello@occta.co.uk" style="color: #facc15; text-decoration: none;">hello@occta.co.uk</a>
+            Need help? Call <strong style="color: #fff;">0800 260 6626</strong> or email <a href="mailto:hello@occta.co.uk" style="color: #facc15; text-decoration: none;">hello@occta.co.uk</a>
           </p>
           <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
             Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm
@@ -180,7 +180,7 @@ const getReminderEmailHtml = (booking: InstallationBooking, orderDetails: { addr
         </div>
         
         <p style="font-size: 15px; line-height: 1.7; color: #333; margin: 16px 0;">
-          If you need to reschedule, please contact us as soon as possible on <strong>0800 260 6627</strong>.
+          If you need to reschedule, please contact us as soon as possible on <strong>0800 260 6626</strong>.
         </p>
         
         <p style="font-size: 15px; line-height: 1.7; color: #333; margin: 24px 0 0 0;">

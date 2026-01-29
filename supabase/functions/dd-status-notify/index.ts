@@ -177,7 +177,7 @@ const generateDDStatusEmail = (
         </div>
         
         <p class="text" style="text-align: center; color: #666; font-size: 13px;">
-          Questions? Contact our UK-based support team at <a href="mailto:hello@occta.co.uk" style="color: #0d0d0d;">hello@occta.co.uk</a> or call <strong>0800 260 6627</strong>.
+          Questions? Contact our UK-based support team at <a href="mailto:hello@occta.co.uk" style="color: #0d0d0d;">hello@occta.co.uk</a> or call <strong>0800 260 6626</strong>.
         </p>
       </div>
       

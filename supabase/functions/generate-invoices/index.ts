@@ -567,7 +567,7 @@ function generateInvoicePdfBase64(data: InvoiceEmailData): string {
   doc.text("Keeping the UK connected", pageWidth / 2, y, { align: "center" });
   
   y += 6;
-  doc.text("Call us: 0800 260 6627 | Email: billing@occta.co.uk", pageWidth / 2, y, { align: "center" });
+  doc.text("Call us: 0800 260 6626 | Email: billing@occta.co.uk", pageWidth / 2, y, { align: "center" });
   
   y += 5;
   doc.text("OCCTA Limited | Company No. 13828933 | Registered in England & Wales", pageWidth / 2, y, { align: "center" });
@@ -716,7 +716,7 @@ async function sendInvoiceEmail(resend: Resend, data: InvoiceEmailData) {
     <!-- Footer -->
     <div style="padding: 20px; text-align: center; font-size: 12px; color: #666;">
       <p style="margin: 0 0 10px 0;">
-        <strong>Need help?</strong> Call us on <a href="tel:08002606627" style="color: #0d0d0d;">0800 260 6627</a> or email <a href="mailto:billing@occta.co.uk" style="color: #0d0d0d;">billing@occta.co.uk</a>
+        <strong>Need help?</strong> Call us on <a href="tel:08002606626" style="color: #0d0d0d;">0800 260 6626</a> or email <a href="mailto:billing@occta.co.uk" style="color: #0d0d0d;">billing@occta.co.uk</a>
       </p>
       <p style="margin: 0; font-size: 11px;">
         OCCTA Limited | Company No. 13828933 | Registered in England & Wales<br>
@@ -749,7 +749,7 @@ Total Due: £${data.total.toFixed(2)}
 
 Pay Now: ${data.paymentUrl}
 
-Need help? Call us on 0800 260 6627 or email billing@occta.co.uk
+Need help? Call us on 0800 260 6626 or email billing@occta.co.uk
 
 OCCTA Limited | Company No. 13828933 | Registered in England & Wales
 22 Pavilion View, Huddersfield, HD3 3WU`,

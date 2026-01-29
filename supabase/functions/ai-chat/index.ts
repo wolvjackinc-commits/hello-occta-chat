@@ -46,7 +46,7 @@ async function checkVerificationRateLimitDb(
 // Business knowledge base
 const businessInfo = {
   company: "OCCTA Telecom",
-  phone: "0800 260 6627",
+  phone: "0800 260 6626",
   email: "hello@occta.co.uk",
   services: ["Broadband", "SIM/Mobile Plans", "Landline"],
   features: [
@@ -350,7 +350,7 @@ async function executeTool(
         console.log(`SECURITY: Rate limit exceeded for email verification: ${email}`);
         return JSON.stringify({ 
           success: false, 
-          message: "Too many verification attempts. Please wait 15 minutes or call us at 0800 260 6627." 
+          message: "Too many verification attempts. Please wait 15 minutes or call us at 0800 260 6626." 
         });
       }
       
@@ -419,7 +419,7 @@ async function executeTool(
         console.log(`SECURITY: Rate limit exceeded for account verification: ${account_number}`);
         return JSON.stringify({ 
           success: false, 
-          message: "Too many verification attempts. Please wait 15 minutes or call us at 0800 260 6627." 
+          message: "Too many verification attempts. Please wait 15 minutes or call us at 0800 260 6626." 
         });
       }
       
@@ -472,7 +472,7 @@ async function executeTool(
         console.log(`AUDIT: No DOB found for verification - denying access`);
         return JSON.stringify({ 
           success: false, 
-          message: "We cannot verify your identity without a date of birth on file. Please contact support at 0800 260 6627 to update your account details." 
+          message: "We cannot verify your identity without a date of birth on file. Please contact support at 0800 260 6626 to update your account details." 
         });
       }
       
@@ -602,7 +602,7 @@ async function executeTool(
       if (!userId) {
         return JSON.stringify({ 
           success: false, 
-          message: "You need to be signed in to create a support ticket. Please sign in or call us at 0800 260 6627." 
+          message: "You need to be signed in to create a support ticket. Please sign in or call us at 0800 260 6626." 
         });
       }
       
@@ -1147,7 +1147,7 @@ Admin tone: Clear, Direct, Fewer emojis, No humour unless appropriate.
 
 ## RESPONSE GUIDELINES
 1. Be friendly, helpful, and concise. Use a conversational British tone.
-2. Always mention our phone number (0800 260 6627) for urgent matters.
+2. Always mention our phone number (0800 260 6626) for urgent matters.
 3. Keep responses concise - aim for 2-3 sentences unless more detail is needed.
 4. Use emojis sparingly but appropriately to be friendly.
 5. If you don't know something, be honest and offer to connect them with human support.
@@ -1191,7 +1191,7 @@ IRA's success is clarity + trust, not conversion at all costs.`;
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Service temporarily unavailable. Please call us at 0800 260 6627." }), {
+        return new Response(JSON.stringify({ error: "Service temporarily unavailable. Please call us at 0800 260 6626." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -1306,7 +1306,7 @@ IRA's success is clarity + trust, not conversion at all costs.`;
     const errorCorsHeaders = getCorsHeaders(origin);
     return new Response(
       JSON.stringify({ 
-        error: "Sorry, I'm having trouble right now. Please try again or call us at 0800 260 6627." 
+        error: "Sorry, I'm having trouble right now. Please try again or call us at 0800 260 6626." 
       }),
       { status: 500, headers: { ...errorCorsHeaders, "Content-Type": "application/json" } }
     );

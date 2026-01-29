@@ -68,7 +68,7 @@ const getStandardFooter = (options?: { showUnsubscribe?: boolean; accentColor?: 
         
         <div style="margin: 24px 0; padding-top: 20px; border-top: 1px solid #333;">
           <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.6;">
-            Need help? Call <strong style="color: #fff;">0800 260 6627</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
+            Need help? Call <strong style="color: #fff;">0800 260 6626</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
           </p>
           <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
             Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm
@@ -675,7 +675,7 @@ const getInvoiceSentHtml = (data: Record<string, unknown>) => {
         </div>
         
         <div class="payment-note">
-          <strong>💳 Payment Methods:</strong> Pay online via your dashboard, or call 0800 260 6627 to pay by card. Bank transfers accepted to OCCTA Ltd.
+          <strong>💳 Payment Methods:</strong> Pay online via your dashboard, or call 0800 260 6626 to pay by card. Bank transfers accepted to OCCTA Ltd.
         </div>
         
         <div class="cta-wrap">
@@ -771,7 +771,7 @@ const getPaymentLinkHtml = (data: Record<string, unknown>) => {
         </div>
         
         <p class="text" style="text-align: center; color: #666; font-size: 13px;">
-          Prefer to pay by phone? Call us on <strong>0800 260 6627</strong><br>
+          Prefer to pay by phone? Call us on <strong>0800 260 6626</strong><br>
           Lines open Monday–Friday 9am–6pm
         </p>
       </div>

@@ -1223,11 +1223,11 @@ function getCardPaymentEmail(data: {
         </p>
         
         <div class="warning">
-          <strong>Didn't request this?</strong> If you didn't expect this payment request, please ignore this email or contact us immediately on 0800 260 6627.
+          <strong>Didn't request this?</strong> If you didn't expect this payment request, please ignore this email or contact us immediately on 0800 260 6626.
         </div>
         
         <p class="text" style="font-size: 13px; color: #666;">
-          If you have any questions, call us on <strong>0800 260 6627</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+          If you have any questions, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
         </p>
       </div>
       <div class="footer">
@@ -1256,9 +1256,9 @@ ${data.paymentLink}
 This link expires on ${expiryDate}.
 
 DIDN'T REQUEST THIS?
-If you didn't expect this payment request, please ignore this email or contact us immediately on 0800 260 6627.
+If you didn't expect this payment request, please ignore this email or contact us immediately on 0800 260 6626.
 
-Questions? Call us on 0800 260 6627 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
 
 ---
 © ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
@@ -1330,11 +1330,11 @@ function getDDSetupEmail(data: {
         </p>
         
         <div class="warning">
-          <strong>Didn't request this?</strong> If you didn't expect this Direct Debit setup request, please ignore this email or contact us immediately on 0800 260 6627.
+          <strong>Didn't request this?</strong> If you didn't expect this Direct Debit setup request, please ignore this email or contact us immediately on 0800 260 6626.
         </div>
         
         <p class="text" style="font-size: 13px; color: #666;">
-          If you have any questions, call us on <strong>0800 260 6627</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+          If you have any questions, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
         </p>
       </div>
       <div class="footer">
@@ -1365,9 +1365,9 @@ ${data.setupLink}
 This link expires on ${expiryDate}.
 
 DIDN'T REQUEST THIS?
-If you didn't expect this Direct Debit setup request, please ignore this email or contact us immediately on 0800 260 6627.
+If you didn't expect this Direct Debit setup request, please ignore this email or contact us immediately on 0800 260 6626.
 
-Questions? Call us on 0800 260 6627 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
 
 ---
 © ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
@@ -1493,7 +1493,7 @@ function getDDStatusEmail(data: {
         </div>
         
         <p class="text" style="font-size: 13px; color: #666;">
-          If you have any questions, call us on <strong>0800 260 6627</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+          If you have any questions, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
         </p>
       </div>
       <div class="footer">
@@ -1524,7 +1524,7 @@ ${statusInfo.message}
 What happens next?
 ${stepsText}
 
-Questions? Call us on 0800 260 6627 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
 
 ---
 © ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
@@ -1600,7 +1600,7 @@ function getPaymentConfirmationEmail(data: {
         </div>
         
         <p class="text" style="font-size: 13px; color: #666;">
-          If you have any questions about this payment, call us on <strong>0800 260 6627</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+          If you have any questions about this payment, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
         </p>
       </div>
       <div class="footer">
@@ -1628,7 +1628,7 @@ ${data.invoiceNumber ? `Invoice: ${data.invoiceNumber}` : ''}
 Receipt: ${data.receiptReference}
 Paid: ${paidDate}
 
-Questions? Call us on 0800 260 6627 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
 
 ---
 © ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
@@ -1703,13 +1703,13 @@ function getPaymentCancelledEmail(data: {
           <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #666;">
             <li>Try paying again with the same or different card</li>
             <li>Contact your bank to ensure your card isn't blocked</li>
-            <li>Call us on 0800 260 6627 for alternative payment options</li>
+            <li>Call us on 0800 260 6626 for alternative payment options</li>
           </ul>
         </div>
         ` : ''}
         
         <p class="text" style="font-size: 13px; color: #666;">
-          If you need assistance or would like to make a payment over the phone, call us on <strong>0800 260 6627</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+          If you need assistance or would like to make a payment over the phone, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
         </p>
       </div>
       <div class="footer">
@@ -1735,10 +1735,10 @@ ${message}
 ${!isCancelled ? `What you can do:
 - Try paying again with the same or different card
 - Contact your bank to ensure your card isn't blocked
-- Call us on 0800 260 6627 for alternative payment options
+- Call us on 0800 260 6626 for alternative payment options
 ` : ''}
 
-Questions? Call us on 0800 260 6627 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
 
 ---
 © ${new Date().getFullYear()} OCCTA Limited. All rights reserved.

@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { jsPDF } from "https://esm.sh/jspdf@2.5.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -243,7 +244,11 @@ Deno.serve(async (req) => {
             await sendInvoiceEmail(resend, {
               to: customerProfile.email,
               customerName: customerProfile.full_name || "Customer",
+              customerEmail: customerProfile.email || "",
               accountNumber: customerProfile.account_number || "",
+              address: customerProfile.address_line1 || undefined,
+              city: customerProfile.city || undefined,
+              postcode: customerProfile.postcode || undefined,
               invoiceNumber,
               issueDate: today,
               dueDate: dueDateStr,
@@ -350,19 +355,228 @@ async function updateNextInvoiceDate(supabase: any, settings: BillingSettings) {
 interface InvoiceEmailData {
   to: string;
   customerName: string;
+  customerEmail: string;
   accountNumber: string;
+  address?: string;
+  city?: string;
+  postcode?: string;
   invoiceNumber: string;
   issueDate: string;
   dueDate: string;
   billingPeriodStart: string;
   billingPeriodEnd: string;
-  lines: { description: string; qty: number; unit_price: number; line_total: number }[];
+  lines: { description: string; qty: number; unit_price: number; line_total: number; vat_rate?: number }[];
   subtotal: number;
   vatEnabled: boolean;
   vatRate: number;
   vatAmount: number;
   total: number;
   paymentUrl: string;
+}
+
+// Generate PDF invoice using jsPDF
+function generateInvoicePdfBase64(data: InvoiceEmailData): string {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  
+  // Color constants (used with setFillColor RGB values directly)
+  
+  // Helper function for date formatting
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  };
+  
+  // Header background
+  doc.setFillColor(13, 13, 13);
+  doc.rect(0, 0, pageWidth, 35, "F");
+  
+  // Logo text
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont("helvetica", "bold");
+  doc.text("OCCTA", 20, 22);
+  
+  // TELECOM in yellow box
+  doc.setFillColor(250, 204, 21);
+  doc.rect(55, 12, 40, 14, "F");
+  doc.setTextColor(13, 13, 13);
+  doc.text("TELECOM", 57, 23);
+  
+  // Invoice label
+  doc.setTextColor(255, 255, 255);
+  doc.text("INVOICE", pageWidth - 20, 22, { align: "right" });
+  
+  // Status badge
+  doc.setFillColor(250, 204, 21);
+  doc.rect(pageWidth - 45, 26, 35, 8, "F");
+  doc.setFontSize(10);
+  doc.setTextColor(13, 13, 13);
+  doc.text("UNPAID", pageWidth - 27.5, 31.5, { align: "center" });
+  
+  // Invoice details section
+  let y = 50;
+  doc.setTextColor(102, 102, 102);
+  doc.setFontSize(8);
+  doc.text("INVOICE NUMBER", 20, y);
+  doc.text("ISSUE DATE", 80, y);
+  doc.text("DUE DATE", 140, y);
+  
+  y += 6;
+  doc.setTextColor(13, 13, 13);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text(data.invoiceNumber, 20, y);
+  doc.setFont("helvetica", "normal");
+  doc.text(formatDate(data.issueDate), 80, y);
+  doc.text(formatDate(data.dueDate), 140, y);
+  
+  // Bill To section
+  y += 15;
+  doc.setFillColor(245, 245, 240);
+  doc.setDrawColor(13, 13, 13);
+  doc.setLineWidth(0.5);
+  doc.rect(20, y, pageWidth - 40, 35, "FD");
+  
+  y += 8;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("Bill To", 25, y);
+  
+  y += 8;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(102, 102, 102);
+  doc.text("Account Number:", 25, y);
+  doc.text("Customer:", 100, y);
+  
+  y += 5;
+  doc.setTextColor(13, 13, 13);
+  doc.setFont("helvetica", "bold");
+  doc.text(data.accountNumber || "N/A", 25, y);
+  doc.text(data.customerName, 100, y);
+  
+  y += 8;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(102, 102, 102);
+  const addressParts = [data.address, data.city, data.postcode].filter(Boolean);
+  if (addressParts.length > 0) {
+    doc.text(addressParts.join(", "), 25, y);
+  }
+  
+  // Line items table header
+  y += 20;
+  doc.setFillColor(13, 13, 13);
+  doc.rect(20, y, pageWidth - 40, 10, "F");
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.text("DESCRIPTION", 25, y + 7);
+  doc.text("QTY", 120, y + 7);
+  doc.text("UNIT PRICE", 140, y + 7);
+  doc.text("TOTAL", pageWidth - 25, y + 7, { align: "right" });
+  
+  // Line items
+  y += 15;
+  doc.setTextColor(13, 13, 13);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  
+  for (const line of data.lines) {
+    doc.setDrawColor(238, 238, 238);
+    doc.line(20, y + 5, pageWidth - 20, y + 5);
+    
+    // Wrap long descriptions
+    const descLines = doc.splitTextToSize(line.description, 90);
+    doc.text(descLines, 25, y);
+    doc.text(line.qty.toString(), 125, y, { align: "center" });
+    doc.text(`£${line.unit_price.toFixed(2)}`, 155, y, { align: "right" });
+    doc.text(`£${line.line_total.toFixed(2)}`, pageWidth - 25, y, { align: "right" });
+    
+    y += Math.max(descLines.length * 5, 10);
+  }
+  
+  // Totals section
+  y += 10;
+  const totalsX = pageWidth - 80;
+  
+  doc.setDrawColor(13, 13, 13);
+  doc.setLineWidth(0.5);
+  doc.rect(totalsX - 5, y - 5, 70, data.vatEnabled ? 40 : 30, "D");
+  
+  doc.setFontSize(9);
+  doc.text("Subtotal", totalsX, y + 3);
+  doc.text(`£${data.subtotal.toFixed(2)}`, pageWidth - 25, y + 3, { align: "right" });
+  
+  if (data.vatEnabled) {
+    y += 10;
+    doc.text(`VAT (${data.vatRate}%)`, totalsX, y + 3);
+    doc.text(`£${data.vatAmount.toFixed(2)}`, pageWidth - 25, y + 3, { align: "right" });
+  }
+  
+  y += 12;
+  doc.setFillColor(13, 13, 13);
+  doc.rect(totalsX - 5, y - 3, 70, 12, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("TOTAL", totalsX, y + 5);
+  doc.text(`£${data.total.toFixed(2)}`, pageWidth - 25, y + 5, { align: "right" });
+  
+  // Pay Now section
+  y += 25;
+  doc.setFillColor(250, 204, 21);
+  doc.setDrawColor(13, 13, 13);
+  doc.setLineWidth(1);
+  const buttonWidth = 60;
+  const buttonX = (pageWidth - buttonWidth) / 2;
+  doc.rect(buttonX, y, buttonWidth, 14, "FD");
+  
+  doc.setTextColor(13, 13, 13);
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("PAY NOW →", pageWidth / 2, y + 9, { align: "center" });
+  
+  // Add clickable link
+  doc.link(buttonX, y, buttonWidth, 14, { url: data.paymentUrl });
+  
+  y += 20;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(102, 102, 102);
+  doc.text(`Or visit: ${data.paymentUrl}`, pageWidth / 2, y, { align: "center" });
+  
+  // Footer
+  y = 270;
+  doc.setDrawColor(13, 13, 13);
+  doc.setLineWidth(0.5);
+  doc.line(20, y, pageWidth - 20, y);
+  
+  y += 8;
+  doc.setTextColor(13, 13, 13);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("OCCTA Telecom", pageWidth / 2, y, { align: "center" });
+  
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(102, 102, 102);
+  doc.text("Keeping the UK connected", pageWidth / 2, y, { align: "center" });
+  
+  y += 6;
+  doc.text("Call us: 0800 260 6627 | Email: billing@occta.co.uk", pageWidth / 2, y, { align: "center" });
+  
+  y += 5;
+  doc.text("OCCTA Limited | Company No. 13828933 | Registered in England & Wales", pageWidth / 2, y, { align: "center" });
+  
+  y += 4;
+  doc.text("22 Pavilion View, Huddersfield, HD3 3WU", pageWidth / 2, y, { align: "center" });
+  
+  // Return as base64
+  return doc.output("datauristring").split(",")[1];
 }
 
 async function sendInvoiceEmail(resend: Resend, data: InvoiceEmailData) {
@@ -514,6 +728,9 @@ async function sendInvoiceEmail(resend: Resend, data: InvoiceEmailData) {
 </html>
   `;
 
+  // Generate PDF and attach to email
+  const pdfBase64 = generateInvoicePdfBase64(data);
+  
   await resend.emails.send({
     from: "OCCTA Billing <billing@occta.co.uk>",
     to: data.to,
@@ -536,5 +753,11 @@ Need help? Call us on 0800 260 6627 or email billing@occta.co.uk
 
 OCCTA Limited | Company No. 13828933 | Registered in England & Wales
 22 Pavilion View, Huddersfield, HD3 3WU`,
+    attachments: [
+      {
+        filename: `OCCTA-Invoice-${data.invoiceNumber}.pdf`,
+        content: pdfBase64,
+      },
+    ],
   });
 }

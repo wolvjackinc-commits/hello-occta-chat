@@ -76,6 +76,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(({ embedded = false
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(embedded);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [hasUserOpened, setHasUserOpened] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -180,10 +181,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(({ embedded = false
 
   // Focus input when chat opens
   useEffect(() => {
-    if (isOpen && !isMinimized) {
+    if (isOpen && !isMinimized && hasUserOpened) {
       inputRef.current?.focus();
     }
-  }, [isOpen, isMinimized]);
+  }, [isOpen, isMinimized, hasUserOpened]);
 
   const formatAttachmentSize = (size: number) => {
     if (size < 1024) return `${size} B`;
@@ -364,7 +365,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(({ embedded = false
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
-              onClick={() => setIsOpen(true)}
+              onClick={() => {
+                setHasUserOpened(true);
+                setIsOpen(true);
+              }}
               className="fixed bottom-24 right-4 z-40 w-12 h-12 bg-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all"
               aria-label="Open chat"
             >

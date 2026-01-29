@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 
 interface InvoiceLineData {
   description: string;
@@ -420,7 +421,7 @@ export function generateInvoicePdf(invoice: InvoiceData): void {
     <div class="footer">
       <p><strong>OCCTA Telecom</strong></p>
       <p>Keeping the UK connected</p>
-      <p style="margin-top: 10px;">Call us: 0800 260 6627 | Email: billing@occta.co.uk</p>
+      <p style="margin-top: 10px;">Call us: ${CONTACT_PHONE_DISPLAY} | Email: billing@occta.co.uk</p>
       <p style="margin-top: 10px;">OCCTA Limited | Company No. 13828933 | Registered in England & Wales</p>
       <p>22 Pavilion View, Huddersfield, HD3 3WU</p>
     </div>

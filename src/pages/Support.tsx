@@ -18,6 +18,7 @@ import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
 import AIChatBot from "@/components/chat/AIChatBot";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createFAQSchema } from "@/components/seo";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { 
   Search, 
   Wifi, 
@@ -598,7 +599,7 @@ const Support = () => {
               <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  <span className="font-display">0800 260 6627</span>
+                  <span className="font-display">{CONTACT_PHONE_DISPLAY}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />

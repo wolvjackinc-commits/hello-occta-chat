@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 
 type PaymentRequestData = {
   id: string;
@@ -191,7 +192,7 @@ export default function Pay() {
               {error || "This payment link is invalid or has expired."}
             </p>
             <p className="text-sm text-muted-foreground">
-              Need help? Call <strong>0800 260 6627</strong>
+              Need help? Call <strong>{CONTACT_PHONE_DISPLAY}</strong>
             </p>
           </CardContent>
         </Card>
@@ -259,7 +260,7 @@ export default function Pay() {
           </div>
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
-            <p>Questions? Call <strong>0800 260 6627</strong></p>
+            <p>Questions? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>
             <p>Lines open Mon–Fri 9am–6pm, Sat 9am–1pm</p>
           </div>
         </CardContent>

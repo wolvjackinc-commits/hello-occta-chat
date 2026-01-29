@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Phone, Wifi, Smartphone, PhoneCall, ShieldCheck, User, LogOut, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -117,13 +118,13 @@ const Header = () => {
           {/* CTA Buttons */}
           <div className="hidden lg:flex items-center gap-4">
             <a 
-              href="tel:08002606627" 
+              href={CONTACT_PHONE_TEL} 
               className="flex items-center gap-2 font-display text-lg hover:text-accent transition-colors"
             >
               <div className="p-2 bg-foreground text-background">
                 <Phone className="w-4 h-4" />
               </div>
-              0800 260 6627
+              {CONTACT_PHONE_DISPLAY}
             </a>
             {user ? (
               <Link to="/dashboard">
@@ -194,11 +195,11 @@ const Header = () => {
                 </Link>
               )}
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t-4 border-foreground">
-                <a href="tel:08002606627" className="flex items-center gap-3 px-4 py-2 font-display text-lg">
+                <a href={CONTACT_PHONE_TEL} className="flex items-center gap-3 px-4 py-2 font-display text-lg">
                   <div className="p-2 bg-foreground text-background">
                     <Phone className="w-5 h-5" />
                   </div>
-                  0800 260 6627
+                  {CONTACT_PHONE_DISPLAY}
                 </a>
                 {user ? (
                   <Link to="/dashboard" onClick={() => setIsOpen(false)}>

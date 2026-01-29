@@ -407,7 +407,7 @@ const Support = () => {
             <div className="flex flex-wrap gap-2 mb-6">
               <button
                 onClick={() => setSelectedCategory(null)}
-                className={`px-4 py-2 border-2 font-display text-sm transition-colors ${
+                className={`px-4 py-2 border-2 text-sm md:text-base leading-tight transition-colors whitespace-normal ${
                   !selectedCategory ? "border-primary bg-primary text-primary-foreground" : "border-foreground/30 hover:bg-secondary"
                 }`}
               >
@@ -417,7 +417,7 @@ const Support = () => {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 border-2 font-display text-sm transition-colors flex items-center gap-2 ${
+                  className={`px-4 py-2 border-2 text-sm md:text-base leading-tight transition-colors flex items-center gap-2 whitespace-normal ${
                     selectedCategory === cat.id ? "border-primary bg-primary text-primary-foreground" : "border-foreground/30 hover:bg-secondary"
                   }`}
                 >
@@ -443,8 +443,12 @@ const Support = () => {
             <Accordion type="single" collapsible className="space-y-2">
               {filteredFaqs.slice(0, 15).map((faq, i) => (
                 <AccordionItem key={i} value={`faq-${i}`} className="border-4 border-foreground bg-card px-4">
-                  <AccordionTrigger className="font-display text-sm hover:no-underline py-3">{faq.question}</AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground pb-3">{faq.answer}</AccordionContent>
+                  <AccordionTrigger className="text-left whitespace-normal font-semibold text-base md:text-lg leading-snug tracking-normal py-4 hover:no-underline">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm md:text-base leading-relaxed text-muted-foreground pb-3">
+                    {faq.answer}
+                  </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>

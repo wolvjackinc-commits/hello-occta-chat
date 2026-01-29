@@ -150,20 +150,24 @@ const Auth = () => {
           Back to home
         </Link>
 
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-warning flex items-center justify-center shadow-glow">
-            <span className="text-primary-foreground font-display font-bold text-xl">O</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-display font-bold text-xl">OCCTA</span>
-            <span className="text-xs text-muted-foreground">Telecom that gets it</span>
-          </div>
-        </div>
-
         {/* Auth Card */}
         <Card className="border-0 shadow-card">
-          <CardHeader className="space-y-1">
+          <CardHeader className="space-y-4">
+            <div className="flex justify-center">
+              <Link to="/" className="flex items-center gap-3 group">
+                <div className="relative">
+                  <div className="w-12 h-12 bg-primary border-4 border-foreground shadow-brutal flex items-center justify-center group-hover:-translate-y-0.5 group-hover:-translate-x-0.5 group-hover:shadow-brutal-lg transition-all duration-150">
+                    <span className="font-display text-2xl text-primary-foreground">O</span>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-display text-2xl tracking-tight">OCCTA</span>
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
+                    Telecom That Gets It
+                  </span>
+                </div>
+              </Link>
+            </div>
             <CardTitle className="text-2xl font-display">
               {activeTab === "signin" ? "Welcome back!" : "Join the club"}
             </CardTitle>

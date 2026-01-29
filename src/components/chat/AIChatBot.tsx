@@ -37,6 +37,8 @@ type Message = {
 interface AIChatBotProps {
   embedded?: boolean;
   className?: string;
+  autoFocusInput?: boolean;
+  onClose?: () => void;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
@@ -72,7 +74,8 @@ const getSessionId = () => {
   return sessionId;
 };
 
-const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(({ embedded = false, className = "" }, ref) => {
+const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
+  ({ embedded = false, className = "", autoFocusInput = false, onClose }, ref) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(embedded);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -94,6 +97,14 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(({ embedded = false
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!autoFocusInput) return;
+    const focusTimer = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(focusTimer);
+  }, [autoFocusInput]);
 
   // Restore persisted chat history
   useEffect(() => {
@@ -622,12 +633,22 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(({ embedded = false
             {isAdmin ? "IRA Admin" : "IRA"}
           </span>
         </div>
-        <button
-          onClick={handleClearChat}
-          className="text-xs font-display uppercase text-primary-foreground/80 hover:text-primary-foreground"
-        >
-          New chat
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleClearChat}
+            className="text-xs font-display uppercase text-primary-foreground/80 hover:text-primary-foreground"
+          >
+            New chat
+          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="border-2 border-primary-foreground px-2 py-1 text-xs font-display uppercase text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+            >
+              Close chat
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Messages */}

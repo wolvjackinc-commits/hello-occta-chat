@@ -36,6 +36,7 @@ import Checkout from "./pages/Checkout";
 import PreCheckout from "./pages/PreCheckout";
 import ThankYou from "./pages/ThankYou";
 import Support from "./pages/Support";
+import Faq from "./pages/Faq";
 import About from "./pages/About";
 import Install from "./pages/Install";
 import Offline from "./pages/Offline";
@@ -142,6 +143,7 @@ const AnimatedRoutes = () => {
             <Route path="/pre-checkout" element={<PreCheckout />} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/support" element={<Support />} />
+            <Route path="/faq" element={<Faq />} />
             <Route path="/about" element={<About />} />
             <Route path="/install" element={<Install />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />

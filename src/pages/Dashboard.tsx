@@ -13,6 +13,7 @@ import { IdentityVerification } from "@/components/dashboard/IdentityVerificatio
 import { OrderTracking } from "@/components/dashboard/OrderTracking";
 import { PaymentHistory } from "@/components/dashboard/PaymentHistory";
 import { useAppMode } from "@/hooks/useAppMode";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 import { 
   Wifi, 
   Smartphone, 
@@ -836,9 +837,9 @@ const Dashboard = () => {
                       Raise a Ticket
                     </Button>
                   </Link>
-                  <a href="tel:08002606627">
+                  <a href={CONTACT_PHONE_TEL}>
                     <Button variant="ghost" className="w-full justify-start text-background/70 hover:text-background hover:bg-background/10">
-                      📞 Call 0800 260 6627
+                      📞 Call {CONTACT_PHONE_DISPLAY}
                     </Button>
                   </a>
                 </div>

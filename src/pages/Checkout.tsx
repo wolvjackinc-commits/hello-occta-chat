@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { getPlanById, Plan } from "@/lib/plans";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -159,7 +160,7 @@ const Checkout = () => {
       console.error("Order error:", error);
       toast({
         title: "Something went wrong",
-        description: "Please try again or call us on 0800 260 6627.",
+        description: `Please try again or call us on ${CONTACT_PHONE_DISPLAY}.`,
         variant: "destructive",
       });
     } finally {

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 
 type TicketType = {
   id: string;
@@ -246,7 +247,7 @@ const AppSupport = () => {
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4" />
-              <span>0800 260 6627</span>
+              <span>{CONTACT_PHONE_DISPLAY}</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />

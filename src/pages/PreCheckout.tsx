@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getPlanById, Plan, calculateBundleDiscount } from "@/lib/plans";
 import { getAddonsByService, Addon, ukProviders } from "@/lib/addons";
 import { format, addDays } from "date-fns";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -918,10 +919,10 @@ const PreCheckout = () => {
                     <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                     <div>
                       <div className="font-display text-sm uppercase tracking-wider">14-Day Cooling Off Period</div>
-                      <p className="text-muted-foreground text-sm mt-1">
-                        You have the right to cancel your order within 14 days of signing up, without giving any reason. 
-                        Contact us on 0800 260 6627 to cancel.
-                      </p>
+                        <p className="text-muted-foreground text-sm mt-1">
+                          You have the right to cancel your order within 14 days of signing up, without giving any reason. 
+                        Contact us on {CONTACT_PHONE_DISPLAY} to cancel.
+                        </p>
                     </div>
                   </div>
                 </div>

@@ -3,6 +3,12 @@
  * Single source of truth for all company details used across the application
  */
 
+import {
+  CONTACT_PHONE_DISPLAY,
+  CONTACT_PHONE_INTERNATIONAL,
+  CONTACT_PHONE_TEL,
+} from "./constants";
+
 export const companyConfig = {
   // Company Legal Details
   name: "OCCTA Limited",
@@ -12,9 +18,9 @@ export const companyConfig = {
   
   // Contact Information
   phone: {
-    display: "0800 260 6627",
-    href: "tel:08002606627",
-    international: "+44-800-260-6627",
+    display: CONTACT_PHONE_DISPLAY,
+    href: CONTACT_PHONE_TEL,
+    international: CONTACT_PHONE_INTERNATIONAL,
   },
   
   // Email Addresses

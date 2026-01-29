@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { 
   MessageCircle, 
   X, 
@@ -253,7 +254,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(({ embedded = false
       if (response.status === 402) {
         toast({
           title: "Service unavailable",
-          description: "Please call us at 0800 260 6627 for assistance.",
+          description: `Please call us at ${CONTACT_PHONE_DISPLAY} for assistance.`,
           variant: "destructive"
         });
         setLastFailedMessage(userMessage.content);
@@ -287,7 +288,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(({ embedded = false
       setMessages(prev => [...prev, { 
         id: crypto.randomUUID(),
         role: "assistant", 
-        content: "Sorry, I'm having trouble right now. Please try again or call us at 0800 260 6627.",
+        content: `Sorry, I'm having trouble right now. Please try again or call us at ${CONTACT_PHONE_DISPLAY}.`,
         createdAt: new Date().toISOString(),
       }]);
       setLastFailedMessage(userMessage.content);

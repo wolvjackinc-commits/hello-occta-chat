@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 
 type DDRequestData = {
   id: string;
@@ -232,7 +233,7 @@ export default function DDSetup() {
               {error || "This Direct Debit setup link is invalid or has expired."}
             </p>
             <p className="text-sm text-muted-foreground">
-              Need help? Call <strong>0800 260 6627</strong>
+              Need help? Call <strong>{CONTACT_PHONE_DISPLAY}</strong>
             </p>
           </CardContent>
         </Card>
@@ -381,7 +382,7 @@ export default function DDSetup() {
           </div>
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
-            <p>Questions? Call <strong>0800 260 6627</strong></p>
+            <p>Questions? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>
             <p>Lines open Mon–Fri 9am–6pm, Sat 9am–1pm</p>
           </div>
         </CardContent>

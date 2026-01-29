@@ -9,6 +9,7 @@ import Layout from '@/components/layout/Layout';
 import { format } from 'date-fns';
 import { generateReceiptPdf } from '@/lib/generateReceiptPdf';
 import { toast } from 'sonner';
+import { CONTACT_PHONE_DISPLAY } from '@/lib/constants';
 
 interface Invoice {
   id: string;
@@ -422,7 +423,7 @@ export default function PayInvoice() {
         </Card>
 
         <div className="text-center text-sm text-muted-foreground space-y-1">
-          <p>Need help? Call <strong>0800 260 6627</strong></p>
+          <p>Need help? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>
           <p>Lines open Mon–Fri 9am–6pm, Sat 9am–1pm</p>
         </div>
       </div>

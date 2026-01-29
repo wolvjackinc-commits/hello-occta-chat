@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logError } from "@/lib/logger";
 import { Loader2 } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 
 const adminEmail = "hello@occta.co.uk";
 
@@ -182,7 +183,7 @@ const BusinessSales = () => {
       logError("BusinessSales.handleSubmit", error);
       toast({
         title: "Something went wrong",
-        description: "Please try again or call us on 0800 260 6627.",
+        description: `Please try again or call us on ${CONTACT_PHONE_DISPLAY}.`,
         variant: "destructive",
       });
     } finally {

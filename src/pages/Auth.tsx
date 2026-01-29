@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Loader2, Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
@@ -309,8 +310,8 @@ const Auth = () => {
         {/* Help Text */}
         <p className="text-center text-sm text-muted-foreground">
           Need help? Call us free on{" "}
-          <a href="tel:08002606627" className="font-medium text-primary hover:underline">
-            0800 260 6627
+          <a href={CONTACT_PHONE_TEL} className="font-medium text-primary hover:underline">
+            {CONTACT_PHONE_DISPLAY}
           </a>
         </p>
       </div>

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Users, Award, Heart, ArrowRight, Phone, X } from "lucide-react";
 import { SEO } from "@/components/seo";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 
 const About = () => {
   const stats = [
@@ -55,10 +56,10 @@ const About = () => {
                     <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
-                <a href="tel:08002606627">
+                <a href={CONTACT_PHONE_TEL}>
                   <Button size="lg" variant="outline">
                     <Phone className="w-5 h-5" />
-                    0800 260 6627
+                    {CONTACT_PHONE_DISPLAY}
                   </Button>
                 </a>
               </div>

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Phone, ArrowRight, Sparkles } from "lucide-react";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 
 const CTASection = () => {
   const containerVariants = {
@@ -126,7 +127,7 @@ const CTASection = () => {
                 </Button>
               </motion.div>
             </Link>
-            <a href="tel:08002606627">
+            <a href={CONTACT_PHONE_TEL}>
               <motion.div
                 whileHover={{ 
                   y: -6, 
@@ -142,7 +143,7 @@ const CTASection = () => {
                   className="w-full sm:w-auto bg-transparent border-background text-background hover:bg-background hover:text-foreground"
                 >
                   <Phone className="w-5 h-5" />
-                  Call 0800 260 6627
+                  Call {CONTACT_PHONE_DISPLAY}
                 </Button>
               </motion.div>
             </a>

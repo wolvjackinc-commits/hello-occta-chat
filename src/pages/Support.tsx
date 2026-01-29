@@ -40,12 +40,9 @@ import {
   LayoutDashboard,
   Ticket,
   Shield,
-  Zap,
-  AlertCircle,
-  Lock,
-  ShoppingCart,
-  AlertTriangle
+  Zap
 } from "lucide-react";
+import { faqCategories, faqs } from "@/data/faqs";
 
 type SupportTicket = {
   id: string;
@@ -72,87 +69,11 @@ const categories = [
   { icon: Settings, label: "Account", value: "account" },
 ];
 
-// FAQ categories for structured navigation
-const faqCategories = [
-  { 
-    id: "billing",
-    icon: CreditCard, 
-    title: "Billing & Payments", 
-    description: "Invoices, payment methods, refunds"
-  },
-  { 
-    id: "services",
-    icon: Wifi, 
-    title: "Landline / Mobile / Broadband", 
-    description: "Service setup, speeds, coverage"
-  },
-  { 
-    id: "faults",
-    icon: AlertTriangle, 
-    title: "Faults & Troubleshooting", 
-    description: "Connection issues, outages"
-  },
-  { 
-    id: "account",
-    icon: Lock, 
-    title: "Account & Security", 
-    description: "Login, passwords, settings"
-  },
-  { 
-    id: "orders",
-    icon: ShoppingCart, 
-    title: "Orders & Activation", 
-    description: "New orders, activation status"
-  },
-  { 
-    id: "complaints",
-    icon: AlertCircle, 
-    title: "Complaints & Escalations", 
-    description: "Formal complaints process"
-  },
-];
-
-const faqs = [
-  { question: "How do I check my broadband speed?", answer: "Use a wired device and run a speed test. WiFi can reduce speeds, so compare results over ethernet before troubleshooting. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "My WiFi is slow. What should I try first?", answer: "Restart your router, move it into the open, and switch to the 5GHz band for faster speeds at short range. Still need help? Our AI assistant or support ticket system can assist you further.", category: "faults" },
-  { question: "What's the difference between 2.4GHz and 5GHz WiFi?", answer: "2.4GHz reaches farther but is slower and busier. 5GHz is faster but has a shorter range. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "How do I reboot or reset my router?", answer: "Unplug the power for 30 seconds to reboot. For a factory reset, hold the reset pin for 10–15 seconds. Still need help? Our AI assistant or support ticket system can assist you further.", category: "faults" },
-  { question: "Why does my connection drop at night?", answer: "Try changing WiFi channels and checking for local interference. If it persists, contact us with times and frequency. Still need help? Our AI assistant or support ticket system can assist you further.", category: "faults" },
-  { question: "How do I set up a new broadband connection?", answer: "Once your kit arrives, plug the router into the master socket and power it on. Follow the quick-start card to finish setup. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "Do you support self-install and engineer visits?", answer: "Most lines are self-install. If an engineer is required, we'll confirm the appointment details during checkout. Still need help? Our AI assistant or support ticket system can assist you further.", category: "orders" },
-  { question: "Can I move my broadband to a new address?", answer: "Yes—tell us your move date at least 2 weeks ahead so we can schedule the transfer or install. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "How do I keep my phone number when switching?", answer: "For mobiles, text PAC to 65075 and share the code with us. For landlines, just confirm the number to port. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "How long does number porting take?", answer: "Mobile ports typically complete within 1 working day. Landline ports can take longer depending on your provider. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "Can I use my own router?", answer: "Yes, if it supports your connection type. You may need to enter our PPPoE settings in the router admin panel. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "How do I change my WiFi name and password?", answer: "Log into your router admin page and update SSID and WiFi password. Restart devices to reconnect. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "What should I do if there's an outage?", answer: "Check our status page or app for updates. If there's no reported outage, reboot your equipment and contact us. Still need help? Our AI assistant or support ticket system can assist you further.", category: "faults" },
-  { question: "What is fair usage?", answer: "Fair usage ensures everyone gets a stable service. Extremely heavy usage may be managed during peak times. Still need help? Our AI assistant or support ticket system can assist you further.", category: "billing" },
-  { question: "What happens if I go over my data limit?", answer: "If your plan includes a cap, speeds may be reduced until your next billing date. No unexpected overage fees. Still need help? Our AI assistant or support ticket system can assist you further.", category: "billing" },
-  { question: "How do I see my data usage?", answer: "Open your dashboard or app to view usage, plan details, and billing dates. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "Do you offer unlimited data plans?", answer: "Yes—check plan details in the shop or your account to see unlimited options. Still need help? Our AI assistant or support ticket system can assist you further.", category: "billing" },
-  { question: "How do I activate my SIM?", answer: "Insert the SIM, restart your phone, and follow the activation instructions sent by SMS or email. Still need help? Our AI assistant or support ticket system can assist you further.", category: "orders" },
-  { question: "My SIM isn't working—what now?", answer: "Confirm it's seated correctly, reboot your phone, and check APN settings. If it still fails, contact support. Still need help? Our AI assistant or support ticket system can assist you further.", category: "faults" },
-  { question: "Do you support eSIM?", answer: "If your device supports eSIM, we can provide a QR code for activation. Check eligibility in your account. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "How do I set up APN settings?", answer: "In your phone's mobile network settings, create a new APN using the details in your account setup guide. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "Can I use my plan abroad?", answer: "Roaming is available on selected plans. Enable roaming in your device settings and check country rates. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "How do I enable international calling?", answer: "Turn on international calling in your account settings. You may need a credit check or a deposit on new accounts. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "How do I pay my bill?", answer: "Pay by card in your account or set up Direct Debit for automatic payments each month. Still need help? Our AI assistant or support ticket system can assist you further.", category: "billing" },
-  { question: "Can I change my billing date?", answer: "Yes—contact support and we'll align your billing date with your preferred schedule. Still need help? Our AI assistant or support ticket system can assist you further.", category: "billing" },
-  { question: "I was charged twice—what should I do?", answer: "Check pending card authorizations first. If the charge has posted twice, contact us with the transaction details. Still need help? Our AI assistant or support ticket system can assist you further.", category: "billing" },
-  { question: "How do refunds work?", answer: "Approved refunds are returned to your original payment method within 3–5 working days. Still need help? Our AI assistant or support ticket system can assist you further.", category: "billing" },
-  { question: "Where can I download invoices?", answer: "Invoices are available in your dashboard under Billing. You can download PDFs for any paid month. Still need help? Our AI assistant or support ticket system can assist you further.", category: "billing" },
-  { question: "How do I update my payment method?", answer: "Go to Billing in your account and choose 'Update payment method' to replace a card or Direct Debit. Still need help? Our AI assistant or support ticket system can assist you further.", category: "billing" },
-  { question: "How do I update my personal details?", answer: "Visit Account Settings to change your email, password, address, and contact preferences. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "I forgot my password—how do I reset it?", answer: "Use the 'Forgot password' link on the sign-in page and follow the email instructions. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "How do I cancel my service?", answer: "Submit a cancellation request in your dashboard or call us. Most plans require 30 days' notice. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "Is there a cooling-off period?", answer: "New services typically include a cooling-off period. Check your plan terms in the order confirmation. Still need help? Our AI assistant or support ticket system can assist you further.", category: "orders" },
-  { question: "Can I pause my service temporarily?", answer: "Pausing isn't available on all plans. Contact support to see what options apply to your account. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "How do I report a vulnerability or security issue?", answer: "Email our security team with details and we'll investigate promptly. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "Do you provide parental controls?", answer: "Yes—enable parental controls in the router or app to manage content categories and device schedules. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "How do I block nuisance calls?", answer: "Use your handset's block list or enable call screening features in your account if available. Still need help? Our AI assistant or support ticket system can assist you further.", category: "services" },
-  { question: "Why is my latency high while gaming?", answer: "Use a wired connection, close background downloads, and choose a nearby game server to reduce ping. Still need help? Our AI assistant or support ticket system can assist you further.", category: "faults" },
-  { question: "Can I add multiple lines to one account?", answer: "Yes—multi-line discounts may be available. Add lines from your account dashboard. Still need help? Our AI assistant or support ticket system can assist you further.", category: "account" },
-  { question: "How do I make a formal complaint?", answer: "Visit our Complaints page to submit a formal complaint. We follow Ofcom guidelines and aim to resolve issues within 8 weeks. Still need help? Our AI assistant or support ticket system can assist you further.", category: "complaints" },
+const topSupportFaqQuestions = [
+  "How do I check my broadband speed?",
+  "My Wi-Fi is slow — what should I try first?",
+  "How long does installation take?",
+  "How do I contact support / raise a ticket?",
 ];
 
 const statusConfig = {
@@ -254,7 +175,8 @@ const Support = () => {
     }
   };
 
-  const filteredFaqs = faqs.filter((faq) => {
+  const supportFaqs = faqs.filter((faq) => topSupportFaqQuestions.includes(faq.question));
+  const filteredFaqs = supportFaqs.filter((faq) => {
     const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = !selectedCategory || faq.category === selectedCategory;
@@ -272,9 +194,8 @@ const Support = () => {
     );
   }
 
-  // Generate FAQ schema for top 10 FAQs
-  const topFaqs = faqs.slice(0, 10).map(f => ({ question: f.question, answer: f.answer }));
-  const faqSchema = createFAQSchema(topFaqs);
+  // Generate FAQ schema for top FAQs shown on this page
+  const faqSchema = createFAQSchema(supportFaqs.map((faq) => ({ question: faq.question, answer: faq.answer })));
 
   return (
     <Layout>
@@ -399,9 +320,12 @@ const Support = () => {
             transition={{ delay: 0.3 }}
             className="max-w-4xl mx-auto mb-12"
           >
-            <div className="mb-6">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <h2 className="font-display text-2xl uppercase mb-2">Frequently Asked Questions</h2>
-              <p className="text-muted-foreground">Browse by category or search for answers</p>
+              <p className="text-muted-foreground">Browse the most requested answers below.</p>
+              <Link to="/faq" className="text-sm font-semibold text-primary hover:underline">
+                View all FAQs
+              </Link>
             </div>
 
             {/* Category Pills */}
@@ -442,12 +366,12 @@ const Support = () => {
 
             {/* FAQs */}
             <Accordion type="single" collapsible className="space-y-2">
-              {filteredFaqs.slice(0, 15).map((faq, i) => (
+              {filteredFaqs.map((faq, i) => (
                 <AccordionItem key={i} value={`faq-${i}`} className="border-4 border-foreground bg-card px-4">
-                  <AccordionTrigger className="text-left whitespace-normal font-semibold text-base md:text-lg leading-snug tracking-normal py-4 hover:no-underline">
+                  <AccordionTrigger className="text-left whitespace-normal font-semibold text-base md:text-lg leading-relaxed tracking-normal py-4 hover:no-underline">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-sm md:text-base leading-relaxed text-muted-foreground pb-3">
+                  <AccordionContent className="text-sm md:text-base leading-relaxed text-muted-foreground pb-3 max-w-prose">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>

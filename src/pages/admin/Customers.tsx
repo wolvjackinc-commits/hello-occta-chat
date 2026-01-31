@@ -21,6 +21,7 @@ import CustomerAdvancedSearch, {
   type AdvancedSearchFilters,
 } from "@/components/admin/CustomerAdvancedSearch";
 import CustomerQuickActions from "@/components/admin/CustomerQuickActions";
+import { AdminDataHealthBanner } from "@/components/admin/AdminDataHealthBanner";
 
 const PAGE_SIZE = 10;
 
@@ -209,6 +210,7 @@ export const AdminCustomers = () => {
 
   return (
     <div className="space-y-6">
+      <AdminDataHealthBanner />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-display">Customers</h1>

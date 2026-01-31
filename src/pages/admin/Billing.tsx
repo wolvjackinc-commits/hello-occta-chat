@@ -38,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
 import { formatAccountNumber } from "@/lib/account";
 import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
+import { hashToken } from "@/lib/tokenHash";
 import { format } from "date-fns";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
 import { 
@@ -461,12 +462,13 @@ export const AdminBilling = () => {
 
     setIsSendingPaymentLink(true);
     try {
-      // Generate secure token
-      const token = crypto.randomUUID();
+      // Generate secure token and hash it
+      const rawToken = crypto.randomUUID();
+      const tokenHash = await hashToken(rawToken);
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
 
-      // Create payment request
+      // Create payment request with hashed token
       const { data: paymentRequest, error: prError } = await supabase
         .from("payment_requests")
         .insert({
@@ -480,7 +482,7 @@ export const AdminBilling = () => {
           currency: "GBP",
           status: "sent",
           expires_at: expiresAt.toISOString(),
-          token_hash: token, // In production, hash this
+          token_hash: tokenHash, // Store hashed token for secure validation
           notes: `Payment for invoice ${invoice.invoice_number}`,
         })
         .select()
@@ -503,7 +505,7 @@ export const AdminBilling = () => {
             amount: invoice.total,
             due_date: invoice.due_date ? format(new Date(invoice.due_date), "dd MMM yyyy") : null,
             expires_at: expiresAt.toISOString(),
-            token: token,
+            token: rawToken, // Send raw token in email (not the hash)
           },
         },
       });

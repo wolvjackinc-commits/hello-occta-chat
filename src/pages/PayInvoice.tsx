@@ -125,33 +125,32 @@ export default function PayInvoice() {
   };
 
   const handlePayNow = async () => {
-    if (!invoice || !user || !profile) return;
+    if (!invoice || !user) {
+      console.error('Missing invoice or user:', { invoice: !!invoice, user: !!user });
+      toast.error('Unable to process payment. Please refresh and try again.');
+      return;
+    }
+
+    // Handle case where profile might not be loaded yet
+    const customerEmail = profile?.email || user.email;
+    const customerName = profile?.full_name || user.user_metadata?.full_name || 'Customer';
+    const accountNumber = profile?.account_number || null;
+
+    if (!customerEmail) {
+      console.error('No customer email available');
+      toast.error('No email address on file. Please contact support.');
+      return;
+    }
 
     setProcessing(true);
     try {
-      // Check for existing active payment request for this invoice
-      const { data: existingRequest } = await supabase
-        .from('payment_requests')
-        .select('id, token_hash, expires_at')
-        .eq('invoice_id', invoice.id)
-        .eq('status', 'sent')
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      let token: string;
-
-      if (existingRequest && existingRequest.token_hash) {
-        // Cannot reuse existing hashed token - we need the raw token to redirect
-        // So we need to create a new payment request
-      }
-      
       // Create new payment request with hashed token
       const rawToken = crypto.randomUUID();
       const tokenHash = await hashToken(rawToken);
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
+
+      console.log('Creating payment request for invoice:', invoice.id);
 
       const { error: insertError } = await supabase
         .from('payment_requests')
@@ -159,9 +158,9 @@ export default function PayInvoice() {
           type: 'card_payment',
           invoice_id: invoice.id,
           user_id: user.id,
-          customer_name: profile.full_name || 'Customer',
-          customer_email: profile.email || user.email,
-          account_number: profile.account_number,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          account_number: accountNumber,
           amount: invoice.total,
           currency: invoice.currency || 'GBP',
           status: 'sent',
@@ -171,13 +170,14 @@ export default function PayInvoice() {
         });
 
       if (insertError) {
+        console.error('Failed to create payment request:', insertError);
         throw new Error('Failed to create payment request');
       }
 
-      token = rawToken; // Use raw token for redirect URL
+      console.log('Payment request created, redirecting to /pay with token');
 
-      // Redirect to payment page
-      navigate(`/pay?token=${token}`);
+      // Redirect to payment page with raw token (not the hash)
+      navigate(`/pay?token=${rawToken}`);
     } catch (err) {
       console.error('Error creating payment request:', err);
       toast.error('Failed to start payment. Please try again.');

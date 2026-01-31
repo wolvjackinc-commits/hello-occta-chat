@@ -59,6 +59,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
+import { hashToken } from "@/lib/tokenHash";
 import { DDMandateDetailDialog } from "@/components/admin/DDMandateDetailDialog";
 import { RecordPhonePaymentDialog } from "@/components/admin/RecordPhonePaymentDialog";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
@@ -213,17 +214,9 @@ export const AdminPaymentRequests = () => {
     try {
       const { data: currentUser } = await supabase.auth.getUser();
       
-      // Generate token for secure link
-      const tokenBytes = new Uint8Array(32);
-      crypto.getRandomValues(tokenBytes);
-      const rawToken = Array.from(tokenBytes, b => b.toString(16).padStart(2, '0')).join('');
-      
-      // Hash the token for storage
-      const encoder = new TextEncoder();
-      const data = encoder.encode(rawToken);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      // Generate token and hash it using shared utility
+      const rawToken = crypto.randomUUID();
+      const tokenHash = await hashToken(rawToken);
 
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
@@ -307,16 +300,9 @@ export const AdminPaymentRequests = () => {
   const handleSendRequest = async (request: PaymentRequest) => {
     setIsSending(true);
     try {
-      // Generate new token
-      const tokenBytes = new Uint8Array(32);
-      crypto.getRandomValues(tokenBytes);
-      const rawToken = Array.from(tokenBytes, b => b.toString(16).padStart(2, '0')).join('');
-      
-      const encoder = new TextEncoder();
-      const data = encoder.encode(rawToken);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      // Generate new token and hash it using shared utility
+      const rawToken = crypto.randomUUID();
+      const tokenHash = await hashToken(rawToken);
 
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);

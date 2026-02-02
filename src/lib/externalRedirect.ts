@@ -6,16 +6,22 @@
  * origin restrictions. Breaking out to the top window avoids that.
  */
 export function redirectToExternal(url: string) {
+  if (typeof window === "undefined") return;
+
+  // In embedded preview iframes, accessing window.top can throw (cross-origin).
+  // Using window.open(url, "_top") reliably navigates the top-level browsing
+  // context without needing to touch window.top.
   try {
-    // If we're inside an iframe (e.g., editor preview), escape to top.
-    if (typeof window !== "undefined" && window.self !== window.top && window.top) {
-      window.top.location.href = url;
-      return;
-    }
+    window.open(url, "_top");
+    return;
   } catch {
-    // Accessing window.top can throw due to cross-origin policies.
-    // Fall back to same-window navigation.
+    // ignore
   }
 
-  window.location.href = url;
+  // Fallbacks
+  try {
+    window.location.assign(url);
+  } catch {
+    window.location.href = url;
+  }
 }

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, CreditCard, Lock, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getPaymentReturnOrigin } from '@/lib/appOrigin';
 
 interface WorldpayCheckoutProps {
   invoiceId: string;
@@ -36,7 +37,7 @@ export function WorldpayCheckout({
 
     try {
       // Get the current page URL to use as return URL
-      const returnUrl = `${window.location.origin}/payment-result`;
+      const returnUrl = `${getPaymentReturnOrigin()}/payment-result`;
 
       console.log('Creating payment session with return URL:', returnUrl);
 

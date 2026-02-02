@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { getPaymentReturnOrigin } from "@/lib/appOrigin";
 
 type PaymentRequestData = {
   id: string;
@@ -92,7 +93,9 @@ export default function Pay() {
 
     setIsProcessing(true);
     try {
-      const returnUrl = `${window.location.origin}/pay?requestId=${paymentData.id}`;
+      // IMPORTANT: use a stable origin for payment provider return URLs.
+      // Preview origins can break Worldpay 3DS ("current origin is not supported").
+      const returnUrl = `${getPaymentReturnOrigin()}/pay?requestId=${paymentData.id}`;
 
       const { data, error: fnError } = await supabase.functions.invoke("payment-request", {
         body: {

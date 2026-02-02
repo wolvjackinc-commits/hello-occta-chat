@@ -72,8 +72,13 @@ export default function Pay() {
         }
 
         setPaymentData(data.request);
-      } catch (err) {
-        setError("Failed to validate payment link. Please contact support.");
+      } catch (err: any) {
+        // Expose a useful error to users (and for debugging), while staying safe.
+        const message =
+          typeof err?.message === "string" && err.message.trim().length
+            ? err.message
+            : "Failed to validate payment link. Please contact support.";
+        setError(message);
       } finally {
         setIsLoading(false);
       }

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { getPaymentReturnOrigin } from "@/lib/appOrigin";
+import { redirectToExternal } from "@/lib/externalRedirect";
 
 type PaymentRequestData = {
   id: string;
@@ -111,7 +112,7 @@ export default function Pay() {
       }
 
       // Redirect to Worldpay
-      window.location.href = data.checkoutUrl;
+      redirectToExternal(data.checkoutUrl);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Payment initialization failed";
       setError(message);

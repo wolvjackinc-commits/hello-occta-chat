@@ -5,6 +5,7 @@ import { Loader2, CreditCard, Lock, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getPaymentReturnOrigin } from '@/lib/appOrigin';
+import { redirectToExternal } from '@/lib/externalRedirect';
 
 interface WorldpayCheckoutProps {
   invoiceId: string;
@@ -68,7 +69,7 @@ export function WorldpayCheckout({
       console.log('Payment session created, redirecting to:', data.checkoutUrl);
 
       // Redirect to Worldpay Hosted Payment Page
-      window.location.href = data.checkoutUrl;
+      redirectToExternal(data.checkoutUrl);
 
     } catch (err: any) {
       console.error('Payment error:', err);

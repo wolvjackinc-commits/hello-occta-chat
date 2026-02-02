@@ -12,6 +12,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
 };
 
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 // Template types for invoice reminders
 type ReminderTemplate = 'due_soon' | 'due_today' | 'overdue_7';
 
@@ -319,60 +327,46 @@ serve(async (req) => {
             .eq('id', invoice.id);
         }
 
-        // Get or create active payment_request for this invoice
-        let paymentToken: string;
-        let paymentRequestId: string;
+        // IMPORTANT: token_hash stores a SHA-256 hash, so we cannot reuse an existing request
+        // (we don't keep raw tokens). Always create a new payment request for email reminders.
+        const rawToken = crypto.randomUUID();
+        const tokenHash = await hashToken(rawToken);
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
 
-        const { data: existingPaymentRequest } = await supabase
+        // Optional: mark any previous active requests as cancelled to reduce confusion
+        await supabase
           .from('payment_requests')
-          .select('id, token_hash')
+          .update({ status: 'cancelled' })
           .eq('invoice_id', invoice.id)
-          .eq('status', 'sent')
-          .gt('expires_at', new Date().toISOString())
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .in('status', ['sent', 'opened'])
+          .gt('expires_at', new Date().toISOString());
 
-        if (existingPaymentRequest && existingPaymentRequest.token_hash) {
-          // Reuse existing active payment request
-          paymentToken = existingPaymentRequest.token_hash;
-          paymentRequestId = existingPaymentRequest.id;
-          console.log(`Reusing payment request ${paymentRequestId} for ${invoice.invoice_number}`);
-        } else {
-          // Create new payment request
-          const newToken = crypto.randomUUID();
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
+        const { data: newPaymentRequest, error: prError } = await supabase
+          .from('payment_requests')
+          .insert({
+            type: 'card_payment',
+            invoice_id: invoice.id,
+            user_id: invoice.user_id,
+            customer_name: profile.full_name || 'Customer',
+            customer_email: profile.email,
+            amount: invoice.total,
+            currency: 'GBP',
+            status: 'sent',
+            token_hash: tokenHash,
+            expires_at: expiresAt.toISOString(),
+          })
+          .select('id')
+          .single();
 
-          const { data: newPaymentRequest, error: prError } = await supabase
-            .from('payment_requests')
-            .insert({
-              type: 'card_payment',
-              invoice_id: invoice.id,
-              user_id: invoice.user_id,
-              customer_name: profile.full_name || 'Customer',
-              customer_email: profile.email,
-              amount: invoice.total,
-              currency: 'GBP',
-              status: 'sent',
-              token_hash: newToken,
-              expires_at: expiresAt.toISOString(),
-            })
-            .select('id')
-            .single();
-
-          if (prError || !newPaymentRequest) {
-            console.error(`Failed to create payment request for ${invoice.invoice_number}:`, prError);
-            errors.push(`Failed to create payment request for ${invoice.invoice_number}`);
-            continue;
-          }
-
-          paymentToken = newToken;
-          paymentRequestId = newPaymentRequest.id;
-          console.log(`Created new payment request ${paymentRequestId} for ${invoice.invoice_number}`);
+        if (prError || !newPaymentRequest) {
+          console.error(`Failed to create payment request for ${invoice.invoice_number}:`, prError);
+          errors.push(`Failed to create payment request for ${invoice.invoice_number}`);
+          continue;
         }
 
-        const payUrl = `${siteUrl}/pay?token=${paymentToken}`;
+        const paymentRequestId = newPaymentRequest.id;
+        const payUrl = `${siteUrl}/pay?token=${rawToken}`;
 
         const html = getReminderHtml({
           customer_name: profile.full_name || 'Customer',

@@ -7,6 +7,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 interface BillingSettings {
   id: string;
   user_id: string;
@@ -196,6 +204,7 @@ Deno.serve(async (req) => {
 
         // 10. Create payment request with secure token
         const token = crypto.randomUUID();
+        const tokenHash = await hashToken(token);
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 14);
 
@@ -212,7 +221,7 @@ Deno.serve(async (req) => {
             currency: "GBP",
             status: "sent",
             expires_at: expiresAt.toISOString(),
-            token_hash: token,
+            token_hash: tokenHash,
             notes: `Payment for invoice ${invoiceNumber}`,
           })
           .select()

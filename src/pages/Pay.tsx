@@ -25,10 +25,17 @@ type PaymentRequestData = {
 
 export default function Pay() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  // keep hook call (even if unused) to avoid changing broader routing behavior
+  useNavigate();
   const token = searchParams.get("token");
   const status = searchParams.get("status");
   const requestId = searchParams.get("requestId");
+
+  const stableOrigin = getPaymentReturnOrigin();
+  const isRunningOnStableOrigin =
+    typeof window === "undefined" ? true : window.location.origin === stableOrigin;
+
+  const shouldOpenOnStableOrigin = !isRunningOnStableOrigin && !!token && !status;
 
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -52,7 +59,7 @@ export default function Pay() {
 
   // Validate token and fetch payment data
   useEffect(() => {
-    if (!token || status) return;
+    if (!token || status || shouldOpenOnStableOrigin) return;
 
     const validateToken = async () => {
       setIsLoading(true);
@@ -87,7 +94,32 @@ export default function Pay() {
     };
 
     validateToken();
-  }, [token, status]);
+  }, [token, status, shouldOpenOnStableOrigin]);
+
+  // If this page is opened inside the Lovable preview domain, 3DS flows can crash with
+  // "The current origin is not supported". Always move the customer to the stable/published
+  // domain BEFORE starting Worldpay.
+  if (shouldOpenOnStableOrigin) {
+    const stableUrl = `${stableOrigin}/pay?${searchParams.toString()}`;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-4 border-foreground">
+          <CardHeader className="bg-foreground text-background">
+            <CardTitle className="font-display text-2xl text-center tracking-widest">OCCTA</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-8 pb-8 text-center space-y-4">
+            <h1 className="font-display text-2xl">Open Secure Payment</h1>
+            <p className="text-muted-foreground">
+              For security reasons, card payments must be completed outside the preview.
+            </p>
+            <Button className="w-full" onClick={() => redirectToExternal(stableUrl)}>
+              Open payment page
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleProceedToPayment = async () => {
     if (!paymentData || !token) return;

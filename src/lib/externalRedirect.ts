@@ -8,11 +8,18 @@
 export function redirectToExternal(url: string) {
   if (typeof window === "undefined") return;
 
+  const host = window.location.hostname;
+  const isPreviewHost = host.startsWith("id-preview--");
+
   // In embedded preview iframes, accessing window.top can throw (cross-origin).
-  // Using window.open(url, "_top") reliably navigates the top-level browsing
-  // context without needing to touch window.top.
+  // Also, 3DS/postMessage flows can break inside the Lovable preview iframe.
+  // Opening a new tab from a user click is the most reliable escape hatch.
   try {
-    window.open(url, "_top");
+    if (isPreviewHost) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      window.open(url, "_top");
+    }
     return;
   } catch {
     // ignore

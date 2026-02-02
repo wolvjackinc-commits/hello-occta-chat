@@ -146,7 +146,25 @@ export default function PayInvoice() {
     try {
       // Create new payment request with hashed token
       const rawToken = crypto.randomUUID();
-      const tokenHash = await hashToken(rawToken);
+      console.log('Generated raw token:', rawToken);
+      
+      // Compute SHA-256 hash of the token
+      let tokenHash: string;
+      try {
+        tokenHash = await hashToken(rawToken);
+        console.log('Computed token hash:', tokenHash, 'length:', tokenHash.length);
+        
+        // Verify hash looks correct (should be 64 hex chars)
+        if (tokenHash.length !== 64 || !/^[a-f0-9]+$/.test(tokenHash)) {
+          throw new Error('Invalid hash format');
+        }
+      } catch (hashError) {
+        console.error('Token hashing failed:', hashError);
+        toast.error('Security error. Please try again.');
+        setProcessing(false);
+        return;
+      }
+      
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
 
@@ -164,7 +182,7 @@ export default function PayInvoice() {
           amount: invoice.total,
           currency: invoice.currency || 'GBP',
           status: 'sent',
-          token_hash: tokenHash, // Store hashed token
+          token_hash: tokenHash, // Store SHA-256 hashed token
           expires_at: expiresAt.toISOString(),
           due_date: invoice.due_date,
         });

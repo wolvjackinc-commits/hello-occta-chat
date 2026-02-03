@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import CustomerAdvancedSearch, {
 } from "@/components/admin/CustomerAdvancedSearch";
 import CustomerQuickActions from "@/components/admin/CustomerQuickActions";
 import { AdminDataHealthBanner } from "@/components/admin/AdminDataHealthBanner";
+import { CreateCustomerDialog } from "@/components/admin/CreateCustomerDialog";
 
 const PAGE_SIZE = 10;
 
@@ -62,6 +63,7 @@ const isEmailSearch = (term: string): boolean => {
 
 export const AdminCustomers = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [quickSearch, setQuickSearch] = useState("");
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState("all");
@@ -69,6 +71,10 @@ export const AdminCustomers = () => {
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedSearchFilters>(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState<AdvancedSearchFilters>(defaultFilters);
   const dobRevealLogged = useRef(false);
+
+  const handleCustomerCreated = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-customers"] });
+  };
 
   const hasAdvancedFilters = appliedFilters.name || appliedFilters.postcode || appliedFilters.dob;
 
@@ -211,22 +217,25 @@ export const AdminCustomers = () => {
   return (
     <div className="space-y-6">
       <AdminDataHealthBanner />
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-display">Customers</h1>
           <p className="text-muted-foreground">
             Search and manage customer records.
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleToggleDob}
-          className="flex items-center gap-1"
-        >
-          {showDob ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          <span className="text-xs">DOB</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <CreateCustomerDialog onCreated={handleCustomerCreated} />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleDob}
+            className="flex items-center gap-1"
+          >
+            {showDob ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            <span className="text-xs">DOB</span>
+          </Button>
+        </div>
       </div>
 
       {/* Quick Search + Filter Row */}

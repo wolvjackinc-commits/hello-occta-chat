@@ -177,8 +177,8 @@ export const CreateCampaignDialog = ({ open, onClose }: CreateCampaignDialogProp
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden bg-background">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 font-display text-xl">
             <Send className="h-5 w-5" />
             New Campaign
@@ -186,7 +186,7 @@ export const CreateCampaignDialog = ({ open, onClose }: CreateCampaignDialogProp
         </DialogHeader>
 
         {/* Step indicator */}
-        <div className="flex items-center justify-center gap-2 border-b pb-4">
+        <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b pb-4">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center">
               <div
@@ -209,7 +209,7 @@ export const CreateCampaignDialog = ({ open, onClose }: CreateCampaignDialogProp
           ))}
         </div>
 
-        <div className="overflow-y-auto py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto py-4">
           {/* Step 1: Recipients */}
           {step === 1 && (
             <div className="space-y-4">
@@ -377,8 +377,8 @@ export const CreateCampaignDialog = ({ open, onClose }: CreateCampaignDialogProp
           )}
         </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between border-t pt-4">
+        {/* Navigation - sticky at bottom */}
+        <div className="flex flex-shrink-0 items-center justify-between border-t bg-background pt-4">
           <Button
             variant="outline"
             onClick={() => (step === 1 ? onClose() : setStep(step - 1))}

@@ -89,7 +89,6 @@ export const TemplateEditorDialog = ({
       const { data: user } = await supabase.auth.getUser();
 
       if (template) {
-        // Update existing
         const { error } = await supabase
           .from("email_templates")
           .update({
@@ -104,7 +103,6 @@ export const TemplateEditorDialog = ({
 
         if (error) throw error;
       } else {
-        // Create new
         const { error } = await supabase.from("email_templates").insert({
           template_name: data.template_name,
           subject: data.subject,
@@ -161,7 +159,6 @@ export const TemplateEditorDialog = ({
         ...prev,
         html_body: before + variable + after,
       }));
-      // Restore cursor position after React re-render
       setTimeout(() => {
         textarea.focus();
         textarea.setSelectionRange(start + variable.length, start + variable.length);
@@ -174,7 +171,6 @@ export const TemplateEditorDialog = ({
     }
   };
 
-  // Preview with sample data
   const getPreviewHtml = () => {
     const sampleData: Record<string, string> = {
       first_name: "John",
@@ -196,96 +192,99 @@ export const TemplateEditorDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden bg-background">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 font-display text-xl">
             {template ? "Edit Template" : "Create Template"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-6 overflow-hidden">
+        <div className="flex min-h-0 flex-1 gap-6">
           {/* Form */}
-          <div className="flex flex-1 flex-col gap-4 overflow-y-auto pr-2">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="template_name">Template Name</Label>
+                  <Input
+                    id="template_name"
+                    placeholder="e.g. Welcome Email"
+                    value={formData.template_name}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, template_name: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, category: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background">
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="template_name">Template Name</Label>
+                <Label htmlFor="subject">Email Subject</Label>
                 <Input
-                  id="template_name"
-                  placeholder="e.g. Welcome Email"
-                  value={formData.template_name}
+                  id="subject"
+                  placeholder="e.g. Welcome to OCCTA, {{first_name}}!"
+                  value={formData.subject}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, template_name: e.target.value }))
+                    setFormData((prev) => ({ ...prev, subject: e.target.value }))
                   }
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, category: value }))
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="html_body">HTML Body</Label>
+                  <VariableHelper onInsert={handleInsertVariable} />
+                </div>
+                <Textarea
+                  id="html_body"
+                  placeholder="Enter HTML content with {{variables}}..."
+                  className="min-h-[200px] font-mono text-sm"
+                  value={formData.html_body}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, html_body: e.target.value }))
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use HTML formatting. Variables will be replaced with customer data.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="text_body">Plain Text Body (Optional)</Label>
+                <Textarea
+                  id="text_body"
+                  placeholder="Plain text fallback for email clients that don't support HTML..."
+                  className="min-h-[100px] font-mono text-sm"
+                  value={formData.text_body}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, text_body: e.target.value }))
+                  }
+                />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="subject">Email Subject</Label>
-              <Input
-                id="subject"
-                placeholder="e.g. Welcome to OCCTA, {{first_name}}!"
-                value={formData.subject}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, subject: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="html_body">HTML Body</Label>
-                <VariableHelper onInsert={handleInsertVariable} />
-              </div>
-              <Textarea
-                id="html_body"
-                placeholder="Enter HTML content with {{variables}}..."
-                className="min-h-[200px] font-mono text-sm"
-                value={formData.html_body}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, html_body: e.target.value }))
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Use HTML formatting. Variables will be replaced with customer data.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="text_body">Plain Text Body (Optional)</Label>
-              <Textarea
-                id="text_body"
-                placeholder="Plain text fallback for email clients that don't support HTML..."
-                className="min-h-[100px] font-mono text-sm"
-                value={formData.text_body}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, text_body: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-4">
+            {/* Action buttons */}
+            <div className="flex flex-shrink-0 items-center justify-between border-t bg-background pt-4 mt-4">
               <Button
                 variant="outline"
                 onClick={() => setShowPreview(!showPreview)}
@@ -313,13 +312,11 @@ export const TemplateEditorDialog = ({
           {/* Preview Panel */}
           {showPreview && (
             <div className="flex w-[400px] flex-col border-l pl-6">
-              <div className="mb-2 flex items-center gap-2">
+              <div className="mb-2 flex flex-shrink-0 items-center gap-2">
                 <Badge variant="outline">Preview</Badge>
-                <span className="text-xs text-muted-foreground">
-                  Sample data shown
-                </span>
+                <span className="text-xs text-muted-foreground">Sample data shown</span>
               </div>
-              <div className="flex-1 overflow-auto rounded border bg-muted/20 p-4">
+              <div className="min-h-0 flex-1 overflow-auto rounded border bg-muted/20 p-4">
                 <div className="mb-2 border-b pb-2">
                   <p className="text-xs text-muted-foreground">Subject:</p>
                   <p className="text-sm font-medium">

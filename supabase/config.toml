@@ -45,8 +45,6 @@ verify_jwt = false
 [functions.email-open-track]
 verify_jwt = false
 
-[functions.admin-send-email]
-verify_jwt = false
 
 # Cron job: Run payment reminders daily at 9:00 AM UTC
 [[cron_jobs]]

@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   BadgeDollarSign,
   CalendarDays,
   ClipboardList,
+  ExternalLink,
   FileText,
+  LayoutDashboard,
   LayoutGrid,
+  LogOut,
   Mail,
   Send,
   Shield,
@@ -311,10 +314,42 @@ export const AdminLayout = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Persistent Admin Top Bar */}
+      <div className="border-b-4 border-foreground bg-muted/50 px-4 py-2">
+        <div className="mx-auto flex max-w-screen-2xl items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            Admin Console
+          </span>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/dashboard">
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Website
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="flex">
-        <aside className="min-h-screen w-64 border-r border-border bg-muted/20 p-6">
+        <aside className="min-h-[calc(100vh-49px)] w-64 border-r border-border bg-muted/20 p-6">
           <div className="mb-8 flex items-center gap-2">
             <Badge className="rounded-full px-3 py-1 text-xs uppercase">Admin</Badge>
             <span className="font-display text-lg">Operations Console</span>

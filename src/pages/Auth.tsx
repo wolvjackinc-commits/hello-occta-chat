@@ -30,12 +30,24 @@ const Auth = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Get the redirect target from ?next= param (validated for security)
+  const getRedirectTarget = () => {
+    const nextUrl = searchParams.get("next");
+    // Security: only allow relative URLs, prevent open redirects
+    if (nextUrl && nextUrl.startsWith("/") && !nextUrl.includes("//")) {
+      return nextUrl;
+    }
+    return "/dashboard";
+  };
+
   useEffect(() => {
+    const redirectTarget = getRedirectTarget();
+    
     // Check if user is already logged in
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/dashboard");
+        navigate(redirectTarget);
       }
     };
     checkSession();
@@ -43,12 +55,12 @@ const Auth = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/dashboard");
+        navigate(redirectTarget);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   const validateForm = (isSignUp: boolean) => {
     const newErrors: Record<string, string> = {};

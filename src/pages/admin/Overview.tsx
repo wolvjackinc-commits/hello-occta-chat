@@ -23,6 +23,9 @@ export const AdminOverview = () => {
         <p className="text-muted-foreground">
           Daily work queues and actionable items for the admin team.
         </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          💡 Tip: bookmark <code className="bg-muted px-1 py-0.5 rounded">/admin</code> for direct admin access.
+        </p>
       </div>
 
       {/* KPI Cards */}

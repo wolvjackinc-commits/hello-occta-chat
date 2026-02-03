@@ -21,7 +21,8 @@ interface EmailRequest {
     | "invoice_sent"
     | "invoice_paid"
     | "payment_link"
-    | "invoice_external_payment";
+    | "invoice_external_payment"
+    | "custom_admin";
   to: string;
   data: Record<string, unknown>;
   orderNumber?: string;
@@ -29,6 +30,7 @@ interface EmailRequest {
   logToCommunications?: boolean;
   invoiceId?: string;
   paymentRequestId?: string;
+  userId?: string; // For custom emails to link to a user
 }
 
 // HTML escape helper to prevent injection attacks
@@ -998,6 +1000,70 @@ const getInvoicePaidHtml = (data: Record<string, unknown>) => {
 </body>
 </html>`;
 };
+// Custom admin email template - allows sending fully custom HTML content with OCCTA branding
+const getCustomAdminHtml = (data: Record<string, unknown>) => {
+  const safeBody = data.html_body as string || escapeHtml(data.body as string || '');
+  const safeGreeting = escapeHtml(data.greeting as string || 'Dear Customer');
+  
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>${escapeHtml(data.subject as string || 'Message from OCCTA')}</title>
+  <style>
+    ${getCommonStyles()}
+    
+    .title-banner { background: #facc15; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #0d0d0d; }
+    
+    .custom-content { font-size: 15px; line-height: 1.7; color: #333; }
+    .custom-content p { margin: 16px 0; }
+    .custom-content ul, .custom-content ol { margin: 16px 0; padding-left: 24px; }
+    .custom-content li { margin: 8px 0; }
+    .custom-content hr { border: none; border-top: 2px dashed #ccc; margin: 24px 0; }
+    .custom-content strong { font-weight: 700; }
+    .custom-content code { background: #f5f4ef; padding: 2px 6px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="preheader">${escapeHtml(data.preheader as string || data.subject as string || 'Message from OCCTA')}</div>
+  
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">OCCTA</div>
+        <div class="tagline">Telecom • Connected</div>
+      </div>
+      
+      ${data.title_banner !== false ? `
+      <div class="title-banner">
+        <h1 class="title">${escapeHtml(data.title as string || 'OCCTA Notification')}</h1>
+      </div>
+      ` : ''}
+      
+      <div class="content">
+        <p class="greeting">${safeGreeting},</p>
+        
+        <div class="custom-content">
+          ${safeBody}
+        </div>
+        
+        ${data.cta_text && data.cta_url ? `
+        <div class="cta-wrap">
+          <a href="${escapeHtml(data.cta_url as string)}" class="cta">${escapeHtml(data.cta_text as string)} →</a>
+        </div>
+        ` : ''}
+      </div>
+      
+      ${getStandardFooter()}
+    </div>
+  </div>
+</body>
+</html>`;
+};
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1026,7 +1092,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, to, data, orderNumber, logToCommunications, invoiceId, paymentRequestId }: EmailRequest = await req.json();
+    const { type, to, data, orderNumber, logToCommunications, invoiceId, paymentRequestId, userId: directUserId }: EmailRequest = await req.json();
 
     if (!resendApiKey) {
       console.error("Missing RESEND_API_KEY");
@@ -1076,35 +1142,43 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`Verified guest order confirmation for ${orderNumber}`);
     } else {
       const authHeader = req.headers.get("Authorization");
-      if (!authHeader?.startsWith("Bearer ")) {
+      
+      // Check for service role key authentication (for internal/admin calls)
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      const isServiceRoleAuth = authHeader === `Bearer ${serviceRoleKey}`;
+      
+      if (isServiceRoleAuth) {
+        console.log("Authenticated via service role key");
+        // Service role can send any email type
+      } else if (!authHeader?.startsWith("Bearer ")) {
         console.error("No authorization header provided");
         return new Response(
           JSON.stringify({ error: "Unauthorized" }),
           { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
-      }
-
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-      
-      if (authError || !user) {
-        console.error("Auth verification failed:", authError);
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      // For admin-only actions like ticket_reply, order_message, invoice_sent/paid, payment_link, verify admin role
-      const adminOnlyTypes = ["ticket_reply", "order_message", "invoice_sent", "invoice_paid", "payment_link", "invoice_external_payment"];
-      if (adminOnlyTypes.includes(type)) {
-        const userIsAdmin = await isAdmin(supabaseAdmin, user.id);
-        if (!userIsAdmin) {
-          console.error("User is not an admin:", user.id);
+      } else {
+        const token = authHeader.replace("Bearer ", "");
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+        
+        if (authError || !user) {
+          console.error("Auth verification failed:", authError);
           return new Response(
-            JSON.stringify({ error: "Forbidden - Admin access required" }),
-            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            JSON.stringify({ error: "Unauthorized" }),
+            { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
+        }
+
+        // For admin-only actions like ticket_reply, order_message, invoice_sent/paid, payment_link, verify admin role
+        const adminOnlyTypes = ["ticket_reply", "order_message", "invoice_sent", "invoice_paid", "payment_link", "invoice_external_payment", "custom_admin"];
+        if (adminOnlyTypes.includes(type)) {
+          const userIsAdmin = await isAdmin(supabaseAdmin, user.id);
+          if (!userIsAdmin) {
+            console.error("User is not an admin:", user.id);
+            return new Response(
+              JSON.stringify({ error: "Forbidden - Admin access required" }),
+              { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
         }
       }
     }
@@ -1154,6 +1228,10 @@ const handler = async (req: Request): Promise<Response> => {
         html = getInvoiceExternalPaymentHtml(data);
         subject = data.subject as string || `OCCTA Invoice - ${escapeHtml(data.invoice_title) || 'Invoice'} (${escapeHtml(data.billing_period)})`;
         break;
+      case "custom_admin":
+        html = getCustomAdminHtml(data);
+        subject = data.subject as string || "Message from OCCTA";
+        break;
       default:
         return new Response(
           JSON.stringify({ error: "Unknown email type" }),
@@ -1181,12 +1259,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Log to communications_log if requested (use already-parsed values from earlier)
     if (logToCommunications) {
       try {
-        // Get user_id from invoice or payment_request
-        let userId = null;
-        if (invoiceId) {
+        // Get user_id from direct param, invoice, or payment_request
+        let userId = directUserId || null;
+        if (!userId && invoiceId) {
           const { data: inv } = await supabaseAdmin.from("invoices").select("user_id").eq("id", invoiceId).single();
           userId = inv?.user_id;
-        } else if (paymentRequestId) {
+        } else if (!userId && paymentRequestId) {
           const { data: pr } = await supabaseAdmin.from("payment_requests").select("user_id").eq("id", paymentRequestId).single();
           userId = pr?.user_id;
         }

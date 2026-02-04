@@ -455,7 +455,8 @@ const PreCheckout = () => {
       // Clear autosaved form data on successful submission
       clearSavedData();
       
-      navigate('/thank-you', { replace: true });
+      // Navigate with in-memory state so Thank You can render instantly even if sessionStorage is blocked.
+      navigate('/thank-you', { replace: true, state: { orderData } });
     } catch (error) {
       logError('PreCheckout.handleSubmit', error);
       toast({

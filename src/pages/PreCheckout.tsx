@@ -377,14 +377,33 @@ const PreCheckout = () => {
         body: {
           type: 'new_guest_order',
           data: {
+            id: insertedOrder?.id,
             order_number: orderNumber,
             customer_name: `${customerData.firstName} ${customerData.lastName}`,
             customer_email: customerData.email,
+            phone: customerData.phone,
+            date_of_birth: null, // Guest orders don't collect DOB
             plan_name: selectedPlans.map(p => p.name).join(' + '),
             plan_price: totalPrice,
+            service_type: selectedPlans.map(p => p.serviceType).join(', '),
             address_line1: customerData.addressLine1,
+            address_line2: customerData.addressLine2 || null,
             city: customerData.city,
             postcode: customerData.postcode,
+            current_provider: customerData.currentProvider,
+            in_contract: customerData.inContract !== 'no' && customerData.inContract !== 'new-connection',
+            contract_end_date: null,
+            preferred_switch_date: selectedInstallationSlot 
+              ? selectedInstallationSlot.slot_date 
+              : (customerData.preferredSwitchDate ? format(customerData.preferredSwitchDate, 'yyyy-MM-dd') : null),
+            selected_addons: selectedAddonDetails,
+            additional_notes: additionalNotes || null,
+            gdpr_consent: gdprConsent,
+            marketing_consent: marketingConsent,
+            account_number: null, // Assigned later when order is activated
+            created_at: new Date().toISOString(),
+            ip_address: 'Captured server-side', // Note: Real IP requires server-side capture
+            user_agent: navigator.userAgent,
           }
         }
       }).catch(err => logError('PreCheckout.handleSubmit.adminNotify', err));

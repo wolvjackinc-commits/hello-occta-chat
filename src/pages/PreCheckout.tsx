@@ -301,7 +301,9 @@ const PreCheckout = () => {
       }).filter(Boolean);
       
       // Save to database
-      const { data: insertedOrder, error } = await supabase.from('guest_orders').insert({
+      // IMPORTANT: guest_orders is intentionally not readable by anonymous users.
+      // Using `.select()` after insert triggers a RETURNING read which will fail RLS.
+      const { error } = await supabase.from('guest_orders').insert({
         order_number: orderNumber,
         email: customerData.email,
         full_name: `${customerData.firstName} ${customerData.lastName}`,
@@ -323,16 +325,30 @@ const PreCheckout = () => {
         plan_price: totalPrice,
         service_type: selectedPlans.map(p => p.serviceType).join(','),
         selected_addons: selectedAddonDetails as unknown as Json,
-      }).select('id').single();
+      });
       
       if (error) throw error;
+
+      // Fetch the new order id using a security-definer function that returns a safe subset
+      // (avoids granting broad SELECT on guest_orders to anon).
+      let insertedOrderId: string | null = null;
+      try {
+        const { data: lookedUp, error: lookupError } = await supabase.rpc('lookup_guest_order', {
+          _order_number: orderNumber,
+          _email: customerData.email,
+        });
+        if (lookupError) throw lookupError;
+        insertedOrderId = lookedUp?.[0]?.id ?? null;
+      } catch (lookupError) {
+        logError('PreCheckout.handleSubmit.lookupGuestOrder', lookupError);
+      }
       
       // Create installation booking if slot was selected
-      if (selectedInstallationSlot && insertedOrder) {
+      if (selectedInstallationSlot && insertedOrderId) {
         try {
           await supabase.from('installation_bookings').insert({
             slot_id: selectedInstallationSlot.id,
-            order_id: insertedOrder.id,
+            order_id: insertedOrderId,
             order_type: 'guest_order',
             customer_name: `${customerData.firstName} ${customerData.lastName}`,
             customer_email: customerData.email,
@@ -377,7 +393,7 @@ const PreCheckout = () => {
         body: {
           type: 'new_guest_order',
           data: {
-            id: insertedOrder?.id,
+            id: insertedOrderId,
             order_number: orderNumber,
             customer_name: `${customerData.firstName} ${customerData.lastName}`,
             customer_email: customerData.email,

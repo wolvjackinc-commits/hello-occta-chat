@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,9 +68,10 @@ type ThankYouViewModel =
   | { kind: "lookup"; data: LookupResult };
 
 const ThankYou = () => {
-  const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [vm, setVm] = useState<ThankYouViewModel | null>(null);
+  const [isAutoLoading, setIsAutoLoading] = useState(false);
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -80,19 +81,30 @@ const ThankYou = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('pendingOrder');
-    if (stored) {
-      try {
+    // 1) Prefer navigation state (most reliable for immediate render)
+    const state = location.state as unknown as { orderData?: OrderData } | null;
+    if (state?.orderData) {
+      setVm({ kind: "session", data: state.orderData });
+      return;
+    }
+
+    // 2) Fallback to sessionStorage (works on refresh in normal browsers)
+    setIsAutoLoading(true);
+    try {
+      const stored = sessionStorage.getItem('pendingOrder');
+      if (stored) {
         setVm({ kind: "session", data: JSON.parse(stored) });
-      } catch {
-        // Don't hard-redirect; allow user to look up their order.
+      } else {
+        // sessionStorage can be blocked/cleared (private browsing, strict settings). Show lookup fallback.
         setVm(null);
       }
-    } else {
-      // sessionStorage can be blocked/cleared (private browsing, strict settings). Show lookup fallback.
+    } catch {
+      // Don't hard-redirect; allow user to look up their order.
       setVm(null);
+    } finally {
+      setIsAutoLoading(false);
     }
-  }, [navigate]);
+  }, [location.state]);
 
   const handleCreateAccount = async () => {
     const result = passwordSchema.safeParse({ password, confirmPassword });
@@ -207,6 +219,17 @@ const ThankYou = () => {
                   Your order appears to have been submitted, but your browser didn't keep the checkout details.
                 </p>
               </motion.div>
+
+              {isAutoLoading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="card-brutal bg-card p-6 flex items-center gap-3"
+                >
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <p className="text-muted-foreground">Loading your order details…</p>
+                </motion.div>
+              )}
 
               <GuestOrderLookup
                 onLoaded={(result) => {

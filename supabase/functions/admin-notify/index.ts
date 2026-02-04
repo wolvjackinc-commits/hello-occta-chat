@@ -119,7 +119,7 @@ function generateOrderEmail(data: Record<string, unknown>, isGuest: boolean): { 
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${subject}</title>
     </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 700px; margin: 0 auto; padding: 0; background: #f5f5f5;">
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.55; color: #111827; font-size: 16px; max-width: 720px; margin: 0 auto; padding: 0; background: #f5f5f5;">
       <!-- Header -->
       <div style="background-color:#0B1220; background-image: linear-gradient(135deg, #0B1220 0%, #0F1B3D 55%, #0B1220 100%); padding: 32px 24px; text-align: center;">
         <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
@@ -141,38 +141,38 @@ function generateOrderEmail(data: Record<string, unknown>, isGuest: boolean): { 
         
         <!-- Order Summary Card -->
         <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.6px;">
             Order Summary
           </h2>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 8px 0; color: #6C757D; width: 40%; font-size: 14px;">Order Number:</td>
+              <td style="padding: 10px 0; color: #374151; width: 40%; font-size: 15px;">Order Number:</td>
               <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0066FF;">#${orderNumber}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Order ID:</td>
+              <td style="padding: 10px 0; color: #374151; font-size: 15px;">Order ID:</td>
               <td style="padding: 8px 0; font-size: 14px; font-family: monospace; color: #495057;">${orderId}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Service Type:</td>
+              <td style="padding: 10px 0; color: #374151; font-size: 15px;">Service Type:</td>
               <td style="padding: 8px 0; font-size: 14px;">
                 <span style="background: #E3F2FD; color: #1565C0; padding: 4px 12px; border-radius: 4px; font-weight: 500; text-transform: capitalize;">${serviceType}</span>
               </td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Selected Plan:</td>
+              <td style="padding: 10px 0; color: #374151; font-size: 15px;">Selected Plan:</td>
               <td style="padding: 8px 0; font-weight: 600; font-size: 14px;">${planName}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Monthly Price:</td>
+              <td style="padding: 10px 0; color: #374151; font-size: 15px;">Monthly Price:</td>
               <td style="padding: 8px 0; font-weight: 700; font-size: 18px; color: #28A745;">${planPrice}/mo</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Add-ons:</td>
+              <td style="padding: 10px 0; color: #374151; font-size: 15px;">Add-ons:</td>
               <td style="padding: 8px 0; font-size: 14px;">${selectedAddons}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Account Number:</td>
+              <td style="padding: 10px 0; color: #374151; font-size: 15px;">Account Number:</td>
               <td style="padding: 8px 0; font-size: 14px; font-family: monospace;">${accountNumber}</td>
             </tr>
           </table>

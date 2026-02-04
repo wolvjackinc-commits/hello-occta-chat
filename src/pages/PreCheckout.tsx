@@ -230,6 +230,16 @@ const PreCheckout = () => {
         }
       });
       setErrors(newErrors);
+
+      // Make validation failure obvious even if the user is scrolled away from the first invalid field.
+      toast({
+        title: "Check your details",
+        description: "Please complete the highlighted fields before submitting.",
+        variant: "destructive",
+      });
+
+      // Scroll to top so the user immediately sees errors.
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return false;
     }
     
@@ -433,13 +443,19 @@ const PreCheckout = () => {
         marketingConsent,
         timestamp: new Date().toISOString(),
       };
-      
-      sessionStorage.setItem('pendingOrder', JSON.stringify(orderData));
+
+      // sessionStorage can be blocked/cleared (private mode, strict settings). Thank you page has a fallback,
+      // but we still try to store for the richer experience.
+      try {
+        sessionStorage.setItem('pendingOrder', JSON.stringify(orderData));
+      } catch (storageErr) {
+        logError('PreCheckout.handleSubmit.sessionStorage', storageErr);
+      }
       
       // Clear autosaved form data on successful submission
       clearSavedData();
       
-      navigate('/thank-you');
+      navigate('/thank-you', { replace: true });
     } catch (error) {
       logError('PreCheckout.handleSubmit', error);
       toast({

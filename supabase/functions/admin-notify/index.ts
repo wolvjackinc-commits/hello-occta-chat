@@ -101,6 +101,7 @@ function generateOrderEmail(data: Record<string, unknown>, isGuest: boolean): { 
   
   // Technical details
   const ipAddress = escapeHtml(String(data.ip_address || data.ipAddress || "Not captured"));
+  const ipCountry = escapeHtml(String(data.ip_country || data.ipCountry || "Unknown"));
   const userAgent = escapeHtml(String(data.user_agent || data.userAgent || "Not captured"));
   const submittedAt = formatDate(String(data.created_at || data.submittedAt || new Date().toISOString()));
   const accountNumber = escapeHtml(String(data.account_number || "Pending assignment"));
@@ -120,7 +121,7 @@ function generateOrderEmail(data: Record<string, unknown>, isGuest: boolean): { 
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 700px; margin: 0 auto; padding: 0; background: #f5f5f5;">
       <!-- Header -->
-      <div style="background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%); padding: 32px 24px; text-align: center;">
+      <div style="background-color:#0B1220; background-image: linear-gradient(135deg, #0B1220 0%, #0F1B3D 55%, #0B1220 100%); padding: 32px 24px; text-align: center;">
         <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
           New ${isGuest ? "Guest " : ""}Order Received
         </h1>
@@ -302,6 +303,10 @@ function generateOrderEmail(data: Record<string, unknown>, isGuest: boolean): { 
             <tr>
               <td style="padding: 8px 0; color: #6C757D; font-size: 13px;">IP Address:</td>
               <td style="padding: 8px 0; font-size: 13px; font-family: monospace;">${ipAddress}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 13px;">IP Country:</td>
+              <td style="padding: 8px 0; font-size: 13px; font-family: monospace;">${ipCountry}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #6C757D; font-size: 13px;">User Agent:</td>
@@ -622,8 +627,28 @@ const handler = async (req: Request): Promise<Response> => {
     const payload: NotificationPayload = await req.json();
     const { type, data } = payload;
 
+    // Capture network-level context server-side (more reliable than frontend).
+    const ipAddress =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip")?.trim() ||
+      "Not captured";
+
+    // Common edge header; varies by provider but harmless if missing.
+    const ipCountry =
+      req.headers.get("cf-ipcountry")?.trim() ||
+      req.headers.get("x-vercel-ip-country")?.trim() ||
+      req.headers.get("x-country")?.trim() ||
+      "Unknown";
+
+    // Merge server-captured fields into the payload for email rendering.
+    const enrichedData: Record<string, unknown> = {
+      ...data,
+      ip_address: ipAddress,
+      ip_country: ipCountry,
+    };
+
     console.log(`[admin-notify] Processing notification type: ${type}`);
-    console.log(`[admin-notify] Data:`, JSON.stringify(data, null, 2));
+    console.log(`[admin-notify] Data:`, JSON.stringify(enrichedData, null, 2));
 
     if (!type || !data) {
       return new Response(
@@ -636,16 +661,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (type) {
       case "new_guest_order":
-        emailContent = generateOrderEmail(data, true);
+        emailContent = generateOrderEmail(enrichedData, true);
         break;
       case "new_order":
-        emailContent = generateOrderEmail(data, false);
+        emailContent = generateOrderEmail(enrichedData, false);
         break;
       case "new_ticket":
-        emailContent = generateTicketEmail(data);
+        emailContent = generateTicketEmail(enrichedData);
         break;
       case "failed_payment":
-        emailContent = generateFailedPaymentEmail(data);
+        emailContent = generateFailedPaymentEmail(enrichedData);
         break;
       default:
         return new Response(

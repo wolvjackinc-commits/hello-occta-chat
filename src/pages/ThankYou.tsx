@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { generateOrderPdf } from "@/lib/generateOrderPdf";
+import { GuestOrderLookup, type LookupResult } from "@/components/thankyou/GuestOrderLookup";
 import { 
   CheckCircle, 
   User,
@@ -62,10 +63,14 @@ interface OrderData {
   timestamp: string;
 }
 
+type ThankYouViewModel =
+  | { kind: "session"; data: OrderData }
+  | { kind: "lookup"; data: LookupResult };
+
 const ThankYou = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [vm, setVm] = useState<ThankYouViewModel | null>(null);
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -78,12 +83,14 @@ const ThankYou = () => {
     const stored = sessionStorage.getItem('pendingOrder');
     if (stored) {
       try {
-        setOrderData(JSON.parse(stored));
+        setVm({ kind: "session", data: JSON.parse(stored) });
       } catch {
-        navigate('/');
+        // Don't hard-redirect; allow user to look up their order.
+        setVm(null);
       }
     } else {
-      navigate('/');
+      // sessionStorage can be blocked/cleared (private browsing, strict settings). Show lookup fallback.
+      setVm(null);
     }
   }, [navigate]);
 
@@ -100,19 +107,19 @@ const ThankYou = () => {
       return;
     }
 
-    if (!orderData) return;
+    if (!vm || vm.kind !== "session") return;
 
     setIsCreating(true);
     setErrors({});
 
     try {
       const { data, error } = await supabase.auth.signUp({
-        email: orderData.customerData.email,
+        email: vm.data.customerData.email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: `${orderData.customerData.firstName} ${orderData.customerData.lastName}`,
+            full_name: `${vm.data.customerData.firstName} ${vm.data.customerData.lastName}`,
           },
         },
       });
@@ -123,13 +130,13 @@ const ThankYou = () => {
       if (data.user) {
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id,
-          full_name: `${orderData.customerData.firstName} ${orderData.customerData.lastName}`,
-          phone: orderData.customerData.phone,
-          address_line1: orderData.customerData.addressLine1,
-          address_line2: orderData.customerData.addressLine2 || null,
-          city: orderData.customerData.city,
-          postcode: orderData.customerData.postcode,
-          email: orderData.customerData.email,
+          full_name: `${vm.data.customerData.firstName} ${vm.data.customerData.lastName}`,
+          phone: vm.data.customerData.phone,
+          address_line1: vm.data.customerData.addressLine1,
+          address_line2: vm.data.customerData.addressLine2 || null,
+          city: vm.data.customerData.city,
+          postcode: vm.data.customerData.postcode,
+          email: vm.data.customerData.email,
         }, { onConflict: 'id' });
 
         if (profileError) {
@@ -144,9 +151,9 @@ const ThankYou = () => {
         // Link the guest order to the new user account via secure edge function
         const { error: orderLinkError } = await supabase.functions.invoke('link-order', {
           body: {
-            orderNumber: orderData.orderNumber,
-            email: orderData.customerData.email,
-            postcode: orderData.customerData.postcode,
+            orderNumber: vm.data.orderNumber,
+            email: vm.data.customerData.email,
+            postcode: vm.data.customerData.postcode,
           }
         });
 
@@ -184,15 +191,51 @@ const ThankYou = () => {
     }
   };
 
-  if (!orderData) {
+  if (!vm) {
     return (
       <Layout>
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin" />
+        <div className="min-h-[60vh] py-20">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-primary/5 p-6 border-primary"
+              >
+                <h1 className="text-display-md mb-2">Thank you</h1>
+                <p className="text-muted-foreground">
+                  Your order appears to have been submitted, but your browser didn't keep the checkout details.
+                </p>
+              </motion.div>
+
+              <GuestOrderLookup
+                onLoaded={(result) => {
+                  setVm({ kind: "lookup", data: result });
+                  toast({
+                    title: "Order loaded",
+                    description: "Here’s your order summary.",
+                  });
+                }}
+              />
+
+              <div className="text-center">
+                <Link to="/">
+                  <Button variant="outline" className="border-4 border-foreground">
+                    <Home className="w-5 h-5 mr-2" />
+                    Back to Home
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </Layout>
     );
   }
+
+  const orderNumber = vm.kind === "session" ? vm.data.orderNumber : vm.data.orderNumber;
+  const customerFirstName =
+    vm.kind === "session" ? vm.data.customerData.firstName : vm.data.fullName.split(" ")[0] || "";
 
   const benefits = [
     { icon: Clock, title: "Track Your Order", desc: "Real-time updates on installation progress" },
@@ -228,7 +271,7 @@ const ThankYou = () => {
                 transition={{ delay: 0.3 }}
                 className="text-display-lg mb-4"
               >
-                THANK YOU, {orderData.customerData.firstName.toUpperCase()}!
+                THANK YOU, {customerFirstName.toUpperCase()}!
               </motion.h1>
               
               <motion.p 
@@ -248,7 +291,7 @@ const ThankYou = () => {
               >
                 <div className="card-brutal bg-secondary px-8 py-4 inline-block">
                   <div className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Order Number</div>
-                  <div className="font-display text-2xl">{orderData.orderNumber}</div>
+                  <div className="font-display text-2xl">{orderNumber}</div>
                 </div>
               </motion.div>
             </motion.div>
@@ -267,19 +310,28 @@ const ThankYou = () => {
                   size="sm"
                   className="border-2 border-foreground"
                   onClick={() => {
-                    const totalPrice = orderData.selectedPlans.reduce((sum, p) => sum + parseFloat(p.price), 0);
+                    if (vm.kind !== "session") {
+                      toast({
+                        title: "PDF unavailable",
+                        description: "Download is available when you complete checkout in this browser session.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    const totalPrice = vm.data.selectedPlans.reduce((sum, p) => sum + parseFloat(p.price), 0);
                     generateOrderPdf({
-                      orderNumber: orderData.orderNumber,
-                      customerName: `${orderData.customerData.firstName} ${orderData.customerData.lastName}`,
-                      email: orderData.customerData.email,
-                      phone: orderData.customerData.phone,
-                      address: orderData.customerData.addressLine1,
-                      city: orderData.customerData.city,
-                      postcode: orderData.customerData.postcode,
-                      planName: orderData.selectedPlans.map(p => p.name).join(' + '),
+                      orderNumber: vm.data.orderNumber,
+                      customerName: `${vm.data.customerData.firstName} ${vm.data.customerData.lastName}`,
+                      email: vm.data.customerData.email,
+                      phone: vm.data.customerData.phone,
+                      address: vm.data.customerData.addressLine1,
+                      city: vm.data.customerData.city,
+                      postcode: vm.data.customerData.postcode,
+                      planName: vm.data.selectedPlans.map(p => p.name).join(' + '),
                       planPrice: totalPrice,
-                      serviceType: orderData.selectedPlans.map(p => p.serviceType).join(', '),
-                      createdAt: orderData.timestamp,
+                      serviceType: vm.data.selectedPlans.map(p => p.serviceType).join(', '),
+                      createdAt: vm.data.timestamp,
                     });
                   }}
                 >
@@ -288,24 +340,37 @@ const ThankYou = () => {
                 </Button>
               </div>
               <div className="space-y-3">
-                {orderData.selectedPlans.map((plan) => (
-                  <div key={plan.id} className="flex justify-between items-center py-2 border-b border-foreground/10 last:border-0">
-                    <div>
-                      <div className="font-display">{plan.name}</div>
-                      <div className="text-muted-foreground text-sm capitalize">{plan.serviceType}</div>
+                {vm.kind === "session" ? (
+                  vm.data.selectedPlans.map((plan) => (
+                    <div key={plan.id} className="flex justify-between items-center py-2 border-b border-foreground/10 last:border-0">
+                      <div>
+                        <div className="font-display">{plan.name}</div>
+                        <div className="text-muted-foreground text-sm capitalize">{plan.serviceType}</div>
+                      </div>
+                      <div className="font-display">£{plan.price}/mo</div>
                     </div>
-                    <div className="font-display">£{plan.price}/mo</div>
+                  ))
+                ) : (
+                  <div className="flex justify-between items-center py-2 border-b border-foreground/10 last:border-0">
+                    <div>
+                      <div className="font-display">{vm.data.planName}</div>
+                      <div className="text-muted-foreground text-sm capitalize">{vm.data.serviceType}</div>
+                    </div>
+                    <div className="font-display">£{vm.data.planPrice.toFixed(2)}/mo</div>
                   </div>
-                ))}
+                )}
               </div>
               <div className="mt-4 pt-4 border-t-2 border-foreground text-muted-foreground text-sm">
-                <p>📧 A confirmation email has been sent to <strong>{orderData.customerData.email}</strong></p>
+                <p>
+                  📧 A confirmation email has been sent to{" "}
+                  <strong>{vm.kind === "session" ? vm.data.customerData.email : vm.data.email}</strong>
+                </p>
                 <p className="mt-2">📞 We'll call you within 24 hours to confirm your installation date.</p>
               </div>
             </motion.div>
 
             {/* Account Creation Section */}
-            {!accountCreated && (
+            {vm.kind === "session" && !accountCreated && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -371,7 +436,7 @@ const ThankYou = () => {
                         <div>
                           <Label className="font-display uppercase tracking-wider text-sm">Name</Label>
                           <Input
-                            value={`${orderData.customerData.firstName} ${orderData.customerData.lastName}`}
+                            value={`${vm.data.customerData.firstName} ${vm.data.customerData.lastName}`}
                             disabled
                             className="mt-1 border-4 border-foreground/30 bg-secondary"
                           />
@@ -379,7 +444,7 @@ const ThankYou = () => {
                         <div>
                           <Label className="font-display uppercase tracking-wider text-sm">Email</Label>
                           <Input
-                            value={orderData.customerData.email}
+                            value={vm.data.customerData.email}
                             disabled
                             className="mt-1 border-4 border-foreground/30 bg-secondary"
                           />

@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { generateOrderPdf } from "@/lib/generateOrderPdf";
 import { GuestOrderLookup, type LookupResult } from "@/components/thankyou/GuestOrderLookup";
+import ConfettiEffect from "@/components/thankyou/ConfettiEffect";
+import SuccessCheckmark from "@/components/thankyou/SuccessCheckmark";
 import { 
-  CheckCircle, 
   User,
   Gift,
   Shield,
@@ -25,6 +26,7 @@ import {
   Loader2,
   Home,
   Download,
+  CheckCircle,
 } from "lucide-react";
 
 const passwordSchema = z.object({
@@ -268,30 +270,49 @@ const ThankYou = () => {
     { icon: Star, title: "Manage Add-ons", desc: "Upgrade or change services anytime" },
   ];
 
+  // Stagger animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.3,
+      },
+    },
+  } as const;
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+    },
+  } as const;
+
   return (
     <Layout>
+      {/* Confetti celebration */}
+      <ConfettiEffect />
+
       <div className="min-h-[60vh] py-20">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
+          <motion.div
+            className="max-w-3xl mx-auto"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {/* Success Message */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-12"
-            >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="w-24 h-24 bg-primary border-4 border-foreground flex items-center justify-center mx-auto mb-8"
-              >
-                <CheckCircle className="w-12 h-12 text-primary-foreground" />
-              </motion.div>
+            <motion.div variants={itemVariants} className="text-center mb-12">
+              <div className="flex justify-center mb-8">
+                <SuccessCheckmark />
+              </div>
               
               <motion.h1 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
                 className="text-display-lg mb-4"
               >
                 THANK YOU, {customerFirstName.toUpperCase()}!
@@ -300,67 +321,80 @@ const ThankYou = () => {
               <motion.p 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: 0.6 }}
                 className="text-xl text-muted-foreground mb-6"
               >
                 Your order has been received and is being processed.
               </motion.p>
               
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.7, type: "spring", stiffness: 150 }}
                 className="inline-block"
               >
-                <div className="card-brutal bg-secondary px-8 py-4 inline-block">
+                <motion.div 
+                  className="card-brutal bg-secondary px-8 py-4 inline-block"
+                  whileHover={{ scale: 1.02, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
+                  transition={{ type: "spring", stiffness: 400 }}
+                >
                   <div className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Order Number</div>
-                  <div className="font-display text-2xl">{orderNumber}</div>
-                </div>
+                  <motion.div 
+                    className="font-display text-2xl"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.9 }}
+                  >
+                    {orderNumber}
+                  </motion.div>
+                </motion.div>
               </motion.div>
             </motion.div>
 
             {/* Order Details */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              variants={itemVariants}
               className="card-brutal bg-card p-6 mb-8"
+              whileHover={{ boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-lg uppercase tracking-wider">Order Summary</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-2 border-foreground"
-                  onClick={() => {
-                    if (vm.kind !== "session") {
-                      toast({
-                        title: "PDF unavailable",
-                        description: "Download is available when you complete checkout in this browser session.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-2 border-foreground"
+                    onClick={() => {
+                      if (vm.kind !== "session") {
+                        toast({
+                          title: "PDF unavailable",
+                          description: "Download is available when you complete checkout in this browser session.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
 
-                    const totalPrice = vm.data.selectedPlans.reduce((sum, p) => sum + parseFloat(p.price), 0);
-                    generateOrderPdf({
-                      orderNumber: vm.data.orderNumber,
-                      customerName: `${vm.data.customerData.firstName} ${vm.data.customerData.lastName}`,
-                      email: vm.data.customerData.email,
-                      phone: vm.data.customerData.phone,
-                      address: vm.data.customerData.addressLine1,
-                      city: vm.data.customerData.city,
-                      postcode: vm.data.customerData.postcode,
-                      planName: vm.data.selectedPlans.map(p => p.name).join(' + '),
-                      planPrice: totalPrice,
-                      serviceType: vm.data.selectedPlans.map(p => p.serviceType).join(', '),
-                      createdAt: vm.data.timestamp,
-                    });
-                  }}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download PDF
-                </Button>
+                      const totalPrice = vm.data.selectedPlans.reduce((sum, p) => sum + parseFloat(p.price), 0);
+                      generateOrderPdf({
+                        orderNumber: vm.data.orderNumber,
+                        customerName: `${vm.data.customerData.firstName} ${vm.data.customerData.lastName}`,
+                        email: vm.data.customerData.email,
+                        phone: vm.data.customerData.phone,
+                        address: vm.data.customerData.addressLine1,
+                        city: vm.data.customerData.city,
+                        postcode: vm.data.customerData.postcode,
+                        planName: vm.data.selectedPlans.map(p => p.name).join(' + '),
+                        planPrice: totalPrice,
+                        serviceType: vm.data.selectedPlans.map(p => p.serviceType).join(', '),
+                        createdAt: vm.data.timestamp,
+                      });
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </motion.div>
               </div>
               <div className="space-y-3">
                 {vm.kind === "session" ? (
@@ -395,9 +429,9 @@ const ThankYou = () => {
             {/* Account Creation Section */}
             {vm.kind === "session" && !accountCreated && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
+                variants={itemVariants}
+                whileHover={{ boxShadow: "6px 6px 0px 0px hsl(var(--primary))" }}
+                transition={{ type: "spring", stiffness: 300 }}
                 className="card-brutal bg-primary/5 p-6 border-primary"
               >
                 {!showAccountForm ? (
@@ -568,7 +602,7 @@ const ThankYou = () => {
                 </div>
               </motion.div>
             )}
-          </div>
+          </motion.div>
         </div>
       </div>
     </Layout>

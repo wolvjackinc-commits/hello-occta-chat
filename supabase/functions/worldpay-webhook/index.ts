@@ -58,35 +58,50 @@ serve(async (req) => {
     // Get the raw body for signature verification
     const body = await req.text();
     
-    // SECURITY: Verify webhook signature if secret is configured
+    // SECURITY: Verify webhook signature - REQUIRED
     const signature = req.headers.get('x-wp-signature') || req.headers.get('X-WP-Signature');
     
-    if (webhookSecret) {
-      const isValid = await verifySignature(body, signature, webhookSecret);
-      if (!isValid) {
-        console.error('Invalid webhook signature - rejecting request');
-        
-        // Log the failed attempt
-        await supabase.from('audit_logs').insert({
-          action: 'worldpay_webhook_invalid_signature',
-          entity: 'payment',
-          entity_id: null,
-          metadata: {
-            hasSignature: !!signature,
-            timestamp: new Date().toISOString(),
-          },
-        });
-        
-        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      console.log('Webhook signature verified successfully');
-    } else {
-      // Log warning that signature verification is not configured
-      console.warn('SECURITY WARNING: WORLDPAY_WEBHOOK_SECRET not configured - signature verification disabled');
+    // SECURITY: Fail closed - reject webhooks if secret is not configured
+    if (!webhookSecret) {
+      console.error('SECURITY ERROR: WORLDPAY_WEBHOOK_SECRET not configured - rejecting webhook');
+      
+      await supabase.from('audit_logs').insert({
+        action: 'worldpay_webhook_missing_secret',
+        entity: 'payment',
+        entity_id: null,
+        metadata: {
+          error: 'Webhook secret not configured',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      
+      return new Response(JSON.stringify({ error: 'Webhook configuration error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+    
+    const isValid = await verifySignature(body, signature, webhookSecret);
+    if (!isValid) {
+      console.error('Invalid webhook signature - rejecting request');
+      
+      // Log the failed attempt
+      await supabase.from('audit_logs').insert({
+        action: 'worldpay_webhook_invalid_signature',
+        entity: 'payment',
+        entity_id: null,
+        metadata: {
+          hasSignature: !!signature,
+          timestamp: new Date().toISOString(),
+        },
+      });
+      
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    console.log('Webhook signature verified successfully');
 
     const payload = JSON.parse(body);
 

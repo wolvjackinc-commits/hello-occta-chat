@@ -45,7 +45,26 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { reason, confirmEmail } = await req.json();
+    const { reason, confirmEmail, password } = await req.json();
+
+    // Rate limiting for deletion attempts (5 attempts per hour per user)
+    const { data: rateLimitResult, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+      _action: 'account_deletion',
+      _identifier: user.id,
+      _max_requests: 5,
+      _window_minutes: 60
+    });
+    
+    if (rateLimitError || rateLimitResult === false) {
+      console.log(`SECURITY: Rate limit exceeded for account deletion: ${user.id}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Too many deletion attempts. Please wait an hour before trying again.',
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Verify the email matches the user's email
     if (confirmEmail?.toLowerCase() !== user.email?.toLowerCase()) {
@@ -54,6 +73,34 @@ serve(async (req) => {
         error: 'Email confirmation does not match your account email',
       }), {
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // SECURITY: Require password re-authentication before deletion
+    if (!password) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Password is required to confirm account deletion',
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Verify password by attempting to sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: password,
+    });
+    
+    if (signInError) {
+      console.log(`SECURITY: Invalid password for account deletion attempt: ${user.id}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Invalid password. Please enter your current password to confirm deletion.',
+      }), {
+        status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

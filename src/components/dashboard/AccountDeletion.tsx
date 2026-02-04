@@ -34,6 +34,7 @@ export const AccountDeletion = ({ userEmail }: AccountDeletionProps) => {
   const { toast } = useToast();
   const [step, setStep] = useState<"initial" | "confirm">("initial");
   const [emailConfirm, setEmailConfirm] = useState("");
+  const [password, setPassword] = useState("");
   const [reason, setReason] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -48,10 +49,19 @@ export const AccountDeletion = ({ userEmail }: AccountDeletionProps) => {
       return;
     }
 
+    if (!password) {
+      toast({
+        title: "Password required",
+        description: "Please enter your password to confirm deletion.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsDeleting(true);
     try {
       const { data, error } = await supabase.functions.invoke("delete-account", {
-        body: { confirmEmail: emailConfirm, reason },
+        body: { confirmEmail: emailConfirm, password, reason },
       });
 
       if (error) throw error;
@@ -167,6 +177,19 @@ export const AccountDeletion = ({ userEmail }: AccountDeletionProps) => {
                             />
                           </div>
                           <div>
+                            <Label htmlFor="password-confirm" className="text-sm font-medium">
+                              Enter your password to confirm
+                            </Label>
+                            <Input
+                              id="password-confirm"
+                              type="password"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              placeholder="Enter your current password"
+                              className="mt-2 border-4 border-foreground"
+                            />
+                          </div>
+                          <div>
                             <Label htmlFor="reason" className="text-sm font-medium">
                               Reason for leaving (optional)
                             </Label>
@@ -190,6 +213,7 @@ export const AccountDeletion = ({ userEmail }: AccountDeletionProps) => {
                   onClick={() => {
                     setStep("initial");
                     setEmailConfirm("");
+                    setPassword("");
                     setReason("");
                   }}
                   className="border-4 border-foreground"
@@ -208,7 +232,7 @@ export const AccountDeletion = ({ userEmail }: AccountDeletionProps) => {
                   <Button
                     variant="destructive"
                     onClick={handleDelete}
-                    disabled={isDeleting || emailConfirm.toLowerCase() !== userEmail.toLowerCase()}
+                    disabled={isDeleting || emailConfirm.toLowerCase() !== userEmail.toLowerCase() || !password}
                     className="border-4 border-destructive"
                   >
                     {isDeleting ? (

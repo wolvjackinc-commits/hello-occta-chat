@@ -456,7 +456,21 @@ const PreCheckout = () => {
       clearSavedData();
       
       // Navigate with in-memory state so Thank You can render instantly even if sessionStorage is blocked.
+      // In some browsers/environments we've seen the SPA transition get "stuck" (order is created + emails fire,
+      // but the route doesn't update until a manual refresh). To make this bulletproof, we add a tiny fallback:
+      // if the URL doesn't change shortly after navigate, do a hard redirect to /thank-you.
       navigate('/thank-you', { replace: true, state: { orderData } });
+
+      // Fallback hard redirect (keeps UX reliable; ThankYou can still read sessionStorage if location.state is lost).
+      window.setTimeout(() => {
+        try {
+          if (window.location.pathname.startsWith('/pre-checkout')) {
+            window.location.assign('/thank-you');
+          }
+        } catch (redirectErr) {
+          logError('PreCheckout.handleSubmit.fallbackRedirect', redirectErr);
+        }
+      }, 300);
     } catch (error) {
       logError('PreCheckout.handleSubmit', error);
       toast({

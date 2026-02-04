@@ -372,6 +372,23 @@ const PreCheckout = () => {
         // Don't block the order if email fails
       }
       
+      // Notify admins about new order (fire and forget)
+      supabase.functions.invoke('admin-notify', {
+        body: {
+          type: 'new_guest_order',
+          data: {
+            order_number: orderNumber,
+            customer_name: `${customerData.firstName} ${customerData.lastName}`,
+            customer_email: customerData.email,
+            plan_name: selectedPlans.map(p => p.name).join(' + '),
+            plan_price: totalPrice,
+            address_line1: customerData.addressLine1,
+            city: customerData.city,
+            postcode: customerData.postcode,
+          }
+        }
+      }).catch(err => logError('PreCheckout.handleSubmit.adminNotify', err));
+      
       // Store order data for thank you page
       const orderData = {
         orderNumber,

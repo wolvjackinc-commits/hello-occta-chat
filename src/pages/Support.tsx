@@ -155,6 +155,12 @@ const Support = () => {
     setIsSubmitting(true);
 
     try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .single();
+
       const { error } = await supabase.from("support_tickets").insert({
         user_id: user.id,
         subject: formData.subject.trim(),
@@ -165,6 +171,21 @@ const Support = () => {
       });
 
       if (error) throw error;
+
+      // Notify admins about new ticket (fire and forget)
+      supabase.functions.invoke('admin-notify', {
+        body: {
+          type: 'new_ticket',
+          data: {
+            subject: formData.subject.trim(),
+            description: formData.description.trim(),
+            category: formData.category,
+            priority: "medium",
+            customer_name: profile?.full_name || user.email,
+            customer_email: profile?.email || user.email,
+          }
+        }
+      }).catch(err => logError('Support.handleSubmitTicket.adminNotify', err));
 
       toast({ title: "Ticket submitted!", description: "We'll get back to you within 24 hours." });
       setFormData({ subject: "", description: "", category: "" });

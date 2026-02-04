@@ -136,7 +136,7 @@ const Checkout = () => {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.from("orders").insert({
+      const { data: insertedOrder, error } = await supabase.from("orders").insert({
         user_id: user.id,
         service_type: plan.serviceType,
         plan_name: plan.name,
@@ -147,9 +147,26 @@ const Checkout = () => {
         city: addressData.city.trim(),
         notes: notes.trim() || null,
         status: "pending",
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      // Notify admins about new order (fire and forget)
+      supabase.functions.invoke('admin-notify', {
+        body: {
+          type: 'new_order',
+          data: {
+            order_id: insertedOrder?.id,
+            customer_name: user.email,
+            customer_email: user.email,
+            plan_name: plan.name,
+            plan_price: plan.priceNum,
+            address_line1: addressData.addressLine1.trim(),
+            city: addressData.city.trim(),
+            postcode: addressData.postcode.trim(),
+          }
+        }
+      }).catch(err => console.error('Admin notify error:', err));
 
       setOrderComplete(true);
       toast({

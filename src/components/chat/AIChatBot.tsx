@@ -197,6 +197,17 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     }
   }, [isOpen, isMinimized, hasUserOpened]);
 
+  // Listen for external open-ai-chat event (from Support page "Start Chat" button)
+  useEffect(() => {
+    if (embedded) return; // Only for floating version
+    const handleOpenChat = () => {
+      setHasUserOpened(true);
+      setIsOpen(true);
+    };
+    window.addEventListener('open-ai-chat', handleOpenChat);
+    return () => window.removeEventListener('open-ai-chat', handleOpenChat);
+  }, [embedded]);
+
   const formatAttachmentSize = (size: number) => {
     if (size < 1024) return `${size} B`;
     if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;

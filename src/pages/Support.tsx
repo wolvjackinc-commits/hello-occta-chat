@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
-import AIChatBot from "@/components/chat/AIChatBot";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createFAQSchema } from "@/components/seo";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
@@ -94,7 +93,6 @@ const Support = () => {
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   
   const [formData, setFormData] = useState({ subject: "", description: "", category: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -240,33 +238,27 @@ const Support = () => {
             className="max-w-4xl mx-auto mb-12"
           >
             <div className="bg-card border-4 border-foreground p-6 sm:p-8">
-              {!isChatOpen ? (
-                <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-foreground flex items-center justify-center">
-                      <Bot className="w-6 h-6 text-background" />
-                    </div>
-                    <div>
-                      <h2 className="font-display text-2xl uppercase">Instant Help (IRA)</h2>
-                      <p className="text-sm text-muted-foreground">Solve issues in seconds — 24/7</p>
-                    </div>
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-foreground flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-background" />
                   </div>
-                  <Button
-                    variant="hero"
-                    size="lg"
-                    onClick={() => setIsChatOpen(true)}
-                  >
-                    Start chat
-                  </Button>
+                  <div>
+                    <h2 className="font-display text-2xl uppercase">Instant Help (IRA)</h2>
+                    <p className="text-sm text-muted-foreground">Solve issues in seconds — 24/7</p>
+                  </div>
                 </div>
-              ) : (
-                <AIChatBot
-                  embedded
-                  autoFocusInput={isChatOpen}
-                  onClose={() => setIsChatOpen(false)}
-                  className="h-[400px]"
-                />
-              )}
+                <Button
+                  variant="hero"
+                  size="lg"
+                  onClick={() => {
+                    // Trigger the floating chat widget to open
+                    window.dispatchEvent(new CustomEvent('open-ai-chat'));
+                  }}
+                >
+                  Start chat
+                </Button>
+              </div>
             </div>
           </motion.div>
 

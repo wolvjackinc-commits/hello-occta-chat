@@ -106,7 +106,14 @@ const AnimatedRoutes = () => {
   return (
     <>
       <ScrollToTop />
-      <AnimatePresence mode="wait">
+      {/*
+        Reliability note:
+        - "mode=wait" can delay the next route until exit animations finish.
+        - Combined with React Router's startTransition future flag, some environments can appear to
+          "stick" on the previous screen until a refresh.
+        Use sync presence so route changes (like checkout -> thank-you) render immediately.
+      */}
+      <AnimatePresence mode="sync">
         <motion.div
           key={location.pathname}
           initial="initial"
@@ -182,7 +189,11 @@ const App = () => (
         <Toaster />
         <Sonner />
         <StructuredData type="all" />
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        {/*
+          Keep BrowserRouter on stable behavior. The v7_startTransition flag can make navigation
+          feel non-immediate in some browsers during heavy UI work (e.g. checkout submit).
+        */}
+        <BrowserRouter>
           <AnimatedRoutes />
         </BrowserRouter>
       </TooltipProvider>

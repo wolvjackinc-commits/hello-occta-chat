@@ -17,76 +17,322 @@ interface NotificationPayload {
   data: Record<string, unknown>;
 }
 
+function escapeHtml(text: string | null | undefined): string {
+  if (!text) return "N/A";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatCurrency(amount: number | string | null | undefined): string {
+  if (amount === null || amount === undefined) return "N/A";
+  return `£${Number(amount).toFixed(2)}`;
+}
+
+function formatDate(date: string | null | undefined): string {
+  if (!date) return "N/A";
+  try {
+    return new Date(date).toLocaleString("en-GB", {
+      dateStyle: "full",
+      timeStyle: "short",
+      timeZone: "Europe/London",
+    });
+  } catch {
+    return String(date);
+  }
+}
+
+function formatDateShort(date: string | null | undefined): string {
+  if (!date) return "N/A";
+  try {
+    return new Date(date).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return String(date);
+  }
+}
+
 function generateOrderEmail(data: Record<string, unknown>, isGuest: boolean): { subject: string; html: string } {
-  const orderNumber = data.order_number || data.orderNumber || "N/A";
-  const customerName = data.customer_name || data.full_name || "Unknown";
-  const customerEmail = data.customer_email || data.email || "N/A";
-  const planName = data.plan_name || "N/A";
-  const planPrice = data.plan_price ? `£${Number(data.plan_price).toFixed(2)}` : "N/A";
-  const address = data.address_line1 || "N/A";
-  const city = data.city || "";
-  const postcode = data.postcode || "";
-  const fullAddress = [address, city, postcode].filter(Boolean).join(", ");
+  // Extract all order details
+  const orderNumber = escapeHtml(String(data.order_number || data.orderNumber || "N/A"));
+  const orderId = escapeHtml(String(data.id || data.orderId || "N/A"));
+  const customerName = escapeHtml(String(data.customer_name || data.full_name || "Unknown"));
+  const customerEmail = escapeHtml(String(data.customer_email || data.email || "N/A"));
+  const customerPhone = escapeHtml(String(data.phone || data.customer_phone || "N/A"));
+  const dateOfBirth = formatDateShort(String(data.date_of_birth || ""));
+  
+  // Plan details
+  const planName = escapeHtml(String(data.plan_name || "N/A"));
+  const planPrice = formatCurrency(data.plan_price as number);
+  const serviceType = escapeHtml(String(data.service_type || "N/A"));
+  
+  // Address details
+  const addressLine1 = escapeHtml(String(data.address_line1 || "N/A"));
+  const addressLine2 = escapeHtml(String(data.address_line2 || ""));
+  const city = escapeHtml(String(data.city || ""));
+  const postcode = escapeHtml(String(data.postcode || ""));
+  const fullAddress = [addressLine1, addressLine2, city, postcode].filter(Boolean).join(", ");
+  
+  // Provider/switching details
+  const currentProvider = escapeHtml(String(data.current_provider || "Not specified"));
+  const inContract = data.in_contract ? "Yes" : "No";
+  const contractEndDate = formatDateShort(String(data.contract_end_date || ""));
+  const preferredSwitchDate = formatDateShort(String(data.preferred_switch_date || ""));
+  
+  // Selected addons
+  const selectedAddons = data.selected_addons 
+    ? (Array.isArray(data.selected_addons) 
+        ? data.selected_addons.map((a: { name?: string; price?: number }) => 
+            `${escapeHtml(a.name || "Addon")} (${formatCurrency(a.price)})`
+          ).join(", ")
+        : escapeHtml(JSON.stringify(data.selected_addons)))
+    : "None";
+  
+  // Notes and consent
+  const additionalNotes = escapeHtml(String(data.additional_notes || data.notes || "None"));
+  const gdprConsent = data.gdpr_consent ? "✓ Granted" : "✗ Not granted";
+  const marketingConsent = data.marketing_consent ? "✓ Opted in" : "✗ Opted out";
+  
+  // Technical details
+  const ipAddress = escapeHtml(String(data.ip_address || data.ipAddress || "Not captured"));
+  const userAgent = escapeHtml(String(data.user_agent || data.userAgent || "Not captured"));
+  const submittedAt = formatDate(String(data.created_at || data.submittedAt || new Date().toISOString()));
+  const accountNumber = escapeHtml(String(data.account_number || "Pending assignment"));
+  
+  // User ID for logged-in orders
+  const userId = escapeHtml(String(data.user_id || "Guest"));
 
   const subject = `🆕 New ${isGuest ? "Guest " : ""}Order Received | #${orderNumber}`;
   
   const html = `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${subject}</title>
     </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: #0066FF; padding: 24px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">🆕 New ${isGuest ? "Guest " : ""}Order Received</h1>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 700px; margin: 0 auto; padding: 0; background: #f5f5f5;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%); padding: 32px 24px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+          New ${isGuest ? "Guest " : ""}Order Received
+        </h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 16px;">
+          Order #${orderNumber} • ${formatDateShort(String(data.created_at || new Date().toISOString()))}
+        </p>
       </div>
       
-      <div style="padding: 24px; background: #f8f9fa; border: 2px solid #1a1a1a;">
-        <p style="margin-top: 0;">Hi Team,</p>
-        <p>A new ${isGuest ? "guest " : ""}order has been placed and requires attention:</p>
+      <!-- Main Content -->
+      <div style="padding: 32px 24px; background: white;">
+        <!-- Priority Banner -->
+        <div style="background: #FFF3CD; border-left: 4px solid #FFC107; padding: 16px; margin-bottom: 24px;">
+          <p style="margin: 0; font-weight: 600; color: #856404;">
+            ⚡ Action Required: Review and process this order
+          </p>
+        </div>
         
-        <div style="background: white; border: 2px solid #1a1a1a; padding: 16px; margin: 16px 0;">
+        <!-- Order Summary Card -->
+        <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+            Order Summary
+          </h2>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 8px 0; color: #666; width: 35%;">Order Number:</td>
-              <td style="padding: 8px 0; font-weight: bold;">#${orderNumber}</td>
+              <td style="padding: 8px 0; color: #6C757D; width: 40%; font-size: 14px;">Order Number:</td>
+              <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0066FF;">#${orderNumber}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #666;">Customer:</td>
-              <td style="padding: 8px 0; font-weight: bold;">${customerName}</td>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Order ID:</td>
+              <td style="padding: 8px 0; font-size: 14px; font-family: monospace; color: #495057;">${orderId}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #666;">Email:</td>
-              <td style="padding: 8px 0;"><a href="mailto:${customerEmail}" style="color: #0066FF;">${customerEmail}</a></td>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Service Type:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <span style="background: #E3F2FD; color: #1565C0; padding: 4px 12px; border-radius: 4px; font-weight: 500; text-transform: capitalize;">${serviceType}</span>
+              </td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #666;">Plan:</td>
-              <td style="padding: 8px 0; font-weight: bold;">${planName}</td>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Selected Plan:</td>
+              <td style="padding: 8px 0; font-weight: 600; font-size: 14px;">${planName}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #666;">Monthly Price:</td>
-              <td style="padding: 8px 0; font-weight: bold;">${planPrice}/mo</td>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Monthly Price:</td>
+              <td style="padding: 8px 0; font-weight: 700; font-size: 18px; color: #28A745;">${planPrice}/mo</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #666;">Address:</td>
-              <td style="padding: 8px 0;">${fullAddress}</td>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Add-ons:</td>
+              <td style="padding: 8px 0; font-size: 14px;">${selectedAddons}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Account Number:</td>
+              <td style="padding: 8px 0; font-size: 14px; font-family: monospace;">${accountNumber}</td>
             </tr>
           </table>
         </div>
         
-        <div style="text-align: center; margin: 24px 0;">
+        <!-- Customer Information -->
+        <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+            👤 Customer Information
+          </h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; width: 40%; font-size: 14px;">Full Name:</td>
+              <td style="padding: 8px 0; font-weight: 600; font-size: 14px;">${customerName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Email Address:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <a href="mailto:${customerEmail}" style="color: #0066FF; text-decoration: none;">${customerEmail}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Phone Number:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <a href="tel:${customerPhone}" style="color: #0066FF; text-decoration: none;">${customerPhone}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Date of Birth:</td>
+              <td style="padding: 8px 0; font-size: 14px;">${dateOfBirth}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">User Type:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <span style="background: ${isGuest ? '#FFF3CD' : '#D4EDDA'}; color: ${isGuest ? '#856404' : '#155724'}; padding: 4px 12px; border-radius: 4px; font-weight: 500;">
+                  ${isGuest ? '👤 Guest Customer' : '✓ Registered User'}
+                </span>
+              </td>
+            </tr>
+            ${!isGuest ? `<tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">User ID:</td>
+              <td style="padding: 8px 0; font-size: 14px; font-family: monospace; color: #495057;">${userId}</td>
+            </tr>` : ''}
+          </table>
+        </div>
+        
+        <!-- Installation Address -->
+        <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+            📍 Installation Address
+          </h2>
+          <p style="margin: 0; font-size: 14px; line-height: 1.8;">
+            ${addressLine1}<br>
+            ${addressLine2 ? addressLine2 + '<br>' : ''}
+            ${city}<br>
+            <strong>${postcode}</strong>
+          </p>
+        </div>
+        
+        <!-- Switching Details -->
+        <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+            🔄 Provider & Switching Details
+          </h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; width: 40%; font-size: 14px;">Current Provider:</td>
+              <td style="padding: 8px 0; font-size: 14px;">${currentProvider}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Currently in Contract:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <span style="background: ${data.in_contract ? '#FFEBEE' : '#E8F5E9'}; color: ${data.in_contract ? '#C62828' : '#2E7D32'}; padding: 4px 12px; border-radius: 4px; font-weight: 500;">${inContract}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Contract End Date:</td>
+              <td style="padding: 8px 0; font-size: 14px;">${contractEndDate}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Preferred Switch Date:</td>
+              <td style="padding: 8px 0; font-size: 14px;">${preferredSwitchDate}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Consent & Compliance -->
+        <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+            📋 Consent & Compliance
+          </h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; width: 40%; font-size: 14px;">GDPR Consent:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <span style="color: ${data.gdpr_consent ? '#28A745' : '#DC3545'}; font-weight: 600;">${gdprConsent}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Marketing Consent:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <span style="color: ${data.marketing_consent ? '#28A745' : '#6C757D'}; font-weight: 500;">${marketingConsent}</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Additional Notes -->
+        ${additionalNotes !== "None" ? `
+        <div style="background: #FFF8E1; border: 1px solid #FFE082; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #F57C00; text-transform: uppercase; letter-spacing: 0.5px;">
+            📝 Customer Notes
+          </h2>
+          <p style="margin: 0; font-size: 14px; color: #5D4037; white-space: pre-wrap;">${additionalNotes}</p>
+        </div>
+        ` : ''}
+        
+        <!-- Technical Details -->
+        <div style="background: #ECEFF1; border: 1px solid #CFD8DC; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+            🔧 Technical & Audit Information
+          </h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; width: 40%; font-size: 13px;">Submitted At:</td>
+              <td style="padding: 8px 0; font-size: 13px; font-family: monospace;">${submittedAt}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 13px;">IP Address:</td>
+              <td style="padding: 8px 0; font-size: 13px; font-family: monospace;">${ipAddress}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 13px;">User Agent:</td>
+              <td style="padding: 8px 0; font-size: 12px; font-family: monospace; word-break: break-all; color: #607D8B;">${userAgent}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0;">
           <a href="${ADMIN_DASHBOARD_URL}/orders" 
-             style="display: inline-block; background: #0066FF; color: white; padding: 14px 28px; text-decoration: none; font-weight: bold; border: 2px solid #1a1a1a;">
+             style="display: inline-block; background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%); color: white; padding: 16px 40px; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);">
             View Order in Dashboard →
           </a>
         </div>
+        
+        <!-- Quick Actions -->
+        <div style="border-top: 1px solid #E9ECEF; padding-top: 20px; text-align: center;">
+          <p style="margin: 0 0 12px; font-size: 13px; color: #6C757D;">Quick Actions:</p>
+          <a href="mailto:${customerEmail}" style="display: inline-block; margin: 0 8px; padding: 8px 16px; background: #F8F9FA; color: #495057; text-decoration: none; border-radius: 4px; font-size: 13px;">📧 Email Customer</a>
+          <a href="tel:${customerPhone}" style="display: inline-block; margin: 0 8px; padding: 8px 16px; background: #F8F9FA; color: #495057; text-decoration: none; border-radius: 4px; font-size: 13px;">📞 Call Customer</a>
+        </div>
       </div>
       
-      <div style="padding: 16px; text-align: center; color: #666; font-size: 12px;">
-        <p style="margin: 0;">OCCTA Admin Notifications</p>
-        <p style="margin: 4px 0 0;">This is an automated message from your admin system.</p>
+      <!-- Footer -->
+      <div style="padding: 24px; text-align: center; background: #1a1a1a; color: #9CA3AF;">
+        <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: white;">OCCTA Admin Notifications</p>
+        <p style="margin: 0; font-size: 12px;">This is an automated message from your admin system.</p>
+        <p style="margin: 12px 0 0; font-size: 11px; color: #6B7280;">
+          OCCTA Limited • Company No. 13828933 • 22 Pavilion View, Huddersfield, HD3 3WU
+        </p>
       </div>
     </body>
     </html>
@@ -96,85 +342,268 @@ function generateOrderEmail(data: Record<string, unknown>, isGuest: boolean): { 
 }
 
 function generateTicketEmail(data: Record<string, unknown>): { subject: string; html: string } {
-  const ticketSubject = data.subject || "No subject";
-  const category = data.category || "General";
-  const priority = data.priority || "medium";
-  const customerName = data.customer_name || "Unknown";
-  const customerEmail = data.customer_email || "N/A";
-  const description = data.description || "No description provided";
+  const ticketId = escapeHtml(String(data.id || data.ticketId || "N/A"));
+  const ticketSubject = escapeHtml(String(data.subject || "No subject"));
+  const category = escapeHtml(String(data.category || "General"));
+  const priority = String(data.priority || "medium");
+  const customerName = escapeHtml(String(data.customer_name || "Unknown"));
+  const customerEmail = escapeHtml(String(data.customer_email || "N/A"));
+  const customerPhone = escapeHtml(String(data.customer_phone || data.phone || "N/A"));
+  const accountNumber = escapeHtml(String(data.account_number || "N/A"));
+  const description = escapeHtml(String(data.description || "No description provided"));
+  const userId = escapeHtml(String(data.user_id || "N/A"));
+  const submittedAt = formatDate(String(data.created_at || new Date().toISOString()));
+  const ipAddress = escapeHtml(String(data.ip_address || data.ipAddress || "Not captured"));
+  const userAgent = escapeHtml(String(data.user_agent || data.userAgent || "Not captured"));
 
-  const priorityColors: Record<string, string> = {
-    low: "#22c55e",
-    medium: "#eab308",
-    high: "#f97316",
-    urgent: "#ef4444",
+  const priorityConfig: Record<string, { color: string; bg: string; label: string }> = {
+    low: { color: "#155724", bg: "#D4EDDA", label: "🟢 Low" },
+    medium: { color: "#856404", bg: "#FFF3CD", label: "🟡 Medium" },
+    high: { color: "#721C24", bg: "#F8D7DA", label: "🟠 High" },
+    urgent: { color: "#FFFFFF", bg: "#DC3545", label: "🔴 Urgent" },
   };
-  const priorityColor = priorityColors[String(priority)] || "#eab308";
+  const pConfig = priorityConfig[priority] || priorityConfig.medium;
 
   const subject = `🎫 New Support Ticket | ${ticketSubject}`;
 
   const html = `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${subject}</title>
     </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: #FF5500; padding: 24px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">🎫 New Support Ticket</h1>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 700px; margin: 0 auto; padding: 0; background: #f5f5f5;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #FF5500 0%, #E64A00 100%); padding: 32px 24px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+          New Support Ticket
+        </h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 16px;">
+          Requires attention
+        </p>
       </div>
       
-      <div style="padding: 24px; background: #f8f9fa; border: 2px solid #1a1a1a;">
-        <p style="margin-top: 0;">Hi Team,</p>
-        <p>A new support ticket has been submitted and requires attention:</p>
+      <!-- Main Content -->
+      <div style="padding: 32px 24px; background: white;">
+        <!-- Priority Banner -->
+        <div style="background: ${pConfig.bg}; border-left: 4px solid ${pConfig.color === '#FFFFFF' ? '#DC3545' : pConfig.color}; padding: 16px; margin-bottom: 24px;">
+          <p style="margin: 0; font-weight: 600; color: ${pConfig.color === '#FFFFFF' ? '#721C24' : pConfig.color};">
+            ${pConfig.label} Priority - ${priority === 'urgent' ? 'Immediate action required!' : 'Please review and respond'}
+          </p>
+        </div>
         
-        <div style="background: white; border: 2px solid #1a1a1a; padding: 16px; margin: 16px 0;">
+        <!-- Ticket Summary -->
+        <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+            Ticket Details
+          </h2>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 8px 0; color: #666; width: 35%;">Subject:</td>
-              <td style="padding: 8px 0; font-weight: bold;">${ticketSubject}</td>
+              <td style="padding: 8px 0; color: #6C757D; width: 35%; font-size: 14px;">Ticket ID:</td>
+              <td style="padding: 8px 0; font-size: 14px; font-family: monospace; color: #495057;">${ticketId}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #666;">Category:</td>
-              <td style="padding: 8px 0;">${String(category).charAt(0).toUpperCase() + String(category).slice(1)}</td>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Subject:</td>
+              <td style="padding: 8px 0; font-weight: 600; font-size: 14px;">${ticketSubject}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #666;">Priority:</td>
-              <td style="padding: 8px 0;">
-                <span style="background: ${priorityColor}; color: white; padding: 4px 12px; font-size: 12px; font-weight: bold; text-transform: uppercase;">
-                  ${priority}
-                </span>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Category:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <span style="background: #E3F2FD; color: #1565C0; padding: 4px 12px; border-radius: 4px; font-weight: 500; text-transform: capitalize;">${category}</span>
               </td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #666;">Customer:</td>
-              <td style="padding: 8px 0; font-weight: bold;">${customerName}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666;">Email:</td>
-              <td style="padding: 8px 0;"><a href="mailto:${customerEmail}" style="color: #0066FF;">${customerEmail}</a></td>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Priority:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <span style="background: ${pConfig.bg}; color: ${pConfig.color}; padding: 4px 12px; border-radius: 4px; font-weight: 600; text-transform: uppercase;">${priority}</span>
+              </td>
             </tr>
           </table>
-          
-          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee;">
-            <p style="color: #666; margin: 0 0 8px;">Description:</p>
-            <p style="margin: 0; white-space: pre-wrap;">${description}</p>
-          </div>
         </div>
         
-        <div style="text-align: center; margin: 24px 0;">
+        <!-- Customer Information -->
+        <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+            👤 Customer Information
+          </h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; width: 35%; font-size: 14px;">Full Name:</td>
+              <td style="padding: 8px 0; font-weight: 600; font-size: 14px;">${customerName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Email:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <a href="mailto:${customerEmail}" style="color: #0066FF; text-decoration: none;">${customerEmail}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Phone:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <a href="tel:${customerPhone}" style="color: #0066FF; text-decoration: none;">${customerPhone}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Account Number:</td>
+              <td style="padding: 8px 0; font-size: 14px; font-family: monospace;">${accountNumber}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">User ID:</td>
+              <td style="padding: 8px 0; font-size: 14px; font-family: monospace; color: #6C757D;">${userId}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Description -->
+        <div style="background: #FFFBF0; border: 1px solid #FFE082; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #5D4037; text-transform: uppercase; letter-spacing: 0.5px;">
+            📝 Issue Description
+          </h2>
+          <p style="margin: 0; font-size: 14px; color: #37474F; white-space: pre-wrap; line-height: 1.7;">${description}</p>
+        </div>
+        
+        <!-- Technical Details -->
+        <div style="background: #ECEFF1; border: 1px solid #CFD8DC; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #6C757D; text-transform: uppercase; letter-spacing: 0.5px;">
+            🔧 Technical & Audit Information
+          </h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; width: 35%; font-size: 13px;">Submitted At:</td>
+              <td style="padding: 8px 0; font-size: 13px; font-family: monospace;">${submittedAt}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 13px;">IP Address:</td>
+              <td style="padding: 8px 0; font-size: 13px; font-family: monospace;">${ipAddress}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 13px;">User Agent:</td>
+              <td style="padding: 8px 0; font-size: 12px; font-family: monospace; word-break: break-all; color: #607D8B;">${userAgent}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0;">
           <a href="${ADMIN_DASHBOARD_URL}/tickets" 
-             style="display: inline-block; background: #FF5500; color: white; padding: 14px 28px; text-decoration: none; font-weight: bold; border: 2px solid #1a1a1a;">
+             style="display: inline-block; background: linear-gradient(135deg, #FF5500 0%, #E64A00 100%); color: white; padding: 16px 40px; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(255, 85, 0, 0.3);">
             View Ticket in Dashboard →
+          </a>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div style="border-top: 1px solid #E9ECEF; padding-top: 20px; text-align: center;">
+          <p style="margin: 0 0 12px; font-size: 13px; color: #6C757D;">Quick Actions:</p>
+          <a href="mailto:${customerEmail}" style="display: inline-block; margin: 0 8px; padding: 8px 16px; background: #F8F9FA; color: #495057; text-decoration: none; border-radius: 4px; font-size: 13px;">📧 Reply to Customer</a>
+          <a href="tel:${customerPhone}" style="display: inline-block; margin: 0 8px; padding: 8px 16px; background: #F8F9FA; color: #495057; text-decoration: none; border-radius: 4px; font-size: 13px;">📞 Call Customer</a>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div style="padding: 24px; text-align: center; background: #1a1a1a; color: #9CA3AF;">
+        <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: white;">OCCTA Admin Notifications</p>
+        <p style="margin: 0; font-size: 12px;">This is an automated message from your admin system.</p>
+        <p style="margin: 12px 0 0; font-size: 11px; color: #6B7280;">
+          OCCTA Limited • Company No. 13828933 • 22 Pavilion View, Huddersfield, HD3 3WU
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
+function generateFailedPaymentEmail(data: Record<string, unknown>): { subject: string; html: string } {
+  const customerName = escapeHtml(String(data.customer_name || "Unknown"));
+  const customerEmail = escapeHtml(String(data.customer_email || "N/A"));
+  const amount = formatCurrency(data.amount as number);
+  const invoiceNumber = escapeHtml(String(data.invoice_number || "N/A"));
+  const failureReason = escapeHtml(String(data.reason || "Unknown error"));
+  const provider = escapeHtml(String(data.provider || "N/A"));
+  const attemptedAt = formatDate(String(data.attempted_at || new Date().toISOString()));
+
+  const subject = `⚠️ Failed Payment Alert | ${customerName} - ${amount}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${subject}</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 700px; margin: 0 auto; padding: 0; background: #f5f5f5;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #DC3545 0%, #C82333 100%); padding: 32px 24px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">
+          ⚠️ Payment Failed
+        </h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 16px;">
+          Immediate attention required
+        </p>
+      </div>
+      
+      <!-- Main Content -->
+      <div style="padding: 32px 24px; background: white;">
+        <div style="background: #F8D7DA; border-left: 4px solid #DC3545; padding: 16px; margin-bottom: 24px;">
+          <p style="margin: 0; font-weight: 600; color: #721C24;">
+            A payment attempt has failed. Please review and take appropriate action.
+          </p>
+        </div>
+        
+        <div style="background: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; width: 40%; font-size: 14px;">Customer:</td>
+              <td style="padding: 8px 0; font-weight: 600; font-size: 14px;">${customerName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Email:</td>
+              <td style="padding: 8px 0; font-size: 14px;">
+                <a href="mailto:${customerEmail}" style="color: #0066FF; text-decoration: none;">${customerEmail}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Amount:</td>
+              <td style="padding: 8px 0; font-weight: 700; font-size: 18px; color: #DC3545;">${amount}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Invoice:</td>
+              <td style="padding: 8px 0; font-size: 14px; font-family: monospace;">${invoiceNumber}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Provider:</td>
+              <td style="padding: 8px 0; font-size: 14px;">${provider}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Attempted:</td>
+              <td style="padding: 8px 0; font-size: 14px;">${attemptedAt}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6C757D; font-size: 14px;">Failure Reason:</td>
+              <td style="padding: 8px 0; font-size: 14px; color: #DC3545; font-weight: 500;">${failureReason}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${ADMIN_DASHBOARD_URL}/billing" 
+             style="display: inline-block; background: linear-gradient(135deg, #DC3545 0%, #C82333 100%); color: white; padding: 16px 40px; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+            View in Billing Dashboard →
           </a>
         </div>
       </div>
       
-      <div style="padding: 16px; text-align: center; color: #666; font-size: 12px;">
-        <p style="margin: 0;">OCCTA Admin Notifications</p>
-        <p style="margin: 4px 0 0;">This is an automated message from your admin system.</p>
+      <!-- Footer -->
+      <div style="padding: 24px; text-align: center; background: #1a1a1a; color: #9CA3AF;">
+        <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: white;">OCCTA Admin Notifications</p>
+        <p style="margin: 0; font-size: 12px;">This is an automated message from your admin system.</p>
+        <p style="margin: 12px 0 0; font-size: 11px; color: #6B7280;">
+          OCCTA Limited • Company No. 13828933 • 22 Pavilion View, Huddersfield, HD3 3WU
+        </p>
       </div>
     </body>
     </html>
@@ -216,11 +645,7 @@ const handler = async (req: Request): Promise<Response> => {
         emailContent = generateTicketEmail(data);
         break;
       case "failed_payment":
-        // Placeholder for future implementation
-        emailContent = {
-          subject: "⚠️ Failed Payment Alert",
-          html: `<p>A payment has failed. Check the admin dashboard for details.</p>`,
-        };
+        emailContent = generateFailedPaymentEmail(data);
         break;
       default:
         return new Response(

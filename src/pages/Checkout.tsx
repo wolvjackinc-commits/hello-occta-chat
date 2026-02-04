@@ -151,19 +151,44 @@ const Checkout = () => {
 
       if (error) throw error;
 
+      // Fetch user profile for full details
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
       // Notify admins about new order (fire and forget)
       supabase.functions.invoke('admin-notify', {
         body: {
           type: 'new_order',
           data: {
-            order_id: insertedOrder?.id,
-            customer_name: user.email,
-            customer_email: user.email,
+            id: insertedOrder?.id,
+            order_number: `ORD-${insertedOrder?.id?.substring(0, 8).toUpperCase()}`,
+            user_id: user.id,
+            customer_name: profile?.full_name || user.email,
+            customer_email: profile?.email || user.email,
+            phone: profile?.phone || 'Not provided',
+            date_of_birth: profile?.date_of_birth || null,
             plan_name: plan.name,
             plan_price: plan.priceNum,
+            service_type: plan.serviceType,
             address_line1: addressData.addressLine1.trim(),
+            address_line2: addressData.addressLine2?.trim() || null,
             city: addressData.city.trim(),
             postcode: addressData.postcode.trim(),
+            current_provider: null,
+            in_contract: false,
+            contract_end_date: null,
+            preferred_switch_date: null,
+            selected_addons: [],
+            additional_notes: notes.trim() || null,
+            gdpr_consent: true, // Logged-in users have already consented
+            marketing_consent: null,
+            account_number: profile?.account_number || null,
+            created_at: new Date().toISOString(),
+            ip_address: 'Captured server-side',
+            user_agent: navigator.userAgent,
           }
         }
       }).catch(err => console.error('Admin notify error:', err));

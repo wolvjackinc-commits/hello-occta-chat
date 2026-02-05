@@ -247,7 +247,7 @@ serve(async (req) => {
       // CREATE WORLDPAY SESSION
       // ==========================================
       case 'create-worldpay-session': {
-        const { token, returnUrl } = data;
+        const { token, returnUrl, paymentOrigin } = data;
 
         if (!token || !returnUrl) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
@@ -255,6 +255,22 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+        
+        // Derive stable origin for Worldpay 3DS postMessage validation
+        let shopperBrowserPaymentOrigin: string | undefined = paymentOrigin;
+        if (!shopperBrowserPaymentOrigin) {
+          try {
+            shopperBrowserPaymentOrigin = new URL(returnUrl).origin;
+          } catch {
+            console.warn('[create-worldpay-session] Could not parse origin from returnUrl:', returnUrl);
+          }
+        }
+        
+        console.log('[create-worldpay-session] Origin params:', { 
+          paymentOrigin, 
+          returnUrl, 
+          shopperBrowserPaymentOrigin 
+        });
 
         const tokenHash = await hashToken(token);
 
@@ -324,6 +340,7 @@ serve(async (req) => {
               failureURL: `${returnUrl}&status=failed`,
               cancelURL: `${returnUrl}&status=cancelled`,
             },
+            ...(shopperBrowserPaymentOrigin ? { shopperBrowserPaymentOrigin } : {}),
             ...(request.customer_email ? {
               riskData: { account: { email: request.customer_email } },
             } : {}),
@@ -331,9 +348,10 @@ serve(async (req) => {
         });
 
         const result = await response.json();
-
+        
+        console.log('[create-worldpay-session] Worldpay response status:', response.status);
         if (!response.ok) {
-          console.error('Worldpay HPP error:', result);
+          console.error('[create-worldpay-session] Worldpay error response:', JSON.stringify(result));
           return new Response(JSON.stringify({ 
             success: false, 
             error: result.message || 'Failed to create payment session' 

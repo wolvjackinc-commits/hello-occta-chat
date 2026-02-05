@@ -128,13 +128,17 @@ export default function Pay() {
     try {
       // IMPORTANT: use a stable origin for payment provider return URLs.
       // Preview origins can break Worldpay 3DS ("current origin is not supported").
-      const returnUrl = `${getPaymentReturnOrigin()}/pay?requestId=${paymentData.id}`;
+      const paymentOrigin = getPaymentReturnOrigin();
+      const returnUrl = `${paymentOrigin}/pay?requestId=${paymentData.id}`;
+      
+      console.log('[Pay] Starting payment session:', { paymentOrigin, returnUrl });
 
       const { data, error: fnError } = await supabase.functions.invoke("payment-request", {
         body: {
           action: "create-worldpay-session",
           token,
           returnUrl,
+          paymentOrigin,
         },
       });
 

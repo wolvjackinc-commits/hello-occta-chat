@@ -256,21 +256,7 @@ serve(async (req) => {
           });
         }
         
-        // Derive stable origin for Worldpay 3DS postMessage validation
-        let shopperBrowserPaymentOrigin: string | undefined = paymentOrigin;
-        if (!shopperBrowserPaymentOrigin) {
-          try {
-            shopperBrowserPaymentOrigin = new URL(returnUrl).origin;
-          } catch {
-            console.warn('[create-worldpay-session] Could not parse origin from returnUrl:', returnUrl);
-          }
-        }
-        
-        console.log('[create-worldpay-session] Origin params:', { 
-          paymentOrigin, 
-          returnUrl, 
-          shopperBrowserPaymentOrigin 
-        });
+        console.log('[create-worldpay-session] Origin params:', { paymentOrigin, returnUrl });
 
         const tokenHash = await hashToken(token);
 
@@ -340,7 +326,6 @@ serve(async (req) => {
               failureURL: `${returnUrl}&status=failed`,
               cancelURL: `${returnUrl}&status=cancelled`,
             },
-            ...(shopperBrowserPaymentOrigin ? { shopperBrowserPaymentOrigin } : {}),
             ...(request.customer_email ? {
               riskData: { account: { email: request.customer_email } },
             } : {}),

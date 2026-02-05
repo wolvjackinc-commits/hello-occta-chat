@@ -59,18 +59,49 @@ export default function Pay() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
 
-  // Handle return from Worldpay
+  // Handle return from Worldpay - VERIFY PAYMENT with backend
   useEffect(() => {
-    if (status && requestId) {
-      if (status === "success") {
-        setPaymentResult("success");
-      } else if (status === "failed") {
-        setPaymentResult("failed");
-      } else if (status === "cancelled") {
-        setPaymentResult("cancelled");
+    if (!status || !requestId) return;
+    
+    const verifyPayment = async () => {
+      console.log('[Pay] Verifying payment with backend:', { requestId, status });
+      
+      try {
+        // Call verify-payment to trigger backend processing (invoice update, receipt, email)
+        const { data, error } = await supabase.functions.invoke("payment-request", {
+          body: {
+            action: "verify-payment",
+            requestId,
+            status,
+          },
+        });
+        
+        if (error) {
+          console.error('[Pay] Verification function error:', error);
+          // Still show result based on Worldpay status (payment already went through)
+        } else if (!data?.success) {
+          console.error('[Pay] Verification failed:', data?.error);
+          // Still show result - Worldpay already processed the payment
+        } else {
+          console.log('[Pay] Payment verified successfully:', data);
+        }
+      } catch (err) {
+        console.error('[Pay] Error calling verify-payment:', err);
+        // Don't block UI - the payment already happened at Worldpay
+      } finally {
+        // Set result based on URL status (Worldpay's determination)
+        if (status === "success") {
+          setPaymentResult("success");
+        } else if (status === "failed") {
+          setPaymentResult("failed");
+        } else if (status === "cancelled") {
+          setPaymentResult("cancelled");
+        }
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    }
+    };
+    
+    verifyPayment();
   }, [status, requestId]);
 
   // Check auth state

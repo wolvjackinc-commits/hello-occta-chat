@@ -142,6 +142,8 @@ serve(async (req) => {
       case 'payment.captured': {
         // Payment successful - find and update invoice
         const transactionRef = payload.transactionReference;
+        
+        // Handle INV- references (direct invoice payments)
         if (transactionRef && transactionRef.startsWith('INV-')) {
           const invoiceId = transactionRef.split('-')[1];
           
@@ -159,6 +161,47 @@ serve(async (req) => {
             .eq('id', invoiceId);
 
           console.log(`Invoice ${invoiceId} marked as paid via webhook`);
+        }
+        
+        // Handle PR- references (payment request flow) - backup mechanism
+        if (transactionRef && transactionRef.startsWith('PR-')) {
+          const prIdPrefix = transactionRef.split('-')[1]; // e.g., "d9ac4843" from "PR-d9ac4843-1738..."
+          console.log(`Processing payment request webhook for PR prefix: ${prIdPrefix}`);
+          
+          // Find payment request by provider_reference
+          const { data: paymentRequest, error: prError } = await supabase
+            .from('payment_requests')
+            .select('id, invoice_id, user_id, amount, status, customer_name, customer_email')
+            .eq('provider_reference', transactionRef)
+            .single();
+          
+          if (prError || !paymentRequest) {
+            console.log('Payment request not found by exact ref, trying prefix match');
+            // Try prefix match as fallback
+            const { data: prByPrefix } = await supabase
+              .from('payment_requests')
+              .select('id, invoice_id, user_id, amount, status, customer_name, customer_email')
+              .like('provider_reference', `PR-${prIdPrefix}%`)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+            
+            if (!prByPrefix) {
+              console.error('Could not find payment request for transaction:', transactionRef);
+              break;
+            }
+            
+            // Use the found request
+            await processPaymentRequestWebhook(supabase, prByPrefix, eventId, payload);
+          } else {
+            // Already completed? Skip to avoid duplicates
+            if (paymentRequest.status === 'completed') {
+              console.log(`Payment request ${paymentRequest.id} already completed, skipping`);
+              break;
+            }
+            
+            await processPaymentRequestWebhook(supabase, paymentRequest, eventId, payload);
+          }
         }
         break;
       }
@@ -189,6 +232,35 @@ serve(async (req) => {
           });
 
           console.log(`Payment failed for invoice ${invoiceId}`);
+        }
+        
+        // Handle PR- references for failed payments
+        if (transactionRef && transactionRef.startsWith('PR-')) {
+          const { data: paymentRequest } = await supabase
+            .from('payment_requests')
+            .select('id, invoice_id, user_id, amount, status')
+            .eq('provider_reference', transactionRef)
+            .single();
+          
+          if (paymentRequest && paymentRequest.status !== 'failed') {
+            await supabase
+              .from('payment_requests')
+              .update({ status: 'failed', updated_at: new Date().toISOString() })
+              .eq('id', paymentRequest.id);
+            
+            // Log failed attempt
+            await supabase.from('payment_attempts').insert({
+              invoice_id: paymentRequest.invoice_id,
+              user_id: paymentRequest.user_id,
+              amount: paymentRequest.amount || 0,
+              status: 'failed',
+              provider: 'worldpay_webhook',
+              provider_ref: eventId,
+              reason: payload.outcome?.reason || 'Payment refused',
+            });
+            
+            console.log(`Payment request ${paymentRequest.id} marked as failed via webhook`);
+          }
         }
         break;
       }
@@ -275,3 +347,80 @@ serve(async (req) => {
     });
   }
 });
+
+// Helper function to process payment request webhooks
+async function processPaymentRequestWebhook(
+  supabase: any,
+  paymentRequest: {
+    id: string;
+    invoice_id: string | null;
+    user_id: string | null;
+    amount: number | null;
+    customer_name: string;
+    customer_email: string;
+  },
+  eventId: string,
+  payload: any
+) {
+  console.log(`Processing webhook for payment request: ${paymentRequest.id}`);
+  
+  // Mark payment request as completed
+  await supabase
+    .from('payment_requests')
+    .update({ 
+      status: 'completed', 
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', paymentRequest.id);
+  
+  // Update payment attempt to success
+  await supabase
+    .from('payment_attempts')
+    .update({ status: 'success' })
+    .eq('provider_ref', payload.transactionReference)
+    .eq('status', 'pending');
+  
+  // If there's a linked invoice, mark it as paid and create receipt
+  if (paymentRequest.invoice_id) {
+    // Mark invoice as paid
+    await supabase
+      .from('invoices')
+      .update({ status: 'paid', updated_at: new Date().toISOString() })
+      .eq('id', paymentRequest.invoice_id);
+    
+    // Create receipt
+    const receiptRef = `RCP-WH-${Date.now().toString(36).toUpperCase()}`;
+    await supabase.from('receipts').insert({
+      invoice_id: paymentRequest.invoice_id,
+      user_id: paymentRequest.user_id,
+      amount: paymentRequest.amount || 0,
+      method: 'card',
+      reference: receiptRef,
+      paid_at: new Date().toISOString(),
+    });
+    
+    console.log(`Created receipt ${receiptRef} for invoice via webhook`);
+  }
+  
+  // Log event
+  await supabase.from('payment_request_events').insert({
+    request_id: paymentRequest.id,
+    event_type: 'completed_via_webhook',
+    metadata: { worldpay_event_id: eventId },
+  });
+  
+  // Audit log
+  await supabase.from('audit_logs').insert({
+    action: 'payment_received_webhook',
+    entity: 'payment_request',
+    entity_id: paymentRequest.id,
+    metadata: {
+      invoice_id: paymentRequest.invoice_id,
+      amount: paymentRequest.amount,
+      worldpay_event_id: eventId,
+    },
+  });
+  
+  console.log(`Payment request ${paymentRequest.id} completed via webhook`);
+}

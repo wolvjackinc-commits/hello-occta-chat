@@ -1,6 +1,8 @@
 
 # Fix: Payment Verification Not Triggering
 
+## ✅ IMPLEMENTED
+
 ## Problem Summary
 A live Worldpay payment was successfully completed (Invoice `INV-ML51PYS8`, £2.00), but the system failed to:
 - Mark the invoice as paid
@@ -98,3 +100,15 @@ FROM invoices WHERE id = '6cc8ea12-2105-4cfc-ab43-f40b6d40b1b0';
 UPDATE payment_requests SET status = 'completed', completed_at = now() 
 WHERE id = 'd9ac4843-c3c5-48c9-82b9-163deafaafe6';
 ```
+
+## Changes Made
+
+### 1. `src/pages/Pay.tsx`
+- Added `verify-payment` call in the useEffect that handles Worldpay return
+- When status + requestId are present, calls `supabase.functions.invoke("payment-request", { action: "verify-payment", ... })`
+- This triggers the backend to mark invoice as paid, create receipt, and send confirmation email
+
+### 2. `supabase/functions/worldpay-webhook/index.ts`
+- Added support for `PR-` transaction references (payment request flow)
+- Webhook now serves as a backup mechanism if frontend verification fails
+- Creates `processPaymentRequestWebhook` helper function for handling PR- references

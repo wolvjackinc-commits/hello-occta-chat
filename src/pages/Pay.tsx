@@ -1,14 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { CreditCard, Shield, Loader2, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { CreditCard, Shield, Loader2, AlertTriangle, Clock, Download, Home, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { getPaymentReturnOrigin } from "@/lib/appOrigin";
 import { redirectToExternal } from "@/lib/externalRedirect";
+import { generateReceiptPdf } from "@/lib/generateReceiptPdf";
+import ConfettiEffect from "@/components/thankyou/ConfettiEffect";
+import { motion } from "framer-motion";
+import { format } from "date-fns";
 
 type PaymentRequestData = {
   id: string;
@@ -23,10 +26,21 @@ type PaymentRequestData = {
   expires_at: string | null;
 };
 
+type PaymentDetails = {
+  invoiceNumber: string;
+  amount: number;
+  paidAt: string;
+  reference: string;
+  method: string;
+  customerName: string;
+  customerEmail: string;
+  accountNumber: string;
+  receiptId: string;
+};
+
 export default function Pay() {
   const [searchParams] = useSearchParams();
-  // keep hook call (even if unused) to avoid changing broader routing behavior
-  useNavigate();
+  const navigate = useNavigate();
   const token = searchParams.get("token");
   const status = searchParams.get("status");
   const requestId = searchParams.get("requestId");
@@ -42,6 +56,8 @@ export default function Pay() {
   const [error, setError] = useState<string | null>(null);
   const [paymentData, setPaymentData] = useState<PaymentRequestData | null>(null);
   const [paymentResult, setPaymentResult] = useState<"success" | "failed" | "cancelled" | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
 
   // Handle return from Worldpay
   useEffect(() => {
@@ -56,6 +72,80 @@ export default function Pay() {
       setIsLoading(false);
     }
   }, [status, requestId]);
+
+  // Check auth state
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+  }, []);
+
+  // Fetch payment details on success
+  useEffect(() => {
+    if (paymentResult !== "success" || !requestId) return;
+
+    const fetchPaymentDetails = async () => {
+      try {
+        // Fetch payment request
+        const { data: paymentRequest, error: prError } = await supabase
+          .from("payment_requests")
+          .select("id, amount, invoice_id, customer_name, customer_email, account_number")
+          .eq("id", requestId)
+          .single();
+
+        if (prError || !paymentRequest) {
+          console.error("Failed to fetch payment request:", prError);
+          return;
+        }
+
+        // Fetch invoice
+        let invoiceNumber = "—";
+        if (paymentRequest.invoice_id) {
+          const { data: invoice } = await supabase
+            .from("invoices")
+            .select("invoice_number")
+            .eq("id", paymentRequest.invoice_id)
+            .single();
+          if (invoice) invoiceNumber = invoice.invoice_number;
+        }
+
+        // Fetch receipt
+        let receiptRef = "";
+        let paidAt = new Date().toISOString();
+        let receiptId = "";
+        if (paymentRequest.invoice_id) {
+          const { data: receipt } = await supabase
+            .from("receipts")
+            .select("id, reference, paid_at")
+            .eq("invoice_id", paymentRequest.invoice_id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+          if (receipt) {
+            receiptRef = receipt.reference || "";
+            paidAt = receipt.paid_at;
+            receiptId = receipt.id;
+          }
+        }
+
+        setPaymentDetails({
+          invoiceNumber,
+          amount: paymentRequest.amount || 0,
+          paidAt,
+          reference: receiptRef,
+          method: "Card",
+          customerName: paymentRequest.customer_name || "",
+          customerEmail: paymentRequest.customer_email || "",
+          accountNumber: paymentRequest.account_number || "",
+          receiptId,
+        });
+      } catch (err) {
+        console.error("Error fetching payment details:", err);
+      }
+    };
+
+    fetchPaymentDetails();
+  }, [paymentResult, requestId]);
 
   // Validate token and fetch payment data
   useEffect(() => {
@@ -156,25 +246,153 @@ export default function Pay() {
     }
   };
 
+  const handleDownloadReceipt = useCallback(() => {
+    if (!paymentDetails) return;
+    generateReceiptPdf({
+      receiptId: paymentDetails.receiptId,
+      invoiceNumber: paymentDetails.invoiceNumber,
+      customerName: paymentDetails.customerName,
+      customerEmail: paymentDetails.customerEmail,
+      accountNumber: paymentDetails.accountNumber,
+      amount: paymentDetails.amount,
+      paidAt: paymentDetails.paidAt,
+      method: paymentDetails.method,
+      reference: paymentDetails.reference,
+    });
+  }, [paymentDetails]);
+
+  const handleNavigation = () => {
+    if (isLoggedIn) navigate("/dashboard");
+    else navigate("/");
+  };
+
   // Result screens
   if (paymentResult) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+        {paymentResult === "success" && <ConfettiEffect />}
         <Card className="w-full max-w-md border-4 border-foreground">
-          <CardContent className="pt-8 pb-8 text-center">
+          <CardContent className="pt-8 pb-8">
             {paymentResult === "success" ? (
-              <>
-                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <h1 className="font-display text-3xl mb-2">Payment Successful</h1>
-                <p className="text-muted-foreground mb-6">
-                  Thank you for your payment. A confirmation email has been sent to you.
-                </p>
-                <Badge className="bg-primary">Receipt sent via email</Badge>
-              </>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="text-center"
+              >
+                {/* Animated checkmark with pulsing rings */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
+                  className="relative mx-auto w-20 h-20 mb-6"
+                >
+                  <motion.div
+                    className="absolute inset-0 bg-primary/20 border-4 border-primary/30 rounded-full"
+                    initial={{ scale: 1, opacity: 0.8 }}
+                    animate={{ scale: 2, opacity: 0 }}
+                    transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 0.5, ease: "easeOut" }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 bg-primary/20 border-4 border-primary/30 rounded-full"
+                    initial={{ scale: 1, opacity: 0.6 }}
+                    animate={{ scale: 1.8, opacity: 0 }}
+                    transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 0.5, ease: "easeOut", delay: 0.3 }}
+                  />
+                  <div className="w-20 h-20 bg-primary border-4 border-foreground rounded-full flex items-center justify-center relative z-10">
+                    <motion.svg
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 0.5, delay: 0.5 }}
+                      className="w-10 h-10 text-primary-foreground"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <motion.path d="M5 12l5 5L20 7" />
+                    </motion.svg>
+                  </div>
+                </motion.div>
+
+                <motion.h1
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="font-display text-3xl mb-2"
+                >
+                  Payment Successful!
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-muted-foreground mb-6"
+                >
+                  Thank you for your payment. A confirmation email has been sent.
+                </motion.p>
+
+                {/* Transaction Details */}
+                {paymentDetails && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="border-4 border-foreground p-4 mb-6 text-left"
+                  >
+                    <h3 className="font-display text-sm uppercase tracking-widest mb-3 border-b-2 border-foreground pb-2">
+                      Transaction Details
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Invoice</span>
+                        <span className="font-mono font-semibold">{paymentDetails.invoiceNumber}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Amount</span>
+                        <span className="font-display text-lg">£{paymentDetails.amount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Date</span>
+                        <span>{format(new Date(paymentDetails.paidAt), "dd MMM yyyy, HH:mm")}</span>
+                      </div>
+                      {paymentDetails.reference && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Reference</span>
+                          <span className="font-mono">{paymentDetails.reference}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Method</span>
+                        <span>{paymentDetails.method}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Action buttons */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  className="space-y-3"
+                >
+                  {paymentDetails && (
+                    <Button onClick={handleDownloadReceipt} variant="outline" className="w-full gap-2 border-2 border-foreground">
+                      <Download className="h-4 w-4" />
+                      Download Receipt
+                    </Button>
+                  )}
+                  <Button onClick={handleNavigation} className="w-full gap-2">
+                    {isLoggedIn ? <LayoutDashboard className="h-4 w-4" /> : <Home className="h-4 w-4" />}
+                    {isLoggedIn ? "Go to Dashboard" : "Back to Home"}
+                  </Button>
+                </motion.div>
+              </motion.div>
             ) : paymentResult === "failed" ? (
-              <>
+              <div className="text-center">
                 <div className="w-16 h-16 bg-destructive rounded-full flex items-center justify-center mx-auto mb-6">
                   <AlertTriangle className="h-8 w-8 text-destructive-foreground" />
                 </div>
@@ -182,20 +400,31 @@ export default function Pay() {
                 <p className="text-muted-foreground mb-6">
                   Unfortunately, your payment could not be processed. Please try again or contact support.
                 </p>
-                <Button onClick={() => window.location.reload()} className="gap-2">
-                  Try Again
-                </Button>
-              </>
+                <div className="space-y-3">
+                  <Button onClick={() => window.location.reload()} className="w-full gap-2">
+                    Try Again
+                  </Button>
+                  <Button onClick={handleNavigation} variant="outline" className="w-full gap-2 border-2 border-foreground">
+                    {isLoggedIn ? "Go to Dashboard" : "Back to Home"}
+                  </Button>
+                </div>
+              </div>
             ) : (
-              <>
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-muted border-2 border-foreground rounded-full flex items-center justify-center mx-auto mb-6">
                   <Clock className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <h1 className="font-display text-3xl mb-2">Payment Cancelled</h1>
                 <p className="text-muted-foreground mb-6">
                   You cancelled the payment. If you'd like to try again, please use the payment link from your email.
                 </p>
-              </>
+                <div className="space-y-3">
+                  <Button onClick={handleNavigation} className="w-full gap-2">
+                    {isLoggedIn ? <LayoutDashboard className="h-4 w-4" /> : <Home className="h-4 w-4" />}
+                    {isLoggedIn ? "Go to Dashboard" : "Back to Home"}
+                  </Button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -1,112 +1,100 @@
 
+# Fix: Payment Verification Not Triggering
 
-# Payment Success Page Enhancement Plan
+## Problem Summary
+A live Worldpay payment was successfully completed (Invoice `INV-ML51PYS8`, £2.00), but the system failed to:
+- Mark the invoice as paid
+- Create a receipt
+- Send a payment confirmation email to the customer
+- Update the payment request status to completed
 
-## Overview
-Enhance the payment success screen in `/pay` with celebratory animations, payment details display, receipt download capability, and smart navigation that adapts based on whether the user is logged in.
+## Root Cause
+The `Pay.tsx` page displays a success screen when returning from Worldpay but **never calls the `verify-payment` backend action**. This action is what triggers all the post-payment processing.
 
-## Current State
-- The `Pay.tsx` page has a basic success screen showing just a simple checkmark, confirmation message, and "Receipt sent via email" badge
-- No animations, no payment details, no receipt download, no navigation options
-- The `PaymentResult.tsx` already has rich features (animations, details, receipt download) but serves a different flow
+## Technical Details
 
-## What Will Change
+### Current Flow (Broken)
+1. Customer pays on Worldpay
+2. Worldpay redirects to `/pay?requestId=xxx&status=success`
+3. `Pay.tsx` sets `paymentResult = "success"` and shows success UI
+4. Page fetches payment details from database for display
+5. **Nothing updates the database** - invoice stays unpaid, no receipt, no email
 
-### 1. Add Celebration Animations
-- Reuse the existing `ConfettiEffect` component from `src/components/thankyou/`
-- Add an animated success checkmark similar to `SuccessCheckmark` component
-- Add Framer Motion entrance animations for all elements (staggered fade-in)
+### Expected Flow (Fixed)
+1. Customer pays on Worldpay
+2. Worldpay redirects to `/pay?requestId=xxx&status=success`
+3. **NEW: Call `verify-payment` action immediately**
+4. Backend marks invoice as paid, creates receipt, sends email
+5. `Pay.tsx` shows success UI with receipt download option
 
-### 2. Display Payment Details
-Fetch and show transaction details after successful payment:
-- Invoice Number
-- Amount Paid
-- Payment Date and Time
-- Payment Reference
-- Payment Method (Card)
+## Changes Required
 
-### 3. Add Receipt Download
-- Add a "Download Receipt" button
-- Reuse the existing `generateReceiptPdf` function from `src/lib/generateReceiptPdf.ts`
-- Fetch receipt data from the database after payment verification
+### File: `src/pages/Pay.tsx`
 
-### 4. Smart Navigation
-- Check if user is authenticated using Supabase auth
-- **If logged in**: Show "Go to Dashboard" button linking to `/dashboard`
-- **If not logged in**: Show "Back to Home" button linking to `/`
-- Add a secondary "Close Window" option for users who want to close the tab
+Add a new `useEffect` hook that calls the `verify-payment` action when `paymentResult` changes to a terminal state (success, failed, or cancelled).
 
-## Implementation Details
+The effect will:
+1. Check if we have a `requestId` and a `status` result
+2. Call `supabase.functions.invoke('payment-request', { action: 'verify-payment', requestId, status })`
+3. Await the result before fetching payment details
+4. Handle errors gracefully (the UI already shows success based on Worldpay's redirect)
 
-### Files to Modify
-1. **`src/pages/Pay.tsx`** - Main changes to the payment result screen section
-
-### Changes in Pay.tsx
+### Changes Summary
 
 ```text
-+----------------------------------------------------------+
-|                        OCCTA                              |
-+----------------------------------------------------------+
-|                                                           |
-|              [Confetti Animation Overlay]                 |
-|                                                           |
-|     +----------------------------------------+           |
-|     |         [Animated Checkmark]            |           |
-|     |              (pulsing rings)            |           |
-|     +----------------------------------------+           |
-|                                                           |
-|               PAYMENT SUCCESSFUL!                         |
-|                                                           |
-|     Thank you for your payment. A confirmation            |
-|     email has been sent to you.                           |
-|                                                           |
-|     +----------------------------------------+           |
-|     |         TRANSACTION DETAILS             |           |
-|     |  +------------------------------------+ |           |
-|     |  | Invoice     |  INV-2024-001       | |           |
-|     |  | Amount      |  £49.99              | |           |
-|     |  | Date        |  05 Feb 2025         | |           |
-|     |  | Reference   |  D9AC4843            | |           |
-|     |  | Method      |  Card                | |           |
-|     |  +------------------------------------+ |           |
-|     +----------------------------------------+           |
-|                                                           |
-|        [====== Download Receipt ======]                   |
-|                                                           |
-|        [ Go to Dashboard ] or [ Back to Home ]            |
-|                                                           |
-+----------------------------------------------------------+
+Location: useEffect that handles payment return (around line 63-74)
+
+BEFORE:
+- Sets paymentResult based on URL status
+- Immediately stops loading
+- Separate effect fetches payment details
+
+AFTER:
+- Sets paymentResult based on URL status
+- NEW: Calls verify-payment edge function with requestId and status
+- Waits for verification before stopping loading
+- Then fetches payment details (which now exist in DB)
 ```
 
-### New State and Logic
+### Key Implementation Points
 
-1. **Add auth state check** - Use `supabase.auth.getSession()` to detect logged-in user
+1. **Call verify-payment on mount** when `status` and `requestId` are present
+2. **Handle all statuses** (success, failed, cancelled) - the backend handles each appropriately
+3. **Error handling**: If verification fails, still show the UI (Worldpay already charged) but log the error
+4. **Idempotency**: The backend already handles duplicate calls gracefully (checks if already completed)
+5. **Fetch details after verification**: Move the payment details fetch to happen after verification completes
 
-2. **Add payment details state** - Store invoice number, amount, date, reference after fetch
+## Secondary Fix: Worldpay Webhook Handler
 
-3. **Fetch payment details on success** - When `paymentResult === "success"`, fetch from:
-   - `payment_requests` table (get invoice_id, amount)
-   - `invoices` table (get invoice_number)  
-   - `receipts` table (get reference, paid_at)
-   - `profiles` table (get customer name, email, account number for PDF)
+### File: `supabase/functions/worldpay-webhook/index.ts`
 
-4. **Add animations**:
-   - Import and use `ConfettiEffect` component
-   - Create animated checkmark with pulsing rings (similar to SuccessCheckmark)
-   - Add Framer Motion stagger animations for content
+The webhook currently only handles transaction references starting with `INV-` but the payment-request flow uses `PR-` references.
 
-5. **Add receipt download** - Import `generateReceiptPdf` and call with fetched data
+Update the webhook to:
+1. Parse both `INV-` (direct invoice payments) and `PR-` (payment request payments) reference formats
+2. For `PR-` references, look up the payment request to find the linked invoice
 
-6. **Smart navigation buttons**:
-   - Check `session` state
-   - Render appropriate button based on auth status
+This provides a backup mechanism if the frontend verification fails (e.g., user closes browser before redirect).
 
----
+## Immediate Manual Fix
 
-## Technical Notes
+For the payment that already went through (Invoice `INV-ML51PYS8`):
+1. Go to Admin Panel > Billing
+2. Find the invoice
+3. Manually mark it as paid and record the receipt
 
-- Uses existing components: `ConfettiEffect`, animation patterns from `SuccessCheckmark`
-- Uses existing PDF generator: `generateReceiptPdf`
-- All data fetching uses existing Supabase client patterns
-- Follows the brutal design system already in use (border-4, card-brutal, etc.)
+Or run this in the database:
+```sql
+-- Mark invoice as paid
+UPDATE invoices SET status = 'paid', updated_at = now() 
+WHERE id = '6cc8ea12-2105-4cfc-ab43-f40b6d40b1b0';
 
+-- Create receipt
+INSERT INTO receipts (invoice_id, user_id, amount, method, reference, paid_at)
+SELECT '6cc8ea12-2105-4cfc-ab43-f40b6d40b1b0', user_id, 2.00, 'card', 'RCP-MANUAL-LIVE', now()
+FROM invoices WHERE id = '6cc8ea12-2105-4cfc-ab43-f40b6d40b1b0';
+
+-- Update payment request
+UPDATE payment_requests SET status = 'completed', completed_at = now() 
+WHERE id = 'd9ac4843-c3c5-48c9-82b9-163deafaafe6';
+```

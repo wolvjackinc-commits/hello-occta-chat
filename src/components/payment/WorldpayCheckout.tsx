@@ -37,8 +37,10 @@ export function WorldpayCheckout({
     setError(null);
 
     try {
-      // Get the current page URL to use as return URL
-      const returnUrl = `${getPaymentReturnOrigin()}/payment-result`;
+      // Worldpay 3DS/Cardinal can reject ephemeral/iframe origins.
+      // Always use a stable origin for both the return URL and the browser payment origin.
+      const paymentOrigin = getPaymentReturnOrigin();
+      const returnUrl = `${paymentOrigin}/payment-result`;
 
       console.log('Creating payment session with return URL:', returnUrl);
 
@@ -53,6 +55,7 @@ export function WorldpayCheckout({
           customerName,
           userId,
           returnUrl,
+          paymentOrigin,
         },
       });
 

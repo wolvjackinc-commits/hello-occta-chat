@@ -42,13 +42,22 @@ serve(async (req) => {
     switch (action) {
       case 'create-payment-session': {
         // Create a Hosted Payment Page session
-        const { invoiceId, invoiceNumber, amount, currency, customerEmail, customerName, userId, returnUrl } = data;
+        const { invoiceId, invoiceNumber, amount, currency, customerEmail, customerName, userId, returnUrl, paymentOrigin } = data;
 
         if (!invoiceId || !amount || !returnUrl) {
           throw new Error('Missing required data (invoiceId, amount, returnUrl)');
         }
 
         console.log('Creating HPP session for invoice:', invoiceId, 'mode:', isLiveMode ? 'LIVE' : 'TEST');
+
+        // Worldpay/Cardinal 3DS uses postMessage between iframes; the merchant origin must be explicit and stable.
+        // Prefer an explicitly provided origin (from the frontend helper), otherwise derive it from returnUrl.
+        let shopperBrowserPaymentOrigin: string | undefined;
+        try {
+          shopperBrowserPaymentOrigin = paymentOrigin || (returnUrl ? new URL(returnUrl).origin : undefined);
+        } catch {
+          shopperBrowserPaymentOrigin = paymentOrigin;
+        }
 
         // Create the payment page session
         const response = await fetch(`${baseUrl}/payment_pages`, {
@@ -63,6 +72,11 @@ serve(async (req) => {
             merchant: {
               entity: worldpayEntityId,
             },
+            ...(shopperBrowserPaymentOrigin
+              ? {
+                  shopperBrowserPaymentOrigin,
+                }
+              : {}),
             narrative: {
               line1: `Invoice ${invoiceNumber || 'Payment'}`,
             },

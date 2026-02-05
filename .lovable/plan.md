@@ -1,59 +1,112 @@
 
-Goal: Fix invoice payment flow failing at Worldpay 3DS with “The current origin is not supported… targetOrigin…” by ensuring the invoice-token payment path (/pay → backend function “payment-request”) passes and uses an explicit, stable browser origin for Worldpay/Cardinal postMessage checks (same fix pattern already applied to the direct invoice checkout flow in “worldpay-payment”).
 
-What I believe is happening (root cause)
-- You have two different Worldpay session-creation flows:
-  1) Logged-in invoice payment flow (dashboard “Pay invoice” /pay-invoice) that ultimately uses `worldpay-payment` edge function (already updated to include `shopperBrowserPaymentOrigin`).
-  2) Tokenized/public-style flow (`/pay?token=...`) that uses the `payment-request` edge function action `create-worldpay-session`.
-- The error you pasted is consistent with Cardinal/3DS failing its origin validation when the merchant origin is missing or mismatched.
-- `payment-request` currently:
-  - Does not accept `paymentOrigin` from the frontend
-  - Does not send `shopperBrowserPaymentOrigin` to Worldpay when creating the HPP session
-- `src/pages/Pay.tsx` currently:
-  - Builds `returnUrl` using `getPaymentReturnOrigin()` (good)
-  - But does not pass `paymentOrigin` to the backend (missing)
+# Payment Success Page Enhancement Plan
 
-Scope of changes (no database changes required)
-A) Frontend: `src/pages/Pay.tsx`
-- Update `handleProceedToPayment` to:
-  - Compute `paymentOrigin = getPaymentReturnOrigin()`
-  - Compute `returnUrl = \`\${paymentOrigin}/pay?requestId=\${paymentData.id}\``
-  - Pass BOTH `returnUrl` and `paymentOrigin` to `supabase.functions.invoke("payment-request", { body: ... })`
-- Add minimal defensive logging (console) for:
-  - `paymentOrigin`
-  - `returnUrl`
-  - This helps confirm the browser is using the published domain when the payment starts.
+## Overview
+Enhance the payment success screen in `/pay` with celebratory animations, payment details display, receipt download capability, and smart navigation that adapts based on whether the user is logged in.
 
-B) Backend function: `supabase/functions/payment-request/index.ts` (action: `create-worldpay-session`)
-- Extend payload parsing to accept `paymentOrigin`:
-  - From: `const { token, returnUrl } = data;`
-  - To: `const { token, returnUrl, paymentOrigin } = data;`
-- Derive a stable origin string:
-  - `shopperBrowserPaymentOrigin = paymentOrigin || new URL(returnUrl).origin` (try/catch)
-- Include `shopperBrowserPaymentOrigin` in the JSON body sent to Worldpay `/payment_pages`, mirroring the working pattern in `supabase/functions/worldpay-payment/index.ts`:
-  - Add:
-    - `...(shopperBrowserPaymentOrigin ? { shopperBrowserPaymentOrigin } : {})`
-- Add targeted logs (server-side) around session creation:
-  - `returnUrl`, `paymentOrigin`, `shopperBrowserPaymentOrigin`
-  - Worldpay response status and any returned errors (already logs some in other function; we’ll match that level here)
+## Current State
+- The `Pay.tsx` page has a basic success screen showing just a simple checkmark, confirmation message, and "Receipt sent via email" badge
+- No animations, no payment details, no receipt download, no navigation options
+- The `PaymentResult.tsx` already has rich features (animations, details, receipt download) but serves a different flow
 
-C) Validation / UX safety checks (small but important)
-- Ensure `returnUrl` already includes `requestId=...` before appending `&status=...` (it does today). Keep as-is.
-- Ensure the `/pay` page’s “open on stable origin” guard remains intact (it already prevents starting from preview origins). This fix is still needed because even on the published domain Worldpay wants the explicit origin value for 3DS postMessage.
+## What Will Change
 
-How we will confirm it’s fixed (end-to-end)
-1) From the customer dashboard, click “Pay” on an invoice (the flow that creates `/pay?token=...`).
-2) Confirm you are redirected/opened on the published domain (not the preview domain).
-3) Complete card entry + 3DS step-up.
-4) Verify it returns to `/pay?requestId=...&status=success` and shows the success UI.
-5) Also verify `payment_attempts` transitions from `pending` to `success` (and invoice becomes `paid`) as expected.
+### 1. Add Celebration Animations
+- Reuse the existing `ConfettiEffect` component from `src/components/thankyou/`
+- Add an animated success checkmark similar to `SuccessCheckmark` component
+- Add Framer Motion entrance animations for all elements (staggered fade-in)
 
-Extra diagnostics if it still fails after this
-- If the error persists, we will capture:
-  - Exact URL/origin where the 3DS error occurs (published domain vs preview domain)
-  - The Worldpay session response fields (in function logs) to confirm the origin field is being accepted
-- Then we can adjust additional Worldpay HPP parameters if needed, but the missing `shopperBrowserPaymentOrigin` in the `payment-request` flow is the first concrete, code-level inconsistency that must be corrected.
+### 2. Display Payment Details
+Fetch and show transaction details after successful payment:
+- Invoice Number
+- Amount Paid
+- Payment Date and Time
+- Payment Reference
+- Payment Method (Card)
 
-Files to change (implementation phase)
-- `src/pages/Pay.tsx` (pass `paymentOrigin`)
-- `supabase/functions/payment-request/index.ts` (include `shopperBrowserPaymentOrigin` in the HPP session creation request)
+### 3. Add Receipt Download
+- Add a "Download Receipt" button
+- Reuse the existing `generateReceiptPdf` function from `src/lib/generateReceiptPdf.ts`
+- Fetch receipt data from the database after payment verification
+
+### 4. Smart Navigation
+- Check if user is authenticated using Supabase auth
+- **If logged in**: Show "Go to Dashboard" button linking to `/dashboard`
+- **If not logged in**: Show "Back to Home" button linking to `/`
+- Add a secondary "Close Window" option for users who want to close the tab
+
+## Implementation Details
+
+### Files to Modify
+1. **`src/pages/Pay.tsx`** - Main changes to the payment result screen section
+
+### Changes in Pay.tsx
+
+```text
++----------------------------------------------------------+
+|                        OCCTA                              |
++----------------------------------------------------------+
+|                                                           |
+|              [Confetti Animation Overlay]                 |
+|                                                           |
+|     +----------------------------------------+           |
+|     |         [Animated Checkmark]            |           |
+|     |              (pulsing rings)            |           |
+|     +----------------------------------------+           |
+|                                                           |
+|               PAYMENT SUCCESSFUL!                         |
+|                                                           |
+|     Thank you for your payment. A confirmation            |
+|     email has been sent to you.                           |
+|                                                           |
+|     +----------------------------------------+           |
+|     |         TRANSACTION DETAILS             |           |
+|     |  +------------------------------------+ |           |
+|     |  | Invoice     |  INV-2024-001       | |           |
+|     |  | Amount      |  £49.99              | |           |
+|     |  | Date        |  05 Feb 2025         | |           |
+|     |  | Reference   |  D9AC4843            | |           |
+|     |  | Method      |  Card                | |           |
+|     |  +------------------------------------+ |           |
+|     +----------------------------------------+           |
+|                                                           |
+|        [====== Download Receipt ======]                   |
+|                                                           |
+|        [ Go to Dashboard ] or [ Back to Home ]            |
+|                                                           |
++----------------------------------------------------------+
+```
+
+### New State and Logic
+
+1. **Add auth state check** - Use `supabase.auth.getSession()` to detect logged-in user
+
+2. **Add payment details state** - Store invoice number, amount, date, reference after fetch
+
+3. **Fetch payment details on success** - When `paymentResult === "success"`, fetch from:
+   - `payment_requests` table (get invoice_id, amount)
+   - `invoices` table (get invoice_number)  
+   - `receipts` table (get reference, paid_at)
+   - `profiles` table (get customer name, email, account number for PDF)
+
+4. **Add animations**:
+   - Import and use `ConfettiEffect` component
+   - Create animated checkmark with pulsing rings (similar to SuccessCheckmark)
+   - Add Framer Motion stagger animations for content
+
+5. **Add receipt download** - Import `generateReceiptPdf` and call with fetched data
+
+6. **Smart navigation buttons**:
+   - Check `session` state
+   - Render appropriate button based on auth status
+
+---
+
+## Technical Notes
+
+- Uses existing components: `ConfettiEffect`, animation patterns from `SuccessCheckmark`
+- Uses existing PDF generator: `generateReceiptPdf`
+- All data fetching uses existing Supabase client patterns
+- Follows the brutal design system already in use (border-4, card-brutal, etc.)
+

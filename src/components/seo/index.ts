@@ -1,6 +1,7 @@
 export { SEO, default as SEOComponent } from './SEO';
 export { 
   StructuredData, 
+  JsonLd,
   organizationSchema,
   createServiceSchema, 
   createProductSchema,

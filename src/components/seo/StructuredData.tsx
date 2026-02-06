@@ -14,7 +14,7 @@ export const organizationSchema = {
   logo: `${BASE_URL}/pwa-512x512.png`,
   image: `${BASE_URL}/og-image.png`,
   description: 'Cheap UK broadband, SIM plans, and landline services with no contracts. Affordable internet from £22.99/month.',
-  foundingDate: String(companyConfig.foundingYear),
+  ...(companyConfig.foundingYear ? { foundingDate: String(companyConfig.foundingYear) } : {}),
   address: {
     '@type': 'PostalAddress',
     streetAddress: companyConfig.address.street,
@@ -23,35 +23,21 @@ export const organizationSchema = {
     addressCountry: companyConfig.address.countryCode,
     addressRegion: companyConfig.address.region,
   },
-  contactPoint: [
-    {
-      '@type': 'ContactPoint',
-      telephone: companyConfig.phone.display,
-      contactType: 'customer service',
-      email: companyConfig.email.support,
-      areaServed: companyConfig.address.countryCode,
-      availableLanguage: ['English'],
-      hoursAvailable: {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        opens: '09:00',
-        closes: '18:00',
-      },
-    },
-    {
-      '@type': 'ContactPoint',
-      telephone: companyConfig.phone.display,
-      contactType: 'sales',
-      email: companyConfig.email.general,
-      areaServed: companyConfig.address.countryCode,
-      availableLanguage: ['English'],
-    },
-  ],
+  email: companyConfig.email.general,
+  telephone: companyConfig.phone.display,
+  contactPoint: {
+    '@type': 'ContactPoint',
+    telephone: companyConfig.phone.display,
+    contactType: 'customer support',
+    email: companyConfig.email.general,
+    areaServed: 'GB',
+    availableLanguage: ['en'],
+  },
   areaServed: {
     '@type': 'Country',
     name: companyConfig.address.country,
   },
-  sameAs: [],
+  sameAs: companyConfig.socialLinks,
 };
 
 // Local Business Schema - basic info without reviews
@@ -63,8 +49,8 @@ const localBusinessSchema = {
   legalName: companyConfig.name,
   description: 'Cheap UK broadband, SIM plans, and landline services. No contracts, no hidden fees, cancel anytime.',
   url: BASE_URL,
-  telephone: companyConfig.phone.international,
-  email: companyConfig.email.support,
+  telephone: companyConfig.phone.display,
+  email: companyConfig.email.general,
   priceRange: '£',
   image: `${BASE_URL}/pwa-512x512.png`,
   address: {
@@ -75,10 +61,7 @@ const localBusinessSchema = {
     addressCountry: companyConfig.address.countryCode,
     addressRegion: companyConfig.address.region,
   },
-  areaServed: {
-    '@type': 'Country',
-    name: companyConfig.address.country,
-  },
+  areaServed: 'GB',
 };
 
 // Website Schema with SearchAction
@@ -297,12 +280,14 @@ export const StructuredData = ({
   return (
     <Helmet>
       {schemas.map((schema, index) => (
-        <script key={index} type="application/ld+json">
-          {JSON.stringify(schema)}
-        </script>
+        <JsonLd key={index} data={schema} />
       ))}
     </Helmet>
   );
 };
+
+export const JsonLd = ({ data }: { data: object }) => (
+  <script type="application/ld+json">{JSON.stringify(data)}</script>
+);
 
 export default StructuredData;

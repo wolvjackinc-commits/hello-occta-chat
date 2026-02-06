@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAppMode } from "@/hooks/useAppMode";
-import { SEO, StructuredData, createFAQSchema } from "@/components/seo";
+import { SEO, StructuredData, JsonLd, createFAQSchema, createOfferSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 
 const containerVariants = {
@@ -91,6 +91,13 @@ const NoContractBroadband = () => {
   const { isAppMode } = useAppMode();
   const LayoutComponent = isAppMode ? AppLayout : Layout;
   const faqSchema = createFAQSchema(faqs);
+  const offerSchema = createOfferSchema({
+    name: "No Contract Broadband",
+    description: "Flexible UK broadband with no contracts, no hidden fees, and no price rises.",
+    price: "22.99",
+    url: "/no-contract-broadband-uk",
+    category: "Broadband",
+  });
 
   return (
     <LayoutComponent>
@@ -101,7 +108,9 @@ const NoContractBroadband = () => {
         keywords="no contract broadband UK, flexible broadband, cancel anytime broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
         price="22.99"
       />
-      <StructuredData customSchema={faqSchema} type="localBusiness" />
+      <StructuredData type="localBusiness" />
+      <JsonLd data={offerSchema} />
+      <JsonLd data={faqSchema} />
 
       {/* Hero Section */}
       <section className="relative bg-background py-16 md:py-24 overflow-hidden">

@@ -11,8 +11,8 @@ import {
 
 export const companyConfig = {
   // Company Legal Details
-  name: "OCCTA Limited",
-  tradingName: "OCCTA",
+  name: "OCCTA LIMITED",
+  tradingName: "OCCTA LIMITED",
   companyNumber: "13828933",
   vatNumber: null, // Add when registered for VAT
   
@@ -26,8 +26,8 @@ export const companyConfig = {
   // Email Addresses
   email: {
     general: "hello@occta.co.uk",
-    support: "support@occta.co.uk",
-    complaints: "complaints@occta.co.uk",
+    support: "hello@occta.co.uk",
+    complaints: "hello@occta.co.uk",
   },
   
   // Physical Address
@@ -49,9 +49,16 @@ export const companyConfig = {
     url: "https://www.occta.co.uk",
     domain: "www.occta.co.uk",
   },
-  
+
+  // Social Links
+  socialLinks: [
+    "https://x.com/Occtatelecom",
+    "https://www.facebook.com/Occtalimited/",
+    "https://www.instagram.com/occtalimited",
+  ],
+
   // Business Information
-  foundingYear: 2021,
+  foundingYear: null,
   
   // Support Hours
   supportHours: {

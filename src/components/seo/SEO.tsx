@@ -58,12 +58,8 @@ export const SEO = ({
       {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
       
       {/* Price Tags for Products */}
-      {price && (
-        <>
-          <meta property="product:price:amount" content={price} />
-          <meta property="product:price:currency" content={priceCurrency} />
-        </>
-      )}
+      {price && <meta property="product:price:amount" content={price} />}
+      {price && <meta property="product:price:currency" content={priceCurrency} />}
       
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />

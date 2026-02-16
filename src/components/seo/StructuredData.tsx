@@ -280,7 +280,7 @@ export const StructuredData = ({
   return (
     <Helmet>
       {schemas.map((schema, index) => (
-        <JsonLd key={index} data={schema} />
+        <script key={index} type="application/ld+json">{JSON.stringify(schema)}</script>
       ))}
     </Helmet>
   );

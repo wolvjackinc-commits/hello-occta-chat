@@ -1,7 +1,16 @@
-# Serve static files directly
-/sitemap.xml    /sitemap.xml    200
-/robots.txt     /robots.txt     200
-/manifest.webmanifest  /manifest.webmanifest  200
+# Serve prerendered route HTML files directly
+/broadband               /broadband/index.html               200
+/sim-plans               /sim-plans/index.html               200
+/landline                /landline/index.html                 200
+/no-contract-broadband-uk /no-contract-broadband-uk/index.html 200
+/support                 /support/index.html                  200
+/about                   /about/index.html                    200
+/faq                     /faq/index.html                      200
 
-# SPA fallback for all other routes
-/*    /index.html   200
+# Serve static files directly
+/sitemap.xml             /sitemap.xml                         200
+/robots.txt              /robots.txt                          200
+/manifest.webmanifest    /manifest.webmanifest                200
+
+# SPA fallback for all other routes (auth, admin, dashboard, etc.)
+/*                       /index.html                          200

@@ -256,21 +256,27 @@ export const createBreadcrumbSchema = (
 interface StructuredDataProps {
   type?: 'organization' | 'localBusiness' | 'website' | 'all';
   customSchema?: object;
+  /** When true, only render customSchema without any global schemas. Defaults to false. */
+  customOnly?: boolean;
 }
 
 export const StructuredData = ({
-  type = 'all',
+  type,
   customSchema,
+  customOnly,
 }: StructuredDataProps) => {
   const schemas: object[] = [];
 
-  if (type === 'all' || type === 'organization') {
+  // If no type is provided and customSchema exists, render custom only (no global duplication)
+  const renderGlobal = type != null && !customOnly;
+
+  if (renderGlobal && (type === 'all' || type === 'organization')) {
     schemas.push(organizationSchema);
   }
-  if (type === 'all' || type === 'localBusiness') {
+  if (renderGlobal && (type === 'all' || type === 'localBusiness')) {
     schemas.push(localBusinessSchema);
   }
-  if (type === 'all' || type === 'website') {
+  if (renderGlobal && (type === 'all' || type === 'website')) {
     schemas.push(websiteSchema);
   }
   if (customSchema) {

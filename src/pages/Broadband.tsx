@@ -93,7 +93,7 @@ const Broadband = () => {
         keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
         price="22.99"
       />
-      <StructuredData customSchema={combinedSchemas} type="localBusiness" />
+      <StructuredData customSchema={combinedSchemas} />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

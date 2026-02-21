@@ -226,7 +226,7 @@ const Support = () => {
   }
 
   // Generate FAQ schema for top FAQs shown on this page
-  const faqSchema = createFAQSchema(supportFaqs.map((faq) => ({ question: faq.question, answer: faq.answer })));
+  const faqSchema = createFAQSchema(supportFaqs.slice(0, 6).map((faq) => ({ question: faq.question, answer: faq.answer })));
 
   return (
     <Layout>
@@ -236,7 +236,7 @@ const Support = () => {
         canonical="/support"
         keywords="OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, landline help"
       />
-      <StructuredData customSchema={faqSchema} type="localBusiness" />
+      <StructuredData customSchema={faqSchema} />
       
       {/* Hero - Help Yourself First Philosophy */}
       <section className="py-12 grid-pattern">

@@ -269,7 +269,7 @@ serve(async (req) => {
     // 6. Send confirmation email - UK Professional Template
     if (resendApiKey && user.email) {
       try {
-        const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+        const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
         const currentYear = new Date().getFullYear();
         const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk";
         

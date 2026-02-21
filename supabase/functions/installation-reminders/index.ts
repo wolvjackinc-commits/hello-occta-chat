@@ -50,7 +50,7 @@ const TIME_SLOT_LABELS: Record<string, string> = {
 
 // UK Companies Act 2006 compliant footer
 const getStandardFooter = () => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   const currentYear = new Date().getFullYear();
   
   return `

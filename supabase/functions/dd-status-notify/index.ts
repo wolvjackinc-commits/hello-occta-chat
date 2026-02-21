@@ -74,7 +74,7 @@ const generateDDStatusEmail = (
   accountHolder: string | null
 ): string => {
   const config = STATUS_EMAIL_CONFIG[status] || STATUS_EMAIL_CONFIG.pending;
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   const currentYear = new Date().getFullYear();
 
   return `

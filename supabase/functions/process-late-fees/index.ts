@@ -32,7 +32,7 @@ const escapeHtml = (unsafe: unknown): string => {
 
 // UK Companies Act 2006 compliant footer
 const getStandardFooter = (accentColor: string = '#facc15') => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   const currentYear = new Date().getFullYear();
   
   return `
@@ -76,7 +76,7 @@ const getLateFeeEmailHtml = (data: {
   new_total: number;
   days_overdue: number;
 }) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   
   return `
 <!DOCTYPE html>
@@ -160,7 +160,7 @@ const getSuspensionWarningEmailHtml = (data: {
   amount: number;
   days_until_suspension: number;
 }) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   
   return `
 <!DOCTYPE html>
@@ -251,7 +251,7 @@ const getServiceSuspendedEmailHtml = (data: {
   service_type: string;
   amount_owed: number;
 }) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   
   return `
 <!DOCTYPE html>

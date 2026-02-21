@@ -40,7 +40,7 @@ const sanitizeNumber = (value: unknown): string => {
 };
 
 const getStandardFooter = (accentColor: string = '#facc15') => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   const currentYear = new Date().getFullYear();
   
   return `
@@ -233,7 +233,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+    const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
 
     if (!resendApiKey) {
       throw new Error('RESEND_API_KEY not configured');

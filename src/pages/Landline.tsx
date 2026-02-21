@@ -91,7 +91,7 @@ const Landline = () => {
         keywords="cheap landline UK, no contract landline, home phone deals, cheap home phone UK, landline no contract, budget landline, affordable landline UK"
         price="7.99"
       />
-      <StructuredData customSchema={combinedSchemas} type="localBusiness" />
+      <StructuredData customSchema={combinedSchemas} />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

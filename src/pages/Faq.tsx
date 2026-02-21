@@ -29,7 +29,7 @@ const Faq = () => {
         canonical="/faq"
         keywords="OCCTA FAQ, broadband questions, mobile support, billing help, account support"
       />
-      <StructuredData customSchema={faqSchema} type="localBusiness" />
+      <StructuredData customSchema={faqSchema} />
 
       <section className="py-12 grid-pattern">
         <div className="container mx-auto px-4">

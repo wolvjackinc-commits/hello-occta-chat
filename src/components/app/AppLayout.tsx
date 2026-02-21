@@ -1,8 +1,9 @@
-import { ReactNode } from "react";
+import { ReactNode, lazy, Suspense } from "react";
 import AppHeader from "./AppHeader";
 import AppBottomNav from "./AppBottomNav";
 import OfflineIndicator from "./OfflineIndicator";
-import AIChatBot from "@/components/chat/AIChatBot";
+
+const AIChatBot = lazy(() => import("@/components/chat/AIChatBot"));
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -18,7 +19,9 @@ const AppLayout = ({ children, hideNav = false }: AppLayoutProps) => {
         {children}
       </main>
       {!hideNav && <AppBottomNav />}
-      <AIChatBot />
+      <Suspense fallback={null}>
+        <AIChatBot />
+      </Suspense>
     </div>
   );
 };

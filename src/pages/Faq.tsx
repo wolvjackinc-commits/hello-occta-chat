@@ -1,10 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { Search } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { SEO, StructuredData, createFAQSchema } from "@/components/seo";
 import { faqCategories, faqs } from "@/data/faqs";
+
+const Accordion = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.Accordion })));
+const AccordionContent = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.AccordionContent })));
+const AccordionItem = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.AccordionItem })));
+const AccordionTrigger = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.AccordionTrigger })));
 
 const Faq = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,18 +77,20 @@ const Faq = () => {
               />
             </div>
 
-            <Accordion type="single" collapsible className="space-y-2">
-              {filteredFaqs.map((faq, i) => (
-                <AccordionItem key={faq.question} value={`faq-${i}`} className="border-4 border-foreground bg-card px-4">
-                  <AccordionTrigger className="text-left whitespace-normal font-semibold text-base md:text-lg leading-relaxed tracking-normal py-4 hover:no-underline">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm md:text-base leading-relaxed text-muted-foreground pb-3 max-w-prose">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            <Suspense fallback={null}>
+              <Accordion type="single" collapsible className="space-y-2">
+                {filteredFaqs.map((faq, i) => (
+                  <AccordionItem key={faq.question} value={`faq-${i}`} className="border-4 border-foreground bg-card px-4">
+                    <AccordionTrigger className="text-left whitespace-normal font-semibold text-base md:text-lg leading-relaxed tracking-normal py-4 hover:no-underline">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-sm md:text-base leading-relaxed text-muted-foreground pb-3 max-w-prose">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </Suspense>
 
             {filteredFaqs.length === 0 && (
               <div className="text-center py-8 border-2 border-dashed border-foreground/30 mt-6">

@@ -1,16 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
 import HeroSection from "@/components/home/HeroSection";
-import ServicesSection from "@/components/home/ServicesSection";
-import WhyUsSection from "@/components/home/WhyUsSection";
-import CustomerLoveSection from "@/components/home/CustomerLoveSection";
-import CTASection from "@/components/home/CTASection";
-import AppHome from "@/components/app/AppHome";
-import AppWelcome from "@/components/app/AppWelcome";
 import { useAppMode } from "@/hooks/useAppMode";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/seo";
+
+// Lazy-load below-fold & non-critical components
+const ServicesSection = lazy(() => import("@/components/home/ServicesSection"));
+const WhyUsSection = lazy(() => import("@/components/home/WhyUsSection"));
+const CustomerLoveSection = lazy(() => import("@/components/home/CustomerLoveSection"));
+const CTASection = lazy(() => import("@/components/home/CTASection"));
+const AppHome = lazy(() => import("@/components/app/AppHome"));
+const AppWelcome = lazy(() => import("@/components/app/AppWelcome"));
 
 const Index = () => {
   const { isAppMode } = useAppMode();
@@ -35,13 +37,12 @@ const Index = () => {
   if (isAppMode) {
     // Show welcome screen for non-logged in users
     if (!user && !isLoading) {
-      return <AppWelcome />;
+      return <Suspense fallback={null}><AppWelcome /></Suspense>;
     }
     
-    // Show home for logged in users
     return (
       <AppLayout>
-        <AppHome />
+        <Suspense fallback={null}><AppHome /></Suspense>
       </AppLayout>
     );
   }
@@ -57,10 +58,12 @@ const Index = () => {
         price="22.99"
       />
       <HeroSection />
-      <ServicesSection />
-      <WhyUsSection />
-      <CustomerLoveSection />
-      <CTASection />
+      <Suspense fallback={null}>
+        <ServicesSection />
+        <WhyUsSection />
+        <CustomerLoveSection />
+        <CTASection />
+      </Suspense>
     </Layout>
   );
 };

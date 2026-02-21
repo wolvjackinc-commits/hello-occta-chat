@@ -53,7 +53,7 @@ const sanitizeNumber = (value: unknown): string => {
 
 // UK Companies Act 2006 compliant footer - GDPR & Professional Standards
 const getStandardFooter = (options?: { showUnsubscribe?: boolean; accentColor?: string }) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   const accentColor = options?.accentColor || '#facc15';
   const currentYear = new Date().getFullYear();
   
@@ -216,7 +216,7 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
         </div>
         
         <div class="cta-wrap">
-          <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/track-order" class="cta">Track Your Order →</a>
+          <a href="${Deno.env.get("SITE_URL") || "https://www.occta.co.uk"}/track-order" class="cta">Track Your Order →</a>
         </div>
         
         <div class="order-callout">
@@ -302,7 +302,7 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
         </div>
         
         <div class="cta-wrap">
-          <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/dashboard" class="cta">Go to Dashboard →</a>
+          <a href="${Deno.env.get("SITE_URL") || "https://www.occta.co.uk"}/dashboard" class="cta">Go to Dashboard →</a>
         </div>
         
         <p class="text" style="text-align: center; color: #666; font-size: 13px;">
@@ -330,7 +330,7 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
 
   const config = statusConfig[data.status as string] || { message: "Your order status has been updated.", color: "#facc15", icon: "📋" };
   const safeStatus = escapeHtml(data.status);
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
 
   return `
 <!DOCTYPE html>
@@ -451,7 +451,7 @@ const getOrderMessageHtml = (data: Record<string, unknown>) => `
         <p class="text">Have questions or need to respond? Log in to your dashboard or get in touch with our support team.</p>
         
         <div class="cta-wrap">
-          <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/dashboard" class="cta">View Order →</a>
+          <a href="${Deno.env.get("SITE_URL") || "https://www.occta.co.uk"}/dashboard" class="cta">View Order →</a>
         </div>
       </div>
       
@@ -516,7 +516,7 @@ const getTicketReplyHtml = (data: Record<string, unknown>) => `
         <p class="text">You can continue the conversation from your dashboard. If your issue is resolved, you can close the ticket there.</p>
         
         <div class="cta-wrap">
-          <a href="${Deno.env.get("SITE_URL") || "https://occta.co.uk"}/dashboard" class="cta">View Ticket →</a>
+          <a href="${Deno.env.get("SITE_URL") || "https://www.occta.co.uk"}/dashboard" class="cta">View Ticket →</a>
         </div>
       </div>
       
@@ -588,7 +588,7 @@ const getPasswordResetHtml = (data: Record<string, unknown>) => `
 `;
 
 const getInvoiceSentHtml = (data: Record<string, unknown>) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   const lines = (data.lines as Array<{ description: string; qty: number; line_total: number }>) || [];
   
   const linesHtml = lines.map(line => `
@@ -698,7 +698,7 @@ const getInvoiceSentHtml = (data: Record<string, unknown>) => {
 };
 
 const getPaymentLinkHtml = (data: Record<string, unknown>) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   const expiresAt = data.expires_at ? new Date(data.expires_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
   
   return `
@@ -931,7 +931,7 @@ const getInvoiceExternalPaymentHtml = (data: Record<string, unknown>) => {
 };
 
 const getInvoicePaidHtml = (data: Record<string, unknown>) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://occta.co.uk";
+  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
   return `
 <!DOCTYPE html>
 <html lang="en">

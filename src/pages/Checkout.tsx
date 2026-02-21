@@ -498,7 +498,7 @@ const Checkout = () => {
                         By placing this order, you agree to our{" "}
                         <Link to="/terms" className="underline">Terms of Service</Link>
                         {" "}and{" "}
-                        <Link to="/privacy-policy" className="underline">Privacy Policy</Link>.
+                        <Link to="/privacy" className="underline">Privacy Policy</Link>.
                         Your first bill of £{plan.price} will be due after installation.
                       </p>
                     </div>

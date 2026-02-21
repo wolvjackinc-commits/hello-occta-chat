@@ -19,7 +19,7 @@ const Footer = () => {
       { name: "Service Status", path: "/status" },
     ],
     legal: [
-      { name: "Privacy Policy", path: "/privacy-policy" },
+      { name: "Privacy Policy", path: "/privacy" },
       { name: "Terms of Service", path: "/terms" },
       { name: "Cookie Policy", path: "/cookies" },
       { name: "Complaints", path: "/complaints" },

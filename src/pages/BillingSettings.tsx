@@ -95,10 +95,10 @@ export default function BillingSettings() {
         }
       }
 
-      // Fetch direct debit mandate if exists
+      // Fetch direct debit mandate if exists (using secure masked view)
       const { data: mandateData } = await supabase
-        .from("dd_mandates")
-        .select("*")
+        .from("dd_mandates_list")
+        .select("id, status, mandate_reference, bank_last4, account_holder")
         .eq("user_id", userId)
         .eq("status", "active")
         .maybeSingle();

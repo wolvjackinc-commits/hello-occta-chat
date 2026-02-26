@@ -1,68 +1,52 @@
 project_id = "oexgjmuvgdndizsufipe"
 
-[functions.send-email]
-verify_jwt = false
-
-[functions.link-order]
-verify_jwt = false
-
-[functions.ai-chat]
-verify_jwt = false
-
-[functions.installation-reminders]
-verify_jwt = false
-
-[functions.payment-reminders]
-verify_jwt = false
-
-[functions.process-late-fees]
-verify_jwt = false
-
-[functions.worldpay-payment]
-verify_jwt = false
-
-[functions.worldpay-webhook]
-verify_jwt = false
-
-[functions.delete-account]
-verify_jwt = false
-
-[functions.payment-request]
-verify_jwt = false
-
-[functions.dd-status-notify]
-verify_jwt = false
-
-[functions.generate-invoices]
-verify_jwt = false
-
-[functions.admin-create-customer]
-verify_jwt = false
-
-[functions.bulk-send-email]
-verify_jwt = false
-
-[functions.email-open-track]
-verify_jwt = false
-
-[functions.admin-notify]
-verify_jwt = false
-
-
-# Cron job: Run payment reminders daily at 9:00 AM UTC
 [[cron_jobs]]
-name = "daily-payment-reminders"
-schedule = "0 9 * * *"
-command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/payment-reminders"
+  command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/payment-reminders"
+  name = "daily-payment-reminders"
+  schedule = "0 9 * * *"
 
-# Cron job: Process late fees daily at 2:00 AM UTC
 [[cron_jobs]]
-name = "daily-late-fee-processing"
-schedule = "0 2 * * *"
-command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/process-late-fees"
+  command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/process-late-fees"
+  name = "daily-late-fee-processing"
+  schedule = "0 2 * * *"
 
-# Cron job: Generate monthly invoices daily at 6:00 AM UTC
 [[cron_jobs]]
-name = "daily-invoice-generation"
-schedule = "0 6 * * *"
-command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/generate-invoices"
+  command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/generate-invoices"
+  name = "daily-invoice-generation"
+  schedule = "0 6 * * *"
+
+[functions]
+  [functions.admin-create-customer]
+    verify_jwt = false
+  [functions.admin-notify]
+    verify_jwt = false
+  [functions.ai-chat]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.bulk-send-email]
+    verify_jwt = false
+  [functions.dd-status-notify]
+    verify_jwt = false
+  [functions.delete-account]
+    verify_jwt = false
+  [functions.email-open-track]
+    verify_jwt = false
+  [functions.generate-invoices]
+    verify_jwt = false
+  [functions.installation-reminders]
+    verify_jwt = false
+  [functions.link-order]
+    verify_jwt = false
+  [functions.payment-reminders]
+    verify_jwt = false
+  [functions.payment-request]
+    verify_jwt = false
+  [functions.process-late-fees]
+    verify_jwt = false
+  [functions.send-email]
+    verify_jwt = false
+  [functions.worldpay-payment]
+    verify_jwt = false
+  [functions.worldpay-webhook]
+    verify_jwt = false

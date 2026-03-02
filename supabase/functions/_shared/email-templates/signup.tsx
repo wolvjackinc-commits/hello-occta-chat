@@ -26,6 +26,7 @@ interface SignupEmailProps {
 }
 
 const LOGO_URL = 'https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/logo.png'
+const CONFETTI_URL = 'https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/confetti-small.png'
 
 export const SignupEmail = ({
   siteName,
@@ -50,10 +51,12 @@ export const SignupEmail = ({
           </Row>
         </Section>
 
-        {/* ── Hero celebration block (Stripe-style) ── */}
+        {/* ── Confetti falling from header ── */}
+        <Img src={CONFETTI_URL} width="600" alt="" style={confettiImg} />
+
+        {/* ── Hero celebration block ── */}
         <Section style={heroSection}>
-          <Text style={heroIcon}>🎉</Text>
-          <Heading style={heroHeading}>You're in.</Heading>
+          <Heading style={heroHeading}>You're in. 🎉</Heading>
           <Text style={heroSubtext}>Welcome to OCCTA — proper British telecom.</Text>
         </Section>
 
@@ -121,12 +124,13 @@ const container = { maxWidth: '600px', margin: '0 auto', border: '4px solid #0d0
 const header: React.CSSProperties = { backgroundColor: '#0d0d0d', padding: '20px 32px' }
 const logoText: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '28px', letterSpacing: '4px', color: '#ffffff', margin: '0', verticalAlign: 'middle', lineHeight: '40px' }
 
-const heroSection: React.CSSProperties = { backgroundColor: '#facc15', padding: '48px 32px 40px', textAlign: 'center' }
-const heroIcon: React.CSSProperties = { fontSize: '56px', margin: '0 0 8px', lineHeight: '1' }
-const heroHeading: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '48px', fontWeight: 'bold', color: '#0d0d0d', letterSpacing: '3px', textTransform: 'uppercase', margin: '0 0 8px', lineHeight: '1.1' }
-const heroSubtext: React.CSSProperties = { fontSize: '16px', color: '#0d0d0d', margin: '0', fontWeight: '500' }
+const confettiImg: React.CSSProperties = { display: 'block', width: '100%', maxWidth: '600px', height: 'auto', marginTop: '-2px' }
 
-const accentBar = { backgroundColor: '#0d0d0d', height: '4px' }
+const heroSection: React.CSSProperties = { padding: '0 32px 40px', textAlign: 'center', marginTop: '-60px' }
+const heroHeading: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '48px', fontWeight: 'bold', color: '#0d0d0d', letterSpacing: '3px', textTransform: 'uppercase', margin: '0 0 8px', lineHeight: '1.1' }
+const heroSubtext: React.CSSProperties = { fontSize: '16px', color: '#333333', margin: '0', fontWeight: '500' }
+
+const accentBar = { backgroundColor: '#facc15', height: '6px' }
 const content = { padding: '32px' }
 const text = { fontSize: '15px', color: '#333333', lineHeight: '1.7', margin: '0 0 24px' }
 const link = { color: '#0d0d0d', textDecoration: 'underline', fontWeight: 'bold' as const }

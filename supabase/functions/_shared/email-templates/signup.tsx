@@ -14,6 +14,8 @@ import {
   Preview,
   Section,
   Text,
+  Row,
+  Column,
 } from 'npm:@react-email/components@0.0.22'
 
 interface SignupEmailProps {
@@ -24,6 +26,7 @@ interface SignupEmailProps {
 }
 
 const LOGO_URL = 'https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/logo.png'
+const CONFETTI_URL = 'https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/confetti-banner.png'
 
 export const SignupEmail = ({
   siteName,
@@ -37,12 +40,20 @@ export const SignupEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Img src={LOGO_URL} width="40" height="40" alt="OCCTA" />
-          <Text style={logoText}>OCCTA</Text>
+          <Row>
+            <Column style={{ width: '48px' }}>
+              <Img src={LOGO_URL} width="40" height="40" alt="OCCTA" style={{ display: 'block' }} />
+            </Column>
+            <Column>
+              <Text style={logoText}>OCCTA</Text>
+            </Column>
+          </Row>
         </Section>
         <Section style={accentBar} />
+        {/* 🎉 Confetti celebration banner */}
+        <Img src={CONFETTI_URL} width="600" height="200" alt="Welcome celebration" style={confettiBanner} />
         <Section style={content}>
-          <Heading style={h1}>Welcome aboard.</Heading>
+          <Heading style={h1}>🎉 Welcome aboard!</Heading>
           <Text style={text}>
             You've signed up for{' '}
             <Link href={siteUrl} style={link}>
@@ -57,9 +68,11 @@ export const SignupEmail = ({
             </Link>
             ) and let's get you connected:
           </Text>
-          <Button style={button} href={confirmationUrl}>
-            CONFIRM EMAIL
-          </Button>
+          <Section style={buttonWrapper}>
+            <Button style={button} href={confirmationUrl}>
+              CONFIRM EMAIL
+            </Button>
+          </Section>
           <Text style={footnote}>
             Didn't create an account? Ignore this – nothing will happen.
           </Text>
@@ -85,12 +98,14 @@ export default SignupEmail
 const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', Arial, sans-serif" }
 const container = { maxWidth: '600px', margin: '0 auto', border: '4px solid #0d0d0d' }
 const header: React.CSSProperties = { backgroundColor: '#0d0d0d', padding: '20px 32px' }
-const logoText: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '28px', letterSpacing: '4px', color: '#ffffff', margin: '0' }
+const logoText: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '28px', letterSpacing: '4px', color: '#ffffff', margin: '0', verticalAlign: 'middle', lineHeight: '40px' }
 const accentBar = { backgroundColor: '#facc15', height: '6px' }
+const confettiBanner: React.CSSProperties = { display: 'block', width: '100%', maxWidth: '600px', height: 'auto' }
 const content = { padding: '32px' }
-const h1: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '28px', fontWeight: 'bold', color: '#0d0d0d', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 20px' }
+const h1: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '32px', fontWeight: 'bold', color: '#0d0d0d', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 20px', textAlign: 'center' }
 const text = { fontSize: '15px', color: '#333333', lineHeight: '1.7', margin: '0 0 20px' }
 const link = { color: '#0d0d0d', textDecoration: 'underline' }
+const buttonWrapper: React.CSSProperties = { textAlign: 'center', margin: '24px 0' }
 const button: React.CSSProperties = { backgroundColor: '#0d0d0d', color: '#ffffff', fontSize: '14px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', borderRadius: '0', padding: '14px 28px', textDecoration: 'none', border: '3px solid #0d0d0d' }
 const footnote = { fontSize: '13px', color: '#888888', margin: '24px 0 0', lineHeight: '1.5' }
 const footer: React.CSSProperties = { backgroundColor: '#0d0d0d', padding: '24px 32px', textAlign: 'center' }

@@ -26,7 +26,6 @@ interface SignupEmailProps {
 }
 
 const LOGO_URL = 'https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/logo.png'
-const CONFETTI_URL = 'https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/confetti.gif'
 
 export const SignupEmail = ({
   siteName,
@@ -39,6 +38,7 @@ export const SignupEmail = ({
     <Preview>Welcome to OCCTA – confirm your email to get started</Preview>
     <Body style={main}>
       <Container style={container}>
+        {/* ── Header ── */}
         <Section style={header}>
           <Row>
             <Column style={{ width: '48px' }}>
@@ -49,34 +49,54 @@ export const SignupEmail = ({
             </Column>
           </Row>
         </Section>
+
+        {/* ── Hero celebration block (Stripe-style) ── */}
+        <Section style={heroSection}>
+          <Text style={heroIcon}>🎉</Text>
+          <Heading style={heroHeading}>You're in.</Heading>
+          <Text style={heroSubtext}>Welcome to OCCTA — proper British telecom.</Text>
+        </Section>
+
+        {/* ── Yellow accent divider ── */}
         <Section style={accentBar} />
-        {/* 🎉 Confetti celebration banner */}
-        <Img src={CONFETTI_URL} width="600" height="200" alt="Welcome celebration" style={confettiBanner} />
+
+        {/* ── Body ── */}
         <Section style={content}>
-          <Heading style={h1}>🎉 Welcome aboard!</Heading>
           <Text style={text}>
-            You've signed up for{' '}
-            <Link href={siteUrl} style={link}>
-              <strong>OCCTA</strong>
-            </Link>
-            . Proper British telecom – no robots, no rubbish, no regrets.
+            One last thing — confirm your email address (
+            <Link href={`mailto:${recipient}`} style={link}>{recipient}</Link>
+            ) so we know it's really you.
           </Text>
-          <Text style={text}>
-            Confirm your email (
-            <Link href={`mailto:${recipient}`} style={link}>
-              {recipient}
-            </Link>
-            ) and let's get you connected:
-          </Text>
+
           <Section style={buttonWrapper}>
             <Button style={button} href={confirmationUrl}>
-              CONFIRM EMAIL
+              CONFIRM EMAIL ADDRESS
             </Button>
           </Section>
+
+          <Section style={featureRow}>
+            <Row>
+              <Column style={featureCol}>
+                <Text style={featureIcon}>⚡</Text>
+                <Text style={featureLabel}>No contracts</Text>
+              </Column>
+              <Column style={featureCol}>
+                <Text style={featureIcon}>🇬🇧</Text>
+                <Text style={featureLabel}>UK support</Text>
+              </Column>
+              <Column style={featureCol}>
+                <Text style={featureIcon}>🛡️</Text>
+                <Text style={featureLabel}>No hidden fees</Text>
+              </Column>
+            </Row>
+          </Section>
+
           <Text style={footnote}>
-            Didn't create an account? Ignore this – nothing will happen.
+            Didn't create an account? Just ignore this email — nothing will happen.
           </Text>
         </Section>
+
+        {/* ── Footer ── */}
         <Section style={footer}>
           <Text style={footerBrand}>OCCTA</Text>
           <Text style={footerText}>
@@ -95,19 +115,30 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
+/* ── Styles ── */
 const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', Arial, sans-serif" }
 const container = { maxWidth: '600px', margin: '0 auto', border: '4px solid #0d0d0d' }
 const header: React.CSSProperties = { backgroundColor: '#0d0d0d', padding: '20px 32px' }
 const logoText: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '28px', letterSpacing: '4px', color: '#ffffff', margin: '0', verticalAlign: 'middle', lineHeight: '40px' }
-const accentBar = { backgroundColor: '#facc15', height: '6px' }
-const confettiBanner: React.CSSProperties = { display: 'block', width: '100%', maxWidth: '600px', height: 'auto' }
+
+const heroSection: React.CSSProperties = { backgroundColor: '#facc15', padding: '48px 32px 40px', textAlign: 'center' }
+const heroIcon: React.CSSProperties = { fontSize: '56px', margin: '0 0 8px', lineHeight: '1' }
+const heroHeading: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '48px', fontWeight: 'bold', color: '#0d0d0d', letterSpacing: '3px', textTransform: 'uppercase', margin: '0 0 8px', lineHeight: '1.1' }
+const heroSubtext: React.CSSProperties = { fontSize: '16px', color: '#0d0d0d', margin: '0', fontWeight: '500' }
+
+const accentBar = { backgroundColor: '#0d0d0d', height: '4px' }
 const content = { padding: '32px' }
-const h1: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '32px', fontWeight: 'bold', color: '#0d0d0d', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 20px', textAlign: 'center' }
-const text = { fontSize: '15px', color: '#333333', lineHeight: '1.7', margin: '0 0 20px' }
-const link = { color: '#0d0d0d', textDecoration: 'underline' }
-const buttonWrapper: React.CSSProperties = { textAlign: 'center', margin: '24px 0' }
-const button: React.CSSProperties = { backgroundColor: '#0d0d0d', color: '#ffffff', fontSize: '14px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', borderRadius: '0', padding: '14px 28px', textDecoration: 'none', border: '3px solid #0d0d0d' }
-const footnote = { fontSize: '13px', color: '#888888', margin: '24px 0 0', lineHeight: '1.5' }
+const text = { fontSize: '15px', color: '#333333', lineHeight: '1.7', margin: '0 0 24px' }
+const link = { color: '#0d0d0d', textDecoration: 'underline', fontWeight: 'bold' as const }
+const buttonWrapper: React.CSSProperties = { textAlign: 'center', margin: '8px 0 32px' }
+const button: React.CSSProperties = { backgroundColor: '#0d0d0d', color: '#ffffff', fontSize: '14px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', borderRadius: '0', padding: '16px 32px', textDecoration: 'none', border: '3px solid #0d0d0d' }
+
+const featureRow: React.CSSProperties = { margin: '0 0 24px', padding: '20px 0', borderTop: '2px solid #f0f0f0', borderBottom: '2px solid #f0f0f0' }
+const featureCol: React.CSSProperties = { textAlign: 'center', verticalAlign: 'top', width: '33.33%' }
+const featureIcon: React.CSSProperties = { fontSize: '24px', margin: '0 0 4px', lineHeight: '1' }
+const featureLabel: React.CSSProperties = { fontSize: '12px', color: '#666666', margin: '0', fontWeight: 'bold' as const, textTransform: 'uppercase', letterSpacing: '1px' }
+
+const footnote = { fontSize: '13px', color: '#888888', margin: '0', lineHeight: '1.5' }
 const footer: React.CSSProperties = { backgroundColor: '#0d0d0d', padding: '24px 32px', textAlign: 'center' }
 const footerBrand: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '20px', letterSpacing: '4px', color: '#facc15', margin: '0 0 12px' }
 const footerText = { fontSize: '12px', color: '#ffffff', margin: '0 0 12px', lineHeight: '1.6' }

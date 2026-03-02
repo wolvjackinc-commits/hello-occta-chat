@@ -13,6 +13,8 @@ import {
   Preview,
   Section,
   Text,
+  Row,
+  Column,
 } from 'npm:@react-email/components@0.0.22'
 
 interface ReauthenticationEmailProps {
@@ -28,14 +30,22 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Img src={LOGO_URL} width="40" height="40" alt="OCCTA" />
-          <Text style={logoText}>OCCTA</Text>
+          <Row>
+            <Column style={{ width: '48px' }}>
+              <Img src={LOGO_URL} width="40" height="40" alt="OCCTA" style={{ display: 'block' }} />
+            </Column>
+            <Column>
+              <Text style={logoText}>OCCTA</Text>
+            </Column>
+          </Row>
         </Section>
         <Section style={accentBar} />
         <Section style={content}>
           <Heading style={h1}>Verification code.</Heading>
           <Text style={text}>Use this code to confirm your identity:</Text>
-          <Text style={codeStyle}>{token}</Text>
+          <Section style={codeWrapper}>
+            <Text style={codeStyle}>{token}</Text>
+          </Section>
           <Text style={footnote}>
             This code expires shortly. Didn't request it? Just ignore this email.
           </Text>
@@ -61,18 +71,19 @@ export default ReauthenticationEmail
 const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', Arial, sans-serif" }
 const container = { maxWidth: '600px', margin: '0 auto', border: '4px solid #0d0d0d' }
 const header: React.CSSProperties = { backgroundColor: '#0d0d0d', padding: '20px 32px' }
-const logoText: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '28px', letterSpacing: '4px', color: '#ffffff', margin: '0' }
+const logoText: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '28px', letterSpacing: '4px', color: '#ffffff', margin: '0', verticalAlign: 'middle', lineHeight: '40px' }
 const accentBar = { backgroundColor: '#facc15', height: '6px' }
 const content = { padding: '32px' }
 const h1: React.CSSProperties = { fontFamily: "'Bebas Neue', Impact, sans-serif", fontSize: '28px', fontWeight: 'bold', color: '#0d0d0d', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 20px' }
 const text = { fontSize: '15px', color: '#333333', lineHeight: '1.7', margin: '0 0 20px' }
+const codeWrapper: React.CSSProperties = { textAlign: 'center', margin: '24px 0' }
 const codeStyle: React.CSSProperties = {
   fontFamily: "'Bebas Neue', Courier, monospace",
   fontSize: '36px',
   fontWeight: 'bold',
   color: '#0d0d0d',
   letterSpacing: '8px',
-  margin: '0 0 24px',
+  margin: '0',
   padding: '16px 24px',
   backgroundColor: '#facc15',
   border: '3px solid #0d0d0d',

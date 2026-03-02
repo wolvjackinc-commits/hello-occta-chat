@@ -1,114 +1,57 @@
 
-# Fix: Payment Verification Not Triggering
+# Checkout Pages UI Polish
 
-## ✅ IMPLEMENTED
+Targeted visual improvements across all three checkout pages, using existing components and the brutalist design system. No new dependencies or structural changes needed.
 
-## Problem Summary
-A live Worldpay payment was successfully completed (Invoice `INV-ML51PYS8`, £2.00), but the system failed to:
-- Mark the invoice as paid
-- Create a receipt
-- Send a payment confirmation email to the customer
-- Update the payment request status to completed
+## 1. PreCheckout (Guest Checkout) - `/pre-checkout`
 
-## Root Cause
-The `Pay.tsx` page displays a success screen when returning from Worldpay but **never calls the `verify-payment` backend action**. This action is what triggers all the post-payment processing.
+**Form field spacing and visual hierarchy**
+- Add section dividers between "Your Details" and "Switching Details" address fields for clearer grouping
+- Add a subtle security badge row (padlock icon + "256-bit encrypted") beneath the submit button for trust
+- Make the "Additional Notes" textarea collapsible by default to reduce visual clutter
+
+**Mobile order summary bar**
+- Add the plan name(s) to the sticky bottom bar so users know what they're buying without expanding
+- Increase touch target size on the "View/Hide" toggle
+
+**Add-ons sidebar**
+- Show a "Popular" or "Recommended" tag on the most common add-on to guide users
+
+## 2. Checkout (Authenticated) - `/checkout`
+
+**Progress stepper**
+- Add a connecting line between steps that fills with the primary color as the user progresses (currently just a static grey bar)
+- Make completed steps clickable to navigate back
+
+**Review step (Step 2)**
+- Add the user's email from their profile beneath the address summary so they can confirm their contact info
+- Add a subtle "Order placed at [time]" timestamp at the bottom -- this already exists, just move it inside the order card for better grouping
+
+**Order complete screen**
+- Add a reference number to the success screen (currently shows plan details but no order ID)
+- Add a "Track your order" link pointing to `/dashboard` with clearer copy
+
+**Sidebar**
+- Add trust indicators (e.g., "No contract", "Free installation", "UK support") as small tags beneath the price to reinforce key selling points
+
+## 3. BusinessCheckout - `/business-checkout`
+
+**Form inputs**
+- Switch the native `<select>` for team size to the project's `<Select>` component for consistent styling (currently uses a plain HTML select which breaks the brutalist border style)
+- Add `border-4 border-foreground` to all Input fields (currently missing the thick brutalist border that PreCheckout uses)
+
+**Hero section**
+- The hero currently sits in a `grid-pattern` background while the form section uses `stripes` -- consider using one consistent background treatment
+
+**Summary card**
+- Add a total estimate row showing "From [plan price]/mo + add-ons" to give users a ballpark before submitting
 
 ## Technical Details
 
-### Current Flow (Broken)
-1. Customer pays on Worldpay
-2. Worldpay redirects to `/pay?requestId=xxx&status=success`
-3. `Pay.tsx` sets `paymentResult = "success"` and shows success UI
-4. Page fetches payment details from database for display
-5. **Nothing updates the database** - invoice stays unpaid, no receipt, no email
+| File | Changes |
+|------|---------|
+| `src/pages/PreCheckout.tsx` | Add plan name to mobile summary bar; add security text under submit button; add "Recommended" badge to first add-on |
+| `src/pages/Checkout.tsx` | Animated progress connector; show order ID on success screen; add trust tags to sidebar; show user email on review step |
+| `src/pages/BusinessCheckout.tsx` | Replace native `<select>` with `<Select>` component; add `border-4 border-foreground` to all inputs; add estimated total to summary |
 
-### Expected Flow (Fixed)
-1. Customer pays on Worldpay
-2. Worldpay redirects to `/pay?requestId=xxx&status=success`
-3. **NEW: Call `verify-payment` action immediately**
-4. Backend marks invoice as paid, creates receipt, sends email
-5. `Pay.tsx` shows success UI with receipt download option
-
-## Changes Required
-
-### File: `src/pages/Pay.tsx`
-
-Add a new `useEffect` hook that calls the `verify-payment` action when `paymentResult` changes to a terminal state (success, failed, or cancelled).
-
-The effect will:
-1. Check if we have a `requestId` and a `status` result
-2. Call `supabase.functions.invoke('payment-request', { action: 'verify-payment', requestId, status })`
-3. Await the result before fetching payment details
-4. Handle errors gracefully (the UI already shows success based on Worldpay's redirect)
-
-### Changes Summary
-
-```text
-Location: useEffect that handles payment return (around line 63-74)
-
-BEFORE:
-- Sets paymentResult based on URL status
-- Immediately stops loading
-- Separate effect fetches payment details
-
-AFTER:
-- Sets paymentResult based on URL status
-- NEW: Calls verify-payment edge function with requestId and status
-- Waits for verification before stopping loading
-- Then fetches payment details (which now exist in DB)
-```
-
-### Key Implementation Points
-
-1. **Call verify-payment on mount** when `status` and `requestId` are present
-2. **Handle all statuses** (success, failed, cancelled) - the backend handles each appropriately
-3. **Error handling**: If verification fails, still show the UI (Worldpay already charged) but log the error
-4. **Idempotency**: The backend already handles duplicate calls gracefully (checks if already completed)
-5. **Fetch details after verification**: Move the payment details fetch to happen after verification completes
-
-## Secondary Fix: Worldpay Webhook Handler
-
-### File: `supabase/functions/worldpay-webhook/index.ts`
-
-The webhook currently only handles transaction references starting with `INV-` but the payment-request flow uses `PR-` references.
-
-Update the webhook to:
-1. Parse both `INV-` (direct invoice payments) and `PR-` (payment request payments) reference formats
-2. For `PR-` references, look up the payment request to find the linked invoice
-
-This provides a backup mechanism if the frontend verification fails (e.g., user closes browser before redirect).
-
-## Immediate Manual Fix
-
-For the payment that already went through (Invoice `INV-ML51PYS8`):
-1. Go to Admin Panel > Billing
-2. Find the invoice
-3. Manually mark it as paid and record the receipt
-
-Or run this in the database:
-```sql
--- Mark invoice as paid
-UPDATE invoices SET status = 'paid', updated_at = now() 
-WHERE id = '6cc8ea12-2105-4cfc-ab43-f40b6d40b1b0';
-
--- Create receipt
-INSERT INTO receipts (invoice_id, user_id, amount, method, reference, paid_at)
-SELECT '6cc8ea12-2105-4cfc-ab43-f40b6d40b1b0', user_id, 2.00, 'card', 'RCP-MANUAL-LIVE', now()
-FROM invoices WHERE id = '6cc8ea12-2105-4cfc-ab43-f40b6d40b1b0';
-
--- Update payment request
-UPDATE payment_requests SET status = 'completed', completed_at = now() 
-WHERE id = 'd9ac4843-c3c5-48c9-82b9-163deafaafe6';
-```
-
-## Changes Made
-
-### 1. `src/pages/Pay.tsx`
-- Added `verify-payment` call in the useEffect that handles Worldpay return
-- When status + requestId are present, calls `supabase.functions.invoke("payment-request", { action: "verify-payment", ... })`
-- This triggers the backend to mark invoice as paid, create receipt, and send confirmation email
-
-### 2. `supabase/functions/worldpay-webhook/index.ts`
-- Added support for `PR-` transaction references (payment request flow)
-- Webhook now serves as a backup mechanism if frontend verification fails
-- Creates `processPaymentRequestWebhook` helper function for handling PR- references
+All changes use existing UI components (`Button`, `Select`, `Badge`, icons from `lucide-react`) and follow the brutalist design tokens already defined in the project. No new dependencies required.

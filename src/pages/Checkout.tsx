@@ -245,6 +245,11 @@ const Checkout = () => {
               Brilliant! We've got your order for <strong>{plan.name}</strong>. 
               One of our team will call you within 24 hours to arrange installation.
             </p>
+
+            <div className="inline-block bg-secondary border-4 border-foreground px-4 py-2 mb-8">
+              <span className="text-xs text-muted-foreground font-display uppercase tracking-wider">Your Reference</span>
+              <p className="font-display text-lg tracking-wider">ORD-{user?.id?.substring(0, 8).toUpperCase()}</p>
+            </div>
             
             <div className="card-brutal bg-card p-6 mb-8 text-left">
               <h3 className="font-display text-lg mb-4">ORDER SUMMARY</h3>
@@ -266,7 +271,7 @@ const Checkout = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/dashboard">
-                <Button variant="hero">Go to Dashboard</Button>
+                <Button variant="hero">Track Your Order</Button>
               </Link>
               <Link to="/">
                 <Button variant="outline" className="border-4 border-foreground">
@@ -305,15 +310,25 @@ const Checkout = () => {
                 <motion.div
                   className={`w-12 h-12 border-4 border-foreground flex items-center justify-center font-display text-xl ${
                     step >= s.num ? "bg-primary text-primary-foreground" : "bg-background"
-                  }`}
+                  } ${step > s.num ? "cursor-pointer" : ""}`}
                   animate={{ scale: step === s.num ? 1.1 : 1 }}
+                  onClick={() => { if (step > s.num) setStep(s.num); }}
                 >
                   {step > s.num ? <Check className="w-6 h-6" /> : s.num}
                 </motion.div>
                 <span className={`font-display uppercase tracking-wider ${step >= s.num ? "text-foreground" : "text-muted-foreground"}`}>
                   {s.label}
                 </span>
-                {i < 1 && <div className="w-16 h-1 bg-foreground/20" />}
+                {i < 1 && (
+                  <div className="w-16 h-1 bg-foreground/20 relative overflow-hidden">
+                    <motion.div
+                      className="absolute inset-y-0 left-0 bg-primary"
+                      initial={{ width: "0%" }}
+                      animate={{ width: step >= 2 ? "100%" : "0%" }}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -447,6 +462,11 @@ const Checkout = () => {
                           <br />
                           {addressData.city}, {addressData.postcode}
                         </p>
+                        {user?.email && (
+                          <p className="text-muted-foreground text-sm mt-2 pt-2 border-t border-foreground/10">
+                            ✉️ {user.email}
+                          </p>
+                        )}
                       </div>
 
                       {/* Plan Summary */}
@@ -568,6 +588,15 @@ const Checkout = () => {
                       <span className="text-background/60">/mo</span>
                     </div>
                   </div>
+                </div>
+
+                {/* Trust Indicators */}
+                <div className="pt-4 mt-4 border-t border-background/20 flex flex-wrap gap-2">
+                  {["No contract", "Free install", "UK support"].map((tag) => (
+                    <span key={tag} className="text-[10px] font-display uppercase tracking-wider bg-background/10 px-2 py-1">
+                      {tag}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>

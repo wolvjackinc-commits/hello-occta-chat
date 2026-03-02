@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAppMode } from "@/hooks/useAppMode";
 import { businessPlans, businessServices } from "@/lib/businessData";
@@ -294,6 +301,7 @@ const BusinessCheckout = () => {
                     value={formData.businessName}
                     onChange={(event) => handleChange("businessName", event.target.value)}
                     placeholder="OCCTA Ltd"
+                    className="border-4 border-foreground"
                   />
                   {errors.businessName && <p className="text-sm text-destructive">{errors.businessName}</p>}
                 </div>
@@ -306,6 +314,7 @@ const BusinessCheckout = () => {
                     value={formData.contactName}
                     onChange={(event) => handleChange("contactName", event.target.value)}
                     placeholder="Alex Patel"
+                    className="border-4 border-foreground"
                   />
                   {errors.contactName && <p className="text-sm text-destructive">{errors.contactName}</p>}
                 </div>
@@ -319,6 +328,7 @@ const BusinessCheckout = () => {
                     value={formData.email}
                     onChange={(event) => handleChange("email", event.target.value)}
                     placeholder="alex@company.co.uk"
+                    className="border-4 border-foreground"
                   />
                   {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                 </div>
@@ -331,6 +341,7 @@ const BusinessCheckout = () => {
                     value={formData.phone}
                     onChange={(event) => handleChange("phone", event.target.value)}
                     placeholder="020 1234 5678"
+                    className="border-4 border-foreground"
                   />
                   {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                 </div>
@@ -343,6 +354,7 @@ const BusinessCheckout = () => {
                     value={formData.postcode}
                     onChange={(event) => handleChange("postcode", event.target.value)}
                     placeholder="HD3 3WU"
+                    className="border-4 border-foreground"
                   />
                   {errors.postcode && <p className="text-sm text-destructive">{errors.postcode}</p>}
                 </div>
@@ -355,6 +367,7 @@ const BusinessCheckout = () => {
                     value={formData.city}
                     onChange={(event) => handleChange("city", event.target.value)}
                     placeholder="City/Town"
+                    className="border-4 border-foreground"
                   />
                   {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                 </div>
@@ -367,6 +380,7 @@ const BusinessCheckout = () => {
                     value={formData.addressLine1}
                     onChange={(event) => handleChange("addressLine1", event.target.value)}
                     placeholder="22 Pavilion View"
+                    className="border-4 border-foreground"
                   />
                   {errors.addressLine1 && <p className="text-sm text-destructive">{errors.addressLine1}</p>}
                 </div>
@@ -379,6 +393,7 @@ const BusinessCheckout = () => {
                     value={formData.addressLine2}
                     onChange={(event) => handleChange("addressLine2", event.target.value)}
                     placeholder="Unit 4, Business Park"
+                    className="border-4 border-foreground"
                   />
                   {errors.addressLine2 && <p className="text-sm text-destructive">{errors.addressLine2}</p>}
                 </div>
@@ -386,19 +401,21 @@ const BusinessCheckout = () => {
                   <Label htmlFor="teamSize" className="font-display uppercase text-sm">
                     Team size
                   </Label>
-                  <select
-                    id="teamSize"
+                  <Select
                     value={formData.teamSize}
-                    onChange={(event) => handleChange("teamSize", event.target.value)}
-                    className="w-full border-2 border-foreground bg-background px-3 py-2 font-medium"
+                    onValueChange={(value) => handleChange("teamSize", value)}
                   >
-                    <option value="">Select team size</option>
-                    {teamSizes.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="border-4 border-foreground">
+                      <SelectValue placeholder="Select team size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teamSizes.map((size) => (
+                        <SelectItem key={size} value={size}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {errors.teamSize && <p className="text-sm text-destructive">{errors.teamSize}</p>}
                 </div>
               </div>
@@ -476,7 +493,11 @@ const BusinessCheckout = () => {
                       ))}
                     </ul>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <div className="border-t-4 border-foreground pt-3 mt-3 flex justify-between">
+                    <span className="font-display uppercase tracking-wider text-sm">Estimate</span>
+                    <span className="font-display text-lg">From {selectedPlan.price}/mo{selectedServiceDetails.length > 0 ? " + add-ons" : ""}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
                     Add-on pricing billed per seat or site as noted; totals confirmed on quote.
                   </p>
                 </div>

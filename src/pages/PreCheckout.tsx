@@ -859,6 +859,12 @@ const PreCheckout = () => {
                 )}
               </Button>
 
+              {/* Security Badge */}
+              <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs mt-3">
+                <Shield className="w-4 h-4" />
+                <span>256-bit encrypted &middot; Your data is safe with us</span>
+              </div>
+
               {/* Switching Timeline - Below Submit Button */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
@@ -942,13 +948,19 @@ const PreCheckout = () => {
                             key={addon.id}
                             onClick={() => toggleAddon(addon.id)}
                             className={cn(
-                              "w-full text-left p-3 border-4 transition-all",
+                              "w-full text-left p-3 border-4 transition-all relative",
                               isSelected 
                                 ? "border-primary bg-primary/10" 
                                 : "border-foreground/30 hover:border-foreground"
                             )}
                             whileTap={{ scale: 0.98 }}
                           >
+                            {/* Show "Popular" tag on first addon */}
+                            {addons.indexOf(addon) === 0 && (
+                              <span className="absolute -top-2.5 right-3 bg-primary text-primary-foreground text-[10px] font-display uppercase tracking-wider px-2 py-0.5">
+                                Popular
+                              </span>
+                            )}
                             <div className="flex items-start gap-3">
                               <div className={cn(
                                 "w-8 h-8 border-2 flex items-center justify-center flex-shrink-0",
@@ -1034,13 +1046,15 @@ const PreCheckout = () => {
         <button
           type="button"
           onClick={() => setIsMobileSummaryOpen((prev) => !prev)}
-          className="w-full flex items-center justify-between px-4 py-3"
+          className="w-full flex items-center justify-between px-4 py-4"
         >
           <div className="text-left">
-            <p className="font-display uppercase tracking-wider text-xs text-muted-foreground">Order Summary</p>
+            <p className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+              {selectedPlans.map(p => p.name).join(' + ')}
+            </p>
             <p className="font-display text-lg">£{monthlyTotal.toFixed(2)}/mo</p>
           </div>
-          <span className="font-display uppercase text-sm text-primary">
+          <span className="font-display uppercase text-sm text-primary px-3 py-1 border-2 border-primary">
             {isMobileSummaryOpen ? "Hide" : "View"}
           </span>
         </button>

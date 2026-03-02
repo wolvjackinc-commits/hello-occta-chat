@@ -26,7 +26,7 @@ interface SignupEmailProps {
 }
 
 const LOGO_URL = 'https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/logo.png'
-const CONFETTI_URL = 'https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/confetti-banner.png'
+const CONFETTI_URL = 'https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/confetti.gif'
 
 export const SignupEmail = ({
   siteName,

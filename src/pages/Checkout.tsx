@@ -259,7 +259,7 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Installation</span>
-                  <span className="font-display text-primary">FREE</span>
+                  <span className="font-display">Included</span>
                 </div>
               </div>
             </div>
@@ -482,11 +482,7 @@ const Checkout = () => {
                         </div>
                         <div className="flex justify-between py-2 border-b-2 border-foreground/10">
                           <span>Installation fee</span>
-                          <span className="font-display text-primary line-through decoration-2">£60.00</span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b-2 border-foreground/10">
-                          <span className="text-primary font-display">FREE installation promo</span>
-                          <span className="font-display text-primary">-£60.00</span>
+                          <span className="font-display text-primary">FREE</span>
                         </div>
                         <div className="flex justify-between py-4 text-xl">
                           <span className="font-display">DUE TODAY</span>
@@ -499,7 +495,7 @@ const Checkout = () => {
                         <Link to="/terms" className="underline">Terms of Service</Link>
                         {" "}and{" "}
                         <Link to="/privacy" className="underline">Privacy Policy</Link>.
-                        Your first bill of £{plan.price} will be due after installation.
+                        No contracts, no lock-ins — cancel anytime.
                       </p>
                     </div>
 

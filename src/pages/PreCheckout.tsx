@@ -811,7 +811,10 @@ const PreCheckout = () => {
                         Terms & Conditions *
                       </Label>
                       <p className="text-muted-foreground text-sm mt-1">
-                        I have read and agree to the Terms of Service, Privacy Policy, and understand this is a 24-month minimum term contract.
+                        I have read and agree to the{" "}
+                        <Link to="/terms" className="underline text-foreground">Terms of Service</Link> and{" "}
+                        <Link to="/privacy" className="underline text-foreground">Privacy Policy</Link>.
+                        No contracts, no lock-ins — cancel anytime.
                       </p>
                     </div>
                   </div>

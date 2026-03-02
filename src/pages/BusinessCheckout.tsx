@@ -225,7 +225,7 @@ const BusinessCheckout = () => {
               </h1>
               <p className="text-lg text-muted-foreground">
                 Build your plan, confirm your details, and send it to our business team.
-                We’ll follow up with contract options and installation availability.
+                We'll follow up with a tailored quote and installation availability.
               </p>
               <Link to="/business-offers" className="text-primary font-semibold">
                 ← Back to plan builder
@@ -237,7 +237,7 @@ const BusinessCheckout = () => {
               className="space-y-4"
             >
               <div className="card-brutal bg-card p-5">
-                <h3 className="font-display text-lg uppercase mb-3">You’ll confirm</h3>
+                <h3 className="font-display text-lg uppercase mb-3">You'll confirm</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li>✅ Business contact and installation address.</li>
                   <li>✅ Preferred plan and add-on services.</li>
@@ -247,7 +247,7 @@ const BusinessCheckout = () => {
               <div className="card-brutal bg-card p-5">
                 <h3 className="font-display text-lg uppercase mb-3">After submit</h3>
                 <p className="text-sm text-muted-foreground">
-                  We’ll confirm availability and send your final quote. Install dates are
+                  We'll confirm availability and send your final quote. Install dates are
                   scheduled once you approve the proposal.
                 </p>
               </div>

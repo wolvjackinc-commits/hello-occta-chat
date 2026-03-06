@@ -430,10 +430,10 @@ const NoContractBroadband = () => {
                 <Card className="p-6 border-2 border-border hover:border-accent transition-colors group">
                   <MessageCircle className="h-10 w-10 text-accent mb-4" />
                   <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">
-                    Landline
+                    Home Phone
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Keep your number with affordable landline from £7.99/month
+                    Keep your number with Digital Home Phone from £4.99/month
                   </p>
                 </Card>
               </Link>

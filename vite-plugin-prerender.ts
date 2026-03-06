@@ -44,7 +44,7 @@ const organizationSchema = {
   logo: `${BASE_URL}/pwa-512x512.png`,
   image: `${BASE_URL}/og-image.png`,
   description:
-    "Cheap UK broadband, SIM plans, and landline services with no contracts. Affordable internet from £22.99/month.",
+    "Cheap UK broadband, SIM plans, and digital home phone services with no contracts. Affordable internet from £22.99/month.",
   address: {
     "@type": "PostalAddress",
     streetAddress: "22 Pavilion View",
@@ -75,7 +75,7 @@ const websiteSchema = {
   name: "OCCTA LIMITED",
   url: BASE_URL,
   description:
-    "Cheap UK broadband, SIM plans, and landline services with no contracts.",
+    "Cheap UK broadband, SIM plans, and digital home phone services with no contracts.",
   publisher: {
     "@type": "Organization",
     name: "OCCTA LIMITED",
@@ -94,7 +94,7 @@ const localBusinessSchema = {
   "@id": `${BASE_URL}/#localbusiness`,
   name: "OCCTA LIMITED",
   description:
-    "Cheap UK broadband, SIM plans, and landline services. No contracts, no hidden fees, cancel anytime.",
+    "Cheap UK broadband, SIM plans, and digital home phone services. No contracts, no hidden fees, cancel anytime.",
   url: BASE_URL,
   email: "hello@occta.co.uk",
   priceRange: "£",
@@ -242,17 +242,17 @@ const routes: RouteSEO[] = [
     path: "/support",
     title: "Help & Support - 24/7 Customer Service | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "OCCTA Support Hub – UK-based help for broadband, SIM and landline. AI chat, FAQs, ticket system. Fast resolution guaranteed.",
+      "OCCTA Support Hub – UK-based help for broadband, SIM and home phone. AI chat, FAQs, ticket system. Fast resolution guaranteed.",
     canonical: "/support",
     keywords:
-      "OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, landline help",
+      "OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, home phone help",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/about",
     title: "About OCCTA - UK Telecom Company | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "OCCTA is a UK telecom company providing cheap broadband, SIM, and landline services. No hidden fees, real UK-based customer support. 5,000+ happy customers.",
+      "OCCTA is a UK telecom company providing cheap broadband, SIM, and digital home phone services. No hidden fees, real UK-based customer support. 5,000+ happy customers.",
     canonical: "/about",
     keywords:
       "OCCTA, UK telecom company, cheap broadband provider, affordable internet UK, honest broadband, UK internet provider",
@@ -260,12 +260,12 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/faq",
-    title: "FAQs - Broadband, SIM & Landline | OCCTA - Cheap UK Broadband & SIM",
+    title: "FAQs - Broadband, SIM & Home Phone | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Answers to common questions about OCCTA broadband, SIM plans, and landline services. Installation, billing, contracts, and more.",
+      "Answers to common questions about OCCTA broadband, SIM plans, and digital home phone services. Installation, billing, contracts, and more.",
     canonical: "/faq",
     keywords:
-      "OCCTA FAQ, broadband questions, SIM FAQ, landline FAQ, internet help UK, telecom FAQ",
+      "OCCTA FAQ, broadband questions, SIM FAQ, home phone FAQ, internet help UK, telecom FAQ",
     jsonLd: [localBusinessSchema],
   },
 ];

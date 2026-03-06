@@ -10,7 +10,7 @@ export const faqCategories = [
   {
     id: "services",
     icon: Wifi,
-    title: "Landline / Mobile / Broadband",
+    title: "Home Phone / Mobile / Broadband",
     description: "Service setup, speeds, coverage",
   },
   {

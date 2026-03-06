@@ -11,7 +11,7 @@ const getPageTitle = (pathname: string): string => {
     case "/sim-plans":
       return "SIM Plans";
     case "/landline":
-      return "Landline";
+      return "Home Phone";
     case "/support":
       return "Support";
     case "/dashboard":

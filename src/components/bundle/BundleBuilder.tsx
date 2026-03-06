@@ -49,7 +49,7 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
     },
     { 
       type: 'landline' as ServiceType, 
-      label: 'Landline', 
+      label: 'Home Phone', 
       icon: PhoneCall, 
       plans: landlinePlans,
       color: 'bg-warning',

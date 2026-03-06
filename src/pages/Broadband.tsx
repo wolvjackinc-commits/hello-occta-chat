@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
 import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
-import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X } from "lucide-react";
+import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall } from "lucide-react";
 import { broadbandPlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
@@ -283,6 +283,81 @@ const Broadband = () => {
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      {/* Add a Home Phone */}
+      <section className="py-16 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-display-md mb-4">ADD A HOME PHONE</h2>
+              <p className="text-lg text-muted-foreground mb-6">
+                Add Digital Home Phone from <span className="font-bold text-foreground">£4.99/month</span> to your broadband.
+              </p>
+              <ul className="space-y-3 mb-6">
+                {[
+                  "Works with your broadband connection",
+                  "Keep your existing phone number",
+                  "Use most standard home phones",
+                  "Optional unlimited call plans available",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link to="/landline">
+                <Button variant="outline" size="lg">
+                  View Digital Home Phone
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </Link>
+            </motion.div>
+            <motion.div
+              className="card-brutal bg-card p-6"
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="w-12 h-12 bg-warning border-4 border-foreground flex items-center justify-center mb-4">
+                <PhoneCall className="w-6 h-6" />
+              </div>
+              <h3 className="font-display text-2xl mb-2">Digital Voice Line</h3>
+              <div className="flex items-baseline gap-1 mb-4">
+                <span className="font-display text-4xl text-primary">£4.99</span>
+                <span className="text-foreground/70 text-sm font-medium">/mo</span>
+              </div>
+              <p className="text-muted-foreground text-sm">Crystal clear HD calls through your broadband router. No separate line needed.</p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Router Included */}
+      <section className="py-12 bg-secondary">
+        <div className="container mx-auto px-4">
+          <div className="card-brutal bg-card p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-accent border-4 border-foreground flex items-center justify-center flex-shrink-0">
+                <Wifi className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-display uppercase mb-2">
+                  Router Included
+                </h2>
+                <p className="text-muted-foreground max-w-2xl">
+                  Your broadband plan includes a Wi-Fi router. If you add Digital Home Phone, 
+                  simply plug your phone into the router. Most standard home phones are supported.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

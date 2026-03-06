@@ -9,6 +9,7 @@ export interface Plan {
   features: string[];
   popular: boolean;
   serviceType: ServiceType;
+  requiresBroadband?: boolean;
   // Type-specific fields
   speed?: string;
   data?: string;
@@ -174,75 +175,22 @@ export const simPlans: Plan[] = [
 
 export const landlinePlans: Plan[] = [
   {
-    id: "landline-payg",
-    name: "Pay As You Go",
-    price: "7.99",
-    priceNum: 7.99,
-    callRate: "8p/min",
-    description: "For occasional callers",
+    id: "landline-digital-voice",
+    name: "Digital Voice Line",
+    price: "4.99",
+    priceNum: 4.99,
+    callRate: "Pay-as-you-go",
+    description: "Digital home phone that works through your broadband",
+    requiresBroadband: true,
     features: [
-      "Line rental included",
-      "8p per minute UK calls",
+      "Digital voice line included",
+      "Crystal clear HD calls",
       "Caller display",
       "Free voicemail",
       "No contracts - cancel anytime",
-      "24/7 UK support",
-    ],
-    popular: false,
-    serviceType: "landline",
-  },
-  {
-    id: "landline-evenings",
-    name: "Evening & Weekend",
-    price: "12.99",
-    priceNum: 12.99,
-    callRate: "Free evenings",
-    description: "Perfect for chatting after work",
-    features: [
-      "Free UK calls 7pm-7am",
-      "Free weekend calls",
-      "Caller display",
-      "Free voicemail",
-      "No contracts - cancel anytime",
-      "Anonymous call reject",
-    ],
-    popular: false,
-    serviceType: "landline",
-  },
-  {
-    id: "landline-anytime",
-    name: "Anytime",
-    price: "17.99",
-    priceNum: 17.99,
-    callRate: "Always free",
-    description: "Unlimited calls, any time",
-    features: [
-      "Unlimited UK calls 24/7",
-      "Caller display",
-      "Free voicemail",
-      "Call waiting",
-      "No contracts - cancel anytime",
-      "Anonymous call reject",
+      "Works with standard home phones",
     ],
     popular: true,
-    serviceType: "landline",
-  },
-  {
-    id: "landline-international",
-    name: "International",
-    price: "26.99",
-    priceNum: 26.99,
-    callRate: "Worldwide",
-    description: "For family abroad",
-    features: [
-      "Unlimited UK calls 24/7",
-      "300 mins to 50+ countries",
-      "Caller display",
-      "Free voicemail",
-      "No contracts - cancel anytime",
-      "Priority fault repair",
-    ],
-    popular: false,
     serviceType: "landline",
   },
 ];

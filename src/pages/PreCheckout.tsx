@@ -504,10 +504,67 @@ const PreCheckout = () => {
     return <CheckoutSkeleton />;
   }
 
+  // Check if landline is selected without broadband
+  const hasLandline = selectedPlans.some(p => p.serviceType === 'landline');
+  const hasBroadband = selectedPlans.some(p => p.serviceType === 'broadband');
+  const landlineWithoutBroadband = hasLandline && !hasBroadband;
+
+  // Check if only broadband is selected (for upsell prompt)
+  const onlyBroadband = selectedPlans.length === 1 && hasBroadband && !hasLandline;
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12 pb-28 lg:pb-12">
         <div className="max-w-6xl mx-auto">
+          {/* Broadband requirement blocker for Digital Home Phone */}
+          {landlineWithoutBroadband && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 border-4 border-destructive bg-destructive/10"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-display uppercase text-destructive">Broadband Required</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Digital Home Phone requires an OCCTA broadband plan. Please add broadband to continue.
+                  </p>
+                  <Link to="/broadband">
+                    <Button variant="outline" size="sm" className="border-2 border-foreground">
+                      View Broadband Plans
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Digital Home Phone upsell when only broadband selected */}
+          {onlyBroadband && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 border-4 border-warning/50 bg-warning/5"
+            >
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-display uppercase text-foreground">Add a Home Phone?</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Add Digital Home Phone for just £4.99/mo. Crystal clear calls through your broadband.
+                  </p>
+                  <Link to="/landline">
+                    <Button variant="ghost" size="sm" className="text-primary font-display">
+                      Learn more →
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Back Link */}
           <Link
             to="/broadband"
@@ -844,7 +901,7 @@ const PreCheckout = () => {
                 className="w-full"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || landlineWithoutBroadband}
               >
                 {isSubmitting ? (
                   <>

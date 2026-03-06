@@ -119,7 +119,7 @@ const routes: RouteSEO[] = [
     path: "/",
     title: "Cheap UK Broadband & SIM Plans | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Cheap broadband UK from £22.99/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £7.99, landline from £7.99. No credit check, cancel anytime. Get connected today!",
+      "Cheap broadband UK from £22.99/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £7.99, digital home phone from £4.99. No credit check, cancel anytime. Get connected today!",
     canonical: "/",
     keywords:
       "cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband",
@@ -186,27 +186,27 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/landline",
-    title: "Cheap Landline Deals UK - No Contract | OCCTA - Cheap UK Broadband & SIM",
+    title: "Digital Home Phone UK - Add to Broadband | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Cheap landline UK from £7.99/mo. No contract home phone, fraud protection, free voicemail. Digital voice clarity. Cancel anytime.",
+      "Add Digital Home Phone from £4.99/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts.",
     canonical: "/landline",
     keywords:
-      "cheap landline UK, no contract landline, home phone deals, cheap home phone UK, landline no contract, budget landline, affordable landline UK",
-    price: "7.99",
+      "digital home phone, digital voice UK, VoIP home phone, home phone broadband, cheap home phone UK, no contract home phone, digital home phone UK",
+    price: "4.99",
     jsonLd: [
       localBusinessSchema,
       {
         "@context": "https://schema.org",
         "@type": "Service",
-        name: "OCCTA Landline",
+        name: "OCCTA Digital Home Phone",
         description:
-          "Reliable UK landline phone service with fraud protection and free voicemail.",
+          "Digital home phone service that works through your OCCTA broadband. Crystal clear HD calls.",
         url: `${BASE_URL}/landline`,
         provider: { "@type": "Organization", name: "OCCTA LIMITED", url: BASE_URL },
         areaServed: { "@type": "Country", name: "United Kingdom" },
         offers: {
           "@type": "Offer",
-          price: "7.99",
+          price: "4.99",
           priceCurrency: "GBP",
           availability: "https://schema.org/InStock",
         },

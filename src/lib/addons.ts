@@ -7,6 +7,7 @@ export interface Addon {
   description: string;
   serviceType: ServiceType;
   icon: string;
+  oneTime?: boolean;
 }
 
 export const broadbandAddons: Addon[] = [
@@ -105,52 +106,29 @@ export const simAddons: Addon[] = [
 
 export const landlineAddons: Addon[] = [
   {
-    id: 'addon-intl-calls-100',
-    name: 'International 100',
-    price: 4.99,
-    description: '100 mins to 30 countries including Europe & USA',
-    serviceType: 'landline',
-    icon: 'globe',
-  },
-  {
-    id: 'addon-intl-calls-300',
-    name: 'International 300',
-    price: 8.99,
-    description: '300 mins to 50+ countries including India & Pakistan',
-    serviceType: 'landline',
-    icon: 'globe-2',
-  },
-  {
-    id: 'addon-call-barring',
-    name: 'Premium Call Barring',
-    price: 0,
-    description: 'Block expensive premium rate numbers',
-    serviceType: 'landline',
-    icon: 'ban',
-  },
-  {
-    id: 'addon-call-divert',
-    name: 'Call Divert',
-    price: 1.99,
-    description: 'Forward calls to your mobile when you\'re away',
+    id: 'addon-unlimited-uk-calls',
+    name: 'Unlimited UK Calls',
+    price: 3,
+    description: 'Unlimited calls to UK landlines and mobiles, 24/7',
     serviceType: 'landline',
     icon: 'phone-forwarded',
   },
   {
-    id: 'addon-1571-plus',
-    name: '1571 Plus Voicemail',
-    price: 1.49,
-    description: 'Extended voicemail with email notifications',
+    id: 'addon-intl-calls-pack',
+    name: 'International Calls Pack',
+    price: 5,
+    description: '300 mins to 50+ countries including USA, India, Pakistan',
     serviceType: 'landline',
-    icon: 'voicemail',
+    icon: 'globe',
   },
   {
-    id: 'addon-caller-display',
-    name: 'Caller Display',
-    price: 0,
-    description: 'See who\'s calling before you answer',
+    id: 'addon-home-handset',
+    name: 'Home Phone Handset',
+    price: 29,
+    description: 'Cordless DECT handset delivered to your door',
     serviceType: 'landline',
-    icon: 'user',
+    icon: 'smartphone',
+    oneTime: true,
   },
 ];
 

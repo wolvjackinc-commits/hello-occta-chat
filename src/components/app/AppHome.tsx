@@ -34,7 +34,7 @@ type Order = {
 const quickActions = [
   { icon: Wifi, label: "Broadband", link: "/broadband", color: "bg-accent text-accent-foreground" },
   { icon: Smartphone, label: "SIM Plans", link: "/sim-plans", color: "bg-primary text-primary-foreground" },
-  { icon: PhoneCall, label: "Landline", link: "/landline", color: "bg-warning text-warning-foreground" },
+  { icon: PhoneCall, label: "Home Phone", link: "/landline", color: "bg-warning text-warning-foreground" },
   { icon: Package, label: "My Orders", link: "/dashboard", color: "bg-success text-success-foreground" },
 ];
 

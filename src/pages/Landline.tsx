@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
 import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Check, PhoneCall, ArrowRight, AlertTriangle, Wifi, Router, Phone, Zap } from "lucide-react";
 import { landlinePlans } from "@/lib/plans";
-import { landlineAddons } from "@/lib/addons";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
 
 const Landline = () => {
   const [isReady, setIsReady] = useState(false);
-  const [selectedCallPlan, setSelectedCallPlan] = useState<string | null>(null);
+  const [selectedCallPlans, setSelectedCallPlans] = useState<string[]>([]);
+  const [showBroadbandDialog, setShowBroadbandDialog] = useState(false);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 100);
@@ -27,10 +30,17 @@ const Landline = () => {
   const plan = landlinePlans[0];
 
   const callPlans = [
-    { id: null, name: "Pay-as-you-go", price: "Included", priceNum: 0, description: "8p/min UK calls" },
     { id: "addon-unlimited-uk-calls", name: "Unlimited UK Calls", price: "+£3/mo", priceNum: 3, description: "Unlimited calls to UK landlines & mobiles" },
     { id: "addon-intl-calls-pack", name: "International Calls", price: "+£5/mo", priceNum: 5, description: "300 mins to 50+ countries" },
   ];
+
+  const toggleCallPlan = (id: string) => {
+    setSelectedCallPlans(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const totalPrice = plan.priceNum + callPlans.filter(cp => selectedCallPlans.includes(cp.id)).reduce((s, cp) => s + cp.priceNum, 0);
 
   if (!isReady) {
     return (
@@ -61,10 +71,6 @@ const Landline = () => {
     '@graph': [landlineServiceSchema, planOfferSchema],
   };
 
-  const checkoutUrl = selectedCallPlan 
-    ? `/pre-checkout?plans=${plan.id}&addons=${selectedCallPlan}` 
-    : `/pre-checkout?plans=${plan.id}`;
-
   return (
     <LayoutComponent>
       <SEO 
@@ -75,6 +81,30 @@ const Landline = () => {
         price="4.99"
       />
       <StructuredData customSchema={combinedSchemas} />
+
+      {/* Broadband Required Dialog */}
+      <Dialog open={showBroadbandDialog} onOpenChange={setShowBroadbandDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase flex items-center gap-2">
+              <Wifi className="w-5 h-5 text-primary" />
+              Broadband Required
+            </DialogTitle>
+            <DialogDescription className="text-base">
+              Digital Home Phone works through your broadband connection and cannot be purchased separately. You'll need an OCCTA broadband plan first.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowBroadbandDialog(false)}>
+              Go Back
+            </Button>
+            <Button variant="hero" onClick={() => navigate("/broadband")}>
+              View Broadband Plans
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Hero */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
@@ -136,12 +166,10 @@ const Landline = () => {
                 ))}
               </div>
 
-              <Link to={checkoutUrl}>
-                <Button size="lg" variant="hero">
-                  Get Digital Home Phone
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
+              <Button size="lg" variant="hero" onClick={() => setShowBroadbandDialog(true)}>
+                Get Digital Home Phone
+                <ArrowRight className="w-5 h-5" />
+              </Button>
             </motion.div>
 
             {/* Right - Plan Card + Call Plan Selector */}
@@ -160,10 +188,18 @@ const Landline = () => {
                 <h2 className="font-display text-3xl mb-1">{plan.name}</h2>
                 <p className="text-muted-foreground text-sm mb-4">{plan.description}</p>
                 
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="font-display text-5xl text-primary">£{plan.price}</span>
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="font-display text-5xl text-primary">£{totalPrice.toFixed(2)}</span>
                   <span className="text-foreground/70 text-sm font-medium">/month</span>
                 </div>
+                {selectedCallPlans.length > 0 && (
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Base £{plan.price} + {callPlans.filter(cp => selectedCallPlans.includes(cp.id)).map(cp => cp.name).join(" + ")}
+                  </p>
+                )}
+                {selectedCallPlans.length === 0 && (
+                  <p className="text-xs text-muted-foreground mb-4">Pay-as-you-go calls (8p/min UK)</p>
+                )}
 
                 <ul className="space-y-2 mb-6">
                   {plan.features.map((feature) => (
@@ -174,42 +210,45 @@ const Landline = () => {
                   ))}
                 </ul>
 
-                <Link to={checkoutUrl} className="block">
-                  <Button variant="hero" className="w-full">
-                    Add to Broadband
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
+                <Button variant="hero" className="w-full" onClick={() => setShowBroadbandDialog(true)}>
+                  Add to Broadband
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
               </div>
 
-              {/* Call Plan Selector */}
+              {/* Call Plan Selector - Multi-select */}
               <div className="card-brutal bg-card p-6">
-                <h3 className="font-display text-xl mb-4">CHOOSE YOUR CALL PLAN</h3>
+                <h3 className="font-display text-xl mb-2">ADD CALL PLANS</h3>
+                <p className="text-sm text-muted-foreground mb-4">Select any combination or leave blank for pay-as-you-go (8p/min UK calls)</p>
                 <div className="space-y-2">
                   {callPlans.map((cp) => (
                     <motion.button
-                      key={cp.name}
+                      key={cp.id}
                       className={`w-full p-4 text-left border-4 transition-colors ${
-                        selectedCallPlan === cp.id 
+                        selectedCallPlans.includes(cp.id)
                           ? 'border-primary bg-primary/5' 
                           : 'border-foreground/10 hover:border-foreground/30 bg-background'
                       }`}
-                      onClick={() => setSelectedCallPlan(cp.id)}
+                      onClick={() => toggleCallPlan(cp.id)}
                       whileHover={{ x: 4 }}
                       transition={{ duration: 0.12 }}
                     >
                       <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-display text-lg">{cp.name}</p>
-                          <p className="text-sm text-muted-foreground">{cp.description}</p>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={selectedCallPlans.includes(cp.id)}
+                            onCheckedChange={() => toggleCallPlan(cp.id)}
+                            className="pointer-events-none"
+                          />
+                          <div>
+                            <p className="font-display text-lg">{cp.name}</p>
+                            <p className="text-sm text-muted-foreground">{cp.description}</p>
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="font-display text-lg text-primary">{cp.price}</p>
                         </div>
                       </div>
-                      {selectedCallPlan === cp.id && (
-                        <Check className="w-4 h-4 text-primary mt-1" />
-                      )}
                     </motion.button>
                   ))}
                 </div>

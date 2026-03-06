@@ -203,7 +203,14 @@ const PreCheckout = () => {
     const serviceTypes = [...new Set(plans.map(p => p.serviceType))];
     const allAddons = serviceTypes.flatMap(type => getAddonsByService(type));
     setAvailableAddons(allAddons);
-  }, [planIds, navigate]);
+
+    // Pre-select addons from URL query param
+    const addonParam = searchParams.get("addons");
+    if (addonParam) {
+      const addonIds = addonParam.split(",").filter(Boolean);
+      setSelectedAddons(addonIds);
+    }
+  }, [planIds, navigate, searchParams]);
 
   const toggleAddon = (addonId: string) => {
     setSelectedAddons(prev => 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
@@ -7,16 +7,21 @@ import { Button } from "@/components/ui/button";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
 import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
-import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall } from "lucide-react";
-import { broadbandPlans } from "@/lib/plans";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone } from "lucide-react";
+import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
 
 const Broadband = () => {
   const [isReady, setIsReady] = useState(false);
+  const [showVoiceDialog, setShowVoiceDialog] = useState(false);
+  const [selectedBroadbandPlanId, setSelectedBroadbandPlanId] = useState<string | null>(null);
+  const [selectedCallPlans, setSelectedCallPlans] = useState<string[]>([]);
+  const navigate = useNavigate();
   
   useEffect(() => {
-    // Short delay to allow initial render and improve perceived performance
     const timer = setTimeout(() => setIsReady(true), 100);
     return () => clearTimeout(timer);
   }, []);
@@ -49,6 +54,37 @@ const Broadband = () => {
 
   const LayoutComponent = isAppMode ? AppLayout : Layout;
 
+  const voicePlan = landlinePlans[0];
+  const callPlanOptions = [
+    { id: "addon-unlimited-uk-calls", name: "Unlimited UK Calls", price: 3, label: "+£3/mo", description: "Unlimited calls to UK landlines & mobiles" },
+    { id: "addon-intl-calls-pack", name: "International Calls", price: 5, label: "+£5/mo", description: "300 mins to 50+ countries" },
+  ];
+
+  const handleChoosePlan = (planId: string) => {
+    setSelectedBroadbandPlanId(planId);
+    setSelectedCallPlans([]);
+    setShowVoiceDialog(true);
+  };
+
+  const toggleCallPlan = (id: string) => {
+    setSelectedCallPlans(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleAddVoice = () => {
+    const addons = selectedCallPlans.length > 0 ? `&addons=${selectedCallPlans.join(",")}` : "";
+    navigate(`/pre-checkout?plans=${selectedBroadbandPlanId},${voicePlan.id}${addons}`);
+    setShowVoiceDialog(false);
+  };
+
+  const handleSkipVoice = () => {
+    navigate(`/pre-checkout?plans=${selectedBroadbandPlanId}`);
+    setShowVoiceDialog(false);
+  };
+
+  const voiceTotal = voicePlan.priceNum + callPlanOptions.filter(cp => selectedCallPlans.includes(cp.id)).reduce((s, cp) => s + cp.price, 0);
+
   if (!isReady) {
     return (
       <LayoutComponent>
@@ -57,7 +93,6 @@ const Broadband = () => {
     );
   }
 
-  // Service schema for the overall broadband service
   const broadbandServiceSchema = createServiceSchema({
     name: 'OCCTA Broadband',
     description: 'Fast, reliable fibre broadband with speeds up to 900Mbps. No contracts, no price rises.',
@@ -65,7 +100,6 @@ const Broadband = () => {
     price: '22.99',
   });
 
-  // Offer schemas for each broadband plan
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
     name: `OCCTA ${plan.name}`,
     description: `Fibre broadband up to ${plan.speed}Mbps. No contract, cancel anytime. ${plan.features.slice(0, 3).join(', ')}.`,
@@ -75,7 +109,6 @@ const Broadband = () => {
     category: 'Broadband',
   }));
 
-  // Combined schemas
   const combinedSchemas = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -94,6 +127,83 @@ const Broadband = () => {
         price="22.99"
       />
       <StructuredData customSchema={combinedSchemas} />
+
+      {/* Digital Voice Upsell Dialog */}
+      <Dialog open={showVoiceDialog} onOpenChange={setShowVoiceDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase flex items-center gap-2">
+              <Phone className="w-5 h-5 text-primary" />
+              Add Digital Home Phone?
+            </DialogTitle>
+            <DialogDescription className="text-base">
+              Add a home phone to your broadband for crystal clear HD calls.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Voice plan summary */}
+            <div className="p-4 border-4 border-primary/30 bg-primary/5">
+              <div className="flex items-center gap-2 mb-1">
+                <PhoneCall className="w-4 h-4 text-primary" />
+                <span className="font-display text-lg">{voicePlan.name}</span>
+              </div>
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="font-display text-3xl text-primary">£{voiceTotal.toFixed(2)}</span>
+                <span className="text-foreground/70 text-sm">/mo</span>
+              </div>
+              {selectedCallPlans.length === 0 && (
+                <p className="text-xs text-muted-foreground">Pay-as-you-go calls included (8p/min UK)</p>
+              )}
+              {selectedCallPlans.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Base £{voicePlan.price} + {callPlanOptions.filter(cp => selectedCallPlans.includes(cp.id)).map(cp => cp.name).join(" + ")}
+                </p>
+              )}
+            </div>
+
+            {/* Call plan options */}
+            <div>
+              <p className="text-sm font-medium mb-2">Optional call plans:</p>
+              <div className="space-y-2">
+                {callPlanOptions.map((cp) => (
+                  <button
+                    key={cp.id}
+                    className={`w-full p-3 text-left border-2 transition-colors flex items-center gap-3 ${
+                      selectedCallPlans.includes(cp.id)
+                        ? 'border-primary bg-primary/5'
+                        : 'border-foreground/10 hover:border-foreground/30 bg-background'
+                    }`}
+                    onClick={() => toggleCallPlan(cp.id)}
+                  >
+                    <Checkbox
+                      checked={selectedCallPlans.includes(cp.id)}
+                      onCheckedChange={() => toggleCallPlan(cp.id)}
+                      className="pointer-events-none"
+                    />
+                    <div className="flex-1">
+                      <p className="font-display text-sm">{cp.name}</p>
+                      <p className="text-xs text-muted-foreground">{cp.description}</p>
+                    </div>
+                    <span className="font-display text-sm text-primary">{cp.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 mt-2">
+            <Button variant="outline" onClick={handleSkipVoice} className="w-full sm:w-auto">
+              No thanks, continue
+            </Button>
+            <Button variant="hero" onClick={handleAddVoice} className="w-full sm:w-auto">
+              Yes, add Home Phone
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
@@ -159,9 +269,9 @@ const Broadband = () => {
                   whileHover={{ x: 4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
                   transition={{ duration: 0.12 }}
                 >
-                  <Link
-                    to={`/pre-checkout?plans=${plan.id}`}
-                    className={`block p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-secondary transition-colors group`}
+                  <button
+                    onClick={() => handleChoosePlan(plan.id)}
+                    className={`block w-full text-left p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-secondary transition-colors group`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -189,7 +299,7 @@ const Broadband = () => {
                         </span>
                       ))}
                     </div>
-                  </Link>
+                  </button>
                 </motion.div>
               ))}
               <Link to="#plans" className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -273,12 +383,15 @@ const Broadband = () => {
                     ))}
                   </ul>
                   
-                  <Link to={`/pre-checkout?plans=${plan.id}`} className="block">
-                    <Button variant={plan.popular ? "hero" : "outline"} className="w-full" size="sm">
-                      Choose Plan
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </Link>
+                  <Button
+                    variant={plan.popular ? "hero" : "outline"}
+                    className="w-full"
+                    size="sm"
+                    onClick={() => handleChoosePlan(plan.id)}
+                  >
+                    Choose Plan
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
                 </div>
               </motion.div>
             ))}

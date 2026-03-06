@@ -7,7 +7,7 @@ const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface EmailRequest {
@@ -1147,9 +1147,14 @@ const handler = async (req: Request): Promise<Response> => {
       const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
       const isServiceRoleAuth = authHeader === `Bearer ${serviceRoleKey}`;
       
-      if (isServiceRoleAuth) {
-        console.log("Authenticated via service role key");
-        // Service role can send any email type
+      // Check for internal secret authentication (for programmatic/cron calls)
+      const internalSecret = req.headers.get("x-internal-secret");
+      const cronJobSecret = Deno.env.get("CRON_JOB_SECRET");
+      const isInternalAuth = internalSecret && cronJobSecret && internalSecret === cronJobSecret;
+      
+      if (isServiceRoleAuth || isInternalAuth) {
+        console.log(isServiceRoleAuth ? "Authenticated via service role key" : "Authenticated via internal secret");
+        // Service role / internal secret can send any email type
       } else if (!authHeader?.startsWith("Bearer ")) {
         console.error("No authorization header provided");
         return new Response(

@@ -532,9 +532,10 @@ const PreCheckout = () => {
   }
 
   // Check if landline is selected without broadband
+  // Allow if broadband is in basket OR user already has active broadband on their account
   const hasLandline = selectedPlans.some(p => p.serviceType === 'landline');
   const hasBroadband = selectedPlans.some(p => p.serviceType === 'broadband');
-  const landlineWithoutBroadband = hasLandline && !hasBroadband;
+  const landlineWithoutBroadband = hasLandline && !hasBroadband && !userHasActiveBroadband;
 
   // Check if only broadband is selected (for upsell prompt)
   const onlyBroadband = selectedPlans.length === 1 && hasBroadband && !hasLandline;

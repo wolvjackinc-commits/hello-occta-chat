@@ -140,6 +140,26 @@ const PreCheckout = () => {
   const [showRestorePrompt, setShowRestorePrompt] = useState(false);
   const [selectedInstallationSlot, setSelectedInstallationSlot] = useState<InstallationSlot | null>(null);
   const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
+  const [userHasActiveBroadband, setUserHasActiveBroadband] = useState(false);
+
+  // Check if logged-in user already has active broadband service
+  useEffect(() => {
+    const checkExistingBroadband = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from('services')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('service_type', 'broadband')
+        .eq('status', 'active')
+        .limit(1);
+      if (data && data.length > 0) {
+        setUserHasActiveBroadband(true);
+      }
+    };
+    checkExistingBroadband();
+  }, []);
 
   // Autosave form data
   const formDataToSave = useMemo(() => ({

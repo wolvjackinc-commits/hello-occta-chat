@@ -32,7 +32,7 @@ const HeroSection = () => {
   const services = [
     { name: "Broadband", price: "£22.99", link: "/broadband" },
     { name: "Mobile SIM", price: "£7.99", link: "/sim-plans" },
-    { name: "Landline", price: "£7.99", link: "/landline" },
+    { name: "Home Phone", price: "£4.99", link: "/landline" },
   ];
 
   return (
@@ -66,7 +66,7 @@ const HeroSection = () => {
               className="text-lg text-muted-foreground max-w-lg"
             >
               Cheap broadband UK from £22.99/mo. Cancel anytime broadband with no hidden fees or lock-ins. 
-              5G SIM plans and landline available UK-wide.
+              5G SIM plans and digital home phone available UK-wide.
             </motion.p>
 
             {/* Benefits Row */}

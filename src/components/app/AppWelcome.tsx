@@ -24,7 +24,7 @@ const benefits = [
 const services = [
   { icon: Wifi, label: "Broadband", desc: "From £24.99/mo", link: "/broadband", color: "bg-accent" },
   { icon: Smartphone, label: "SIM Plans", desc: "From £5.99/mo", link: "/sim-plans", color: "bg-primary" },
-  { icon: PhoneCall, label: "Landline", desc: "From £9.99/mo", link: "/landline", color: "bg-warning" },
+  { icon: PhoneCall, label: "Home Phone", desc: "From £4.99/mo", link: "/landline", color: "bg-warning" },
 ];
 
 const AppWelcome = () => {

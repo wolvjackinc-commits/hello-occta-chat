@@ -241,7 +241,7 @@ const TermsOfService = () => {
     <Layout>
       <SEO 
         title="Terms of Service"
-        description="OCCTA Terms of Service. Legal agreement covering our broadband, SIM, and landline services. Compliant with UK Communications Act 2003."
+        description="OCCTA Terms of Service. Legal agreement covering our broadband, SIM, and digital home phone services. Compliant with UK Communications Act 2003."
         canonical="/terms"
       />
       <section className="min-h-[calc(100vh-80px)] py-12 bg-secondary/30">

@@ -29,7 +29,7 @@ const Faq = () => {
     <Layout>
       <SEO
         title="FAQs - OCCTA Help Center"
-        description="Find answers to common broadband, mobile, landline, billing, and account questions in the OCCTA FAQ hub."
+        description="Find answers to common broadband, mobile, home phone, billing, and account questions in the OCCTA FAQ hub."
         canonical="/faq"
         keywords="OCCTA FAQ, broadband questions, mobile support, billing help, account support"
       />

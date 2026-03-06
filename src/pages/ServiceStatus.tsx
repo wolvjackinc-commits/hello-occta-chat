@@ -30,7 +30,7 @@ const ServiceStatus = () => {
       detail: "Elevated latency in a small number of UK regions.",
     },
     {
-      name: "Landline Voice",
+      name: "Digital Home Phone",
       status: "operational",
       detail: "Voice routing is stable across the region.",
     },
@@ -85,7 +85,7 @@ const ServiceStatus = () => {
               <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Service status</p>
               <h1 className="text-4xl sm:text-5xl font-display uppercase mt-3">Network health & updates</h1>
               <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
-                Real-time updates across broadband, mobile, landline, and support. Bookmark this page to stay in the loop.
+                Real-time updates across broadband, mobile, home phone, and support. Bookmark this page to stay in the loop.
               </p>
             </div>
             <Card className="w-full max-w-md border-4 border-foreground">

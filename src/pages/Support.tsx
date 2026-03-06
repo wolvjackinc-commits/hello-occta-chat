@@ -62,7 +62,7 @@ const ticketSchema = z.object({
 const categories = [
   { icon: Wifi, label: "Broadband", value: "broadband" },
   { icon: Smartphone, label: "Mobile", value: "mobile" },
-  { icon: PhoneCall, label: "Landline", value: "landline" },
+  { icon: PhoneCall, label: "Home Phone", value: "landline" },
   { icon: FileText, label: "Billing", value: "billing" },
   { icon: CreditCard, label: "Payments", value: "payments" },
   { icon: Settings, label: "Account", value: "account" },
@@ -232,9 +232,9 @@ const Support = () => {
     <Layout>
       <SEO 
         title="Help & Support - 24/7 Customer Service"
-        description="OCCTA Support Hub – UK-based help for broadband, SIM and landline. AI chat, FAQs, ticket system. Fast resolution guaranteed."
+        description="OCCTA Support Hub – UK-based help for broadband, SIM and home phone. AI chat, FAQs, ticket system. Fast resolution guaranteed."
         canonical="/support"
-        keywords="OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, landline help"
+        keywords="OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, home phone help"
       />
       <StructuredData customSchema={faqSchema} />
       

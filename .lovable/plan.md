@@ -1,57 +1,90 @@
 
-# Checkout Pages UI Polish
 
-Targeted visual improvements across all three checkout pages, using existing components and the brutalist design system. No new dependencies or structural changes needed.
+# Digital Home Phone Migration Plan
 
-## 1. PreCheckout (Guest Checkout) - `/pre-checkout`
+## Summary
+Restructure the Landline service to reflect the UK PSTN switch-off reality: voice becomes a broadband add-on ("Digital Home Phone") at £4.99/mo with optional call plans, rather than a standalone £7.99 service.
 
-**Form field spacing and visual hierarchy**
-- Add section dividers between "Your Details" and "Switching Details" address fields for clearer grouping
-- Add a subtle security badge row (padlock icon + "256-bit encrypted") beneath the submit button for trust
-- Make the "Additional Notes" textarea collapsible by default to reduce visual clutter
+## Files to Modify
 
-**Mobile order summary bar**
-- Add the plan name(s) to the sticky bottom bar so users know what they're buying without expanding
-- Increase touch target size on the "View/Hide" toggle
+### 1. `src/lib/plans.ts` — Restructure landline plans
+- Replace 4 standalone landline plans with a single "Digital Voice Line" plan at £4.99/mo
+- Add new call plan add-on tiers (PAYG £0, Unlimited UK +£3, International +£5)
+- Keep `ServiceType = 'landline'` unchanged for compatibility
+- Update `landlinePlans` array to reflect new pricing
+- Add `requiresBroadband: boolean` field to Plan interface
 
-**Add-ons sidebar**
-- Show a "Popular" or "Recommended" tag on the most common add-on to guide users
+### 2. `src/lib/addons.ts` — Add call plan add-ons + handset upsell
+- Replace old landline addons with call plan add-ons:
+  - "Unlimited UK Calls" — £3/mo
+  - "International Calls Pack" — £5/mo
+- Add optional handset upsell addon: "Home Phone Handset" — £29 one-time (flagged as one-time)
+- Keep existing broadband/SIM addons untouched
 
-## 2. Checkout (Authenticated) - `/checkout`
+### 3. `src/pages/Landline.tsx` — Full page redesign
+- Rename all visible text from "Landline" to "Digital Home Phone"
+- Add broadband requirement notice banner at top (alert component)
+- Restructure hero: "DIGITAL HOME PHONE" heading, "From £4.99/month" pricing, "Requires OCCTA broadband" subtitle
+- Replace plan grid with single Digital Voice Line card + call plan selector (PAYG/Unlimited/International as toggleable options)
+- Add "Equipment Needed" section (broadband, router, standard handset)
+- Add optional handset upsell mention (£29 one-time)
+- Add power cut legal notice at bottom
+- Keep BundleBuilder at bottom
 
-**Progress stepper**
-- Add a connecting line between steps that fills with the primary color as the user progresses (currently just a static grey bar)
-- Make completed steps clickable to navigate back
+### 4. `src/pages/Broadband.tsx` — Add "Add a Home Phone" section
+- Insert new section after the "All Plans" grid and before BundleBuilder
+- Title: "Add a Home Phone"
+- Content: Digital Home Phone from £4.99/mo with bullet points (works with broadband, keep number, standard phones, optional call plans)
+- CTA button linking to `/landline`
+- Add "Router Included" info section explaining phone-into-router setup
 
-**Review step (Step 2)**
-- Add the user's email from their profile beneath the address summary so they can confirm their contact info
-- Add a subtle "Order placed at [time]" timestamp at the bottom -- this already exists, just move it inside the order card for better grouping
+### 5. `src/components/layout/Header.tsx` — Rename nav label
+- Change `{ name: "Landline", path: "/landline" }` to `{ name: "Home Phone", path: "/landline" }`
+- Keep path unchanged for SEO
 
-**Order complete screen**
-- Add a reference number to the success screen (currently shows plan details but no order ID)
-- Add a "Track your order" link pointing to `/dashboard` with clearer copy
+### 6. `src/components/layout/Footer.tsx` — Rename footer link
+- Change `{ name: "Landline", path: "/landline" }` to `{ name: "Digital Home Phone", path: "/landline" }`
 
-**Sidebar**
-- Add trust indicators (e.g., "No contract", "Free installation", "UK support") as small tags beneath the price to reinforce key selling points
+### 7. `src/components/home/ServicesSection.tsx` — Rename service card
+- Change title from "LANDLINE" to "HOME PHONE"
+- Update subtitle: "Digital voice, no old copper"
+- Update description to reference Digital Voice + broadband requirement
+- Update price: "From £4.99/mo"
 
-## 3. BusinessCheckout - `/business-checkout`
+### 8. `src/components/app/AppHome.tsx` — Rename quick action
+- Change label from "Landline" to "Home Phone"
 
-**Form inputs**
-- Switch the native `<select>` for team size to the project's `<Select>` component for consistent styling (currently uses a plain HTML select which breaks the brutalist border style)
-- Add `border-4 border-foreground` to all Input fields (currently missing the thick brutalist border that PreCheckout uses)
+### 9. `src/components/bundle/BundleBuilder.tsx` — Rename label
+- Change service label from "Landline" to "Home Phone"
+- Add validation: if landline selected without broadband, show warning
 
-**Hero section**
-- The hero currently sits in a `grid-pattern` background while the form section uses `stripes` -- consider using one consistent background treatment
+### 10. `src/pages/PreCheckout.tsx` — Add checkout validation
+- Add validation: if cart contains a landline plan but no broadband plan, show blocking alert: "Digital Home Phone requires an OCCTA broadband plan"
+- When only broadband is selected, show a subtle add-on prompt to add Digital Voice
 
-**Summary card**
-- Add a total estimate row showing "From [plan price]/mo + add-ons" to give users a ballpark before submitting
+### 11. `vite-plugin-prerender.ts` — Update SEO metadata for `/landline`
+- Change title to "Digital Home Phone UK - Add to Broadband | OCCTA"
+- Update description: "Add Digital Home Phone from £4.99/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts."
+- Update keywords to include "digital home phone", "digital voice UK", "VoIP home phone"
+- Update JSON-LD service name to "OCCTA Digital Home Phone", price to "4.99"
+- Keep path as `/landline` — no URL change
 
-## Technical Details
+### 12. `src/components/seo/StructuredData.tsx` — Update description strings
+- Change "landline services" references to "digital home phone" in organization/website schema descriptions
 
-| File | Changes |
-|------|---------|
-| `src/pages/PreCheckout.tsx` | Add plan name to mobile summary bar; add security text under submit button; add "Recommended" badge to first add-on |
-| `src/pages/Checkout.tsx` | Animated progress connector; show order ID on success screen; add trust tags to sidebar; show user email on review step |
-| `src/pages/BusinessCheckout.tsx` | Replace native `<select>` with `<Select>` component; add `border-4 border-foreground` to all inputs; add estimated total to summary |
+## Files NOT Modified
+- `src/App.tsx` — route stays as `/landline`
+- `public/sitemap.xml` — URL unchanged
+- `public/_redirects` — no change needed
+- Admin pages — untouched
+- Auth pages — untouched
+- `src/integrations/supabase/*` — untouched
+- `supabase/*` — no database changes needed (service_type column values remain 'landline')
 
-All changes use existing UI components (`Button`, `Select`, `Badge`, icons from `lucide-react`) and follow the brutalist design tokens already defined in the project. No new dependencies required.
+## Key Design Decisions
+- The internal `serviceType` value stays `'landline'` everywhere to avoid breaking database records, order processing, and admin panels
+- Only user-facing labels change to "Digital Home Phone" / "Home Phone"
+- The URL remains `/landline` for SEO continuity
+- Call plans are modeled as add-ons in `addons.ts` rather than separate plans, matching how BT/Sky/Vodafone structure Digital Voice
+- Checkout validation blocks purchase of voice without broadband
+

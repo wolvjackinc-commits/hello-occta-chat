@@ -140,6 +140,26 @@ const PreCheckout = () => {
   const [showRestorePrompt, setShowRestorePrompt] = useState(false);
   const [selectedInstallationSlot, setSelectedInstallationSlot] = useState<InstallationSlot | null>(null);
   const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
+  const [userHasActiveBroadband, setUserHasActiveBroadband] = useState(false);
+
+  // Check if logged-in user already has active broadband service
+  useEffect(() => {
+    const checkExistingBroadband = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from('services')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('service_type', 'broadband')
+        .eq('status', 'active')
+        .limit(1);
+      if (data && data.length > 0) {
+        setUserHasActiveBroadband(true);
+      }
+    };
+    checkExistingBroadband();
+  }, []);
 
   // Autosave form data
   const formDataToSave = useMemo(() => ({
@@ -512,9 +532,10 @@ const PreCheckout = () => {
   }
 
   // Check if landline is selected without broadband
+  // Allow if broadband is in basket OR user already has active broadband on their account
   const hasLandline = selectedPlans.some(p => p.serviceType === 'landline');
   const hasBroadband = selectedPlans.some(p => p.serviceType === 'broadband');
-  const landlineWithoutBroadband = hasLandline && !hasBroadband;
+  const landlineWithoutBroadband = hasLandline && !hasBroadband && !userHasActiveBroadband;
 
   // Check if only broadband is selected (for upsell prompt)
   const onlyBroadband = selectedPlans.length === 1 && hasBroadband && !hasLandline;

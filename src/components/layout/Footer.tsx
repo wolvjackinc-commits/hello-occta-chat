@@ -9,7 +9,7 @@ const Footer = () => {
     services: [
       { name: "Broadband", path: "/broadband" },
       { name: "SIM Plans", path: "/sim-plans" },
-      { name: "Landline", path: "/landline" },
+      { name: "Digital Home Phone", path: "/landline" },
       { name: "Business", path: "/business" },
     ],
     support: [

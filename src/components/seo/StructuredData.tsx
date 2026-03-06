@@ -13,7 +13,7 @@ export const organizationSchema = {
   url: `${BASE_URL}/`,
   logo: `${BASE_URL}/pwa-512x512.png`,
   image: `${BASE_URL}/og-image.png`,
-  description: 'Cheap UK broadband, SIM plans, and landline services with no contracts. Affordable internet from £22.99/month.',
+  description: 'Cheap UK broadband, SIM plans, and digital home phone services with no contracts. Affordable internet from £22.99/month.',
   ...(companyConfig.foundingYear ? { foundingDate: String(companyConfig.foundingYear) } : {}),
   address: {
     '@type': 'PostalAddress',
@@ -47,7 +47,7 @@ const localBusinessSchema = {
   '@id': `${BASE_URL}/#localbusiness`,
   name: companyConfig.tradingName,
   legalName: companyConfig.name,
-  description: 'Cheap UK broadband, SIM plans, and landline services. No contracts, no hidden fees, cancel anytime.',
+  description: 'Cheap UK broadband, SIM plans, and digital home phone services. No contracts, no hidden fees, cancel anytime.',
   url: BASE_URL,
   telephone: companyConfig.phone.display,
   email: companyConfig.email.general,
@@ -71,7 +71,7 @@ const websiteSchema = {
   name: companyConfig.tradingName,
   alternateName: companyConfig.name,
   url: BASE_URL,
-  description: 'Cheap UK broadband, SIM plans, and landline services with no contracts.',
+  description: 'Cheap UK broadband, SIM plans, and digital home phone services with no contracts.',
   publisher: {
     '@type': 'Organization',
     name: companyConfig.tradingName,

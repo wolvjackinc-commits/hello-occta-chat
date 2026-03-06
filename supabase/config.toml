@@ -16,6 +16,8 @@ project_id = "oexgjmuvgdndizsufipe"
   schedule = "0 6 * * *"
 
 [functions]
+  [functions.admin-send-email]
+    verify_jwt = false
   [functions.admin-create-customer]
     verify_jwt = false
   [functions.admin-notify]

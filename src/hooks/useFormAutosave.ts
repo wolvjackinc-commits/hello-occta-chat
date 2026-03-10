@@ -9,7 +9,7 @@ interface UseFormAutosaveOptions<T> {
 }
 
 export function useFormAutosave<T>({ key, data, enabled = true }: UseFormAutosaveOptions<T>) {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Save data to localStorage with debouncing
   const saveData = useCallback(() => {

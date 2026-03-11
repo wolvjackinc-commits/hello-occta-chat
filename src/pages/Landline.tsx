@@ -334,6 +334,24 @@ const Landline = () => {
 
       {/* Bundle Builder */}
       {!isAppMode && <BundleBuilder currentService="landline" />}
+
+      {/* Related Guides */}
+      <section className="py-12 bg-background">
+        <div className="container mx-auto px-4">
+          <h2 className="text-xl font-display uppercase mb-4">Home Phone Guides</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {[
+              { title: "Digital Voice UK", desc: "How Digital Voice works and what you need to know.", path: "/guides/digital-voice-uk" },
+              { title: "PSTN Switch-Off UK", desc: "The copper line shutdown and what it means for your landline.", path: "/guides/pstn-switch-off-uk" },
+            ].map((g) => (
+              <Link key={g.path} to={g.path} className="card-brutal bg-card p-4 hover:bg-secondary transition-colors group">
+                <h3 className="font-display text-base mb-1 group-hover:text-primary transition-colors">{g.title}</h3>
+                <p className="text-sm text-muted-foreground">{g.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
     </LayoutComponent>
   );
 };

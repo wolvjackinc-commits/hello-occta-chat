@@ -264,6 +264,19 @@ const SimPlans = () => {
 
       {/* Bundle Builder */}
       {!isAppMode && <BundleBuilder currentService="sim" />}
+
+      {/* Related Guides */}
+      <section className="py-12 bg-background">
+        <div className="container mx-auto px-4">
+          <h2 className="text-xl font-display uppercase mb-4">SIM Guides</h2>
+          <div className="grid sm:grid-cols-1 max-w-md gap-4">
+            <Link to="/guides/cheap-sim-only-deals" className="card-brutal bg-card p-4 hover:bg-secondary transition-colors group">
+              <h3 className="font-display text-base mb-1 group-hover:text-primary transition-colors">Cheap SIM Only Deals UK</h3>
+              <p className="text-sm text-muted-foreground">How to find genuine value and avoid overpaying for mobile.</p>
+            </Link>
+          </div>
+        </div>
+      </section>
     </LayoutComponent>
   );
 };

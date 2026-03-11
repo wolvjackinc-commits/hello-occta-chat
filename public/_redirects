@@ -9,6 +9,13 @@ http://www.occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 /support                 /support/index.html                  200
 /about                   /about/index.html                    200
 /faq                     /faq/index.html                      200
+/guides                  /guides/index.html                   200
+/guides/no-contract-broadband-uk /guides/no-contract-broadband-uk/index.html 200
+/guides/cheap-broadband-uk /guides/cheap-broadband-uk/index.html 200
+/guides/how-to-switch-broadband /guides/how-to-switch-broadband/index.html 200
+/guides/digital-voice-uk /guides/digital-voice-uk/index.html  200
+/guides/pstn-switch-off-uk /guides/pstn-switch-off-uk/index.html 200
+/guides/cheap-sim-only-deals /guides/cheap-sim-only-deals/index.html 200
 
 # Serve static files directly
 /sitemap.xml             /sitemap.xml                         200

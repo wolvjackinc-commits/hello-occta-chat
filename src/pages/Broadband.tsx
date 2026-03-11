@@ -476,6 +476,25 @@ const Broadband = () => {
 
       {/* Bundle Builder */}
       {!isAppMode && <BundleBuilder currentService="broadband" />}
+
+      {/* Related Guides */}
+      <section className="py-12 bg-background">
+        <div className="container mx-auto px-4">
+          <h2 className="text-xl font-display uppercase mb-4">Broadband Guides</h2>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {[
+              { title: "No Contract Broadband UK", desc: "How rolling monthly broadband works and who it suits.", path: "/guides/no-contract-broadband-uk" },
+              { title: "Cheap Broadband UK", desc: "How to find affordable internet and avoid hidden costs.", path: "/guides/cheap-broadband-uk" },
+              { title: "How to Switch Broadband", desc: "Step-by-step guide to switching provider.", path: "/guides/how-to-switch-broadband" },
+            ].map((g) => (
+              <Link key={g.path} to={g.path} className="card-brutal bg-card p-4 hover:bg-secondary transition-colors group">
+                <h3 className="font-display text-base mb-1 group-hover:text-primary transition-colors">{g.title}</h3>
+                <p className="text-sm text-muted-foreground">{g.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
     </LayoutComponent>
   );
 };

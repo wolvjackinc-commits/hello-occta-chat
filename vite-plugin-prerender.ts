@@ -268,6 +268,63 @@ const routes: RouteSEO[] = [
       "OCCTA FAQ, broadband questions, SIM FAQ, home phone FAQ, internet help UK, telecom FAQ",
     jsonLd: [localBusinessSchema],
   },
+  /* ─── Guide pages ─── */
+  {
+    path: "/guides",
+    title: "Guides — Broadband, Home Phone & SIM | OCCTA - Cheap UK Broadband & SIM",
+    description: "Helpful guides on UK broadband, Digital Home Phone, and SIM plans. No-contract options, switching tips, and money-saving advice from OCCTA.",
+    canonical: "/guides",
+    keywords: "broadband guide UK, home phone guide, SIM guide, internet tips, switching broadband, digital voice guide",
+    jsonLd: [localBusinessSchema],
+  },
+  {
+    path: "/guides/no-contract-broadband-uk",
+    title: "No Contract Broadband UK — Flexible Internet | OCCTA - Cheap UK Broadband & SIM",
+    description: "Looking for no contract broadband in the UK? Learn how rolling monthly broadband works, who it suits, and how to get connected without lock-ins or exit fees.",
+    canonical: "/guides/no-contract-broadband-uk",
+    keywords: "no contract broadband UK, flexible broadband, cancel anytime broadband, rolling monthly broadband, no lock-in broadband",
+    jsonLd: [localBusinessSchema],
+  },
+  {
+    path: "/guides/cheap-broadband-uk",
+    title: "Cheap Broadband UK — Affordable Internet Plans | OCCTA - Cheap UK Broadband & SIM",
+    description: "Find genuinely cheap broadband in the UK without sacrificing speed or reliability. Compare what matters and avoid hidden costs.",
+    canonical: "/guides/cheap-broadband-uk",
+    keywords: "cheap broadband UK, affordable broadband, budget broadband, cheapest internet UK, low cost broadband",
+    jsonLd: [localBusinessSchema],
+  },
+  {
+    path: "/guides/how-to-switch-broadband",
+    title: "How to Switch Broadband — Step by Step Guide | OCCTA - Cheap UK Broadband & SIM",
+    description: "A step-by-step guide to switching broadband provider in the UK. Learn about the One Touch Switch process and how to avoid downtime.",
+    canonical: "/guides/how-to-switch-broadband",
+    keywords: "switch broadband UK, change broadband provider, how to switch internet, One Touch Switch",
+    jsonLd: [localBusinessSchema],
+  },
+  {
+    path: "/guides/digital-voice-uk",
+    title: "Digital Voice UK — Home Phone Over Broadband | OCCTA - Cheap UK Broadband & SIM",
+    description: "Everything you need to know about Digital Voice — the new way home phones work over broadband in the UK.",
+    canonical: "/guides/digital-voice-uk",
+    keywords: "digital voice UK, digital home phone, VoIP home phone, home phone broadband, landline over broadband",
+    jsonLd: [localBusinessSchema],
+  },
+  {
+    path: "/guides/pstn-switch-off-uk",
+    title: "UK PSTN Switch-Off — Copper Line Shutdown | OCCTA - Cheap UK Broadband & SIM",
+    description: "The UK PSTN copper phone network is shutting down by 2027. Find out what this means for your home phone and how Digital Voice replaces it.",
+    canonical: "/guides/pstn-switch-off-uk",
+    keywords: "PSTN switch off UK, copper line shutdown, BT landline switch off, digital switchover UK",
+    jsonLd: [localBusinessSchema],
+  },
+  {
+    path: "/guides/cheap-sim-only-deals",
+    title: "Cheap SIM Only Deals UK — Budget Mobile Plans | OCCTA - Cheap UK Broadband & SIM",
+    description: "Find the best cheap SIM only deals in the UK. No credit check, no contracts, 5G included.",
+    canonical: "/guides/cheap-sim-only-deals",
+    keywords: "cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only no contract, best SIM deals UK",
+    jsonLd: [localBusinessSchema],
+  },
 ];
 
 /* ------------------------------------------------------------------ */

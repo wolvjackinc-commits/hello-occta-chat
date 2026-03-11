@@ -24,6 +24,12 @@ const Footer = () => {
       { name: "Cookie Policy", path: "/cookies" },
       { name: "Complaints", path: "/complaints" },
     ],
+    guides: [
+      { name: "No Contract Broadband", path: "/guides/no-contract-broadband-uk" },
+      { name: "Digital Voice UK", path: "/guides/digital-voice-uk" },
+      { name: "Cheap SIM Deals", path: "/guides/cheap-sim-only-deals" },
+      { name: "All Guides", path: "/guides" },
+    ],
   };
 
   return (
@@ -58,7 +64,7 @@ const Footer = () => {
 
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12">
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-4 mb-6">
@@ -119,6 +125,23 @@ const Footer = () => {
             <h4 className="font-display text-xl mb-6 text-primary">SUPPORT</h4>
             <ul className="space-y-3">
               {footerLinks.support.map((link) => (
+                <li key={link.name}>
+                  <Link 
+                    to={link.path} 
+                    className="text-background/80 hover:text-primary transition-colors font-medium"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Guides */}
+          <div>
+            <h4 className="font-display text-xl mb-6 text-primary">GUIDES</h4>
+            <ul className="space-y-3">
+              {footerLinks.guides.map((link) => (
                 <li key={link.name}>
                   <Link 
                     to={link.path} 

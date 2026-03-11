@@ -56,6 +56,8 @@ import PayInvoice from "./pages/PayInvoice";
 import PaymentResult from "./pages/PaymentResult";
 import BillingSettings from "./pages/BillingSettings";
 import NoContractBroadband from "./pages/NoContractBroadband";
+import Guides from "./pages/guides/Guides";
+import GuidePage from "./pages/guides/GuidePage";
 
 const queryClient = new QueryClient();
 
@@ -173,6 +175,8 @@ const AnimatedRoutes = () => {
             <Route path="/no-contract-broadband-uk" element={<NoContractBroadband />} />
             <Route path="/pay" element={<Pay />} />
             <Route path="/dd/setup" element={<DDSetup />} />
+            <Route path="/guides" element={<Guides />} />
+            <Route path="/guides/:slug" element={<GuidePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

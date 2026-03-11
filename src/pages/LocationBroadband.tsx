@@ -4,7 +4,7 @@ import { ArrowRight, Check, ChevronRight, Wifi, Shield, Clock, X, Zap } from "lu
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
+import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema, createServiceSchema, createOfferSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { broadbandPlans } from "@/lib/plans";
 import { getLocationBySlug } from "@/data/locations";
@@ -16,6 +16,22 @@ const LocationBroadband = () => {
 
   if (!location) return <NotFound />;
 
+  const broadbandServiceSchema = createServiceSchema({
+    name: `OCCTA Broadband in ${location.city}`,
+    description: `Fast, reliable fibre broadband in ${location.city} with speeds up to 900Mbps. No contracts, no price rises.`,
+    url: `/broadband-${location.slug}`,
+    price: '22.99',
+  });
+
+  const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
+    name: `OCCTA ${plan.name}`,
+    description: `Fibre broadband up to ${plan.speed}Mbps in ${location.city}. No contract, cancel anytime. ${plan.features.slice(0, 3).join(', ')}.`,
+    price: plan.price.toString(),
+    url: `/pre-checkout?plans=${plan.id}`,
+    sku: plan.id,
+    category: 'Broadband',
+  }));
+
   const faqSchema = createFAQSchema(location.faqs);
   const breadcrumbSchema = createBreadcrumbSchema([
     { name: "Home", url: "/" },
@@ -25,7 +41,12 @@ const LocationBroadband = () => {
 
   const combinedSchema = {
     "@context": "https://schema.org",
-    "@graph": [faqSchema, breadcrumbSchema],
+    "@graph": [
+      broadbandServiceSchema,
+      ...planOfferSchemas,
+      faqSchema,
+      breadcrumbSchema,
+    ],
   };
 
   const features = [

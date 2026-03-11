@@ -178,6 +178,7 @@ const AnimatedRoutes = () => {
             <Route path="/dd/setup" element={<DDSetup />} />
             <Route path="/guides" element={<Guides />} />
             <Route path="/guides/:slug" element={<GuidePage />} />
+            <Route path="/broadband-:city" element={<LocationBroadband />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -495,6 +495,35 @@ const Broadband = () => {
           </div>
         </div>
       </section>
+
+      {/* Broadband by City */}
+      <section className="py-12 bg-secondary">
+        <div className="container mx-auto px-4">
+          <h2 className="text-xl font-display uppercase mb-4">Broadband by City</h2>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { name: "London", path: "/broadband-london" },
+              { name: "Manchester", path: "/broadband-manchester" },
+              { name: "Birmingham", path: "/broadband-birmingham" },
+              { name: "Leeds", path: "/broadband-leeds" },
+              { name: "Glasgow", path: "/broadband-glasgow" },
+              { name: "Liverpool", path: "/broadband-liverpool" },
+              { name: "Sheffield", path: "/broadband-sheffield" },
+              { name: "Bristol", path: "/broadband-bristol" },
+              { name: "Leicester", path: "/broadband-leicester" },
+              { name: "Nottingham", path: "/broadband-nottingham" },
+            ].map((city) => (
+              <Link
+                key={city.path}
+                to={city.path}
+                className="px-3 py-1.5 text-sm font-medium border-2 border-foreground/20 bg-card hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+              >
+                {city.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
     </LayoutComponent>
   );
 };

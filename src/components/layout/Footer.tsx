@@ -30,6 +30,13 @@ const Footer = () => {
       { name: "Cheap SIM Deals", path: "/guides/cheap-sim-only-deals" },
       { name: "All Guides", path: "/guides" },
     ],
+    locations: [
+      { name: "Broadband in London", path: "/broadband-london" },
+      { name: "Broadband in Manchester", path: "/broadband-manchester" },
+      { name: "Broadband in Birmingham", path: "/broadband-birmingham" },
+      { name: "Broadband in Leeds", path: "/broadband-leeds" },
+      { name: "Broadband in Glasgow", path: "/broadband-glasgow" },
+    ],
   };
 
   return (

@@ -9,9 +9,12 @@ import { broadbandPlans } from "@/lib/plans";
 import { getLocationBySlug } from "@/data/locations";
 import NotFound from "@/pages/NotFound";
 
+import { motion } from "framer-motion";
+
 const LocationBroadband = () => {
-  const { city } = useParams<{ city: string }>();
-  const location = city ? getLocationBySlug(city) : undefined;
+  const { pathname } = useLocation();
+  const slug = pathname.replace("/broadband-", "");
+  const location = slug ? getLocationBySlug(slug) : undefined;
 
   if (!location) return <NotFound />;
 

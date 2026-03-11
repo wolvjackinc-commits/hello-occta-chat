@@ -16,6 +16,16 @@ http://www.occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 /guides/digital-voice-uk /guides/digital-voice-uk/index.html  200
 /guides/pstn-switch-off-uk /guides/pstn-switch-off-uk/index.html 200
 /guides/cheap-sim-only-deals /guides/cheap-sim-only-deals/index.html 200
+/broadband-london            /broadband-london/index.html              200
+/broadband-manchester        /broadband-manchester/index.html          200
+/broadband-birmingham        /broadband-birmingham/index.html          200
+/broadband-leeds             /broadband-leeds/index.html               200
+/broadband-glasgow           /broadband-glasgow/index.html             200
+/broadband-liverpool         /broadband-liverpool/index.html           200
+/broadband-sheffield         /broadband-sheffield/index.html           200
+/broadband-bristol           /broadband-bristol/index.html             200
+/broadband-leicester         /broadband-leicester/index.html           200
+/broadband-nottingham        /broadband-nottingham/index.html          200
 
 # Serve static files directly
 /sitemap.xml             /sitemap.xml                         200

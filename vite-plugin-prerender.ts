@@ -325,6 +325,27 @@ const routes: RouteSEO[] = [
     keywords: "cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only no contract, best SIM deals UK",
     jsonLd: [localBusinessSchema],
   },
+  /* ─── Location broadband pages ─── */
+  ...([
+    { slug: "london", city: "London", region: "Greater London" },
+    { slug: "manchester", city: "Manchester", region: "Greater Manchester" },
+    { slug: "birmingham", city: "Birmingham", region: "West Midlands" },
+    { slug: "leeds", city: "Leeds", region: "West Yorkshire" },
+    { slug: "glasgow", city: "Glasgow", region: "Scotland" },
+    { slug: "liverpool", city: "Liverpool", region: "Merseyside" },
+    { slug: "sheffield", city: "Sheffield", region: "South Yorkshire" },
+    { slug: "bristol", city: "Bristol", region: "South West England" },
+    { slug: "leicester", city: "Leicester", region: "East Midlands" },
+    { slug: "nottingham", city: "Nottingham", region: "East Midlands" },
+  ].map(({ slug, city, region }): RouteSEO => ({
+    path: `/broadband-${slug}`,
+    title: `Cheap Broadband in ${city} - No Contract Fibre | OCCTA - Cheap UK Broadband & SIM`,
+    description: `Cheap broadband in ${city} from \u00A322.99/mo. No contract fibre up to 900Mbps in ${region}. No price rises, cancel anytime.`,
+    canonical: `/broadband-${slug}`,
+    keywords: `cheap broadband ${city}, broadband ${city}, fibre broadband ${city}, no contract broadband ${city}, internet ${city}, ${region} broadband`,
+    price: "22.99",
+    jsonLd: [localBusinessSchema],
+  }))),
 ];
 
 /* ------------------------------------------------------------------ */

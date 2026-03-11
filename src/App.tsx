@@ -58,6 +58,7 @@ import BillingSettings from "./pages/BillingSettings";
 import NoContractBroadband from "./pages/NoContractBroadband";
 import Guides from "./pages/guides/Guides";
 import GuidePage from "./pages/guides/GuidePage";
+import LocationBroadband from "./pages/LocationBroadband";
 
 const queryClient = new QueryClient();
 
@@ -177,6 +178,7 @@ const AnimatedRoutes = () => {
             <Route path="/dd/setup" element={<DDSetup />} />
             <Route path="/guides" element={<Guides />} />
             <Route path="/guides/:slug" element={<GuidePage />} />
+            <Route path="/broadband-:city" element={<LocationBroadband />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -4,7 +4,7 @@ import { ArrowRight, Check, ChevronRight, Wifi, Shield, Clock, X, Zap } from "lu
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
+import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema, createServiceSchema, createOfferSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { broadbandPlans } from "@/lib/plans";
 import { getLocationBySlug } from "@/data/locations";

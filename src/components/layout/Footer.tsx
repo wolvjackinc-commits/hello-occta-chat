@@ -176,6 +176,7 @@ const Footer = () => {
                 </li>
               ))}
             </ul>
+          </div>
 
           {/* Legal */}
           <div>

@@ -58,6 +58,7 @@ import BillingSettings from "./pages/BillingSettings";
 import NoContractBroadband from "./pages/NoContractBroadband";
 import Guides from "./pages/guides/Guides";
 import GuidePage from "./pages/guides/GuidePage";
+import LocationBroadband from "./pages/LocationBroadband";
 
 const queryClient = new QueryClient();
 

@@ -1,5 +1,4 @@
-import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link, useLocation } from "react-router-dom";
 import { ArrowRight, Check, ChevronRight, Wifi, Shield, Clock, X, Zap } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -10,9 +9,12 @@ import { broadbandPlans } from "@/lib/plans";
 import { getLocationBySlug } from "@/data/locations";
 import NotFound from "@/pages/NotFound";
 
+import { motion } from "framer-motion";
+
 const LocationBroadband = () => {
-  const { city } = useParams<{ city: string }>();
-  const location = city ? getLocationBySlug(city) : undefined;
+  const { pathname } = useLocation();
+  const slug = pathname.replace("/broadband-", "");
+  const location = slug ? getLocationBySlug(slug) : undefined;
 
   if (!location) return <NotFound />;
 

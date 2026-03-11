@@ -178,7 +178,16 @@ const AnimatedRoutes = () => {
             <Route path="/dd/setup" element={<DDSetup />} />
             <Route path="/guides" element={<Guides />} />
             <Route path="/guides/:slug" element={<GuidePage />} />
-            <Route path="/broadband-:city" element={<LocationBroadband />} />
+            <Route path="/broadband-london" element={<LocationBroadband />} />
+            <Route path="/broadband-manchester" element={<LocationBroadband />} />
+            <Route path="/broadband-birmingham" element={<LocationBroadband />} />
+            <Route path="/broadband-leeds" element={<LocationBroadband />} />
+            <Route path="/broadband-glasgow" element={<LocationBroadband />} />
+            <Route path="/broadband-liverpool" element={<LocationBroadband />} />
+            <Route path="/broadband-sheffield" element={<LocationBroadband />} />
+            <Route path="/broadband-bristol" element={<LocationBroadband />} />
+            <Route path="/broadband-leicester" element={<LocationBroadband />} />
+            <Route path="/broadband-nottingham" element={<LocationBroadband />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

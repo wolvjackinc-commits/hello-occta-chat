@@ -59,6 +59,10 @@ import NoContractBroadband from "./pages/NoContractBroadband";
 import Guides from "./pages/guides/Guides";
 import GuidePage from "./pages/guides/GuidePage";
 import LocationBroadband from "./pages/LocationBroadband";
+import ComparisonPage from "./pages/ComparisonPage";
+import KeywordLanding from "./pages/KeywordLanding";
+
+import { locations } from "./data/locations";
 
 const queryClient = new QueryClient();
 
@@ -109,13 +113,6 @@ const AnimatedRoutes = () => {
   return (
     <>
       <ScrollToTop />
-      {/*
-        Reliability note:
-        - "mode=wait" can delay the next route until exit animations finish.
-        - Combined with React Router's startTransition future flag, some environments can appear to
-          "stick" on the previous screen until a refresh.
-        Use sync presence so route changes (like checkout -> thank-you) render immediately.
-      */}
       <AnimatePresence mode="sync">
         <motion.div
           key={location.pathname}
@@ -178,16 +175,23 @@ const AnimatedRoutes = () => {
             <Route path="/dd/setup" element={<DDSetup />} />
             <Route path="/guides" element={<Guides />} />
             <Route path="/guides/:slug" element={<GuidePage />} />
-            <Route path="/broadband-london" element={<LocationBroadband />} />
-            <Route path="/broadband-manchester" element={<LocationBroadband />} />
-            <Route path="/broadband-birmingham" element={<LocationBroadband />} />
-            <Route path="/broadband-leeds" element={<LocationBroadband />} />
-            <Route path="/broadband-glasgow" element={<LocationBroadband />} />
-            <Route path="/broadband-liverpool" element={<LocationBroadband />} />
-            <Route path="/broadband-sheffield" element={<LocationBroadband />} />
-            <Route path="/broadband-bristol" element={<LocationBroadband />} />
-            <Route path="/broadband-leicester" element={<LocationBroadband />} />
-            <Route path="/broadband-nottingham" element={<LocationBroadband />} />
+
+            {/* Location broadband pages (50 cities) */}
+            {locations.map((loc) => (
+              <Route key={loc.slug} path={`/broadband-${loc.slug}`} element={<LocationBroadband />} />
+            ))}
+
+            {/* Comparison pages */}
+            <Route path="/compare/:slug" element={<ComparisonPage />} />
+
+            {/* Keyword landing pages */}
+            <Route path="/cheap-broadband-near-me" element={<KeywordLanding />} />
+            <Route path="/broadband-no-credit-check" element={<KeywordLanding />} />
+            <Route path="/broadband-for-students" element={<KeywordLanding />} />
+            <Route path="/best-broadband-deals-uk" element={<KeywordLanding />} />
+            <Route path="/broadband-for-gaming" element={<KeywordLanding />} />
+            <Route path="/broadband-for-working-from-home" element={<KeywordLanding />} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -204,10 +208,6 @@ const App = () => (
         <Toaster />
         <Sonner />
         <StructuredData type="all" />
-        {/*
-          Keep BrowserRouter on stable behavior. The v7_startTransition flag can make navigation
-          feel non-immediate in some browsers during heavy UI work (e.g. checkout submit).
-        */}
         <BrowserRouter>
           <AnimatedRoutes />
         </BrowserRouter>

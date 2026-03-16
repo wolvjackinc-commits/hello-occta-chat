@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ArrowRight, Check, ChevronRight, Zap } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,8 @@ import NotFound from "@/pages/NotFound";
 import { motion } from "framer-motion";
 
 const KeywordLanding = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { pathname } = useLocation();
+  const slug = pathname.replace(/^\//, "");
   const page = slug ? getKeywordPageBySlug(slug) : undefined;
 
   if (!page) return <NotFound />;

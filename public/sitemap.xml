@@ -6,7 +6,7 @@
   <!-- Homepage -->
   <url>
     <loc>https://www.occta.co.uk/</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -14,19 +14,19 @@
   <!-- Main Service Pages -->
   <url>
     <loc>https://www.occta.co.uk/broadband</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/sim-plans</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/landline</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
@@ -34,21 +34,91 @@
   <!-- SEO Landing Pages -->
   <url>
     <loc>https://www.occta.co.uk/no-contract-broadband-uk</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
+  </url>
+
+  <!-- Keyword Landing Pages -->
+  <url>
+    <loc>https://www.occta.co.uk/cheap-broadband-near-me</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/broadband-no-credit-check</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/broadband-for-students</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/best-broadband-deals-uk</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/broadband-for-gaming</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/broadband-for-working-from-home</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Comparison Pages -->
+  <url>
+    <loc>https://www.occta.co.uk/compare/occta-vs-bt</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/compare/occta-vs-sky</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/compare/occta-vs-virgin-media</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/compare/occta-vs-talktalk</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/compare/occta-vs-plusnet</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
   </url>
 
   <!-- Business Pages -->
   <url>
     <loc>https://www.occta.co.uk/business</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/business-offers</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
@@ -56,19 +126,19 @@
   <!-- Information Pages -->
   <url>
     <loc>https://www.occta.co.uk/about</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/support</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/faq</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
@@ -76,19 +146,19 @@
   <!-- Utility Pages -->
   <url>
     <loc>https://www.occta.co.uk/track-order</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.60</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/status</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.65</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/complaints</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
   </url>
@@ -96,19 +166,19 @@
   <!-- Legal Pages -->
   <url>
     <loc>https://www.occta.co.uk/privacy</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.30</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/terms</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.30</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/cookies</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.30</priority>
   </url>
@@ -116,106 +186,120 @@
   <!-- Guides -->
   <url>
     <loc>https://www.occta.co.uk/guides</loc>
-    <lastmod>2026-03-11</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/guides/no-contract-broadband-uk</loc>
-    <lastmod>2026-03-11</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/guides/cheap-broadband-uk</loc>
-    <lastmod>2026-03-11</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/guides/how-to-switch-broadband</loc>
-    <lastmod>2026-03-11</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/guides/digital-voice-uk</loc>
-    <lastmod>2026-03-11</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/guides/pstn-switch-off-uk</loc>
-    <lastmod>2026-03-11</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://www.occta.co.uk/guides/cheap-sim-only-deals</loc>
-    <lastmod>2026-03-11</lastmod>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/guides/broadband-for-gaming</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/guides/broadband-for-working-from-home</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/guides/fibre-broadband-explained</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://www.occta.co.uk/guides/broadband-for-students</loc>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
 
-  <!-- Location Broadband Pages -->
-  <url>
-    <loc>https://www.occta.co.uk/broadband-london</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://www.occta.co.uk/broadband-manchester</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://www.occta.co.uk/broadband-birmingham</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://www.occta.co.uk/broadband-leeds</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://www.occta.co.uk/broadband-glasgow</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://www.occta.co.uk/broadband-liverpool</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://www.occta.co.uk/broadband-sheffield</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://www.occta.co.uk/broadband-bristol</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://www.occta.co.uk/broadband-leicester</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://www.occta.co.uk/broadband-nottingham</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
+  <!-- Location Broadband Pages (50 cities) -->
+  <url><loc>https://www.occta.co.uk/broadband-london</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-manchester</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-birmingham</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-leeds</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-glasgow</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-liverpool</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-sheffield</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-bristol</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-leicester</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-nottingham</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-edinburgh</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-cardiff</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-newcastle</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-southampton</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-coventry</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-brighton</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-plymouth</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-stoke-on-trent</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-wolverhampton</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-derby</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-swansea</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-aberdeen</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-reading</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-sunderland</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-norwich</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-luton</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-preston</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-milton-keynes</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-northampton</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-dundee</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-york</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-portsmouth</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-exeter</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-cambridge</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-oxford</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-bath</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-bournemouth</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-middlesbrough</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-bolton</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-blackpool</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-ipswich</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-peterborough</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-huddersfield</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-wakefield</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-hull</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-warrington</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-doncaster</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-stockport</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-wigan</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-cheltenham</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
 </urlset>

@@ -9,6 +9,8 @@ http://www.occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 /support                 /support/index.html                  200
 /about                   /about/index.html                    200
 /faq                     /faq/index.html                      200
+
+# Guide pages
 /guides                  /guides/index.html                   200
 /guides/no-contract-broadband-uk /guides/no-contract-broadband-uk/index.html 200
 /guides/cheap-broadband-uk /guides/cheap-broadband-uk/index.html 200
@@ -16,6 +18,27 @@ http://www.occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 /guides/digital-voice-uk /guides/digital-voice-uk/index.html  200
 /guides/pstn-switch-off-uk /guides/pstn-switch-off-uk/index.html 200
 /guides/cheap-sim-only-deals /guides/cheap-sim-only-deals/index.html 200
+/guides/broadband-for-gaming /guides/broadband-for-gaming/index.html 200
+/guides/broadband-for-working-from-home /guides/broadband-for-working-from-home/index.html 200
+/guides/fibre-broadband-explained /guides/fibre-broadband-explained/index.html 200
+/guides/broadband-for-students /guides/broadband-for-students/index.html 200
+
+# Keyword landing pages
+/cheap-broadband-near-me /cheap-broadband-near-me/index.html 200
+/broadband-no-credit-check /broadband-no-credit-check/index.html 200
+/broadband-for-students  /broadband-for-students/index.html   200
+/best-broadband-deals-uk /best-broadband-deals-uk/index.html  200
+/broadband-for-gaming    /broadband-for-gaming/index.html      200
+/broadband-for-working-from-home /broadband-for-working-from-home/index.html 200
+
+# Comparison pages
+/compare/occta-vs-bt     /compare/occta-vs-bt/index.html      200
+/compare/occta-vs-sky    /compare/occta-vs-sky/index.html     200
+/compare/occta-vs-virgin-media /compare/occta-vs-virgin-media/index.html 200
+/compare/occta-vs-talktalk /compare/occta-vs-talktalk/index.html 200
+/compare/occta-vs-plusnet /compare/occta-vs-plusnet/index.html  200
+
+# Location broadband pages (50 cities)
 /broadband-london            /broadband-london/index.html              200
 /broadband-manchester        /broadband-manchester/index.html          200
 /broadband-birmingham        /broadband-birmingham/index.html          200
@@ -26,6 +49,46 @@ http://www.occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 /broadband-bristol           /broadband-bristol/index.html             200
 /broadband-leicester         /broadband-leicester/index.html           200
 /broadband-nottingham        /broadband-nottingham/index.html          200
+/broadband-edinburgh         /broadband-edinburgh/index.html           200
+/broadband-cardiff           /broadband-cardiff/index.html             200
+/broadband-newcastle         /broadband-newcastle/index.html           200
+/broadband-southampton       /broadband-southampton/index.html         200
+/broadband-coventry          /broadband-coventry/index.html            200
+/broadband-brighton          /broadband-brighton/index.html            200
+/broadband-plymouth          /broadband-plymouth/index.html            200
+/broadband-stoke-on-trent    /broadband-stoke-on-trent/index.html     200
+/broadband-wolverhampton     /broadband-wolverhampton/index.html       200
+/broadband-derby             /broadband-derby/index.html               200
+/broadband-swansea           /broadband-swansea/index.html             200
+/broadband-aberdeen          /broadband-aberdeen/index.html            200
+/broadband-reading           /broadband-reading/index.html             200
+/broadband-sunderland        /broadband-sunderland/index.html          200
+/broadband-norwich           /broadband-norwich/index.html             200
+/broadband-luton             /broadband-luton/index.html               200
+/broadband-preston           /broadband-preston/index.html             200
+/broadband-milton-keynes     /broadband-milton-keynes/index.html       200
+/broadband-northampton       /broadband-northampton/index.html         200
+/broadband-dundee            /broadband-dundee/index.html              200
+/broadband-york              /broadband-york/index.html                200
+/broadband-portsmouth        /broadband-portsmouth/index.html          200
+/broadband-exeter            /broadband-exeter/index.html              200
+/broadband-cambridge         /broadband-cambridge/index.html           200
+/broadband-oxford            /broadband-oxford/index.html              200
+/broadband-bath              /broadband-bath/index.html                200
+/broadband-bournemouth       /broadband-bournemouth/index.html         200
+/broadband-middlesbrough     /broadband-middlesbrough/index.html       200
+/broadband-bolton            /broadband-bolton/index.html              200
+/broadband-blackpool         /broadband-blackpool/index.html           200
+/broadband-ipswich           /broadband-ipswich/index.html             200
+/broadband-peterborough      /broadband-peterborough/index.html        200
+/broadband-huddersfield      /broadband-huddersfield/index.html        200
+/broadband-wakefield         /broadband-wakefield/index.html           200
+/broadband-hull              /broadband-hull/index.html                200
+/broadband-warrington        /broadband-warrington/index.html          200
+/broadband-doncaster         /broadband-doncaster/index.html           200
+/broadband-stockport         /broadband-stockport/index.html           200
+/broadband-wigan             /broadband-wigan/index.html               200
+/broadband-cheltenham        /broadband-cheltenham/index.html          200
 
 # Serve static files directly
 /sitemap.xml             /sitemap.xml                         200

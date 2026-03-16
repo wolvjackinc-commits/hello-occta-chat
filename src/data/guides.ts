@@ -336,6 +336,212 @@ export const guides: Guide[] = [
     ctaLink: '/sim-plans',
     relatedSlugs: ['cheap-broadband-uk', 'no-contract-broadband-uk'],
   },
+  {
+    slug: 'broadband-for-gaming',
+    title: 'Best Broadband for Gaming UK: What You Need',
+    metaTitle: 'Best Broadband for Gaming UK — Low Latency Guide',
+    description: 'Find the best broadband for gaming in the UK. Learn what speeds, latency, and connection types you need for lag-free online gaming.',
+    keywords: 'broadband for gaming, gaming broadband UK, best internet for gaming, low latency broadband, gaming internet, fast broadband gaming',
+    category: 'broadband',
+    categoryLabel: 'Broadband',
+    intro: 'Online gaming demands more from your broadband than casual browsing. Low latency, consistent speeds, and unlimited data are essential. Here is what you need to know to choose the right broadband for gaming.',
+    sections: [
+      {
+        heading: 'Speed vs Latency: What Matters More?',
+        paragraphs: [
+          'Many gamers focus on download speed, but latency (ping) is more important for online gaming. Latency is the time it takes for data to travel between your device and the game server. Lower ping means more responsive gameplay.',
+          'Fibre broadband typically offers the lowest latency. FTTP (full fibre) connections can deliver ping times under 10ms, while older ADSL connections often exceed 30ms.',
+        ],
+      },
+      {
+        heading: 'What Speed Do You Need?',
+        paragraphs: ['Here is a rough guide based on your gaming habits:'],
+        bullets: [
+          'Casual online gaming (Fortnite, Minecraft): 10-30Mbps is sufficient',
+          'Competitive gaming (CS2, Valorant, Rocket League): 50Mbps+ recommended',
+          'Streaming while gaming (Twitch, YouTube): 150Mbps+ recommended',
+          'Household with multiple gamers: 300-500Mbps+',
+          'Downloading large games (50-100GB): Faster speeds save hours',
+        ],
+      },
+      {
+        heading: 'Wired vs Wireless',
+        paragraphs: [
+          'For the best gaming experience, use an Ethernet cable directly from your router. Wi-Fi adds latency and can be unstable. If you must use Wi-Fi, connect to the 5GHz band and stay close to your router.',
+        ],
+      },
+      {
+        heading: 'OCCTA for Gaming',
+        paragraphs: [
+          'OCCTA offers speeds up to 900Mbps on the Openreach fibre network with unlimited data and no throttling. There are no contracts, so you can upgrade your speed tier anytime as your gaming needs change.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Is fibre broadband better for gaming?', answer: 'Yes. Fibre delivers lower latency and more consistent speeds than ADSL or mobile broadband.' },
+      { question: 'Does OCCTA throttle gaming traffic?', answer: 'No. We do not throttle, shape, or prioritise any traffic. All usage is treated equally.' },
+      { question: 'What is a good ping for gaming?', answer: 'Under 20ms is excellent. Under 50ms is good. Over 100ms will cause noticeable lag in fast-paced games.' },
+      { question: 'Can I game and stream at the same time?', answer: 'Yes, but you will need at least 150Mbps to do both comfortably without quality drops.' },
+    ],
+    ctaText: 'View Broadband Plans',
+    ctaLink: '/broadband',
+    relatedSlugs: ['cheap-broadband-uk', 'no-contract-broadband-uk'],
+  },
+  {
+    slug: 'broadband-for-working-from-home',
+    title: 'Best Broadband for Working from Home UK',
+    metaTitle: 'Best Broadband for Working from Home — WFH Guide',
+    description: 'Find the best broadband for working from home in the UK. Reliable fibre for video calls, cloud apps, and remote work without interruptions.',
+    keywords: 'broadband working from home, WFH broadband, remote work internet, home office broadband, reliable broadband, video call broadband',
+    category: 'broadband',
+    categoryLabel: 'Broadband',
+    intro: 'Working from home requires reliable, fast broadband. Dropped video calls, slow file uploads, and buffering are not just annoying — they hurt your productivity. Here is how to choose the right broadband for remote work.',
+    sections: [
+      {
+        heading: 'Why WFH Broadband Is Different',
+        paragraphs: [
+          'When working from home, your broadband becomes a business-critical tool. You need consistent upload AND download speeds, low latency for video calls, and enough bandwidth for cloud applications like Office 365, Google Workspace, and Slack.',
+          'Standard broadband that works fine for Netflix might struggle with a full day of Zoom meetings, file syncing, and cloud app usage — especially if others in the household are online too.',
+        ],
+      },
+      {
+        heading: 'Recommended Speeds for Remote Work',
+        paragraphs: ['Match your speed to your work pattern:'],
+        bullets: [
+          'Email and web browsing: 10-30Mbps',
+          'Regular video calls (Zoom, Teams): 50-80Mbps',
+          'HD video calls + screen sharing: 80-150Mbps',
+          'Multiple remote workers in one household: 200-500Mbps',
+          'Large file uploads (design, video, engineering): 300Mbps+',
+        ],
+      },
+      {
+        heading: 'Upload Speed Matters',
+        paragraphs: [
+          'Most providers advertise download speeds but say little about uploads. For video calls, screen sharing, and cloud file syncing, upload speed is crucial. FTTP (full fibre) connections offer symmetrical or near-symmetrical speeds, making them ideal for remote work.',
+        ],
+      },
+      {
+        heading: 'OCCTA for Home Workers',
+        paragraphs: [
+          'OCCTA fibre broadband offers speeds up to 900Mbps with unlimited data and no throttling. With no contracts, you can upgrade your speed tier as your work demands change. UK-based support is available if you need help.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'What speed do I need for working from home?', answer: 'For regular video calls and cloud apps, 80Mbps is a good minimum. For households with multiple workers, 200Mbps+ is recommended.' },
+      { question: 'Is upload speed important for WFH?', answer: 'Yes. Video calls, screen sharing, and cloud file uploads all depend on upload speed. FTTP connections offer the best upload speeds.' },
+      { question: 'Can I claim broadband as a business expense?', answer: 'You may be able to claim a portion. Check HMRC guidance or speak to your accountant.' },
+      { question: 'Do I need a business broadband plan?', answer: 'For most home workers, residential broadband is fine. Business plans are only needed if you require static IPs or SLA guarantees.' },
+    ],
+    ctaText: 'View Broadband Plans',
+    ctaLink: '/broadband',
+    relatedSlugs: ['cheap-broadband-uk', 'how-to-switch-broadband'],
+  },
+  {
+    slug: 'fibre-broadband-explained',
+    title: 'Fibre Broadband Explained: FTTC vs FTTP',
+    metaTitle: 'Fibre Broadband Explained — FTTC vs FTTP UK',
+    description: 'Understand the difference between FTTC and FTTP fibre broadband in the UK. Learn which type you have and what speeds you can expect.',
+    keywords: 'fibre broadband explained, FTTC vs FTTP, full fibre broadband, fibre to the cabinet, fibre to the premises, fibre broadband UK',
+    category: 'broadband',
+    categoryLabel: 'Broadband',
+    intro: 'Not all fibre broadband is the same. Understanding the difference between FTTC and FTTP can help you choose the right plan and know what speeds to expect at your address.',
+    sections: [
+      {
+        heading: 'What Is FTTC (Fibre to the Cabinet)?',
+        paragraphs: [
+          'FTTC uses fibre optic cables from the exchange to the green street cabinet, then copper wires from the cabinet to your home. This is the most common type of fibre broadband in the UK.',
+          'Because the last stretch uses copper, speeds are limited. Typical FTTC speeds range from 36Mbps to 80Mbps depending on your distance from the cabinet.',
+        ],
+      },
+      {
+        heading: 'What Is FTTP (Fibre to the Premises)?',
+        paragraphs: [
+          'FTTP — also called full fibre — uses fibre optic cables all the way from the exchange to your home. No copper at all. This delivers the fastest possible speeds: up to 900Mbps or even 1Gbps.',
+          'FTTP is being rolled out across the UK by Openreach and alternative networks. Coverage is expanding rapidly, with over 14 million UK homes now able to access full fibre.',
+        ],
+      },
+      {
+        heading: 'Which Is Better?',
+        paragraphs: ['Here is how FTTC and FTTP compare:'],
+        bullets: [
+          'Speed: FTTP is significantly faster (up to 900Mbps vs 80Mbps for FTTC)',
+          'Reliability: FTTP is more consistent as there is no copper degradation',
+          'Upload speed: FTTP offers much faster uploads, important for WFH and cloud services',
+          'Availability: FTTC is available to ~95% of UK premises; FTTP covers ~60% and growing',
+          'Price: Both are affordable. OCCTA offers FTTC from £22.99/mo and FTTP from £27.99/mo',
+        ],
+      },
+      {
+        heading: 'How to Check What You Can Get',
+        paragraphs: [
+          'Enter your postcode on our broadband page to see whether FTTC, FTTP, or both are available at your address. We will show you the exact speeds and plans you can order.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'How do I know if I have FTTC or FTTP?', answer: 'Check your postcode on our broadband page. If speeds above 80Mbps are available, you likely have FTTP access.' },
+      { question: 'Is FTTP worth the extra cost?', answer: 'If you need speeds above 80Mbps, work from home, or have a busy household, FTTP is worth it for the speed and reliability.' },
+      { question: 'Can I upgrade from FTTC to FTTP?', answer: 'Yes, if FTTP is available at your address. An engineer visit may be needed to install the fibre line to your property.' },
+      { question: 'Is full fibre available in my area?', answer: 'Enter your postcode on our broadband page to check. FTTP coverage is expanding across the UK.' },
+    ],
+    ctaText: 'Check Your Postcode',
+    ctaLink: '/broadband',
+    relatedSlugs: ['cheap-broadband-uk', 'no-contract-broadband-uk'],
+  },
+  {
+    slug: 'broadband-for-students',
+    title: 'Best Broadband for Students UK: No Contract Guide',
+    metaTitle: 'Student Broadband UK — No Contract Internet',
+    description: 'Best broadband for students in the UK. No contract, no credit check, cancel when you move. Perfect internet for student houses and flats.',
+    keywords: 'student broadband, broadband for students, student internet UK, no contract student broadband, university broadband, cheap student broadband',
+    category: 'broadband',
+    categoryLabel: 'Broadband',
+    intro: 'Student houses need fast, cheap broadband that can be cancelled when the tenancy ends. Here is how to find the right broadband for your student accommodation without getting locked into a long contract.',
+    sections: [
+      {
+        heading: 'Why Students Need No-Contract Broadband',
+        paragraphs: [
+          'Most student tenancies last 9-12 months, but big providers want 18-24 month contracts. That means paying for broadband in a house you have already left, or paying expensive exit fees.',
+          'No-contract broadband solves this. Sign up when you move in, cancel when you move out. No penalties.',
+        ],
+      },
+      {
+        heading: 'What to Look for in Student Broadband',
+        paragraphs: ['Here are the key features for student broadband:'],
+        bullets: [
+          'No contract — rolling monthly is essential for student tenancies',
+          'No credit check — many students have no credit history',
+          'Enough speed for a shared house (100Mbps+ for 3-4 people)',
+          'Unlimited data for streaming, gaming, and studying',
+          'Easy setup with a free router',
+          'Affordable — keep the monthly bill low',
+        ],
+      },
+      {
+        heading: 'How Much Speed Do Students Need?',
+        paragraphs: [
+          'For a solo student, 36Mbps is fine. For a shared house with 3-4 people streaming, gaming, and on video calls, aim for 100-300Mbps. Our recommendation: get the fastest affordable plan so no one has to argue about bandwidth.',
+        ],
+      },
+      {
+        heading: 'OCCTA for Students',
+        paragraphs: [
+          'OCCTA broadband starts from £22.99/mo with no contract, no credit check, and free installation. Perfect for student accommodation of any length. When you move out, give us 30 days notice and that is it — no exit fees.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Can students get broadband without a credit check?', answer: 'Yes. OCCTA does not run credit checks on any plan, making it ideal for students.' },
+      { question: 'Can I cancel when I move out?', answer: 'Yes. OCCTA is rolling monthly. Give 30 days notice and cancel with no fees.' },
+      { question: 'How many people can share one broadband connection?', answer: 'With 100Mbps, 3-4 people can comfortably stream, game, and browse. For larger houses, choose 300Mbps+.' },
+      { question: 'How long does installation take?', answer: 'Usually 7 working days from placing your order.' },
+    ],
+    ctaText: 'View Student-Friendly Plans',
+    ctaLink: '/broadband',
+    relatedSlugs: ['cheap-broadband-uk', 'no-contract-broadband-uk'],
+  },
 ];
 
 export const getGuideBySlug = (slug: string): Guide | undefined =>

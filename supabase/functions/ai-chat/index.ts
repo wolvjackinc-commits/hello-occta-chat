@@ -985,7 +985,7 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { messages, userId, sessionId } = await req.json();
+    const { messages, userId: _clientUserId, sessionId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -1000,16 +1000,24 @@ serve(async (req) => {
     const supabaseServiceClient = createClient(supabaseUrl, supabaseServiceKey);
     const supabaseAnonClient = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Check if user is an admin
+    // SECURITY: Extract userId from verified JWT, never trust client-supplied userId
+    let userId: string | null = null;
     let isAdmin = false;
-    if (userId) {
-      const { data: roleData } = await supabaseServiceClient
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .single();
-      isAdmin = !!roleData;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: userError } = await supabaseServiceClient.auth.getUser(token);
+      if (!userError && userData?.user) {
+        userId = userData.user.id;
+        // Check admin role using verified userId
+        const { data: roleData } = await supabaseServiceClient
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("role", "admin")
+          .single();
+        isAdmin = !!roleData;
+      }
     }
 
     // Get the last user message for analytics

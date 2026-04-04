@@ -1427,14 +1427,20 @@ const PreCheckout = () => {
                     </div>
                   )}
                 </div>
-                <div className="border-t-2 border-foreground/20 pt-3 flex items-center justify-between">
-                  <span className="font-display uppercase tracking-wider text-sm">Ongoing Monthly</span>
-                  <span className="font-display text-lg">£{monthlyTotal.toFixed(2)}</span>
+                <div className="border-t-2 border-foreground/20 pt-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-display uppercase tracking-wider text-sm">Ongoing Monthly</span>
+                    <span className="font-display text-lg">£{monthlyTotal.toFixed(2)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">incl. VAT (£{monthlyVat.toFixed(2)})</p>
                 </div>
                 {totalDueToday > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-display uppercase tracking-wider text-sm">Due Today</span>
-                    <span className="font-display text-lg">£{totalDueToday.toFixed(2)}</span>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-display uppercase tracking-wider text-sm">Due Today</span>
+                      <span className="font-display text-lg">£{totalDueToday.toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">incl. VAT (£{oneOffVat.toFixed(2)})</p>
                   </div>
                 )}
               </div>

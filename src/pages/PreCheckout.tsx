@@ -1364,22 +1364,22 @@ const PreCheckout = () => {
         </div>
       </div>
       {/* Mobile Order Summary */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t-4 border-foreground bg-background">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-foreground/20 bg-background shadow-lg">
         <button
           type="button"
           onClick={() => setIsMobileSummaryOpen((prev) => !prev)}
-          className="w-full flex items-center justify-between px-4 py-4"
+          className="w-full flex items-center justify-between px-4 py-3"
         >
           <div className="text-left">
-            <p className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
               {selectedPlans.map(p => p.name).join(' + ')}
             </p>
-            <p className="font-display text-lg">£{monthlyTotal.toFixed(2)}/mo</p>
+            <p className="font-display text-lg leading-tight">£{monthlyTotal.toFixed(2)}<span className="text-muted-foreground text-xs">/mo</span></p>
             {totalDueToday > 0 && (
-              <p className="text-xs text-muted-foreground">+ £{totalDueToday.toFixed(2)} today</p>
+              <p className="text-[10px] text-muted-foreground">+ £{totalDueToday.toFixed(2)} today</p>
             )}
           </div>
-          <span className="font-display uppercase text-sm text-primary px-3 py-1 border-2 border-primary">
+          <span className="font-display uppercase text-xs text-primary px-3 py-1.5 border border-primary rounded-sm">
             {isMobileSummaryOpen ? "Hide" : "View"}
           </span>
         </button>
@@ -1389,7 +1389,7 @@ const PreCheckout = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden border-t-4 border-foreground bg-card"
+              className="overflow-hidden border-t border-foreground/10 bg-card"
             >
               <div className="px-4 pb-4 pt-2 space-y-3">
                 <div className="space-y-2">

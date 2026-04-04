@@ -414,7 +414,7 @@ const Checkout = () => {
                 key={step}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
+                className="border border-foreground/10 bg-card p-6 sm:p-8"
               >
                 {step === 1 && (
                   <>
@@ -432,7 +432,7 @@ const Checkout = () => {
                           value={addressData.postcode}
                           onChange={(e) => handleAddressChange("postcode", e.target.value.toUpperCase())}
                           placeholder="HD1 2QD"
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                         />
                         {errors.postcode && <p className="text-destructive text-sm mt-1">{errors.postcode}</p>}
                       </div>
@@ -444,7 +444,7 @@ const Checkout = () => {
                           value={addressData.addressLine1}
                           onChange={(e) => handleAddressChange("addressLine1", e.target.value)}
                           placeholder="123 High Street"
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                         />
                         {errors.addressLine1 && <p className="text-destructive text-sm mt-1">{errors.addressLine1}</p>}
                       </div>
@@ -456,7 +456,7 @@ const Checkout = () => {
                           value={addressData.addressLine2}
                           onChange={(e) => handleAddressChange("addressLine2", e.target.value)}
                           placeholder="Flat 4"
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                         />
                       </div>
                       
@@ -467,7 +467,7 @@ const Checkout = () => {
                           value={addressData.city}
                           onChange={(e) => handleAddressChange("city", e.target.value)}
                           placeholder="City/Town"
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                         />
                         {errors.city && <p className="text-destructive text-sm mt-1">{errors.city}</p>}
                       </div>
@@ -479,7 +479,7 @@ const Checkout = () => {
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
                           placeholder="E.g., best time to call, access instructions..."
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                           rows={3}
                         />
                       </div>
@@ -496,7 +496,7 @@ const Checkout = () => {
                           value={installScenarioId ?? ''}
                           onValueChange={(value) => setInstallScenarioId(value)}
                         >
-                          <SelectTrigger className="border-2 border-foreground/30">
+                          <SelectTrigger className="border border-foreground/20">
                             <SelectValue placeholder="Select installation type" />
                           </SelectTrigger>
                           <SelectContent>
@@ -633,18 +633,18 @@ const Checkout = () => {
                             <span>+£{careUplift.toFixed(2)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between text-xs text-muted-foreground py-1 border-t border-foreground/5">
+                        <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1 border-t border-foreground/5">
                           <span>Subtotal (ex VAT)</span>
                           <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-xs text-muted-foreground py-1">
+                        <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1">
                           <span>VAT (20%)</span>
                           <span>£{monthlyVat.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-display py-2 border-t border-foreground/10">
-                          <span className="text-sm">Ongoing monthly</span>
+                          <span className="text-base font-semibold">Ongoing monthly</span>
                           <div className="text-right">
-                            <span className="text-lg">£{ongoingMonthly.toFixed(2)}</span>
+                            <span className="text-2xl">£{ongoingMonthly.toFixed(2)}</span>
                             <span className="text-muted-foreground text-xs">/mo</span>
                           </div>
                         </div>
@@ -664,11 +664,11 @@ const Checkout = () => {
                         </div>
                         {oneOffSubtotalExVat > 0 && (
                           <>
-                            <div className="flex justify-between text-xs text-muted-foreground py-1 border-t border-foreground/5">
+                            <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1 border-t border-foreground/5">
                               <span>Subtotal (ex VAT)</span>
                               <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between text-xs text-muted-foreground py-1">
+                            <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1">
                               <span>VAT (20%)</span>
                               <span>£{oneOffVat.toFixed(2)}</span>
                             </div>
@@ -677,12 +677,12 @@ const Checkout = () => {
                         <div className="bg-foreground text-background p-3 -mx-6 sm:-mx-8 mt-2 flex justify-between items-baseline">
                           <span className="font-display text-sm uppercase tracking-wider">Due today</span>
                           <div>
-                            <span className="font-display text-xl">£{totalDueToday.toFixed(2)}</span>
+                            <span className="font-display text-2xl">£{totalDueToday.toFixed(2)}</span>
                             <span className="text-background/60 text-xs ml-1">incl. VAT</span>
                           </div>
                         </div>
                         <p className="text-muted-foreground text-xs mt-3 text-center">
-                          30-day rolling · no contracts
+                          Prices include VAT where applicable
                         </p>
                         {resolvedProduct?.technology === 'SOGEA' && (
                           <p className="text-muted-foreground text-[10px] text-center italic">
@@ -740,26 +740,14 @@ const Checkout = () => {
                           <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
                           <>
-                            Place Order
-                            <Check className="w-5 h-5" />
+                            <Shield className="w-4 h-4" />
+                            Place order securely
                           </>
                         )}
                       </Button>
                     </div>
                     
-                    <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs mt-4">
-                      <div className="flex items-center gap-1">
-                        <Shield className="w-3.5 h-3.5" />
-                        <span>256-bit encrypted</span>
-                      </div>
-                      <span className="text-foreground/20">·</span>
-                      <span>
-                        {new Date().toLocaleString('en-GB', { 
-                          dateStyle: 'medium', 
-                          timeStyle: 'short' 
-                        })}
-                      </span>
-                    </div>
+                    <p className="text-center text-muted-foreground text-xs mt-4">You won't be charged today unless applicable</p>
                   </>
                 )}
               </motion.div>
@@ -791,7 +779,7 @@ const Checkout = () => {
                 
                 <div className="pt-4 border-t border-foreground/10 space-y-1.5">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Monthly</span>
+                    <span className="text-base font-semibold font-display">Monthly</span>
                     <div>
                       <span className="font-display text-2xl">£{ongoingMonthly.toFixed(2)}</span>
                       <span className="text-muted-foreground text-xs">/mo</span>

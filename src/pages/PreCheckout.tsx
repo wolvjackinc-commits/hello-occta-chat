@@ -663,7 +663,55 @@ const PreCheckout = () => {
           </Link>
 
           <h1 className="text-display-md mb-2">COMPLETE YOUR ORDER</h1>
-          <p className="text-muted-foreground mb-8">Fill in your details below and we'll get you connected.</p>
+          <p className="text-muted-foreground mb-4">Fill in your details below and we'll get you connected.</p>
+
+          {/* Progress Indicator — visual only */}
+          <div className="flex items-center gap-2 mb-8">
+            {[
+              { label: "Plan", filled: true },
+              { label: "Details", filled: false },
+              { label: "Setup", filled: false },
+              { label: "Review", filled: false },
+            ].map((s, i, arr) => (
+              <div key={s.label} className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    s.filled ? "bg-primary" : "bg-foreground/15"
+                  )} />
+                  <span className={cn(
+                    "text-xs font-display uppercase tracking-wider",
+                    s.filled ? "text-foreground" : "text-muted-foreground"
+                  )}>{s.label}</span>
+                </div>
+                {i < arr.length - 1 && <div className="w-6 h-px bg-foreground/10" />}
+              </div>
+            ))}
+          </div>
+
+          {/* Compact Plan Confirmation Strip */}
+          <div className="mb-8 border border-foreground/10 bg-secondary/20 p-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap flex-grow">
+                {selectedPlans.map((plan) => {
+                  const PlanIcon = serviceIcons[plan.serviceType];
+                  return (
+                    <div key={plan.id} className="flex items-center gap-2">
+                      <PlanIcon className="w-4 h-4 text-primary" />
+                      <span className="font-display text-sm">{plan.name}</span>
+                      {plan.speed && (
+                        <span className="text-[10px] font-display uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5">{plan.speed}</span>
+                      )}
+                      <span className="text-sm text-muted-foreground">£{plan.price}/mo</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <Link to="/broadband" className="text-xs text-primary hover:underline font-medium whitespace-nowrap">
+                Change plan
+              </Link>
+            </div>
+          </div>
 
           {/* Restore Saved Form Prompt */}
           <AnimatePresence>
@@ -709,7 +757,7 @@ const PreCheckout = () => {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
+                className="border border-foreground/10 bg-card p-6 sm:p-8"
               >
                 <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
                   <User className="w-5 h-5 text-muted-foreground" />
@@ -724,7 +772,7 @@ const PreCheckout = () => {
                       value={customerData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
                       placeholder="John"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.firstName && <p className="text-destructive text-sm mt-1">{errors.firstName}</p>}
                   </div>
@@ -735,7 +783,7 @@ const PreCheckout = () => {
                       value={customerData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}
                       placeholder="Smith"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.lastName && <p className="text-destructive text-sm mt-1">{errors.lastName}</p>}
                   </div>
@@ -747,7 +795,7 @@ const PreCheckout = () => {
                       value={customerData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       placeholder="john@example.com"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
                   </div>
@@ -759,7 +807,7 @@ const PreCheckout = () => {
                       value={customerData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="07700 900123"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
                   </div>
@@ -772,7 +820,7 @@ const PreCheckout = () => {
                       value={customerData.addressLine1}
                       onChange={(e) => handleInputChange("addressLine1", e.target.value)}
                       placeholder="123 High Street"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.addressLine1 && <p className="text-destructive text-sm mt-1">{errors.addressLine1}</p>}
                   </div>
@@ -783,7 +831,7 @@ const PreCheckout = () => {
                       value={customerData.addressLine2}
                       onChange={(e) => handleInputChange("addressLine2", e.target.value)}
                       placeholder="Flat 4"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                   </div>
                   
@@ -794,7 +842,7 @@ const PreCheckout = () => {
                         value={customerData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         placeholder="City/Town"
-                        className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                        className="mt-1 border border-foreground/20 focus:border-foreground"
                       />
                       {errors.city && <p className="text-destructive text-sm mt-1">{errors.city}</p>}
                     </div>
@@ -805,7 +853,7 @@ const PreCheckout = () => {
                         value={customerData.postcode}
                         onChange={(e) => handleInputChange("postcode", e.target.value.toUpperCase())}
                         placeholder="HD1 2QD"
-                        className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                        className="mt-1 border border-foreground/20 focus:border-foreground"
                       />
                       {errors.postcode && <p className="text-destructive text-sm mt-1">{errors.postcode}</p>}
                     </div>
@@ -818,7 +866,7 @@ const PreCheckout = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
+                className="border border-foreground/10 bg-card p-6 sm:p-8"
               >
                 <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
                   <ArrowRight className="w-5 h-5 text-muted-foreground" />
@@ -833,7 +881,7 @@ const PreCheckout = () => {
                       value={customerData.currentProvider}
                       onValueChange={(value) => handleInputChange("currentProvider", value)}
                     >
-                      <SelectTrigger className="mt-1 border-2 border-foreground/30">
+                      <SelectTrigger className="mt-1 border border-foreground/20">
                         <SelectValue placeholder="Select your current provider" />
                       </SelectTrigger>
                       <SelectContent>
@@ -853,7 +901,7 @@ const PreCheckout = () => {
                       value={customerData.inContract}
                       onValueChange={(value) => handleInputChange("inContract", value)}
                     >
-                      <SelectTrigger className="mt-1 border-2 border-foreground/30">
+                      <SelectTrigger className="mt-1 border border-foreground/20">
                         <SelectValue placeholder="Select an option" />
                       </SelectTrigger>
                       <SelectContent>
@@ -873,7 +921,7 @@ const PreCheckout = () => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full mt-1 justify-start text-left border-2 border-foreground/30 font-normal",
+                            "w-full mt-1 justify-start text-left border border-foreground/20 font-normal",
                             !customerData.preferredSwitchDate && "text-muted-foreground"
                           )}
                         >
@@ -885,7 +933,7 @@ const PreCheckout = () => {
                           )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 border-2 border-foreground/30" align="start">
+                      <PopoverContent className="w-auto p-0 border border-foreground/20" align="start">
                         <Calendar
                           mode="single"
                           selected={customerData.preferredSwitchDate}
@@ -906,7 +954,7 @@ const PreCheckout = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.12 }}
-                  className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
+                  className="border border-foreground/10 bg-card p-6 sm:p-8"
                 >
                   <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
                     <Router className="w-5 h-5 text-muted-foreground" />
@@ -917,7 +965,7 @@ const PreCheckout = () => {
                     value={installScenarioId ?? ''}
                     onValueChange={(value) => setInstallScenarioId(value)}
                   >
-                    <SelectTrigger className="border-2 border-foreground/30">
+                    <SelectTrigger className="border border-foreground/20">
                       <SelectValue placeholder="Select installation type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -939,7 +987,7 @@ const PreCheckout = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.13 }}
-                  className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
+                  className="border border-foreground/10 bg-card p-6 sm:p-8"
                 >
                   <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-muted-foreground" />
@@ -974,6 +1022,119 @@ const PreCheckout = () => {
                       </button>
                     ))}
                   </div>
+                </motion.div>
+              )}
+
+              {/* Add-ons */}
+              {Object.keys(addonsByService).length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.14 }}
+                  className="border border-foreground/10 bg-card p-6 sm:p-8"
+                >
+                  <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-muted-foreground" />
+                    Add-ons
+                  </h2>
+                  <p className="text-muted-foreground text-sm mb-5">Enhance your package with extras.</p>
+
+                  {Object.entries(addonsByService).map(([serviceType, addons]) => {
+                    const recommended = addons.slice(0, 2);
+                    const optional = addons.slice(2);
+                    return (
+                      <div key={serviceType} className="space-y-4">
+                        {recommended.length > 0 && (
+                          <div>
+                            <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">Recommended</p>
+                            <div className="space-y-2.5">
+                              {recommended.map((addon) => {
+                                const isSelected = selectedAddons.includes(addon.id);
+                                const IconComponent = iconMap[addon.icon] || Shield;
+                                return (
+                                  <motion.button
+                                    key={addon.id}
+                                    onClick={() => toggleAddon(addon.id)}
+                                    className={cn(
+                                      "w-full text-left p-3 border transition-all relative rounded-sm",
+                                      isSelected 
+                                        ? "border-primary/40 bg-primary/5" 
+                                        : "border-foreground/10 hover:border-foreground/20"
+                                    )}
+                                    whileTap={{ scale: 0.98 }}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div className={cn(
+                                        "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
+                                        isSelected ? "bg-primary border-primary" : "border-foreground/20"
+                                      )}>
+                                        {isSelected ? (
+                                          <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                                        ) : (
+                                          <IconComponent className="w-3.5 h-3.5 text-muted-foreground" />
+                                        )}
+                                      </div>
+                                      <div className="flex-grow min-w-0">
+                                        <div className="font-medium text-sm">{addon.name}</div>
+                                        <div className="text-muted-foreground text-xs mt-0.5">{addon.description}</div>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                        {addon.price === 0 ? "FREE" : addon.oneTime ? `£${addon.price.toFixed(2)}` : `+£${addon.price.toFixed(2)}/mo`}
+                                      </div>
+                                    </div>
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {optional.length > 0 && (
+                          <div>
+                            <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2 mt-4">Optional extras</p>
+                            <div className="space-y-2.5">
+                              {optional.map((addon) => {
+                                const isSelected = selectedAddons.includes(addon.id);
+                                const IconComponent = iconMap[addon.icon] || Shield;
+                                return (
+                                  <motion.button
+                                    key={addon.id}
+                                    onClick={() => toggleAddon(addon.id)}
+                                    className={cn(
+                                      "w-full text-left p-3 border transition-all rounded-sm",
+                                      isSelected 
+                                        ? "border-primary/40 bg-primary/5" 
+                                        : "border-foreground/10 hover:border-foreground/20"
+                                    )}
+                                    whileTap={{ scale: 0.98 }}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div className={cn(
+                                        "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
+                                        isSelected ? "bg-primary border-primary" : "border-foreground/20"
+                                      )}>
+                                        {isSelected ? (
+                                          <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                                        ) : (
+                                          <IconComponent className="w-3.5 h-3.5 text-muted-foreground" />
+                                        )}
+                                      </div>
+                                      <div className="flex-grow min-w-0">
+                                        <div className="font-medium text-sm">{addon.name}</div>
+                                        <div className="text-muted-foreground text-xs mt-0.5">{addon.description}</div>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                        {addon.price === 0 ? "FREE" : addon.oneTime ? `£${addon.price.toFixed(2)}` : `+£${addon.price.toFixed(2)}/mo`}
+                                      </div>
+                                    </div>
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </motion.div>
               )}
 
@@ -1094,25 +1255,13 @@ const PreCheckout = () => {
                 <p className="text-center text-muted-foreground text-xs">You won't be charged today unless applicable</p>
               </div>
 
-              {/* Security Badge */}
-              <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs">
-                <div className="flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>256-bit encrypted</span>
-                </div>
-                <span className="text-foreground/20">·</span>
-                <div className="flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Ofcom regulated</span>
-                </div>
-              </div>
 
               {/* What happens next */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="border-2 border-foreground/10 bg-card p-6 sm:p-8"
+                className="border border-foreground/10 bg-card p-6 sm:p-8"
               >
                 <h2 className="font-display text-lg uppercase tracking-wider mb-6 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-muted-foreground" />
@@ -1141,87 +1290,36 @@ const PreCheckout = () => {
               </motion.div>
             </div>
 
-            {/* Right Sidebar - Order Summary & Add-ons */}
+            {/* Right Sidebar - Order Summary */}
             <div className="space-y-6">
-              {/* Selected Plans */}
               <div className="border-2 border-foreground/20 bg-card p-5 sticky top-4">
                 <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-4">Order Summary</h3>
-                
-                <div className="space-y-4 mb-6">
-                  {selectedPlans.map((plan) => {
-                    const Icon = serviceIcons[plan.serviceType];
-                    return (
-                      <div key={plan.id} className="flex items-center gap-3 p-3 border border-foreground/10 bg-secondary/30 rounded-sm">
-                        <div className="w-9 h-9 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-sm">
-                          <Icon className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-grow">
-                          <div className="font-display text-sm">{plan.name}</div>
-                          <div className="text-muted-foreground text-xs capitalize">{plan.serviceType}</div>
-                        </div>
-                        <div className="font-display text-sm">£{plan.price}</div>
-                      </div>
-                    );
-                  })}
-                </div>
 
-                {/* Add-ons Section */}
-                {Object.entries(addonsByService).map(([serviceType, addons]) => (
-                  <div key={serviceType} className="mb-4">
-                    <h4 className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <Plus className="w-3.5 h-3.5" />
-                      {serviceType} add-ons
-                    </h4>
-                    <div className="space-y-2">
-                      {addons.map((addon) => {
-                        const isSelected = selectedAddons.includes(addon.id);
-                        const IconComponent = iconMap[addon.icon] || Shield;
+                {/* Selected Add-ons (compact read-only summary) */}
+                {selectedAddons.length > 0 ? (
+                  <div className="mb-4 pb-4 border-b border-foreground/10">
+                    <p className="font-display text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Selected add-ons</p>
+                    <div className="space-y-1">
+                      {selectedAddons.map(id => {
+                        const a = availableAddons.find(x => x.id === id);
+                        if (!a) return null;
                         return (
-                          <motion.button
-                            key={addon.id}
-                            onClick={() => toggleAddon(addon.id)}
-                            className={cn(
-                              "w-full text-left p-2.5 border transition-all relative rounded-sm",
-                              isSelected 
-                                ? "border-primary/40 bg-primary/8" 
-                                : "border-foreground/10 hover:border-foreground/20"
-                            )}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            {/* Show "Popular" tag on first addon */}
-                            {addons.indexOf(addon) === 0 && (
-                              <span className="absolute -top-2.5 right-3 bg-primary text-primary-foreground text-[10px] font-display uppercase tracking-wider px-2 py-0.5">
-                                Popular
-                              </span>
-                            )}
-                            <div className="flex items-start gap-2.5">
-                              <div className={cn(
-                                "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
-                                isSelected ? "bg-primary border-primary" : "border-foreground/20"
-                              )}>
-                                {isSelected ? (
-                                  <Check className="w-3.5 h-3.5 text-primary-foreground" />
-                                ) : (
-                                  <IconComponent className="w-3.5 h-3.5 text-muted-foreground" />
-                                )}
-                              </div>
-                              <div className="flex-grow min-w-0">
-                                <div className="font-medium text-sm">{addon.name}</div>
-                                <div className="text-muted-foreground text-xs">{addon.description}</div>
-                              </div>
-                              <div className="text-xs text-muted-foreground whitespace-nowrap">
-                                {addon.price === 0 ? "FREE" : `+£${addon.price.toFixed(2)}`}
-                              </div>
-                            </div>
-                          </motion.button>
+                          <div key={id} className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">{a.name}</span>
+                            <span>{a.oneTime ? `£${a.price.toFixed(2)}` : `+£${a.price.toFixed(2)}/mo`}</span>
+                          </div>
                         );
                       })}
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="mb-4 pb-4 border-b border-foreground/10">
+                    <p className="text-[11px] text-muted-foreground">No add-ons selected</p>
+                  </div>
+                )}
 
                 {/* Itemised Breakdown */}
-                <div className="border-t border-foreground/10 pt-4 space-y-1.5">
+                <div className="space-y-1.5">
                   <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">Monthly charges</p>
                   {selectedPlans.map(plan => (
                     <div key={plan.id} className="flex justify-between text-sm">
@@ -1253,18 +1351,18 @@ const PreCheckout = () => {
                       <span>-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-xs text-muted-foreground pt-1.5 border-t border-foreground/5">
+                  <div className="flex justify-between text-[11px] text-muted-foreground/70 pt-1.5 border-t border-foreground/5">
                     <span>Subtotal (ex VAT)</span>
                     <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[11px] text-muted-foreground/70">
                     <span>VAT (20%)</span>
                     <span>£{monthlyVat.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-baseline font-display pt-3 border-t border-foreground/10">
-                    <span className="text-sm">Ongoing monthly</span>
+                    <span className="text-base font-semibold">Ongoing monthly</span>
                     <div className="text-right">
-                      <span className="text-xl">£{monthlyTotal.toFixed(2)}</span>
+                      <span className="text-2xl">£{monthlyTotal.toFixed(2)}</span>
                       <span className="text-muted-foreground text-xs">/mo</span>
                     </div>
                   </div>
@@ -1297,11 +1395,11 @@ const PreCheckout = () => {
                   })}
                   {oneOffSubtotalExVat > 0 && (
                     <>
-                      <div className="flex justify-between text-xs text-muted-foreground pt-1.5 border-t border-foreground/5">
+                      <div className="flex justify-between text-[11px] text-muted-foreground/70 pt-1.5 border-t border-foreground/5">
                         <span>Subtotal (ex VAT)</span>
                         <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
+                      <div className="flex justify-between text-[11px] text-muted-foreground/70">
                         <span>VAT (20%)</span>
                         <span>£{oneOffVat.toFixed(2)}</span>
                       </div>
@@ -1311,16 +1409,13 @@ const PreCheckout = () => {
                   <div className="bg-foreground text-background p-3 -mx-5 mt-3 flex justify-between items-baseline">
                     <span className="font-display text-sm uppercase tracking-wider">Due today</span>
                     <div>
-                      <span className="font-display text-xl">£{totalDueToday.toFixed(2)}</span>
+                      <span className="font-display text-2xl">£{totalDueToday.toFixed(2)}</span>
                       <span className="text-background/60 text-xs ml-1">incl. VAT</span>
                     </div>
                   </div>
 
                   <p className="text-muted-foreground text-[10px] mt-3 text-center">
                     Prices include VAT where applicable
-                  </p>
-                  <p className="text-muted-foreground text-[10px] text-center">
-                    30-day rolling · no contracts
                   </p>
                   {resolvedProduct?.technology === 'SOGEA' && (
                     <p className="text-muted-foreground text-[10px] mt-1 text-center italic">
@@ -1360,7 +1455,7 @@ const PreCheckout = () => {
         </div>
       </div>
       {/* Mobile Order Summary */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-foreground/20 bg-background shadow-lg">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-foreground/15 bg-background shadow-lg">
         <button
           type="button"
           onClick={() => setIsMobileSummaryOpen((prev) => !prev)}

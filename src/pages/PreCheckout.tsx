@@ -1172,7 +1172,7 @@ const PreCheckout = () => {
                       <Plus className="w-3.5 h-3.5" />
                       {serviceType} add-ons
                     </h4>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       {addons.map((addon) => {
                         const isSelected = selectedAddons.includes(addon.id);
                         const IconComponent = iconMap[addon.icon] || Shield;
@@ -1183,8 +1183,8 @@ const PreCheckout = () => {
                             className={cn(
                               "w-full text-left p-2.5 border transition-all relative rounded-sm",
                               isSelected 
-                                ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
-                                : "border-foreground/15 hover:border-foreground/30"
+                                ? "border-primary/40 bg-primary/8" 
+                                : "border-foreground/10 hover:border-foreground/20"
                             )}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -1197,7 +1197,7 @@ const PreCheckout = () => {
                             <div className="flex items-start gap-2.5">
                               <div className={cn(
                                 "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
-                                isSelected ? "bg-primary border-primary" : "border-foreground/30"
+                                isSelected ? "bg-primary border-primary" : "border-foreground/20"
                               )}>
                                 {isSelected ? (
                                   <Check className="w-3.5 h-3.5 text-primary-foreground" />
@@ -1206,10 +1206,10 @@ const PreCheckout = () => {
                                 )}
                               </div>
                               <div className="flex-grow min-w-0">
-                                <div className="font-display text-sm">{addon.name}</div>
+                                <div className="font-medium text-sm">{addon.name}</div>
                                 <div className="text-muted-foreground text-xs">{addon.description}</div>
                               </div>
-                              <div className="font-display text-sm whitespace-nowrap">
+                              <div className="text-xs text-muted-foreground whitespace-nowrap">
                                 {addon.price === 0 ? "FREE" : `+£${addon.price.toFixed(2)}`}
                               </div>
                             </div>

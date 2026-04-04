@@ -677,12 +677,12 @@ const Checkout = () => {
                         <div className="bg-foreground text-background p-3 -mx-6 sm:-mx-8 mt-2 flex justify-between items-baseline">
                           <span className="font-display text-sm uppercase tracking-wider">Due today</span>
                           <div>
-                            <span className="font-display text-xl">£{totalDueToday.toFixed(2)}</span>
+                            <span className="font-display text-2xl">£{totalDueToday.toFixed(2)}</span>
                             <span className="text-background/60 text-xs ml-1">incl. VAT</span>
                           </div>
                         </div>
                         <p className="text-muted-foreground text-xs mt-3 text-center">
-                          30-day rolling · no contracts
+                          Prices include VAT where applicable
                         </p>
                         {resolvedProduct?.technology === 'SOGEA' && (
                           <p className="text-muted-foreground text-[10px] text-center italic">

@@ -98,7 +98,7 @@ const Broadband = () => {
     name: 'OCCTA Broadband',
     description: 'Fast, reliable fibre broadband with speeds up to 900Mbps. No contracts, no price rises.',
     url: '/broadband',
-    price: '22.99',
+    price: getFromPrices().broadband,
   });
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({

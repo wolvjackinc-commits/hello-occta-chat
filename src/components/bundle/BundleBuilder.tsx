@@ -221,14 +221,14 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
               <div className="bg-background text-foreground border-4 border-primary p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-display text-2xl">YOUR BUNDLE</h3>
-                  {hasBundle && (
+                  {hasBundle && bundleStats.savings > 0 && (
                     <motion.div 
                       className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 border-4 border-foreground"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                     >
                       <BadgePercent className="w-5 h-5" />
-                      <span className="font-display">{bundleStats.discountPercentage}% OFF</span>
+                      <span className="font-display">SAVE £{bundleStats.savings.toFixed(0)}/mo</span>
                     </motion.div>
                   )}
                 </div>

@@ -1260,21 +1260,25 @@ const PreCheckout = () => {
                       <span>-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm pt-2 border-t border-foreground/10">
+                  <div className="flex justify-between text-xs text-muted-foreground pt-1.5 border-t border-foreground/5">
                     <span>Subtotal (ex VAT)</span>
                     <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs text-muted-foreground">
                     <span>VAT (20%)</span>
                     <span>£{monthlyVat.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between font-display text-lg pt-2 border-t-2 border-foreground/20">
-                    <span>ONGOING MONTHLY</span>
-                    <span>£{monthlyTotal.toFixed(2)}/mo <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
+                  <div className="flex justify-between font-display pt-2 border-t border-foreground/10">
+                    <span className="text-sm">Ongoing monthly</span>
+                    <div className="text-right">
+                      <span className="text-lg">£{monthlyTotal.toFixed(2)}</span>
+                      <span className="text-muted-foreground text-xs">/mo</span>
+                    </div>
                   </div>
+                  <p className="text-muted-foreground text-[10px] text-right">incl. VAT</p>
 
                   {/* One-off charges */}
-                  <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mt-4 mb-2">One-off charges</p>
+                  <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mt-5 mb-1.5">One-off charges</p>
                   <div className="flex justify-between text-sm">
                     <span>
                       Setup/install
@@ -1284,7 +1288,7 @@ const PreCheckout = () => {
                         </span>
                       )}
                     </span>
-                    <span>{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
+                    <span className={setupCharge === 0 ? "text-primary font-display" : ""}>{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
                   </div>
                   {selectedAddons.filter(id => {
                     const a = availableAddons.find(x => x.id === id);
@@ -1300,54 +1304,58 @@ const PreCheckout = () => {
                   })}
                   {oneOffSubtotalExVat > 0 && (
                     <>
-                      <div className="flex justify-between text-sm pt-2 border-t border-foreground/10">
+                      <div className="flex justify-between text-xs text-muted-foreground pt-1.5 border-t border-foreground/5">
                         <span>Subtotal (ex VAT)</span>
                         <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs text-muted-foreground">
                         <span>VAT (20%)</span>
                         <span>£{oneOffVat.toFixed(2)}</span>
                       </div>
                     </>
                   )}
-                  <div className="flex justify-between font-display text-xl pt-2 border-t-2 border-foreground/20">
-                    <span>TOTAL DUE TODAY</span>
-                    <span>£{totalDueToday.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
+
+                  <div className="bg-foreground text-background p-3 -mx-5 mt-3 flex justify-between items-baseline">
+                    <span className="font-display text-sm uppercase tracking-wider">Due today</span>
+                    <div>
+                      <span className="font-display text-xl">£{totalDueToday.toFixed(2)}</span>
+                      <span className="text-background/60 text-xs ml-1">incl. VAT</span>
+                    </div>
                   </div>
 
-                  <p className="text-muted-foreground text-xs mt-3">
-                    30-day rolling — no contracts
+                  <p className="text-muted-foreground text-xs mt-3 text-center">
+                    30-day rolling · no contracts
                   </p>
                   {resolvedProduct?.technology === 'SOGEA' && (
-                    <p className="text-muted-foreground text-xs mt-1 italic">
+                    <p className="text-muted-foreground text-[10px] mt-1 text-center italic">
                       {getSOGEANote()}
                     </p>
                   )}
                 </div>
 
                 {/* Cooling Off Notice */}
-                <div className="mt-6 p-4 bg-secondary border-4 border-foreground">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="mt-4 p-3 bg-secondary/50 border border-foreground/10 rounded-sm">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-display text-sm uppercase tracking-wider">14-Day Cooling Off Period</div>
-                        <p className="text-muted-foreground text-sm mt-1">
-                          You have the right to cancel your order within 14 days of signing up, without giving any reason. 
-                        Contact us on {CONTACT_PHONE_DISPLAY} to cancel.
-                        </p>
+                      <div className="text-xs font-medium">14-day cooling off period</div>
+                      <p className="text-muted-foreground text-[10px] mt-0.5 leading-relaxed">
+                        Cancel within 14 days without reason. Call {CONTACT_PHONE_DISPLAY}.
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Trust Badges */}
-                <div className="mt-4 flex items-center justify-center gap-4 text-muted-foreground text-xs">
+                <div className="mt-3 flex items-center justify-center gap-3 text-muted-foreground text-[10px]">
                   <div className="flex items-center gap-1">
-                    <Shield className="w-4 h-4" />
+                    <Shield className="w-3 h-3" />
                     <span>Secure</span>
                   </div>
+                  <span className="text-foreground/10">·</span>
                   <div className="flex items-center gap-1">
-                    <Check className="w-4 h-4" />
-                    <span>Ofcom Regulated</span>
+                    <Check className="w-3 h-3" />
+                    <span>Ofcom regulated</span>
                   </div>
                 </div>
               </div>

@@ -25,7 +25,7 @@ export const broadbandRetailCards: RetailCardDef[] = [
     serviceType: 'broadband',
     publicPricePrefix: 'From',
     publicSetupText: 'Setup may apply depending on line status',
-    publicTagline: 'Perfect for light browsing and the occasional Netflix binge',
+    publicTagline: 'Perfect for browsing, emails, and light streaming',
     publicFeatures: [
       'Up to 80Mbps download',
       'Unlimited usage',

@@ -122,10 +122,10 @@ const Broadband = () => {
     <LayoutComponent>
       <SEO 
         title="Cheap Broadband UK - No Contract Fibre"
-        description="Cheap broadband UK from £22.99/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, cancel anytime. Best budget broadband 2025."
+        description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, cancel anytime. Best budget broadband 2025.`}
         canonical="/broadband"
         keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
-        price="22.99"
+        price={getFromPrices().broadband}
       />
       <StructuredData customSchema={combinedSchemas} />
 

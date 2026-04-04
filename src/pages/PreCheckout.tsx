@@ -719,12 +719,13 @@ const PreCheckout = () => {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-6"
+                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
               >
-                <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                  <User className="w-6 h-6" />
-                  YOUR DETAILS
+                <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                  <User className="w-5 h-5 text-muted-foreground" />
+                  Your Details
                 </h2>
+                <p className="text-muted-foreground text-sm mb-6">We'll use this to set up your account.</p>
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>

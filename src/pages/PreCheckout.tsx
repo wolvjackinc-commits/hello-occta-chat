@@ -690,28 +690,43 @@ const PreCheckout = () => {
           </div>
 
           {/* Compact Plan Confirmation Strip */}
-          <div className="mb-8 border border-foreground/10 bg-secondary/20 p-3">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-3 flex-wrap flex-grow">
-                {selectedPlans.map((plan) => {
-                  const PlanIcon = serviceIcons[plan.serviceType];
-                  return (
-                    <div key={plan.id} className="flex items-center gap-2">
+          {selectedPlans.map((plan) => {
+            const PlanIcon = serviceIcons[plan.serviceType];
+            return (
+              <div key={plan.id} className="mb-8 border border-foreground/10 bg-secondary/10 p-4 md:p-5">
+                <div className="flex items-start justify-between gap-6">
+                  {/* Left: icon + plan info */}
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="mt-0.5 flex-shrink-0 w-8 h-8 bg-primary/10 flex items-center justify-center">
                       <PlanIcon className="w-4 h-4 text-primary" />
-                      <span className="font-display text-sm">{plan.name}</span>
-                      {plan.speed && (
-                        <span className="text-[10px] font-display uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5">{plan.speed}</span>
-                      )}
-                      <span className="text-sm text-muted-foreground">£{plan.price}/mo</span>
                     </div>
-                  );
-                })}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-display text-sm font-semibold">{plan.name}</span>
+                        {plan.speed && (
+                          <span className="text-[10px] font-display uppercase tracking-wider text-muted-foreground bg-secondary/60 px-1.5 py-0.5">Up to {plan.speed} Mbps</span>
+                        )}
+                      </div>
+                      <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+                        <li className="flex items-center gap-1"><Check className="w-3 h-3 text-primary/70" />Unlimited usage</li>
+                        <li className="flex items-center gap-1"><Check className="w-3 h-3 text-primary/70" />Router included</li>
+                        <li className="flex items-center gap-1"><Check className="w-3 h-3 text-primary/70" />No contract — cancel anytime</li>
+                        <li className="flex items-center gap-1"><Check className="w-3 h-3 text-primary/70" />UK-based support</li>
+                      </ul>
+                      <p className="mt-1.5 text-[11px] text-muted-foreground/60">Setup may apply depending on your line</p>
+                    </div>
+                  </div>
+                  {/* Right: price + change link */}
+                  <div className="flex-shrink-0 text-right">
+                    <div className="font-display text-lg font-bold">£{plan.price}<span className="text-xs font-normal text-muted-foreground">/mo</span></div>
+                    <Link to="/broadband" className="text-[11px] text-muted-foreground hover:underline hover:text-foreground transition-colors whitespace-nowrap">
+                      Change plan
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <Link to="/broadband" className="text-xs text-primary hover:underline font-medium whitespace-nowrap">
-                Change plan
-              </Link>
-            </div>
-          </div>
+            );
+          })}
 
           {/* Restore Saved Form Prompt */}
           <AnimatePresence>

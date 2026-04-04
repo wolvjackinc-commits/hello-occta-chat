@@ -743,19 +743,25 @@ const Checkout = () => {
                   ))}
                 </ul>
                 
-                <div className="pt-6 border-t border-background/20">
+                <div className="pt-6 border-t border-background/20 space-y-2">
                   <div className="flex justify-between items-baseline">
                     <span className="font-display uppercase tracking-wider text-sm">Monthly</span>
                     <div>
-                      <span className="font-display text-3xl">£{plan.price}</span>
+                      <span className="font-display text-3xl">£{ongoingMonthly.toFixed(2)}</span>
                       <span className="text-background/60">/mo</span>
                     </div>
                   </div>
+                  {setupCharge > 0 && (
+                    <div className="flex justify-between items-baseline text-sm">
+                      <span className="text-background/60">Setup</span>
+                      <span className="font-display">£{setupCharge.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Trust Indicators */}
                 <div className="pt-4 mt-4 border-t border-background/20 flex flex-wrap gap-2">
-                  {["No contract", "Free install", "UK support"].map((tag) => (
+                  {["No contract", setupCharge === 0 ? "Free install" : "Setup applies", "UK support"].map((tag) => (
                     <span key={tag} className="text-[10px] font-display uppercase tracking-wider bg-background/10 px-2 py-1">
                       {tag}
                     </span>

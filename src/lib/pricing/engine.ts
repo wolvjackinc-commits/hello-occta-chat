@@ -152,10 +152,48 @@ export function getCallRate(type: string): number {
   return tariff?.retailPerMinute ?? 0;
 }
 
+// ── VAT utilities ──
+export const VAT_RATE = 0.20;
+
+export function applyVAT(amount: number, inclusive: boolean): number {
+  // Residential prices already include VAT; business prices are net
+  if (inclusive) return amount;
+  return amount / (1 + VAT_RATE); // Strip VAT to show net
+}
+
+export function formatPriceWithVAT(amount: number, mode: VatMode): string {
+  const suffix = mode === 'residential' ? '(inc. VAT)' : '(ex. VAT)';
+  const displayed = mode === 'residential' ? amount : amount / (1 + VAT_RATE);
+  return `£${displayed.toFixed(2)} ${suffix}`;
+}
+
+// ── Proration ──
+export const PRORATION_ENABLED = true;
+
+export function calculateProration(monthlyAmount: number, activationDate: Date, billingCycleDay: number): number {
+  const daysInMonth = new Date(activationDate.getFullYear(), activationDate.getMonth() + 1, 0).getDate();
+  const activationDay = activationDate.getDate();
+  let remainingDays: number;
+  if (activationDay <= billingCycleDay) {
+    remainingDays = billingCycleDay - activationDay;
+  } else {
+    remainingDays = daysInMonth - activationDay + billingCycleDay;
+  }
+  return Math.round(((monthlyAmount / daysInMonth) * remainingDays) * 100) / 100;
+}
+
 // ── SOGEA fairness note ──
 export function getSOGEANote(): string {
   return '30-day rolling. One-off setup applies. If service is ended within 12 months, upstream install subsidy conditions may affect internal costs.';
 }
+
+// ── Consent labels ──
+const ORDER_CONSENT_LABELS = [
+  'I understand this service is 30-day rolling with no fixed contract',
+  'Setup charges may apply depending on my line status',
+  'I accept all charges shown above',
+  'Service is subject to availability at my address',
+];
 
 // ── Order summary builder ──
 export function buildOrderSummary(params: {
@@ -166,6 +204,7 @@ export function buildOrderSummary(params: {
   bundleServiceTypes?: ServiceFamily[];
   portingSelections?: { optionId: string; count: number }[];
   numberSelections?: { typeId: string; count: number }[];
+  vatMode?: VatMode;
 }): OrderSummary {
   const product = catalogueProducts.find(p => p.id === params.productId);
   const monthlyBase = product?.retailMonthly ?? 0;
@@ -175,6 +214,7 @@ export function buildOrderSummary(params: {
   const bundle = params.bundleServiceTypes ? calculateBundleDiscount(params.bundleServiceTypes) : { discount: 0, bundleName: null, valid: false };
   const portingTotal = params.portingSelections ? calculatePortingTotal(params.portingSelections) : 0;
   const numberTotal = params.numberSelections ? calculateNumberTotal(params.numberSelections) : 0;
+  const vatMode = params.vatMode ?? 'residential';
 
   const monthlySubtotal = monthlyBase + careUplift + addonTotals.monthly + numberTotal;
   const oneOffSubtotal = setupCharge + addonTotals.oneOff + portingTotal;
@@ -204,5 +244,8 @@ export function buildOrderSummary(params: {
       oneOff: product ? product.marginOneOff : 0,
     },
     rollingMonthly: product?.wholesaleContractTerm === 1,
+    vatMode,
+    hardwareCharges: [], // Hardware included in addons if applicable
+    consentRequired: ORDER_CONSENT_LABELS,
   };
 }

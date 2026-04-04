@@ -740,7 +740,7 @@ const PreCheckout = () => {
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Last Name *</Label>
+                    <Label className="text-sm font-medium">Last name <span className="text-destructive">*</span></Label>
                     <Input
                       value={customerData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}

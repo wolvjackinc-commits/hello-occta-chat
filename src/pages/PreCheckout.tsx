@@ -669,7 +669,8 @@ const PreCheckout = () => {
             Back to plans
           </Link>
 
-          <h1 className="text-display-md mb-8">COMPLETE YOUR ORDER</h1>
+          <h1 className="text-display-md mb-2">COMPLETE YOUR ORDER</h1>
+          <p className="text-muted-foreground mb-8">Fill in your details below and we'll get you connected.</p>
 
           {/* Restore Saved Form Prompt */}
           <AnimatePresence>
@@ -718,56 +719,57 @@ const PreCheckout = () => {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-6"
+                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
               >
-                <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                  <User className="w-6 h-6" />
-                  YOUR DETAILS
+                <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                  <User className="w-5 h-5 text-muted-foreground" />
+                  Your Details
                 </h2>
+                <p className="text-muted-foreground text-sm mb-6">We'll use this to set up your account.</p>
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">First Name *</Label>
+                    <Label className="text-sm font-medium">First name <span className="text-destructive">*</span></Label>
                     <Input
                       value={customerData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
                       placeholder="John"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                     {errors.firstName && <p className="text-destructive text-sm mt-1">{errors.firstName}</p>}
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Last Name *</Label>
+                    <Label className="text-sm font-medium">Last name <span className="text-destructive">*</span></Label>
                     <Input
                       value={customerData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}
                       placeholder="Smith"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                     {errors.lastName && <p className="text-destructive text-sm mt-1">{errors.lastName}</p>}
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Email Address *</Label>
+                    <Label className="text-sm font-medium">Email address <span className="text-destructive">*</span></Label>
                     <Input
                       type="email"
                       value={customerData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       placeholder="john@example.com"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                     {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Phone Number *</Label>
+                    <Label className="text-sm font-medium">Phone number <span className="text-destructive">*</span></Label>
                     <Input
                       type="tel"
                       value={customerData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="07700 900123"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                     {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
                   </div>
@@ -775,45 +777,45 @@ const PreCheckout = () => {
 
                 <div className="mt-6 space-y-4">
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Address Line 1 *</Label>
+                    <Label className="text-sm font-medium">Address line 1 <span className="text-destructive">*</span></Label>
                     <Input
                       value={customerData.addressLine1}
                       onChange={(e) => handleInputChange("addressLine1", e.target.value)}
                       placeholder="123 High Street"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                     {errors.addressLine1 && <p className="text-destructive text-sm mt-1">{errors.addressLine1}</p>}
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Address Line 2</Label>
+                    <Label className="text-sm font-medium">Address line 2</Label>
                     <Input
                       value={customerData.addressLine2}
                       onChange={(e) => handleInputChange("addressLine2", e.target.value)}
                       placeholder="Flat 4"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                   </div>
                   
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="font-display uppercase tracking-wider text-sm">City *</Label>
+                      <Label className="text-sm font-medium">City <span className="text-destructive">*</span></Label>
                       <Input
                         value={customerData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         placeholder="City/Town"
-                        className="mt-1 border-4 border-foreground"
+                        className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                       />
                       {errors.city && <p className="text-destructive text-sm mt-1">{errors.city}</p>}
                     </div>
                     
                     <div>
-                      <Label className="font-display uppercase tracking-wider text-sm">Postcode *</Label>
+                      <Label className="text-sm font-medium">Postcode <span className="text-destructive">*</span></Label>
                       <Input
                         value={customerData.postcode}
                         onChange={(e) => handleInputChange("postcode", e.target.value.toUpperCase())}
                         placeholder="HD1 2QD"
-                        className="mt-1 border-4 border-foreground"
+                        className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                       />
                       {errors.postcode && <p className="text-destructive text-sm mt-1">{errors.postcode}</p>}
                     </div>
@@ -826,21 +828,22 @@ const PreCheckout = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="card-brutal bg-card p-6"
+                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
               >
-                <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                  <ArrowRight className="w-6 h-6" />
-                  SWITCHING DETAILS
+                <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                  Switching Details
                 </h2>
+                <p className="text-muted-foreground text-sm mb-6">Tell us about your current setup so we can manage the switch.</p>
                 
                 <div className="space-y-4">
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Current Provider *</Label>
+                    <Label className="text-sm font-medium">Current provider <span className="text-destructive">*</span></Label>
                     <Select
                       value={customerData.currentProvider}
                       onValueChange={(value) => handleInputChange("currentProvider", value)}
                     >
-                      <SelectTrigger className="mt-1 border-4 border-foreground">
+                      <SelectTrigger className="mt-1 border-2 border-foreground/30">
                         <SelectValue placeholder="Select your current provider" />
                       </SelectTrigger>
                       <SelectContent>
@@ -855,12 +858,12 @@ const PreCheckout = () => {
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Are you currently in a contract? *</Label>
+                    <Label className="text-sm font-medium">Are you currently in a contract? <span className="text-destructive">*</span></Label>
                     <Select
                       value={customerData.inContract}
                       onValueChange={(value) => handleInputChange("inContract", value)}
                     >
-                      <SelectTrigger className="mt-1 border-4 border-foreground">
+                      <SelectTrigger className="mt-1 border-2 border-foreground/30">
                         <SelectValue placeholder="Select an option" />
                       </SelectTrigger>
                       <SelectContent>
@@ -874,13 +877,13 @@ const PreCheckout = () => {
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Preferred Switch Date (Optional)</Label>
+                    <Label className="text-sm font-medium">Preferred switch date <span className="text-muted-foreground font-normal">(optional)</span></Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full mt-1 justify-start text-left border-4 border-foreground font-normal",
+                            "w-full mt-1 justify-start text-left border-2 border-foreground/30 font-normal",
                             !customerData.preferredSwitchDate && "text-muted-foreground"
                           )}
                         >
@@ -892,7 +895,7 @@ const PreCheckout = () => {
                           )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 border-4 border-foreground" align="start">
+                      <PopoverContent className="w-auto p-0 border-2 border-foreground/30" align="start">
                         <Calendar
                           mode="single"
                           selected={customerData.preferredSwitchDate}
@@ -902,7 +905,7 @@ const PreCheckout = () => {
                         />
                       </PopoverContent>
                     </Popover>
-                    <p className="text-muted-foreground text-sm mt-1">We need at least 7 days to arrange your switch</p>
+                    <p className="text-muted-foreground text-xs mt-1">We need at least 7 days to arrange your switch</p>
                   </div>
                 </div>
               </motion.div>
@@ -913,17 +916,18 @@ const PreCheckout = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.12 }}
-                  className="card-brutal bg-card p-6"
+                  className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
                 >
-                  <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                    <Router className="w-6 h-6" />
-                    INSTALLATION TYPE
+                  <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <Router className="w-5 h-5 text-muted-foreground" />
+                    Installation Type
                   </h2>
+                  <p className="text-muted-foreground text-sm mb-4">Charges depend on your current line status.</p>
                   <Select
                     value={installScenarioId ?? ''}
                     onValueChange={(value) => setInstallScenarioId(value)}
                   >
-                    <SelectTrigger className="border-4 border-foreground">
+                    <SelectTrigger className="border-2 border-foreground/30">
                       <SelectValue placeholder="Select installation type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -936,9 +940,6 @@ const PreCheckout = () => {
                         ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-muted-foreground text-sm mt-2">
-                    Setup charges depend on your current line status.
-                  </p>
                 </motion.div>
               )}
 
@@ -948,12 +949,13 @@ const PreCheckout = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.13 }}
-                  className="card-brutal bg-card p-6"
+                  className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
                 >
-                  <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                    <ShieldCheck className="w-6 h-6" />
-                    SUPPORT LEVEL
+                  <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-muted-foreground" />
+                    Support Level
                   </h2>
+                  <p className="text-muted-foreground text-sm mb-4">Choose the level of support that suits you.</p>
                   <div className="space-y-2">
                     {careLevels.map(level => (
                       <button
@@ -961,14 +963,22 @@ const PreCheckout = () => {
                         type="button"
                         onClick={() => setCareLevelId(level.id)}
                         className={cn(
-                          "w-full text-left p-3 border-4 transition-all flex items-center justify-between",
+                          "w-full text-left px-4 py-3 border-2 transition-all flex items-center justify-between rounded-sm",
                           careLevelId === level.id
-                            ? "border-primary bg-primary/10"
-                            : "border-foreground/30 hover:border-foreground"
+                            ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                            : "border-foreground/15 hover:border-foreground/40"
                         )}
                       >
-                        <span className="font-display text-sm">{level.label}</span>
-                        <span className="font-display text-sm">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                            careLevelId === level.id ? "border-primary" : "border-foreground/30"
+                          )}>
+                            {careLevelId === level.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                          </div>
+                          <span className="font-display text-sm">{level.label}</span>
+                        </div>
+                        <span className={cn("text-sm", careLevelId === level.id ? "font-display text-primary" : "text-muted-foreground")}>
                           {level.monthlyUplift === 0 ? 'Included' : `+£${level.monthlyUplift.toFixed(2)}/mo`}
                         </span>
                       </button>
@@ -989,105 +999,83 @@ const PreCheckout = () => {
                 />
               </motion.div>
 
-              {/* GDPR & Consent */}
+              {/* Before you place your order */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="card-brutal bg-card p-6"
+                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
               >
-                <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                  <Shield className="w-6 h-6" />
-                  CONSENT & PERMISSIONS
+                <h2 className="font-display text-lg uppercase tracking-wider mb-4">
+                  Before you place your order
                 </h2>
                 
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 p-4 border-4 border-foreground bg-secondary">
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-3 rounded-sm bg-secondary/50 cursor-pointer hover:bg-secondary transition-colors">
                     <Checkbox
                       id="gdpr"
                       checked={gdprConsent}
                       onCheckedChange={(checked) => setGdprConsent(checked as boolean)}
-                      className="mt-1"
+                      className="mt-0.5"
                     />
                     <div>
-                      <Label htmlFor="gdpr" className="font-display uppercase tracking-wider text-sm cursor-pointer">
-                        GDPR Data Processing Agreement *
-                      </Label>
-                      <p className="text-muted-foreground text-sm mt-1">
-                        I consent to the processing of my personal data in accordance with the General Data Protection Regulation (GDPR). 
-                        My data will be used to provide the requested services, manage my account, and communicate about my order. 
-                        I understand I can withdraw consent at any time.
+                      <span className="text-sm font-medium">GDPR data processing <span className="text-destructive">*</span></span>
+                      <p className="text-muted-foreground text-xs mt-0.5 leading-relaxed">
+                        I consent to the processing of my personal data to provide the requested services, manage my account, and communicate about my order. I can withdraw consent at any time.
                       </p>
                     </div>
-                  </div>
+                  </label>
                   
-                  <div className="flex items-start gap-3 p-4 border-4 border-foreground">
+                  <label className="flex items-start gap-3 p-3 rounded-sm cursor-pointer hover:bg-secondary/30 transition-colors">
                     <Checkbox
                       id="terms"
                       checked={termsConsent}
                       onCheckedChange={(checked) => setTermsConsent(checked as boolean)}
-                      className="mt-1"
+                      className="mt-0.5"
                     />
                     <div>
-                      <Label htmlFor="terms" className="font-display uppercase tracking-wider text-sm cursor-pointer">
-                        Terms & Conditions *
-                      </Label>
-                      <p className="text-muted-foreground text-sm mt-1">
-                        I have read and agree to the{" "}
+                      <span className="text-sm font-medium">Terms & conditions <span className="text-destructive">*</span></span>
+                      <p className="text-muted-foreground text-xs mt-0.5">
+                        I agree to the{" "}
                         <Link to="/terms" className="underline text-foreground">Terms of Service</Link> and{" "}
-                        <Link to="/privacy" className="underline text-foreground">Privacy Policy</Link>.
-                        No contracts, no lock-ins — cancel anytime.
+                        <Link to="/privacy" className="underline text-foreground">Privacy Policy</Link>. No contracts — cancel anytime.
                       </p>
                     </div>
-                  </div>
+                  </label>
                   
-                  <div className="flex items-start gap-3 p-4 border-4 border-foreground">
+                  <label className="flex items-start gap-3 p-3 rounded-sm cursor-pointer hover:bg-secondary/30 transition-colors">
                     <Checkbox
                       id="marketing"
                       checked={marketingConsent}
                       onCheckedChange={(checked) => setMarketingConsent(checked as boolean)}
-                      className="mt-1"
+                      className="mt-0.5"
                     />
                     <div>
-                      <Label htmlFor="marketing" className="font-display uppercase tracking-wider text-sm cursor-pointer">
-                        Marketing Communications (Optional)
-                      </Label>
-                      <p className="text-muted-foreground text-sm mt-1">
-                        I would like to receive updates about exclusive offers, new products, and services via email and SMS.
+                      <span className="text-sm font-medium">Marketing <span className="text-muted-foreground font-normal">(optional)</span></span>
+                      <p className="text-muted-foreground text-xs mt-0.5">
+                        Receive updates about offers, new products, and services via email and SMS.
                       </p>
                     </div>
-                  </div>
-                </div>
-              </motion.div>
+                  </label>
 
-              {/* Order Consent */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="card-brutal bg-card p-6"
-              >
-                <h2 className="text-display-sm mb-4 flex items-center gap-3">
-                  <Check className="w-6 h-6" />
-                  ORDER CONFIRMATION
-                </h2>
-                <div className="flex items-start gap-3 p-4 border-4 border-foreground bg-secondary">
-                  <Checkbox
-                    id="orderConsent"
-                    checked={orderConsent}
-                    onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <Label htmlFor="orderConsent" className="font-display uppercase tracking-wider text-sm cursor-pointer">
-                      I confirm all of the following *
-                    </Label>
-                    <ul className="text-muted-foreground text-sm mt-2 space-y-1 list-disc list-inside">
-                      <li>I understand this service is 30-day rolling with no fixed contract</li>
-                      <li>Setup charges may apply depending on my line status</li>
-                      <li>I accept all charges shown above</li>
-                      <li>Service is subject to availability at my address</li>
-                    </ul>
+                  <div className="border-t border-foreground/10 pt-3 mt-3">
+                    <label className="flex items-start gap-3 p-3 rounded-sm bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors">
+                      <Checkbox
+                        id="orderConsent"
+                        checked={orderConsent}
+                        onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <span className="text-sm font-medium">I confirm the following <span className="text-destructive">*</span></span>
+                        <ul className="text-muted-foreground text-xs mt-1 space-y-0.5">
+                          <li>• This service is 30-day rolling with no fixed contract</li>
+                          <li>• Setup charges may apply depending on my line status</li>
+                          <li>• I accept all charges shown in the order summary</li>
+                          <li>• Service is subject to availability at my address</li>
+                        </ul>
+                      </div>
+                    </label>
                   </div>
                 </div>
               </motion.div>
@@ -1114,50 +1102,48 @@ const PreCheckout = () => {
               </Button>
 
               {/* Security Badge */}
-              <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs mt-3">
-                <Shield className="w-4 h-4" />
-                <span>256-bit encrypted &middot; Your data is safe with us</span>
+              <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs">
+                <div className="flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>256-bit encrypted</span>
+                </div>
+                <span className="text-foreground/20">·</span>
+                <div className="flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Ofcom regulated</span>
+                </div>
               </div>
 
-              {/* Switching Timeline - Below Submit Button */}
+              {/* What happens next */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="card-brutal bg-primary/5 p-6 border-primary"
+                className="border-2 border-foreground/10 bg-card p-6 sm:p-8"
               >
-                <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                  <Clock className="w-6 h-6" />
-                  WHAT HAPPENS NEXT
+                <h2 className="font-display text-lg uppercase tracking-wider mb-6 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-muted-foreground" />
+                  What Happens Next
                 </h2>
                 
-                <div className="relative">
-                  {/* Timeline line */}
-                  <div className="absolute left-6 top-8 bottom-8 w-1 bg-primary/30" />
-                  
-                  <div className="space-y-6">
-                    {[
-                      { day: "Day 1", title: "Order Received", desc: "We receive your order and begin processing. You'll get a confirmation email with your order details.", icon: "📩" },
-                      { day: "Day 2", title: "Provider Notified", desc: "We contact your current provider to initiate the switch. They'll send you a leaving confirmation.", icon: "📞" },
-                      { day: "Day 3-5", title: "Switch Arranged", desc: "We coordinate with Openreach to schedule your installation or line activation date.", icon: "📅" },
-                      { day: "Day 7", title: "Equipment Arrives", desc: "Your new router and any equipment will arrive at your address via tracked delivery.", icon: "📦" },
-                      { day: "Day 10-12", title: "Engineer Visit", desc: "If required, an engineer will visit to complete the setup. Most installations don't need this.", icon: "🔧" },
-                      { day: "Day 14", title: "You're Live!", desc: "Your new service goes live! Your old provider will stop charging from this date.", icon: "🎉" },
-                    ].map((step, idx) => (
-                      <div key={idx} className="relative flex gap-4 pl-2">
-                        <div className="w-10 h-10 bg-primary border-4 border-foreground flex items-center justify-center text-lg z-10">
-                          {step.icon}
-                        </div>
-                        <div className="flex-grow pb-2">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-display text-primary uppercase tracking-wider text-sm">{step.day}</span>
-                            <span className="font-display uppercase tracking-wider">{step.title}</span>
-                          </div>
-                          <p className="text-muted-foreground text-sm">{step.desc}</p>
-                        </div>
+                <div className="space-y-4">
+                  {[
+                    { day: "Day 1", title: "Order received", desc: "Confirmation email sent with your order details." },
+                    { day: "Day 2", title: "Provider notified", desc: "We initiate the switch with your current provider." },
+                    { day: "Day 3–5", title: "Switch arranged", desc: "Installation or line activation date scheduled." },
+                    { day: "Day 7", title: "Equipment arrives", desc: "Router and equipment delivered via tracked delivery." },
+                    { day: "Day 10–14", title: "You're live", desc: "Service goes live. Your old provider stops charging." },
+                  ].map((step, idx) => (
+                    <div key={idx} className="flex gap-4 items-start">
+                      <div className="flex-shrink-0 w-16">
+                        <span className="text-xs font-display uppercase tracking-wider text-primary">{step.day}</span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex-grow border-l-2 border-foreground/10 pl-4 pb-1">
+                        <span className="font-display text-sm uppercase tracking-wider">{step.title}</span>
+                        <p className="text-muted-foreground text-xs mt-0.5">{step.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </motion.div>
             </div>
@@ -1165,22 +1151,22 @@ const PreCheckout = () => {
             {/* Right Sidebar - Order Summary & Add-ons */}
             <div className="space-y-6">
               {/* Selected Plans */}
-              <div className="card-brutal bg-card p-6 sticky top-4">
-                <h3 className="font-display text-lg mb-4 uppercase tracking-wider">Your Order</h3>
+              <div className="border-2 border-foreground/20 bg-card p-5 sticky top-4">
+                <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-4">Order Summary</h3>
                 
                 <div className="space-y-4 mb-6">
                   {selectedPlans.map((plan) => {
                     const Icon = serviceIcons[plan.serviceType];
                     return (
-                      <div key={plan.id} className="flex items-center gap-3 p-3 border-4 border-foreground bg-secondary">
-                        <div className="w-10 h-10 bg-primary border-2 border-foreground flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-primary-foreground" />
+                      <div key={plan.id} className="flex items-center gap-3 p-3 border border-foreground/10 bg-secondary/30 rounded-sm">
+                        <div className="w-9 h-9 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-sm">
+                          <Icon className="w-4 h-4 text-primary" />
                         </div>
                         <div className="flex-grow">
-                          <div className="font-display">{plan.name}</div>
-                          <div className="text-muted-foreground text-sm capitalize">{plan.serviceType}</div>
+                          <div className="font-display text-sm">{plan.name}</div>
+                          <div className="text-muted-foreground text-xs capitalize">{plan.serviceType}</div>
                         </div>
-                        <div className="font-display">£{plan.price}</div>
+                        <div className="font-display text-sm">£{plan.price}</div>
                       </div>
                     );
                   })}
@@ -1188,12 +1174,12 @@ const PreCheckout = () => {
 
                 {/* Add-ons Section */}
                 {Object.entries(addonsByService).map(([serviceType, addons]) => (
-                  <div key={serviceType} className="mb-6">
-                    <h4 className="font-display text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Plus className="w-4 h-4" />
-                      {serviceType} Add-ons
+                  <div key={serviceType} className="mb-4">
+                    <h4 className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <Plus className="w-3.5 h-3.5" />
+                      {serviceType} add-ons
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {addons.map((addon) => {
                         const isSelected = selectedAddons.includes(addon.id);
                         const IconComponent = iconMap[addon.icon] || Shield;
@@ -1202,10 +1188,10 @@ const PreCheckout = () => {
                             key={addon.id}
                             onClick={() => toggleAddon(addon.id)}
                             className={cn(
-                              "w-full text-left p-3 border-4 transition-all relative",
+                              "w-full text-left p-2.5 border transition-all relative rounded-sm",
                               isSelected 
-                                ? "border-primary bg-primary/10" 
-                                : "border-foreground/30 hover:border-foreground"
+                                ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
+                                : "border-foreground/15 hover:border-foreground/30"
                             )}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -1215,15 +1201,15 @@ const PreCheckout = () => {
                                 Popular
                               </span>
                             )}
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-2.5">
                               <div className={cn(
-                                "w-8 h-8 border-2 flex items-center justify-center flex-shrink-0",
-                                isSelected ? "bg-primary border-primary" : "border-foreground/50"
+                                "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
+                                isSelected ? "bg-primary border-primary" : "border-foreground/30"
                               )}>
                                 {isSelected ? (
-                                  <Check className="w-4 h-4 text-primary-foreground" />
+                                  <Check className="w-3.5 h-3.5 text-primary-foreground" />
                                 ) : (
-                                  <IconComponent className="w-4 h-4" />
+                                  <IconComponent className="w-3.5 h-3.5 text-muted-foreground" />
                                 )}
                               </div>
                               <div className="flex-grow min-w-0">
@@ -1242,7 +1228,7 @@ const PreCheckout = () => {
                 ))}
 
                 {/* Itemised Breakdown */}
-                <div className="border-t-4 border-foreground pt-4 space-y-2">
+                <div className="border-t border-foreground/10 pt-4 space-y-1.5">
                   <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">Monthly charges</p>
                   {selectedPlans.map(plan => (
                     <div key={plan.id} className="flex justify-between text-sm">
@@ -1274,21 +1260,25 @@ const PreCheckout = () => {
                       <span>-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm pt-2 border-t border-foreground/10">
+                  <div className="flex justify-between text-xs text-muted-foreground pt-1.5 border-t border-foreground/5">
                     <span>Subtotal (ex VAT)</span>
                     <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs text-muted-foreground">
                     <span>VAT (20%)</span>
                     <span>£{monthlyVat.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between font-display text-lg pt-2 border-t-2 border-foreground/20">
-                    <span>ONGOING MONTHLY</span>
-                    <span>£{monthlyTotal.toFixed(2)}/mo <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
+                  <div className="flex justify-between font-display pt-2 border-t border-foreground/10">
+                    <span className="text-sm">Ongoing monthly</span>
+                    <div className="text-right">
+                      <span className="text-lg">£{monthlyTotal.toFixed(2)}</span>
+                      <span className="text-muted-foreground text-xs">/mo</span>
+                    </div>
                   </div>
+                  <p className="text-muted-foreground text-[10px] text-right">incl. VAT</p>
 
                   {/* One-off charges */}
-                  <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mt-4 mb-2">One-off charges</p>
+                  <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mt-5 mb-1.5">One-off charges</p>
                   <div className="flex justify-between text-sm">
                     <span>
                       Setup/install
@@ -1298,7 +1288,7 @@ const PreCheckout = () => {
                         </span>
                       )}
                     </span>
-                    <span>{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
+                    <span className={setupCharge === 0 ? "text-primary font-display" : ""}>{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
                   </div>
                   {selectedAddons.filter(id => {
                     const a = availableAddons.find(x => x.id === id);
@@ -1314,54 +1304,58 @@ const PreCheckout = () => {
                   })}
                   {oneOffSubtotalExVat > 0 && (
                     <>
-                      <div className="flex justify-between text-sm pt-2 border-t border-foreground/10">
+                      <div className="flex justify-between text-xs text-muted-foreground pt-1.5 border-t border-foreground/5">
                         <span>Subtotal (ex VAT)</span>
                         <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs text-muted-foreground">
                         <span>VAT (20%)</span>
                         <span>£{oneOffVat.toFixed(2)}</span>
                       </div>
                     </>
                   )}
-                  <div className="flex justify-between font-display text-xl pt-2 border-t-2 border-foreground/20">
-                    <span>TOTAL DUE TODAY</span>
-                    <span>£{totalDueToday.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
+
+                  <div className="bg-foreground text-background p-3 -mx-5 mt-3 flex justify-between items-baseline">
+                    <span className="font-display text-sm uppercase tracking-wider">Due today</span>
+                    <div>
+                      <span className="font-display text-xl">£{totalDueToday.toFixed(2)}</span>
+                      <span className="text-background/60 text-xs ml-1">incl. VAT</span>
+                    </div>
                   </div>
 
-                  <p className="text-muted-foreground text-xs mt-3">
-                    30-day rolling — no contracts
+                  <p className="text-muted-foreground text-xs mt-3 text-center">
+                    30-day rolling · no contracts
                   </p>
                   {resolvedProduct?.technology === 'SOGEA' && (
-                    <p className="text-muted-foreground text-xs mt-1 italic">
+                    <p className="text-muted-foreground text-[10px] mt-1 text-center italic">
                       {getSOGEANote()}
                     </p>
                   )}
                 </div>
 
                 {/* Cooling Off Notice */}
-                <div className="mt-6 p-4 bg-secondary border-4 border-foreground">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="mt-4 p-3 bg-secondary/50 border border-foreground/10 rounded-sm">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-display text-sm uppercase tracking-wider">14-Day Cooling Off Period</div>
-                        <p className="text-muted-foreground text-sm mt-1">
-                          You have the right to cancel your order within 14 days of signing up, without giving any reason. 
-                        Contact us on {CONTACT_PHONE_DISPLAY} to cancel.
-                        </p>
+                      <div className="text-xs font-medium">14-day cooling off period</div>
+                      <p className="text-muted-foreground text-[10px] mt-0.5 leading-relaxed">
+                        Cancel within 14 days without reason. Call {CONTACT_PHONE_DISPLAY}.
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Trust Badges */}
-                <div className="mt-4 flex items-center justify-center gap-4 text-muted-foreground text-xs">
+                <div className="mt-3 flex items-center justify-center gap-3 text-muted-foreground text-[10px]">
                   <div className="flex items-center gap-1">
-                    <Shield className="w-4 h-4" />
+                    <Shield className="w-3 h-3" />
                     <span>Secure</span>
                   </div>
+                  <span className="text-foreground/10">·</span>
                   <div className="flex items-center gap-1">
-                    <Check className="w-4 h-4" />
-                    <span>Ofcom Regulated</span>
+                    <Check className="w-3 h-3" />
+                    <span>Ofcom regulated</span>
                   </div>
                 </div>
               </div>
@@ -1370,22 +1364,22 @@ const PreCheckout = () => {
         </div>
       </div>
       {/* Mobile Order Summary */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t-4 border-foreground bg-background">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-foreground/20 bg-background shadow-lg">
         <button
           type="button"
           onClick={() => setIsMobileSummaryOpen((prev) => !prev)}
-          className="w-full flex items-center justify-between px-4 py-4"
+          className="w-full flex items-center justify-between px-4 py-3"
         >
           <div className="text-left">
-            <p className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
               {selectedPlans.map(p => p.name).join(' + ')}
             </p>
-            <p className="font-display text-lg">£{monthlyTotal.toFixed(2)}/mo</p>
+            <p className="font-display text-lg leading-tight">£{monthlyTotal.toFixed(2)}<span className="text-muted-foreground text-xs">/mo</span></p>
             {totalDueToday > 0 && (
-              <p className="text-xs text-muted-foreground">+ £{totalDueToday.toFixed(2)} today</p>
+              <p className="text-[10px] text-muted-foreground">+ £{totalDueToday.toFixed(2)} today</p>
             )}
           </div>
-          <span className="font-display uppercase text-sm text-primary px-3 py-1 border-2 border-primary">
+          <span className="font-display uppercase text-xs text-primary px-3 py-1.5 border border-primary rounded-sm">
             {isMobileSummaryOpen ? "Hide" : "View"}
           </span>
         </button>
@@ -1395,7 +1389,7 @@ const PreCheckout = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden border-t-4 border-foreground bg-card"
+              className="overflow-hidden border-t border-foreground/10 bg-card"
             >
               <div className="px-4 pb-4 pt-2 space-y-3">
                 <div className="space-y-2">

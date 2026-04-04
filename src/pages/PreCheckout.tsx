@@ -1055,13 +1055,45 @@ const PreCheckout = () => {
                 </div>
               </motion.div>
 
+              {/* Order Consent */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="card-brutal bg-card p-6"
+              >
+                <h2 className="text-display-sm mb-4 flex items-center gap-3">
+                  <Check className="w-6 h-6" />
+                  ORDER CONFIRMATION
+                </h2>
+                <div className="flex items-start gap-3 p-4 border-4 border-foreground bg-secondary">
+                  <Checkbox
+                    id="orderConsent"
+                    checked={orderConsent}
+                    onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <Label htmlFor="orderConsent" className="font-display uppercase tracking-wider text-sm cursor-pointer">
+                      I confirm all of the following *
+                    </Label>
+                    <ul className="text-muted-foreground text-sm mt-2 space-y-1 list-disc list-inside">
+                      <li>I understand this service is 30-day rolling with no fixed contract</li>
+                      <li>Setup charges may apply depending on my line status</li>
+                      <li>I accept all charges shown above</li>
+                      <li>Service is subject to availability at my address</li>
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+
               {/* Submit Button */}
               <Button
                 variant="hero"
                 className="w-full"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={isSubmitting || landlineWithoutBroadband}
+                disabled={isSubmitting || landlineWithoutBroadband || !orderConsent}
               >
                 {isSubmitting ? (
                   <>

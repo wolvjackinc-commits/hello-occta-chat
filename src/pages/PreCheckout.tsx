@@ -916,17 +916,18 @@ const PreCheckout = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.12 }}
-                  className="card-brutal bg-card p-6"
+                  className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
                 >
-                  <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                    <Router className="w-6 h-6" />
-                    INSTALLATION TYPE
+                  <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <Router className="w-5 h-5 text-muted-foreground" />
+                    Installation Type
                   </h2>
+                  <p className="text-muted-foreground text-sm mb-4">Charges depend on your current line status.</p>
                   <Select
                     value={installScenarioId ?? ''}
                     onValueChange={(value) => setInstallScenarioId(value)}
                   >
-                    <SelectTrigger className="border-4 border-foreground">
+                    <SelectTrigger className="border-2 border-foreground/30">
                       <SelectValue placeholder="Select installation type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -939,9 +940,6 @@ const PreCheckout = () => {
                         ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-muted-foreground text-sm mt-2">
-                    Setup charges depend on your current line status.
-                  </p>
                 </motion.div>
               )}
 
@@ -951,12 +949,13 @@ const PreCheckout = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.13 }}
-                  className="card-brutal bg-card p-6"
+                  className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
                 >
-                  <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                    <ShieldCheck className="w-6 h-6" />
-                    SUPPORT LEVEL
+                  <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-muted-foreground" />
+                    Support Level
                   </h2>
+                  <p className="text-muted-foreground text-sm mb-4">Choose the level of support that suits you.</p>
                   <div className="space-y-2">
                     {careLevels.map(level => (
                       <button
@@ -964,14 +963,22 @@ const PreCheckout = () => {
                         type="button"
                         onClick={() => setCareLevelId(level.id)}
                         className={cn(
-                          "w-full text-left p-3 border-4 transition-all flex items-center justify-between",
+                          "w-full text-left px-4 py-3 border-2 transition-all flex items-center justify-between rounded-sm",
                           careLevelId === level.id
-                            ? "border-primary bg-primary/10"
-                            : "border-foreground/30 hover:border-foreground"
+                            ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                            : "border-foreground/15 hover:border-foreground/40"
                         )}
                       >
-                        <span className="font-display text-sm">{level.label}</span>
-                        <span className="font-display text-sm">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                            careLevelId === level.id ? "border-primary" : "border-foreground/30"
+                          )}>
+                            {careLevelId === level.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                          </div>
+                          <span className="font-display text-sm">{level.label}</span>
+                        </div>
+                        <span className={cn("text-sm", careLevelId === level.id ? "font-display text-primary" : "text-muted-foreground")}>
                           {level.monthlyUplift === 0 ? 'Included' : `+£${level.monthlyUplift.toFixed(2)}/mo`}
                         </span>
                       </button>
@@ -992,105 +999,83 @@ const PreCheckout = () => {
                 />
               </motion.div>
 
-              {/* GDPR & Consent */}
+              {/* Before you place your order */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="card-brutal bg-card p-6"
+                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
               >
-                <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                  <Shield className="w-6 h-6" />
-                  CONSENT & PERMISSIONS
+                <h2 className="font-display text-lg uppercase tracking-wider mb-4">
+                  Before you place your order
                 </h2>
                 
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 p-4 border-4 border-foreground bg-secondary">
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-3 rounded-sm bg-secondary/50 cursor-pointer hover:bg-secondary transition-colors">
                     <Checkbox
                       id="gdpr"
                       checked={gdprConsent}
                       onCheckedChange={(checked) => setGdprConsent(checked as boolean)}
-                      className="mt-1"
+                      className="mt-0.5"
                     />
                     <div>
-                      <Label htmlFor="gdpr" className="font-display uppercase tracking-wider text-sm cursor-pointer">
-                        GDPR Data Processing Agreement *
-                      </Label>
-                      <p className="text-muted-foreground text-sm mt-1">
-                        I consent to the processing of my personal data in accordance with the General Data Protection Regulation (GDPR). 
-                        My data will be used to provide the requested services, manage my account, and communicate about my order. 
-                        I understand I can withdraw consent at any time.
+                      <span className="text-sm font-medium">GDPR data processing <span className="text-destructive">*</span></span>
+                      <p className="text-muted-foreground text-xs mt-0.5 leading-relaxed">
+                        I consent to the processing of my personal data to provide the requested services, manage my account, and communicate about my order. I can withdraw consent at any time.
                       </p>
                     </div>
-                  </div>
+                  </label>
                   
-                  <div className="flex items-start gap-3 p-4 border-4 border-foreground">
+                  <label className="flex items-start gap-3 p-3 rounded-sm cursor-pointer hover:bg-secondary/30 transition-colors">
                     <Checkbox
                       id="terms"
                       checked={termsConsent}
                       onCheckedChange={(checked) => setTermsConsent(checked as boolean)}
-                      className="mt-1"
+                      className="mt-0.5"
                     />
                     <div>
-                      <Label htmlFor="terms" className="font-display uppercase tracking-wider text-sm cursor-pointer">
-                        Terms & Conditions *
-                      </Label>
-                      <p className="text-muted-foreground text-sm mt-1">
-                        I have read and agree to the{" "}
+                      <span className="text-sm font-medium">Terms & conditions <span className="text-destructive">*</span></span>
+                      <p className="text-muted-foreground text-xs mt-0.5">
+                        I agree to the{" "}
                         <Link to="/terms" className="underline text-foreground">Terms of Service</Link> and{" "}
-                        <Link to="/privacy" className="underline text-foreground">Privacy Policy</Link>.
-                        No contracts, no lock-ins — cancel anytime.
+                        <Link to="/privacy" className="underline text-foreground">Privacy Policy</Link>. No contracts — cancel anytime.
                       </p>
                     </div>
-                  </div>
+                  </label>
                   
-                  <div className="flex items-start gap-3 p-4 border-4 border-foreground">
+                  <label className="flex items-start gap-3 p-3 rounded-sm cursor-pointer hover:bg-secondary/30 transition-colors">
                     <Checkbox
                       id="marketing"
                       checked={marketingConsent}
                       onCheckedChange={(checked) => setMarketingConsent(checked as boolean)}
-                      className="mt-1"
+                      className="mt-0.5"
                     />
                     <div>
-                      <Label htmlFor="marketing" className="font-display uppercase tracking-wider text-sm cursor-pointer">
-                        Marketing Communications (Optional)
-                      </Label>
-                      <p className="text-muted-foreground text-sm mt-1">
-                        I would like to receive updates about exclusive offers, new products, and services via email and SMS.
+                      <span className="text-sm font-medium">Marketing <span className="text-muted-foreground font-normal">(optional)</span></span>
+                      <p className="text-muted-foreground text-xs mt-0.5">
+                        Receive updates about offers, new products, and services via email and SMS.
                       </p>
                     </div>
-                  </div>
-                </div>
-              </motion.div>
+                  </label>
 
-              {/* Order Consent */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="card-brutal bg-card p-6"
-              >
-                <h2 className="text-display-sm mb-4 flex items-center gap-3">
-                  <Check className="w-6 h-6" />
-                  ORDER CONFIRMATION
-                </h2>
-                <div className="flex items-start gap-3 p-4 border-4 border-foreground bg-secondary">
-                  <Checkbox
-                    id="orderConsent"
-                    checked={orderConsent}
-                    onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <Label htmlFor="orderConsent" className="font-display uppercase tracking-wider text-sm cursor-pointer">
-                      I confirm all of the following *
-                    </Label>
-                    <ul className="text-muted-foreground text-sm mt-2 space-y-1 list-disc list-inside">
-                      <li>I understand this service is 30-day rolling with no fixed contract</li>
-                      <li>Setup charges may apply depending on my line status</li>
-                      <li>I accept all charges shown above</li>
-                      <li>Service is subject to availability at my address</li>
-                    </ul>
+                  <div className="border-t border-foreground/10 pt-3 mt-3">
+                    <label className="flex items-start gap-3 p-3 rounded-sm bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors">
+                      <Checkbox
+                        id="orderConsent"
+                        checked={orderConsent}
+                        onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <span className="text-sm font-medium">I confirm the following <span className="text-destructive">*</span></span>
+                        <ul className="text-muted-foreground text-xs mt-1 space-y-0.5">
+                          <li>• This service is 30-day rolling with no fixed contract</li>
+                          <li>• Setup charges may apply depending on my line status</li>
+                          <li>• I accept all charges shown in the order summary</li>
+                          <li>• Service is subject to availability at my address</li>
+                        </ul>
+                      </div>
+                    </label>
                   </div>
                 </div>
               </motion.div>
@@ -1117,50 +1102,48 @@ const PreCheckout = () => {
               </Button>
 
               {/* Security Badge */}
-              <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs mt-3">
-                <Shield className="w-4 h-4" />
-                <span>256-bit encrypted &middot; Your data is safe with us</span>
+              <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs">
+                <div className="flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>256-bit encrypted</span>
+                </div>
+                <span className="text-foreground/20">·</span>
+                <div className="flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Ofcom regulated</span>
+                </div>
               </div>
 
-              {/* Switching Timeline - Below Submit Button */}
+              {/* What happens next */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="card-brutal bg-primary/5 p-6 border-primary"
+                className="border-2 border-foreground/10 bg-card p-6 sm:p-8"
               >
-                <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                  <Clock className="w-6 h-6" />
-                  WHAT HAPPENS NEXT
+                <h2 className="font-display text-lg uppercase tracking-wider mb-6 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-muted-foreground" />
+                  What Happens Next
                 </h2>
                 
-                <div className="relative">
-                  {/* Timeline line */}
-                  <div className="absolute left-6 top-8 bottom-8 w-1 bg-primary/30" />
-                  
-                  <div className="space-y-6">
-                    {[
-                      { day: "Day 1", title: "Order Received", desc: "We receive your order and begin processing. You'll get a confirmation email with your order details.", icon: "📩" },
-                      { day: "Day 2", title: "Provider Notified", desc: "We contact your current provider to initiate the switch. They'll send you a leaving confirmation.", icon: "📞" },
-                      { day: "Day 3-5", title: "Switch Arranged", desc: "We coordinate with Openreach to schedule your installation or line activation date.", icon: "📅" },
-                      { day: "Day 7", title: "Equipment Arrives", desc: "Your new router and any equipment will arrive at your address via tracked delivery.", icon: "📦" },
-                      { day: "Day 10-12", title: "Engineer Visit", desc: "If required, an engineer will visit to complete the setup. Most installations don't need this.", icon: "🔧" },
-                      { day: "Day 14", title: "You're Live!", desc: "Your new service goes live! Your old provider will stop charging from this date.", icon: "🎉" },
-                    ].map((step, idx) => (
-                      <div key={idx} className="relative flex gap-4 pl-2">
-                        <div className="w-10 h-10 bg-primary border-4 border-foreground flex items-center justify-center text-lg z-10">
-                          {step.icon}
-                        </div>
-                        <div className="flex-grow pb-2">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-display text-primary uppercase tracking-wider text-sm">{step.day}</span>
-                            <span className="font-display uppercase tracking-wider">{step.title}</span>
-                          </div>
-                          <p className="text-muted-foreground text-sm">{step.desc}</p>
-                        </div>
+                <div className="space-y-4">
+                  {[
+                    { day: "Day 1", title: "Order received", desc: "Confirmation email sent with your order details." },
+                    { day: "Day 2", title: "Provider notified", desc: "We initiate the switch with your current provider." },
+                    { day: "Day 3–5", title: "Switch arranged", desc: "Installation or line activation date scheduled." },
+                    { day: "Day 7", title: "Equipment arrives", desc: "Router and equipment delivered via tracked delivery." },
+                    { day: "Day 10–14", title: "You're live", desc: "Service goes live. Your old provider stops charging." },
+                  ].map((step, idx) => (
+                    <div key={idx} className="flex gap-4 items-start">
+                      <div className="flex-shrink-0 w-16">
+                        <span className="text-xs font-display uppercase tracking-wider text-primary">{step.day}</span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex-grow border-l-2 border-foreground/10 pl-4 pb-1">
+                        <span className="font-display text-sm uppercase tracking-wider">{step.title}</span>
+                        <p className="text-muted-foreground text-xs mt-0.5">{step.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </motion.div>
             </div>

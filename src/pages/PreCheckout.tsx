@@ -881,7 +881,7 @@ const PreCheckout = () => {
                       value={customerData.currentProvider}
                       onValueChange={(value) => handleInputChange("currentProvider", value)}
                     >
-                      <SelectTrigger className="mt-1 border-2 border-foreground/30">
+                      <SelectTrigger className="mt-1 border border-foreground/20">
                         <SelectValue placeholder="Select your current provider" />
                       </SelectTrigger>
                       <SelectContent>

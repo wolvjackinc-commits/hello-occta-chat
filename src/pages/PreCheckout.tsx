@@ -669,7 +669,8 @@ const PreCheckout = () => {
             Back to plans
           </Link>
 
-          <h1 className="text-display-md mb-8">COMPLETE YOUR ORDER</h1>
+          <h1 className="text-display-md mb-2">COMPLETE YOUR ORDER</h1>
+          <p className="text-muted-foreground mb-8">Fill in your details below and we'll get you connected.</p>
 
           {/* Restore Saved Form Prompt */}
           <AnimatePresence>

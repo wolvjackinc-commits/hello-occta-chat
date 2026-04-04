@@ -411,7 +411,7 @@ const Broadband = () => {
             >
               <h2 className="text-display-md mb-4">ADD A HOME PHONE</h2>
               <p className="text-lg text-muted-foreground mb-6">
-                Add Digital Home Phone from <span className="font-bold text-foreground">£4.99/month</span> to your broadband.
+                Add Digital Home Phone from <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span> to your broadband.
               </p>
               <ul className="space-y-3 mb-6">
                 {[

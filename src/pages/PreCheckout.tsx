@@ -866,7 +866,7 @@ const PreCheckout = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
+                className="border border-foreground/10 bg-card p-6 sm:p-8"
               >
                 <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
                   <ArrowRight className="w-5 h-5 text-muted-foreground" />

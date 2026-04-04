@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Star
 } from "lucide-react";
+import { getFromPrices } from "@/lib/pricing/engine";
 import { Button } from "@/components/ui/button";
 
 const benefits = [

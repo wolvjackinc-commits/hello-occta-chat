@@ -432,7 +432,7 @@ const Checkout = () => {
                           value={addressData.postcode}
                           onChange={(e) => handleAddressChange("postcode", e.target.value.toUpperCase())}
                           placeholder="HD1 2QD"
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                         />
                         {errors.postcode && <p className="text-destructive text-sm mt-1">{errors.postcode}</p>}
                       </div>

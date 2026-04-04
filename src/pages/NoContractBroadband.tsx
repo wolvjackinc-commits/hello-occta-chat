@@ -22,6 +22,7 @@ import {
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, JsonLd, createFAQSchema, createOfferSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -90,11 +91,12 @@ const faqs = [
 const NoContractBroadband = () => {
   const { isAppMode } = useAppMode();
   const LayoutComponent = isAppMode ? AppLayout : Layout;
+  const prices = getFromPrices();
   const faqSchema = createFAQSchema(faqs.slice(0, 6));
   const offerSchema = createOfferSchema({
     name: "No Contract Broadband",
     description: "Flexible UK broadband with no contracts, no hidden fees, and no price rises.",
-    price: "22.99",
+    price: prices.broadband,
     url: "/no-contract-broadband-uk",
     category: "Broadband",
   });
@@ -106,7 +108,7 @@ const NoContractBroadband = () => {
         description="Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband with no lock-ins, no hidden fees, and no surprise price rises."
         canonical="/no-contract-broadband-uk"
         keywords="no contract broadband UK, flexible broadband, cancel anytime broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
-        price="22.99"
+        price={prices.broadband}
       />
       <JsonLd data={offerSchema} />
       <JsonLd data={faqSchema} />
@@ -134,7 +136,7 @@ const NoContractBroadband = () => {
               className="text-xl md:text-2xl font-bold text-muted-foreground mb-4"
             >
               Broadband from{" "}
-              <span className="text-foreground">£22.99/month</span>. No
+              <span className="text-foreground">£{prices.broadband}/month</span>. No
               contracts, no hidden fees, cancel anytime.
             </motion.p>
 
@@ -405,7 +407,7 @@ const NoContractBroadband = () => {
                     Broadband Plans
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Compare all our broadband packages from £22.99/month
+                    Compare all our broadband packages from £{prices.broadband}/month
                   </p>
                 </Card>
               </Link>
@@ -419,7 +421,7 @@ const NoContractBroadband = () => {
                     SIM Plans
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Flexible mobile plans with no contract from £7.99/month
+                    Flexible mobile plans with no contract from £{prices.sim}/month
                   </p>
                 </Card>
               </Link>
@@ -433,7 +435,7 @@ const NoContractBroadband = () => {
                     Home Phone
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Keep your number with Digital Home Phone from £4.99/month
+                    Keep your number with Digital Home Phone from £{prices.landline}/month
                   </p>
                 </Card>
               </Link>

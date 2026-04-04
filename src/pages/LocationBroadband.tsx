@@ -7,6 +7,7 @@ import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema, createSer
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { broadbandPlans } from "@/lib/plans";
 import { getLocationBySlug } from "@/data/locations";
+import { getFromPrices } from "@/lib/pricing/engine";
 import NotFound from "@/pages/NotFound";
 
 import { motion } from "framer-motion";
@@ -18,11 +19,12 @@ const LocationBroadband = () => {
 
   if (!location) return <NotFound />;
 
+  const prices = getFromPrices();
   const broadbandServiceSchema = createServiceSchema({
     name: `OCCTA Broadband in ${location.city}`,
     description: `Fast, reliable fibre broadband in ${location.city} with speeds up to 900Mbps. No contracts, no price rises.`,
     url: `/broadband-${location.slug}`,
-    price: '22.99',
+    price: prices.broadband,
   });
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
@@ -74,7 +76,7 @@ const LocationBroadband = () => {
         description={location.metaDescription}
         canonical={`/broadband-${location.slug}`}
         keywords={`cheap broadband ${location.city}, broadband ${location.city}, fibre broadband ${location.city}, no contract broadband ${location.city}, internet ${location.city}, ${location.region} broadband`}
-        price="22.99"
+        price={prices.broadband}
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 

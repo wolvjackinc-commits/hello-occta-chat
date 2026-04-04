@@ -44,7 +44,7 @@ const organizationSchema = {
   logo: `${BASE_URL}/pwa-512x512.png`,
   image: `${BASE_URL}/og-image.png`,
   description:
-    "Cheap UK broadband, SIM plans, and digital home phone services with no contracts. Affordable internet from £22.99/month.",
+    "Cheap UK broadband, SIM plans, and digital home phone services with no contracts. Affordable internet from £26.95/month.",
   address: {
     "@type": "PostalAddress",
     streetAddress: "22 Pavilion View",
@@ -119,22 +119,22 @@ const routes: RouteSEO[] = [
     path: "/",
     title: "Cheap UK Broadband & SIM Plans | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Cheap broadband UK from £22.99/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £7.99, digital home phone from £4.99. No credit check, cancel anytime. Get connected today!",
+      "Cheap broadband UK from £26.95/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £7.99, digital home phone from £4.95. No credit check, cancel anytime. Get connected today!",
     canonical: "/",
     keywords:
       "cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband",
-    price: "22.99",
+    price: "26.95",
     jsonLd: globalSchemas,
   },
   {
     path: "/broadband",
     title: "Cheap Broadband UK - No Contract Fibre | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Cheap broadband UK from £22.99/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, cancel anytime. Best budget broadband 2025.",
+      "Cheap broadband UK from £26.95/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, cancel anytime. Best budget broadband 2025.",
     canonical: "/broadband",
     keywords:
       "cheap broadband UK, no contract broadband, cancel anytime broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK",
-    price: "22.99",
+    price: "26.95",
     jsonLd: [
       localBusinessSchema,
       {
@@ -148,7 +148,7 @@ const routes: RouteSEO[] = [
         areaServed: { "@type": "Country", name: "United Kingdom" },
         offers: {
           "@type": "Offer",
-          price: "22.99",
+          price: "26.95",
           priceCurrency: "GBP",
           availability: "https://schema.org/InStock",
         },
@@ -188,11 +188,11 @@ const routes: RouteSEO[] = [
     path: "/landline",
     title: "Digital Home Phone UK - Add to Broadband | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Add Digital Home Phone from £4.99/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts.",
+      "Add Digital Home Phone from £4.95/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts.",
     canonical: "/landline",
     keywords:
       "digital home phone, digital voice UK, VoIP home phone, home phone broadband, cheap home phone UK, no contract home phone, digital home phone UK",
-    price: "4.99",
+    price: "4.95",
     jsonLd: [
       localBusinessSchema,
       {
@@ -206,7 +206,7 @@ const routes: RouteSEO[] = [
         areaServed: { "@type": "Country", name: "United Kingdom" },
         offers: {
           "@type": "Offer",
-          price: "4.99",
+          price: "4.95",
           priceCurrency: "GBP",
           availability: "https://schema.org/InStock",
         },
@@ -221,7 +221,7 @@ const routes: RouteSEO[] = [
     canonical: "/no-contract-broadband-uk",
     keywords:
       "no contract broadband UK, flexible broadband, cancel anytime broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband",
-    price: "22.99",
+    price: "26.95",
     jsonLd: [
       localBusinessSchema,
       {
@@ -230,7 +230,7 @@ const routes: RouteSEO[] = [
         name: "No Contract Broadband",
         description:
           "Flexible UK broadband with no contracts, no hidden fees, and no price rises.",
-        price: "22.99",
+        price: "26.95",
         priceCurrency: "GBP",
         url: `${BASE_URL}/no-contract-broadband-uk`,
         availability: "https://schema.org/InStock",
@@ -380,65 +380,65 @@ const routes: RouteSEO[] = [
   ].map(({ slug, city, region }): RouteSEO => ({
     path: `/broadband-${slug}`,
     title: `Cheap Broadband in ${city} - No Contract Fibre | OCCTA - Cheap UK Broadband & SIM`,
-    description: `Cheap broadband in ${city} from \u00A322.99/mo. No contract fibre up to 900Mbps in ${region}. No price rises, cancel anytime.`,
+    description: `Cheap broadband in ${city} from \u00A326.95/mo. No contract fibre up to 900Mbps in ${region}. No price rises, cancel anytime.`,
     canonical: `/broadband-${slug}`,
     keywords: `cheap broadband ${city}, broadband ${city}, fibre broadband ${city}, no contract broadband ${city}, internet ${city}, ${region} broadband`,
-    price: "22.99",
+    price: "26.95",
     jsonLd: [localBusinessSchema],
   }))),
   /* ─── Keyword landing pages ─── */
   {
     path: "/cheap-broadband-near-me",
     title: "Cheap Broadband Near Me — Find Affordable Internet | OCCTA",
-    description: "Looking for cheap broadband near you? OCCTA offers affordable fibre broadband from £22.99/mo with no contracts across the UK.",
+    description: "Looking for cheap broadband near you? OCCTA offers affordable fibre broadband from £26.95/mo with no contracts across the UK.",
     canonical: "/cheap-broadband-near-me",
     keywords: "cheap broadband near me, affordable broadband near me, broadband deals near me, internet near me cheap",
-    price: "22.99",
+    price: "26.95",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/broadband-no-credit-check",
     title: "Broadband No Credit Check — Get Connected Today | OCCTA",
-    description: "Need broadband with no credit check? OCCTA offers fast fibre broadband from £22.99/mo with no credit check, no contract.",
+    description: "Need broadband with no credit check? OCCTA offers fast fibre broadband from £26.95/mo with no credit check, no contract.",
     canonical: "/broadband-no-credit-check",
     keywords: "broadband no credit check, internet no credit check, wifi no credit check, broadband without credit check UK",
-    price: "22.99",
+    price: "26.95",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/broadband-for-students",
     title: "Student Broadband — No Contract Internet for Students | OCCTA",
-    description: "Best broadband for students in the UK. No contract, no credit check, cancel anytime. From £22.99/mo.",
+    description: "Best broadband for students in the UK. No contract, no credit check, cancel anytime. From £26.95/mo.",
     canonical: "/broadband-for-students",
     keywords: "student broadband, broadband for students UK, student internet deals, no contract broadband students",
-    price: "22.99",
+    price: "26.95",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/best-broadband-deals-uk",
     title: "Best Broadband Deals UK 2026 — Compare & Save | OCCTA",
-    description: "Find the best broadband deals in the UK for 2026. No-contract plans from £22.99/mo. No hidden fees.",
+    description: "Find the best broadband deals in the UK for 2026. No-contract plans from £26.95/mo. No hidden fees.",
     canonical: "/best-broadband-deals-uk",
     keywords: "best broadband deals UK, best broadband deals 2026, cheapest broadband UK, broadband deals comparison",
-    price: "22.99",
+    price: "26.95",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/broadband-for-gaming",
     title: "Best Broadband for Gaming UK — Low Latency Internet | OCCTA",
-    description: "Best broadband for gaming in the UK. Low latency, fast speeds up to 900Mbps, no contracts. From £22.99/mo.",
+    description: "Best broadband for gaming in the UK. Low latency, fast speeds up to 900Mbps, no contracts. From £26.95/mo.",
     canonical: "/broadband-for-gaming",
     keywords: "broadband for gaming, gaming broadband UK, best internet for gaming, low latency broadband",
-    price: "22.99",
+    price: "26.95",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/broadband-for-working-from-home",
     title: "Best Broadband for Working from Home — Reliable WFH Internet | OCCTA",
-    description: "Best broadband for working from home. Reliable fibre, fast speeds, no contracts. From £22.99/mo.",
+    description: "Best broadband for working from home. Reliable fibre, fast speeds, no contracts. From £26.95/mo.",
     canonical: "/broadband-for-working-from-home",
     keywords: "broadband for working from home, WFH broadband, remote working internet, home office broadband",
-    price: "22.99",
+    price: "26.95",
     jsonLd: [localBusinessSchema],
   },
   /* ─── Comparison pages ─── */

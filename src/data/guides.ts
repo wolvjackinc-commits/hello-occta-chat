@@ -57,7 +57,7 @@ export const guides: Guide[] = [
       {
         heading: 'How Much Does It Cost?',
         paragraphs: [
-          'At OCCTA, no-contract broadband starts from just £22.99 per month. You get the same speeds, the same unlimited data, and the same UK-based support as any contract plan — but without the tie-in.',
+          'At OCCTA, no-contract broadband starts from just £26.95 per month. You get the same speeds, the same unlimited data, and the same UK-based support as any contract plan — but without the tie-in.',
           'Many providers charge a premium for flexibility. We believe broadband should be simple: one price, no hidden fees, no mid-contract price rises.',
         ],
       },
@@ -109,7 +109,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA: Transparent Pricing',
         paragraphs: [
-          'At OCCTA, the price you see is the price you pay. Our broadband starts from £22.99 per month with no setup fees, no mid-contract rises, and no exit penalties. We include the router and unlimited data as standard.',
+          'At OCCTA, the price you see is the price you pay. Our broadband starts from £26.95 per month with no setup fees, no mid-contract rises, and no exit penalties. We include the router and unlimited data as standard.',
           'We are a UK company with UK-based support. No call centres abroad, no endless hold music.',
         ],
       },
@@ -125,7 +125,7 @@ export const guides: Guide[] = [
       },
     ],
     faqs: [
-      { question: 'What is the cheapest broadband in the UK?', answer: 'OCCTA offers broadband from £22.99 per month with no hidden fees, no contracts, and speeds up to 900Mbps.' },
+      { question: 'What is the cheapest broadband in the UK?', answer: 'OCCTA offers broadband from £26.95 per month with no hidden fees, no contracts, and speeds up to 900Mbps.' },
       { question: 'Are there any hidden fees?', answer: 'Not with OCCTA. The price advertised is the price you pay, including router and unlimited data.' },
       { question: 'Is cheap broadband reliable?', answer: 'Yes. Our network delivers the same fibre infrastructure used by larger providers. Speed and reliability are not compromised.' },
     ],
@@ -220,7 +220,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA Digital Home Phone',
         paragraphs: [
-          'OCCTA offers Digital Home Phone from just £4.99 per month as an add-on to any broadband plan. You get HD voice quality, caller display, and free voicemail. Optional call plans let you add unlimited UK calls or international minutes.',
+          'OCCTA offers Digital Home Phone from just £4.95 per month as an add-on to any broadband plan. You get HD voice quality, caller display, and free voicemail. Optional call plans let you add unlimited UK calls or international minutes.',
         ],
       },
     ],
@@ -272,13 +272,13 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA Digital Home Phone',
         paragraphs: [
-          'OCCTA Digital Home Phone is already fully digital — no copper line needed. From £4.99 per month as a broadband add-on, it includes HD voice, caller display, and voicemail. You can add unlimited UK or international calling plans too.',
+          'OCCTA Digital Home Phone is already fully digital — no copper line needed. From £4.95 per month as a broadband add-on, it includes HD voice, caller display, and voicemail. You can add unlimited UK or international calling plans too.',
         ],
       },
     ],
     faqs: [
       { question: 'Will my landline stop working?', answer: 'Your traditional analogue landline will stop working when your area is switched off. You will need to move to a Digital Voice service that works over broadband.' },
-      { question: 'Do I have to pay more for Digital Voice?', answer: 'OCCTA Digital Home Phone starts at £4.99 per month, which is typically less than a traditional line rental.' },
+      { question: 'Do I have to pay more for Digital Voice?', answer: 'OCCTA Digital Home Phone starts at £4.95 per month, which is typically less than a traditional line rental.' },
       { question: 'What about my alarm system?', answer: 'Some older telecare and alarm systems that use the phone line may not work over digital. Check with your alarm provider for compatibility.' },
       { question: 'Can I keep my phone number?', answer: 'Yes. Number porting is available when you switch to Digital Voice.' },
     ],
@@ -470,7 +470,7 @@ export const guides: Guide[] = [
           'Reliability: FTTP is more consistent as there is no copper degradation',
           'Upload speed: FTTP offers much faster uploads, important for WFH and cloud services',
           'Availability: FTTC is available to ~95% of UK premises; FTTP covers ~60% and growing',
-          'Price: Both are affordable. OCCTA offers FTTC from £22.99/mo and FTTP from £27.99/mo',
+          'Price: Both are affordable. OCCTA offers FTTC from £26.95/mo and FTTP from £27.99/mo',
         ],
       },
       {
@@ -528,7 +528,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Students',
         paragraphs: [
-          'OCCTA broadband starts from £22.99/mo with no contract, no credit check, and free installation. Perfect for student accommodation of any length. When you move out, give us 30 days notice and that is it — no exit fees.',
+          'OCCTA broadband starts from £26.95/mo with no contract, no credit check, and free installation. Perfect for student accommodation of any length. When you move out, give us 30 days notice and that is it — no exit fees.',
         ],
       },
     ],

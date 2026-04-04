@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Star
 } from "lucide-react";
+import { getFromPrices } from "@/lib/pricing/engine";
 import { Button } from "@/components/ui/button";
 
 const benefits = [
@@ -21,10 +22,11 @@ const benefits = [
   { icon: Headphones, title: "UK Support", desc: "UK-based team, real humans" },
 ];
 
+const appPrices = getFromPrices();
 const services = [
-  { icon: Wifi, label: "Broadband", desc: "From £24.99/mo", link: "/broadband", color: "bg-accent" },
-  { icon: Smartphone, label: "SIM Plans", desc: "From £5.99/mo", link: "/sim-plans", color: "bg-primary" },
-  { icon: PhoneCall, label: "Home Phone", desc: "From £4.99/mo", link: "/landline", color: "bg-warning" },
+  { icon: Wifi, label: "Broadband", desc: `From £${appPrices.broadband}/mo`, link: "/broadband", color: "bg-accent" },
+  { icon: Smartphone, label: "SIM Plans", desc: `From £${appPrices.sim}/mo`, link: "/sim-plans", color: "bg-primary" },
+  { icon: PhoneCall, label: "Home Phone", desc: `From £${appPrices.landline}/mo`, link: "/landline", color: "bg-warning" },
 ];
 
 const AppWelcome = () => {

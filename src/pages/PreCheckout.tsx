@@ -1119,20 +1119,20 @@ const PreCheckout = () => {
                   What Happens Next
                 </h2>
                 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {[
-                    { day: "Day 1", title: "Order received", desc: "Confirmation email sent with your order details." },
-                    { day: "Day 2", title: "Provider notified", desc: "We initiate the switch with your current provider." },
-                    { day: "Day 3–5", title: "Switch arranged", desc: "Installation or line activation date scheduled." },
-                    { day: "Day 7", title: "Equipment arrives", desc: "Router and equipment delivered via tracked delivery." },
-                    { day: "Day 10–14", title: "You're live", desc: "Service goes live. Your old provider stops charging." },
+                    { day: "Day 1", title: "Order received", desc: "Confirmation email with your order details." },
+                    { day: "Day 2", title: "Provider notified", desc: "We initiate the switch on your behalf." },
+                    { day: "Day 3–5", title: "Switch arranged", desc: "Activation date confirmed." },
+                    { day: "Day 7", title: "Equipment arrives", desc: "Router delivered via tracked post." },
+                    { day: "Day 10–14", title: "You're live", desc: "Service goes live. Old provider stops." },
                   ].map((step, idx) => (
                     <div key={idx} className="flex gap-4 items-start">
                       <div className="flex-shrink-0 w-16">
-                        <span className="text-xs font-display uppercase tracking-wider text-primary">{step.day}</span>
+                        <span className="text-[11px] font-display uppercase tracking-wider text-primary">{step.day}</span>
                       </div>
-                      <div className="flex-grow border-l-2 border-foreground/10 pl-4 pb-1">
-                        <span className="font-display text-sm uppercase tracking-wider">{step.title}</span>
+                      <div className="flex-grow border-l border-foreground/10 pl-4">
+                        <span className="font-medium text-sm">{step.title}</span>
                         <p className="text-muted-foreground text-xs mt-0.5">{step.desc}</p>
                       </div>
                     </div>

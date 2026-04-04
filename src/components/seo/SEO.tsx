@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { getFromPrices } from '@/lib/pricing/engine';
 
 interface SEOProps {
   title?: string;

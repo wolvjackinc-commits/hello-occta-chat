@@ -729,7 +729,7 @@ const PreCheckout = () => {
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">First Name *</Label>
+                    <Label className="text-sm font-medium">First name <span className="text-destructive">*</span></Label>
                     <Input
                       value={customerData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}

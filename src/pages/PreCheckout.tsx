@@ -953,22 +953,22 @@ const PreCheckout = () => {
                         type="button"
                         onClick={() => setCareLevelId(level.id)}
                         className={cn(
-                          "w-full text-left px-4 py-3 border-2 transition-all flex items-center justify-between rounded-sm",
+                          "w-full text-left px-4 py-3 border transition-all flex items-center justify-between rounded-sm",
                           careLevelId === level.id
-                            ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                            : "border-foreground/15 hover:border-foreground/40"
+                            ? "border-primary/40 bg-primary/8"
+                            : "border-foreground/10 bg-secondary/20 hover:border-foreground/25 hover:bg-secondary/40"
                         )}
                       >
                         <div className="flex items-center gap-3">
                           <div className={cn(
-                            "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                            careLevelId === level.id ? "border-primary" : "border-foreground/30"
+                            "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
+                            careLevelId === level.id ? "border-primary bg-primary" : "border-foreground/25"
                           )}>
-                            {careLevelId === level.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                            {careLevelId === level.id && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                           </div>
-                          <span className="font-display text-sm">{level.label}</span>
+                          <span className="font-medium text-sm">{level.label}</span>
                         </div>
-                        <span className={cn("text-sm", careLevelId === level.id ? "font-display text-primary" : "text-muted-foreground")}>
+                        <span className={cn("text-xs", careLevelId === level.id ? "font-medium text-foreground" : "text-muted-foreground")}>
                           {level.monthlyUplift === 0 ? 'Included' : `+£${level.monthlyUplift.toFixed(2)}/mo`}
                         </span>
                       </button>

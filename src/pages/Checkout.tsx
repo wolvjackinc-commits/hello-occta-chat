@@ -322,16 +322,20 @@ const Checkout = () => {
                   <span className="font-display">{plan.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Monthly cost</span>
-                  <span className="font-display">£{plan.price}/mo</span>
+                  <span className="text-muted-foreground">Monthly (ex VAT)</span>
+                  <span className="font-display">£{monthlySubtotalExVat.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">VAT (20%)</span>
+                  <span className="font-display">£{monthlyVat.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-display">
+                  <span>Ongoing monthly (incl. VAT)</span>
+                  <span>£{ongoingMonthly.toFixed(2)}/mo</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Setup/install</span>
-                  <span className="font-display">{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Ongoing monthly</span>
-                  <span className="font-display">£{ongoingMonthly.toFixed(2)}/mo</span>
+                  <span className="font-display">{setupCharge === 0 ? 'FREE' : `£${totalDueToday.toFixed(2)} (incl. VAT)`}</span>
                 </div>
               </div>
             </div>

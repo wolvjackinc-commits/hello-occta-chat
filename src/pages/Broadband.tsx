@@ -153,8 +153,13 @@ const Broadband = () => {
                 <span className="font-display text-3xl text-primary">£{voiceTotal.toFixed(2)}</span>
                 <span className="text-foreground/70 text-sm">/mo</span>
               </div>
+              <ul className="text-xs text-muted-foreground space-y-0.5 mb-2">
+                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Works through your broadband</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Keep your existing number</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Plug into your router</li>
+              </ul>
               {selectedCallPlans.length === 0 && (
-                <p className="text-xs text-muted-foreground">Pay-as-you-go calls included (8p/min UK)</p>
+                <p className="text-xs text-muted-foreground">Pay-as-you-go calls (8p/min UK)</p>
               )}
               {selectedCallPlans.length > 0 && (
                 <p className="text-xs text-muted-foreground">

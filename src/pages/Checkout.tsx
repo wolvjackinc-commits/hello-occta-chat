@@ -614,13 +614,59 @@ const Checkout = () => {
                           <span>Monthly subscription</span>
                           <span className="font-display">£{plan.price}</span>
                         </div>
+                        {careUplift > 0 && (
+                          <div className="flex justify-between py-2 border-b-2 border-foreground/10">
+                            <span>Care level uplift</span>
+                            <span className="font-display">+£{careUplift.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between py-2 border-b-2 border-foreground/10 font-display">
+                          <span>ONGOING MONTHLY</span>
+                          <span>£{ongoingMonthly.toFixed(2)}/mo</span>
+                        </div>
                         <div className="flex justify-between py-2 border-b-2 border-foreground/10">
-                          <span>Installation fee</span>
-                          <span className="font-display text-primary">FREE</span>
+                          <span>
+                            Setup/install
+                            {installScenarioId && installScenarioId !== 'fttp-standard' && (
+                              <span className="text-muted-foreground text-xs ml-1">
+                                ({installScenarios.find(s => s.id === installScenarioId)?.label})
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-display">{setupCharge === 0 ? <span className="text-primary">FREE</span> : `£${setupCharge.toFixed(2)}`}</span>
                         </div>
                         <div className="flex justify-between py-4 text-xl">
-                          <span className="font-display">DUE TODAY</span>
-                          <span className="font-display">£0.00</span>
+                          <span className="font-display">TOTAL DUE TODAY</span>
+                          <span className="font-display">£{totalDueToday.toFixed(2)}</span>
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                          30-day rolling — no contracts
+                        </p>
+                        {resolvedProduct?.technology === 'SOGEA' && (
+                          <p className="text-muted-foreground text-xs italic">
+                            {getSOGEANote()}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Order Consent */}
+                      <div className="flex items-start gap-3 p-4 border-4 border-foreground bg-secondary">
+                        <Checkbox
+                          id="orderConsentCheckout"
+                          checked={orderConsent}
+                          onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
+                          className="mt-1"
+                        />
+                        <div>
+                          <Label htmlFor="orderConsentCheckout" className="font-display uppercase tracking-wider text-sm cursor-pointer">
+                            I confirm all of the following *
+                          </Label>
+                          <ul className="text-muted-foreground text-sm mt-2 space-y-1 list-disc list-inside">
+                            <li>I understand this service is 30-day rolling with no fixed contract</li>
+                            <li>Setup charges may apply depending on my line status</li>
+                            <li>I accept all charges shown above</li>
+                            <li>Service is subject to availability at my address</li>
+                          </ul>
                         </div>
                       </div>
 
@@ -629,7 +675,6 @@ const Checkout = () => {
                         <Link to="/terms" className="underline">Terms of Service</Link>
                         {" "}and{" "}
                         <Link to="/privacy" className="underline">Privacy Policy</Link>.
-                        No contracts, no lock-ins — cancel anytime.
                       </p>
                     </div>
 

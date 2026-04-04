@@ -1174,12 +1174,12 @@ const PreCheckout = () => {
 
                 {/* Add-ons Section */}
                 {Object.entries(addonsByService).map(([serviceType, addons]) => (
-                  <div key={serviceType} className="mb-6">
-                    <h4 className="font-display text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Plus className="w-4 h-4" />
-                      {serviceType} Add-ons
+                  <div key={serviceType} className="mb-4">
+                    <h4 className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <Plus className="w-3.5 h-3.5" />
+                      {serviceType} add-ons
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {addons.map((addon) => {
                         const isSelected = selectedAddons.includes(addon.id);
                         const IconComponent = iconMap[addon.icon] || Shield;
@@ -1188,10 +1188,10 @@ const PreCheckout = () => {
                             key={addon.id}
                             onClick={() => toggleAddon(addon.id)}
                             className={cn(
-                              "w-full text-left p-3 border-4 transition-all relative",
+                              "w-full text-left p-2.5 border transition-all relative rounded-sm",
                               isSelected 
-                                ? "border-primary bg-primary/10" 
-                                : "border-foreground/30 hover:border-foreground"
+                                ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
+                                : "border-foreground/15 hover:border-foreground/30"
                             )}
                             whileTap={{ scale: 0.98 }}
                           >

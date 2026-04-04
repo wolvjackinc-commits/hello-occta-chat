@@ -61,7 +61,7 @@ const Landline = () => {
   const planOfferSchema = createOfferSchema({
     name: 'OCCTA Digital Voice Line',
     description: 'Digital home phone with HD calls, caller display, free voicemail. Requires OCCTA broadband.',
-    price: '4.99',
+    price: getFromPrices().landline,
     url: `/pre-checkout?plans=${plan.id}`,
     sku: plan.id,
     category: 'Digital Home Phone',

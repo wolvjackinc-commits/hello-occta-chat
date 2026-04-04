@@ -633,18 +633,18 @@ const Checkout = () => {
                             <span>+£{careUplift.toFixed(2)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between text-xs text-muted-foreground py-1 border-t border-foreground/5">
+                        <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1 border-t border-foreground/5">
                           <span>Subtotal (ex VAT)</span>
                           <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-xs text-muted-foreground py-1">
+                        <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1">
                           <span>VAT (20%)</span>
                           <span>£{monthlyVat.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-display py-2 border-t border-foreground/10">
-                          <span className="text-sm">Ongoing monthly</span>
+                          <span className="text-base font-semibold">Ongoing monthly</span>
                           <div className="text-right">
-                            <span className="text-lg">£{ongoingMonthly.toFixed(2)}</span>
+                            <span className="text-2xl">£{ongoingMonthly.toFixed(2)}</span>
                             <span className="text-muted-foreground text-xs">/mo</span>
                           </div>
                         </div>

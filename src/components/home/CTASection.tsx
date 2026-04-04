@@ -122,7 +122,7 @@ const CTASection = () => {
                 transition={{ duration: 0.15 }}
               >
                 <Button variant="hero" size="xl" className="w-full sm:w-auto border-background">
-                  Get Started Now
+                  Get Started
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </motion.div>

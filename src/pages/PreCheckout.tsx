@@ -1151,8 +1151,8 @@ const PreCheckout = () => {
             {/* Right Sidebar - Order Summary & Add-ons */}
             <div className="space-y-6">
               {/* Selected Plans */}
-              <div className="card-brutal bg-card p-6 sticky top-4">
-                <h3 className="font-display text-lg mb-4 uppercase tracking-wider">Your Order</h3>
+              <div className="border-2 border-foreground/20 bg-card p-5 sticky top-4">
+                <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-4">Order Summary</h3>
                 
                 <div className="space-y-4 mb-6">
                   {selectedPlans.map((plan) => {

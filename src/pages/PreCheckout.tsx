@@ -1236,28 +1236,82 @@ const PreCheckout = () => {
                   </div>
                 ))}
 
-                {/* Totals */}
+                {/* Itemised Breakdown */}
                 <div className="border-t-4 border-foreground pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Plans subtotal</span>
-                    <span>£{bundleCalc.originalTotal.toFixed(2)}</span>
-                  </div>
-                  {bundleCalc.discountPercentage > 0 && (
+                  <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">Monthly charges</p>
+                  {selectedPlans.map(plan => (
+                    <div key={plan.id} className="flex justify-between text-sm">
+                      <span>{plan.name}</span>
+                      <span>£{plan.price}</span>
+                    </div>
+                  ))}
+                  {careUplift > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span>Care level uplift</span>
+                      <span>+£{careUplift.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedAddons.filter(id => {
+                    const a = availableAddons.find(x => x.id === id);
+                    return a && !a.oneTime;
+                  }).map(id => {
+                    const a = availableAddons.find(x => x.id === id)!;
+                    return (
+                      <div key={id} className="flex justify-between text-sm">
+                        <span>{a.name}</span>
+                        <span>+£{a.price.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                  {bundleCalc.savings > 0 && (
                     <div className="flex justify-between text-sm text-primary">
-                      <span>Bundle discount ({bundleCalc.discountPercentage}%)</span>
+                      <span>Bundle discount</span>
                       <span>-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
-                  {addonsTotal > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span>Add-ons</span>
-                      <span>+£{addonsTotal.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-display text-xl pt-2 border-t-2 border-foreground/20">
-                    <span>Monthly Total</span>
-                    <span>£{monthlyTotal.toFixed(2)}</span>
+                  <div className="flex justify-between font-display text-lg pt-2 border-t-2 border-foreground/20">
+                    <span>ONGOING MONTHLY</span>
+                    <span>£{monthlyTotal.toFixed(2)}/mo</span>
                   </div>
+
+                  {/* One-off charges */}
+                  <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mt-4 mb-2">One-off charges</p>
+                  <div className="flex justify-between text-sm">
+                    <span>
+                      Setup/install
+                      {installScenarioId && (
+                        <span className="text-muted-foreground text-xs ml-1">
+                          ({installScenarios.find(s => s.id === installScenarioId)?.label})
+                        </span>
+                      )}
+                    </span>
+                    <span>{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
+                  </div>
+                  {selectedAddons.filter(id => {
+                    const a = availableAddons.find(x => x.id === id);
+                    return a?.oneTime;
+                  }).map(id => {
+                    const a = availableAddons.find(x => x.id === id)!;
+                    return (
+                      <div key={id} className="flex justify-between text-sm">
+                        <span>{a.name}</span>
+                        <span>£{a.price.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between font-display text-xl pt-2 border-t-2 border-foreground/20">
+                    <span>TOTAL DUE TODAY</span>
+                    <span>£{totalDueToday.toFixed(2)}</span>
+                  </div>
+
+                  <p className="text-muted-foreground text-xs mt-3">
+                    30-day rolling — no contracts
+                  </p>
+                  {resolvedProduct?.technology === 'SOGEA' && (
+                    <p className="text-muted-foreground text-xs mt-1 italic">
+                      {getSOGEANote()}
+                    </p>
+                  )}
                 </div>
 
                 {/* Cooling Off Notice */}

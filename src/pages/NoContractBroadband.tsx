@@ -411,7 +411,7 @@ const NoContractBroadband = () => {
                     Broadband Plans
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Compare all our broadband packages from £22.99/month
+                    Compare all our broadband packages from £{prices.broadband}/month
                   </p>
                 </Card>
               </Link>

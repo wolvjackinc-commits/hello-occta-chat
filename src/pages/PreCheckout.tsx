@@ -772,7 +772,7 @@ const PreCheckout = () => {
                       value={customerData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
                       placeholder="John"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.firstName && <p className="text-destructive text-sm mt-1">{errors.firstName}</p>}
                   </div>
@@ -783,7 +783,7 @@ const PreCheckout = () => {
                       value={customerData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}
                       placeholder="Smith"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.lastName && <p className="text-destructive text-sm mt-1">{errors.lastName}</p>}
                   </div>
@@ -795,7 +795,7 @@ const PreCheckout = () => {
                       value={customerData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       placeholder="john@example.com"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
                   </div>
@@ -807,7 +807,7 @@ const PreCheckout = () => {
                       value={customerData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="07700 900123"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
                   </div>

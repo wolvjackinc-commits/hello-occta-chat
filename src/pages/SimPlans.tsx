@@ -10,6 +10,7 @@ import { Check, Smartphone, Signal, Globe, ArrowRight, X } from "lucide-react";
 import { simPlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 const SimPlans = () => {
   const [isReady, setIsReady] = useState(false);
@@ -87,10 +88,10 @@ const SimPlans = () => {
     <LayoutComponent>
       <SEO 
         title="Cheap SIM Only Deals UK - 5G No Contract"
-        description="Cheap SIM deals UK from £7.99/mo. 5G SIM no credit check, no contracts, EU roaming included. Best budget SIM plans 2025. Unlimited calls & texts."
+        description={`Cheap SIM deals UK from £${getFromPrices().sim}/mo. 5G SIM no credit check, no contracts, EU roaming included. Best budget SIM plans 2025. Unlimited calls & texts.`}
         canonical="/sim-plans"
         keywords="cheap SIM deals UK, 5G SIM no credit check, no contract SIM, cheap mobile plans UK, SIM only deals, budget SIM UK, unlimited SIM UK, PAYG SIM cheap, best SIM deals 2025"
-        price="7.99"
+        price={getFromPrices().sim}
       />
       <StructuredData customSchema={combinedSchemas} />
       {/* Hero - Compact */}

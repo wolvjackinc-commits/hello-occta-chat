@@ -1,3 +1,6 @@
+import { getFromPrices } from './pricing/engine';
+import { voiceProducts } from './pricing/catalogue';
+
 export type BusinessPlan = {
   id: string;
   name: string;
@@ -15,6 +18,10 @@ export type BusinessService = {
   typical: string;
   details: string[];
 };
+
+const prices = getFromPrices();
+const bizVoipPayg = voiceProducts.find(v => v.id === 'biz-voip-payg');
+const sipTrunkPayg = voiceProducts.find(v => v.id === 'sip-trunk-payg');
 
 export const businessPlans: BusinessPlan[] = [
   {
@@ -50,12 +57,23 @@ export const businessServices: BusinessService[] = [
   {
     id: "hosted-voip",
     title: "Hosted VoIP",
-    price: "£8/seat",
+    price: `£${bizVoipPayg?.retailMonthly.toFixed(2) ?? '6.95'}/seat`,
     typical: "Typical £9-12/seat",
     details: [
       "UK numbers, auto attendant, call recording",
       "Softphone apps for iOS/Android",
       "Call queues, hunt groups, voicemail to email",
+    ],
+  },
+  {
+    id: "sip-trunk",
+    title: "SIP Trunks",
+    price: `£${sipTrunkPayg?.retailMonthly.toFixed(2) ?? '5.95'}/trunk`,
+    typical: "Typical £7-10/trunk",
+    details: [
+      "PAYG or 2000 minute bundles available",
+      "Enhanced SIP add-on available",
+      "TLS support on alternate ports",
     ],
   },
   {

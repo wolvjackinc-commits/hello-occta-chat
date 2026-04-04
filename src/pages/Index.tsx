@@ -5,6 +5,7 @@ import HeroSection from "@/components/home/HeroSection";
 import { useAppMode } from "@/hooks/useAppMode";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/seo";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 // Lazy-load below-fold & non-critical components
 const ServicesSection = lazy(() => import("@/components/home/ServicesSection"));
@@ -52,10 +53,10 @@ const Index = () => {
     <Layout>
       <SEO 
         title="Cheap UK Broadband & SIM Plans"
-        description="Cheap broadband UK from £22.99/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £7.99, digital home phone from £4.99. No credit check, cancel anytime. Get connected today!"
+        description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £${getFromPrices().sim}, digital home phone from £${getFromPrices().landline}. No credit check, cancel anytime. Get connected today!`}
         canonical="/"
         keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband"
-        price="22.99"
+        price={getFromPrices().broadband}
       />
       <HeroSection />
       <Suspense fallback={null}>

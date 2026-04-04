@@ -13,6 +13,7 @@ import { Check, PhoneCall, ArrowRight, AlertTriangle, Wifi, Router, Phone, Zap }
 import { landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 const Landline = () => {
   const [isReady, setIsReady] = useState(false);
@@ -52,15 +53,15 @@ const Landline = () => {
 
   const landlineServiceSchema = createServiceSchema({
     name: 'OCCTA Digital Home Phone',
-    description: 'Digital home phone service that works through your OCCTA broadband. Crystal clear HD calls from £4.99/month.',
+    description: `Digital home phone service that works through your OCCTA broadband. Crystal clear HD calls from £${getFromPrices().landline}/month.`,
     url: '/landline',
-    price: '4.99',
+    price: getFromPrices().landline,
   });
 
   const planOfferSchema = createOfferSchema({
     name: 'OCCTA Digital Voice Line',
     description: 'Digital home phone with HD calls, caller display, free voicemail. Requires OCCTA broadband.',
-    price: '4.99',
+    price: getFromPrices().landline,
     url: `/pre-checkout?plans=${plan.id}`,
     sku: plan.id,
     category: 'Digital Home Phone',
@@ -75,10 +76,10 @@ const Landline = () => {
     <LayoutComponent>
       <SEO 
         title="Digital Home Phone UK - Add to Broadband"
-        description="Add Digital Home Phone from £4.99/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts."
+        description={`Add Digital Home Phone from £${getFromPrices().landline}/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts.`}
         canonical="/landline"
         keywords="digital home phone, digital voice UK, VoIP home phone, home phone broadband, cheap home phone UK, no contract home phone"
-        price="4.99"
+        price={getFromPrices().landline}
       />
       <StructuredData customSchema={combinedSchemas} />
 
@@ -146,7 +147,7 @@ const Landline = () => {
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-lg mx-auto lg:mx-0">
                 Crystal clear calls through your broadband connection. Keep your existing number, 
-                use your standard home phone. From £4.99/month, no contracts.
+                use your standard home phone. From £{getFromPrices().landline}/month, no contracts.
               </p>
               
               {/* Benefits */}

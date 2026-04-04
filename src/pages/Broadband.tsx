@@ -13,6 +13,7 @@ import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone } from
 import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 const Broadband = () => {
   const [isReady, setIsReady] = useState(false);
@@ -97,7 +98,7 @@ const Broadband = () => {
     name: 'OCCTA Broadband',
     description: 'Fast, reliable fibre broadband with speeds up to 900Mbps. No contracts, no price rises.',
     url: '/broadband',
-    price: '22.99',
+    price: getFromPrices().broadband,
   });
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
@@ -121,10 +122,10 @@ const Broadband = () => {
     <LayoutComponent>
       <SEO 
         title="Cheap Broadband UK - No Contract Fibre"
-        description="Cheap broadband UK from £22.99/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, cancel anytime. Best budget broadband 2025."
+        description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, cancel anytime. Best budget broadband 2025.`}
         canonical="/broadband"
         keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
-        price="22.99"
+        price={getFromPrices().broadband}
       />
       <StructuredData customSchema={combinedSchemas} />
 
@@ -225,7 +226,7 @@ const Broadband = () => {
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-lg">
                 Fast, reliable internet without the corporate nonsense. 
-                From £22.99/month with no price rises mid-contract — cheap broadband UK
+                From £{getFromPrices().broadband}/month with no price rises mid-contract — cheap broadband UK
                 that stays no contract broadband and cancel anytime broadband.
               </p>
               <p className="text-sm text-muted-foreground mb-6">

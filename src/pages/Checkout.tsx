@@ -479,7 +479,7 @@ const Checkout = () => {
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
                           placeholder="E.g., best time to call, access instructions..."
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                           rows={3}
                         />
                       </div>

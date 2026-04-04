@@ -1455,7 +1455,7 @@ const PreCheckout = () => {
         </div>
       </div>
       {/* Mobile Order Summary */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-foreground/20 bg-background shadow-lg">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-foreground/15 bg-background shadow-lg">
         <button
           type="button"
           onClick={() => setIsMobileSummaryOpen((prev) => !prev)}

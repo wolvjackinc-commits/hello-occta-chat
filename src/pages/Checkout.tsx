@@ -172,6 +172,24 @@ const Checkout = () => {
   const handleSubmitOrder = async () => {
     if (!user || !plan) return;
 
+    if (resolvedProduct?.technology === 'SOGEA' && !installScenarioId) {
+      toast({
+        title: "Installation type required",
+        description: "Please select an installation type for your broadband.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!orderConsent) {
+      toast({
+        title: "Order consent required",
+        description: "Please confirm the order terms before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {

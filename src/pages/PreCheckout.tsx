@@ -901,7 +901,7 @@ const PreCheckout = () => {
                       value={customerData.inContract}
                       onValueChange={(value) => handleInputChange("inContract", value)}
                     >
-                      <SelectTrigger className="mt-1 border-2 border-foreground/30">
+                      <SelectTrigger className="mt-1 border border-foreground/20">
                         <SelectValue placeholder="Select an option" />
                       </SelectTrigger>
                       <SelectContent>

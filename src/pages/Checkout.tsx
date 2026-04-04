@@ -77,6 +77,9 @@ const Checkout = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState("");
+  const [installScenarioId, setInstallScenarioId] = useState<string | null>(null);
+  const [careLevelId, setCareLevelId] = useState('standard');
+  const [orderConsent, setOrderConsent] = useState(false);
 
   useEffect(() => {
     if (planId) {

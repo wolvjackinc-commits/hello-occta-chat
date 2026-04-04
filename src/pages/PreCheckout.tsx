@@ -672,16 +672,13 @@ const PreCheckout = () => {
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="mb-6 p-4 border-4 border-accent bg-accent/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                className="mb-6 px-4 py-3 border border-foreground/10 bg-secondary/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
               >
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-display uppercase text-accent">Saved Progress Found</h4>
-                    <p className="text-sm text-muted-foreground">
-                      We saved your form from earlier. Would you like to continue where you left off?
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <p className="text-sm text-muted-foreground">
+                    We saved your progress. <span className="text-foreground font-medium">Continue where you left off?</span>
+                  </p>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <Button

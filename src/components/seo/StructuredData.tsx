@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { companyConfig } from '@/lib/companyConfig';
+import { getFromPrices } from '@/lib/pricing/engine';
 
 const BASE_URL = companyConfig.website.url;
 

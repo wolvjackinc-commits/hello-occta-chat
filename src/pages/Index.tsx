@@ -5,6 +5,7 @@ import HeroSection from "@/components/home/HeroSection";
 import { useAppMode } from "@/hooks/useAppMode";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/seo";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 // Lazy-load below-fold & non-critical components
 const ServicesSection = lazy(() => import("@/components/home/ServicesSection"));

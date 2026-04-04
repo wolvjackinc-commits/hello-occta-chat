@@ -17,6 +17,7 @@ export interface Plan {
   speed?: string;
   data?: string;
   callRate?: string;
+  catalogueProductId?: string;
 }
 
 // ── Broadband plans derived from pricing engine ──

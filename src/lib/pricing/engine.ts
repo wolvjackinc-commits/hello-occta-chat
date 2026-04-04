@@ -1,4 +1,4 @@
-import type { FromPrices, OrderSummary, ServiceFamily } from './types';
+import type { FromPrices, OrderSummary, ServiceFamily, VatMode } from './types';
 import { catalogueProducts, voiceProducts, installScenarios, careLevels, bundleConfigs, addonCatalogue, portingOptions, numberTypes, smsTiers, callTariffs, GLOBAL_CEASE_FEE } from './catalogue';
 import { broadbandRetailCards, landlineRetailCard, simRetailCards } from './retailCards';
 

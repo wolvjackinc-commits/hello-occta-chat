@@ -195,6 +195,7 @@ const Broadband = () => {
                   </button>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground mt-2">Most customers add Unlimited UK Calls for peace of mind</p>
             </div>
           </div>
 

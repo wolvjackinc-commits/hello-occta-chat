@@ -40,8 +40,8 @@ export const broadbandRetailCards: RetailCardDef[] = [
     id: 'superfast',
     publicTitle: 'SUPERFAST',
     category: 'Everyday Fibre',
-    tagline: 'For households that actually use the internet properly',
-    description: 'For households that actually use the internet properly',
+    tagline: 'Ideal for families, Netflix, and everyday use',
+    description: 'Ideal for families, Netflix, and everyday use',
     features: [
       'Up to 330Mbps download',
       'Unlimited usage',

@@ -842,7 +842,7 @@ const PreCheckout = () => {
                         value={customerData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         placeholder="City/Town"
-                        className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                        className="mt-1 border border-foreground/20 focus:border-foreground"
                       />
                       {errors.city && <p className="text-destructive text-sm mt-1">{errors.city}</p>}
                     </div>
@@ -853,7 +853,7 @@ const PreCheckout = () => {
                         value={customerData.postcode}
                         onChange={(e) => handleInputChange("postcode", e.target.value.toUpperCase())}
                         placeholder="HD1 2QD"
-                        className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                        className="mt-1 border border-foreground/20 focus:border-foreground"
                       />
                       {errors.postcode && <p className="text-destructive text-sm mt-1">{errors.postcode}</p>}
                     </div>

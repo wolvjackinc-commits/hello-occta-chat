@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, X, Shield, Phone, Wifi, RefreshCcw } from "lucide-react";
+import { ArrowRight, X, Shield, Phone, Wifi, RefreshCcw, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getFromPrices } from "@/lib/pricing/engine";
@@ -33,9 +33,9 @@ const HeroSection = () => {
   ];
 
   const services = [
-    { name: "Broadband", price: `£${prices.broadband}`, link: "/broadband" },
-    { name: "Mobile SIM", price: `£${prices.sim}`, link: "/sim-plans" },
-    { name: "Home Phone", price: `£${prices.landline}`, link: "/landline" },
+    { name: "Broadband", price: `£${prices.broadband}`, link: "/broadband", subtitle: "No contracts · Cancel anytime" },
+    { name: "Mobile SIM", price: `£${prices.sim}`, link: "/sim-plans", subtitle: "No contracts · Keep your number" },
+    { name: "Home Phone", price: `£${prices.landline}`, link: "/landline", subtitle: "Works with your broadband · No extra line needed" },
   ];
 
   return (
@@ -55,19 +55,19 @@ const HeroSection = () => {
               variants={itemVariants} 
               className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display uppercase leading-[0.9] tracking-tight text-foreground"
             >
-              Cheap UK
+              Finally.
               <br />
-              Broadband
+              Broadband that
               <br />
-              <span className="text-gradient">No Contracts</span>
+              <span className="text-gradient">doesn't lock you in.</span>
             </motion.h1>
 
             <motion.p 
               variants={itemVariants} 
               className="text-lg text-muted-foreground max-w-lg"
             >
-              Cheap broadband UK from £{prices.broadband}/mo. Cancel anytime broadband with no hidden fees or lock-ins. 
-              5G SIM plans and digital home phone available UK-wide.
+              No contracts. No hidden fees. No nonsense.
+              Just fast, reliable internet that works — and lets you leave whenever you want.
             </motion.p>
 
             <motion.div 
@@ -100,6 +100,9 @@ const HeroSection = () => {
                 <Link to="/about">Learn More</Link>
               </Button>
             </motion.div>
+            <motion.p variants={itemVariants} className="text-xs text-muted-foreground pt-1">
+              Switch in under 60 seconds
+            </motion.p>
           </motion.div>
 
           {/* Right - Service Cards */}
@@ -129,7 +132,7 @@ const HeroSection = () => {
                 >
                   <div>
                     <h3 className="font-display text-lg uppercase">{service.name}</h3>
-                    <p className="text-xs text-muted-foreground">No contract required</p>
+                    <p className="text-xs text-muted-foreground">{service.subtitle}</p>
                   </div>
                   <div className="text-right flex items-center gap-3">
                     <div>
@@ -144,14 +147,20 @@ const HeroSection = () => {
 
             <motion.div 
               variants={itemVariants}
-              className="flex items-center justify-center gap-6 pt-2 text-sm text-muted-foreground"
+              className="flex flex-col items-center gap-2 pt-2 text-xs text-muted-foreground"
             >
-              <span className="flex items-center gap-2">
-                <span className="text-lg">🇬🇧</span> 100% British
-              </span>
-              <span className="flex items-center gap-2">
-                <Shield className="w-4 h-4" /> 98% Recommend Us
-              </span>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-primary" /> Works on UK's largest network (Openreach)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-primary" /> 24/7 UK-based support
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-primary" /> 14-day cooling-off period
+                </span>
+              </div>
+              <p className="text-muted-foreground/70 mt-1">No contracts. No pressure. Just better broadband.</p>
             </motion.div>
           </motion.div>
         </div>

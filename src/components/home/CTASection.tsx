@@ -122,7 +122,7 @@ const CTASection = () => {
                 transition={{ duration: 0.15 }}
               >
                 <Button variant="hero" size="xl" className="w-full sm:w-auto border-background">
-                  Get Started Now
+                  Get Started
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </motion.div>
@@ -149,10 +149,18 @@ const CTASection = () => {
             </a>
           </motion.div>
 
+          {/* Helper text */}
+          <motion.p
+            variants={itemVariants}
+            className="mt-4 text-sm text-background/60"
+          >
+            Switch in under 60 seconds
+          </motion.p>
+
           {/* Trust Note */}
           <motion.p
             variants={itemVariants}
-            className="mt-8 text-sm text-background/70 font-display uppercase tracking-wider"
+            className="mt-4 text-sm text-background/70 font-display uppercase tracking-wider"
           >
             No CPI price rises • Cancel anytime • Same networks, lower prices
           </motion.p>

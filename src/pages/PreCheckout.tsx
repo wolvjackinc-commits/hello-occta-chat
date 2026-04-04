@@ -1235,10 +1235,9 @@ const PreCheckout = () => {
                       <div>
                         <span className="text-sm font-medium">I confirm the following <span className="text-destructive">*</span></span>
                         <ul className="text-muted-foreground text-xs mt-1 space-y-0.5">
-                          <li>• This service is 30-day rolling with no fixed contract</li>
-                          <li>• Setup charges may apply depending on my line status</li>
-                          <li>• I accept all charges shown in the order summary</li>
-                          <li>• Service is subject to availability at my address</li>
+                          <li>• This is a 30-day rolling service</li>
+                          <li>• Setup charges may apply depending on my line</li>
+                          <li>• My service depends on availability at my address</li>
                         </ul>
                       </div>
                     </label>
@@ -1303,6 +1302,7 @@ const PreCheckout = () => {
                   ))}
                 </div>
               </motion.div>
+              <p className="text-xs text-muted-foreground text-center mt-4">No contracts. No pressure. Just better broadband.</p>
             </div>
 
             {/* Right Sidebar - Order Summary */}

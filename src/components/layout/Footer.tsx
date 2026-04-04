@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, Bot, LayoutDashboard, Ticket, Shield } from "lucide-react";
+import { Phone, Mail, Bot, LayoutDashboard, Ticket, Shield, Lock, CheckCircle, Users } from "lucide-react";
 import { companyConfig } from "@/lib/companyConfig";
 
 const Footer = () => {
@@ -58,6 +58,26 @@ const Footer = () => {
                 Raise a ticket
               </Link>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trust Bar */}
+      <div className="border-b border-background/10">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-background/60">
+            <span className="flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5" /> Ofcom regulated UK telecom provider
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5" /> Secure payments (256-bit encryption)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5" /> Transparent pricing — no hidden fees
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" /> UK customer support team
+            </span>
           </div>
         </div>
       </div>

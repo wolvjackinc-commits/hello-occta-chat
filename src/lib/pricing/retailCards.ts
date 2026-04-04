@@ -9,8 +9,8 @@ export const broadbandRetailCards: RetailCardDef[] = [
     id: 'essential',
     publicTitle: 'ESSENTIAL',
     category: 'Essentials',
-    tagline: 'Perfect for light browsing and the occasional Netflix binge',
-    description: 'Perfect for light browsing and the occasional Netflix binge',
+    tagline: 'Perfect for browsing, emails, and light streaming',
+    description: 'Perfect for browsing, emails, and light streaming',
     features: [
       'Up to 80Mbps download',
       'Unlimited usage',
@@ -25,7 +25,7 @@ export const broadbandRetailCards: RetailCardDef[] = [
     serviceType: 'broadband',
     publicPricePrefix: 'From',
     publicSetupText: 'Setup may apply depending on line status',
-    publicTagline: 'Perfect for light browsing and the occasional Netflix binge',
+    publicTagline: 'Perfect for browsing, emails, and light streaming',
     publicFeatures: [
       'Up to 80Mbps download',
       'Unlimited usage',
@@ -40,8 +40,8 @@ export const broadbandRetailCards: RetailCardDef[] = [
     id: 'superfast',
     publicTitle: 'SUPERFAST',
     category: 'Everyday Fibre',
-    tagline: 'For households that actually use the internet properly',
-    description: 'For households that actually use the internet properly',
+    tagline: 'Ideal for families, Netflix, and everyday use',
+    description: 'Ideal for families, Netflix, and everyday use',
     features: [
       'Up to 330Mbps download',
       'Unlimited usage',
@@ -56,7 +56,7 @@ export const broadbandRetailCards: RetailCardDef[] = [
     serviceType: 'broadband',
     publicPricePrefix: 'From',
     publicSetupText: '',
-    publicTagline: 'For households that actually use the internet properly',
+    publicTagline: 'Ideal for families, Netflix, and everyday use',
     publicFeatures: [
       'Up to 330Mbps download',
       'Unlimited usage',
@@ -71,8 +71,8 @@ export const broadbandRetailCards: RetailCardDef[] = [
     id: 'ultrafast',
     publicTitle: 'ULTRAFAST',
     category: 'Ultra Fibre',
-    tagline: 'For gamers, streamers, and people who work from home',
-    description: 'For gamers, streamers, and people who work from home',
+    tagline: 'Great for gamers, work-from-home, and heavy usage',
+    description: 'Great for gamers, work-from-home, and heavy usage',
     features: [
       'Up to 550Mbps download',
       'Unlimited usage',
@@ -87,7 +87,7 @@ export const broadbandRetailCards: RetailCardDef[] = [
     serviceType: 'broadband',
     publicPricePrefix: 'From',
     publicSetupText: '',
-    publicTagline: 'For gamers, streamers, and people who work from home',
+    publicTagline: 'Great for gamers, work-from-home, and heavy usage',
     publicFeatures: [
       'Up to 550Mbps download',
       'Unlimited usage',
@@ -102,8 +102,8 @@ export const broadbandRetailCards: RetailCardDef[] = [
     id: 'gigabit',
     publicTitle: 'GIGABIT',
     category: 'Gigafast',
-    tagline: 'The fastest internet money can buy. Period.',
-    description: 'The fastest internet money can buy. Period.',
+    tagline: 'Maximum speed for power users and smart homes',
+    description: 'Maximum speed for power users and smart homes',
     features: [
       'Up to 1Gbps download',
       'Unlimited usage',
@@ -118,7 +118,7 @@ export const broadbandRetailCards: RetailCardDef[] = [
     serviceType: 'broadband',
     publicPricePrefix: 'From',
     publicSetupText: '',
-    publicTagline: 'The fastest internet money can buy. Period.',
+    publicTagline: 'Maximum speed for power users and smart homes',
     publicFeatures: [
       'Up to 1Gbps download',
       'Unlimited usage',

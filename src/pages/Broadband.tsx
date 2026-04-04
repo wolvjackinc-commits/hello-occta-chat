@@ -339,7 +339,7 @@ const Broadband = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-display-md mb-2">ALL PLANS</h2>
-            <p className="text-muted-foreground">Unlimited data, no price rises. Novel concept.</p>
+            <p className="text-muted-foreground">Choose your speed — we'll handle the rest</p>
           </motion.div>
 
           <motion.div
@@ -397,6 +397,13 @@ const Broadband = () => {
               </motion.div>
             ))}
           </motion.div>
+
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            ✔ Setup usually within 7 days · ✔ We notify your current provider · ✔ No downtime during switch
+          </p>
+          <p className="text-center text-xs text-muted-foreground/70 mt-2">
+            No contracts. No pressure. Just better broadband.
+          </p>
         </div>
       </section>
 
@@ -409,9 +416,9 @@ const Broadband = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-display-md mb-4">ADD A HOME PHONE</h2>
+              <h2 className="text-display-md mb-4">ADD A HOME PHONE (OPTIONAL)</h2>
               <p className="text-lg text-muted-foreground mb-6">
-                Add Digital Home Phone from <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span> to your broadband.
+                Keep your number. Plug into your router. No copper line needed. From <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span>.
               </p>
               <ul className="space-y-3 mb-6">
                 {[

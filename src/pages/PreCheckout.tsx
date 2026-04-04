@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { getPlanById, Plan, calculateBundleDiscount } from "@/lib/plans";
 import { getAddonsByService, Addon, ukProviders } from "@/lib/addons";
-import { getFromPrices, buildOrderSummary, getSOGEANote } from "@/lib/pricing/engine";
+import { getFromPrices, buildOrderSummary, getSOGEANote, VAT_RATE } from "@/lib/pricing/engine";
 import { installScenarios, careLevels, catalogueProducts } from "@/lib/pricing/catalogue";
 import type { CatalogueProduct } from "@/lib/pricing/types";
 import { format, addDays } from "date-fns";
@@ -577,8 +577,13 @@ const PreCheckout = () => {
     return sum + (addon?.oneTime ? addon.price : 0);
   }, 0);
 
-  const monthlyTotal = bundleCalc.discountedTotal + addonsTotal + careUplift;
-  const totalDueToday = setupCharge + addonsOneOff;
+  const monthlySubtotalExVat = bundleCalc.discountedTotal + addonsTotal + careUplift;
+  const monthlyVat = Math.round(monthlySubtotalExVat * VAT_RATE * 100) / 100;
+  const monthlyTotal = Math.round((monthlySubtotalExVat + monthlyVat) * 100) / 100;
+
+  const oneOffSubtotalExVat = setupCharge + addonsOneOff;
+  const oneOffVat = Math.round(oneOffSubtotalExVat * VAT_RATE * 100) / 100;
+  const totalDueToday = Math.round((oneOffSubtotalExVat + oneOffVat) * 100) / 100;
 
   // Group addons by service type
   const addonsByService = selectedPlans.reduce((acc, plan) => {
@@ -1269,9 +1274,17 @@ const PreCheckout = () => {
                       <span>-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
+                  <div className="flex justify-between text-sm pt-2 border-t border-foreground/10">
+                    <span>Subtotal (ex VAT)</span>
+                    <span>£{monthlySubtotalExVat.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>VAT (20%)</span>
+                    <span>£{monthlyVat.toFixed(2)}</span>
+                  </div>
                   <div className="flex justify-between font-display text-lg pt-2 border-t-2 border-foreground/20">
                     <span>ONGOING MONTHLY</span>
-                    <span>£{monthlyTotal.toFixed(2)}/mo</span>
+                    <span>£{monthlyTotal.toFixed(2)}/mo <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
                   </div>
 
                   {/* One-off charges */}
@@ -1299,9 +1312,21 @@ const PreCheckout = () => {
                       </div>
                     );
                   })}
+                  {oneOffSubtotalExVat > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm pt-2 border-t border-foreground/10">
+                        <span>Subtotal (ex VAT)</span>
+                        <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>VAT (20%)</span>
+                        <span>£{oneOffVat.toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between font-display text-xl pt-2 border-t-2 border-foreground/20">
                     <span>TOTAL DUE TODAY</span>
-                    <span>£{totalDueToday.toFixed(2)}</span>
+                    <span>£{totalDueToday.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
                   </div>
 
                   <p className="text-muted-foreground text-xs mt-3">
@@ -1402,14 +1427,20 @@ const PreCheckout = () => {
                     </div>
                   )}
                 </div>
-                <div className="border-t-2 border-foreground/20 pt-3 flex items-center justify-between">
-                  <span className="font-display uppercase tracking-wider text-sm">Ongoing Monthly</span>
-                  <span className="font-display text-lg">£{monthlyTotal.toFixed(2)}</span>
+                <div className="border-t-2 border-foreground/20 pt-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-display uppercase tracking-wider text-sm">Ongoing Monthly</span>
+                    <span className="font-display text-lg">£{monthlyTotal.toFixed(2)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">incl. VAT (£{monthlyVat.toFixed(2)})</p>
                 </div>
                 {totalDueToday > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-display uppercase tracking-wider text-sm">Due Today</span>
-                    <span className="font-display text-lg">£{totalDueToday.toFixed(2)}</span>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-display uppercase tracking-wider text-sm">Due Today</span>
+                      <span className="font-display text-lg">£{totalDueToday.toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">incl. VAT (£{oneOffVat.toFixed(2)})</p>
                   </div>
                 )}
               </div>

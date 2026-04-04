@@ -1316,7 +1316,10 @@ const PreCheckout = () => {
                     </div>
                   </div>
 
-                  <p className="text-muted-foreground text-xs mt-3 text-center">
+                  <p className="text-muted-foreground text-[10px] mt-3 text-center">
+                    Prices include VAT where applicable
+                  </p>
+                  <p className="text-muted-foreground text-[10px] text-center">
                     30-day rolling · no contracts
                   </p>
                   {resolvedProduct?.technology === 'SOGEA' && (

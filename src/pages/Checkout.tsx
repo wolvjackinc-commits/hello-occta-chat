@@ -320,8 +320,12 @@ const Checkout = () => {
                   <span className="font-display">£{plan.price}/mo</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Installation</span>
-                  <span className="font-display">Included</span>
+                  <span className="text-muted-foreground">Setup/install</span>
+                  <span className="font-display">{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Ongoing monthly</span>
+                  <span className="font-display">£{ongoingMonthly.toFixed(2)}/mo</span>
                 </div>
               </div>
             </div>

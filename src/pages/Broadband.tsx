@@ -138,7 +138,7 @@ const Broadband = () => {
               Add Digital Home Phone?
             </DialogTitle>
             <DialogDescription className="text-base">
-              Add a home phone to your broadband for crystal clear HD calls.
+              Stay connected with crystal-clear calls — no extra line needed.
             </DialogDescription>
           </DialogHeader>
 

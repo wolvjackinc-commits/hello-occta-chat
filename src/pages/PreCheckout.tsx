@@ -1274,9 +1274,17 @@ const PreCheckout = () => {
                       <span>-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
+                  <div className="flex justify-between text-sm pt-2 border-t border-foreground/10">
+                    <span>Subtotal (ex VAT)</span>
+                    <span>£{monthlySubtotalExVat.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>VAT (20%)</span>
+                    <span>£{monthlyVat.toFixed(2)}</span>
+                  </div>
                   <div className="flex justify-between font-display text-lg pt-2 border-t-2 border-foreground/20">
                     <span>ONGOING MONTHLY</span>
-                    <span>£{monthlyTotal.toFixed(2)}/mo</span>
+                    <span>£{monthlyTotal.toFixed(2)}/mo <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
                   </div>
 
                   {/* One-off charges */}

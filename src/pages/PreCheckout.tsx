@@ -1356,6 +1356,9 @@ const PreCheckout = () => {
               {selectedPlans.map(p => p.name).join(' + ')}
             </p>
             <p className="font-display text-lg">£{monthlyTotal.toFixed(2)}/mo</p>
+            {totalDueToday > 0 && (
+              <p className="text-xs text-muted-foreground">+ £{totalDueToday.toFixed(2)} today</p>
+            )}
           </div>
           <span className="font-display uppercase text-sm text-primary px-3 py-1 border-2 border-primary">
             {isMobileSummaryOpen ? "Hide" : "View"}
@@ -1380,23 +1383,35 @@ const PreCheckout = () => {
                       <span className="font-display">£{plan.price}</span>
                     </div>
                   ))}
+                  {careUplift > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Care level uplift</span>
+                      <span className="font-display">+£{careUplift.toFixed(2)}</span>
+                    </div>
+                  )}
                   {addonsTotal > 0 && (
                     <div className="flex items-center justify-between text-sm">
-                      <span>Add-ons</span>
+                      <span>Add-ons (monthly)</span>
                       <span className="font-display">+£{addonsTotal.toFixed(2)}</span>
                     </div>
                   )}
-                  {bundleCalc.discountPercentage > 0 && (
+                  {bundleCalc.savings > 0 && (
                     <div className="flex items-center justify-between text-sm text-primary">
-                      <span>Bundle discount ({bundleCalc.discountPercentage}%)</span>
+                      <span>Bundle discount</span>
                       <span className="font-display">-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
                 <div className="border-t-2 border-foreground/20 pt-3 flex items-center justify-between">
-                  <span className="font-display uppercase tracking-wider text-sm">Monthly Total</span>
+                  <span className="font-display uppercase tracking-wider text-sm">Ongoing Monthly</span>
                   <span className="font-display text-lg">£{monthlyTotal.toFixed(2)}</span>
                 </div>
+                {totalDueToday > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-display uppercase tracking-wider text-sm">Due Today</span>
+                    <span className="font-display text-lg">£{totalDueToday.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

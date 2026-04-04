@@ -1177,87 +1177,36 @@ const PreCheckout = () => {
               </motion.div>
             </div>
 
-            {/* Right Sidebar - Order Summary & Add-ons */}
+            {/* Right Sidebar - Order Summary */}
             <div className="space-y-6">
-              {/* Selected Plans */}
               <div className="border-2 border-foreground/20 bg-card p-5 sticky top-4">
                 <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-4">Order Summary</h3>
-                
-                <div className="space-y-4 mb-6">
-                  {selectedPlans.map((plan) => {
-                    const Icon = serviceIcons[plan.serviceType];
-                    return (
-                      <div key={plan.id} className="flex items-center gap-3 p-3 border border-foreground/10 bg-secondary/30 rounded-sm">
-                        <div className="w-9 h-9 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-sm">
-                          <Icon className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-grow">
-                          <div className="font-display text-sm">{plan.name}</div>
-                          <div className="text-muted-foreground text-xs capitalize">{plan.serviceType}</div>
-                        </div>
-                        <div className="font-display text-sm">£{plan.price}</div>
-                      </div>
-                    );
-                  })}
-                </div>
 
-                {/* Add-ons Section */}
-                {Object.entries(addonsByService).map(([serviceType, addons]) => (
-                  <div key={serviceType} className="mb-4">
-                    <h4 className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <Plus className="w-3.5 h-3.5" />
-                      {serviceType} add-ons
-                    </h4>
-                    <div className="space-y-2">
-                      {addons.map((addon) => {
-                        const isSelected = selectedAddons.includes(addon.id);
-                        const IconComponent = iconMap[addon.icon] || Shield;
+                {/* Selected Add-ons (compact read-only summary) */}
+                {selectedAddons.length > 0 ? (
+                  <div className="mb-4 pb-4 border-b border-foreground/10">
+                    <p className="font-display text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Selected add-ons</p>
+                    <div className="space-y-1">
+                      {selectedAddons.map(id => {
+                        const a = availableAddons.find(x => x.id === id);
+                        if (!a) return null;
                         return (
-                          <motion.button
-                            key={addon.id}
-                            onClick={() => toggleAddon(addon.id)}
-                            className={cn(
-                              "w-full text-left p-2.5 border transition-all relative rounded-sm",
-                              isSelected 
-                                ? "border-primary/40 bg-primary/8" 
-                                : "border-foreground/10 hover:border-foreground/20"
-                            )}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            {/* Show "Popular" tag on first addon */}
-                            {addons.indexOf(addon) === 0 && (
-                              <span className="absolute -top-2.5 right-3 bg-primary text-primary-foreground text-[10px] font-display uppercase tracking-wider px-2 py-0.5">
-                                Popular
-                              </span>
-                            )}
-                            <div className="flex items-start gap-2.5">
-                              <div className={cn(
-                                "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
-                                isSelected ? "bg-primary border-primary" : "border-foreground/20"
-                              )}>
-                                {isSelected ? (
-                                  <Check className="w-3.5 h-3.5 text-primary-foreground" />
-                                ) : (
-                                  <IconComponent className="w-3.5 h-3.5 text-muted-foreground" />
-                                )}
-                              </div>
-                              <div className="flex-grow min-w-0">
-                                <div className="font-medium text-sm">{addon.name}</div>
-                                <div className="text-muted-foreground text-xs">{addon.description}</div>
-                              </div>
-                              <div className="text-xs text-muted-foreground whitespace-nowrap">
-                                {addon.price === 0 ? "FREE" : `+£${addon.price.toFixed(2)}`}
-                              </div>
-                            </div>
-                          </motion.button>
+                          <div key={id} className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">{a.name}</span>
+                            <span>{a.oneTime ? `£${a.price.toFixed(2)}` : `+£${a.price.toFixed(2)}/mo`}</span>
+                          </div>
                         );
                       })}
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="mb-4 pb-4 border-b border-foreground/10">
+                    <p className="text-[11px] text-muted-foreground">No add-ons selected</p>
+                  </div>
+                )}
 
                 {/* Itemised Breakdown */}
-                <div className="border-t border-foreground/10 pt-4 space-y-1.5">
+                <div className="space-y-1.5">
                   <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">Monthly charges</p>
                   {selectedPlans.map(plan => (
                     <div key={plan.id} className="flex justify-between text-sm">
@@ -1289,18 +1238,18 @@ const PreCheckout = () => {
                       <span>-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-xs text-muted-foreground pt-1.5 border-t border-foreground/5">
+                  <div className="flex justify-between text-[11px] text-muted-foreground/70 pt-1.5 border-t border-foreground/5">
                     <span>Subtotal (ex VAT)</span>
                     <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-[11px] text-muted-foreground/70">
                     <span>VAT (20%)</span>
                     <span>£{monthlyVat.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-baseline font-display pt-3 border-t border-foreground/10">
-                    <span className="text-sm">Ongoing monthly</span>
+                    <span className="text-base font-semibold">Ongoing monthly</span>
                     <div className="text-right">
-                      <span className="text-xl">£{monthlyTotal.toFixed(2)}</span>
+                      <span className="text-2xl">£{monthlyTotal.toFixed(2)}</span>
                       <span className="text-muted-foreground text-xs">/mo</span>
                     </div>
                   </div>
@@ -1333,11 +1282,11 @@ const PreCheckout = () => {
                   })}
                   {oneOffSubtotalExVat > 0 && (
                     <>
-                      <div className="flex justify-between text-xs text-muted-foreground pt-1.5 border-t border-foreground/5">
+                      <div className="flex justify-between text-[11px] text-muted-foreground/70 pt-1.5 border-t border-foreground/5">
                         <span>Subtotal (ex VAT)</span>
                         <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
+                      <div className="flex justify-between text-[11px] text-muted-foreground/70">
                         <span>VAT (20%)</span>
                         <span>£{oneOffVat.toFixed(2)}</span>
                       </div>
@@ -1347,16 +1296,13 @@ const PreCheckout = () => {
                   <div className="bg-foreground text-background p-3 -mx-5 mt-3 flex justify-between items-baseline">
                     <span className="font-display text-sm uppercase tracking-wider">Due today</span>
                     <div>
-                      <span className="font-display text-xl">£{totalDueToday.toFixed(2)}</span>
+                      <span className="font-display text-2xl">£{totalDueToday.toFixed(2)}</span>
                       <span className="text-background/60 text-xs ml-1">incl. VAT</span>
                     </div>
                   </div>
 
                   <p className="text-muted-foreground text-[10px] mt-3 text-center">
                     Prices include VAT where applicable
-                  </p>
-                  <p className="text-muted-foreground text-[10px] text-center">
-                    30-day rolling · no contracts
                   </p>
                   {resolvedProduct?.technology === 'SOGEA' && (
                     <p className="text-muted-foreground text-[10px] mt-1 text-center italic">

@@ -563,55 +563,56 @@ const Checkout = () => {
 
                 {step === 2 && (
                   <>
-                    <div className="flex items-center gap-3 mb-6">
-                      <CreditCard className="w-6 h-6" />
-                      <h2 className="text-display-sm">REVIEW ORDER</h2>
-                    </div>
+                    <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-muted-foreground" />
+                      Review Your Order
+                    </h2>
+                    <p className="text-muted-foreground text-sm mb-6">Check everything looks right before placing your order.</p>
 
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                       {/* Address Summary */}
-                      <div className="p-4 border-4 border-foreground bg-secondary">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-display uppercase tracking-wider text-sm">Delivery Address</span>
+                      <div className="p-4 border border-foreground/10 bg-secondary/30 rounded-sm">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Delivery address</span>
                           <button
                             onClick={() => setStep(1)}
-                            className="text-primary font-display uppercase tracking-wider text-sm hover:underline"
+                            className="text-primary text-xs font-medium hover:underline"
                           >
                             Edit
                           </button>
                         </div>
-                        <p className="text-muted-foreground">
+                        <p className="text-sm">
                           {addressData.addressLine1}
                           {addressData.addressLine2 && <>, {addressData.addressLine2}</>}
                           <br />
                           {addressData.city}, {addressData.postcode}
                         </p>
                         {user?.email && (
-                          <p className="text-muted-foreground text-sm mt-2 pt-2 border-t border-foreground/10">
-                            ✉️ {user.email}
+                          <p className="text-muted-foreground text-xs mt-2 pt-2 border-t border-foreground/5">
+                            {user.email}
                           </p>
                         )}
                       </div>
 
                       {/* Plan Summary */}
-                      <div className="p-4 border-4 border-foreground">
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className="w-12 h-12 bg-primary border-4 border-foreground flex items-center justify-center">
-                            <Icon className="w-6 h-6 text-primary-foreground" />
+                      <div className="p-4 border border-foreground/10 rounded-sm">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-sm">
+                            <Icon className="w-5 h-5 text-primary" />
                           </div>
                           <div className="flex-grow">
-                            <h3 className="font-display text-xl">{plan.name}</h3>
-                            <p className="text-muted-foreground capitalize">{plan.serviceType}</p>
+                            <h3 className="font-display text-lg">{plan.name}</h3>
+                            <p className="text-muted-foreground text-xs capitalize">{plan.serviceType}</p>
                           </div>
                           <div className="text-right">
-                            <div className="font-display text-2xl">£{plan.price}</div>
-                            <div className="text-muted-foreground text-sm">/month</div>
+                            <div className="font-display text-xl">£{plan.price}</div>
+                            <div className="text-muted-foreground text-xs">/month</div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-1.5">
                           {plan.features.map((feature) => (
-                            <div key={feature} className="flex items-center gap-2 text-xs">
-                              <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                            <div key={feature} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Check className="w-3 h-3 text-primary flex-shrink-0" />
                               <span>{feature}</span>
                             </div>
                           ))}
@@ -619,30 +620,37 @@ const Checkout = () => {
                       </div>
 
                       {/* Price Breakdown */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between py-2 border-b-2 border-foreground/10">
+                      <div className="space-y-1.5">
+                        <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">Monthly charges</p>
+                        <div className="flex justify-between text-sm py-1">
                           <span>Monthly subscription</span>
-                          <span className="font-display">£{(plan?.priceNum ?? 0).toFixed(2)}</span>
+                          <span>£{(plan?.priceNum ?? 0).toFixed(2)}</span>
                         </div>
                         {careUplift > 0 && (
-                          <div className="flex justify-between py-2 border-b-2 border-foreground/10">
+                          <div className="flex justify-between text-sm py-1">
                             <span>Care level uplift</span>
-                            <span className="font-display">+£{careUplift.toFixed(2)}</span>
+                            <span>+£{careUplift.toFixed(2)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between py-2 border-b-2 border-foreground/10 text-muted-foreground text-sm">
+                        <div className="flex justify-between text-xs text-muted-foreground py-1 border-t border-foreground/5">
                           <span>Subtotal (ex VAT)</span>
                           <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between py-2 border-b-2 border-foreground/10 text-muted-foreground text-sm">
+                        <div className="flex justify-between text-xs text-muted-foreground py-1">
                           <span>VAT (20%)</span>
                           <span>£{monthlyVat.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between py-2 border-b-2 border-foreground/10 font-display">
-                          <span>ONGOING MONTHLY</span>
-                          <span>£{ongoingMonthly.toFixed(2)}/mo <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
+                        <div className="flex justify-between font-display py-2 border-t border-foreground/10">
+                          <span className="text-sm">Ongoing monthly</span>
+                          <div className="text-right">
+                            <span className="text-lg">£{ongoingMonthly.toFixed(2)}</span>
+                            <span className="text-muted-foreground text-xs">/mo</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between py-2 border-b-2 border-foreground/10">
+                        <p className="text-muted-foreground text-[10px] text-right">incl. VAT</p>
+
+                        <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mt-4 mb-2">One-off charges</p>
+                        <div className="flex justify-between text-sm py-1">
                           <span>
                             Setup/install
                             {installScenarioId && installScenarioId !== 'fttp-standard' && (
@@ -651,50 +659,60 @@ const Checkout = () => {
                               </span>
                             )}
                           </span>
-                          <span className="font-display">{setupCharge === 0 ? <span className="text-primary">FREE</span> : `£${oneOffSubtotalExVat.toFixed(2)}`}</span>
+                          <span className={setupCharge === 0 ? "text-primary font-display" : ""}>{setupCharge === 0 ? 'FREE' : `£${oneOffSubtotalExVat.toFixed(2)}`}</span>
                         </div>
                         {oneOffSubtotalExVat > 0 && (
-                          <div className="flex justify-between py-2 border-b-2 border-foreground/10 text-muted-foreground text-sm">
-                            <span>VAT (20%)</span>
-                            <span>£{oneOffVat.toFixed(2)}</span>
-                          </div>
+                          <>
+                            <div className="flex justify-between text-xs text-muted-foreground py-1 border-t border-foreground/5">
+                              <span>Subtotal (ex VAT)</span>
+                              <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-xs text-muted-foreground py-1">
+                              <span>VAT (20%)</span>
+                              <span>£{oneOffVat.toFixed(2)}</span>
+                            </div>
+                          </>
                         )}
-                        <div className="flex justify-between py-4 text-xl">
-                          <span className="font-display">TOTAL DUE TODAY</span>
-                          <span className="font-display">£{totalDueToday.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
+                        <div className="bg-foreground text-background p-3 -mx-6 sm:-mx-8 mt-2 flex justify-between items-baseline">
+                          <span className="font-display text-sm uppercase tracking-wider">Due today</span>
+                          <div>
+                            <span className="font-display text-xl">£{totalDueToday.toFixed(2)}</span>
+                            <span className="text-background/60 text-xs ml-1">incl. VAT</span>
+                          </div>
                         </div>
-                        <p className="text-muted-foreground text-xs">
-                          30-day rolling — no contracts
+                        <p className="text-muted-foreground text-xs mt-3 text-center">
+                          30-day rolling · no contracts
                         </p>
                         {resolvedProduct?.technology === 'SOGEA' && (
-                          <p className="text-muted-foreground text-xs italic">
+                          <p className="text-muted-foreground text-[10px] text-center italic">
                             {getSOGEANote()}
                           </p>
                         )}
                       </div>
 
-                      {/* Order Consent */}
-                      <div className="flex items-start gap-3 p-4 border-4 border-foreground bg-secondary">
-                        <Checkbox
-                          id="orderConsentCheckout"
-                          checked={orderConsent}
-                          onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
-                          className="mt-1"
-                        />
-                        <div>
-                          <Label htmlFor="orderConsentCheckout" className="font-display uppercase tracking-wider text-sm cursor-pointer">
-                            I confirm all of the following *
-                          </Label>
-                          <ul className="text-muted-foreground text-sm mt-2 space-y-1 list-disc list-inside">
-                            <li>I understand this service is 30-day rolling with no fixed contract</li>
-                            <li>Setup charges may apply depending on my line status</li>
-                            <li>I accept all charges shown above</li>
-                            <li>Service is subject to availability at my address</li>
-                          </ul>
-                        </div>
+                      {/* Before you place your order */}
+                      <div className="pt-4 border-t border-foreground/10">
+                        <h3 className="font-display text-sm uppercase tracking-wider mb-3">Before you place your order</h3>
+                        <label className="flex items-start gap-3 p-3 rounded-sm bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors">
+                          <Checkbox
+                            id="orderConsentCheckout"
+                            checked={orderConsent}
+                            onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <span className="text-sm font-medium">I confirm the following <span className="text-destructive">*</span></span>
+                            <ul className="text-muted-foreground text-xs mt-1 space-y-0.5">
+                              <li>• This service is 30-day rolling with no fixed contract</li>
+                              <li>• Setup charges may apply depending on my line status</li>
+                              <li>• I accept all charges shown above</li>
+                              <li>• Service is subject to availability at my address</li>
+                            </ul>
+                          </div>
+                        </label>
                       </div>
 
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         By placing this order, you agree to our{" "}
                         <Link to="/terms" className="underline">Terms of Service</Link>
                         {" "}and{" "}
@@ -705,7 +723,7 @@ const Checkout = () => {
                     <div className="flex gap-4 mt-8">
                       <Button
                         variant="outline"
-                        className="border-4 border-foreground"
+                        className="border-2 border-foreground/30"
                         onClick={() => setStep(1)}
                       >
                         <ArrowLeft className="w-5 h-5" />
@@ -728,12 +746,19 @@ const Checkout = () => {
                       </Button>
                     </div>
                     
-                    <p className="text-center text-sm text-muted-foreground mt-4">
-                      Order time: {new Date().toLocaleString('en-GB', { 
-                        dateStyle: 'medium', 
-                        timeStyle: 'short' 
-                      })}
-                    </p>
+                    <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs mt-4">
+                      <div className="flex items-center gap-1">
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>256-bit encrypted</span>
+                      </div>
+                      <span className="text-foreground/20">·</span>
+                      <span>
+                        {new Date().toLocaleString('en-GB', { 
+                          dateStyle: 'medium', 
+                          timeStyle: 'short' 
+                        })}
+                      </span>
+                    </div>
                   </>
                 )}
               </motion.div>
@@ -741,48 +766,49 @@ const Checkout = () => {
 
             {/* Order Summary Sidebar */}
             <div className="lg:col-span-1">
-              <div className="card-brutal bg-foreground text-background p-6 sticky top-24">
-                <h3 className="font-display text-lg mb-4">YOUR PLAN</h3>
+              <div className="border-2 border-foreground/20 bg-card p-5 sticky top-24">
+                <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-4">Your Plan</h3>
                 
-                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-background/20">
-                  <div className="w-14 h-14 bg-primary flex items-center justify-center">
-                    <Icon className="w-7 h-7 text-primary-foreground" />
+                <div className="flex items-center gap-3 mb-5 pb-5 border-b border-foreground/10">
+                  <div className="w-11 h-11 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-sm">
+                    <Icon className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <div className="font-display text-xl">{plan.name}</div>
-                    <div className="text-background/60 capitalize">{plan.serviceType}</div>
+                    <div className="font-display">{plan.name}</div>
+                    <div className="text-muted-foreground text-xs capitalize">{plan.serviceType}</div>
                   </div>
                 </div>
                 
-                <ul className="space-y-2 mb-6">
+                <ul className="space-y-1.5 mb-5">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="text-background/80">{feature}</span>
+                    <li key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                      <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
                 
-                <div className="pt-6 border-t border-background/20 space-y-2">
+                <div className="pt-4 border-t border-foreground/10 space-y-1.5">
                   <div className="flex justify-between items-baseline">
-                    <span className="font-display uppercase tracking-wider text-sm">Monthly</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Monthly</span>
                     <div>
-                      <span className="font-display text-3xl">£{ongoingMonthly.toFixed(2)}</span>
-                      <span className="text-background/60">/mo</span>
+                      <span className="font-display text-2xl">£{ongoingMonthly.toFixed(2)}</span>
+                      <span className="text-muted-foreground text-xs">/mo</span>
                     </div>
                   </div>
+                  <p className="text-[10px] text-muted-foreground text-right">incl. VAT</p>
                   {setupCharge > 0 && (
-                    <div className="flex justify-between items-baseline text-sm">
-                      <span className="text-background/60">Setup</span>
+                    <div className="flex justify-between items-baseline text-sm pt-1">
+                      <span className="text-muted-foreground text-xs">Setup</span>
                       <span className="font-display">£{setupCharge.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Trust Indicators */}
-                <div className="pt-4 mt-4 border-t border-background/20 flex flex-wrap gap-2">
+                <div className="pt-3 mt-3 border-t border-foreground/10 flex flex-wrap gap-1.5">
                   {["No contract", setupCharge === 0 ? "Free install" : "Setup applies", "UK support"].map((tag) => (
-                    <span key={tag} className="text-[10px] font-display uppercase tracking-wider bg-background/10 px-2 py-1">
+                    <span key={tag} className="text-[10px] font-display uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded-sm">
                       {tag}
                     </span>
                   ))}

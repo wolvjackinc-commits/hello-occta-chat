@@ -751,7 +751,7 @@ const PreCheckout = () => {
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Email Address *</Label>
+                    <Label className="text-sm font-medium">Email address <span className="text-destructive">*</span></Label>
                     <Input
                       type="email"
                       value={customerData.email}

@@ -444,7 +444,7 @@ const Checkout = () => {
                           value={addressData.addressLine1}
                           onChange={(e) => handleAddressChange("addressLine1", e.target.value)}
                           placeholder="123 High Street"
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                         />
                         {errors.addressLine1 && <p className="text-destructive text-sm mt-1">{errors.addressLine1}</p>}
                       </div>

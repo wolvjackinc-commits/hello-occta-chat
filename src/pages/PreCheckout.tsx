@@ -1302,6 +1302,7 @@ const PreCheckout = () => {
                   ))}
                 </div>
               </motion.div>
+              <p className="text-xs text-muted-foreground text-center mt-4">No contracts. No pressure. Just better broadband.</p>
             </div>
 
             {/* Right Sidebar - Order Summary */}

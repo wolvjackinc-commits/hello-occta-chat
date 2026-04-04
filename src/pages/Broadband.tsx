@@ -416,9 +416,9 @@ const Broadband = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-display-md mb-4">ADD A HOME PHONE</h2>
+              <h2 className="text-display-md mb-4">ADD A HOME PHONE (OPTIONAL)</h2>
               <p className="text-lg text-muted-foreground mb-6">
-                Add Digital Home Phone from <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span> to your broadband.
+                Keep your number. Plug into your router. No copper line needed. From <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span>.
               </p>
               <ul className="space-y-3 mb-6">
                 {[

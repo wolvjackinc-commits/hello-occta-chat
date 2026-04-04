@@ -293,6 +293,26 @@ const PreCheckout = () => {
       });
       return false;
     }
+
+    // Require install scenario for SOGEA broadband
+    if (resolvedProduct && resolvedProduct.technology === 'SOGEA' && !installScenarioId) {
+      toast({
+        title: "Installation type required",
+        description: "Please select an installation type for your broadband.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Require order consent
+    if (!orderConsent) {
+      toast({
+        title: "Order consent required",
+        description: "Please confirm the order terms before submitting.",
+        variant: "destructive",
+      });
+      return false;
+    }
     
     setErrors({});
     return true;

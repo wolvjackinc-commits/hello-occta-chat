@@ -109,7 +109,7 @@ const WhyUsSection = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             whileHover={{ rotate: 2, scale: 1.05 }}
           >
-            No BS Guarantee
+            Why Switch?
           </motion.div>
           <h2 className="text-display-md mb-4">
             WHY PEOPLE ACTUALLY

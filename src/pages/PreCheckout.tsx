@@ -1228,7 +1228,7 @@ const PreCheckout = () => {
                 ))}
 
                 {/* Itemised Breakdown */}
-                <div className="border-t-4 border-foreground pt-4 space-y-2">
+                <div className="border-t border-foreground/10 pt-4 space-y-1.5">
                   <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">Monthly charges</p>
                   {selectedPlans.map(plan => (
                     <div key={plan.id} className="flex justify-between text-sm">

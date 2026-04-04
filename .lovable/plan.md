@@ -1,151 +1,62 @@
-# Customer Pricing Visibility, VAT, Billing, Hardware & Order Consent
+
+
+# Checkout UI Final Refinements — Presentation Only
 
 ## Summary
+Six targeted visual refinements to PreCheckout.tsx and Checkout.tsx. Zero logic, validation, calculation, or backend changes.
 
-Wire the pricing engine's `buildOrderSummary()` into both checkout flows (PreCheckout + Checkout) with a full itemised breakdown, install scenario selector, care level selector, order consent checkboxes, and VAT mode support. No visual redesign — uses existing `card-brutal`, `Select`, `Checkbox` component patterns.
+## Changes
 
-## Architecture Changes
+### 1. Compact selected-plan confirmation strip (PreCheckout.tsx)
+Replace the full plan cards in the sidebar (lines 1150-1166) with a compact inline strip at the top of the left column, below the page heading. Each plan renders as a single row: icon + name + speed/data badge + price. Add a "Change plan" link back to /broadband. Remove the duplicate plan cards from the sidebar — the sidebar keeps only the pricing breakdown.
 
-### 1. Add `catalogueProductId` to Plan interface (`src/lib/plans.ts`)
+In Checkout.tsx, the sidebar already has a compact plan card — keep it but remove any redundant plan detail repetition in the review step.
 
-Add optional `catalogueProductId?: string` field to `Plan`. Populate it for broadband plans using the cheapest eligible catalogue product ID from each retail card. This lets checkout resolve the product's technology (SOGEA vs FTTP) to determine which install scenarios apply.
+### 2. Progress indicators — visual only (PreCheckout.tsx)
+Add a horizontal progress bar below the page heading showing: Plan → Details → Setup → Review. These are static labels only — no scroll-reactive highlighting, no click handlers, no step navigation logic. Just four labels with dots/connectors where the first one is always filled (since the plan is already selected). Purely decorative visual context.
 
-### 2. Add VAT utility to engine (`src/lib/pricing/engine.ts`)
+In Checkout.tsx, the existing 2-step progress indicator stays as-is (it already has click-back behaviour which is existing logic — don't change it).
 
-Add:
+### 3. Add-ons: main flow + compact sidebar summary (PreCheckout.tsx)
+Move the full add-on selection UI (lines 1168-1221) from the sidebar into the left column as a new section between "Support Level" and "Installation Scheduling". Group addons into two sub-sections:
+- "Recommended" — first 2 addons per service type
+- "Optional extras" — remaining addons
 
-- `const VAT_RATE = 0.20`
-- `applyVAT(amount: number, inclusive: boolean): number` — if inclusive (residential), amount stays as-is (prices already include VAT). If exclusive (business), returns amount as net.
-- `formatPriceWithVAT(amount: number, mode: 'residential' | 'business'): string` — returns formatted price with "(inc. VAT)" or "(ex. VAT)" suffix.
-- Add `vatMode` field to `buildOrderSummary` params and `OrderSummary` type.
+In the sidebar, replace the removed add-on toggles with a compact "Selected add-ons" list showing only the names and prices of currently selected addons (read-only summary, no toggle buttons). If none selected, show "No add-ons selected" in muted text.
 
-### 3. Add proration config (`src/lib/pricing/engine.ts`)
+### 4. Selective border reduction (both files)
+- Form section cards: reduce from `border-2 border-foreground/20` to `border border-foreground/10`
+- Sidebar order summary: keep `border-2 border-foreground/20` (bold framing on key container)
+- Primary CTA button: keep existing `variant="hero"` with full border weight
+- Consent block: keep `border-2` on the outer card
+- Inputs: reduce from `border-2 border-foreground/30` to `border border-foreground/20`
+- Mobile summary bar: reduce to `border-t border-foreground/15`
 
-Add:
+### 5. Price hierarchy in summary (both files)
+- "Ongoing monthly" label: bump to `text-base font-semibold` with the price at `text-2xl` (from `text-xl`)
+- "Due today" inverted block: keep but make the price `text-2xl` as well
+- VAT lines: reduce to `text-[11px]` and `text-muted-foreground/70` for lower visual weight
+- Subtotal (ex VAT) lines: same `text-[11px]` treatment
+- Monthly charge line items stay at `text-sm`
 
-- `calculateProration(monthlyAmount: number, activationDate: Date, billingCycleDay: number): number` — returns prorated amount for partial first month.
-- Export `PRORATION_ENABLED = true` constant (configurable flag).
+### 6. De-duplicate trust/reassurance copy (both files)
+Current state has overlapping trust copy in: trust badges below CTA, sidebar footer text, consent block items, and "What Happens Next". Remove redundancy:
+- Remove the standalone "256-bit encrypted · Ofcom regulated" badge below the CTA (lines 1097-1108 in PreCheckout) — these appear again in the sidebar
+- Remove "30-day rolling · no contracts" from the sidebar footer (line 1323) — this is already stated in the consent block
+- Keep the sidebar's "Prices include VAT where applicable" (unique, not repeated elsewhere)
+- Keep the 14-day cooling off notice in sidebar (unique)
+- Keep trust badges in sidebar only (single location)
 
-### 4. Update `src/lib/pricing/types.ts`
+In Checkout.tsx, apply the same de-duplication: remove any duplicate trust text that already appears in the consent or sidebar.
 
-Add to `OrderSummary`:
+## Files modified (2)
 
-- `vatMode: 'residential' | 'business'`
-- `hardwareCharges: { name: string; amount: number }[]`
-- `consentRequired: string[]` — list of consent labels the user must confirm
+1. **`src/pages/PreCheckout.tsx`** — plan strip, progress labels, addon relocation + grouping, compact sidebar addon summary, border reduction, price hierarchy, trust copy de-duplication
+2. **`src/pages/Checkout.tsx`** — border reduction, price hierarchy, trust copy de-duplication
 
-### 5. Rewrite `src/pages/PreCheckout.tsx` (guest checkout)
+## Constraints
+- Zero logic, state, handler, validation, or calculation changes
+- Same components, same imports (no new files)
+- OCCTA brutalist identity preserved on key containers and CTAs
+- All existing fields, consent, and pricing data remain
 
-**New state:**
-
-- `installScenarioId: string | null` — selected install scenario
-- `careLevelId: string` — default `'standard'`
-- `orderConsent: boolean` — master consent checkbox (all 4 conditions)
-
-**New imports:** `installScenarios`, `careLevels`, `catalogueProducts` from pricing catalogue; `buildOrderSummary`, `getSOGEANote`, `getFromPrices` from engine.
-
-**Technology resolution logic:**
-When broadband plan is selected, look up its `catalogueProductId` in `catalogueProducts`. Read `technology` and `installTypeSupported[]`. If SOGEA → show install scenario selector. If FTTP with `freeInstallEligible: true` → auto-set `fttp-standard` (£0). If no broadband → hide install section entirely.
-
-**New UI sections (inserted into existing form area, same `card-brutal` styling):**
-
-a) **Installation Type card** — appears after Address section when broadband is selected and product is SOGEA. Uses existing `Select` component. Options filtered from `installScenarios` based on `installTypeSupported[]`. Each option shows label + retail charge (e.g. "Engineer Visit — £79.95", "No Engineer — £59.95", "Migration from FTTC — £9.95", "Migration from ADSL — £19.95").
-
-b) **Support Level card** — appears below install type when broadband is selected. Three options using existing styling: Standard (Included), Priority (+£9/mo), Enhanced (+£14/mo). Uses radio-style buttons or `Select`.
-
-c) **Order Consent card** — appears above the submit button. Contains a single `Checkbox` with grouped text:
-
-- "I understand this service is 30-day rolling with no fixed contract"
-- "Setup charges may apply depending on my line status"
-- "I accept all charges shown above"
-- "Service is subject to availability at my address"
-
-Submit button is disabled until `orderConsent === true` AND existing `gdprConsent` + `termsConsent` are true.
-
-**Sidebar totals rewrite (lines 1076-1097):**
-Replace simple monthly total with full itemised breakdown:
-
-```
-Monthly charges:
-  [Plan name]                    £XX.XX
-  Care level uplift              +£X.XX   (only if not standard)
-  [Addon 1 name]                 +£X.XX   (each addon)
-  Bundle discount ([name])       -£X.XX   (if applicable)
-  ─────────────────────────────
-  ONGOING MONTHLY                £XX.XX/mo
-
-One-off charges:
-  Setup/install ([scenario])     £XX.XX   (or FREE for FTTP)
-  [One-off addon name]           £XX.XX   (if any)
-  ─────────────────────────────
-  TOTAL DUE TODAY                £XX.XX
-
-  30-day rolling — no contracts
-  [SOGEA fairness note if applicable]
-```
-
-All values computed from `buildOrderSummary()` called reactively when selections change.
-
-**Mobile summary (lines 1130-1186):** Mirror the same breakdown — show ongoing monthly AND total due today.
-
-**Fix upsell price (line 584):** Replace hardcoded `£4.99/mo` with `£${getFromPrices().landline}/mo`.
-
-**Submit validation additions:**
-
-- If broadband + SOGEA and no install scenario selected → toast error "Please select an installation type"
-- If `orderConsent` is false → toast error "Please confirm the order terms"
-
-**Order payload enrichment:** Include `installScenarioId`, `careLevelId`, setup charge amount, and full breakdown in the order data sent to DB and admin notification.
-
-### 6. Rewrite `src/pages/Checkout.tsx` (logged-in checkout)
-
-Same pattern but simpler (single plan, no multi-plan bundles):
-
-**New state:** `installScenarioId`, `careLevelId`, `orderConsent`.
-
-**Step 1 (Address):** Add install scenario selector and care level selector below address fields when broadband plan is selected.
-
-**Step 2 (Review) price breakdown (lines 498-511):** Replace hardcoded "Installation fee: FREE" / "DUE TODAY: £0.00":
-
-```
-Monthly subscription              £XX.XX
-Care level uplift                  +£X.XX  (if selected)
-─────────────────────────────
-ONGOING MONTHLY                    £XX.XX/mo
-
-Setup/install                      £XX.XX  (or FREE)
-─────────────────────────────
-TOTAL DUE TODAY                    £XX.XX
-```
-
-**Order consent:** Add consent checkbox before "Place Order" button. Block submission if unchecked.
-
-**Sidebar (lines 561-601):** Add setup charge line. Replace "Free install" trust tag with conditional text based on technology.
-
-**Order confirmation screen (lines 254-270):** Replace hardcoded "Installation: Included" with actual setup charge from selection.
-
-**Submit validation:** Same as PreCheckout — require install scenario for SOGEA, require consent.
-
-### 7. Hardware display logic
-
-No new hardware products. Current broadband cards already show "Router included" or similar in their features array from `retailCards.ts`. If a catalogue product or addon has a one-off hardware charge (e.g. existing "Home Phone Handset" addon at £29.00), it appears in the one-off section of the breakdown as it already does via `addonCatalogue`. No changes needed beyond ensuring one-off addons render in the "One-off charges" section of the new breakdown.
-
-## Files modified (4)
-
-1. `src/lib/plans.ts` — add `catalogueProductId` to Plan interface and broadband plan mapping
-2. `src/lib/pricing/types.ts` — add `vatMode`, `hardwareCharges` to OrderSummary
-3. `src/lib/pricing/engine.ts` — add VAT helpers, proration utility, update buildOrderSummary
-4. `src/pages/PreCheckout.tsx` — install selector, care level, full breakdown, consent, fix upsell price
-5. `src/pages/Checkout.tsx` — install selector, care level, full breakdown, consent, fix hardcoded values
-
-## Constraints preserved
-
-- Zero visual redesign — all new elements use existing card-brutal, Select, Checkbox patterns
-- Same grid layout, same step flow, same animations
-- No new routes or pages
-- No supplier names shown
-- "No contracts / 30-day rolling" preserved and reinforced in consent
-- Residential prices shown inc. VAT (current behaviour preserved)
-- No invented hardware products
-- Existing router/hardware logic unchanged  
-All prices shown include VAT (where applicable)

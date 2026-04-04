@@ -641,22 +641,15 @@ const PreCheckout = () => {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 border-4 border-warning/50 bg-warning/5"
+              className="mb-6 px-4 py-3 border border-foreground/10 bg-secondary/30 flex items-center gap-3"
             >
-              <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-display uppercase text-foreground">Add a Home Phone?</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Add Digital Home Phone for just £{getFromPrices().landline}/mo. Crystal clear calls through your broadband.
-                  </p>
-                  <Link to="/landline">
-                    <Button variant="ghost" size="sm" className="text-primary font-display">
-                      Learn more →
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+              <PhoneCall className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <p className="text-sm text-muted-foreground flex-grow">
+                Add Digital Home Phone from £{getFromPrices().landline}/mo.{' '}
+                <Link to="/landline" className="text-accent underline underline-offset-2 hover:text-foreground transition-colors">
+                  Learn more →
+                </Link>
+              </p>
             </motion.div>
           )}
 
@@ -679,31 +672,28 @@ const PreCheckout = () => {
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="mb-6 p-4 border-4 border-accent bg-accent/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                className="mb-6 px-4 py-3 border border-foreground/10 bg-secondary/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
               >
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-display uppercase text-accent">Saved Progress Found</h4>
-                    <p className="text-sm text-muted-foreground">
-                      We saved your form from earlier. Would you like to continue where you left off?
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <p className="text-sm text-muted-foreground">
+                    We saved your progress. <span className="text-foreground font-medium">Continue where you left off?</span>
+                  </p>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleDiscardSavedData}
-                    className="border-2 border-foreground flex-1 sm:flex-none"
+                    className="border border-foreground/20 flex-1 sm:flex-none text-xs"
                   >
-                    Start Fresh
+                    Start fresh
                   </Button>
                   <Button
                     variant="hero"
                     size="sm"
                     onClick={handleRestoreData}
-                    className="flex-1 sm:flex-none"
+                    className="flex-1 sm:flex-none text-xs"
                   >
                     Restore
                   </Button>
@@ -963,22 +953,22 @@ const PreCheckout = () => {
                         type="button"
                         onClick={() => setCareLevelId(level.id)}
                         className={cn(
-                          "w-full text-left px-4 py-3 border-2 transition-all flex items-center justify-between rounded-sm",
+                          "w-full text-left px-4 py-3 border transition-all flex items-center justify-between rounded-sm",
                           careLevelId === level.id
-                            ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                            : "border-foreground/15 hover:border-foreground/40"
+                            ? "border-primary/40 bg-primary/8"
+                            : "border-foreground/10 bg-secondary/20 hover:border-foreground/25 hover:bg-secondary/40"
                         )}
                       >
                         <div className="flex items-center gap-3">
                           <div className={cn(
-                            "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                            careLevelId === level.id ? "border-primary" : "border-foreground/30"
+                            "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
+                            careLevelId === level.id ? "border-primary bg-primary" : "border-foreground/25"
                           )}>
-                            {careLevelId === level.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                            {careLevelId === level.id && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                           </div>
-                          <span className="font-display text-sm">{level.label}</span>
+                          <span className="font-medium text-sm">{level.label}</span>
                         </div>
-                        <span className={cn("text-sm", careLevelId === level.id ? "font-display text-primary" : "text-muted-foreground")}>
+                        <span className={cn("text-xs", careLevelId === level.id ? "font-medium text-foreground" : "text-muted-foreground")}>
                           {level.monthlyUplift === 0 ? 'Included' : `+£${level.monthlyUplift.toFixed(2)}/mo`}
                         </span>
                       </button>
@@ -1081,25 +1071,28 @@ const PreCheckout = () => {
               </motion.div>
 
               {/* Submit Button */}
-              <Button
-                variant="hero"
-                className="w-full"
-                size="lg"
-                onClick={handleSubmit}
-                disabled={isSubmitting || landlineWithoutBroadband || !orderConsent}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    Submit Order
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  variant="hero"
+                  className="w-full"
+                  size="lg"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || landlineWithoutBroadband || !orderConsent}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4" />
+                      Place order securely
+                    </>
+                  )}
+                </Button>
+                <p className="text-center text-muted-foreground text-xs">You won't be charged today unless applicable</p>
+              </div>
 
               {/* Security Badge */}
               <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs">
@@ -1126,20 +1119,20 @@ const PreCheckout = () => {
                   What Happens Next
                 </h2>
                 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {[
-                    { day: "Day 1", title: "Order received", desc: "Confirmation email sent with your order details." },
-                    { day: "Day 2", title: "Provider notified", desc: "We initiate the switch with your current provider." },
-                    { day: "Day 3–5", title: "Switch arranged", desc: "Installation or line activation date scheduled." },
-                    { day: "Day 7", title: "Equipment arrives", desc: "Router and equipment delivered via tracked delivery." },
-                    { day: "Day 10–14", title: "You're live", desc: "Service goes live. Your old provider stops charging." },
+                    { day: "Day 1", title: "Order received", desc: "Confirmation email with your order details." },
+                    { day: "Day 2", title: "Provider notified", desc: "We initiate the switch on your behalf." },
+                    { day: "Day 3–5", title: "Switch arranged", desc: "Activation date confirmed." },
+                    { day: "Day 7", title: "Equipment arrives", desc: "Router delivered via tracked post." },
+                    { day: "Day 10–14", title: "You're live", desc: "Service goes live. Old provider stops." },
                   ].map((step, idx) => (
                     <div key={idx} className="flex gap-4 items-start">
                       <div className="flex-shrink-0 w-16">
-                        <span className="text-xs font-display uppercase tracking-wider text-primary">{step.day}</span>
+                        <span className="text-[11px] font-display uppercase tracking-wider text-primary">{step.day}</span>
                       </div>
-                      <div className="flex-grow border-l-2 border-foreground/10 pl-4 pb-1">
-                        <span className="font-display text-sm uppercase tracking-wider">{step.title}</span>
+                      <div className="flex-grow border-l border-foreground/10 pl-4">
+                        <span className="font-medium text-sm">{step.title}</span>
                         <p className="text-muted-foreground text-xs mt-0.5">{step.desc}</p>
                       </div>
                     </div>
@@ -1179,7 +1172,7 @@ const PreCheckout = () => {
                       <Plus className="w-3.5 h-3.5" />
                       {serviceType} add-ons
                     </h4>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       {addons.map((addon) => {
                         const isSelected = selectedAddons.includes(addon.id);
                         const IconComponent = iconMap[addon.icon] || Shield;
@@ -1190,8 +1183,8 @@ const PreCheckout = () => {
                             className={cn(
                               "w-full text-left p-2.5 border transition-all relative rounded-sm",
                               isSelected 
-                                ? "border-primary bg-primary/5 ring-1 ring-primary/20" 
-                                : "border-foreground/15 hover:border-foreground/30"
+                                ? "border-primary/40 bg-primary/8" 
+                                : "border-foreground/10 hover:border-foreground/20"
                             )}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -1204,7 +1197,7 @@ const PreCheckout = () => {
                             <div className="flex items-start gap-2.5">
                               <div className={cn(
                                 "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
-                                isSelected ? "bg-primary border-primary" : "border-foreground/30"
+                                isSelected ? "bg-primary border-primary" : "border-foreground/20"
                               )}>
                                 {isSelected ? (
                                   <Check className="w-3.5 h-3.5 text-primary-foreground" />
@@ -1213,10 +1206,10 @@ const PreCheckout = () => {
                                 )}
                               </div>
                               <div className="flex-grow min-w-0">
-                                <div className="font-display text-sm">{addon.name}</div>
+                                <div className="font-medium text-sm">{addon.name}</div>
                                 <div className="text-muted-foreground text-xs">{addon.description}</div>
                               </div>
-                              <div className="font-display text-sm whitespace-nowrap">
+                              <div className="text-xs text-muted-foreground whitespace-nowrap">
                                 {addon.price === 0 ? "FREE" : `+£${addon.price.toFixed(2)}`}
                               </div>
                             </div>
@@ -1268,10 +1261,10 @@ const PreCheckout = () => {
                     <span>VAT (20%)</span>
                     <span>£{monthlyVat.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between font-display pt-2 border-t border-foreground/10">
+                  <div className="flex justify-between items-baseline font-display pt-3 border-t border-foreground/10">
                     <span className="text-sm">Ongoing monthly</span>
                     <div className="text-right">
-                      <span className="text-lg">£{monthlyTotal.toFixed(2)}</span>
+                      <span className="text-xl">£{monthlyTotal.toFixed(2)}</span>
                       <span className="text-muted-foreground text-xs">/mo</span>
                     </div>
                   </div>
@@ -1323,7 +1316,10 @@ const PreCheckout = () => {
                     </div>
                   </div>
 
-                  <p className="text-muted-foreground text-xs mt-3 text-center">
+                  <p className="text-muted-foreground text-[10px] mt-3 text-center">
+                    Prices include VAT where applicable
+                  </p>
+                  <p className="text-muted-foreground text-[10px] text-center">
                     30-day rolling · no contracts
                   </p>
                   {resolvedProduct?.technology === 'SOGEA' && (

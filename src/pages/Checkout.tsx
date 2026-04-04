@@ -9,9 +9,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getPlanById, Plan } from "@/lib/plans";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { installScenarios, careLevels, catalogueProducts } from "@/lib/pricing/catalogue";
+import { getSOGEANote } from "@/lib/pricing/engine";
+import type { CatalogueProduct } from "@/lib/pricing/types";
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -22,8 +33,11 @@ import {
   PhoneCall,
   MapPin,
   CreditCard,
-  CheckCircle
+  CheckCircle,
+  Router,
+  ShieldCheck,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const addressSchema = z.object({
   postcode: z.string().min(5, "Enter a valid postcode").max(10, "Postcode too long"),

@@ -13,6 +13,7 @@ import { Check, PhoneCall, ArrowRight, AlertTriangle, Wifi, Router, Phone, Zap }
 import { landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 const Landline = () => {
   const [isReady, setIsReady] = useState(false);

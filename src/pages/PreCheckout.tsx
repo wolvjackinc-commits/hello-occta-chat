@@ -1261,10 +1261,10 @@ const PreCheckout = () => {
                     <span>VAT (20%)</span>
                     <span>£{monthlyVat.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between font-display pt-2 border-t border-foreground/10">
+                  <div className="flex justify-between items-baseline font-display pt-3 border-t border-foreground/10">
                     <span className="text-sm">Ongoing monthly</span>
                     <div className="text-right">
-                      <span className="text-lg">£{monthlyTotal.toFixed(2)}</span>
+                      <span className="text-xl">£{monthlyTotal.toFixed(2)}</span>
                       <span className="text-muted-foreground text-xs">/mo</span>
                     </div>
                   </div>

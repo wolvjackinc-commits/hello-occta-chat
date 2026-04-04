@@ -100,6 +100,9 @@ const HeroSection = () => {
                 <Link to="/about">Learn More</Link>
               </Button>
             </motion.div>
+            <motion.p variants={itemVariants} className="text-xs text-muted-foreground pt-1">
+              Switch in under 60 seconds
+            </motion.p>
           </motion.div>
 
           {/* Right - Service Cards */}

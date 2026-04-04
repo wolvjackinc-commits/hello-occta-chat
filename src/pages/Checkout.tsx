@@ -467,7 +467,7 @@ const Checkout = () => {
                           value={addressData.city}
                           onChange={(e) => handleAddressChange("city", e.target.value)}
                           placeholder="City/Town"
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                         />
                         {errors.city && <p className="text-destructive text-sm mt-1">{errors.city}</p>}
                       </div>

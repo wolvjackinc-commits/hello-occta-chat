@@ -200,10 +200,10 @@ const Broadband = () => {
 
           <DialogFooter className="flex-col sm:flex-row gap-2 mt-2">
             <Button variant="outline" onClick={handleSkipVoice} className="w-full sm:w-auto">
-              No thanks, continue
+              Continue without phone
             </Button>
             <Button variant="hero" onClick={handleAddVoice} className="w-full sm:w-auto">
-              Yes, add Home Phone
+              Add home phone
               <ArrowRight className="w-4 h-4" />
             </Button>
           </DialogFooter>

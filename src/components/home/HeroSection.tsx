@@ -147,14 +147,20 @@ const HeroSection = () => {
 
             <motion.div 
               variants={itemVariants}
-              className="flex items-center justify-center gap-6 pt-2 text-sm text-muted-foreground"
+              className="flex flex-col items-center gap-2 pt-2 text-xs text-muted-foreground"
             >
-              <span className="flex items-center gap-2">
-                <span className="text-lg">🇬🇧</span> 100% British
-              </span>
-              <span className="flex items-center gap-2">
-                <Shield className="w-4 h-4" /> 98% Recommend Us
-              </span>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-primary" /> Works on UK's largest network (Openreach)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-primary" /> 24/7 UK-based support
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-primary" /> 14-day cooling-off period
+                </span>
+              </div>
+              <p className="text-muted-foreground/70 mt-1">No contracts. No pressure. Just better broadband.</p>
             </motion.div>
           </motion.div>
         </div>

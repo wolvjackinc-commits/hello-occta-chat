@@ -118,7 +118,7 @@ export const broadbandRetailCards: RetailCardDef[] = [
     serviceType: 'broadband',
     publicPricePrefix: 'From',
     publicSetupText: '',
-    publicTagline: 'The fastest internet money can buy. Period.',
+    publicTagline: 'Maximum speed for power users and smart homes',
     publicFeatures: [
       'Up to 1Gbps download',
       'Unlimited usage',

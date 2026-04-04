@@ -112,13 +112,13 @@ const WhyUsSection = () => {
             Why Switch?
           </motion.div>
           <h2 className="text-display-md mb-4">
-            WHY PEOPLE ACTUALLY
+            WHY PEOPLE ARE SWITCHING
             <br />
             <motion.span 
               className="text-gradient inline-block"
               whileHover={{ scale: 1.02 }}
             >
-              LIKE US
+              TO OCCTA
             </motion.span>
           </h2>
           <p className="text-xl text-muted-foreground">

@@ -91,11 +91,12 @@ const faqs = [
 const NoContractBroadband = () => {
   const { isAppMode } = useAppMode();
   const LayoutComponent = isAppMode ? AppLayout : Layout;
+  const prices = getFromPrices();
   const faqSchema = createFAQSchema(faqs.slice(0, 6));
   const offerSchema = createOfferSchema({
     name: "No Contract Broadband",
     description: "Flexible UK broadband with no contracts, no hidden fees, and no price rises.",
-    price: "22.99",
+    price: prices.broadband,
     url: "/no-contract-broadband-uk",
     category: "Broadband",
   });

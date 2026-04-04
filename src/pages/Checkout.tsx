@@ -414,7 +414,7 @@ const Checkout = () => {
                 key={step}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
+                className="border border-foreground/10 bg-card p-6 sm:p-8"
               >
                 {step === 1 && (
                   <>

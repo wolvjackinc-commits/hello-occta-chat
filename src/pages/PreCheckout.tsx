@@ -777,45 +777,45 @@ const PreCheckout = () => {
 
                 <div className="mt-6 space-y-4">
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Address Line 1 *</Label>
+                    <Label className="text-sm font-medium">Address line 1 <span className="text-destructive">*</span></Label>
                     <Input
                       value={customerData.addressLine1}
                       onChange={(e) => handleInputChange("addressLine1", e.target.value)}
                       placeholder="123 High Street"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                     {errors.addressLine1 && <p className="text-destructive text-sm mt-1">{errors.addressLine1}</p>}
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Address Line 2</Label>
+                    <Label className="text-sm font-medium">Address line 2</Label>
                     <Input
                       value={customerData.addressLine2}
                       onChange={(e) => handleInputChange("addressLine2", e.target.value)}
                       placeholder="Flat 4"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                   </div>
                   
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="font-display uppercase tracking-wider text-sm">City *</Label>
+                      <Label className="text-sm font-medium">City <span className="text-destructive">*</span></Label>
                       <Input
                         value={customerData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         placeholder="City/Town"
-                        className="mt-1 border-4 border-foreground"
+                        className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                       />
                       {errors.city && <p className="text-destructive text-sm mt-1">{errors.city}</p>}
                     </div>
                     
                     <div>
-                      <Label className="font-display uppercase tracking-wider text-sm">Postcode *</Label>
+                      <Label className="text-sm font-medium">Postcode <span className="text-destructive">*</span></Label>
                       <Input
                         value={customerData.postcode}
                         onChange={(e) => handleInputChange("postcode", e.target.value.toUpperCase())}
                         placeholder="HD1 2QD"
-                        className="mt-1 border-4 border-foreground"
+                        className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                       />
                       {errors.postcode && <p className="text-destructive text-sm mt-1">{errors.postcode}</p>}
                     </div>

@@ -1,62 +1,87 @@
 
 
-# Checkout UI Final Refinements — Presentation Only
+# Copy, Trust & Micro-UX Refinement Plan
 
-## Summary
-Six targeted visual refinements to PreCheckout.tsx and Checkout.tsx. Zero logic, validation, calculation, or backend changes.
+Text-only and content-hierarchy improvements across homepage, broadband page, landline page, checkout, and CTA. Zero layout, logic, or backend changes.
 
-## Changes
+---
 
-### 1. Compact selected-plan confirmation strip (PreCheckout.tsx)
-Replace the full plan cards in the sidebar (lines 1150-1166) with a compact inline strip at the top of the left column, below the page heading. Each plan renders as a single row: icon + name + speed/data badge + price. Add a "Change plan" link back to /broadband. Remove the duplicate plan cards from the sidebar — the sidebar keeps only the pricing breakdown.
+## Files Modified (7)
 
-In Checkout.tsx, the sidebar already has a compact plan card — keep it but remove any redundant plan detail repetition in the review step.
+### 1. `src/components/home/HeroSection.tsx` — Hero copy rewrite
+- **Headline**: Replace "Cheap UK / Broadband / No Contracts" with "Finally. / Broadband that / doesn't lock you in."
+- **Subtext**: Replace current paragraph with "No contracts. No hidden fees. No nonsense. Just fast, reliable internet that works — and lets you leave whenever you want."
+- **Service card subtitles**: Update from generic "No contract required" to:
+  - Broadband: "No contracts · Cancel anytime"
+  - Mobile SIM: "No contracts · Keep your number"
+  - Home Phone: "Works with your broadband · No extra line needed"
+- **Trust strip**: Replace the "100% British / 98% Recommend Us" footer with a 3-item trust line:
+  - "Works on UK's largest network (Openreach)"
+  - "24/7 UK-based support"
+  - "14-day cooling-off period"
+- **CTA helper text**: Add "Switch in under 60 seconds" below the "Check Your Postcode" button
 
-### 2. Progress indicators — visual only (PreCheckout.tsx)
-Add a horizontal progress bar below the page heading showing: Plan → Details → Setup → Review. These are static labels only — no scroll-reactive highlighting, no click handlers, no step navigation logic. Just four labels with dots/connectors where the first one is always filled (since the plan is already selected). Purely decorative visual context.
+### 2. `src/components/home/WhyUsSection.tsx` — Section copy update
+- **Section title**: Change from "WHY PEOPLE ACTUALLY / LIKE US" to "WHY PEOPLE ARE SWITCHING / TO OCCTA"
+- **Stamp badge**: Change from "No BS Guarantee" to "Why Switch?"
+- **Reason cards** — update titles and descriptions:
+  - "NO CONTRACTS" → "Leave anytime. No exit fees. No tricks."
+  - "NO PRICE HIKES" → "What you see is what you pay."
+  - "QUICK SETUP" → "WE HANDLE THE SWITCH" / "No calls. No stress. We move everything for you."
+  - "HUMANS ANSWER" → "UK-BASED SUPPORT" / "Real humans. No scripts."
+  - "SMALL BUSINESS, BIG CARE" → "SAME NETWORK AS BIG BRANDS" / "Powered by Openreach infrastructure."
+  - "98% RECOMMEND US" — keep as-is (social proof is strong)
 
-In Checkout.tsx, the existing 2-step progress indicator stays as-is (it already has click-back behaviour which is existing logic — don't change it).
+### 3. `src/lib/pricing/retailCards.ts` — Broadband plan descriptions
+Update the `tagline` and `publicTagline` fields (these feed into the plan cards):
+- Essential: "Perfect for browsing, emails, and light streaming"
+- Superfast: "Ideal for families, Netflix, and everyday use"
+- Ultrafast: "Great for gamers, work-from-home, and heavy usage"
+- Gigabit: "Maximum speed for power users and smart homes"
 
-### 3. Add-ons: main flow + compact sidebar summary (PreCheckout.tsx)
-Move the full add-on selection UI (lines 1168-1221) from the sidebar into the left column as a new section between "Support Level" and "Installation Scheduling". Group addons into two sub-sections:
-- "Recommended" — first 2 addons per service type
-- "Optional extras" — remaining addons
+### 4. `src/pages/Broadband.tsx` — Broadband page copy
+- **Above plans section header**: Change "ALL PLANS" subtext from "Unlimited data, no price rises. Novel concept." to "Choose your speed — we'll handle the rest"
+- **Under each "Choose Plan" button**: Add 3 micro-conversion lines below the plan grid:
+  "Setup usually within 7 days · We notify your current provider · No downtime during switch"
+  (Single text line below the plans grid, not per-card)
+- **Home Phone section heading**: Change "ADD A HOME PHONE" to "ADD A HOME PHONE (OPTIONAL)"
+- **Home Phone description**: Update to "Keep your number. Plug into your router. No copper line needed."
 
-In the sidebar, replace the removed add-on toggles with a compact "Selected add-ons" list showing only the names and prices of currently selected addons (read-only summary, no toggle buttons). If none selected, show "No add-ons selected" in muted text.
+### 5. `src/components/home/CTASection.tsx` — CTA copy
+- **Headline**: Keep existing (already strong)
+- **Button text**: Change "Get Started Now" to "Get Started"
+- **Add helper text** below CTA buttons: "Switch in under 60 seconds"
+- **Trust note**: Keep existing (already good, no duplication concern since it's the inverted footer section)
 
-### 4. Selective border reduction (both files)
-- Form section cards: reduce from `border-2 border-foreground/20` to `border border-foreground/10`
-- Sidebar order summary: keep `border-2 border-foreground/20` (bold framing on key container)
-- Primary CTA button: keep existing `variant="hero"` with full border weight
-- Consent block: keep `border-2` on the outer card
-- Inputs: reduce from `border-2 border-foreground/30` to `border border-foreground/20`
-- Mobile summary bar: reduce to `border-t border-foreground/15`
+### 6. `src/components/layout/Footer.tsx` — Trust section before footer
+Add a compact trust bar at the top of the footer (inside the existing component, between the support banner and main footer content):
+- "Ofcom regulated UK telecom provider"
+- "Secure payments (256-bit encryption)"
+- "Transparent pricing — no hidden fees"
+- "UK customer support team"
+Rendered as a simple horizontal list with shield/lock icons, using existing muted styling.
 
-### 5. Price hierarchy in summary (both files)
-- "Ongoing monthly" label: bump to `text-base font-semibold` with the price at `text-2xl` (from `text-xl`)
-- "Due today" inverted block: keep but make the price `text-2xl` as well
-- VAT lines: reduce to `text-[11px]` and `text-muted-foreground/70` for lower visual weight
-- Subtotal (ex VAT) lines: same `text-[11px]` treatment
-- Monthly charge line items stay at `text-sm`
+### 7. `src/pages/PreCheckout.tsx` — Checkout microcopy
+- **Page heading**: Already says "COMPLETE YOUR ORDER" — keep
+- **Subtitle**: Already says "Fill in your details below and we'll get you connected." — keep
+- **Order confirmation list in consent block**: Update the `orderConsent` bullet points to match requested copy:
+  - "This is a 30-day rolling service"
+  - "Setup charges may apply depending on my line"
+  - "My service depends on availability at my address"
+  (Remove "I accept all charges shown in the order summary" — redundant with the CTA)
+- **Tagline placement**: Add "No contracts. No pressure. Just better broadband." as a subtle line below the "What Happens Next" section, styled as `text-xs text-muted-foreground text-center`
 
-### 6. De-duplicate trust/reassurance copy (both files)
-Current state has overlapping trust copy in: trust badges below CTA, sidebar footer text, consent block items, and "What Happens Next". Remove redundancy:
-- Remove the standalone "256-bit encrypted · Ofcom regulated" badge below the CTA (lines 1097-1108 in PreCheckout) — these appear again in the sidebar
-- Remove "30-day rolling · no contracts" from the sidebar footer (line 1323) — this is already stated in the consent block
-- Keep the sidebar's "Prices include VAT where applicable" (unique, not repeated elsewhere)
-- Keep the 14-day cooling off notice in sidebar (unique)
-- Keep trust badges in sidebar only (single location)
+### Also add the tagline in:
+- `src/components/home/HeroSection.tsx` — below the trust strip
+- `src/pages/Broadband.tsx` — below the plans grid micro-conversion text
 
-In Checkout.tsx, apply the same de-duplication: remove any duplicate trust text that already appears in the consent or sidebar.
+---
 
-## Files modified (2)
-
-1. **`src/pages/PreCheckout.tsx`** — plan strip, progress labels, addon relocation + grouping, compact sidebar addon summary, border reduction, price hierarchy, trust copy de-duplication
-2. **`src/pages/Checkout.tsx`** — border reduction, price hierarchy, trust copy de-duplication
-
-## Constraints
-- Zero logic, state, handler, validation, or calculation changes
-- Same components, same imports (no new files)
-- OCCTA brutalist identity preserved on key containers and CTAs
-- All existing fields, consent, and pricing data remain
+## What is NOT changed
+- No layout or structural changes
+- No color/theme changes
+- No component additions or removals
+- No pricing logic, backend, or routing changes
+- No responsive breakpoints affected
+- Broadband plan names (ESSENTIAL, SUPERFAST, etc.) remain as-is — only taglines updated
 

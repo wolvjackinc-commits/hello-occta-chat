@@ -22,6 +22,7 @@ import {
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, JsonLd, createFAQSchema, createOfferSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 const containerVariants = {
   hidden: { opacity: 0 },

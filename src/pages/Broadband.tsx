@@ -13,6 +13,7 @@ import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone } from
 import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 const Broadband = () => {
   const [isReady, setIsReady] = useState(false);

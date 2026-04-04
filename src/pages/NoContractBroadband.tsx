@@ -141,9 +141,7 @@ const NoContractBroadband = () => {
             </motion.p>
 
             {/* This empty fragment replaces the old hardcoded paragraph below */}
-              Broadband from{" "}
-              <span className="text-foreground">£22.99/month</span>. No
-              contracts, no hidden fees, cancel anytime.
+              {/* content moved above */}
             </motion.p>
 
             <motion.p

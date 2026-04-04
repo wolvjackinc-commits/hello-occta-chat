@@ -129,7 +129,7 @@ const HeroSection = () => {
                 >
                   <div>
                     <h3 className="font-display text-lg uppercase">{service.name}</h3>
-                    <p className="text-xs text-muted-foreground">No contract required</p>
+                    <p className="text-xs text-muted-foreground">{service.subtitle}</p>
                   </div>
                   <div className="text-right flex items-center gap-3">
                     <div>

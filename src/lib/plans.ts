@@ -43,6 +43,7 @@ export const broadbandPlans: Plan[] = bbCards.map(card => ({
   features: card.publicFeatures,
   popular: card.popular,
   serviceType: 'broadband' as ServiceType,
+  catalogueProductId: getCheapestEligibleId(card.eligibleProductIds),
 }));
 
 // ── SIM plans (no ICUK data — keep current prices) ──

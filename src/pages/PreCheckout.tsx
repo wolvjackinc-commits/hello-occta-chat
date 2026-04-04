@@ -641,22 +641,15 @@ const PreCheckout = () => {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 border-4 border-warning/50 bg-warning/5"
+              className="mb-6 px-4 py-3 border border-foreground/10 bg-secondary/30 flex items-center gap-3"
             >
-              <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-display uppercase text-foreground">Add a Home Phone?</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Add Digital Home Phone for just £{getFromPrices().landline}/mo. Crystal clear calls through your broadband.
-                  </p>
-                  <Link to="/landline">
-                    <Button variant="ghost" size="sm" className="text-primary font-display">
-                      Learn more →
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+              <PhoneCall className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <p className="text-sm text-muted-foreground flex-grow">
+                Add Digital Home Phone from £{getFromPrices().landline}/mo.{' '}
+                <Link to="/landline" className="text-accent underline underline-offset-2 hover:text-foreground transition-colors">
+                  Learn more →
+                </Link>
+              </p>
             </motion.div>
           )}
 

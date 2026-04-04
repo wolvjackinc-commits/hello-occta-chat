@@ -160,8 +160,14 @@ const Checkout = () => {
     ? (installScenarios.find(s => s.id === installScenarioId)?.retailCharge ?? 0)
     : 0;
   const careUplift = careLevels.find(c => c.id === careLevelId)?.monthlyUplift ?? 0;
-  const ongoingMonthly = (plan?.priceNum ?? 0) + careUplift;
-  const totalDueToday = setupCharge;
+
+  const monthlySubtotalExVat = (plan?.priceNum ?? 0) + careUplift;
+  const monthlyVat = Math.round(monthlySubtotalExVat * VAT_RATE * 100) / 100;
+  const ongoingMonthly = Math.round((monthlySubtotalExVat + monthlyVat) * 100) / 100;
+
+  const oneOffSubtotalExVat = setupCharge;
+  const oneOffVat = Math.round(oneOffSubtotalExVat * VAT_RATE * 100) / 100;
+  const totalDueToday = Math.round((oneOffSubtotalExVat + oneOffVat) * 100) / 100;
 
   const handleNextStep = () => {
     if (step === 1 && validateAddress()) {

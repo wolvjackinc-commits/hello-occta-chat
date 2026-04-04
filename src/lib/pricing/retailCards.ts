@@ -102,8 +102,8 @@ export const broadbandRetailCards: RetailCardDef[] = [
     id: 'gigabit',
     publicTitle: 'GIGABIT',
     category: 'Gigafast',
-    tagline: 'The fastest internet money can buy. Period.',
-    description: 'The fastest internet money can buy. Period.',
+    tagline: 'Maximum speed for power users and smart homes',
+    description: 'Maximum speed for power users and smart homes',
     features: [
       'Up to 1Gbps download',
       'Unlimited usage',

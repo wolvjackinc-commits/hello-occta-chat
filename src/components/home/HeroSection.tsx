@@ -33,9 +33,9 @@ const HeroSection = () => {
   ];
 
   const services = [
-    { name: "Broadband", price: `£${prices.broadband}`, link: "/broadband" },
-    { name: "Mobile SIM", price: `£${prices.sim}`, link: "/sim-plans" },
-    { name: "Home Phone", price: `£${prices.landline}`, link: "/landline" },
+    { name: "Broadband", price: `£${prices.broadband}`, link: "/broadband", subtitle: "No contracts · Cancel anytime" },
+    { name: "Mobile SIM", price: `£${prices.sim}`, link: "/sim-plans", subtitle: "No contracts · Keep your number" },
+    { name: "Home Phone", price: `£${prices.landline}`, link: "/landline", subtitle: "Works with your broadband · No extra line needed" },
   ];
 
   return (

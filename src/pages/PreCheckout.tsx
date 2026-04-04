@@ -1071,25 +1071,28 @@ const PreCheckout = () => {
               </motion.div>
 
               {/* Submit Button */}
-              <Button
-                variant="hero"
-                className="w-full"
-                size="lg"
-                onClick={handleSubmit}
-                disabled={isSubmitting || landlineWithoutBroadband || !orderConsent}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    Submit Order
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  variant="hero"
+                  className="w-full"
+                  size="lg"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || landlineWithoutBroadband || !orderConsent}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4" />
+                      Place order securely
+                    </>
+                  )}
+                </Button>
+                <p className="text-center text-muted-foreground text-xs">You won't be charged today unless applicable</p>
+              </div>
 
               {/* Security Badge */}
               <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs">

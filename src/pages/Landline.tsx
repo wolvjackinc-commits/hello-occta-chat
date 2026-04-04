@@ -76,10 +76,10 @@ const Landline = () => {
     <LayoutComponent>
       <SEO 
         title="Digital Home Phone UK - Add to Broadband"
-        description="Add Digital Home Phone from £4.99/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts."
+        description={`Add Digital Home Phone from £${getFromPrices().landline}/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts.`}
         canonical="/landline"
         keywords="digital home phone, digital voice UK, VoIP home phone, home phone broadband, cheap home phone UK, no contract home phone"
-        price="4.99"
+        price={getFromPrices().landline}
       />
       <StructuredData customSchema={combinedSchemas} />
 

@@ -425,7 +425,7 @@ const NoContractBroadband = () => {
                     SIM Plans
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Flexible mobile plans with no contract from £7.99/month
+                    Flexible mobile plans with no contract from £{prices.sim}/month
                   </p>
                 </Card>
               </Link>

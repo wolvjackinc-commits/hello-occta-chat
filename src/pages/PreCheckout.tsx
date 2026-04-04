@@ -1025,6 +1025,119 @@ const PreCheckout = () => {
                 </motion.div>
               )}
 
+              {/* Add-ons */}
+              {Object.keys(addonsByService).length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.14 }}
+                  className="border border-foreground/10 bg-card p-6 sm:p-8"
+                >
+                  <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-muted-foreground" />
+                    Add-ons
+                  </h2>
+                  <p className="text-muted-foreground text-sm mb-5">Enhance your package with extras.</p>
+
+                  {Object.entries(addonsByService).map(([serviceType, addons]) => {
+                    const recommended = addons.slice(0, 2);
+                    const optional = addons.slice(2);
+                    return (
+                      <div key={serviceType} className="space-y-4">
+                        {recommended.length > 0 && (
+                          <div>
+                            <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">Recommended</p>
+                            <div className="space-y-2.5">
+                              {recommended.map((addon) => {
+                                const isSelected = selectedAddons.includes(addon.id);
+                                const IconComponent = iconMap[addon.icon] || Shield;
+                                return (
+                                  <motion.button
+                                    key={addon.id}
+                                    onClick={() => toggleAddon(addon.id)}
+                                    className={cn(
+                                      "w-full text-left p-3 border transition-all relative rounded-sm",
+                                      isSelected 
+                                        ? "border-primary/40 bg-primary/5" 
+                                        : "border-foreground/10 hover:border-foreground/20"
+                                    )}
+                                    whileTap={{ scale: 0.98 }}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div className={cn(
+                                        "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
+                                        isSelected ? "bg-primary border-primary" : "border-foreground/20"
+                                      )}>
+                                        {isSelected ? (
+                                          <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                                        ) : (
+                                          <IconComponent className="w-3.5 h-3.5 text-muted-foreground" />
+                                        )}
+                                      </div>
+                                      <div className="flex-grow min-w-0">
+                                        <div className="font-medium text-sm">{addon.name}</div>
+                                        <div className="text-muted-foreground text-xs mt-0.5">{addon.description}</div>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                        {addon.price === 0 ? "FREE" : addon.oneTime ? `£${addon.price.toFixed(2)}` : `+£${addon.price.toFixed(2)}/mo`}
+                                      </div>
+                                    </div>
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {optional.length > 0 && (
+                          <div>
+                            <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2 mt-4">Optional extras</p>
+                            <div className="space-y-2.5">
+                              {optional.map((addon) => {
+                                const isSelected = selectedAddons.includes(addon.id);
+                                const IconComponent = iconMap[addon.icon] || Shield;
+                                return (
+                                  <motion.button
+                                    key={addon.id}
+                                    onClick={() => toggleAddon(addon.id)}
+                                    className={cn(
+                                      "w-full text-left p-3 border transition-all rounded-sm",
+                                      isSelected 
+                                        ? "border-primary/40 bg-primary/5" 
+                                        : "border-foreground/10 hover:border-foreground/20"
+                                    )}
+                                    whileTap={{ scale: 0.98 }}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div className={cn(
+                                        "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
+                                        isSelected ? "bg-primary border-primary" : "border-foreground/20"
+                                      )}>
+                                        {isSelected ? (
+                                          <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                                        ) : (
+                                          <IconComponent className="w-3.5 h-3.5 text-muted-foreground" />
+                                        )}
+                                      </div>
+                                      <div className="flex-grow min-w-0">
+                                        <div className="font-medium text-sm">{addon.name}</div>
+                                        <div className="text-muted-foreground text-xs mt-0.5">{addon.description}</div>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                        {addon.price === 0 ? "FREE" : addon.oneTime ? `£${addon.price.toFixed(2)}` : `+£${addon.price.toFixed(2)}/mo`}
+                                      </div>
+                                    </div>
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              )}
+
               {/* Installation Scheduling */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}

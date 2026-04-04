@@ -7,6 +7,7 @@ import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema, createSer
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { broadbandPlans } from "@/lib/plans";
 import { getLocationBySlug } from "@/data/locations";
+import { getFromPrices } from "@/lib/pricing/engine";
 import NotFound from "@/pages/NotFound";
 
 import { motion } from "framer-motion";

@@ -685,15 +685,15 @@ const PreCheckout = () => {
                     variant="outline"
                     size="sm"
                     onClick={handleDiscardSavedData}
-                    className="border-2 border-foreground flex-1 sm:flex-none"
+                    className="border border-foreground/20 flex-1 sm:flex-none text-xs"
                   >
-                    Start Fresh
+                    Start fresh
                   </Button>
                   <Button
                     variant="hero"
                     size="sm"
                     onClick={handleRestoreData}
-                    className="flex-1 sm:flex-none"
+                    className="flex-1 sm:flex-none text-xs"
                   >
                     Restore
                   </Button>

@@ -664,11 +664,11 @@ const Checkout = () => {
                         </div>
                         {oneOffSubtotalExVat > 0 && (
                           <>
-                            <div className="flex justify-between text-xs text-muted-foreground py-1 border-t border-foreground/5">
+                            <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1 border-t border-foreground/5">
                               <span>Subtotal (ex VAT)</span>
                               <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between text-xs text-muted-foreground py-1">
+                            <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1">
                               <span>VAT (20%)</span>
                               <span>£{oneOffVat.toFixed(2)}</span>
                             </div>

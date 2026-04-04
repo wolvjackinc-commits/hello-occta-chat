@@ -577,8 +577,13 @@ const PreCheckout = () => {
     return sum + (addon?.oneTime ? addon.price : 0);
   }, 0);
 
-  const monthlyTotal = bundleCalc.discountedTotal + addonsTotal + careUplift;
-  const totalDueToday = setupCharge + addonsOneOff;
+  const monthlySubtotalExVat = bundleCalc.discountedTotal + addonsTotal + careUplift;
+  const monthlyVat = Math.round(monthlySubtotalExVat * VAT_RATE * 100) / 100;
+  const monthlyTotal = Math.round((monthlySubtotalExVat + monthlyVat) * 100) / 100;
+
+  const oneOffSubtotalExVat = setupCharge + addonsOneOff;
+  const oneOffVat = Math.round(oneOffSubtotalExVat * VAT_RATE * 100) / 100;
+  const totalDueToday = Math.round((oneOffSubtotalExVat + oneOffVat) * 100) / 100;
 
   // Group addons by service type
   const addonsByService = selectedPlans.reduce((acc, plan) => {

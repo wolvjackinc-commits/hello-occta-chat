@@ -456,7 +456,7 @@ const Checkout = () => {
                           value={addressData.addressLine2}
                           onChange={(e) => handleAddressChange("addressLine2", e.target.value)}
                           placeholder="Flat 4"
-                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                          className="mt-1 border border-foreground/20 focus:border-foreground"
                         />
                       </div>
                       

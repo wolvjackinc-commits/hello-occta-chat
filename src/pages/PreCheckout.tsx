@@ -1142,18 +1142,6 @@ const PreCheckout = () => {
                 <p className="text-center text-muted-foreground text-xs">You won't be charged today unless applicable</p>
               </div>
 
-              {/* Security Badge */}
-              <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs">
-                <div className="flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>256-bit encrypted</span>
-                </div>
-                <span className="text-foreground/20">·</span>
-                <div className="flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Ofcom regulated</span>
-                </div>
-              </div>
 
               {/* What happens next */}
               <motion.div 

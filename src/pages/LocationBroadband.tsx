@@ -19,11 +19,12 @@ const LocationBroadband = () => {
 
   if (!location) return <NotFound />;
 
+  const prices = getFromPrices();
   const broadbandServiceSchema = createServiceSchema({
     name: `OCCTA Broadband in ${location.city}`,
     description: `Fast, reliable fibre broadband in ${location.city} with speeds up to 900Mbps. No contracts, no price rises.`,
     url: `/broadband-${location.slug}`,
-    price: '22.99',
+    price: prices.broadband,
   });
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({

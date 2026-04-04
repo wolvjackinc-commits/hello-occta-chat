@@ -571,10 +571,10 @@ const PreCheckout = () => {
   // Care level uplift
   const careUplift = careLevels.find(c => c.id === careLevelId)?.monthlyUplift ?? 0;
 
-  // One-off addon charges
+  // One-off addon charges (addons marked oneTime have their price as one-off)
   const addonsOneOff = selectedAddons.reduce((sum, id) => {
     const addon = availableAddons.find(a => a.id === id);
-    return sum + (addon?.oneOff || 0);
+    return sum + (addon?.oneTime ? addon.price : 0);
   }, 0);
 
   const monthlyTotal = bundleCalc.discountedTotal + addonsTotal + careUplift;

@@ -769,7 +769,7 @@ const PreCheckout = () => {
                       value={customerData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="07700 900123"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                     {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
                   </div>

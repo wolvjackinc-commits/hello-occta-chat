@@ -779,7 +779,7 @@ const Checkout = () => {
                 
                 <div className="pt-4 border-t border-foreground/10 space-y-1.5">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Monthly</span>
+                    <span className="text-base font-semibold font-display">Monthly</span>
                     <div>
                       <span className="font-display text-2xl">£{ongoingMonthly.toFixed(2)}</span>
                       <span className="text-muted-foreground text-xs">/mo</span>

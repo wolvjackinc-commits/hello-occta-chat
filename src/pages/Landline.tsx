@@ -147,7 +147,7 @@ const Landline = () => {
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-lg mx-auto lg:mx-0">
                 Crystal clear calls through your broadband connection. Keep your existing number, 
-                use your standard home phone. From £4.99/month, no contracts.
+                use your standard home phone. From £{getFromPrices().landline}/month, no contracts.
               </p>
               
               {/* Benefits */}

@@ -226,7 +226,7 @@ const Broadband = () => {
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-lg">
                 Fast, reliable internet without the corporate nonsense. 
-                From £22.99/month with no price rises mid-contract — cheap broadband UK
+                From £{getFromPrices().broadband}/month with no price rises mid-contract — cheap broadband UK
                 that stays no contract broadband and cancel anytime broadband.
               </p>
               <p className="text-sm text-muted-foreground mb-6">

@@ -20,7 +20,7 @@ const DEFAULT_KEYWORDS = 'cheap broadband UK, no contract broadband, cancel anyt
 
 export const SEO = ({
   title,
-  description = 'Cheap broadband UK from £22.99/mo. No contract broadband, 5G SIM plans, landline. No credit check, cancel anytime. 900Mbps speeds. Get connected today!',
+  description = `Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract broadband, 5G SIM plans, landline. No credit check, cancel anytime. 900Mbps speeds. Get connected today!`,
   canonical,
   type = 'website',
   image = DEFAULT_IMAGE,

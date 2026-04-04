@@ -14,7 +14,7 @@ export const organizationSchema = {
   url: `${BASE_URL}/`,
   logo: `${BASE_URL}/pwa-512x512.png`,
   image: `${BASE_URL}/og-image.png`,
-  description: 'Cheap UK broadband, SIM plans, and digital home phone services with no contracts. Affordable internet from £22.99/month.',
+  description: `Cheap UK broadband, SIM plans, and digital home phone services with no contracts. Affordable internet from £${getFromPrices().broadband}/month.`,
   ...(companyConfig.foundingYear ? { foundingDate: String(companyConfig.foundingYear) } : {}),
   address: {
     '@type': 'PostalAddress',

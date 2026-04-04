@@ -55,19 +55,19 @@ const HeroSection = () => {
               variants={itemVariants} 
               className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display uppercase leading-[0.9] tracking-tight text-foreground"
             >
-              Cheap UK
+              Finally.
               <br />
-              Broadband
+              Broadband that
               <br />
-              <span className="text-gradient">No Contracts</span>
+              <span className="text-gradient">doesn't lock you in.</span>
             </motion.h1>
 
             <motion.p 
               variants={itemVariants} 
               className="text-lg text-muted-foreground max-w-lg"
             >
-              Cheap broadband UK from £{prices.broadband}/mo. Cancel anytime broadband with no hidden fees or lock-ins. 
-              5G SIM plans and digital home phone available UK-wide.
+              No contracts. No hidden fees. No nonsense.
+              Just fast, reliable internet that works — and lets you leave whenever you want.
             </motion.p>
 
             <motion.div 

@@ -56,7 +56,7 @@ export const broadbandRetailCards: RetailCardDef[] = [
     serviceType: 'broadband',
     publicPricePrefix: 'From',
     publicSetupText: '',
-    publicTagline: 'For households that actually use the internet properly',
+    publicTagline: 'Ideal for families, Netflix, and everyday use',
     publicFeatures: [
       'Up to 330Mbps download',
       'Unlimited usage',

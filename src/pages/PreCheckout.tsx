@@ -1201,15 +1201,15 @@ const PreCheckout = () => {
                                 Popular
                               </span>
                             )}
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-2.5">
                               <div className={cn(
-                                "w-8 h-8 border-2 flex items-center justify-center flex-shrink-0",
-                                isSelected ? "bg-primary border-primary" : "border-foreground/50"
+                                "w-6 h-6 border flex items-center justify-center flex-shrink-0 rounded-sm",
+                                isSelected ? "bg-primary border-primary" : "border-foreground/30"
                               )}>
                                 {isSelected ? (
-                                  <Check className="w-4 h-4 text-primary-foreground" />
+                                  <Check className="w-3.5 h-3.5 text-primary-foreground" />
                                 ) : (
-                                  <IconComponent className="w-4 h-4" />
+                                  <IconComponent className="w-3.5 h-3.5 text-muted-foreground" />
                                 )}
                               </div>
                               <div className="flex-grow min-w-0">

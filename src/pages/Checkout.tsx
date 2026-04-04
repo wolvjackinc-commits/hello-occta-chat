@@ -740,8 +740,8 @@ const Checkout = () => {
                           <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
                           <>
-                            Place Order
-                            <Check className="w-5 h-5" />
+                            <Shield className="w-4 h-4" />
+                            Place order securely
                           </>
                         )}
                       </Button>

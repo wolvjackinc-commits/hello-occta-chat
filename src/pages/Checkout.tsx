@@ -652,14 +652,7 @@ const Checkout = () => {
 
                         <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mt-4 mb-2">One-off charges</p>
                         <div className="flex justify-between text-sm py-1">
-                          <span>
-                            Setup/install
-                            {installScenarioId && installScenarioId !== 'fttp-standard' && (
-                              <span className="text-muted-foreground text-xs ml-1">
-                                ({installScenarios.find(s => s.id === installScenarioId)?.label})
-                              </span>
-                            )}
-                          </span>
+                          <span>Setup / install</span>
                           <span className={setupCharge === 0 ? "text-primary font-display" : ""}>{setupCharge === 0 ? 'FREE' : `£${oneOffSubtotalExVat.toFixed(2)}`}</span>
                         </div>
                         {oneOffSubtotalExVat > 0 && (

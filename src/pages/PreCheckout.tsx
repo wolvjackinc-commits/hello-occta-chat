@@ -696,24 +696,24 @@ const PreCheckout = () => {
               <div key={plan.id} className="mb-8 border border-foreground/10 bg-secondary/10 p-4 md:p-5">
                 <div className="flex items-start justify-between gap-6">
                   {/* Left: icon + plan info */}
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="mt-0.5 flex-shrink-0 w-8 h-8 bg-primary/10 flex items-center justify-center">
-                      <PlanIcon className="w-4 h-4 text-primary" />
+                  <div className="flex items-start gap-3.5 min-w-0">
+                    <div className="mt-0.5 flex-shrink-0 w-9 h-9 bg-foreground/5 border border-foreground/10 flex items-center justify-center">
+                      <PlanIcon className="w-5 h-5 text-foreground" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-display text-sm font-semibold">{plan.name}</span>
+                        <span className="text-sm font-medium tracking-normal">{plan.name}</span>
                         {plan.speed && (
                           <span className="text-[10px] font-display uppercase tracking-wider text-muted-foreground bg-secondary/60 px-1.5 py-0.5">Up to {plan.speed} Mbps</span>
                         )}
                       </div>
-                      <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                        <li className="flex items-center gap-1"><Check className="w-3 h-3 text-primary/70" />Unlimited usage</li>
-                        <li className="flex items-center gap-1"><Check className="w-3 h-3 text-primary/70" />Router included</li>
-                        <li className="flex items-center gap-1"><Check className="w-3 h-3 text-primary/70" />No contract — cancel anytime</li>
-                        <li className="flex items-center gap-1"><Check className="w-3 h-3 text-primary/70" />UK-based support</li>
+                      <ul className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
+                        <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />Unlimited usage</li>
+                        <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />Router included</li>
+                        <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />No contract — cancel anytime</li>
+                        <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />UK-based support</li>
                       </ul>
-                      <p className="mt-1.5 text-[11px] text-muted-foreground/60">Setup may apply depending on your line</p>
+                      <p className="mt-2.5 text-[11px] text-muted-foreground/60">Setup may apply depending on your line</p>
                     </div>
                   </div>
                   {/* Right: price + change link */}

@@ -95,7 +95,7 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
           </h2>
           <p className="text-background/85 text-lg max-w-2xl mx-auto">
             Mix and match our services to get exactly what you need. 
-            <span className="text-primary font-bold"> Save 10% with 2 services, 15% with all 3!</span>
+            <span className="text-primary font-bold"> Save up to £7/mo when you bundle!</span>
           </p>
         </motion.div>
 

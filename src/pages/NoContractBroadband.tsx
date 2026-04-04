@@ -140,10 +140,6 @@ const NoContractBroadband = () => {
               contracts, no hidden fees, cancel anytime.
             </motion.p>
 
-            {/* This empty fragment replaces the old hardcoded paragraph below */}
-              {/* content moved above */}
-            </motion.p>
-
             <motion.p
               variants={itemVariants}
               className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto"

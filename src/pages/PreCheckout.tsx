@@ -144,6 +144,9 @@ const PreCheckout = () => {
   const [selectedInstallationSlot, setSelectedInstallationSlot] = useState<InstallationSlot | null>(null);
   const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
   const [userHasActiveBroadband, setUserHasActiveBroadband] = useState(false);
+  const [installScenarioId, setInstallScenarioId] = useState<string | null>(null);
+  const [careLevelId, setCareLevelId] = useState('standard');
+  const [orderConsent, setOrderConsent] = useState(false);
 
   // Check if logged-in user already has active broadband service
   useEffect(() => {

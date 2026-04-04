@@ -53,9 +53,9 @@ const Landline = () => {
 
   const landlineServiceSchema = createServiceSchema({
     name: 'OCCTA Digital Home Phone',
-    description: 'Digital home phone service that works through your OCCTA broadband. Crystal clear HD calls from £4.99/month.',
+    description: `Digital home phone service that works through your OCCTA broadband. Crystal clear HD calls from £${getFromPrices().landline}/month.`,
     url: '/landline',
-    price: '4.99',
+    price: getFromPrices().landline,
   });
 
   const planOfferSchema = createOfferSchema({

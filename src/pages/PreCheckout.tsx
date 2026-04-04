@@ -828,21 +828,22 @@ const PreCheckout = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="card-brutal bg-card p-6"
+                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
               >
-                <h2 className="text-display-sm mb-6 flex items-center gap-3">
-                  <ArrowRight className="w-6 h-6" />
-                  SWITCHING DETAILS
+                <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                  Switching Details
                 </h2>
+                <p className="text-muted-foreground text-sm mb-6">Tell us about your current setup so we can manage the switch.</p>
                 
                 <div className="space-y-4">
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Current Provider *</Label>
+                    <Label className="text-sm font-medium">Current provider <span className="text-destructive">*</span></Label>
                     <Select
                       value={customerData.currentProvider}
                       onValueChange={(value) => handleInputChange("currentProvider", value)}
                     >
-                      <SelectTrigger className="mt-1 border-4 border-foreground">
+                      <SelectTrigger className="mt-1 border-2 border-foreground/30">
                         <SelectValue placeholder="Select your current provider" />
                       </SelectTrigger>
                       <SelectContent>
@@ -857,12 +858,12 @@ const PreCheckout = () => {
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Are you currently in a contract? *</Label>
+                    <Label className="text-sm font-medium">Are you currently in a contract? <span className="text-destructive">*</span></Label>
                     <Select
                       value={customerData.inContract}
                       onValueChange={(value) => handleInputChange("inContract", value)}
                     >
-                      <SelectTrigger className="mt-1 border-4 border-foreground">
+                      <SelectTrigger className="mt-1 border-2 border-foreground/30">
                         <SelectValue placeholder="Select an option" />
                       </SelectTrigger>
                       <SelectContent>
@@ -876,13 +877,13 @@ const PreCheckout = () => {
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Preferred Switch Date (Optional)</Label>
+                    <Label className="text-sm font-medium">Preferred switch date <span className="text-muted-foreground font-normal">(optional)</span></Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full mt-1 justify-start text-left border-4 border-foreground font-normal",
+                            "w-full mt-1 justify-start text-left border-2 border-foreground/30 font-normal",
                             !customerData.preferredSwitchDate && "text-muted-foreground"
                           )}
                         >
@@ -894,7 +895,7 @@ const PreCheckout = () => {
                           )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 border-4 border-foreground" align="start">
+                      <PopoverContent className="w-auto p-0 border-2 border-foreground/30" align="start">
                         <Calendar
                           mode="single"
                           selected={customerData.preferredSwitchDate}
@@ -904,7 +905,7 @@ const PreCheckout = () => {
                         />
                       </PopoverContent>
                     </Popover>
-                    <p className="text-muted-foreground text-sm mt-1">We need at least 7 days to arrange your switch</p>
+                    <p className="text-muted-foreground text-xs mt-1">We need at least 7 days to arrange your switch</p>
                   </div>
                 </div>
               </motion.div>

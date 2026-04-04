@@ -663,7 +663,55 @@ const PreCheckout = () => {
           </Link>
 
           <h1 className="text-display-md mb-2">COMPLETE YOUR ORDER</h1>
-          <p className="text-muted-foreground mb-8">Fill in your details below and we'll get you connected.</p>
+          <p className="text-muted-foreground mb-4">Fill in your details below and we'll get you connected.</p>
+
+          {/* Progress Indicator — visual only */}
+          <div className="flex items-center gap-2 mb-8">
+            {[
+              { label: "Plan", filled: true },
+              { label: "Details", filled: false },
+              { label: "Setup", filled: false },
+              { label: "Review", filled: false },
+            ].map((s, i, arr) => (
+              <div key={s.label} className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    s.filled ? "bg-primary" : "bg-foreground/15"
+                  )} />
+                  <span className={cn(
+                    "text-xs font-display uppercase tracking-wider",
+                    s.filled ? "text-foreground" : "text-muted-foreground"
+                  )}>{s.label}</span>
+                </div>
+                {i < arr.length - 1 && <div className="w-6 h-px bg-foreground/10" />}
+              </div>
+            ))}
+          </div>
+
+          {/* Compact Plan Confirmation Strip */}
+          <div className="mb-8 border border-foreground/10 bg-secondary/20 p-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap flex-grow">
+                {selectedPlans.map((plan) => {
+                  const PlanIcon = serviceIcons[plan.serviceType];
+                  return (
+                    <div key={plan.id} className="flex items-center gap-2">
+                      <PlanIcon className="w-4 h-4 text-primary" />
+                      <span className="font-display text-sm">{plan.name}</span>
+                      {plan.speed && (
+                        <span className="text-[10px] font-display uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5">{plan.speed}</span>
+                      )}
+                      <span className="text-sm text-muted-foreground">£{plan.price}/mo</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <Link to="/broadband" className="text-xs text-primary hover:underline font-medium whitespace-nowrap">
+                Change plan
+              </Link>
+            </div>
+          </div>
 
           {/* Restore Saved Form Prompt */}
           <AnimatePresence>

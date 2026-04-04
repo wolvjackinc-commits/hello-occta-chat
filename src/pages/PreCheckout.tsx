@@ -933,7 +933,7 @@ const PreCheckout = () => {
                           )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 border-2 border-foreground/30" align="start">
+                      <PopoverContent className="w-auto p-0 border border-foreground/20" align="start">
                         <Calendar
                           mode="single"
                           selected={customerData.preferredSwitchDate}

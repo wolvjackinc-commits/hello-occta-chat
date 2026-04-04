@@ -25,6 +25,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { getPlanById, Plan, calculateBundleDiscount } from "@/lib/plans";
 import { getAddonsByService, Addon, ukProviders } from "@/lib/addons";
+import { getFromPrices, buildOrderSummary, getSOGEANote } from "@/lib/pricing/engine";
+import { installScenarios, careLevels, catalogueProducts } from "@/lib/pricing/catalogue";
+import type { CatalogueProduct } from "@/lib/pricing/types";
 import { format, addDays } from "date-fns";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { 

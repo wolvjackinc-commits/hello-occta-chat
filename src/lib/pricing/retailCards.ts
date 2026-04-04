@@ -71,8 +71,8 @@ export const broadbandRetailCards: RetailCardDef[] = [
     id: 'ultrafast',
     publicTitle: 'ULTRAFAST',
     category: 'Ultra Fibre',
-    tagline: 'For gamers, streamers, and people who work from home',
-    description: 'For gamers, streamers, and people who work from home',
+    tagline: 'Great for gamers, work-from-home, and heavy usage',
+    description: 'Great for gamers, work-from-home, and heavy usage',
     features: [
       'Up to 550Mbps download',
       'Unlimited usage',

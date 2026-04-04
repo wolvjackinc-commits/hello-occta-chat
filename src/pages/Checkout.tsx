@@ -747,19 +747,7 @@ const Checkout = () => {
                       </Button>
                     </div>
                     
-                    <div className="flex items-center justify-center gap-3 text-muted-foreground text-xs mt-4">
-                      <div className="flex items-center gap-1">
-                        <Shield className="w-3.5 h-3.5" />
-                        <span>256-bit encrypted</span>
-                      </div>
-                      <span className="text-foreground/20">·</span>
-                      <span>
-                        {new Date().toLocaleString('en-GB', { 
-                          dateStyle: 'medium', 
-                          timeStyle: 'short' 
-                        })}
-                      </span>
-                    </div>
+                    <p className="text-center text-muted-foreground text-xs mt-4">You won't be charged today unless applicable</p>
                   </>
                 )}
               </motion.div>

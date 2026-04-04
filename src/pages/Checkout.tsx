@@ -626,7 +626,7 @@ const Checkout = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between py-2 border-b-2 border-foreground/10">
                           <span>Monthly subscription</span>
-                          <span className="font-display">£{plan.price}</span>
+                          <span className="font-display">£{(plan?.priceNum ?? 0).toFixed(2)}</span>
                         </div>
                         {careUplift > 0 && (
                           <div className="flex justify-between py-2 border-b-2 border-foreground/10">
@@ -634,9 +634,17 @@ const Checkout = () => {
                             <span className="font-display">+£{careUplift.toFixed(2)}</span>
                           </div>
                         )}
+                        <div className="flex justify-between py-2 border-b-2 border-foreground/10 text-muted-foreground text-sm">
+                          <span>Subtotal (ex VAT)</span>
+                          <span>£{monthlySubtotalExVat.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b-2 border-foreground/10 text-muted-foreground text-sm">
+                          <span>VAT (20%)</span>
+                          <span>£{monthlyVat.toFixed(2)}</span>
+                        </div>
                         <div className="flex justify-between py-2 border-b-2 border-foreground/10 font-display">
                           <span>ONGOING MONTHLY</span>
-                          <span>£{ongoingMonthly.toFixed(2)}/mo</span>
+                          <span>£{ongoingMonthly.toFixed(2)}/mo <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
                         </div>
                         <div className="flex justify-between py-2 border-b-2 border-foreground/10">
                           <span>
@@ -647,11 +655,17 @@ const Checkout = () => {
                               </span>
                             )}
                           </span>
-                          <span className="font-display">{setupCharge === 0 ? <span className="text-primary">FREE</span> : `£${setupCharge.toFixed(2)}`}</span>
+                          <span className="font-display">{setupCharge === 0 ? <span className="text-primary">FREE</span> : `£${oneOffSubtotalExVat.toFixed(2)}`}</span>
                         </div>
+                        {oneOffSubtotalExVat > 0 && (
+                          <div className="flex justify-between py-2 border-b-2 border-foreground/10 text-muted-foreground text-sm">
+                            <span>VAT (20%)</span>
+                            <span>£{oneOffVat.toFixed(2)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between py-4 text-xl">
                           <span className="font-display">TOTAL DUE TODAY</span>
-                          <span className="font-display">£{totalDueToday.toFixed(2)}</span>
+                          <span className="font-display">£{totalDueToday.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
                         </div>
                         <p className="text-muted-foreground text-xs">
                           30-day rolling — no contracts

@@ -1312,9 +1312,21 @@ const PreCheckout = () => {
                       </div>
                     );
                   })}
+                  {oneOffSubtotalExVat > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm pt-2 border-t border-foreground/10">
+                        <span>Subtotal (ex VAT)</span>
+                        <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>VAT (20%)</span>
+                        <span>£{oneOffVat.toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between font-display text-xl pt-2 border-t-2 border-foreground/20">
                     <span>TOTAL DUE TODAY</span>
-                    <span>£{totalDueToday.toFixed(2)}</span>
+                    <span>£{totalDueToday.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(incl. VAT)</span></span>
                   </div>
 
                   <p className="text-muted-foreground text-xs mt-3">

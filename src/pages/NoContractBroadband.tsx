@@ -439,7 +439,7 @@ const NoContractBroadband = () => {
                     Home Phone
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Keep your number with Digital Home Phone from £4.99/month
+                    Keep your number with Digital Home Phone from £{prices.landline}/month
                   </p>
                 </Card>
               </Link>

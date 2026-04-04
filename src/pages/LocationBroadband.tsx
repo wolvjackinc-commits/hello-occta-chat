@@ -76,7 +76,7 @@ const LocationBroadband = () => {
         description={location.metaDescription}
         canonical={`/broadband-${location.slug}`}
         keywords={`cheap broadband ${location.city}, broadband ${location.city}, fibre broadband ${location.city}, no contract broadband ${location.city}, internet ${location.city}, ${location.region} broadband`}
-        price="22.99"
+        price={prices.broadband}
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 

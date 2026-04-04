@@ -255,7 +255,7 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
                     <span>Subtotal</span>
                     <span>£{bundleStats.originalTotal.toFixed(2)}</span>
                   </div>
-                  {hasBundle && (
+                  {hasBundle && bundleStats.savings > 0 && (
                     <motion.div 
                       className="flex justify-between text-primary"
                       initial={{ opacity: 0 }}
@@ -263,7 +263,7 @@ const BundleBuilder = ({ currentService }: BundleBuilderProps) => {
                     >
                       <span className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4" />
-                        Bundle discount ({bundleStats.discountPercentage}%)
+                        Bundle discount
                       </span>
                       <span>-£{bundleStats.savings.toFixed(2)}</span>
                     </motion.div>

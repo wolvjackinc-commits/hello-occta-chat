@@ -138,7 +138,7 @@ const Broadband = () => {
               Add Digital Home Phone?
             </DialogTitle>
             <DialogDescription className="text-base">
-              Add a home phone to your broadband for crystal clear HD calls.
+              Stay connected with crystal-clear calls — no extra line needed.
             </DialogDescription>
           </DialogHeader>
 
@@ -153,8 +153,13 @@ const Broadband = () => {
                 <span className="font-display text-3xl text-primary">£{voiceTotal.toFixed(2)}</span>
                 <span className="text-foreground/70 text-sm">/mo</span>
               </div>
+              <ul className="text-xs text-muted-foreground space-y-0.5 mb-2">
+                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Works through your broadband</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Keep your existing number</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Plug into your router</li>
+              </ul>
               {selectedCallPlans.length === 0 && (
-                <p className="text-xs text-muted-foreground">Pay-as-you-go calls included (8p/min UK)</p>
+                <p className="text-xs text-muted-foreground">Pay-as-you-go calls (8p/min UK)</p>
               )}
               {selectedCallPlans.length > 0 && (
                 <p className="text-xs text-muted-foreground">
@@ -183,22 +188,23 @@ const Broadband = () => {
                       className="pointer-events-none"
                     />
                     <div className="flex-1">
-                      <p className="font-display text-sm">{cp.name}</p>
+                      <p className="font-display text-sm">{cp.name}{cp.id === 'addon-unlimited-uk-calls' && <span className="text-xs text-primary ml-1">(Most Popular)</span>}</p>
                       <p className="text-xs text-muted-foreground">{cp.description}</p>
                     </div>
                     <span className="font-display text-sm text-primary">{cp.label}</span>
                   </button>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground mt-2">Most customers add Unlimited UK Calls for peace of mind</p>
             </div>
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 mt-2">
             <Button variant="outline" onClick={handleSkipVoice} className="w-full sm:w-auto">
-              No thanks, continue
+              Continue without phone
             </Button>
             <Button variant="hero" onClick={handleAddVoice} className="w-full sm:w-auto">
-              Yes, add Home Phone
+              Add home phone
               <ArrowRight className="w-4 h-4" />
             </Button>
           </DialogFooter>

@@ -2,41 +2,44 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Wifi, Smartphone, PhoneCall, ArrowRight } from "lucide-react";
-
-const services = [
-  {
-    icon: Wifi,
-    title: "BROADBAND",
-    subtitle: "Internet that actually works",
-    description: "From 36Mbps for the casual browser to 900Mbps for the household of gamers, streamers, and people who video call too much.",
-    price: "From £22.99/mo",
-    link: "/broadband",
-    color: "bg-primary",
-    accent: "border-primary",
-  },
-  {
-    icon: Smartphone,
-    title: "SIM PLANS",
-    subtitle: "Mobile without the mobile drama",
-    description: "Unlimited texts, plenty of data, and calls that don't drop mid-sentence. Revolutionary concept, we know.",
-    price: "From £7.99/mo",
-    link: "/sim-plans",
-    color: "bg-accent",
-    accent: "border-accent",
-  },
-  {
-    icon: PhoneCall,
-    title: "HOME PHONE",
-    subtitle: "Digital voice, no old copper",
-    description: "Crystal clear calls through your broadband. Keep your number, use your existing phone. Requires OCCTA broadband.",
-    price: "From £4.99/mo",
-    link: "/landline",
-    color: "bg-warning",
-    accent: "border-warning",
-  },
-];
+import { getFromPrices } from "@/lib/pricing/engine";
 
 const ServicesSection = () => {
+  const prices = getFromPrices();
+
+  const services = [
+    {
+      icon: Wifi,
+      title: "BROADBAND",
+      subtitle: "Internet that actually works",
+      description: "From 36Mbps for the casual browser to 900Mbps for the household of gamers, streamers, and people who video call too much.",
+      price: `From £${prices.broadband}/mo`,
+      link: "/broadband",
+      color: "bg-primary",
+      accent: "border-primary",
+    },
+    {
+      icon: Smartphone,
+      title: "SIM PLANS",
+      subtitle: "Mobile without the mobile drama",
+      description: "Unlimited texts, plenty of data, and calls that don't drop mid-sentence. Revolutionary concept, we know.",
+      price: `From £${prices.sim}/mo`,
+      link: "/sim-plans",
+      color: "bg-accent",
+      accent: "border-accent",
+    },
+    {
+      icon: PhoneCall,
+      title: "HOME PHONE",
+      subtitle: "Digital voice, no old copper",
+      description: "Crystal clear calls through your broadband. Keep your number, use your existing phone. Requires OCCTA broadband.",
+      price: `From £${prices.landline}/mo`,
+      link: "/landline",
+      color: "bg-warning",
+      accent: "border-warning",
+    },
+  ];
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {

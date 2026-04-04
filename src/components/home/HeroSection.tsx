@@ -2,8 +2,11 @@ import { motion } from "framer-motion";
 import { ArrowRight, X, Shield, Phone, Wifi, RefreshCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 const HeroSection = () => {
+  const prices = getFromPrices();
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -30,9 +33,9 @@ const HeroSection = () => {
   ];
 
   const services = [
-    { name: "Broadband", price: "£22.99", link: "/broadband" },
-    { name: "Mobile SIM", price: "£7.99", link: "/sim-plans" },
-    { name: "Home Phone", price: "£4.99", link: "/landline" },
+    { name: "Broadband", price: `£${prices.broadband}`, link: "/broadband" },
+    { name: "Mobile SIM", price: `£${prices.sim}`, link: "/sim-plans" },
+    { name: "Home Phone", price: `£${prices.landline}`, link: "/landline" },
   ];
 
   return (
@@ -48,7 +51,6 @@ const HeroSection = () => {
             initial="hidden"
             animate="visible"
           >
-            {/* Headline - Large and Prominent with Keywords */}
             <motion.h1 
               variants={itemVariants} 
               className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display uppercase leading-[0.9] tracking-tight text-foreground"
@@ -60,16 +62,14 @@ const HeroSection = () => {
               <span className="text-gradient">No Contracts</span>
             </motion.h1>
 
-            {/* Subheadline with Keywords */}
             <motion.p 
               variants={itemVariants} 
               className="text-lg text-muted-foreground max-w-lg"
             >
-              Cheap broadband UK from £22.99/mo. Cancel anytime broadband with no hidden fees or lock-ins. 
+              Cheap broadband UK from £{prices.broadband}/mo. Cancel anytime broadband with no hidden fees or lock-ins. 
               5G SIM plans and digital home phone available UK-wide.
             </motion.p>
 
-            {/* Benefits Row */}
             <motion.div 
               variants={itemVariants}
               className="flex flex-wrap gap-2"
@@ -89,7 +89,6 @@ const HeroSection = () => {
               ))}
             </motion.div>
 
-            {/* CTA */}
             <motion.div variants={itemVariants} className="flex flex-wrap gap-3 pt-2">
               <Button asChild size="lg" variant="hero">
                 <Link to="/broadband">
@@ -143,7 +142,6 @@ const HeroSection = () => {
               </motion.div>
             ))}
 
-            {/* Trust Badge */}
             <motion.div 
               variants={itemVariants}
               className="flex items-center justify-center gap-6 pt-2 text-sm text-muted-foreground"

@@ -397,6 +397,13 @@ const Broadband = () => {
               </motion.div>
             ))}
           </motion.div>
+
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            ✔ Setup usually within 7 days · ✔ We notify your current provider · ✔ No downtime during switch
+          </p>
+          <p className="text-center text-xs text-muted-foreground/70 mt-2">
+            No contracts. No pressure. Just better broadband.
+          </p>
         </div>
       </section>
 

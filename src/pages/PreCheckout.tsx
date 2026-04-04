@@ -1386,14 +1386,7 @@ const PreCheckout = () => {
                   {/* One-off charges */}
                   <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mt-5 mb-1.5">One-off charges</p>
                   <div className="flex justify-between text-sm">
-                    <span>
-                      Setup/install
-                      {installScenarioId && (
-                        <span className="text-muted-foreground text-xs ml-1">
-                          ({installScenarios.find(s => s.id === installScenarioId)?.label})
-                        </span>
-                      )}
-                    </span>
+                    <span>Setup / install</span>
                     <span className={setupCharge === 0 ? "text-primary font-display" : ""}>{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
                   </div>
                   {selectedAddons.filter(id => {

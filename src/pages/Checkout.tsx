@@ -483,6 +483,63 @@ const Checkout = () => {
                       </div>
                     </div>
 
+                    {/* Installation Type — SOGEA broadband only */}
+                    {resolvedProduct && resolvedProduct.technology === 'SOGEA' && (
+                      <div className="mt-6 p-4 border-4 border-foreground">
+                        <Label className="font-display uppercase tracking-wider text-sm flex items-center gap-2 mb-3">
+                          <Router className="w-5 h-5" />
+                          Installation Type *
+                        </Label>
+                        <Select
+                          value={installScenarioId ?? ''}
+                          onValueChange={(value) => setInstallScenarioId(value)}
+                        >
+                          <SelectTrigger className="border-4 border-foreground">
+                            <SelectValue placeholder="Select installation type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {installScenarios
+                              .filter(s => s.id !== 'fttp-standard')
+                              .map(s => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  {s.label} — {s.retailCharge === 0 ? 'FREE' : `£${s.retailCharge.toFixed(2)}`}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* Support Level — broadband only */}
+                    {plan.serviceType === 'broadband' && (
+                      <div className="mt-6 p-4 border-4 border-foreground">
+                        <Label className="font-display uppercase tracking-wider text-sm flex items-center gap-2 mb-3">
+                          <ShieldCheck className="w-5 h-5" />
+                          Support Level
+                        </Label>
+                        <div className="space-y-2">
+                          {careLevels.map(level => (
+                            <button
+                              key={level.id}
+                              type="button"
+                              onClick={() => setCareLevelId(level.id)}
+                              className={cn(
+                                "w-full text-left p-3 border-4 transition-all flex items-center justify-between",
+                                careLevelId === level.id
+                                  ? "border-primary bg-primary/10"
+                                  : "border-foreground/30 hover:border-foreground"
+                              )}
+                            >
+                              <span className="font-display text-sm">{level.label}</span>
+                              <span className="font-display text-sm">
+                                {level.monthlyUplift === 0 ? 'Included' : `+£${level.monthlyUplift.toFixed(2)}/mo`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       variant="hero"
                       className="w-full mt-8"

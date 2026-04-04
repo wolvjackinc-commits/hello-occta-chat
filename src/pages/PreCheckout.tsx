@@ -734,7 +734,7 @@ const PreCheckout = () => {
                       value={customerData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
                       placeholder="John"
-                      className="mt-1 border-4 border-foreground"
+                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                     />
                     {errors.firstName && <p className="text-destructive text-sm mt-1">{errors.firstName}</p>}
                   </div>

@@ -365,33 +365,35 @@ const Checkout = () => {
           {/* Back Link */}
           <Link
             to={`/${plan.serviceType === 'sim' ? 'sim-plans' : plan.serviceType}`}
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 font-display uppercase tracking-wider text-sm"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to plans
           </Link>
 
           {/* Progress Steps */}
-          <div className="flex items-center gap-4 mb-12">
+          <div className="flex items-center gap-4 mb-10">
             {[
-              { num: 1, label: "Address" },
+              { num: 1, label: "Details" },
               { num: 2, label: "Review" },
             ].map((s, i) => (
-              <div key={s.num} className="flex items-center gap-4">
+              <div key={s.num} className="flex items-center gap-3">
                 <motion.div
-                  className={`w-12 h-12 border-4 border-foreground flex items-center justify-center font-display text-xl ${
-                    step >= s.num ? "bg-primary text-primary-foreground" : "bg-background"
-                  } ${step > s.num ? "cursor-pointer" : ""}`}
-                  animate={{ scale: step === s.num ? 1.1 : 1 }}
+                  className={cn(
+                    "w-10 h-10 border-2 flex items-center justify-center font-display text-lg rounded-sm",
+                    step >= s.num ? "bg-primary text-primary-foreground border-primary" : "bg-background border-foreground/20",
+                    step > s.num ? "cursor-pointer" : ""
+                  )}
+                  animate={{ scale: step === s.num ? 1.05 : 1 }}
                   onClick={() => { if (step > s.num) setStep(s.num); }}
                 >
-                  {step > s.num ? <Check className="w-6 h-6" /> : s.num}
+                  {step > s.num ? <Check className="w-5 h-5" /> : s.num}
                 </motion.div>
-                <span className={`font-display uppercase tracking-wider ${step >= s.num ? "text-foreground" : "text-muted-foreground"}`}>
+                <span className={cn("font-display uppercase tracking-wider text-sm", step >= s.num ? "text-foreground" : "text-muted-foreground")}>
                   {s.label}
                 </span>
                 {i < 1 && (
-                  <div className="w-16 h-1 bg-foreground/20 relative overflow-hidden">
+                  <div className="w-12 h-0.5 bg-foreground/10 relative overflow-hidden">
                     <motion.div
                       className="absolute inset-y-0 left-0 bg-primary"
                       initial={{ width: "0%" }}

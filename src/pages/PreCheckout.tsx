@@ -536,13 +536,49 @@ const PreCheckout = () => {
     }
   };
 
+  // ── Resolve catalogue product for broadband plan ──
+  const broadbandPlan = selectedPlans.find(p => p.serviceType === 'broadband');
+  const resolvedProduct: CatalogueProduct | undefined = broadbandPlan?.catalogueProductId
+    ? catalogueProducts.find(p => p.id === broadbandPlan.catalogueProductId)
+    : undefined;
+
+  // Determine applicable install scenarios
+  const applicableScenarios = resolvedProduct
+    ? installScenarios.filter(s => resolvedProduct.installTypeSupported.includes(s.id.replace('sogea-', '').replace('fttp-', '')))
+    : [];
+
+  // Auto-select FTTP standard if applicable
+  React.useEffect(() => {
+    if (resolvedProduct?.technology === 'FTTP' && resolvedProduct.freeInstallEligible) {
+      setInstallScenarioId('fttp-standard');
+    } else if (!resolvedProduct || resolvedProduct.technology !== 'SOGEA') {
+      setInstallScenarioId(null);
+    }
+  }, [resolvedProduct?.id]);
+
   // Calculate totals
   const bundleCalc = calculateBundleDiscount(selectedPlans);
   const addonsTotal = selectedAddons.reduce((sum, id) => {
     const addon = availableAddons.find(a => a.id === id);
     return sum + (addon?.price || 0);
   }, 0);
-  const monthlyTotal = bundleCalc.discountedTotal + addonsTotal;
+
+  // Calculate setup charge
+  const setupCharge = installScenarioId
+    ? (installScenarios.find(s => s.id === installScenarioId)?.retailCharge ?? 0)
+    : 0;
+
+  // Care level uplift
+  const careUplift = careLevels.find(c => c.id === careLevelId)?.monthlyUplift ?? 0;
+
+  // One-off addon charges
+  const addonsOneOff = selectedAddons.reduce((sum, id) => {
+    const addon = availableAddons.find(a => a.id === id);
+    return sum + (addon?.oneOff || 0);
+  }, 0);
+
+  const monthlyTotal = bundleCalc.discountedTotal + addonsTotal + careUplift;
+  const totalDueToday = setupCharge + addonsOneOff;
 
   // Group addons by service type
   const addonsByService = selectedPlans.reduce((acc, plan) => {

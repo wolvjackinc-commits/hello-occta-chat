@@ -691,7 +691,7 @@ const Checkout = () => {
                         variant="hero"
                         className="flex-grow"
                         onClick={handleSubmitOrder}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !orderConsent}
                       >
                         {isSubmitting ? (
                           <Loader2 className="w-5 h-5 animate-spin" />

@@ -188,7 +188,7 @@ const Broadband = () => {
                       className="pointer-events-none"
                     />
                     <div className="flex-1">
-                      <p className="font-display text-sm">{cp.name}</p>
+                      <p className="font-display text-sm">{cp.name}{cp.id === 'addon-unlimited-uk-calls' && <span className="text-xs text-primary ml-1">(Most Popular)</span>}</p>
                       <p className="text-xs text-muted-foreground">{cp.description}</p>
                     </div>
                     <span className="font-display text-sm text-primary">{cp.label}</span>

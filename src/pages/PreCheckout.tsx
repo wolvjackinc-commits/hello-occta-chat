@@ -1158,15 +1158,15 @@ const PreCheckout = () => {
                   {selectedPlans.map((plan) => {
                     const Icon = serviceIcons[plan.serviceType];
                     return (
-                      <div key={plan.id} className="flex items-center gap-3 p-3 border-4 border-foreground bg-secondary">
-                        <div className="w-10 h-10 bg-primary border-2 border-foreground flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-primary-foreground" />
+                      <div key={plan.id} className="flex items-center gap-3 p-3 border border-foreground/10 bg-secondary/30 rounded-sm">
+                        <div className="w-9 h-9 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-sm">
+                          <Icon className="w-4 h-4 text-primary" />
                         </div>
                         <div className="flex-grow">
-                          <div className="font-display">{plan.name}</div>
-                          <div className="text-muted-foreground text-sm capitalize">{plan.serviceType}</div>
+                          <div className="font-display text-sm">{plan.name}</div>
+                          <div className="text-muted-foreground text-xs capitalize">{plan.serviceType}</div>
                         </div>
-                        <div className="font-display">£{plan.price}</div>
+                        <div className="font-display text-sm">£{plan.price}</div>
                       </div>
                     );
                   })}

@@ -108,7 +108,7 @@ const NoContractBroadband = () => {
         description="Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband with no lock-ins, no hidden fees, and no surprise price rises."
         canonical="/no-contract-broadband-uk"
         keywords="no contract broadband UK, flexible broadband, cancel anytime broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
-        price="22.99"
+        price={prices.broadband}
       />
       <JsonLd data={offerSchema} />
       <JsonLd data={faqSchema} />

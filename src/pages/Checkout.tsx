@@ -141,6 +141,28 @@ const Checkout = () => {
     }
   };
 
+  // ── Resolve catalogue product ──
+  const resolvedProduct: CatalogueProduct | undefined = plan?.catalogueProductId
+    ? catalogueProducts.find(p => p.id === plan.catalogueProductId)
+    : undefined;
+
+  // Auto-select FTTP standard
+  useEffect(() => {
+    if (resolvedProduct?.technology === 'FTTP' && resolvedProduct.freeInstallEligible) {
+      setInstallScenarioId('fttp-standard');
+    } else if (!resolvedProduct || resolvedProduct.technology !== 'SOGEA') {
+      setInstallScenarioId(null);
+    }
+  }, [resolvedProduct?.id]);
+
+  // Calculate charges
+  const setupCharge = installScenarioId
+    ? (installScenarios.find(s => s.id === installScenarioId)?.retailCharge ?? 0)
+    : 0;
+  const careUplift = careLevels.find(c => c.id === careLevelId)?.monthlyUplift ?? 0;
+  const ongoingMonthly = (plan?.priceNum ?? 0) + careUplift;
+  const totalDueToday = setupCharge;
+
   const handleNextStep = () => {
     if (step === 1 && validateAddress()) {
       setStep(2);

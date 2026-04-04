@@ -496,7 +496,7 @@ const Checkout = () => {
                           value={installScenarioId ?? ''}
                           onValueChange={(value) => setInstallScenarioId(value)}
                         >
-                          <SelectTrigger className="border-2 border-foreground/30">
+                          <SelectTrigger className="border border-foreground/20">
                             <SelectValue placeholder="Select installation type" />
                           </SelectTrigger>
                           <SelectContent>

@@ -820,7 +820,7 @@ const PreCheckout = () => {
                       value={customerData.addressLine1}
                       onChange={(e) => handleInputChange("addressLine1", e.target.value)}
                       placeholder="123 High Street"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                     {errors.addressLine1 && <p className="text-destructive text-sm mt-1">{errors.addressLine1}</p>}
                   </div>
@@ -831,7 +831,7 @@ const PreCheckout = () => {
                       value={customerData.addressLine2}
                       onChange={(e) => handleInputChange("addressLine2", e.target.value)}
                       placeholder="Flat 4"
-                      className="mt-1 border-2 border-foreground/30 focus:border-foreground"
+                      className="mt-1 border border-foreground/20 focus:border-foreground"
                     />
                   </div>
                   

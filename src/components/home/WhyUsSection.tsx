@@ -3,29 +3,29 @@ import { Phone, Clock, PoundSterling, Users, Zap, ThumbsUp } from "lucide-react"
 
 const reasons = [
   {
-    icon: Phone,
-    title: "HUMANS ANSWER",
-    description: "Ring us and a real person picks up. UK-based support, plain English, no scripts.",
-  },
-  {
     icon: Clock,
-    title: "30-DAY CONTRACTS",
-    description: "Monthly rolling plans only. No 24-month lock-ins, no exit fees, no drama.",
+    title: "NO CONTRACTS",
+    description: "Leave anytime. No exit fees. No tricks.",
   },
   {
     icon: PoundSterling,
     title: "NO PRICE HIKES",
-    description: "No CPI-linked increases. The price you see is what you pay.",
-  },
-  {
-    icon: Users,
-    title: "SMALL BUSINESS, BIG CARE",
-    description: "We keep overheads low and pass the savings on. Same networks, lower prices.",
+    description: "What you see is what you pay.",
   },
   {
     icon: Zap,
-    title: "QUICK SETUP",
-    description: "Most installs happen within 7 days. Straightforward plans, zero fuss.",
+    title: "WE HANDLE THE SWITCH",
+    description: "No calls. No stress. We move everything for you.",
+  },
+  {
+    icon: Phone,
+    title: "UK-BASED SUPPORT",
+    description: "Real humans. No scripts.",
+  },
+  {
+    icon: Users,
+    title: "SAME NETWORK AS BIG BRANDS",
+    description: "Powered by Openreach infrastructure.",
   },
   {
     icon: ThumbsUp,

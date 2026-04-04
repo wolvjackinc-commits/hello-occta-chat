@@ -921,7 +921,7 @@ const PreCheckout = () => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full mt-1 justify-start text-left border-2 border-foreground/30 font-normal",
+                            "w-full mt-1 justify-start text-left border border-foreground/20 font-normal",
                             !customerData.preferredSwitchDate && "text-muted-foreground"
                           )}
                         >

@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getPlanById, Plan } from "@/lib/plans";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { installScenarios, careLevels, catalogueProducts } from "@/lib/pricing/catalogue";
-import { getSOGEANote } from "@/lib/pricing/engine";
+import { getSOGEANote, VAT_RATE } from "@/lib/pricing/engine";
 import type { CatalogueProduct } from "@/lib/pricing/types";
 import { 
   ArrowLeft, 

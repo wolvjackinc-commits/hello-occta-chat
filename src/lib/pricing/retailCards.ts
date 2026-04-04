@@ -9,8 +9,8 @@ export const broadbandRetailCards: RetailCardDef[] = [
     id: 'essential',
     publicTitle: 'ESSENTIAL',
     category: 'Essentials',
-    tagline: 'Perfect for light browsing and the occasional Netflix binge',
-    description: 'Perfect for light browsing and the occasional Netflix binge',
+    tagline: 'Perfect for browsing, emails, and light streaming',
+    description: 'Perfect for browsing, emails, and light streaming',
     features: [
       'Up to 80Mbps download',
       'Unlimited usage',

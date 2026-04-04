@@ -413,87 +413,72 @@ const Checkout = () => {
                 key={step}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="card-brutal bg-card p-8"
+                className="border-2 border-foreground/20 bg-card p-6 sm:p-8"
               >
                 {step === 1 && (
                   <>
-                    <div className="flex items-center gap-3 mb-6">
-                      <MapPin className="w-6 h-6" />
-                      <h2 className="text-display-sm">YOUR ADDRESS</h2>
-                    </div>
+                    <h2 className="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-muted-foreground" />
+                      Your Address
+                    </h2>
+                    <p className="text-muted-foreground text-sm mb-6">Where should we install your service?</p>
                     
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="postcode" className="font-display uppercase tracking-wider">
-                          Postcode *
-                        </Label>
+                        <Label className="text-sm font-medium">Postcode <span className="text-destructive">*</span></Label>
                         <Input
                           id="postcode"
                           value={addressData.postcode}
                           onChange={(e) => handleAddressChange("postcode", e.target.value.toUpperCase())}
                           placeholder="HD1 2QD"
-                          className="mt-1 border-4 border-foreground"
+                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                         />
-                        {errors.postcode && (
-                          <p className="text-destructive text-sm mt-1">{errors.postcode}</p>
-                        )}
+                        {errors.postcode && <p className="text-destructive text-sm mt-1">{errors.postcode}</p>}
                       </div>
                       
                       <div>
-                        <Label htmlFor="addressLine1" className="font-display uppercase tracking-wider">
-                          Address Line 1 *
-                        </Label>
+                        <Label className="text-sm font-medium">Address line 1 <span className="text-destructive">*</span></Label>
                         <Input
                           id="addressLine1"
                           value={addressData.addressLine1}
                           onChange={(e) => handleAddressChange("addressLine1", e.target.value)}
                           placeholder="123 High Street"
-                          className="mt-1 border-4 border-foreground"
+                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                         />
-                        {errors.addressLine1 && (
-                          <p className="text-destructive text-sm mt-1">{errors.addressLine1}</p>
-                        )}
+                        {errors.addressLine1 && <p className="text-destructive text-sm mt-1">{errors.addressLine1}</p>}
                       </div>
                       
                       <div>
-                        <Label htmlFor="addressLine2" className="font-display uppercase tracking-wider">
-                          Address Line 2
-                        </Label>
+                        <Label className="text-sm font-medium">Address line 2</Label>
                         <Input
                           id="addressLine2"
                           value={addressData.addressLine2}
                           onChange={(e) => handleAddressChange("addressLine2", e.target.value)}
                           placeholder="Flat 4"
-                          className="mt-1 border-4 border-foreground"
+                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                         />
                       </div>
                       
                       <div>
-                        <Label htmlFor="city" className="font-display uppercase tracking-wider">
-                          City *
-                        </Label>
+                        <Label className="text-sm font-medium">City <span className="text-destructive">*</span></Label>
                         <Input
                           id="city"
                           value={addressData.city}
                           onChange={(e) => handleAddressChange("city", e.target.value)}
                           placeholder="City/Town"
-                          className="mt-1 border-4 border-foreground"
+                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                         />
-                        {errors.city && (
-                          <p className="text-destructive text-sm mt-1">{errors.city}</p>
-                        )}
+                        {errors.city && <p className="text-destructive text-sm mt-1">{errors.city}</p>}
                       </div>
 
                       <div>
-                        <Label htmlFor="notes" className="font-display uppercase tracking-wider">
-                          Installation Notes (optional)
-                        </Label>
+                        <Label className="text-sm font-medium">Installation notes <span className="text-muted-foreground font-normal">(optional)</span></Label>
                         <Textarea
                           id="notes"
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
                           placeholder="E.g., best time to call, access instructions..."
-                          className="mt-1 border-4 border-foreground"
+                          className="mt-1 border-2 border-foreground/30 focus:border-foreground"
                           rows={3}
                         />
                       </div>
@@ -501,16 +486,16 @@ const Checkout = () => {
 
                     {/* Installation Type — SOGEA broadband only */}
                     {resolvedProduct && resolvedProduct.technology === 'SOGEA' && (
-                      <div className="mt-6 p-4 border-4 border-foreground">
-                        <Label className="font-display uppercase tracking-wider text-sm flex items-center gap-2 mb-3">
-                          <Router className="w-5 h-5" />
-                          Installation Type *
+                      <div className="mt-6 p-4 border border-foreground/10 bg-secondary/30 rounded-sm">
+                        <Label className="text-sm font-medium flex items-center gap-2 mb-2">
+                          <Router className="w-4 h-4 text-muted-foreground" />
+                          Installation type <span className="text-destructive">*</span>
                         </Label>
                         <Select
                           value={installScenarioId ?? ''}
                           onValueChange={(value) => setInstallScenarioId(value)}
                         >
-                          <SelectTrigger className="border-4 border-foreground">
+                          <SelectTrigger className="border-2 border-foreground/30">
                             <SelectValue placeholder="Select installation type" />
                           </SelectTrigger>
                           <SelectContent>
@@ -523,31 +508,40 @@ const Checkout = () => {
                               ))}
                           </SelectContent>
                         </Select>
+                        <p className="text-muted-foreground text-xs mt-1.5">Charges depend on your current line status.</p>
                       </div>
                     )}
 
                     {/* Support Level — broadband only */}
                     {plan.serviceType === 'broadband' && (
-                      <div className="mt-6 p-4 border-4 border-foreground">
-                        <Label className="font-display uppercase tracking-wider text-sm flex items-center gap-2 mb-3">
-                          <ShieldCheck className="w-5 h-5" />
-                          Support Level
+                      <div className="mt-6 p-4 border border-foreground/10 bg-secondary/30 rounded-sm">
+                        <Label className="text-sm font-medium flex items-center gap-2 mb-3">
+                          <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+                          Support level
                         </Label>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           {careLevels.map(level => (
                             <button
                               key={level.id}
                               type="button"
                               onClick={() => setCareLevelId(level.id)}
                               className={cn(
-                                "w-full text-left p-3 border-4 transition-all flex items-center justify-between",
+                                "w-full text-left px-4 py-2.5 border transition-all flex items-center justify-between rounded-sm",
                                 careLevelId === level.id
-                                  ? "border-primary bg-primary/10"
-                                  : "border-foreground/30 hover:border-foreground"
+                                  ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                                  : "border-foreground/15 hover:border-foreground/30"
                               )}
                             >
-                              <span className="font-display text-sm">{level.label}</span>
-                              <span className="font-display text-sm">
+                              <div className="flex items-center gap-2.5">
+                                <div className={cn(
+                                  "w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center",
+                                  careLevelId === level.id ? "border-primary" : "border-foreground/30"
+                                )}>
+                                  {careLevelId === level.id && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                </div>
+                                <span className="text-sm">{level.label}</span>
+                              </div>
+                              <span className={cn("text-sm", careLevelId === level.id ? "font-display text-primary" : "text-muted-foreground")}>
                                 {level.monthlyUplift === 0 ? 'Included' : `+£${level.monthlyUplift.toFixed(2)}/mo`}
                               </span>
                             </button>

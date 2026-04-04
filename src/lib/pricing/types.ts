@@ -138,6 +138,8 @@ export interface BundleConfig {
   addonDiscountRules: string;
 }
 
+export type VatMode = 'residential' | 'business';
+
 export interface OrderSummary {
   productSelected: string | null;
   supplierMapping: string | null;
@@ -152,6 +154,9 @@ export interface OrderSummary {
   notes: string[];
   internalMarginSnapshot: { monthly: number; oneOff: number };
   rollingMonthly: boolean;
+  vatMode: VatMode;
+  hardwareCharges: { name: string; amount: number }[];
+  consentRequired: string[];
 }
 
 export interface FromPrices {

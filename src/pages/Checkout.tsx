@@ -9,9 +9,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getPlanById, Plan } from "@/lib/plans";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { installScenarios, careLevels, catalogueProducts } from "@/lib/pricing/catalogue";
+import { getSOGEANote } from "@/lib/pricing/engine";
+import type { CatalogueProduct } from "@/lib/pricing/types";
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -22,8 +33,11 @@ import {
   PhoneCall,
   MapPin,
   CreditCard,
-  CheckCircle
+  CheckCircle,
+  Router,
+  ShieldCheck,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const addressSchema = z.object({
   postcode: z.string().min(5, "Enter a valid postcode").max(10, "Postcode too long"),
@@ -63,6 +77,9 @@ const Checkout = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState("");
+  const [installScenarioId, setInstallScenarioId] = useState<string | null>(null);
+  const [careLevelId, setCareLevelId] = useState('standard');
+  const [orderConsent, setOrderConsent] = useState(false);
 
   useEffect(() => {
     if (planId) {
@@ -124,6 +141,28 @@ const Checkout = () => {
     }
   };
 
+  // ── Resolve catalogue product ──
+  const resolvedProduct: CatalogueProduct | undefined = plan?.catalogueProductId
+    ? catalogueProducts.find(p => p.id === plan.catalogueProductId)
+    : undefined;
+
+  // Auto-select FTTP standard
+  useEffect(() => {
+    if (resolvedProduct?.technology === 'FTTP' && resolvedProduct.freeInstallEligible) {
+      setInstallScenarioId('fttp-standard');
+    } else if (!resolvedProduct || resolvedProduct.technology !== 'SOGEA') {
+      setInstallScenarioId(null);
+    }
+  }, [resolvedProduct?.id]);
+
+  // Calculate charges
+  const setupCharge = installScenarioId
+    ? (installScenarios.find(s => s.id === installScenarioId)?.retailCharge ?? 0)
+    : 0;
+  const careUplift = careLevels.find(c => c.id === careLevelId)?.monthlyUplift ?? 0;
+  const ongoingMonthly = (plan?.priceNum ?? 0) + careUplift;
+  const totalDueToday = setupCharge;
+
   const handleNextStep = () => {
     if (step === 1 && validateAddress()) {
       setStep(2);
@@ -132,6 +171,24 @@ const Checkout = () => {
 
   const handleSubmitOrder = async () => {
     if (!user || !plan) return;
+
+    if (resolvedProduct?.technology === 'SOGEA' && !installScenarioId) {
+      toast({
+        title: "Installation type required",
+        description: "Please select an installation type for your broadband.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!orderConsent) {
+      toast({
+        title: "Order consent required",
+        description: "Please confirm the order terms before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     
@@ -263,8 +320,12 @@ const Checkout = () => {
                   <span className="font-display">£{plan.price}/mo</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Installation</span>
-                  <span className="font-display">Included</span>
+                  <span className="text-muted-foreground">Setup/install</span>
+                  <span className="font-display">{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Ongoing monthly</span>
+                  <span className="font-display">£{ongoingMonthly.toFixed(2)}/mo</span>
                 </div>
               </div>
             </div>
@@ -426,6 +487,63 @@ const Checkout = () => {
                       </div>
                     </div>
 
+                    {/* Installation Type — SOGEA broadband only */}
+                    {resolvedProduct && resolvedProduct.technology === 'SOGEA' && (
+                      <div className="mt-6 p-4 border-4 border-foreground">
+                        <Label className="font-display uppercase tracking-wider text-sm flex items-center gap-2 mb-3">
+                          <Router className="w-5 h-5" />
+                          Installation Type *
+                        </Label>
+                        <Select
+                          value={installScenarioId ?? ''}
+                          onValueChange={(value) => setInstallScenarioId(value)}
+                        >
+                          <SelectTrigger className="border-4 border-foreground">
+                            <SelectValue placeholder="Select installation type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {installScenarios
+                              .filter(s => s.id !== 'fttp-standard')
+                              .map(s => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  {s.label} — {s.retailCharge === 0 ? 'FREE' : `£${s.retailCharge.toFixed(2)}`}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* Support Level — broadband only */}
+                    {plan.serviceType === 'broadband' && (
+                      <div className="mt-6 p-4 border-4 border-foreground">
+                        <Label className="font-display uppercase tracking-wider text-sm flex items-center gap-2 mb-3">
+                          <ShieldCheck className="w-5 h-5" />
+                          Support Level
+                        </Label>
+                        <div className="space-y-2">
+                          {careLevels.map(level => (
+                            <button
+                              key={level.id}
+                              type="button"
+                              onClick={() => setCareLevelId(level.id)}
+                              className={cn(
+                                "w-full text-left p-3 border-4 transition-all flex items-center justify-between",
+                                careLevelId === level.id
+                                  ? "border-primary bg-primary/10"
+                                  : "border-foreground/30 hover:border-foreground"
+                              )}
+                            >
+                              <span className="font-display text-sm">{level.label}</span>
+                              <span className="font-display text-sm">
+                                {level.monthlyUplift === 0 ? 'Included' : `+£${level.monthlyUplift.toFixed(2)}/mo`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       variant="hero"
                       className="w-full mt-8"
@@ -500,13 +618,59 @@ const Checkout = () => {
                           <span>Monthly subscription</span>
                           <span className="font-display">£{plan.price}</span>
                         </div>
+                        {careUplift > 0 && (
+                          <div className="flex justify-between py-2 border-b-2 border-foreground/10">
+                            <span>Care level uplift</span>
+                            <span className="font-display">+£{careUplift.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between py-2 border-b-2 border-foreground/10 font-display">
+                          <span>ONGOING MONTHLY</span>
+                          <span>£{ongoingMonthly.toFixed(2)}/mo</span>
+                        </div>
                         <div className="flex justify-between py-2 border-b-2 border-foreground/10">
-                          <span>Installation fee</span>
-                          <span className="font-display text-primary">FREE</span>
+                          <span>
+                            Setup/install
+                            {installScenarioId && installScenarioId !== 'fttp-standard' && (
+                              <span className="text-muted-foreground text-xs ml-1">
+                                ({installScenarios.find(s => s.id === installScenarioId)?.label})
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-display">{setupCharge === 0 ? <span className="text-primary">FREE</span> : `£${setupCharge.toFixed(2)}`}</span>
                         </div>
                         <div className="flex justify-between py-4 text-xl">
-                          <span className="font-display">DUE TODAY</span>
-                          <span className="font-display">£0.00</span>
+                          <span className="font-display">TOTAL DUE TODAY</span>
+                          <span className="font-display">£{totalDueToday.toFixed(2)}</span>
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                          30-day rolling — no contracts
+                        </p>
+                        {resolvedProduct?.technology === 'SOGEA' && (
+                          <p className="text-muted-foreground text-xs italic">
+                            {getSOGEANote()}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Order Consent */}
+                      <div className="flex items-start gap-3 p-4 border-4 border-foreground bg-secondary">
+                        <Checkbox
+                          id="orderConsentCheckout"
+                          checked={orderConsent}
+                          onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
+                          className="mt-1"
+                        />
+                        <div>
+                          <Label htmlFor="orderConsentCheckout" className="font-display uppercase tracking-wider text-sm cursor-pointer">
+                            I confirm all of the following *
+                          </Label>
+                          <ul className="text-muted-foreground text-sm mt-2 space-y-1 list-disc list-inside">
+                            <li>I understand this service is 30-day rolling with no fixed contract</li>
+                            <li>Setup charges may apply depending on my line status</li>
+                            <li>I accept all charges shown above</li>
+                            <li>Service is subject to availability at my address</li>
+                          </ul>
                         </div>
                       </div>
 
@@ -515,7 +679,6 @@ const Checkout = () => {
                         <Link to="/terms" className="underline">Terms of Service</Link>
                         {" "}and{" "}
                         <Link to="/privacy" className="underline">Privacy Policy</Link>.
-                        No contracts, no lock-ins — cancel anytime.
                       </p>
                     </div>
 
@@ -532,7 +695,7 @@ const Checkout = () => {
                         variant="hero"
                         className="flex-grow"
                         onClick={handleSubmitOrder}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !orderConsent}
                       >
                         {isSubmitting ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -580,19 +743,25 @@ const Checkout = () => {
                   ))}
                 </ul>
                 
-                <div className="pt-6 border-t border-background/20">
+                <div className="pt-6 border-t border-background/20 space-y-2">
                   <div className="flex justify-between items-baseline">
                     <span className="font-display uppercase tracking-wider text-sm">Monthly</span>
                     <div>
-                      <span className="font-display text-3xl">£{plan.price}</span>
+                      <span className="font-display text-3xl">£{ongoingMonthly.toFixed(2)}</span>
                       <span className="text-background/60">/mo</span>
                     </div>
                   </div>
+                  {setupCharge > 0 && (
+                    <div className="flex justify-between items-baseline text-sm">
+                      <span className="text-background/60">Setup</span>
+                      <span className="font-display">£{setupCharge.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Trust Indicators */}
                 <div className="pt-4 mt-4 border-t border-background/20 flex flex-wrap gap-2">
-                  {["No contract", "Free install", "UK support"].map((tag) => (
+                  {["No contract", setupCharge === 0 ? "Free install" : "Setup applies", "UK support"].map((tag) => (
                     <span key={tag} className="text-[10px] font-display uppercase tracking-wider bg-background/10 px-2 py-1">
                       {tag}
                     </span>

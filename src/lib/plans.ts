@@ -1,6 +1,17 @@
 import { getFromPrices, getRetailBroadbandCards, getRetailLandlineCard } from './pricing/engine';
 import { calculateBundleDiscount as calcBundle } from './pricing/engine';
+import { catalogueProducts } from './pricing/catalogue';
 import type { ServiceFamily } from './pricing/types';
+
+// Resolve cheapest eligible catalogue product ID for a set of IDs
+function getCheapestEligibleId(eligibleIds: string[]): string | undefined {
+  const eligible = catalogueProducts.filter(
+    p => eligibleIds.includes(p.id) && p.productStatus === 'public' && p.wholesaleContractTerm === 1
+  );
+  if (eligible.length === 0) return undefined;
+  eligible.sort((a, b) => a.retailMonthly - b.retailMonthly);
+  return eligible[0].id;
+}
 
 export type ServiceType = 'broadband' | 'sim' | 'landline';
 
@@ -17,6 +28,7 @@ export interface Plan {
   speed?: string;
   data?: string;
   callRate?: string;
+  catalogueProductId?: string;
 }
 
 // ── Broadband plans derived from pricing engine ──
@@ -31,6 +43,7 @@ export const broadbandPlans: Plan[] = bbCards.map(card => ({
   features: card.publicFeatures,
   popular: card.popular,
   serviceType: 'broadband' as ServiceType,
+  catalogueProductId: getCheapestEligibleId(card.eligibleProductIds),
 }));
 
 // ── SIM plans (no ICUK data — keep current prices) ──

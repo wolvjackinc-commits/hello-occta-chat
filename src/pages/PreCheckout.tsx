@@ -25,6 +25,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { getPlanById, Plan, calculateBundleDiscount } from "@/lib/plans";
 import { getAddonsByService, Addon, ukProviders } from "@/lib/addons";
+import { getFromPrices, buildOrderSummary, getSOGEANote } from "@/lib/pricing/engine";
+import { installScenarios, careLevels, catalogueProducts } from "@/lib/pricing/catalogue";
+import type { CatalogueProduct } from "@/lib/pricing/types";
 import { format, addDays } from "date-fns";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { 
@@ -141,6 +144,9 @@ const PreCheckout = () => {
   const [selectedInstallationSlot, setSelectedInstallationSlot] = useState<InstallationSlot | null>(null);
   const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
   const [userHasActiveBroadband, setUserHasActiveBroadband] = useState(false);
+  const [installScenarioId, setInstallScenarioId] = useState<string | null>(null);
+  const [careLevelId, setCareLevelId] = useState('standard');
+  const [orderConsent, setOrderConsent] = useState(false);
 
   // Check if logged-in user already has active broadband service
   useEffect(() => {
@@ -283,6 +289,26 @@ const PreCheckout = () => {
       toast({
         title: "Terms Required",
         description: "Please accept the terms and conditions.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Require install scenario for SOGEA broadband
+    if (resolvedProduct && resolvedProduct.technology === 'SOGEA' && !installScenarioId) {
+      toast({
+        title: "Installation type required",
+        description: "Please select an installation type for your broadband.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Require order consent
+    if (!orderConsent) {
+      toast({
+        title: "Order consent required",
+        description: "Please confirm the order terms before submitting.",
         variant: "destructive",
       });
       return false;
@@ -510,13 +536,49 @@ const PreCheckout = () => {
     }
   };
 
+  // ── Resolve catalogue product for broadband plan ──
+  const broadbandPlan = selectedPlans.find(p => p.serviceType === 'broadband');
+  const resolvedProduct: CatalogueProduct | undefined = broadbandPlan?.catalogueProductId
+    ? catalogueProducts.find(p => p.id === broadbandPlan.catalogueProductId)
+    : undefined;
+
+  // Determine applicable install scenarios
+  const applicableScenarios = resolvedProduct
+    ? installScenarios.filter(s => resolvedProduct.installTypeSupported.includes(s.id.replace('sogea-', '').replace('fttp-', '')))
+    : [];
+
+  // Auto-select FTTP standard if applicable
+  React.useEffect(() => {
+    if (resolvedProduct?.technology === 'FTTP' && resolvedProduct.freeInstallEligible) {
+      setInstallScenarioId('fttp-standard');
+    } else if (!resolvedProduct || resolvedProduct.technology !== 'SOGEA') {
+      setInstallScenarioId(null);
+    }
+  }, [resolvedProduct?.id]);
+
   // Calculate totals
   const bundleCalc = calculateBundleDiscount(selectedPlans);
   const addonsTotal = selectedAddons.reduce((sum, id) => {
     const addon = availableAddons.find(a => a.id === id);
     return sum + (addon?.price || 0);
   }, 0);
-  const monthlyTotal = bundleCalc.discountedTotal + addonsTotal;
+
+  // Calculate setup charge
+  const setupCharge = installScenarioId
+    ? (installScenarios.find(s => s.id === installScenarioId)?.retailCharge ?? 0)
+    : 0;
+
+  // Care level uplift
+  const careUplift = careLevels.find(c => c.id === careLevelId)?.monthlyUplift ?? 0;
+
+  // One-off addon charges (addons marked oneTime have their price as one-off)
+  const addonsOneOff = selectedAddons.reduce((sum, id) => {
+    const addon = availableAddons.find(a => a.id === id);
+    return sum + (addon?.oneTime ? addon.price : 0);
+  }, 0);
+
+  const monthlyTotal = bundleCalc.discountedTotal + addonsTotal + careUplift;
+  const totalDueToday = setupCharge + addonsOneOff;
 
   // Group addons by service type
   const addonsByService = selectedPlans.reduce((acc, plan) => {
@@ -581,7 +643,7 @@ const PreCheckout = () => {
                 <div>
                   <h4 className="font-display uppercase text-foreground">Add a Home Phone?</h4>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Add Digital Home Phone for just £4.99/mo. Crystal clear calls through your broadband.
+                    Add Digital Home Phone for just £{getFromPrices().landline}/mo. Crystal clear calls through your broadband.
                   </p>
                   <Link to="/landline">
                     <Button variant="ghost" size="sm" className="text-primary font-display">
@@ -840,6 +902,76 @@ const PreCheckout = () => {
                 </div>
               </motion.div>
 
+              {/* Installation Type — SOGEA broadband only */}
+              {resolvedProduct && resolvedProduct.technology === 'SOGEA' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.12 }}
+                  className="card-brutal bg-card p-6"
+                >
+                  <h2 className="text-display-sm mb-6 flex items-center gap-3">
+                    <Router className="w-6 h-6" />
+                    INSTALLATION TYPE
+                  </h2>
+                  <Select
+                    value={installScenarioId ?? ''}
+                    onValueChange={(value) => setInstallScenarioId(value)}
+                  >
+                    <SelectTrigger className="border-4 border-foreground">
+                      <SelectValue placeholder="Select installation type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {installScenarios
+                        .filter(s => s.id !== 'fttp-standard')
+                        .map(s => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.label} — {s.retailCharge === 0 ? 'FREE' : `£${s.retailCharge.toFixed(2)}`}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    Setup charges depend on your current line status.
+                  </p>
+                </motion.div>
+              )}
+
+              {/* Support Level — broadband only */}
+              {broadbandPlan && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.13 }}
+                  className="card-brutal bg-card p-6"
+                >
+                  <h2 className="text-display-sm mb-6 flex items-center gap-3">
+                    <ShieldCheck className="w-6 h-6" />
+                    SUPPORT LEVEL
+                  </h2>
+                  <div className="space-y-2">
+                    {careLevels.map(level => (
+                      <button
+                        key={level.id}
+                        type="button"
+                        onClick={() => setCareLevelId(level.id)}
+                        className={cn(
+                          "w-full text-left p-3 border-4 transition-all flex items-center justify-between",
+                          careLevelId === level.id
+                            ? "border-primary bg-primary/10"
+                            : "border-foreground/30 hover:border-foreground"
+                        )}
+                      >
+                        <span className="font-display text-sm">{level.label}</span>
+                        <span className="font-display text-sm">
+                          {level.monthlyUplift === 0 ? 'Included' : `+£${level.monthlyUplift.toFixed(2)}/mo`}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
               {/* Installation Scheduling */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
@@ -923,13 +1055,45 @@ const PreCheckout = () => {
                 </div>
               </motion.div>
 
+              {/* Order Consent */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="card-brutal bg-card p-6"
+              >
+                <h2 className="text-display-sm mb-4 flex items-center gap-3">
+                  <Check className="w-6 h-6" />
+                  ORDER CONFIRMATION
+                </h2>
+                <div className="flex items-start gap-3 p-4 border-4 border-foreground bg-secondary">
+                  <Checkbox
+                    id="orderConsent"
+                    checked={orderConsent}
+                    onCheckedChange={(checked) => setOrderConsent(checked as boolean)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <Label htmlFor="orderConsent" className="font-display uppercase tracking-wider text-sm cursor-pointer">
+                      I confirm all of the following *
+                    </Label>
+                    <ul className="text-muted-foreground text-sm mt-2 space-y-1 list-disc list-inside">
+                      <li>I understand this service is 30-day rolling with no fixed contract</li>
+                      <li>Setup charges may apply depending on my line status</li>
+                      <li>I accept all charges shown above</li>
+                      <li>Service is subject to availability at my address</li>
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+
               {/* Submit Button */}
               <Button
                 variant="hero"
                 className="w-full"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={isSubmitting || landlineWithoutBroadband}
+                disabled={isSubmitting || landlineWithoutBroadband || !orderConsent}
               >
                 {isSubmitting ? (
                   <>
@@ -1072,28 +1236,82 @@ const PreCheckout = () => {
                   </div>
                 ))}
 
-                {/* Totals */}
+                {/* Itemised Breakdown */}
                 <div className="border-t-4 border-foreground pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Plans subtotal</span>
-                    <span>£{bundleCalc.originalTotal.toFixed(2)}</span>
-                  </div>
-                  {bundleCalc.discountPercentage > 0 && (
+                  <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">Monthly charges</p>
+                  {selectedPlans.map(plan => (
+                    <div key={plan.id} className="flex justify-between text-sm">
+                      <span>{plan.name}</span>
+                      <span>£{plan.price}</span>
+                    </div>
+                  ))}
+                  {careUplift > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span>Care level uplift</span>
+                      <span>+£{careUplift.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedAddons.filter(id => {
+                    const a = availableAddons.find(x => x.id === id);
+                    return a && !a.oneTime;
+                  }).map(id => {
+                    const a = availableAddons.find(x => x.id === id)!;
+                    return (
+                      <div key={id} className="flex justify-between text-sm">
+                        <span>{a.name}</span>
+                        <span>+£{a.price.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                  {bundleCalc.savings > 0 && (
                     <div className="flex justify-between text-sm text-primary">
-                      <span>Bundle discount ({bundleCalc.discountPercentage}%)</span>
+                      <span>Bundle discount</span>
                       <span>-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
-                  {addonsTotal > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span>Add-ons</span>
-                      <span>+£{addonsTotal.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-display text-xl pt-2 border-t-2 border-foreground/20">
-                    <span>Monthly Total</span>
-                    <span>£{monthlyTotal.toFixed(2)}</span>
+                  <div className="flex justify-between font-display text-lg pt-2 border-t-2 border-foreground/20">
+                    <span>ONGOING MONTHLY</span>
+                    <span>£{monthlyTotal.toFixed(2)}/mo</span>
                   </div>
+
+                  {/* One-off charges */}
+                  <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mt-4 mb-2">One-off charges</p>
+                  <div className="flex justify-between text-sm">
+                    <span>
+                      Setup/install
+                      {installScenarioId && (
+                        <span className="text-muted-foreground text-xs ml-1">
+                          ({installScenarios.find(s => s.id === installScenarioId)?.label})
+                        </span>
+                      )}
+                    </span>
+                    <span>{setupCharge === 0 ? 'FREE' : `£${setupCharge.toFixed(2)}`}</span>
+                  </div>
+                  {selectedAddons.filter(id => {
+                    const a = availableAddons.find(x => x.id === id);
+                    return a?.oneTime;
+                  }).map(id => {
+                    const a = availableAddons.find(x => x.id === id)!;
+                    return (
+                      <div key={id} className="flex justify-between text-sm">
+                        <span>{a.name}</span>
+                        <span>£{a.price.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between font-display text-xl pt-2 border-t-2 border-foreground/20">
+                    <span>TOTAL DUE TODAY</span>
+                    <span>£{totalDueToday.toFixed(2)}</span>
+                  </div>
+
+                  <p className="text-muted-foreground text-xs mt-3">
+                    30-day rolling — no contracts
+                  </p>
+                  {resolvedProduct?.technology === 'SOGEA' && (
+                    <p className="text-muted-foreground text-xs mt-1 italic">
+                      {getSOGEANote()}
+                    </p>
+                  )}
                 </div>
 
                 {/* Cooling Off Notice */}
@@ -1138,6 +1356,9 @@ const PreCheckout = () => {
               {selectedPlans.map(p => p.name).join(' + ')}
             </p>
             <p className="font-display text-lg">£{monthlyTotal.toFixed(2)}/mo</p>
+            {totalDueToday > 0 && (
+              <p className="text-xs text-muted-foreground">+ £{totalDueToday.toFixed(2)} today</p>
+            )}
           </div>
           <span className="font-display uppercase text-sm text-primary px-3 py-1 border-2 border-primary">
             {isMobileSummaryOpen ? "Hide" : "View"}
@@ -1162,23 +1383,35 @@ const PreCheckout = () => {
                       <span className="font-display">£{plan.price}</span>
                     </div>
                   ))}
+                  {careUplift > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Care level uplift</span>
+                      <span className="font-display">+£{careUplift.toFixed(2)}</span>
+                    </div>
+                  )}
                   {addonsTotal > 0 && (
                     <div className="flex items-center justify-between text-sm">
-                      <span>Add-ons</span>
+                      <span>Add-ons (monthly)</span>
                       <span className="font-display">+£{addonsTotal.toFixed(2)}</span>
                     </div>
                   )}
-                  {bundleCalc.discountPercentage > 0 && (
+                  {bundleCalc.savings > 0 && (
                     <div className="flex items-center justify-between text-sm text-primary">
-                      <span>Bundle discount ({bundleCalc.discountPercentage}%)</span>
+                      <span>Bundle discount</span>
                       <span className="font-display">-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
                 <div className="border-t-2 border-foreground/20 pt-3 flex items-center justify-between">
-                  <span className="font-display uppercase tracking-wider text-sm">Monthly Total</span>
+                  <span className="font-display uppercase tracking-wider text-sm">Ongoing Monthly</span>
                   <span className="font-display text-lg">£{monthlyTotal.toFixed(2)}</span>
                 </div>
+                {totalDueToday > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-display uppercase tracking-wider text-sm">Due Today</span>
+                    <span className="font-display text-lg">£{totalDueToday.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

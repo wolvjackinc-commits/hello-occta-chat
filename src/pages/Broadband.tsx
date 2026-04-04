@@ -339,7 +339,7 @@ const Broadband = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-display-md mb-2">ALL PLANS</h2>
-            <p className="text-muted-foreground">Unlimited data, no price rises. Novel concept.</p>
+            <p className="text-muted-foreground">Choose your speed — we'll handle the rest</p>
           </motion.div>
 
           <motion.div

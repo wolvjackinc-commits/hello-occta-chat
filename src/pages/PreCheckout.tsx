@@ -763,7 +763,7 @@ const PreCheckout = () => {
                   </div>
                   
                   <div>
-                    <Label className="font-display uppercase tracking-wider text-sm">Phone Number *</Label>
+                    <Label className="text-sm font-medium">Phone number <span className="text-destructive">*</span></Label>
                     <Input
                       type="tel"
                       value={customerData.phone}

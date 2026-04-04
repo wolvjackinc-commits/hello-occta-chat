@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, Bot, LayoutDashboard, Ticket, Shield } from "lucide-react";
+import { Phone, Mail, Bot, LayoutDashboard, Ticket, Shield, Lock, CheckCircle, Users } from "lucide-react";
 import { companyConfig } from "@/lib/companyConfig";
 
 const Footer = () => {

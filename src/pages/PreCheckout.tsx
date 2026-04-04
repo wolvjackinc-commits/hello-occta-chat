@@ -643,7 +643,7 @@ const PreCheckout = () => {
                 <div>
                   <h4 className="font-display uppercase text-foreground">Add a Home Phone?</h4>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Add Digital Home Phone for just £4.99/mo. Crystal clear calls through your broadband.
+                    Add Digital Home Phone for just £{getFromPrices().landline}/mo. Crystal clear calls through your broadband.
                   </p>
                   <Link to="/landline">
                     <Button variant="ghost" size="sm" className="text-primary font-display">

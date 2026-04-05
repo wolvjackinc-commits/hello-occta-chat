@@ -5,30 +5,8 @@ const corsHeaders = {
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
 const ICUK_BASE_URL = Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk'
-const ICUK_API_USER = Deno.env.get('ICUK_API_USER') || ''
-const ICUK_API_KEY = Deno.env.get('ICUK_API_KEY') || ''
+const ICUK_API_TOKEN = Deno.env.get('ICUK_API_TOKEN') || ''
 const ICUK_API_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
-
-async function getOAuthToken(): Promise<string> {
-  const basicAuth = btoa(`${ICUK_API_USER}:${ICUK_API_KEY}`)
-  const res = await fetch(`${ICUK_BASE_URL}/oauth/token`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${basicAuth}`,
-      'APIPlatform': ICUK_API_PLATFORM,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({ grant_type: 'client_credentials' }),
-  })
-
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`OAuth token request failed (${res.status}): ${text}`)
-  }
-
-  const data = await res.json()
-  return data.access_token
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -78,14 +56,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get OAuth token
-    const token = await getOAuthToken()
-
-    // Call ICUK address lookup
+    // Call ICUK address lookup with pre-generated Bearer token
     const icukRes = await fetch(`${ICUK_BASE_URL}/broadband/address/${normalized}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${ICUK_API_TOKEN}`,
         'APIPlatform': ICUK_API_PLATFORM,
         'Accept': 'application/json',
       },
@@ -93,7 +68,7 @@ Deno.serve(async (req) => {
 
     if (!icukRes.ok) {
       const errText = await icukRes.text()
-      console.error(`ICUK address lookup failed (${icukRes.status}):`, errText)
+      console.error(`ICUK address lookup failed (${icukRes.status}):`, errText, 'URL:', `${ICUK_BASE_URL}/broadband/address/${normalized}`, 'Platform:', ICUK_API_PLATFORM)
       return new Response(
         JSON.stringify({
           addresses: [],
@@ -103,9 +78,24 @@ Deno.serve(async (req) => {
       )
     }
 
-    const addresses = await icukRes.json()
+    const rawBody = await icukRes.text()
+    console.log('ICUK address raw response:', rawBody.substring(0, 2000))
+    
+    let addresses: any
+    try {
+      addresses = JSON.parse(rawBody)
+    } catch {
+      console.error('Failed to parse ICUK response as JSON')
+      return new Response(
+        JSON.stringify({ addresses: [], message: "We couldn't automatically find your address. Contact us and we'll check manually." }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    if (!Array.isArray(addresses) || addresses.length === 0) {
+    // The ICUK response might be an object with an addresses array, or directly an array
+    const addressList = Array.isArray(addresses) ? addresses : (addresses?.addresses || addresses?.results || [])
+    
+    if (!Array.isArray(addressList) || addressList.length === 0) {
       return new Response(
         JSON.stringify({
           addresses: [],
@@ -116,7 +106,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ addresses }),
+      JSON.stringify({ addresses: addressList }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {

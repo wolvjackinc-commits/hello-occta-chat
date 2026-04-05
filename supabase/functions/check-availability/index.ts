@@ -5,8 +5,7 @@ const corsHeaders = {
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
 const ICUK_BASE_URL = Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk'
-const ICUK_API_USER = Deno.env.get('ICUK_API_USER') || ''
-const ICUK_API_KEY = Deno.env.get('ICUK_API_KEY') || ''
+const ICUK_API_TOKEN = Deno.env.get('ICUK_API_TOKEN') || ''
 const ICUK_API_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
 
 // OCCTA retail card IDs and their technology + speed requirements
@@ -28,27 +27,6 @@ const INVALID_PLACEHOLDERS = [2147483647, -1, 0]
 
 function isValidSpeed(val: unknown): val is number {
   return typeof val === 'number' && !INVALID_PLACEHOLDERS.includes(val) && val > 0
-}
-
-async function getOAuthToken(): Promise<string> {
-  const basicAuth = btoa(`${ICUK_API_USER}:${ICUK_API_KEY}`)
-  const res = await fetch(`${ICUK_BASE_URL}/oauth/token`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${basicAuth}`,
-      'APIPlatform': ICUK_API_PLATFORM,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({ grant_type: 'client_credentials' }),
-  })
-
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`OAuth token request failed (${res.status}): ${text}`)
-  }
-
-  const data = await res.json()
-  return data.access_token
 }
 
 interface NormalizedProduct {
@@ -73,6 +51,7 @@ interface AvailabilityResponse {
   exchangeInfo: { name: string; code: string; status: string } | null
   rawMessages: string[]
   eligibleOcctaPlans: string[]
+  message?: string
 }
 
 function normalizeIcukResponse(data: any): AvailabilityResponse {
@@ -99,7 +78,6 @@ function normalizeIcukResponse(data: any): AvailabilityResponse {
   }
 
   // Process products from the ICUK response
-  // The ICUK availability response may contain products in various structures
   const rawProducts = data.products || data.broadband_products || []
   const productList = Array.isArray(rawProducts) ? rawProducts : []
 
@@ -152,11 +130,10 @@ function normalizeIcukResponse(data: any): AvailabilityResponse {
     const hasTech = plan.techs.some(t => availableTechs.has(t))
     if (!hasTech) continue
 
-    // Check if any available product meets the speed requirement
     const meetsSpeed = products.some(p => {
       if (!plan.techs.includes(p.technology)) return false
       if (plan.minDown && p.likelyDownSpeed < plan.minDown) return false
-      if (plan.maxDown && p.likelyDownSpeed > plan.maxDown + 50) return false // tolerance
+      if (plan.maxDown && p.likelyDownSpeed > plan.maxDown + 50) return false
       return true
     })
 
@@ -214,14 +191,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get OAuth token
-    const token = await getOAuthToken()
-
     // Call ICUK availability with the full unchanged address object
     const icukRes = await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${ICUK_API_TOKEN}`,
         'APIPlatform': ICUK_API_PLATFORM,
         'Content-Type': 'application/json',
         'Accept': 'application/json',

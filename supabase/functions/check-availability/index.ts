@@ -5,8 +5,7 @@ const corsHeaders = {
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
 const ICUK_BASE_URL = Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk'
-const ICUK_API_USER = Deno.env.get('ICUK_API_USER') || ''
-const ICUK_API_KEY = Deno.env.get('ICUK_API_KEY') || ''
+const ICUK_API_TOKEN = Deno.env.get('ICUK_API_TOKEN') || ''
 const ICUK_API_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
 
 // OCCTA retail card IDs and their technology + speed requirements
@@ -53,25 +52,6 @@ interface AvailabilityResponse {
   rawMessages: string[]
   eligibleOcctaPlans: string[]
   message?: string
-}
-
-async function getIcukToken(): Promise<string> {
-  const credentials = btoa(`${ICUK_API_USER}:${ICUK_API_KEY}`)
-  const res = await fetch(`${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'ApiPlatform': ICUK_API_PLATFORM,
-      'Authorization': `Basic ${credentials}`,
-    },
-  })
-  if (!res.ok) {
-    const errText = await res.text()
-    console.error(`ICUK token request failed (${res.status}):`, errText)
-    throw new Error(`ICUK token request failed: ${res.status}`)
-  }
-  const data = await res.json()
-  return data.access_token
 }
 
 function normalizeIcukResponse(data: any): AvailabilityResponse {
@@ -204,14 +184,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get OAuth token
-    const token = await getIcukToken()
-
-    // Call ICUK availability with the full unchanged address object
+    // Call ICUK availability with static Bearer token
     const icukRes = await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${ICUK_API_TOKEN}`,
         'ApiPlatform': ICUK_API_PLATFORM,
         'Content-Type': 'application/json',
         'Accept': 'application/json',

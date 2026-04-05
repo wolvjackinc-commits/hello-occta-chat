@@ -17,7 +17,9 @@ async function getIcukAccessToken(): Promise<string> {
       'Accept': 'application/json',
       'ApiPlatform': ICUK_API_PLATFORM,
       'Authorization': `Basic ${credentials}`,
+      'Content-Length': '0',
     },
+    body: '',
   })
   if (!res.ok) {
     const errText = await res.text()

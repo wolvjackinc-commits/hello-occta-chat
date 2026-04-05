@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ addresses }),
+      JSON.stringify({ addresses: addressList }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {

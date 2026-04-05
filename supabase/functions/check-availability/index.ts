@@ -5,7 +5,8 @@ const corsHeaders = {
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
 const ICUK_BASE_URL = Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk'
-const ICUK_API_TOKEN = Deno.env.get('ICUK_API_TOKEN') || ''
+const ICUK_API_USER = Deno.env.get('ICUK_API_USER') || ''
+const ICUK_API_KEY = Deno.env.get('ICUK_API_KEY') || ''
 const ICUK_API_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
 
 // OCCTA retail card IDs and their technology + speed requirements
@@ -54,13 +55,31 @@ interface AvailabilityResponse {
   message?: string
 }
 
+async function getIcukToken(): Promise<string> {
+  const credentials = btoa(`${ICUK_API_USER}:${ICUK_API_KEY}`)
+  const res = await fetch(`${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'ApiPlatform': ICUK_API_PLATFORM,
+      'Authorization': `Basic ${credentials}`,
+    },
+  })
+  if (!res.ok) {
+    const errText = await res.text()
+    console.error(`ICUK token request failed (${res.status}):`, errText)
+    throw new Error(`ICUK token request failed: ${res.status}`)
+  }
+  const data = await res.json()
+  return data.access_token
+}
+
 function normalizeIcukResponse(data: any): AvailabilityResponse {
   const products: NormalizedProduct[] = []
   const techMap = new Map<string, { maxDown: number; maxUp: number }>()
   const messages: string[] = []
   let exchangeInfo = null
 
-  // Extract exchange info if present
   if (data.exchange) {
     exchangeInfo = {
       name: data.exchange.name || '',
@@ -69,7 +88,6 @@ function normalizeIcukResponse(data: any): AvailabilityResponse {
     }
   }
 
-  // Extract messages
   if (Array.isArray(data.messages)) {
     messages.push(...data.messages)
   }
@@ -77,7 +95,6 @@ function normalizeIcukResponse(data: any): AvailabilityResponse {
     messages.push(data.message)
   }
 
-  // Process products from the ICUK response
   const rawProducts = data.products || data.broadband_products || []
   const productList = Array.isArray(rawProducts) ? rawProducts : []
 
@@ -104,25 +121,21 @@ function normalizeIcukResponse(data: any): AvailabilityResponse {
       speedRangeUp: p.speed_range_up || p.speedRangeUp || `${validUp}Mbps`,
     })
 
-    // Track best speeds per technology
     const existing = techMap.get(tech)
     if (!existing || validDown > existing.maxDown) {
       techMap.set(tech, { maxDown: validDown, maxUp: validUp })
     }
   }
 
-  // Build technologies array sorted by priority (FTTP first)
   const technologies = Array.from(techMap.entries())
     .map(([name, speeds]) => ({ name, ...speeds }))
     .sort((a, b) => (TECH_PRIORITY[b.name] || 0) - (TECH_PRIORITY[a.name] || 0))
 
-  // Determine primary technology and max speeds
   const primary = technologies[0]
   const primaryTechnology = primary?.name || 'none'
   const maxDownload = primary?.maxDown || 0
   const maxUpload = primary?.maxUp || 0
 
-  // Map to eligible OCCTA plans
   const availableTechs = new Set(technologies.map(t => t.name))
   const eligibleOcctaPlans: string[] = []
 
@@ -191,12 +204,15 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Get OAuth token
+    const token = await getIcukToken()
+
     // Call ICUK availability with the full unchanged address object
     const icukRes = await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${ICUK_API_TOKEN}`,
-        'APIPlatform': ICUK_API_PLATFORM,
+        'Authorization': `Bearer ${token}`,
+        'ApiPlatform': ICUK_API_PLATFORM,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
@@ -217,6 +233,7 @@ Deno.serve(async (req) => {
     }
 
     const rawData = await icukRes.json()
+    console.log('ICUK availability raw response:', JSON.stringify(rawData).substring(0, 2000))
     const normalized = normalizeIcukResponse(rawData)
 
     if (!normalized.available) {

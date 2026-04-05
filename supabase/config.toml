@@ -52,3 +52,7 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = false
   [functions.worldpay-webhook]
     verify_jwt = false
+  [functions.check-address]
+    verify_jwt = false
+  [functions.check-availability]
+    verify_jwt = false

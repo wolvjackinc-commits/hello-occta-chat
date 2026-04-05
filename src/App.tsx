@@ -113,7 +113,7 @@ const AnimatedRoutes = () => {
   return (
     <>
       <ScrollToTop />
-      <AnimatePresence mode="sync">
+      <AnimatePresence mode="wait">
         <motion.div
           key={location.pathname}
           initial="initial"

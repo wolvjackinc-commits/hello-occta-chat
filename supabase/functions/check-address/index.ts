@@ -10,14 +10,15 @@ const ICUK_API_KEY = Deno.env.get('ICUK_API_KEY') || ''
 const ICUK_API_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
 
 async function getOAuthToken(): Promise<string> {
+  const basicAuth = btoa(`${ICUK_API_USER}:${ICUK_API_KEY}`)
   const res = await fetch(`${ICUK_BASE_URL}/oauth/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: ICUK_API_USER,
-      client_secret: ICUK_API_KEY,
-    }),
+    headers: {
+      'Authorization': `Basic ${basicAuth}`,
+      'APIPlatform': ICUK_API_PLATFORM,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({ grant_type: 'client_credentials' }),
   })
 
   if (!res.ok) {

@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
     if (!icukRes.ok) {
       const errText = await icukRes.text()
-      console.error(`ICUK address lookup failed (${icukRes.status}):`, errText)
+      console.error(`ICUK address lookup failed (${icukRes.status}):`, errText, 'URL:', `${ICUK_BASE_URL}/broadband/address/${normalized}`, 'Platform:', ICUK_API_PLATFORM)
       return new Response(
         JSON.stringify({
           addresses: [],

@@ -78,9 +78,24 @@ Deno.serve(async (req) => {
       )
     }
 
-    const addresses = await icukRes.json()
+    const rawBody = await icukRes.text()
+    console.log('ICUK address raw response:', rawBody.substring(0, 2000))
+    
+    let addresses: any
+    try {
+      addresses = JSON.parse(rawBody)
+    } catch {
+      console.error('Failed to parse ICUK response as JSON')
+      return new Response(
+        JSON.stringify({ addresses: [], message: "We couldn't automatically find your address. Contact us and we'll check manually." }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    if (!Array.isArray(addresses) || addresses.length === 0) {
+    // The ICUK response might be an object with an addresses array, or directly an array
+    const addressList = Array.isArray(addresses) ? addresses : (addresses?.addresses || addresses?.results || [])
+    
+    if (!Array.isArray(addressList) || addressList.length === 0) {
       return new Response(
         JSON.stringify({
           addresses: [],

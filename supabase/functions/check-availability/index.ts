@@ -2,14 +2,9 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
-const ICUK_BASE_URL = Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk'
-const ICUK_API_USER = Deno.env.get('ICUK_API_USER') || ''
-const ICUK_API_KEY = Deno.env.get('ICUK_API_KEY') || ''
-const ICUK_API_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
+const BACKEND_BASE = 'https://caleb-unfronted-contumeliously.ngrok-free.dev'
 
-// OCCTA retail card IDs and their technology + speed requirements
 const OCCTA_PLAN_MAP = [
   { id: 'essential', techs: ['SOGEA', 'FTTP'], maxDown: 80 },
   { id: 'superfast', techs: ['FTTP'], minDown: 160, maxDown: 330 },
@@ -53,26 +48,6 @@ interface AvailabilityResponse {
   rawMessages: string[]
   eligibleOcctaPlans: string[]
   message?: string
-}
-
-async function getIcukAccessToken(): Promise<string> {
-  const credentials = btoa(`${ICUK_API_USER}:${ICUK_API_KEY}`)
-  const res = await fetch(`${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'ApiPlatform': ICUK_API_PLATFORM,
-      'Authorization': `Basic ${credentials}`,
-      'Content-Length': '0',
-    },
-    body: '',
-  })
-  if (!res.ok) {
-    const errText = await res.text()
-    throw new Error(`OAuth token request failed (${res.status}): ${errText}`)
-  }
-  const data = await res.json()
-  return data.access_token
 }
 
 function normalizeIcukResponse(data: any): AvailabilityResponse {
@@ -179,51 +154,23 @@ Deno.serve(async (req) => {
 
     if (!address || typeof address !== 'object') {
       return new Response(
-        JSON.stringify({ error: 'Full ICUK address object is required' }),
+        JSON.stringify({ error: 'Full address object is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Rate limiting
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') || '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    )
-
-    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const { data: allowed } = await supabase.rpc('check_rate_limit', {
-      _identifier: clientIp,
-      _action: 'check_availability',
-      _max_requests: 5,
-      _window_minutes: 5,
-    })
-
-    if (allowed === false) {
-      return new Response(
-        JSON.stringify({ error: 'Too many requests. Please try again shortly.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get OAuth2 access token
-    const accessToken = await getIcukAccessToken()
-    console.log('ICUK OAuth token obtained successfully')
-
-    // Call ICUK availability with OAuth Bearer token
-    const icukRes = await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
+    const res = await fetch(`${BACKEND_BASE}/check-availability`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'ApiPlatform': ICUK_API_PLATFORM,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
       body: JSON.stringify(address),
     })
 
-    if (!icukRes.ok) {
-      const errText = await icukRes.text()
-      console.error(`ICUK availability check failed (${icukRes.status}):`, errText)
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error(`Backend check-availability failed (${res.status}):`, errText)
       return new Response(
         JSON.stringify({
           available: false,
@@ -234,8 +181,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    const rawData = await icukRes.json()
-    console.log('ICUK availability raw response:', JSON.stringify(rawData).substring(0, 2000))
+    const rawData = await res.json()
+    console.log('Backend check-availability response:', JSON.stringify(rawData).substring(0, 2000))
     const normalized = normalizeIcukResponse(rawData)
 
     if (!normalized.available) {

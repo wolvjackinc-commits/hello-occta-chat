@@ -6,10 +6,10 @@ const corsHeaders = {
 const BACKEND_BASE = 'https://caleb-unfronted-contumeliously.ngrok-free.dev'
 
 const OCCTA_PLAN_MAP = [
-  { id: 'essential', techs: ['SOGEA', 'FTTP'], maxDown: 80 },
-  { id: 'superfast', techs: ['FTTP'], minDown: 160, maxDown: 330 },
-  { id: 'ultrafast', techs: ['FTTP'], minDown: 500, maxDown: 550 },
-  { id: 'gigabit', techs: ['FTTP'], minDown: 900, maxDown: 1000 },
+  { id: 'essential', techs: ['SOGEA', 'SoGEA', 'FTTP'], minLineSpeed: 0, maxLineSpeed: 80 },
+  { id: 'superfast', techs: ['FTTP'], minLineSpeed: 160, maxLineSpeed: 330 },
+  { id: 'ultrafast', techs: ['FTTP'], minLineSpeed: 500, maxLineSpeed: 550 },
+  { id: 'gigabit', techs: ['FTTP'], minLineSpeed: 900, maxLineSpeed: 1000 },
 ]
 
 const TECH_PRIORITY: Record<string, number> = {

@@ -6,6 +6,7 @@ import { useAppMode } from "@/hooks/useAppMode";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/seo";
 import { getFromPrices } from "@/lib/pricing/engine";
+import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 
 // Lazy-load below-fold & non-critical components
 const ServicesSection = lazy(() => import("@/components/home/ServicesSection"));
@@ -36,7 +37,6 @@ const Index = () => {
 
   // App mode: show app-like UI
   if (isAppMode) {
-    // Show welcome screen for non-logged in users
     if (!user && !isLoading) {
       return <Suspense fallback={null}><AppWelcome /></Suspense>;
     }
@@ -50,22 +50,24 @@ const Index = () => {
 
   // Browser mode: show full website
   return (
-    <Layout>
-      <SEO 
-        title="Cheap UK Broadband & SIM Plans"
-        description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £${getFromPrices().sim}, digital home phone from £${getFromPrices().landline}. No credit check, cancel anytime. Get connected today!`}
-        canonical="/"
-        keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband"
-        price={getFromPrices().broadband}
-      />
-      <HeroSection />
-      <Suspense fallback={null}>
-        <ServicesSection />
-        <WhyUsSection />
-        <CustomerLoveSection />
-        <CTASection />
-      </Suspense>
-    </Layout>
+    <AvailabilityProvider>
+      <Layout>
+        <SEO 
+          title="Cheap UK Broadband & SIM Plans"
+          description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £${getFromPrices().sim}, digital home phone from £${getFromPrices().landline}. No credit check, cancel anytime. Get connected today!`}
+          canonical="/"
+          keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband"
+          price={getFromPrices().broadband}
+        />
+        <HeroSection />
+        <Suspense fallback={null}>
+          <ServicesSection />
+          <WhyUsSection />
+          <CustomerLoveSection />
+          <CTASection />
+        </Suspense>
+      </Layout>
+    </AvailabilityProvider>
   );
 };
 

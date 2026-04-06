@@ -229,9 +229,9 @@ const BroadbandInner = () => {
       </Dialog>
 
       {/* Hero - Compact */}
-      <section className="flex items-center py-12 grid-pattern">
+      <section className="flex items-center py-6 sm:py-12 grid-pattern">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-8 items-start">
+          <div className="grid lg:grid-cols-2 gap-5 sm:gap-8 items-start">
             {/* Left - Content */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -242,12 +242,12 @@ const BroadbandInner = () => {
                 <Zap className="w-4 h-4 inline mr-2" />
                 Free installation available for a limited time
               </div>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4 text-foreground">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display uppercase leading-[0.9] mb-3 sm:mb-4 text-foreground">
                 BROADBAND
                 <br />
                 <span className="text-gradient">THAT WORKS</span>
               </h1>
-              <p className="text-lg text-muted-foreground mb-6 max-w-lg">
+              <p className="text-sm sm:text-lg text-muted-foreground mb-4 sm:mb-6 max-w-lg">
                 Fast, reliable internet without the corporate nonsense. 
                 From £{getFromPrices().broadband}/month with no price rises mid-contract — cheap broadband UK
                 that stays no contract broadband and cancel anytime broadband.

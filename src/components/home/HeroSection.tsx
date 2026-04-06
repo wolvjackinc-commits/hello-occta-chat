@@ -86,15 +86,15 @@ const HeroSection = () => {
     <section className="relative flex items-center bg-gradient-to-br from-background via-background to-muted/30">
       <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/20 -skew-x-12 translate-x-20 hidden lg:block" />
 
-      <div className="container mx-auto px-6 md:px-12 py-8 lg:pt-8 lg:pb-10 relative z-10" style={{ maxWidth: 1440 }}>
-        <div className="grid lg:grid-cols-[52fr_48fr] gap-8 lg:gap-10 items-start">
+      <div className="container mx-auto px-4 sm:px-6 md:px-12 py-6 lg:pt-8 lg:pb-10 relative z-10" style={{ maxWidth: 1440 }}>
+        <div className="grid lg:grid-cols-[52fr_48fr] gap-5 lg:gap-10 items-start">
           {/* ─── LEFT COLUMN ─── */}
           <motion.div className="space-y-3" variants={containerVariants} initial="hidden" animate="visible">
             <motion.p variants={itemVariants} className="font-display text-[10px] sm:text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
               No Contracts • No Annual Price Hikes • UK-based Support
             </motion.p>
 
-            <motion.h1 variants={itemVariants} className="text-4xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-foreground">
+            <motion.h1 variants={itemVariants} className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-foreground">
               Finally.
               <br />
               Broadband that
@@ -334,55 +334,55 @@ const HeroSection = () => {
               <motion.div
                 key="idle"
                 variants={itemVariants}
-                className="card-brutal bg-card p-5 md:p-6"
+                className="card-brutal bg-card p-4 sm:p-5 md:p-6"
               >
-                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1 sm:mb-2">
                   FROM
                 </p>
-                <p className="font-display text-5xl md:text-6xl text-primary leading-none">
+                <p className="font-display text-4xl sm:text-5xl md:text-6xl text-primary leading-none">
                   £{prices.broadband}
                 </p>
-                <p className="font-display text-base font-semibold text-foreground mt-1">
+                <p className="font-display text-sm sm:text-base font-semibold text-foreground mt-1">
                   /month
                 </p>
-                <p className="text-[11px] text-muted-foreground/60 mt-1.5 mb-1">
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground/60 mt-1 mb-1">
                   *Subject to availability at your address
                 </p>
-                <p className="text-sm font-semibold text-foreground mb-1">
+                <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
                   No contracts • No annual price hikes
                 </p>
-                <p className="text-xs text-primary font-medium mb-4">
+                <p className="text-[11px] sm:text-xs text-primary font-medium mb-3 sm:mb-4">
                   Join customers switching away from price rises
                 </p>
 
-                <div className="space-y-2 mb-4">
+                <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
                   {[
                     { name: "Essential", tagline: "Everyday browsing" },
                     { name: "Superfast", tagline: "Streaming & busy homes" },
                     { name: "Gigabit", tagline: "Serious speed" },
                   ].map(cat => (
-                    <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/10 bg-background">
-                      <span className="font-display text-xs uppercase font-bold">{cat.name}</span>
-                      <span className="text-[11px] text-foreground/70 font-medium">— {cat.tagline}</span>
+                    <div key={cat.name} className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-1.5 sm:py-2 border-2 border-foreground/10 bg-background">
+                      <span className="font-display text-[11px] sm:text-xs uppercase font-bold">{cat.name}</span>
+                      <span className="text-[10px] sm:text-[11px] text-foreground/70 font-medium">— {cat.tagline}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="space-y-2.5 mb-4">
+                <div className="space-y-1.5 sm:space-y-2.5 mb-3 sm:mb-4">
                   {[
                     "Full Fibre where available",
                     "Works on the Openreach network",
                     "UK-based support when you need it",
                     "Free installation (limited time)",
                   ].map(line => (
-                    <p key={line} className="flex items-center gap-2.5 text-[15px] font-semibold text-foreground">
-                      <Check className="w-[18px] h-[18px] text-primary flex-shrink-0" />
+                    <p key={line} className="flex items-center gap-2 sm:gap-2.5 text-[13px] sm:text-[15px] font-semibold text-foreground">
+                      <Check className="w-4 sm:w-[18px] h-4 sm:h-[18px] text-primary flex-shrink-0" />
                       {line}
                     </p>
                   ))}
                 </div>
 
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
+                <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-[9px] sm:text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
                   <span>14-day cooling-off period</span>
                   <span>Keep your number on home phone</span>
                   <span>No mid-contract price rises</span>

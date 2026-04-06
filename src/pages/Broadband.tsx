@@ -229,9 +229,9 @@ const BroadbandInner = () => {
       </Dialog>
 
       {/* Hero - Compact */}
-      <section className="flex items-center py-12 grid-pattern">
+      <section className="flex items-center py-6 sm:py-12 grid-pattern">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-8 items-start">
+          <div className="grid lg:grid-cols-2 gap-5 sm:gap-8 items-start">
             {/* Left - Content */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -242,17 +242,17 @@ const BroadbandInner = () => {
                 <Zap className="w-4 h-4 inline mr-2" />
                 Free installation available for a limited time
               </div>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4 text-foreground">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display uppercase leading-[0.9] mb-3 sm:mb-4 text-foreground">
                 BROADBAND
                 <br />
                 <span className="text-gradient">THAT WORKS</span>
               </h1>
-              <p className="text-lg text-muted-foreground mb-6 max-w-lg">
+              <p className="text-sm sm:text-lg text-muted-foreground mb-4 sm:mb-6 max-w-lg">
                 Fast, reliable internet without the corporate nonsense. 
                 From £{getFromPrices().broadband}/month with no price rises mid-contract — cheap broadband UK
                 that stays no contract broadband and cancel anytime broadband.
               </p>
-              <p className="text-sm text-muted-foreground mb-6">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
                 Want flexible terms?{" "}
                 <Link to="/no-contract-broadband-uk" className="font-medium text-accent hover:text-accent/80 transition-colors">
                   Explore no-contract broadband options
@@ -261,7 +261,7 @@ const BroadbandInner = () => {
               </p>
               
               {/* Benefits */}
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
                 {features.map((feature) => (
                   <div
                     key={feature.text}
@@ -302,7 +302,7 @@ const BroadbandInner = () => {
                   key="loading"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="card-brutal bg-card p-6 md:p-8 flex flex-col items-center justify-center min-h-[320px]"
+                  className="card-brutal bg-card p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center min-h-[200px] sm:min-h-[320px]"
                 >
                   <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
                   <p className="font-display text-sm uppercase tracking-wider text-foreground">
@@ -318,7 +318,7 @@ const BroadbandInner = () => {
                   key="addresses"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="card-brutal bg-card p-5 md:p-6"
+                  className="card-brutal bg-card p-4 sm:p-5 md:p-6"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div>
@@ -338,7 +338,7 @@ const BroadbandInner = () => {
                   </div>
 
                   <div className="border-2 border-foreground/10 overflow-hidden">
-                    <div className="max-h-[340px] overflow-y-auto">
+                    <div className="max-h-[240px] sm:max-h-[340px] overflow-y-auto">
                       {addresses.map((addr, idx) => (
                         <button
                           key={idx}

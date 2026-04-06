@@ -336,20 +336,22 @@ const HeroSection = () => {
                 variants={itemVariants}
                 className="card-brutal bg-card p-5 md:p-6"
               >
-                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                  Starting From
+                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                  FROM
                 </p>
-                <p className="font-display text-4xl md:text-5xl text-primary leading-none">
-                  From £{prices.broadband}
-                  <span className="text-base text-foreground/70">/month</span>
+                <p className="font-display text-5xl md:text-6xl text-primary leading-none">
+                  £{prices.broadband}
                 </p>
-                <p className="text-xs text-muted-foreground/60 mt-1 mb-1">
+                <p className="font-display text-base font-semibold text-foreground mt-1">
+                  /month
+                </p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1.5 mb-1">
                   *Subject to availability at your address
                 </p>
-                <p className="text-sm text-muted-foreground mb-1">
+                <p className="text-sm font-semibold text-foreground mb-1">
                   No contracts • No annual price hikes
                 </p>
-                <p className="text-xs text-primary/80 mb-4">
+                <p className="text-xs text-primary font-medium mb-4">
                   Join customers switching away from price rises
                 </p>
 
@@ -360,28 +362,25 @@ const HeroSection = () => {
                     { name: "Gigabit", tagline: "Serious speed" },
                   ].map(cat => (
                     <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/10 bg-background">
-                      <span className="font-display text-xs uppercase">{cat.name}</span>
-                      <span className="text-[11px] text-muted-foreground">— {cat.tagline}</span>
+                      <span className="font-display text-xs uppercase font-bold">{cat.name}</span>
+                      <span className="text-[11px] text-foreground/70 font-medium">— {cat.tagline}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="space-y-1.5 mb-4">
+                <div className="space-y-2.5 mb-4">
                   {[
                     "Full Fibre where available",
                     "Works on the Openreach network",
                     "UK-based support when you need it",
+                    "Free installation (limited time)",
                   ].map(line => (
-                    <p key={line} className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                      <Check className="w-3 h-3 text-primary flex-shrink-0" />
+                    <p key={line} className="flex items-center gap-2.5 text-[15px] font-semibold text-foreground">
+                      <Check className="w-[18px] h-[18px] text-primary flex-shrink-0" />
                       {line}
                     </p>
                   ))}
                 </div>
-
-                <p className="text-xs text-primary/80 mb-3">
-                  Free installation available for a limited time
-                </p>
 
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
                   <span>14-day cooling-off period</span>

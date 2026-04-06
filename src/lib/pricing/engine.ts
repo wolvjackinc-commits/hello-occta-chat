@@ -25,7 +25,7 @@ export function getFromPrices(): FromPrices {
   const bbPrices = broadbandRetailCards
     .map(c => getCheapestForCard(c.eligibleProductIds))
     .filter((p): p is number => p !== null);
-  const bbMin = bbPrices.length > 0 ? Math.min(...bbPrices) : 26.95;
+  const bbMin = bbPrices.length > 0 ? Math.min(...bbPrices) : 22.99;
 
   // SIM: cheapest SIM card
   const simMin = Math.min(...Object.values(SIM_PRICES));

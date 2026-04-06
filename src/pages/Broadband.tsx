@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
@@ -9,42 +9,49 @@ import BundleBuilder from "@/components/bundle/BundleBuilder";
 import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone } from "lucide-react";
+import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star } from "lucide-react";
 import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
 import { getFromPrices } from "@/lib/pricing/engine";
+import { AvailabilityProvider, useAvailability } from "@/contexts/AvailabilityContext";
 
-const Broadband = () => {
+const BroadbandInner = () => {
   const [isReady, setIsReady] = useState(false);
   const [showVoiceDialog, setShowVoiceDialog] = useState(false);
   const [selectedBroadbandPlanId, setSelectedBroadbandPlanId] = useState<string | null>(null);
   const [selectedCallPlans, setSelectedCallPlans] = useState<string[]>([]);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { status, result, postcode, reset } = useAvailability();
   
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // Auto-trigger voice dialog if coming from homepage with plan param
+  useEffect(() => {
+    const planParam = searchParams.get("plan");
+    if (planParam && isReady) {
+      const matchingPlan = broadbandPlans.find(p => p.id === `broadband-${planParam}` || p.id === planParam);
+      if (matchingPlan) {
+        setSelectedBroadbandPlanId(matchingPlan.id);
+        setSelectedCallPlans([]);
+        setShowVoiceDialog(true);
+      }
+    }
+  }, [searchParams, isReady]);
+
   const { isAppMode } = useAppMode();
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.08 },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
   };
 
   const cardVariants = {
     hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.4,
-        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
-      },
-    },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] } },
   };
 
   const features = [
@@ -86,12 +93,27 @@ const Broadband = () => {
 
   const voiceTotal = voicePlan.priceNum + callPlanOptions.filter(cp => selectedCallPlans.includes(cp.id)).reduce((s, cp) => s + cp.price, 0);
 
+  // Filter plans based on availability
+  const hasPersonalisedResult = status === "success" && result && result.eligibleOcctaPlans.length > 0;
+
+  const getFilteredPlans = () => {
+    if (!hasPersonalisedResult) return broadbandPlans;
+    return broadbandPlans
+      .filter(p => result.eligibleOcctaPlans.includes(p.id.replace("broadband-", "")))
+      .sort((a, b) => {
+        const aId = a.id.replace("broadband-", "");
+        const bId = b.id.replace("broadband-", "");
+        if (aId === result.recommendedPlan) return -1;
+        if (bId === result.recommendedPlan) return 1;
+        return 0;
+      });
+  };
+
+  const filteredPlans = getFilteredPlans();
+  const isFttcOnly = hasPersonalisedResult && result.primaryTechnology !== "FTTP";
+
   if (!isReady) {
-    return (
-      <LayoutComponent>
-        <ServicePageSkeleton />
-      </LayoutComponent>
-    );
+    return <LayoutComponent><ServicePageSkeleton /></LayoutComponent>;
   }
 
   const broadbandServiceSchema = createServiceSchema({
@@ -112,10 +134,7 @@ const Broadband = () => {
 
   const combinedSchemas = {
     '@context': 'https://schema.org',
-    '@graph': [
-      broadbandServiceSchema,
-      ...planOfferSchemas,
-    ],
+    '@graph': [broadbandServiceSchema, ...planOfferSchemas],
   };
 
   return (
@@ -143,7 +162,6 @@ const Broadband = () => {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Voice plan summary */}
             <div className="p-4 border-4 border-primary/30 bg-primary/5">
               <div className="flex items-center gap-2 mb-1">
                 <PhoneCall className="w-4 h-4 text-primary" />
@@ -168,7 +186,6 @@ const Broadband = () => {
               )}
             </div>
 
-            {/* Call plan options */}
             <div>
               <p className="text-sm font-medium mb-2">Optional call plans:</p>
               <div className="space-y-2">
@@ -223,7 +240,7 @@ const Broadband = () => {
             >
               <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
                 <Zap className="w-4 h-4 inline mr-2" />
-                Free installation until March
+                Free installation available for a limited time
               </div>
               <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4 text-foreground">
                 BROADBAND
@@ -344,64 +361,102 @@ const Broadband = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-display-md mb-2">ALL PLANS</h2>
-            <p className="text-muted-foreground">Choose your speed — we'll handle the rest</p>
+            <h2 className="text-display-md mb-2">
+              {hasPersonalisedResult ? "PLANS AVAILABLE AT YOUR ADDRESS" : "ALL PLANS"}
+            </h2>
+            <p className="text-muted-foreground">
+              {hasPersonalisedResult
+                ? `Showing plans available at your address (${postcode})`
+                : "Choose your speed — we'll handle the rest"}
+            </p>
+            {isFttcOnly && (
+              <p className="text-sm text-muted-foreground/70 mt-1">
+                Full Fibre isn't currently available at this address
+              </p>
+            )}
+            {hasPersonalisedResult && (
+              <button
+                onClick={reset}
+                className="text-sm text-primary hover:underline mt-2 font-medium"
+              >
+                Clear address check and view all plans
+              </button>
+            )}
           </motion.div>
 
           <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-4"
+            className={`grid md:grid-cols-2 ${filteredPlans.length >= 4 ? "lg:grid-cols-4" : filteredPlans.length === 3 ? "lg:grid-cols-3" : filteredPlans.length === 2 ? "lg:grid-cols-2" : ""} gap-4`}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={containerVariants}
           >
-            {broadbandPlans.map((plan) => (
-              <motion.div
-                key={plan.id}
-                className={`relative card-brutal bg-card p-5 flex flex-col ${plan.popular ? "border-primary" : ""}`}
-                variants={cardVariants}
-                whileHover={{ y: -6, x: -3, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-3 bg-primary text-primary-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
-                    Most Popular
+            {filteredPlans.map((plan) => {
+              const planKey = plan.id.replace("broadband-", "");
+              const isRecommended = hasPersonalisedResult && planKey === result.recommendedPlan;
+              const isUpgrade = hasPersonalisedResult && planKey === result.upgradePlan;
+              
+              return (
+                <motion.div
+                  key={plan.id}
+                  className={`relative card-brutal bg-card p-5 flex flex-col ${
+                    isRecommended ? "border-primary" : plan.popular && !hasPersonalisedResult ? "border-primary" : ""
+                  }`}
+                  variants={cardVariants}
+                  whileHover={{ y: -6, x: -3, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
+                >
+                  {isRecommended && (
+                    <div className="absolute -top-3 left-3 bg-primary text-primary-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground flex items-center gap-1">
+                      <Star className="w-3 h-3" />
+                      Recommended for your address
+                    </div>
+                  )}
+                  {isUpgrade && (
+                    <div className="absolute -top-3 left-3 bg-accent text-accent-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
+                      Upgrade Option
+                    </div>
+                  )}
+                  {!hasPersonalisedResult && plan.popular && (
+                    <div className="absolute -top-3 left-3 bg-primary text-primary-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
+                      Most Popular
+                    </div>
+                  )}
+                  
+                  <div className={(isRecommended || isUpgrade || (!hasPersonalisedResult && plan.popular)) ? "pt-2" : ""}>
+                    <h3 className="font-display text-2xl mb-1">{plan.name}</h3>
+                    
+                    <div className="flex items-baseline gap-1 mb-2">
+                      <span className="font-display text-4xl">£{plan.price}</span>
+                      <span className="text-foreground/70 text-sm font-medium">/mo</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-accent border-2 border-foreground inline-block">
+                      <Wifi className="w-3 h-3 text-accent-foreground" />
+                      <span className="font-display text-accent-foreground text-sm">Up to {plan.speed}Mbps</span>
+                    </div>
+                    
+                    <ul className="space-y-1.5 mb-4 flex-grow">
+                      {plan.features.slice(0, 6).map((feature) => (
+                        <li key={feature} className="flex items-center gap-2 text-xs">
+                          <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    
+                    <Button
+                      variant={isRecommended || (!hasPersonalisedResult && plan.popular) ? "hero" : "outline"}
+                      className="w-full"
+                      size="sm"
+                      onClick={() => handleChoosePlan(plan.id)}
+                    >
+                      Choose Plan
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
                   </div>
-                )}
-                
-                <div className={plan.popular ? "pt-2" : ""}>
-                  <h3 className="font-display text-2xl mb-1">{plan.name}</h3>
-                  
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="font-display text-4xl">£{plan.price}</span>
-                    <span className="text-foreground/70 text-sm font-medium">/mo</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-accent border-2 border-foreground inline-block">
-                    <Wifi className="w-3 h-3 text-accent-foreground" />
-                    <span className="font-display text-accent-foreground text-sm">Up to {plan.speed}Mbps</span>
-                  </div>
-                  
-                  <ul className="space-y-1.5 mb-4 flex-grow">
-                    {plan.features.slice(0, 6).map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-xs">
-                        <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button
-                    variant={plan.popular ? "hero" : "outline"}
-                    className="w-full"
-                    size="sm"
-                    onClick={() => handleChoosePlan(plan.id)}
-                  >
-                    Choose Plan
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </motion.div>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
@@ -541,5 +596,11 @@ const Broadband = () => {
     </LayoutComponent>
   );
 };
+
+const Broadband = () => (
+  <AvailabilityProvider>
+    <BroadbandInner />
+  </AvailabilityProvider>
+);
 
 export default Broadband;

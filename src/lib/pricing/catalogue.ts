@@ -42,7 +42,7 @@ export const catalogueProducts: CatalogueProduct[] = [
   {
     id: 'fttp-80-20-tt', slug: 'fttp-80-20-tt', name: 'FTTP 80/20 TalkTalk',
     supplier: 'TalkTalk', technology: 'FTTP', speedDown: 80, speedUp: 20,
-    wholesaleMonthly: 22.00, retailMonthly: 26.95, wholesaleContractTerm: 1,
+    wholesaleMonthly: 22.00, retailMonthly: 22.99, wholesaleContractTerm: 1,
     retailContractLabel: '30-day rolling', productStatus: 'public', customerType: 'residential',
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,

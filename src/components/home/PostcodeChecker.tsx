@@ -1,161 +1,46 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, CheckCircle, XCircle, Loader2, ChevronDown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Search, Loader2, ChevronDown } from "lucide-react";
+import { useAvailability, getAddressLabel } from "@/contexts/AvailabilityContext";
 
-interface ICUKAddress {
-  [key: string]: unknown;
+interface PostcodeCheckerProps {
+  variant?: "hero" | "standalone";
 }
 
-interface AvailabilityResult {
-  available: boolean;
-  primaryTechnology: string;
-  maxDownload: number;
-  maxUpload: number;
-  eligibleOcctaPlans: string[];
-  message?: string;
-}
+const PostcodeChecker = ({ variant = "standalone" }: PostcodeCheckerProps) => {
+  const { status, addresses, postcode: ctxPostcode, errorMessage, checkPostcode, selectAddress } = useAvailability();
+  const [localPostcode, setLocalPostcode] = useState(ctxPostcode || "");
 
-const PLAN_LABELS: Record<string, string> = {
-  essential: "Essential (up to 80Mbps)",
-  superfast: "Superfast (up to 330Mbps)",
-  ultrafast: "Ultrafast (up to 550Mbps)",
-  gigabit: "Gigabit (up to 1Gbps)",
-};
-
-const PostcodeChecker = () => {
-  const [postcode, setPostcode] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "addresses" | "checking" | "success" | "error">("idle");
-  const [addresses, setAddresses] = useState<ICUKAddress[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<ICUKAddress | null>(null);
-  const [result, setResult] = useState<string | null>(null);
-  const [eligiblePlans, setEligiblePlans] = useState<string[]>([]);
-
-  const validatePostcode = (pc: string) => {
-    const postcodeRegex = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i;
-    return postcodeRegex.test(pc.trim());
-  };
-
-  const handleCheck = async () => {
-    if (!validatePostcode(postcode)) {
-      setStatus("error");
-      setResult("That doesn't look like a proper postcode, mate.");
-      return;
-    }
-
-    setStatus("loading");
-    setAddresses([]);
-    setSelectedAddress(null);
-    setResult(null);
-    setEligiblePlans([]);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("check-address", {
-        body: { postcode },
-      });
-
-      if (error) throw error;
-
-      if (!data.addresses || data.addresses.length === 0) {
-        setStatus("error");
-        setResult(data.message || "We couldn't automatically find your address. Contact us and we'll check manually.");
-        return;
-      }
-
-      setAddresses(data.addresses);
-      setStatus("addresses");
-    } catch (err) {
-      console.error("Address lookup error:", err);
-      setStatus("error");
-      setResult("Something went wrong looking up your address. Please try again.");
-    }
-  };
-
-  const handleAddressSelect = async (address: ICUKAddress) => {
-    setSelectedAddress(address);
-    setStatus("checking");
-    setResult(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("check-availability", {
-        body: { address },
-      });
-
-      if (error) throw error;
-
-      if (data.available && data.eligibleOcctaPlans?.length > 0) {
-        const techLabel = data.primaryTechnology === "FTTP" ? "Full Fibre" : "Fibre";
-        const speedLabel = data.maxDownload >= 1000
-          ? "1Gbps"
-          : `${data.maxDownload}Mbps`;
-
-        setEligiblePlans(data.eligibleOcctaPlans);
-        setResult(
-          `Brilliant! ${techLabel} broadband is available at your address — speeds up to ${speedLabel}!`
-        );
-        setStatus("success");
-      } else {
-        setResult(
-          data.message || "We don't currently have orderable products at this address. Contact us and we'll check manually."
-        );
-        setStatus("error");
-      }
-    } catch (err) {
-      console.error("Availability check error:", err);
-      setStatus("error");
-      setResult("Something went wrong checking availability. Please try again.");
-    }
-  };
-
-  const getAddressLabel = (addr: ICUKAddress): string => {
-    // Build a readable label from the ICUK address object
-    const parts = [
-      addr.sub_premises,
-      addr.premises_name,
-      addr.thoroughfare_number,
-      addr.thoroughfare_name,
-      addr.locality,
-      addr.post_town,
-    ].filter(Boolean);
-
-    if (parts.length > 0) return parts.join(", ") as string;
-
-    // Fallback: use any string-like fields
-    const fallback = Object.values(addr).filter(v => typeof v === "string" && v.length > 0);
-    return fallback.slice(0, 4).join(", ") || "Address";
+  const handleCheck = () => {
+    checkPostcode(localPostcode);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleCheck();
-    }
+    if (e.key === "Enter") handleCheck();
   };
 
-  const handleReset = () => {
-    setPostcode("");
-    setStatus("idle");
-    setAddresses([]);
-    setSelectedAddress(null);
-    setResult(null);
-    setEligiblePlans([]);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalPostcode(e.target.value.toUpperCase());
   };
+
+  const isHero = variant === "hero";
 
   return (
-    <div className="w-full max-w-xl">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+    <div className={`w-full ${isHero ? "max-w-[700px]" : "max-w-xl"}`}>
+      {/* Label */}
+      <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">
+        Enter your postcode
+      </p>
+
+      {/* Input row */}
+      <div className={`flex gap-4 ${isHero ? "flex-col sm:flex-row" : "flex-col sm:flex-row"}`}>
+        <div className={`relative ${isHero ? "sm:w-[68%] w-full" : "flex-1"}`}>
           <Input
             type="text"
-            placeholder="e.g. HD3 3WU"
-            value={postcode}
-            onChange={(e) => {
-              setPostcode(e.target.value.toUpperCase());
-              if (status !== "idle") {
-                handleReset();
-                setPostcode(e.target.value.toUpperCase());
-              }
-            }}
+            placeholder="E.g. HD3 3WU"
+            value={localPostcode}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             className="h-14 pl-12 text-lg font-display uppercase tracking-wider border-4 border-foreground focus:ring-0 focus:border-foreground bg-background placeholder:text-muted-foreground/50"
           />
@@ -163,14 +48,14 @@ const PostcodeChecker = () => {
         </div>
         <Button
           onClick={handleCheck}
-          disabled={!postcode || status === "loading" || status === "checking"}
+          disabled={!localPostcode || status === "loading-postcode" || status === "checking-address"}
           size="lg"
-          className="h-14"
+          className={`h-14 font-display uppercase tracking-wider ${isHero ? "sm:w-[32%] w-full" : ""}`}
         >
-          {status === "loading" ? (
+          {status === "loading-postcode" ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Finding addresses...
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              Checking…
             </>
           ) : (
             "Check Availability"
@@ -178,20 +63,35 @@ const PostcodeChecker = () => {
         </Button>
       </div>
 
-      {/* Address Dropdown */}
+      {/* Helper line */}
+      <p className="text-xs text-muted-foreground mt-3 flex flex-wrap gap-x-3 gap-y-1">
+        <span>✓ Takes 10 seconds</span>
+        <span>✓ No commitment</span>
+        <span>✓ Real availability</span>
+      </p>
+
+      {/* Loading postcode */}
+      {status === "loading-postcode" && (
+        <div className="mt-4 p-4 border-4 border-foreground/20 animate-slide-up flex items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <p className="font-medium">Checking your address…</p>
+        </div>
+      )}
+
+      {/* Address dropdown */}
       {status === "addresses" && addresses.length > 0 && (
         <div className="mt-4 border-4 border-foreground bg-background animate-slide-up">
           <div className="p-3 border-b-2 border-foreground/10">
-            <p className="font-medium text-sm text-muted-foreground">
-              {addresses.length} address{addresses.length !== 1 ? "es" : ""} found — select yours:
+            <p className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+              Select your address
             </p>
           </div>
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-72 overflow-y-auto">
             {addresses.map((addr, idx) => (
               <button
                 key={idx}
-                onClick={() => handleAddressSelect(addr)}
-                className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2"
+                onClick={() => selectAddress(addr)}
+                className="w-full text-left px-4 py-3.5 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2"
               >
                 <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0 -rotate-90" />
@@ -201,43 +101,18 @@ const PostcodeChecker = () => {
         </div>
       )}
 
-      {/* Checking spinner */}
-      {status === "checking" && (
+      {/* Checking address */}
+      {status === "checking-address" && (
         <div className="mt-4 p-4 border-4 border-foreground/20 animate-slide-up flex items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <p className="font-medium">Checking availability at your address...</p>
+          <p className="font-medium">Finding the fastest available speeds…</p>
         </div>
       )}
 
-      {/* Result Display */}
-      {result && (status === "success" || status === "error") && (
-        <div
-          className={`mt-4 p-4 border-4 animate-slide-up flex items-start gap-3 ${
-            status === "success"
-              ? "border-success bg-success/10"
-              : "border-destructive bg-destructive/10"
-          }`}
-        >
-          {status === "success" ? (
-            <CheckCircle className="w-6 h-6 text-success flex-shrink-0 mt-0.5" />
-          ) : (
-            <XCircle className="w-6 h-6 text-destructive flex-shrink-0 mt-0.5" />
-          )}
-          <div>
-            <p className="font-medium">{result}</p>
-            {status === "success" && eligiblePlans.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {eligiblePlans.map((planId) => (
-                  <span
-                    key={planId}
-                    className="inline-block text-xs font-bold px-2 py-1 bg-primary/10 text-primary border border-primary/20"
-                  >
-                    {PLAN_LABELS[planId] || planId}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* Error states */}
+      {status === "error" && (
+        <div className="mt-4 p-4 border-4 border-destructive bg-destructive/10 animate-slide-up">
+          <p className="font-medium text-sm">{errorMessage}</p>
         </div>
       )}
     </div>

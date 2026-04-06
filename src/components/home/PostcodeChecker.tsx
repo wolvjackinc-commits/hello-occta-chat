@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, ChevronDown } from "lucide-react";
-import { useAvailability, getAddressLabel } from "@/contexts/AvailabilityContext";
+import { Search, Loader2 } from "lucide-react";
+import { useAvailability } from "@/contexts/AvailabilityContext";
 
 interface PostcodeCheckerProps {
   variant?: "hero" | "standalone";
 }
 
 const PostcodeChecker = ({ variant = "standalone" }: PostcodeCheckerProps) => {
-  const { status, addresses, postcode: ctxPostcode, errorMessage, checkPostcode, selectAddress } = useAvailability();
+  const { status, postcode: ctxPostcode, checkPostcode } = useAvailability();
   const [localPostcode, setLocalPostcode] = useState(ctxPostcode || "");
 
   const handleCheck = () => {
@@ -25,6 +25,7 @@ const PostcodeChecker = ({ variant = "standalone" }: PostcodeCheckerProps) => {
   };
 
   const isHero = variant === "hero";
+  const isLoading = status === "loading-postcode" || status === "checking-address";
 
   return (
     <div className={`w-full ${isHero ? "max-w-[700px]" : "max-w-xl"}`}>
@@ -48,7 +49,7 @@ const PostcodeChecker = ({ variant = "standalone" }: PostcodeCheckerProps) => {
         </div>
         <Button
           onClick={handleCheck}
-          disabled={!localPostcode || status === "loading-postcode" || status === "checking-address"}
+          disabled={!localPostcode || isLoading}
           size="lg"
           className={`h-14 font-display uppercase tracking-wider ${isHero ? "sm:w-[32%] w-full" : ""}`}
         >
@@ -69,52 +70,6 @@ const PostcodeChecker = ({ variant = "standalone" }: PostcodeCheckerProps) => {
         <span>✓ No commitment</span>
         <span>✓ Real availability</span>
       </p>
-
-      {/* Loading postcode */}
-      {status === "loading-postcode" && (
-        <div className="mt-4 p-4 border-4 border-foreground/20 animate-slide-up flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <p className="font-medium">Checking your address…</p>
-        </div>
-      )}
-
-      {/* Address dropdown */}
-      {status === "addresses" && addresses.length > 0 && (
-        <div className="mt-4 border-4 border-foreground bg-background animate-slide-up">
-          <div className="p-3 border-b-2 border-foreground/10">
-            <p className="font-display text-sm uppercase tracking-wider text-muted-foreground">
-              Select your address
-            </p>
-          </div>
-          <div className="max-h-72 overflow-y-auto">
-            {addresses.map((addr, idx) => (
-              <button
-                key={idx}
-                onClick={() => selectAddress(addr)}
-                className="w-full text-left px-4 py-3.5 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2"
-              >
-                <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
-                <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0 -rotate-90" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Checking address */}
-      {status === "checking-address" && (
-        <div className="mt-4 p-4 border-4 border-foreground/20 animate-slide-up flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <p className="font-medium">Finding the fastest available speeds…</p>
-        </div>
-      )}
-
-      {/* Error states */}
-      {status === "error" && (
-        <div className="mt-4 p-4 border-4 border-destructive bg-destructive/10 animate-slide-up">
-          <p className="font-medium text-sm">{errorMessage}</p>
-        </div>
-      )}
     </div>
   );
 };

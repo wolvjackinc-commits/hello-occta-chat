@@ -1,15 +1,15 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Shield, Wifi, Phone, X, RefreshCcw, Star } from "lucide-react";
+import { ArrowRight, Check, Shield, Wifi, Phone, X, RefreshCcw, Star, ChevronRight, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
-import { useAvailability, getShortAddress } from "@/contexts/AvailabilityContext";
+import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/AvailabilityContext";
 
 const HeroSection = () => {
   const prices = getFromPrices();
   const navigate = useNavigate();
-  const { status, result, postcode, selectedAddress, reset } = useAvailability();
+  const { status, result, postcode, selectedAddress, addresses, reset, selectAddress } = useAvailability();
   const retailCards = getRetailBroadbandCards();
 
   const hasResult = status === "success" && result;
@@ -38,7 +38,6 @@ const HeroSection = () => {
     navigate(`/broadband?plan=${planId}`);
   };
 
-  // Get max 2 plans: recommended + optional upgrade
   const getHeroPlanCards = () => {
     if (!result) return [];
     const cards = result.eligibleOcctaPlans
@@ -55,12 +54,11 @@ const HeroSection = () => {
           isUpgrade: planId === result.upgradePlan,
         };
       })
-    .filter(Boolean) as {
+      .filter(Boolean) as {
         id: string; name: string; speed: number; speedLabel: string;
         price: string | number; isRecommended: boolean; isUpgrade: boolean;
       }[];
 
-    // Only show recommended + upgrade (max 2)
     const recommended = cards.find(c => c.isRecommended);
     const upgrade = cards.find(c => c.isUpgrade);
     const out: typeof cards = [];
@@ -78,6 +76,12 @@ const HeroSection = () => {
         : null
   ) : null;
 
+  // Determine right panel state
+  const isAddressSelect = status === "addresses" && addresses.length > 0;
+  const isLoadingPostcode = status === "loading-postcode";
+  const isCheckingAddress = status === "checking-address";
+  const isLoadingState = isLoadingPostcode || isCheckingAddress;
+
   return (
     <section className="relative flex items-center bg-gradient-to-br from-background via-background to-muted/30">
       <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/20 -skew-x-12 translate-x-20 hidden lg:block" />
@@ -86,12 +90,10 @@ const HeroSection = () => {
         <div className="grid lg:grid-cols-[52fr_48fr] gap-8 lg:gap-10 items-start">
           {/* ─── LEFT COLUMN ─── */}
           <motion.div className="space-y-3" variants={containerVariants} initial="hidden" animate="visible">
-            {/* Eyebrow */}
             <motion.p variants={itemVariants} className="font-display text-[10px] sm:text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
               No Contracts • No Annual Price Hikes • UK-based Support
             </motion.p>
 
-            {/* Headline — reduced ~15% */}
             <motion.h1 variants={itemVariants} className="text-4xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-foreground">
               Finally.
               <br />
@@ -100,12 +102,10 @@ const HeroSection = () => {
               <span className="text-gradient">doesn't lock you in.</span>
             </motion.h1>
 
-            {/* Paragraph */}
             <motion.p variants={itemVariants} className="text-base text-muted-foreground max-w-[580px]">
               No contracts. No annual price hikes. No nonsense. Just fast, reliable broadband from £{prices.broadband}/month.
             </motion.p>
 
-            {/* Value chips — compact */}
             <motion.div variants={itemVariants} className="flex flex-wrap gap-1.5">
               {benefits.map((b, i) => (
                 <div
@@ -125,7 +125,7 @@ const HeroSection = () => {
               <PostcodeChecker variant="hero" />
             </motion.div>
 
-            {/* Compact inline confirmation — replaces the old large result box */}
+            {/* Compact inline confirmation */}
             {hasResult && inlineConfirmation && (
               <motion.p
                 initial={{ opacity: 0, y: 6 }}
@@ -159,79 +159,80 @@ const HeroSection = () => {
             )}
           </motion.div>
 
-          {/* ─── RIGHT COLUMN ─── */}
+          {/* ─── RIGHT COLUMN — state-driven panel replacement ─── */}
           <motion.div variants={containerVariants} initial="hidden" animate="visible">
-            {!hasResult ? (
-              /* ── STATE A: Before check ── */
+
+            {/* LOADING STATE — replaces right panel while checking */}
+            {isLoadingState && (
               <motion.div
-                variants={itemVariants}
+                key="loading"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card p-6 md:p-8 flex flex-col items-center justify-center min-h-[320px]"
+              >
+                <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                  {isLoadingPostcode ? "Checking your address…" : "Finding the fastest available speeds…"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">This only takes a moment</p>
+              </motion.div>
+            )}
+
+            {/* ADDRESS SELECT STATE — replaces right panel with address list */}
+            {isAddressSelect && (
+              <motion.div
+                key="addresses"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
                 className="card-brutal bg-card p-5 md:p-6"
               >
-                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                  Starting From
-                </p>
-                <p className="font-display text-4xl md:text-5xl text-primary leading-none">
-                  From £{prices.broadband}
-                  <span className="text-base text-foreground/70">/month</span>
-                </p>
-                <p className="text-xs text-muted-foreground/60 mt-1 mb-1">
-                  *Subject to availability at your address
-                </p>
-                <p className="text-sm text-muted-foreground mb-1">
-                  No contracts • No annual price hikes
-                </p>
-                <p className="text-xs text-primary/80 mb-4">
-                  Join customers switching away from price rises
-                </p>
-
-                {/* Category cues */}
-                <div className="space-y-2 mb-4">
-                  {[
-                    { name: "Essential", tagline: "Everyday browsing" },
-                    { name: "Superfast", tagline: "Streaming & busy homes" },
-                    { name: "Gigabit", tagline: "Serious speed" },
-                  ].map(cat => (
-                    <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/10 bg-background">
-                      <span className="font-display text-xs uppercase">{cat.name}</span>
-                      <span className="text-[11px] text-muted-foreground">— {cat.tagline}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Proof rows */}
-                <div className="space-y-1.5 mb-4">
-                  {[
-                    "Full Fibre where available",
-                    "Works on the Openreach network",
-                    "UK-based support when you need it",
-                  ].map(line => (
-                    <p key={line} className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                      <Check className="w-3 h-3 text-primary flex-shrink-0" />
-                      {line}
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                      Select your address
                     </p>
-                  ))}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {addresses.length} addresses found for {postcode}
+                    </p>
+                  </div>
+                  <button
+                    onClick={reset}
+                    className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap"
+                  >
+                    Change postcode
+                  </button>
                 </div>
 
-                <p className="text-xs text-primary/80 mb-3">
-                  Free installation available for a limited time
+                <div className="border-2 border-foreground/10 overflow-hidden">
+                  <div className="max-h-[340px] overflow-y-auto">
+                    {addresses.map((addr, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => selectAddress(addr)}
+                        className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
+                      >
+                        <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground mt-3">
+                  We'll only show plans actually available at your address.
                 </p>
-
-                {/* Bottom strip */}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
-                  <span>14-day cooling-off period</span>
-                  <span>Keep your number on home phone</span>
-                  <span>No mid-contract price rises</span>
-                </div>
               </motion.div>
-            ) : (
-              /* ── STATE B: After result — single source of truth ── */
+            )}
+
+            {/* RESULT STATE — personalised plans */}
+            {hasResult && (
               <motion.div
+                key="results"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35 }}
                 className="card-brutal bg-card p-5 md:p-6"
               >
-                {/* Card header with address + change link */}
                 <div className="flex items-start justify-between mb-1">
                   <div>
                     <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -251,7 +252,6 @@ const HeroSection = () => {
                   </button>
                 </div>
 
-                {/* Speed stat */}
                 <div className="flex items-center justify-between py-2 px-3 border-2 border-foreground/10 bg-background mb-3">
                   <p className="font-display text-sm uppercase">
                     Up to {getSpeedLabel(result.maxDownload)} available
@@ -259,7 +259,6 @@ const HeroSection = () => {
                   <Wifi className="w-4 h-4 text-primary" />
                 </div>
 
-                {/* Plan cards — max 2 */}
                 <div className="space-y-3">
                   {getHeroPlanCards().map(plan => (
                     <div
@@ -315,7 +314,6 @@ const HeroSection = () => {
                   ))}
                 </div>
 
-                {/* View all link */}
                 <div className="text-center pt-3">
                   <Link
                     to="/broadband"
@@ -325,10 +323,71 @@ const HeroSection = () => {
                   </Link>
                 </div>
 
-                {/* Bottom line */}
                 <p className="text-center text-[10px] text-muted-foreground pt-2">
                   No annual price hikes • Cancel anytime
                 </p>
+              </motion.div>
+            )}
+
+            {/* IDLE / DEFAULT STATE — price anchor card */}
+            {!hasResult && !isAddressSelect && !isLoadingState && status !== "error" && (
+              <motion.div
+                key="idle"
+                variants={itemVariants}
+                className="card-brutal bg-card p-5 md:p-6"
+              >
+                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                  Starting From
+                </p>
+                <p className="font-display text-4xl md:text-5xl text-primary leading-none">
+                  From £{prices.broadband}
+                  <span className="text-base text-foreground/70">/month</span>
+                </p>
+                <p className="text-xs text-muted-foreground/60 mt-1 mb-1">
+                  *Subject to availability at your address
+                </p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  No contracts • No annual price hikes
+                </p>
+                <p className="text-xs text-primary/80 mb-4">
+                  Join customers switching away from price rises
+                </p>
+
+                <div className="space-y-2 mb-4">
+                  {[
+                    { name: "Essential", tagline: "Everyday browsing" },
+                    { name: "Superfast", tagline: "Streaming & busy homes" },
+                    { name: "Gigabit", tagline: "Serious speed" },
+                  ].map(cat => (
+                    <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/10 bg-background">
+                      <span className="font-display text-xs uppercase">{cat.name}</span>
+                      <span className="text-[11px] text-muted-foreground">— {cat.tagline}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-1.5 mb-4">
+                  {[
+                    "Full Fibre where available",
+                    "Works on the Openreach network",
+                    "UK-based support when you need it",
+                  ].map(line => (
+                    <p key={line} className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <Check className="w-3 h-3 text-primary flex-shrink-0" />
+                      {line}
+                    </p>
+                  ))}
+                </div>
+
+                <p className="text-xs text-primary/80 mb-3">
+                  Free installation available for a limited time
+                </p>
+
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
+                  <span>14-day cooling-off period</span>
+                  <span>Keep your number on home phone</span>
+                  <span>No mid-contract price rises</span>
+                </div>
               </motion.div>
             )}
           </motion.div>

@@ -9,12 +9,12 @@ import BundleBuilder from "@/components/bundle/BundleBuilder";
 import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star } from "lucide-react";
+import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star, ChevronRight, Loader2 } from "lucide-react";
 import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
 import { getFromPrices } from "@/lib/pricing/engine";
-import { AvailabilityProvider, useAvailability } from "@/contexts/AvailabilityContext";
+import { AvailabilityProvider, useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 
 const BroadbandInner = () => {
   const [isReady, setIsReady] = useState(false);

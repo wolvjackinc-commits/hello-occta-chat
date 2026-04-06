@@ -55,9 +55,9 @@ const HeroSection = () => {
           isUpgrade: planId === result.upgradePlan,
         };
       })
-      .filter(Boolean) as {
+    .filter(Boolean) as {
         id: string; name: string; speed: number; speedLabel: string;
-        price: number; isRecommended: boolean; isUpgrade: boolean;
+        price: string | number; isRecommended: boolean; isUpgrade: boolean;
       }[];
 
     // Only show recommended + upgrade (max 2)

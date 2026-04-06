@@ -115,18 +115,19 @@ function normalizeIcukResponse(data: any): AvailabilityResponse {
   const availableTechs = new Set(technologies.map(t => t.name))
   const eligibleOcctaPlans: string[] = []
 
+  // For each OCCTA plan, check if the line supports it based on max line speed
   for (const plan of OCCTA_PLAN_MAP) {
     const hasTech = plan.techs.some(t => availableTechs.has(t))
     if (!hasTech) continue
 
-    const meetsSpeed = products.some(p => {
-      if (!plan.techs.includes(p.technology)) return false
-      if (plan.minDown && p.likelyDownSpeed < plan.minDown) return false
-      if (plan.maxDown && p.likelyDownSpeed > plan.maxDown + 50) return false
-      return true
+    // Check if the max line speed for any matching tech can support this plan
+    const canSupport = technologies.some(t => {
+      if (!plan.techs.includes(t.name)) return false
+      // The line's max speed must be >= the plan's minimum requirement
+      return t.maxDown >= plan.minLineSpeed
     })
 
-    if (meetsSpeed || (plan.id === 'essential' && hasTech)) {
+    if (canSupport) {
       eligibleOcctaPlans.push(plan.id)
     }
   }

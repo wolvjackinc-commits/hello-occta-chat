@@ -1,87 +1,215 @@
+## Homepage Conversion Overhaul — Final Plan
 
+### 1. Create `src/contexts/AvailabilityContext.tsx`
 
-# Copy, Trust & Micro-UX Refinement Plan
+Central state + API logic for the entire availability flow.
 
-Text-only and content-hierarchy improvements across homepage, broadband page, landline page, checkout, and CTA. Zero layout, logic, or backend changes.
+**State:**
 
----
+```
+status: 'idle' | 'loading-postcode' | 'addresses' | 'checking-address' | 'success' | 'error'
+postcode, addresses[], selectedAddress, errorType, result (single normalized object)
+```
 
-## Files Modified (7)
+**Result object** (the ONE source of truth for all UI):
 
-### 1. `src/components/home/HeroSection.tsx` — Hero copy rewrite
-- **Headline**: Replace "Cheap UK / Broadband / No Contracts" with "Finally. / Broadband that / doesn't lock you in."
-- **Subtext**: Replace current paragraph with "No contracts. No hidden fees. No nonsense. Just fast, reliable internet that works — and lets you leave whenever you want."
-- **Service card subtitles**: Update from generic "No contract required" to:
-  - Broadband: "No contracts · Cancel anytime"
-  - Mobile SIM: "No contracts · Keep your number"
-  - Home Phone: "Works with your broadband · No extra line needed"
-- **Trust strip**: Replace the "100% British / 98% Recommend Us" footer with a 3-item trust line:
-  - "Works on UK's largest network (Openreach)"
-  - "24/7 UK-based support"
-  - "14-day cooling-off period"
-- **CTA helper text**: Add "Switch in under 60 seconds" below the "Check Your Postcode" button
+```
+{ available, primaryTechnology, maxDownload, maxUpload, eligibleOcctaPlans[], recommendedPlan, upgradePlan?, message? }
+```
 
-### 2. `src/components/home/WhyUsSection.tsx` — Section copy update
-- **Section title**: Change from "WHY PEOPLE ACTUALLY / LIKE US" to "WHY PEOPLE ARE SWITCHING / TO OCCTA"
-- **Stamp badge**: Change from "No BS Guarantee" to "Why Switch?"
-- **Reason cards** — update titles and descriptions:
-  - "NO CONTRACTS" → "Leave anytime. No exit fees. No tricks."
-  - "NO PRICE HIKES" → "What you see is what you pay."
-  - "QUICK SETUP" → "WE HANDLE THE SWITCH" / "No calls. No stress. We move everything for you."
-  - "HUMANS ANSWER" → "UK-BASED SUPPORT" / "Real humans. No scripts."
-  - "SMALL BUSINESS, BIG CARE" → "SAME NETWORK AS BIG BRANDS" / "Powered by Openreach infrastructure."
-  - "98% RECOMMEND US" — keep as-is (social proof is strong)
+**Recommendation logic (computed on result):**
 
-### 3. `src/lib/pricing/retailCards.ts` — Broadband plan descriptions
-Update the `tagline` and `publicTagline` fields (these feed into the plan cards):
-- Essential: "Perfect for browsing, emails, and light streaming"
-- Superfast: "Ideal for families, Netflix, and everyday use"
-- Ultrafast: "Great for gamers, work-from-home, and heavy usage"
-- Gigabit: "Maximum speed for power users and smart homes"
+- FTTC only → `essential`
+- FTTP max 330–549 → recommended: `superfast`
+- FTTP max 550–899 → recommended: `superfast`, upgrade: `ultrafast`
+- FTTP max 900+ → recommended: `superfast` (best value)
 
-### 4. `src/pages/Broadband.tsx` — Broadband page copy
-- **Above plans section header**: Change "ALL PLANS" subtext from "Unlimited data, no price rises. Novel concept." to "Choose your speed — we'll handle the rest"
-- **Under each "Choose Plan" button**: Add 3 micro-conversion lines below the plan grid:
-  "Setup usually within 7 days · We notify your current provider · No downtime during switch"
-  (Single text line below the plans grid, not per-card)
-- **Home Phone section heading**: Change "ADD A HOME PHONE" to "ADD A HOME PHONE (OPTIONAL)"
-- **Home Phone description**: Update to "Keep your number. Plug into your router. No copper line needed."
+**Persistence:** On success, write result + postcode + selectedAddress to `sessionStorage('occta_availability')`. On mount, hydrate from sessionStorage if present. Expose `reset()` to clear both.
 
-### 5. `src/components/home/CTASection.tsx` — CTA copy
-- **Headline**: Keep existing (already strong)
-- **Button text**: Change "Get Started Now" to "Get Started"
-- **Add helper text** below CTA buttons: "Switch in under 60 seconds"
-- **Trust note**: Keep existing (already good, no duplication concern since it's the inverted footer section)
+**Error types:** `invalid-postcode | no-addresses | backend-unavailable | availability-failed`
 
-### 6. `src/components/layout/Footer.tsx` — Trust section before footer
-Add a compact trust bar at the top of the footer (inside the existing component, between the support banner and main footer content):
-- "Ofcom regulated UK telecom provider"
-- "Secure payments (256-bit encryption)"
-- "Transparent pricing — no hidden fees"
-- "UK customer support team"
-Rendered as a simple horizontal list with shield/lock icons, using existing muted styling.
+**Actions:** `checkPostcode(pc)`, `selectAddress(addr)`, `reset()`
 
-### 7. `src/pages/PreCheckout.tsx` — Checkout microcopy
-- **Page heading**: Already says "COMPLETE YOUR ORDER" — keep
-- **Subtitle**: Already says "Fill in your details below and we'll get you connected." — keep
-- **Order confirmation list in consent block**: Update the `orderConsent` bullet points to match requested copy:
-  - "This is a 30-day rolling service"
-  - "Setup charges may apply depending on my line"
-  - "My service depends on availability at my address"
-  (Remove "I accept all charges shown in the order summary" — redundant with the CTA)
-- **Tagline placement**: Add "No contracts. No pressure. Just better broadband." as a subtle line below the "What Happens Next" section, styled as `text-xs text-muted-foreground text-center`
-
-### Also add the tagline in:
-- `src/components/home/HeroSection.tsx` — below the trust strip
-- `src/pages/Broadband.tsx` — below the plans grid micro-conversion text
+API calls to edge functions (`check-address`, `check-availability`) move here from PostcodeChecker.
 
 ---
 
-## What is NOT changed
-- No layout or structural changes
-- No color/theme changes
-- No component additions or removals
-- No pricing logic, backend, or routing changes
-- No responsive breakpoints affected
-- Broadband plan names (ESSENTIAL, SUPERFAST, etc.) remain as-is — only taglines updated
+### 2. Refactor `src/components/home/PostcodeChecker.tsx`
 
+Strip API logic — becomes pure UI consuming context.
+
+- Calls `checkPostcode()` and `selectAddress()` from context
+- Accepts `variant?: 'hero' | 'standalone'` prop
+- Hero variant: input 68% + button 32%, max-width 700px desktop; stacked mobile
+- Placeholder: `"E.g. HD3 3WU"` / Button: `"CHECK AVAILABILITY"`
+- Helper line below: `"We'll only show plans actually available at your address."`
+- Shows address dropdown when `status === 'addresses'`
+- Explicit loading states: spinner + text for `loading-postcode` and `checking-address`
+- Error states with distinct messages per `errorType`
+
+---
+
+### 3. Rebuild `src/components/home/HeroSection.tsx`
+
+Two-column grid: 52/48 desktop, stacked mobile. Reads from AvailabilityContext.
+
+**Left column:**
+
+1. Eyebrow: `"NO CONTRACTS • NO ANNUAL PRICE HIKES • UK-BASED SUPPORT"`
+2. Headline: `"FINALLY.\nBROADBAND THAT\nDOESN'T LOCK YOU IN."`
+3. Paragraph: `"No contracts. No annual price hikes. No nonsense. Just fast, reliable broadband from £22.99/month."`
+4. Value chips: No Contracts, No Annual Price Hikes, UK-based Support, Openreach Network, Cancel Anytime
+5. Label: `"CHECK WHAT'S AVAILABLE AT YOUR ADDRESS"`
+6. `<PostcodeChecker variant="hero" />`
+7. Result card below checker (reads from context `result`):
+  - FTTP: green border, "Brilliant — Full Fibre is available…" + speed + plan pills
+  - FTTC: "Good news — Fibre is available…" + Essential pill
+  - Unavailable: "We couldn't confirm service online." + "CALL 0800 260 6626"
+
+**Right column — State A (before check / idle):**
+
+- Static card with OCCTA border/shadow
+- "STARTING FROM" → `£22.99/month` → "No contracts • No annual price hikes"
+- Compact category cues (not full plan cards):
+  - Essential — everyday browsing
+  - Superfast — streaming and busy homes
+  - Gigabit — serious speed
+- 3 proof rows: Full Fibre where available, Openreach network, UK-based support
+- Bottom strip: 14-day cooling-off, keep your number, no mid-contract price rises
+
+**Right column — State B (after success):**
+
+- "AVAILABLE AT YOUR ADDRESS" + short address
+- "Up to {maxSpeed}" stat
+- Eligible plan rows only (from `result.eligibleOcctaPlans`), each: name, speed, price, 2-3 benefits, "CHOOSE PLAN"
+- Recommended badge on `result.recommendedPlan`; if `upgradePlan` exists, show subtle "upgrade" label on that plan
+- "CHOOSE PLAN" navigates to broadband page or triggers voice upsell, preserving context in sessionStorage
+- Bottom: "No annual price hikes • Cancel anytime"
+
+Both panels read from the same `result` object — no duplicate state.
+
+---
+
+### 4. Update `src/pages/Index.tsx`
+
+Wrap homepage content with `<AvailabilityProvider>`.
+
+---
+
+### 5. Update `src/pages/Broadband.tsx`
+
+Wrap with `<AvailabilityProvider>`. Read context.
+
+**If personalised result exists:**
+
+- Note: "Showing plans available at your address"
+- Filter to eligible plans only, recommended first
+- "Recommended for your address" badge
+- FTTC-only note: "Full Fibre isn't currently available at this address"
+- Link: "Clear address check and view all plans" → calls `reset()`
+
+**If no result:** full plan ladder as today.
+
+---
+
+### 6. Downstream context preservation
+
+When "CHOOSE PLAN" is clicked, postcode + address remain in sessionStorage. PreCheckout reads sessionStorage to prefill postcode/address fields where the form supports it.
+
+---
+
+### What does NOT change
+
+- Global header, footer, nav, colours, fonts, shadows, borders
+- Pricing logic, catalogue, checkout flow
+- Edge functions / ngrok backend
+- Below-hero sections (Services, WhyUs, CustomerLove, CTA)
+- App mode flows, SIM/landline pages
+
+### Implementation order
+
+1. AvailabilityContext with sessionStorage
+2. PostcodeChecker refactor
+3. HeroSection two-column rebuild
+4. Index.tsx provider wrap
+5. Broadband.tsx filtering + clear link
+6. Test all states  
+Add this above input:
+  ```
+  ENTER YOUR POSTCODE
+  ```
+  Add under checker:
+  ```
+  ✓ Takes 10 seconds • ✓ No commitment • ✓ Real availability
+  ```
+  ### Add ONE psychological trigger:
+  Under price (£22.99):
+  ```
+  Join customers switching away from price rises
+  ```
+  Under plan section:
+  ```
+  Free installation available for a limited time
+  ```
+  ### While checking:
+  Show:
+  ```
+  Checking your address…
+  ```
+  Then:
+  ```
+  Finding the fastest available speeds…
+  ```
+  When postcode returns multiple addresses:
+  👉 Make dropdown clean + large  
+  👉 Show:
+  ```
+  Select your address
+  ```
+  When user lands with results:
+  Add top banner:
+  ```
+  Results for: HD3 3WU
+  [Change postcode]
+  ```
+    
+  You already added error states — improve it:
+  If unavailable:
+  ```
+  We couldn't confirm availability online.
+
+  Call 0800 260 6626 — we'll check instantly and get you connected.
+  ```
+    
+  Make sure Lovable DOES THIS:
+  ```
+  Single source of truth = AvailabilityContext.result
+  ```
+  ## Improve “State B” plan display (MOST IMPORTANT CHANGE)
+  Right now:
+  - You show eligible plans → correct
+  BUT you must:
+  ### 🔥 Add THIS STRUCTURE:
+  For each plan:
+  ```
+  [PLAN NAME]
+  Up to X Mbps
+
+  £XX.XX/month
+
+  ✔ Unlimited usage  
+  ✔ No contracts  
+  ✔ Free router  
+
+  [CHOOSE PLAN]
+  ```
+  AND:
+  ### ⭐ Make ONLY ONE plan visually dominant:
+  -   
+  bigger border  
+
+  -   
+  slightly larger card  
+
+  -   
+  “MOST POPULAR” badge

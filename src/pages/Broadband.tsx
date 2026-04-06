@@ -23,7 +23,7 @@ const BroadbandInner = () => {
   const [selectedCallPlans, setSelectedCallPlans] = useState<string[]>([]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { status, result, postcode, reset } = useAvailability();
+  const { status, result, postcode, reset, addresses, selectedAddress, selectAddress } = useAvailability();
   
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 100);

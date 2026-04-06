@@ -5,7 +5,7 @@
  * merchant return URL uses ephemeral preview origins.
  */
 
-const PUBLISHED_ORIGIN_FALLBACK = "https://hello-occta-chat.lovable.app";
+const PUBLISHED_ORIGIN_FALLBACK = "https://www.occta.co.uk";
 
 export function getPaymentReturnOrigin(): string {
   if (typeof window === "undefined") return PUBLISHED_ORIGIN_FALLBACK;

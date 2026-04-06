@@ -122,7 +122,7 @@ const HeroSection = () => {
 
             {/* Checker — always visible */}
             <motion.div variants={itemVariants}>
-              <PostcodeChecker variant="hero" />
+              <PostcodeChecker variant="hero" externalAddressSelect />
             </motion.div>
 
             {/* Compact inline confirmation */}

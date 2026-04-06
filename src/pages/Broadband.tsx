@@ -9,12 +9,12 @@ import BundleBuilder from "@/components/bundle/BundleBuilder";
 import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star } from "lucide-react";
+import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star, ChevronRight, Loader2 } from "lucide-react";
 import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
 import { getFromPrices } from "@/lib/pricing/engine";
-import { AvailabilityProvider, useAvailability } from "@/contexts/AvailabilityContext";
+import { AvailabilityProvider, useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 
 const BroadbandInner = () => {
   const [isReady, setIsReady] = useState(false);
@@ -23,7 +23,7 @@ const BroadbandInner = () => {
   const [selectedCallPlans, setSelectedCallPlans] = useState<string[]>([]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { status, result, postcode, reset } = useAvailability();
+  const { status, result, postcode, reset, addresses, selectedAddress, selectAddress } = useAvailability();
   
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 100);
@@ -229,9 +229,9 @@ const BroadbandInner = () => {
       </Dialog>
 
       {/* Hero - Compact */}
-      <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
+      <section className="flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 items-start">
             {/* Left - Content */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -273,62 +273,155 @@ const BroadbandInner = () => {
                 ))}
               </div>
               
-              <PostcodeChecker />
+              <PostcodeChecker externalAddressSelect />
+
+              {/* Inline confirmation */}
+              {hasPersonalisedResult && selectedAddress && (
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 text-sm font-medium text-foreground mt-3"
+                >
+                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                  {result.primaryTechnology === "FTTP" ? "Full Fibre" : "Fibre"} available — {getShortAddress(selectedAddress)}
+                  <button onClick={reset} className="text-xs text-primary hover:underline ml-auto font-medium">Change</button>
+                </motion.p>
+              )}
             </motion.div>
 
-            {/* Right - Plans Preview */}
+            {/* Right - Panel Replacement (like homepage) */}
             <motion.div
               className="space-y-3"
               initial="hidden"
               animate="visible"
               variants={containerVariants}
             >
-              <p className="font-display text-sm uppercase tracking-wider text-muted-foreground">
-                Choose Your Speed
-              </p>
-              {broadbandPlans.slice(0, 3).map((plan) => (
+              {/* LOADING STATE */}
+              {(status === "loading-postcode" || status === "checking-address") && (
                 <motion.div
-                  key={plan.id}
-                  variants={cardVariants}
-                  whileHover={{ x: 4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
-                  transition={{ duration: 0.12 }}
+                  key="loading"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="card-brutal bg-card p-6 md:p-8 flex flex-col items-center justify-center min-h-[320px]"
                 >
-                  <button
-                    onClick={() => handleChoosePlan(plan.id)}
-                    className={`block w-full text-left p-4 bg-card border-4 ${plan.popular ? 'border-primary' : 'border-foreground'} hover:bg-secondary transition-colors group`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        {plan.popular && (
-                          <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-display uppercase">Popular</span>
-                        )}
-                        <div>
-                          <h3 className="font-display text-lg uppercase">{plan.name}</h3>
-                          <p className="text-xs text-muted-foreground">Up to {plan.speed}Mbps</p>
-                        </div>
-                      </div>
-                      <div className="text-right flex items-center gap-3">
-                        <div>
-                          <p className="font-display text-2xl text-primary">£{plan.price}</p>
-                          <p className="text-xs text-foreground/70">/month</p>
-                        </div>
-                        <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
+                  <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                  <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                    {status === "loading-postcode" ? "Checking your address…" : "Finding available speeds…"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">This only takes a moment</p>
+                </motion.div>
+              )}
+
+              {/* ADDRESS SELECT STATE */}
+              {status === "addresses" && addresses.length > 0 && (
+                <motion.div
+                  key="addresses"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="card-brutal bg-card p-5 md:p-6"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                        Select your address
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {addresses.length} addresses found for {postcode}
+                      </p>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {plan.features.slice(0, 6).map((feature) => (
-                        <span key={feature} className="inline-flex items-center gap-1 px-2 py-0.5 bg-secondary text-xs border border-foreground/10">
-                          <Check className="w-3 h-3 text-primary" />
-                          {feature}
-                        </span>
+                    <button
+                      onClick={reset}
+                      className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap"
+                    >
+                      Change postcode
+                    </button>
+                  </div>
+
+                  <div className="border-2 border-foreground/10 overflow-hidden">
+                    <div className="max-h-[340px] overflow-y-auto">
+                      {addresses.map((addr, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => selectAddress(addr)}
+                          className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
+                        >
+                          <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
                       ))}
                     </div>
-                  </button>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mt-3">
+                    We'll only show plans actually available at your address.
+                  </p>
                 </motion.div>
-              ))}
-              <Link to="#plans" className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
-                View all plans ↓
-              </Link>
+              )}
+
+              {/* DEFAULT: Plans Preview (idle, error, or success) */}
+              {status !== "loading-postcode" && status !== "checking-address" && !(status === "addresses" && addresses.length > 0) && (
+                <>
+                  <p className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+                    {hasPersonalisedResult ? "Plans at Your Address" : "Choose Your Speed"}
+                  </p>
+                  {(hasPersonalisedResult ? filteredPlans : broadbandPlans).slice(0, 3).map((plan) => {
+                    const planKey = plan.id.replace("broadband-", "");
+                    const isRecommended = hasPersonalisedResult && planKey === result.recommendedPlan;
+                    
+                    return (
+                      <motion.div
+                        key={plan.id}
+                        variants={cardVariants}
+                        whileHover={{ x: 4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
+                        transition={{ duration: 0.12 }}
+                      >
+                        <button
+                          onClick={() => handleChoosePlan(plan.id)}
+                          className={`block w-full text-left p-4 bg-card border-4 ${
+                            isRecommended ? 'border-primary' : plan.popular && !hasPersonalisedResult ? 'border-primary' : 'border-foreground'
+                          } hover:bg-secondary transition-colors group relative`}
+                        >
+                          {isRecommended && (
+                            <div className="absolute -top-2.5 left-3 bg-primary text-primary-foreground px-2 py-0.5 font-display uppercase tracking-wider text-[10px] border border-foreground flex items-center gap-1">
+                              <Star className="w-2.5 h-2.5" />
+                              Recommended
+                            </div>
+                          )}
+                          {!hasPersonalisedResult && plan.popular && (
+                            <span className="absolute -top-2.5 left-3 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-display uppercase border border-foreground">
+                              Popular
+                            </span>
+                          )}
+                          <div className={`flex items-center justify-between mb-3 ${isRecommended || (!hasPersonalisedResult && plan.popular) ? "pt-1" : ""}`}>
+                            <div>
+                              <h3 className="font-display text-lg uppercase">{plan.name}</h3>
+                              <p className="text-xs text-muted-foreground">Up to {plan.speed}Mbps</p>
+                            </div>
+                            <div className="text-right flex items-center gap-3">
+                              <div>
+                                <p className="font-display text-2xl text-primary">£{plan.price}</p>
+                                <p className="text-xs text-foreground/70">/month</p>
+                              </div>
+                              <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {plan.features.slice(0, 6).map((feature) => (
+                              <span key={feature} className="inline-flex items-center gap-1 px-2 py-0.5 bg-secondary text-xs border border-foreground/10">
+                                <Check className="w-3 h-3 text-primary" />
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                        </button>
+                      </motion.div>
+                    );
+                  })}
+                  <Link to="#plans" className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    View all plans ↓
+                  </Link>
+                </>
+              )}
             </motion.div>
           </div>
         </div>

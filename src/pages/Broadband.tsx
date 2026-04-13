@@ -361,6 +361,25 @@ const BroadbandInner = () => {
               {/* DEFAULT: Plans Preview (idle, error, or success) */}
               {status !== "loading-postcode" && status !== "checking-address" && !(status === "addresses" && addresses.length > 0) && (
                 <>
+                  {/* Generic availability message when checker errors */}
+                  {status === "error" && postcode && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="card-brutal bg-primary/10 border-primary p-4 flex items-center gap-3 mb-1"
+                    >
+                      <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                          Full Fibre is available at {postcode}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Browse all our plans below and choose the best speed for you.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
                   <p className="font-display text-sm uppercase tracking-wider text-muted-foreground">
                     {hasPersonalisedResult ? "Plans at Your Address" : "Choose Your Speed"}
                   </p>
@@ -394,21 +413,21 @@ const BroadbandInner = () => {
                           )}
                           <div className={`flex items-center justify-between mb-3 ${isRecommended || (!hasPersonalisedResult && plan.popular) ? "pt-1" : ""}`}>
                             <div>
-                              <h3 className="font-display text-lg uppercase">{plan.name}</h3>
+                              <h3 className="font-display text-lg uppercase text-foreground">{plan.name}</h3>
                               <p className="text-xs text-muted-foreground">Up to {plan.speed}Mbps</p>
                             </div>
                             <div className="text-right flex items-center gap-3">
                               <div>
                                 <p className="font-display text-2xl text-primary">£{plan.price}</p>
-                                <p className="text-xs text-foreground/70">/month</p>
+                                <p className="text-xs text-foreground font-semibold">/month</p>
                               </div>
-                              <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <ArrowRight className="w-5 h-5 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {plan.features.slice(0, 6).map((feature) => (
-                              <span key={feature} className="inline-flex items-center gap-1 px-2 py-0.5 bg-secondary text-xs border border-foreground/10">
-                                <Check className="w-3 h-3 text-primary" />
+                              <span key={feature} className="inline-flex items-center gap-1 px-2 py-0.5 bg-secondary text-xs text-foreground border border-foreground/10">
+                                <Check className="w-3.5 h-3.5 text-primary" />
                                 {feature}
                               </span>
                             ))}

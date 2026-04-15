@@ -7,6 +7,11 @@ import { seoPrerender } from "./vite-plugin-prerender";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __BUILD_VERSION__: JSON.stringify(
+      `${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`
+    ),
+  },
   server: {
     host: "::",
     port: 8080,
@@ -16,6 +21,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      devOptions: { enabled: false },
       includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "OCCTA - Telecom Services",
@@ -47,9 +53,12 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api/],
+        navigateFallbackDenylist: [/^\/api/, /^\/~oauth/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/oexgjmuvgdndizsufipe\.supabase\.co\/.*/i,
@@ -58,19 +67,19 @@ export default defineConfig(({ mode }) => ({
               cacheName: "supabase-cache",
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24,
+                maxAgeSeconds: 60 * 60, // 1 hour (was 24h — too stale)
               },
-              networkTimeoutSeconds: 10,
+              networkTimeoutSeconds: 5,
             },
           },
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
-            handler: "CacheFirst",
+            handler: "StaleWhileRevalidate",
             options: {
               cacheName: "images-cache",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days (was 30)
               },
             },
           },
@@ -81,7 +90,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "fonts-cache",
               expiration: {
                 maxEntries: 20,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
             },
           },

@@ -7,6 +7,11 @@ import { seoPrerender } from "./vite-plugin-prerender";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __BUILD_VERSION__: JSON.stringify(
+      `${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`
+    ),
+  },
   server: {
     host: "::",
     port: 8080,
@@ -16,6 +21,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      devOptions: { enabled: false },
       includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "OCCTA - Telecom Services",

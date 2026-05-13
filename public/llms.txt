@@ -1,0 +1,46 @@
+# OCCTA
+
+> Cheap, no-contract UK broadband, SIM plans, and Digital Home Phone. Honest pricing, no credit check, cancel anytime.
+
+OCCTA is a UK telecom provider offering Full Fibre broadband from £22.99/month, 5G SIM plans, and Digital Home Phone. No fixed-term contracts, no mid-contract price hikes, no hidden setup gotchas. VAT included for residential customers.
+
+## Pages
+
+- [Home](/): Plans, postcode availability checker, pricing.
+- [Broadband](/broadband): Full Fibre broadband plans and speeds.
+- [SIM Plans](/sim-plans): 5G data SIM plans, no credit check.
+- [Landline / Digital Home Phone](/landline): Digital Home Phone after the PSTN switch-off.
+- [Business](/business): Business broadband and connectivity.
+- [About](/about): Company information and ethos.
+- [Support](/support): Help, contact, and self-service.
+- [FAQ](/faq): Common broadband, SIM, billing, and account questions.
+- [Service Status](/status): Live network and service status.
+- [Track Order](/track-order): Order tracking lookup.
+- [Complaints](/complaints): Complaints policy and process.
+
+## Guides
+
+- [No-contract broadband UK](/guides/no-contract-broadband-uk): Why no-contract broadband, switching, and cancel-anytime rules.
+- [Cheap broadband UK](/guides/cheap-broadband-uk): How to find genuinely cheap UK broadband.
+- [How to switch broadband](/guides/how-to-switch-broadband): One-touch switching, notice periods, and timing.
+- [Digital Voice UK](/guides/digital-voice-uk): What Digital Voice / Digital Home Phone means for you.
+- [PSTN switch-off UK](/guides/pstn-switch-off-uk): Timeline and what to do before the copper network closes.
+- [Cheap SIM-only deals](/guides/cheap-sim-only-deals): Picking a low-cost SIM plan with no credit check.
+- [Broadband for gaming](/guides/broadband-for-gaming): Speeds, latency, and packages for gamers.
+- [Broadband for working from home](/guides/broadband-for-working-from-home): Reliability, upload speeds, and home office setup.
+- [Fibre broadband explained](/guides/fibre-broadband-explained): FTTC vs FTTP and what speeds to expect.
+- [Broadband for students](/guides/broadband-for-students): Short-term, no-contract options for student lets.
+
+## Comparisons
+
+- [OCCTA vs BT](/compare/occta-vs-bt): Side-by-side broadband comparison.
+- [OCCTA vs Sky](/compare/occta-vs-sky): Side-by-side broadband comparison.
+- [OCCTA vs Virgin Media](/compare/occta-vs-virgin-media): Side-by-side broadband comparison.
+- [OCCTA vs TalkTalk](/compare/occta-vs-talktalk): Side-by-side broadband comparison.
+- [OCCTA vs Plusnet](/compare/occta-vs-plusnet): Side-by-side broadband comparison.
+
+## Optional
+
+- [Privacy Policy](/privacy): How we handle personal data (UK GDPR).
+- [Terms of Service](/terms): Terms of service.
+- [Cookie Policy](/cookies): Cookies and tracking.

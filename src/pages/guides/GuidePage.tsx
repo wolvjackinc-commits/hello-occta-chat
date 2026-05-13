@@ -24,7 +24,29 @@ const GuidePage = () => {
 
   const combinedSchema = {
     "@context": "https://schema.org",
-    "@graph": [faqSchema, breadcrumbSchema],
+    "@graph": [
+      {
+        "@type": "Article",
+        headline: guide.title,
+        description: guide.description,
+        author: { "@type": "Organization", name: "OCCTA" },
+        publisher: {
+          "@type": "Organization",
+          name: "OCCTA",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://www.occta.co.uk/og-image.png",
+          },
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": `https://www.occta.co.uk/guides/${guide.slug}`,
+        },
+        inLanguage: "en-GB",
+      },
+      faqSchema,
+      breadcrumbSchema,
+    ],
   };
 
   return (

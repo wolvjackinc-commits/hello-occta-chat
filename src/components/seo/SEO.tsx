@@ -29,9 +29,9 @@ export const SEO = ({
   price,
   priceCurrency = 'GBP',
 }: SEOProps) => {
-  const fullTitle = title 
-    ? `${title} | ${SITE_NAME} - Cheap UK Broadband & SIM` 
-    : `${SITE_NAME} - Cheap UK Broadband, SIM Plans & Landline | No Contracts`;
+  const fullTitle = title
+    ? `${title} | ${SITE_NAME}`
+    : `${SITE_NAME} — Cheap UK Broadband & SIM, No Contracts`;
   const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : undefined;
 
   return (

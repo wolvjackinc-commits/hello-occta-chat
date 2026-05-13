@@ -20,7 +20,7 @@ const DEFAULT_KEYWORDS = 'cheap broadband UK, no contract broadband, cancel anyt
 
 export const SEO = ({
   title,
-  description = `Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract broadband, 5G SIM plans, landline. No credit check, cancel anytime. 900Mbps speeds. Get connected today!`,
+  description = `Cheap UK broadband from £${getFromPrices().broadband}/mo. No contracts, no credit check, cancel anytime. 900Mbps fibre, SIM & landline.`,
   canonical,
   type = 'website',
   image = DEFAULT_IMAGE,
@@ -29,9 +29,9 @@ export const SEO = ({
   price,
   priceCurrency = 'GBP',
 }: SEOProps) => {
-  const fullTitle = title 
-    ? `${title} | ${SITE_NAME} - Cheap UK Broadband & SIM` 
-    : `${SITE_NAME} - Cheap UK Broadband, SIM Plans & Landline | No Contracts`;
+  const fullTitle = title
+    ? `${title} | ${SITE_NAME}`
+    : `${SITE_NAME} — Cheap UK Broadband & SIM, No Contracts`;
   const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : undefined;
 
   return (

@@ -47,7 +47,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
             value={localPostcode}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            className="h-14 pl-12 text-lg font-display uppercase tracking-wider border-4 border-foreground focus:ring-0 focus:border-foreground bg-background placeholder:text-muted-foreground/50"
+            className="h-14 pl-12 text-lg font-display uppercase tracking-wider border-4 border-foreground focus:ring-0 focus:border-foreground bg-background placeholder:text-muted-foreground"
           />
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         </div>

@@ -713,7 +713,7 @@ const PreCheckout = () => {
                         <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />No contract — cancel anytime</li>
                         <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />UK-based support</li>
                       </ul>
-                      <p className="mt-2.5 text-[11px] text-muted-foreground/60">Setup may apply depending on your line</p>
+                      <p className="mt-2.5 text-[11px] text-muted-foreground">Setup may apply depending on your line</p>
                     </div>
                   </div>
                   {/* Right: price + change link */}
@@ -1370,7 +1370,7 @@ const PreCheckout = () => {
                     <span>Subtotal (ex VAT)</span>
                     <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-[11px] text-muted-foreground/70">
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
                     <span>VAT (20%)</span>
                     <span>£{monthlyVat.toFixed(2)}</span>
                   </div>
@@ -1407,7 +1407,7 @@ const PreCheckout = () => {
                         <span>Subtotal (ex VAT)</span>
                         <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-[11px] text-muted-foreground/70">
+                      <div className="flex justify-between text-[11px] text-muted-foreground">
                         <span>VAT (20%)</span>
                         <span>£{oneOffVat.toFixed(2)}</span>
                       </div>

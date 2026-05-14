@@ -283,7 +283,7 @@ const HeroSection = () => {
 
                       <div className={`flex items-start justify-between ${plan.isRecommended ? "pt-1" : ""}`}>
                         <div>
-                          <h3 className="font-display text-lg uppercase leading-tight">{plan.name}</h3>
+                          <h3 className="font-sans text-base font-bold tracking-tight leading-tight">{plan.name}</h3>
                           <p className="text-xs text-muted-foreground">{plan.speedLabel}</p>
                         </div>
                         <div className="text-right">

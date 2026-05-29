@@ -20,6 +20,7 @@ import {
   Wrench,
   Search,
   ScrollText,
+  MessageSquare,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ const navItems = [
   { label: "Payments & DD", to: "/admin/payments-dd", icon: Activity },
   { label: "Payment Requests", to: "/admin/payment-requests", icon: Mail },
   { label: "Communications", to: "/admin/communications", icon: Send },
+  { label: "Chat Transcripts", to: "/admin/chat-transcripts", icon: MessageSquare },
   { label: "Installations", to: "/admin/installations", icon: CalendarDays },
   { label: "Plans", to: "/admin/plans", icon: FileText },
   { label: "Compliance", to: "/admin/compliance", icon: Shield },

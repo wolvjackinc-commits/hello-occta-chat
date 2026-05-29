@@ -28,6 +28,7 @@ import { AdminSettings } from "./pages/admin/Settings";
 import { AdminAuditLog } from "./pages/admin/AuditLog";
 import { AdminPaymentRequests } from "./pages/admin/PaymentRequests";
 import { AdminCommunications } from "./pages/admin/Communications";
+import { AdminChatTranscripts } from "./pages/admin/ChatTranscripts";
 import Broadband from "./pages/Broadband";
 import Pay from "./pages/Pay";
 import DDSetup from "./pages/DDSetup";
@@ -112,6 +113,7 @@ const AnimatedRoutes = () => {
             <Route path="audit-log" element={<AdminAuditLog />} />
             <Route path="payment-requests" element={<AdminPaymentRequests />} />
             <Route path="communications" element={<AdminCommunications />} />
+            <Route path="chat-transcripts" element={<AdminChatTranscripts />} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

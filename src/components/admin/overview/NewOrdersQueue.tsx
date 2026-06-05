@@ -35,6 +35,7 @@ import { formatDistanceToNow } from "date-fns";
 import { MoreHorizontal, ExternalLink, UserCheck, PlayCircle, Package } from "lucide-react";
 
 const PAGE_SIZE = 10;
+type OrderStatus = "active" | "cancelled" | "confirmed" | "pending";
 
 type Order = {
   id: string;
@@ -92,8 +93,8 @@ const NewOrdersQueueContent = () => {
   });
 
   const updateOrderMutation = useMutation({
-    mutationFn: async ({ orderId, status, notes }: { orderId: string; status?: string; notes?: string }) => {
-      const updates: Record<string, unknown> = {};
+    mutationFn: async ({ orderId, status, notes }: { orderId: string; status?: OrderStatus; notes?: string }) => {
+      const updates: { status?: OrderStatus; admin_notes?: string } = {};
       if (status) updates.status = status;
       if (notes !== undefined) updates.admin_notes = notes;
 

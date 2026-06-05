@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const ADMIN_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "hello@occta.co.uk";
@@ -624,15 +625,44 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Capture client IP for rate limiting and audit
+    const ipAddress =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip")?.trim() ||
+      req.headers.get("cf-connecting-ip")?.trim() ||
+      "unknown";
+
+    // Rate limit: 20 admin-notify requests per IP per hour. Internal callers
+    // (other edge functions / cron jobs) may bypass by supplying CRON_JOB_SECRET.
+    const internalSecret = req.headers.get("x-internal-secret");
+    const expectedSecret = Deno.env.get("CRON_JOB_SECRET");
+    const isInternal = expectedSecret && internalSecret === expectedSecret;
+
+    if (!isInternal) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+      const { data: allowed } = await supabase.rpc("check_rate_limit", {
+        _identifier: ipAddress,
+        _action: "admin_notify",
+        _max_requests: 20,
+        _window_minutes: 60,
+      });
+
+      if (allowed === false) {
+        console.warn(`[admin-notify] Rate limit exceeded for IP: ${ipAddress}`);
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const payload: NotificationPayload = await req.json();
     const { type, data } = payload;
 
     // Capture network-level context server-side (more reliable than frontend).
-    const ipAddress =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip")?.trim() ||
-      "Not captured";
-
     // Common edge header; varies by provider but harmless if missing.
     const ipCountry =
       req.headers.get("cf-ipcountry")?.trim() ||

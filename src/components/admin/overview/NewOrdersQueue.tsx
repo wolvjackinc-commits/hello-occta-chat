@@ -93,7 +93,7 @@ const NewOrdersQueueContent = () => {
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ orderId, status, notes }: { orderId: string; status?: string; notes?: string }) => {
-      const updates: Record<string, unknown> = {};
+      const updates: { status?: string; admin_notes?: string } = {};
       if (status) updates.status = status;
       if (notes !== undefined) updates.admin_notes = notes;
 

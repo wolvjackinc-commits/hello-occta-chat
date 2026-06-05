@@ -37,7 +37,10 @@ const unregisterStaleAppShellServiceWorker = () => {
 
     window.caches?.keys().then((cacheNames) => {
       cacheNames
-        .filter((name) => /(^|-)precache-v\d+-|(^|-)runtime-|(^|-)googleAnalytics-/.test(name))
+        .filter((name) => {
+          const isWorkboxBucket = /(^|-)precache-v\d+-|(^|-)runtime-|(^|-)googleAnalytics-/.test(name);
+          return isWorkboxBucket && name.endsWith(window.location.origin + "/");
+        })
         .forEach((name) => window.caches.delete(name));
     });
   });

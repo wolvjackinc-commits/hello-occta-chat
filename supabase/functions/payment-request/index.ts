@@ -118,6 +118,45 @@ serve(async (req) => {
     const { action, ...data } = await req.json();
     console.log(`Payment request action: ${action}`);
 
+    // ============================================
+    // Admin-only actions require a valid admin JWT
+    // ============================================
+    const ADMIN_ACTIONS = new Set([
+      'verify-dd-mandate',
+      'view-dd-bank-details',
+      'record-phone-payment',
+      'send-email',
+    ]);
+    let verifiedAdminUserId: string | null = null;
+    if (ADMIN_ACTIONS.has(action)) {
+      const authHeader = req.headers.get('Authorization') || '';
+      const token = authHeader.replace(/^Bearer\s+/i, '');
+      if (!token) {
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: isAdmin } = await supabase.rpc('has_role', {
+        _user_id: userData.user.id,
+        _role: 'admin',
+      });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      verifiedAdminUserId = userData.user.id;
+    }
+
     switch (action) {
       // ==========================================
       // VALIDATE TOKEN (with security enhancements)
@@ -515,7 +554,8 @@ serve(async (req) => {
       // VERIFY DD MANDATE (admin action) with email notification
       // ==========================================
       case 'verify-dd-mandate': {
-        const { mandateId, status, adminUserId, provider, providerReference } = data;
+        const { mandateId, status, provider, providerReference } = data;
+        const adminUserId = verifiedAdminUserId;
 
         if (!mandateId || !status) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
@@ -691,9 +731,10 @@ serve(async (req) => {
       // VIEW DD BANK DETAILS (with audit logging) - FULL DETAILS
       // ==========================================
       case 'view-dd-bank-details': {
-        const { mandateId, adminUserId } = data;
+        const { mandateId } = data;
+        const adminUserId = verifiedAdminUserId;
 
-        if (!mandateId || !adminUserId) {
+        if (!mandateId) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -773,9 +814,10 @@ serve(async (req) => {
       // RECORD PHONE PAYMENT (admin action)
       // ==========================================
       case 'record-phone-payment': {
-        const { invoiceId, amount, reference, notes, adminUserId } = data;
+        const { invoiceId, amount, reference, notes } = data;
+        const adminUserId = verifiedAdminUserId;
 
-        if (!invoiceId || !amount || !adminUserId) {
+        if (!invoiceId || !amount) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -973,9 +1015,13 @@ serve(async (req) => {
           });
         }
 
+        // SECURITY: This endpoint is READ-ONLY. The client-supplied `status`
+        // is not trusted — the Worldpay webhook (`worldpay-webhook`) is the
+        // sole source of truth for payment status changes. We simply return
+        // the current status from the database so the UI can render it.
         const { data: request, error } = await supabase
           .from('payment_requests')
-          .select('*, invoices:invoice_id(invoice_number, total, user_id)')
+          .select('id, status, amount, currency, customer_name, customer_email, account_number, invoice_id, provider_reference')
           .eq('id', requestId)
           .single();
 
@@ -986,161 +1032,23 @@ serve(async (req) => {
           });
         }
 
-        if (status === 'success') {
-          // Mark request as completed
-          await supabase
-            .from('payment_requests')
-            .update({ status: 'completed', completed_at: new Date().toISOString() })
-            .eq('id', requestId);
-
-          // Update payment attempt
-          await supabase
-            .from('payment_attempts')
-            .update({ status: 'success' })
-            .eq('provider_ref', request.provider_reference)
-            .eq('status', 'pending');
-
-          let receiptRef = '';
-          // If linked to invoice, mark invoice as paid and create receipt
-          if (request.invoice_id) {
-            await supabase
-              .from('invoices')
-              .update({ status: 'paid', updated_at: new Date().toISOString() })
-              .eq('id', request.invoice_id);
-
-            receiptRef = `RCP-${Date.now().toString(36).toUpperCase()}`;
-            await supabase.from('receipts').insert({
-              invoice_id: request.invoice_id,
-              user_id: request.user_id,
-              amount: request.amount,
-              method: 'card',
-              reference: receiptRef,
-              paid_at: new Date().toISOString(),
-            });
-
-            // Audit log
-            await supabase.from('audit_logs').insert({
-              actor_user_id: request.user_id,
-              action: 'payment_received',
-              entity: 'invoice',
-              entity_id: request.invoice_id,
-              metadata: {
-                amount: request.amount,
-                method: 'payment_request',
-                provider: 'worldpay',
-                provider_reference: request.provider_reference,
-                receipt_ref: receiptRef,
-                payment_request_id: requestId,
-              },
-            });
-          }
-
-          // Log event
+        // Record a non-authoritative event for the user's redirect status
+        // (does not change payment_requests.status — webhook owns that).
+        if (status === 'cancelled' || status === 'failed') {
           await supabase.from('payment_request_events').insert({
             request_id: requestId,
-            event_type: 'completed',
-            metadata: { 
-              status: 'success',
-              provider_reference: request.provider_reference,
-            },
-          });
-
-          // Send payment confirmation email
-          const resendApiKey = Deno.env.get('RESEND_API_KEY');
-          if (resendApiKey && request.customer_email) {
-            try {
-              const invoiceNumber = request.invoices?.invoice_number || null;
-              const emailContent = getPaymentConfirmationEmail({
-                customerName: request.customer_name,
-                amount: request.amount,
-                accountNumber: request.account_number,
-                invoiceNumber,
-                receiptReference: receiptRef,
-                paidAt: new Date().toISOString(),
-              });
-
-              await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${resendApiKey}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  from: 'OCCTA Billing <billing@occta.co.uk>',
-                  to: [request.customer_email],
-                  subject: emailContent.subject,
-                  html: emailContent.html,
-                  text: emailContent.text,
-                }),
-              });
-              console.log(`Payment confirmation email sent to ${request.customer_email}`);
-            } catch (emailError) {
-              console.error('Failed to send payment confirmation email:', emailError);
-            }
-          }
-
-          return new Response(JSON.stringify({ success: true, status: 'paid' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        } else {
-          // Failed or cancelled
-          const newStatus = status === 'cancelled' ? 'cancelled' : 'failed';
-          
-          await supabase
-            .from('payment_requests')
-            .update({ status: newStatus })
-            .eq('id', requestId);
-
-          await supabase
-            .from('payment_attempts')
-            .update({ 
-              status: newStatus, 
-              reason: status === 'cancelled' ? 'Cancelled by user' : 'Payment failed' 
-            })
-            .eq('provider_ref', request.provider_reference)
-            .eq('status', 'pending');
-
-          await supabase.from('payment_request_events').insert({
-            request_id: requestId,
-            event_type: newStatus,
-            metadata: { provider_reference: request.provider_reference },
-          });
-
-          // Send payment cancellation/failure email
-          const resendApiKey = Deno.env.get('RESEND_API_KEY');
-          if (resendApiKey && request.customer_email) {
-            try {
-              const emailContent = getPaymentCancelledEmail({
-                customerName: request.customer_name,
-                amount: request.amount,
-                accountNumber: request.account_number,
-                status: newStatus,
-              });
-
-              await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${resendApiKey}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  from: 'OCCTA Billing <billing@occta.co.uk>',
-                  to: [request.customer_email],
-                  subject: emailContent.subject,
-                  html: emailContent.html,
-                  text: emailContent.text,
-                }),
-              });
-              console.log(`Payment ${newStatus} email sent to ${request.customer_email}`);
-            } catch (emailError) {
-              console.error(`Failed to send payment ${newStatus} email:`, emailError);
-            }
-          }
-
-          return new Response(JSON.stringify({ success: false, status: newStatus }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+            event_type: `redirect_${status}`,
+            metadata: { reported_by: 'client_redirect', client_ip: clientIp },
+          }).catch(() => {});
         }
+
+        const completed = request.status === 'completed';
+        return new Response(JSON.stringify({
+          success: completed,
+          status: completed ? 'paid' : request.status,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       default:

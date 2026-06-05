@@ -39,14 +39,69 @@ serve(async (req) => {
 
     const { action, ...data } = await req.json();
 
+    // SECURITY: All actions require an authenticated user. Ownership of the
+    // referenced invoice is verified server-side (callers cannot mark
+    // someone else's invoice as paid or initiate sessions for it).
+    const reqAuthHeader = req.headers.get('Authorization') || '';
+    const jwt = reqAuthHeader.replace(/^Bearer\s+/i, '');
+    if (!jwt) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { data: userData, error: userErr } = await supabase.auth.getUser(jwt);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const callerUserId = userData.user.id;
+    const { data: callerIsAdmin } = await supabase.rpc('has_role', {
+      _user_id: callerUserId,
+      _role: 'admin',
+    });
+
     switch (action) {
       case 'create-payment-session': {
         // Create a Hosted Payment Page session
-        const { invoiceId, invoiceNumber, amount, currency, customerEmail, customerName, userId, returnUrl, paymentOrigin } = data;
+        const { invoiceId, currency, customerEmail, returnUrl, paymentOrigin } = data;
 
-        if (!invoiceId || !amount || !returnUrl) {
-          throw new Error('Missing required data (invoiceId, amount, returnUrl)');
+        if (!invoiceId || !returnUrl) {
+          throw new Error('Missing required data (invoiceId, returnUrl)');
         }
+
+        // Verify the invoice exists and the caller owns it (or is admin).
+        // Amount and invoice_number are derived from the DB — never trusted from client.
+        const { data: invoiceRow, error: invErr } = await supabase
+          .from('invoices')
+          .select('id, user_id, invoice_number, total, status')
+          .eq('id', invoiceId)
+          .single();
+
+        if (invErr || !invoiceRow) {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (invoiceRow.user_id !== callerUserId && !callerIsAdmin) {
+          return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (invoiceRow.status === 'paid') {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice already paid' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const amount = Number(invoiceRow.total);
+        const invoiceNumber = invoiceRow.invoice_number;
+        const userId = invoiceRow.user_id;
 
         console.log('Creating HPP session for invoice:', invoiceId, 'mode:', isLiveMode ? 'LIVE' : 'TEST');
 
@@ -164,106 +219,45 @@ serve(async (req) => {
       }
 
       case 'verify-payment': {
-        // Verify payment status after redirect
+        // SECURITY: Read-only. The Worldpay webhook is the sole source of truth
+        // for invoice payment status changes. This endpoint only returns the
+        // current status from the database so the UI can render the result.
         const { invoiceId, status } = data;
 
         if (!invoiceId) {
           throw new Error('Missing invoiceId');
         }
 
-        console.log('Verifying payment for invoice:', invoiceId, 'status:', status);
+        const { data: invoice, error: invErr } = await supabase
+          .from('invoices')
+          .select('id, user_id, status')
+          .eq('id', invoiceId)
+          .single();
 
-        if (status === 'success') {
-          // Get invoice details for receipt
-          const { data: invoice } = await supabase
-            .from('invoices')
-            .select('invoice_number, total, user_id')
-            .eq('id', invoiceId)
-            .single();
-
-          // Update invoice status to paid
-          const { error: updateError } = await supabase
-            .from('invoices')
-            .update({ status: 'paid', updated_at: new Date().toISOString() })
-            .eq('id', invoiceId);
-
-          if (updateError) {
-            console.error('Failed to update invoice:', updateError);
-          }
-
-          // Update payment attempt
-          const { data: paymentAttempt } = await supabase
-            .from('payment_attempts')
-            .update({ status: 'success' })
-            .eq('invoice_id', invoiceId)
-            .eq('status', 'pending')
-            .select()
-            .single();
-
-          // Create receipt record
-          if (invoice) {
-            const receiptRef = `RCP-${Date.now().toString(36).toUpperCase()}`;
-            await supabase.from('receipts').insert({
-              invoice_id: invoiceId,
-              user_id: invoice.user_id,
-              amount: invoice.total,
-              method: 'card',
-              reference: receiptRef,
-              paid_at: new Date().toISOString(),
-            });
-
-            // Log audit
-            await supabase.from('audit_logs').insert({
-              actor_user_id: invoice.user_id,
-              action: 'payment_received',
-              entity: 'invoice',
-              entity_id: invoiceId,
-              metadata: {
-                amount: invoice.total,
-                method: 'worldpay_hpp',
-                receipt_ref: receiptRef,
-              },
-            });
-          }
-
-          return new Response(JSON.stringify({
-            success: true,
-            status: 'paid',
-            message: 'Payment verified successfully',
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        } else if (status === 'failed') {
-          // Update payment attempt as failed
-          await supabase
-            .from('payment_attempts')
-            .update({ status: 'failed', reason: 'Payment failed at Worldpay' })
-            .eq('invoice_id', invoiceId)
-            .eq('status', 'pending');
-
-          return new Response(JSON.stringify({
-            success: false,
-            status: 'failed',
-            message: 'Payment failed',
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        } else {
-          // Cancelled
-          await supabase
-            .from('payment_attempts')
-            .update({ status: 'cancelled', reason: 'Payment cancelled by user' })
-            .eq('invoice_id', invoiceId)
-            .eq('status', 'pending');
-
-          return new Response(JSON.stringify({
-            success: false,
-            status: 'cancelled',
-            message: 'Payment was cancelled',
-          }), {
+        if (invErr || !invoice) {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice not found' }), {
+            status: 404,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+
+        if (invoice.user_id !== callerUserId && !callerIsAdmin) {
+          return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const isPaid = invoice.status === 'paid';
+        return new Response(JSON.stringify({
+          success: isPaid,
+          status: isPaid ? 'paid' : (status || invoice.status),
+          message: isPaid
+            ? 'Payment verified successfully'
+            : 'Payment is still being processed — please refresh in a moment.',
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       default:

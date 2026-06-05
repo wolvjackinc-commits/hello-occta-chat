@@ -554,7 +554,8 @@ serve(async (req) => {
       // VERIFY DD MANDATE (admin action) with email notification
       // ==========================================
       case 'verify-dd-mandate': {
-        const { mandateId, status, adminUserId, provider, providerReference } = data;
+        const { mandateId, status, provider, providerReference } = data;
+        const adminUserId = verifiedAdminUserId;
 
         if (!mandateId || !status) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
@@ -730,9 +731,10 @@ serve(async (req) => {
       // VIEW DD BANK DETAILS (with audit logging) - FULL DETAILS
       // ==========================================
       case 'view-dd-bank-details': {
-        const { mandateId, adminUserId } = data;
+        const { mandateId } = data;
+        const adminUserId = verifiedAdminUserId;
 
-        if (!mandateId || !adminUserId) {
+        if (!mandateId) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -812,9 +814,10 @@ serve(async (req) => {
       // RECORD PHONE PAYMENT (admin action)
       // ==========================================
       case 'record-phone-payment': {
-        const { invoiceId, amount, reference, notes, adminUserId } = data;
+        const { invoiceId, amount, reference, notes } = data;
+        const adminUserId = verifiedAdminUserId;
 
-        if (!invoiceId || !amount || !adminUserId) {
+        if (!invoiceId || !amount) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

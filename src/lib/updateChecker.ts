@@ -5,7 +5,7 @@
  */
 import { BUILD_VERSION } from "./buildVersion";
 
-const CHECK_INTERVAL_MS = 60_000; // every 60 s
+const CHECK_INTERVAL_MS = 30_000; // every 30 s
 const UNSAFE_PATHS = ["/checkout", "/business-checkout", "/pay", "/dd-setup", "/pay-invoice"];
 
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -78,11 +78,8 @@ export function startUpdateChecker(): void {
   if (BUILD_VERSION === "dev") return; // skip in dev
   if (timer) return;
 
-  // First check after 30 s, then every interval
-  setTimeout(() => {
-    checkForUpdate();
-    timer = setInterval(checkForUpdate, CHECK_INTERVAL_MS);
-  }, 30_000);
+  checkForUpdate();
+  timer = setInterval(checkForUpdate, CHECK_INTERVAL_MS);
 
   // Also check when tab becomes visible after being hidden
   document.addEventListener("visibilitychange", () => {

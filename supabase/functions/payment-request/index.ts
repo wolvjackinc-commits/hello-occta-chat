@@ -118,6 +118,45 @@ serve(async (req) => {
     const { action, ...data } = await req.json();
     console.log(`Payment request action: ${action}`);
 
+    // ============================================
+    // Admin-only actions require a valid admin JWT
+    // ============================================
+    const ADMIN_ACTIONS = new Set([
+      'verify-dd-mandate',
+      'view-dd-bank-details',
+      'record-phone-payment',
+      'send-email',
+    ]);
+    let verifiedAdminUserId: string | null = null;
+    if (ADMIN_ACTIONS.has(action)) {
+      const authHeader = req.headers.get('Authorization') || '';
+      const token = authHeader.replace(/^Bearer\s+/i, '');
+      if (!token) {
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: isAdmin } = await supabase.rpc('has_role', {
+        _user_id: userData.user.id,
+        _role: 'admin',
+      });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      verifiedAdminUserId = userData.user.id;
+    }
+
     switch (action) {
       // ==========================================
       // VALIDATE TOKEN (with security enhancements)

@@ -1015,9 +1015,13 @@ serve(async (req) => {
           });
         }
 
+        // SECURITY: This endpoint is READ-ONLY. The client-supplied `status`
+        // is not trusted — the Worldpay webhook (`worldpay-webhook`) is the
+        // sole source of truth for payment status changes. We simply return
+        // the current status from the database so the UI can render it.
         const { data: request, error } = await supabase
           .from('payment_requests')
-          .select('*, invoices:invoice_id(invoice_number, total, user_id)')
+          .select('id, status, amount, currency, customer_name, customer_email, account_number, invoice_id, provider_reference')
           .eq('id', requestId)
           .single();
 
@@ -1028,7 +1032,27 @@ serve(async (req) => {
           });
         }
 
-        if (status === 'success') {
+        // Record a non-authoritative event for the user's redirect status
+        // (does not change payment_requests.status — webhook owns that).
+        if (status === 'cancelled' || status === 'failed') {
+          await supabase.from('payment_request_events').insert({
+            request_id: requestId,
+            event_type: `redirect_${status}`,
+            metadata: { reported_by: 'client_redirect', client_ip: clientIp },
+          }).catch(() => {});
+        }
+
+        const completed = request.status === 'completed';
+        return new Response(JSON.stringify({
+          success: completed,
+          status: completed ? 'paid' : request.status,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
+        // Legacy write path retained below (disabled) for reference.
+        // eslint-disable-next-line no-unreachable
+        if (false && status === 'success') {
           // Mark request as completed
           await supabase
             .from('payment_requests')

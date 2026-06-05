@@ -43,9 +43,7 @@ const unregisterStaleAppShellServiceWorker = () => {
   });
 };
 
-if (isPreviewHost || isInIframe || window.location.hostname.endsWith("occta.co.uk")) {
-  unregisterStaleAppShellServiceWorker();
-}
+unregisterStaleAppShellServiceWorker();
 
 // ── Render ──
 createRoot(document.getElementById("root")!).render(

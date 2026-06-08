@@ -449,438 +449,57 @@ const Dashboard = () => {
             ))}
           </motion.div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Orders Section */}
-            <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
-              {/* Order Tracking */}
-              <AnimatePresence mode="wait">
-                {selectedOrder && (
-                  <motion.div
-                    key="order-tracking"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-display-sm">ORDER TRACKING</h2>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setSelectedOrder(null)}
-                        className="border-2 border-foreground"
-                      >
-                        <XCircle className="w-4 h-4 mr-1" />
-                        Close
-                      </Button>
-                    </div>
-                    <OrderTracking 
-                      order={{
-                        id: selectedOrder.id,
-                        order_number: 'order_number' in selectedOrder ? selectedOrder.order_number : undefined,
-                        plan_name: selectedOrder.plan_name,
-                        plan_price: selectedOrder.plan_price,
-                        service_type: selectedOrder.service_type,
-                        status: 'status' in selectedOrder ? selectedOrder.status : 'pending',
-                        created_at: selectedOrder.created_at,
-                        installation_date: 'installation_date' in selectedOrder ? selectedOrder.installation_date : null,
-                        admin_notes: selectedOrder.admin_notes,
-                      }}
-                      onContactSupport={() => navigate('/support')}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="w-full overflow-x-auto flex-wrap justify-start gap-1 h-auto bg-transparent border-b-4 border-foreground rounded-none p-0 mb-6">
+              {[
+                ["overview", "Overview"],
+                ["services", "My Services"],
+                ["orders", "My Orders"],
+                ["quotes", "Quotes"],
+                ["cs", "Contract Summaries"],
+                ["invoices", "Invoices & Payments"],
+                ["support", "Support"],
+                ["chat", "Chat History"],
+                ["complaints", "Complaints"],
+                ["rewards", "Rewards & Referrals"],
+                ["documents", "Documents"],
+                ["account", "Account Settings"],
+                ["vuln", "Vulnerable Support"],
+              ].map(([v, l]) => (
+                <TabsTrigger
+                  key={v}
+                  value={v}
+                  className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-display uppercase text-xs px-3 py-2"
+                >
+                  {l}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-              <div className="card-brutal bg-card p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-display-sm">YOUR ORDERS</h2>
-                  <Link to="/broadband">
-                    <Button variant="outline" size="sm" className="border-4 border-foreground">
-                      <Plus className="w-4 h-4" />
-                      New Order
-                    </Button>
-                  </Link>
-                </div>
+            <TabsContent value="overview">
+              <OverviewTab
+                activeServices={activeOrders.length}
+                pendingQuotes={0}
+                latestOrderStatus={orders[0]?.status ?? guestOrders[0]?.status ?? null}
+                unpaidInvoices={outstandingInvoices.length}
+                unpaidTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
+                openTickets={openTickets.length}
+              />
+            </TabsContent>
 
-                {isDataLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  </div>
-                ) : allOrders.length > 0 ? (
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground mb-2">Click an order to track its progress</p>
-                    {orders.map((order, index) => {
-                      const Icon = serviceIcons[order.service_type];
-                      const status = statusConfig[order.status];
-                      const isSelected = selectedOrder?.id === order.id;
-                      return (
-                        <motion.div
-                          key={order.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          onClick={() => setSelectedOrder(isSelected ? null : order)}
-                          className={`flex items-center justify-between p-4 border-4 cursor-pointer transition-colors ${
-                            isSelected 
-                              ? "border-primary bg-primary/5" 
-                              : "border-foreground bg-background hover:bg-secondary"
-                          }`}
-                          whileHover={{ x: -4, boxShadow: "8px 0px 0px 0px hsl(var(--foreground))" }}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-foreground text-background flex items-center justify-center">
-                              <Icon className="w-6 h-6" />
-                            </div>
-                            <div>
-                              <h4 className="font-display text-lg uppercase">{order.plan_name}</h4>
-                              <p className="text-sm text-muted-foreground capitalize">{order.service_type}</p>
-                            </div>
-                          </div>
-                          <div className="text-right flex items-center gap-3">
-                            <div>
-                              <div className={`inline-flex items-center gap-2 px-3 py-1 ${status.color} border-2 border-foreground`}>
-                                <span className="font-display text-sm uppercase">{status.label}</span>
-                              </div>
-                              <p className="text-lg font-display mt-1">£{order.plan_price}/mo</p>
-                            </div>
-                            <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${isSelected ? "rotate-90" : ""}`} />
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                    {guestOrders.map((order, index) => {
-                      const Icon = serviceIcons[order.service_type as keyof typeof serviceIcons] || Package;
-                      const isSelected = selectedOrder?.id === order.id;
-                      return (
-                        <motion.div
-                          key={order.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: (orders.length + index) * 0.1 }}
-                          onClick={() => setSelectedOrder(isSelected ? null : order)}
-                          className={`flex items-center justify-between p-4 border-4 cursor-pointer transition-colors ${
-                            isSelected 
-                              ? "border-primary bg-primary/5" 
-                              : "border-foreground bg-background hover:bg-secondary"
-                          }`}
-                          whileHover={{ x: -4, boxShadow: "8px 0px 0px 0px hsl(var(--foreground))" }}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-foreground text-background flex items-center justify-center">
-                              <Icon className="w-6 h-6" />
-                            </div>
-                            <div>
-                              <h4 className="font-display text-lg uppercase">{order.plan_name}</h4>
-                              <p className="text-sm text-muted-foreground capitalize">{order.service_type}</p>
-                              <p className="text-xs text-muted-foreground">Order #{order.order_number}</p>
-                            </div>
-                          </div>
-                          <div className="text-right flex items-center gap-3">
-                            <div>
-                              <div className="inline-flex items-center gap-2 px-3 py-1 bg-warning border-2 border-foreground">
-                                <span className="font-display text-sm uppercase">{order.status || 'Processing'}</span>
-                              </div>
-                              <p className="text-lg font-display mt-1">£{order.plan_price}/mo</p>
-                            </div>
-                            <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${isSelected ? "rotate-90" : ""}`} />
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 border-4 border-dashed border-foreground/30">
-                    <div className="w-16 h-16 bg-foreground text-background flex items-center justify-center mx-auto mb-4">
-                      <Package className="w-8 h-8" />
-                    </div>
-                    <h3 className="font-display text-xl mb-2">NO ORDERS YET</h3>
-                    <p className="text-muted-foreground mb-4">
-                      You haven't ordered any services. Let's change that!
-                    </p>
-                    <Link to="/broadband">
-                      <Button variant="hero">Browse Services</Button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Sidebar */}
-            <motion.div variants={itemVariants} className="space-y-6">
-              {/* Support Tickets */}
-              <div className="card-brutal bg-card p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-display text-lg">SUPPORT TICKETS</h3>
-                  <Link to="/support">
-                    <Button variant="ghost" size="sm">
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-
-                {isDataLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  </div>
-                ) : tickets.length > 0 ? (
-                  <div className="space-y-3">
-                    {tickets.slice(0, 3).map((ticket) => {
-                      const ticketStatus = ticketStatusConfig[ticket.status];
-                      return (
-                        <motion.div
-                          key={ticket.id}
-                          className="p-3 border-4 border-foreground bg-background cursor-pointer"
-                          whileHover={{ x: -2, boxShadow: "4px 0px 0px 0px hsl(var(--foreground))" }}
-                          onClick={() => {
-                            setSelectedTicket(ticket);
-                            setTicketDialogOpen(true);
-                          }}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className={`w-8 h-8 ${ticketStatus.color} flex items-center justify-center flex-shrink-0`}>
-                              <ticketStatus.icon className="w-4 h-4" />
-                            </div>
-                            <div className="flex-grow min-w-0">
-                              <p className="font-display text-sm truncate">{ticket.subject}</p>
-                              <p className="text-xs text-muted-foreground uppercase">{ticketStatus.label}</p>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                    <Link to="/support" className="block">
-                      <Button variant="outline" className="w-full border-4 border-foreground">
-                        View All Tickets
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <MessageSquare className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">No tickets yet</p>
-                    <Link to="/support">
-                      <Button variant="outline" size="sm" className="mt-3 border-4 border-foreground">
-                        Get Support
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-
-              {/* Payment History */}
-              {user && <PaymentHistory userId={user.id} limit={10} />}
-
-              {/* Sensitive Actions - Require Verification */}
-              <div className="card-brutal bg-card p-6">
-                <h3 className="font-display text-lg mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  SENSITIVE ACTIONS
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  These actions require identity verification for your security.
-                </p>
-                <div className="space-y-2">
-                  <IdentityVerification
-                    accountNumber={profile?.account_number || null}
-                    dateOfBirth={profile?.date_of_birth || null}
-                    onVerified={() => {
-                      toast({
-                        title: "Payment Methods",
-                        description: "You can now manage your payment methods.",
-                      });
-                    }}
-                    actionLabel="payment methods"
-                  >
-                    <Button variant="outline" className="w-full justify-start border-2 border-foreground">
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Manage Payment Methods
-                    </Button>
-                  </IdentityVerification>
-                  <IdentityVerification
-                    accountNumber={profile?.account_number || null}
-                    dateOfBirth={profile?.date_of_birth || null}
-                    onVerified={() => {
-                      toast({
-                        title: "Download Invoices",
-                        description: "You can now download your invoices.",
-                      });
-                    }}
-                    actionLabel="invoice downloads"
-                  >
-                    <Button variant="outline" className="w-full justify-start border-2 border-foreground">
-                      <Receipt className="w-4 h-4 mr-2" />
-                      Download Invoices
-                    </Button>
-                  </IdentityVerification>
-                </div>
-              </div>
-
-              {/* Outstanding Invoices - Pay Now */}
-              {outstandingInvoices.length > 0 && (
-                <div className="card-brutal bg-warning/10 border-warning p-6">
-                  <h3 className="font-display text-lg mb-4 flex items-center gap-2">
-                    <Receipt className="w-5 h-5 text-warning" />
-                    OUTSTANDING BILLS
-                    <span className="ml-auto text-sm font-normal text-muted-foreground">
-                      {outstandingInvoices.length} unpaid
-                    </span>
-                  </h3>
-                  <div className="space-y-3">
-                    {outstandingInvoices.map((inv) => {
-                      const isOverdue = inv.due_date && new Date(inv.due_date) < new Date();
-                      const isDueSoon = inv.due_date && !isOverdue && 
-                        (new Date(inv.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24) <= 3;
-                      
-                      return (
-                        <motion.div
-                          key={inv.id}
-                          className={`flex items-center justify-between p-4 border-4 bg-background ${
-                            isOverdue ? 'border-destructive' : isDueSoon ? 'border-warning' : 'border-foreground'
-                          }`}
-                          whileHover={{ y: -2, boxShadow: "4px 4px 0px 0px hsl(var(--foreground))" }}
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-display text-sm">{inv.invoice_number}</p>
-                              {isOverdue && (
-                                <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 font-display">
-                                  OVERDUE
-                                </span>
-                              )}
-                              {isDueSoon && !isOverdue && (
-                                <span className="text-xs bg-warning text-warning-foreground px-2 py-0.5 font-display">
-                                  DUE SOON
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <span>Due: {inv.due_date ? format(new Date(inv.due_date), "dd MMM yyyy") : "N/A"}</span>
-                              <span className="capitalize">{inv.status === 'overdue' ? 'Awaiting Payment' : inv.status}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="font-display text-xl">£{inv.total.toFixed(2)}</p>
-                              <p className="text-xs text-muted-foreground">Outstanding</p>
-                            </div>
-                            <Link to={`/pay-invoice?id=${inv.id}`}>
-                              <Button size="sm" variant={isOverdue ? "destructive" : "hero"} className="font-display">
-                                <CreditCard className="w-4 h-4 mr-1" />
-                                Pay Now
-                              </Button>
-                            </Link>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Payment History */}
-              {user && (
-                <PaymentHistory userId={user.id} limit={5} />
-              )}
-
-              {/* Invoice Files Section */}
-              {Object.keys(groupedInvoiceFiles).length > 0 && (
-                <div className="card-brutal bg-card p-6">
-                  <h3 className="font-display text-lg mb-4 flex items-center gap-2">
-                    <Receipt className="w-5 h-5" />
-                    INVOICE HISTORY
-                  </h3>
-                  <div className="space-y-4">
-                    {Object.entries(groupedInvoiceFiles).map(([month, files]) => (
-                      <div key={month}>
-                        <p className="text-xs text-muted-foreground uppercase font-display mb-2">{month}</p>
-                        <div className="space-y-2">
-                          {files.map((file) => (
-                            <motion.div
-                              key={file.id}
-                              className="flex items-center gap-3 p-3 border-2 border-foreground bg-background cursor-pointer"
-                              whileHover={{ x: -2, boxShadow: "4px 0px 0px 0px hsl(var(--foreground))" }}
-                              onClick={() => handleDownloadFile(file.file_path, file.file_name)}
-                            >
-                              <FileText className="w-5 h-5 flex-shrink-0 text-primary" />
-                              <div className="flex-grow min-w-0">
-                                <p className="font-display text-sm truncate">{file.file_name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {format(new Date(file.created_at), "dd MMM yyyy")}
-                                </p>
-                              </div>
-                              <Download className="w-4 h-4 text-muted-foreground" />
-                            </motion.div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* User Files (non-invoices) */}
-              {userFiles.filter(f => !invoiceFiles.includes(f)).length > 0 && (
-                <div className="card-brutal bg-card p-6">
-                  <h3 className="font-display text-lg mb-4">YOUR DOCUMENTS</h3>
-                  <div className="space-y-2">
-                    {userFiles.filter(f => !invoiceFiles.includes(f)).slice(0, 5).map((file) => (
-                      <motion.div
-                        key={file.id}
-                        className="flex items-center gap-3 p-3 border-2 border-foreground bg-background cursor-pointer"
-                        whileHover={{ x: -2, boxShadow: "4px 0px 0px 0px hsl(var(--foreground))" }}
-                        onClick={() => handleDownloadFile(file.file_path, file.file_name)}
-                      >
-                        <File className="w-5 h-5 flex-shrink-0" />
-                        <div className="flex-grow min-w-0">
-                          <p className="font-display text-sm truncate">{file.file_name}</p>
-                          {file.description && (
-                            <p className="text-xs text-muted-foreground truncate">{file.description}</p>
-                          )}
-                        </div>
-                        <Download className="w-4 h-4 text-muted-foreground" />
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="card-brutal bg-foreground text-background p-6">
-                <h3 className="font-display text-lg mb-4">NEED HELP?</h3>
-                <div className="space-y-3">
-                  <Link to="/support">
-                    <Button variant="outline" className="w-full justify-start bg-transparent border-background text-background hover:bg-background hover:text-foreground">
-                      <HelpCircle className="w-4 h-4" />
-                      Raise a Ticket
-                    </Button>
-                  </Link>
-                  <a href={CONTACT_PHONE_TEL}>
-                    <Button variant="ghost" className="w-full justify-start text-background/70 hover:text-background hover:bg-background/10">
-                      📞 Call {CONTACT_PHONE_DISPLAY}
-                    </Button>
-                  </a>
-                </div>
-              </div>
-
-              {/* Promo Card */}
-              <motion.div
-                className="p-6 border-4 border-primary bg-primary/10"
-                whileHover={{ rotate: 1 }}
-              >
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
-                    <h4 className="font-display text-sm mb-1">UPGRADE AVAILABLE!</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Double your speed for £5/mo more. Worth it? We think so.
-                    </p>
-                    <Button variant="link" className="px-0 h-auto mt-2 text-primary font-display">
-                      Learn more →
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
+            <TabsContent value="services"><ServicesTab userId={user.id} /></TabsContent>
+            <TabsContent value="orders"><OrdersTimelineTab userId={user.id} userEmail={user.email ?? null} /></TabsContent>
+            <TabsContent value="quotes"><QuotesTab userId={user.id} /></TabsContent>
+            <TabsContent value="cs"><ContractSummariesTab userId={user.id} /></TabsContent>
+            <TabsContent value="invoices"><InvoicesTab userId={user.id} /></TabsContent>
+            <TabsContent value="support"><SupportTab tickets={tickets} /></TabsContent>
+            <TabsContent value="chat"><ChatHistoryTab userId={user.id} /></TabsContent>
+            <TabsContent value="complaints"><ComplaintsTab /></TabsContent>
+            <TabsContent value="rewards"><RewardsTab /></TabsContent>
+            <TabsContent value="documents"><DocumentsTab userId={user.id} /></TabsContent>
+            <TabsContent value="account"><AccountSettingsTab profile={profile as any} /></TabsContent>
+            <TabsContent value="vuln"><VulnerableSupportTab userId={user.id} /></TabsContent>
+          </Tabs>
         </motion.div>
       </div>
 

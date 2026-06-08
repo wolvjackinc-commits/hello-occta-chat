@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Loader2, Copy, AlertTriangle } from "lucide-react";
+import { Search, RefreshCw, Loader2, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
 
 const STATUS_OPTIONS = ["all", "draft", "sent", "viewed", "accepted", "rejected", "expired", "converted"];
 
@@ -27,6 +27,8 @@ export const AdminQuotes = () => {
   const [search, setSearch] = useState("");
   const [tokenDialog, setTokenDialog] = useState<{ open: boolean; quoteNumber?: string; token?: string; kind?: "quote" | "cs"; csNumber?: string }>({ open: false });
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [overrideDialog, setOverrideDialog] = useState<{ open: boolean; quoteId?: string; quoteNumber?: string }>({ open: false });
+  const [overrideReason, setOverrideReason] = useState("");
 
   const { data: vatActive } = useQuery({
     queryKey: ["is-vat-active"],
@@ -92,11 +94,52 @@ export const AdminQuotes = () => {
     setBusyId(id);
     try {
       const { data, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: id, rotate_token: true } });
-      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      if (error || (data as any)?.error) {
+        const msg = (data as any)?.message || (data as any)?.error || error?.message;
+        if ((data as any)?.error === "blocked_low_margin") {
+          toast({ title: "Blocked by margin guard", description: "Run a margin check and use override to send.", variant: "destructive" });
+        } else {
+          throw new Error(msg);
+        }
+        return;
+      }
       toast({ title: `Quote ${quoteNumber} sent` });
       qc.invalidateQueries({ queryKey: ["admin-quotes"] });
     } catch (e: any) {
       toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+    } finally { setBusyId(null); }
+  };
+
+  const runMarginCheck = async (id: string) => {
+    setBusyId(id);
+    try {
+      const { data, error } = await supabase.functions.invoke("run-quote-margin-check", { body: { quote_id: id } });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      const status = (data as any)?.check?.status ?? "unknown";
+      toast({ title: `Margin: ${status}`, description: (data as any)?.check?.reason });
+      qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+    } catch (e: any) {
+      toast({ title: "Margin check failed", description: e?.message, variant: "destructive" });
+    } finally { setBusyId(null); }
+  };
+
+  const submitOverride = async () => {
+    if (!overrideDialog.quoteId || overrideReason.trim().length < 10) {
+      toast({ title: "Reason required (10+ chars)", variant: "destructive" });
+      return;
+    }
+    setBusyId(overrideDialog.quoteId);
+    try {
+      const { data, error } = await supabase.functions.invoke("override-quote-margin", {
+        body: { quote_id: overrideDialog.quoteId, reason: overrideReason.trim() },
+      });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      toast({ title: "Override recorded" });
+      setOverrideDialog({ open: false });
+      setOverrideReason("");
+      qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+    } catch (e: any) {
+      toast({ title: "Override failed", description: e?.message, variant: "destructive" });
     } finally { setBusyId(null); }
   };
 
@@ -217,11 +260,17 @@ export const AdminQuotes = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex flex-wrap gap-1 justify-end">
+                      <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => runMarginCheck(r.id)} title="Run margin check">
+                        <ShieldCheck className="w-3 h-3" />
+                      </Button>
                       {(r.status === "draft" || r.status === "sent" || r.status === "viewed") && (
                         <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => sendQuote(r.id, r.quote_number)}>
                           {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send"}
                         </Button>
                       )}
+                      <Button size="sm" variant="outline" onClick={() => setOverrideDialog({ open: true, quoteId: r.id, quoteNumber: r.quote_number })} title="Override red margin (admin)">
+                        Override
+                      </Button>
                       {!r.cs && (
                         <Button size="sm" variant="hero" disabled={!vatActive || busyId === r.id} onClick={() => generateCS(r.id, r.quote_number)}
                           title={!vatActive ? "VAT settings incomplete" : "Generate Contract Summary"}>
@@ -264,6 +313,26 @@ export const AdminQuotes = () => {
           </div>
           <DialogFooter>
             <Button onClick={() => setTokenDialog({ open: false })}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Margin override dialog */}
+      <Dialog open={overrideDialog.open} onOpenChange={(o) => setOverrideDialog({ open: o })}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Override low-margin block — {overrideDialog.quoteNumber}</DialogTitle></DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p className="text-muted-foreground">Admin/super-admin only. Provide a clear business reason (10+ characters). This will be logged.</p>
+            <textarea
+              className="w-full border-2 border-foreground p-2 text-sm min-h-[100px]"
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="Strategic discount approved by..."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setOverrideDialog({ open: false }); setOverrideReason(""); }}>Cancel</Button>
+            <Button variant="hero" onClick={submitOverride}>Record override</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

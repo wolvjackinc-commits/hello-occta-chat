@@ -47,8 +47,8 @@ type SupportTicket = {
   id: string;
   subject: string;
   description: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed' | 'waiting_customer' | 'waiting_occta';
+  priority: 'low' | 'medium' | 'normal' | 'high' | 'urgent';
   category: string | null;
   created_at: string;
 };

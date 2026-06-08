@@ -15,7 +15,15 @@ export type LowRiskEventType =
   | "postcode_check"
   | "form_submit"
   | "contract_summary_view"
-  | "legal_view";
+  | "legal_view"
+  | "dashboard_view"
+  | "tab_view"
+  | "quote_view_from_dashboard"
+  | "contract_summary_view_from_dashboard"
+  | "invoice_view_from_dashboard"
+  | "support_cta_click"
+  | "vulnerable_support_view"
+  | "marketing_preference_change";
 
 export interface ActivityLogPayload {
   event_type: LowRiskEventType;

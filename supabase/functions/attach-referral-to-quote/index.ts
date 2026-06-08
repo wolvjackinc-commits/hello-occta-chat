@@ -57,10 +57,8 @@ Deno.serve(async (req) => {
     event_type: "quote_submitted",
     details: {},
   });
-  await svc.from("referral_codes").update({ usage_count: 1 }).eq("id", rc.id);
-  // increment usage_count atomically
-  await svc.rpc?.("noop").catch(() => {});
-  await svc.from("referral_codes").update({ usage_count: (await svc.from("referral_codes").select("usage_count").eq("id", rc.id).maybeSingle()).data?.usage_count ?? 1 }).eq("id", rc.id);
+  const { data: cur } = await svc.from("referral_codes").select("usage_count").eq("id", rc.id).maybeSingle();
+  await svc.from("referral_codes").update({ usage_count: (cur?.usage_count ?? 0) + 1 }).eq("id", rc.id);
 
   await svc.rpc("log_event", {
     _actor_type: "system", _event_type: "referral_attached_to_quote",

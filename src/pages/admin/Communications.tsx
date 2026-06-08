@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Send, Zap } from "lucide-react";
+import { FileText, Send, Zap, Inbox } from "lucide-react";
 import { TemplatesTab } from "@/components/admin/communications/TemplatesTab";
 import { CampaignsTab } from "@/components/admin/communications/CampaignsTab";
 import { QuickEmailTab } from "@/components/admin/communications/QuickEmailTab";
+import { InboxTab } from "@/components/admin/communications/InboxTab";
 
 export const AdminCommunications = () => {
-  const [activeTab, setActiveTab] = useState("quick");
+  const [activeTab, setActiveTab] = useState("inbox");
 
   return (
     <div className="space-y-6">
@@ -21,6 +22,10 @@ export const AdminCommunications = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="border-2 border-foreground">
+          <TabsTrigger value="inbox" className="gap-2">
+            <Inbox className="h-4 w-4" />
+            Inbox
+          </TabsTrigger>
           <TabsTrigger value="quick" className="gap-2">
             <Zap className="h-4 w-4" />
             Quick Email
@@ -34,6 +39,10 @@ export const AdminCommunications = () => {
             Campaigns
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="inbox" className="space-y-4">
+          <InboxTab />
+        </TabsContent>
 
         <TabsContent value="quick" className="space-y-4">
           <QuickEmailTab />

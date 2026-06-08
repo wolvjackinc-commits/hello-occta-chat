@@ -35,7 +35,12 @@ type AuditEntity =
   | "user_role"
   | "customer_dob"
   | "payment_request"
-  | "billing_settings";
+  | "billing_settings"
+  | "ticket_internal_note"
+  | "complaint"
+  | "complaint_event"
+  | "communication_thread"
+  | "communication_message";
 
 interface LogAuditParams {
   action: AuditAction;

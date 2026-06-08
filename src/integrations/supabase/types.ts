@@ -1675,7 +1675,16 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role:
+        | "admin"
+        | "user"
+        | "super_admin"
+        | "finance_admin"
+        | "support_agent"
+        | "sales_agent"
+        | "compliance_admin"
+        | "marketing_admin"
+        | "auditor"
       order_status: "pending" | "confirmed" | "active" | "cancelled"
       service_type: "broadband" | "sim" | "landline"
       ticket_priority: "low" | "medium" | "high" | "urgent"
@@ -1807,7 +1816,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: [
+        "admin",
+        "user",
+        "super_admin",
+        "finance_admin",
+        "support_agent",
+        "sales_agent",
+        "compliance_admin",
+        "marketing_admin",
+        "auditor",
+      ],
       order_status: ["pending", "confirmed", "active", "cancelled"],
       service_type: ["broadband", "sim", "landline"],
       ticket_priority: ["low", "medium", "high", "urgent"],

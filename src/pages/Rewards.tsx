@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,24 @@ import { Link } from "react-router-dom";
 import { Gift, Lock } from "lucide-react";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { logClientEvent } from "@/lib/activityLog";
+import { supabase } from "@/integrations/supabase/client";
+
+type PublicBenefit = {
+  id: string; benefit_name: string; description: string | null; value_label: string | null;
+  terms_text: string | null; plan_type: string; customer_type: string;
+  starts_at: string | null; ends_at: string | null;
+};
 
 export default function RewardsPage() {
   const { rewardsEnabled } = usePlatformSettings();
+  const [benefits, setBenefits] = useState<PublicBenefit[]>([]);
 
   useEffect(() => {
     logClientEvent({ event_type: "page_view", title: "Rewards teaser", source_module: "marketing" });
+    (async () => {
+      const { data } = await (supabase as any).rpc("get_public_contract_benefits");
+      setBenefits((data ?? []) as PublicBenefit[]);
+    })();
   }, []);
 
   return (
@@ -45,6 +57,28 @@ export default function RewardsPage() {
             <li>You'll see your reward status inside your customer dashboard once the programme is live.</li>
           </ul>
         </div>
+
+        {benefits.length > 0 && (
+          <div className="border-4 border-foreground p-6 text-left mb-6">
+            <h2 className="font-display uppercase text-xl mb-3">Active benefits</h2>
+            <ul className="space-y-4">
+              {benefits.map((b) => (
+                <li key={b.id} className="border-l-4 border-primary pl-3">
+                  <p className="font-display uppercase text-sm">
+                    {b.benefit_name}
+                    {b.value_label && <span className="text-primary"> — {b.value_label}</span>}
+                  </p>
+                  {b.description && <p className="text-xs text-muted-foreground mt-1">{b.description}</p>}
+                  {b.terms_text && <p className="text-[11px] text-muted-foreground mt-1">Terms: {b.terms_text}</p>}
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Plan: {b.plan_type} · Customer: {b.customer_type}
+                    {b.ends_at && ` · Until ${new Date(b.ends_at).toLocaleDateString()}`}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {rewardsEnabled ? (
           <p className="text-sm text-muted-foreground">

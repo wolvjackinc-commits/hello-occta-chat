@@ -3435,6 +3435,52 @@ export type Database = {
       generate_account_number: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_user_account_number: { Args: never; Returns: string }
+      get_customer_points_ledger: {
+        Args: { _limit?: number }
+        Returns: {
+          available_at: string
+          bill_credit_delta: number
+          created_at: string
+          expires_at: string
+          id: string
+          points_delta: number
+          reason: string
+          source_type: string
+          status: string
+        }[]
+      }
+      get_customer_referral_codes: {
+        Args: never
+        Returns: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          status: string
+          usage_count: number
+        }[]
+      }
+      get_customer_reward_account: {
+        Args: never
+        Returns: {
+          bill_credit_balance: number
+          points_balance: number
+          status: string
+          updated_at: string
+        }[]
+      }
+      get_customer_rewards: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          reward_currency: string
+          reward_type: string
+          reward_value: number
+          status: string
+          unlock_rule: string
+        }[]
+      }
       get_platform_settings: {
         Args: never
         Returns: {
@@ -3464,6 +3510,21 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_public_contract_benefits: {
+        Args: never
+        Returns: {
+          benefit_name: string
+          benefit_type: string
+          customer_type: string
+          description: string
+          ends_at: string
+          id: string
+          plan_type: string
+          starts_at: string
+          terms_text: string
+          value_label: string
+        }[]
       }
       has_accepted_contract_summary: {
         Args: { _quote_id: string }

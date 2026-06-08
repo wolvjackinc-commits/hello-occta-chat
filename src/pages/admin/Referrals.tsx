@@ -24,7 +24,7 @@ export const AdminReferrals = () => {
   }
   useEffect(() => { load(); }, []);
 
-  async function setStatus(id: string, status: string) {
+  async function setStatus(id: string, status: "active" | "paused" | "blocked" | "expired") {
     await supabase.from("referral_codes").update({ status }).eq("id", id);
     load();
   }

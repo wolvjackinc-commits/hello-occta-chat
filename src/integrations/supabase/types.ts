@@ -212,6 +212,69 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_drafts: {
+        Row: {
+          active: boolean
+          approval_status: Database["public"]["Enums"]["campaign_approval_status"]
+          approved_by: string | null
+          campaign_type: Database["public"]["Enums"]["campaign_draft_type"]
+          compliance_check_status: Database["public"]["Enums"]["campaign_compliance_status"]
+          created_at: string
+          created_by: string | null
+          draft_copy: string | null
+          ends_at: string | null
+          id: string
+          margin_check_status: Database["public"]["Enums"]["campaign_margin_status"]
+          offer_terms: string | null
+          performance_json: Json
+          published_at: string | null
+          starts_at: string | null
+          target_audience: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          approval_status?: Database["public"]["Enums"]["campaign_approval_status"]
+          approved_by?: string | null
+          campaign_type: Database["public"]["Enums"]["campaign_draft_type"]
+          compliance_check_status?: Database["public"]["Enums"]["campaign_compliance_status"]
+          created_at?: string
+          created_by?: string | null
+          draft_copy?: string | null
+          ends_at?: string | null
+          id?: string
+          margin_check_status?: Database["public"]["Enums"]["campaign_margin_status"]
+          offer_terms?: string | null
+          performance_json?: Json
+          published_at?: string | null
+          starts_at?: string | null
+          target_audience?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          approval_status?: Database["public"]["Enums"]["campaign_approval_status"]
+          approved_by?: string | null
+          campaign_type?: Database["public"]["Enums"]["campaign_draft_type"]
+          compliance_check_status?: Database["public"]["Enums"]["campaign_compliance_status"]
+          created_at?: string
+          created_by?: string | null
+          draft_copy?: string | null
+          ends_at?: string | null
+          id?: string
+          margin_check_status?: Database["public"]["Enums"]["campaign_margin_status"]
+          offer_terms?: string | null
+          performance_json?: Json
+          published_at?: string | null
+          starts_at?: string | null
+          target_audience?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       campaign_recipients: {
         Row: {
           account_number: string | null
@@ -575,6 +638,60 @@ export type Database = {
           },
         ]
       }
+      contract_benefits: {
+        Row: {
+          active: boolean
+          benefit_name: string
+          benefit_type: Database["public"]["Enums"]["contract_benefit_type"]
+          created_at: string
+          customer_type: Database["public"]["Enums"]["benefit_customer_type"]
+          description: string | null
+          ends_at: string | null
+          id: string
+          internal_cost_estimate: number | null
+          plan_type: Database["public"]["Enums"]["benefit_plan_type"]
+          requires_margin_green: boolean
+          starts_at: string | null
+          terms_text: string | null
+          updated_at: string
+          value_label: string | null
+        }
+        Insert: {
+          active?: boolean
+          benefit_name: string
+          benefit_type: Database["public"]["Enums"]["contract_benefit_type"]
+          created_at?: string
+          customer_type?: Database["public"]["Enums"]["benefit_customer_type"]
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          internal_cost_estimate?: number | null
+          plan_type?: Database["public"]["Enums"]["benefit_plan_type"]
+          requires_margin_green?: boolean
+          starts_at?: string | null
+          terms_text?: string | null
+          updated_at?: string
+          value_label?: string | null
+        }
+        Update: {
+          active?: boolean
+          benefit_name?: string
+          benefit_type?: Database["public"]["Enums"]["contract_benefit_type"]
+          created_at?: string
+          customer_type?: Database["public"]["Enums"]["benefit_customer_type"]
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          internal_cost_estimate?: number | null
+          plan_type?: Database["public"]["Enums"]["benefit_plan_type"]
+          requires_margin_green?: boolean
+          starts_at?: string | null
+          terms_text?: string | null
+          updated_at?: string
+          value_label?: string | null
+        }
+        Relationships: []
+      }
       contract_summaries: {
         Row: {
           accepted_at: string | null
@@ -910,6 +1027,70 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fraud_flags: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          details: Json
+          flag_type: Database["public"]["Enums"]["fraud_flag_type"]
+          id: string
+          referral_event_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reward_id: string | null
+          severity: Database["public"]["Enums"]["fraud_flag_severity"]
+          status: Database["public"]["Enums"]["fraud_flag_status"]
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          details?: Json
+          flag_type: Database["public"]["Enums"]["fraud_flag_type"]
+          id?: string
+          referral_event_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reward_id?: string | null
+          severity?: Database["public"]["Enums"]["fraud_flag_severity"]
+          status?: Database["public"]["Enums"]["fraud_flag_status"]
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          details?: Json
+          flag_type?: Database["public"]["Enums"]["fraud_flag_type"]
+          id?: string
+          referral_event_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reward_id?: string | null
+          severity?: Database["public"]["Enums"]["fraud_flag_severity"]
+          status?: Database["public"]["Enums"]["fraud_flag_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_flags_referral_event_id_fkey"
+            columns: ["referral_event_id"]
+            isOneToOne: false
+            referencedRelation: "referral_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_flags_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "customer_rewards_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_flags_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
             referencedColumns: ["id"]
           },
         ]
@@ -1672,6 +1853,51 @@ export type Database = {
         }
         Relationships: []
       }
+      points_ledger: {
+        Row: {
+          available_at: string | null
+          bill_credit_delta: number
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          expires_at: string | null
+          id: string
+          points_delta: number
+          reason: string
+          source_id: string | null
+          source_type: Database["public"]["Enums"]["points_ledger_source"]
+          status: Database["public"]["Enums"]["points_ledger_status"]
+        }
+        Insert: {
+          available_at?: string | null
+          bill_credit_delta?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          expires_at?: string | null
+          id?: string
+          points_delta?: number
+          reason: string
+          source_id?: string | null
+          source_type: Database["public"]["Enums"]["points_ledger_source"]
+          status?: Database["public"]["Enums"]["points_ledger_status"]
+        }
+        Update: {
+          available_at?: string | null
+          bill_credit_delta?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          expires_at?: string | null
+          id?: string
+          points_delta?: number
+          reason?: string
+          source_id?: string | null
+          source_type?: Database["public"]["Enums"]["points_ledger_source"]
+          status?: Database["public"]["Enums"]["points_ledger_status"]
+        }
+        Relationships: []
+      }
       pricing_rules: {
         Row: {
           active: boolean
@@ -2315,6 +2541,206 @@ export type Database = {
           },
         ]
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          customer_id: string | null
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          partner_id: string | null
+          status: Database["public"]["Enums"]["referral_code_status"]
+          usage_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          customer_id?: string | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          partner_id?: string | null
+          status?: Database["public"]["Enums"]["referral_code_status"]
+          usage_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          customer_id?: string | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          partner_id?: string | null
+          status?: Database["public"]["Enums"]["referral_code_status"]
+          usage_count?: number
+        }
+        Relationships: []
+      }
+      referral_events: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["referral_event_type"]
+          id: string
+          ip_hash: string | null
+          referral_code_id: string | null
+          referred_customer_id: string | null
+          referred_order_id: string | null
+          referred_quote_id: string | null
+          referred_quote_request_id: string | null
+          referrer_customer_id: string | null
+          user_agent_hash: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["referral_event_type"]
+          id?: string
+          ip_hash?: string | null
+          referral_code_id?: string | null
+          referred_customer_id?: string | null
+          referred_order_id?: string | null
+          referred_quote_id?: string | null
+          referred_quote_request_id?: string | null
+          referrer_customer_id?: string | null
+          user_agent_hash?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["referral_event_type"]
+          id?: string
+          ip_hash?: string | null
+          referral_code_id?: string | null
+          referred_customer_id?: string | null
+          referred_order_id?: string | null
+          referred_quote_id?: string | null
+          referred_quote_request_id?: string | null
+          referrer_customer_id?: string | null
+          user_agent_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_events_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "customer_referral_codes_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_events_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_accounts: {
+        Row: {
+          bill_credit_balance_cached: number
+          created_at: string
+          customer_id: string
+          id: string
+          points_balance_cached: number
+          status: Database["public"]["Enums"]["reward_account_status"]
+          updated_at: string
+        }
+        Insert: {
+          bill_credit_balance_cached?: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          points_balance_cached?: number
+          status?: Database["public"]["Enums"]["reward_account_status"]
+          updated_at?: string
+        }
+        Update: {
+          bill_credit_balance_cached?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          points_balance_cached?: number
+          status?: Database["public"]["Enums"]["reward_account_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          admin_approved_at: string | null
+          admin_approved_by: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          margin_check_status:
+            | Database["public"]["Enums"]["quote_margin_check_status"]
+            | null
+          related_invoice_id: string | null
+          related_order_id: string | null
+          related_quote_id: string | null
+          related_referral_event_id: string | null
+          reversal_reason: string | null
+          reward_currency: string
+          reward_type: Database["public"]["Enums"]["reward_type"]
+          reward_value: number | null
+          status: Database["public"]["Enums"]["reward_status"]
+          unlock_rule: Database["public"]["Enums"]["reward_unlock_rule"] | null
+          updated_at: string
+        }
+        Insert: {
+          admin_approved_at?: string | null
+          admin_approved_by?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          margin_check_status?:
+            | Database["public"]["Enums"]["quote_margin_check_status"]
+            | null
+          related_invoice_id?: string | null
+          related_order_id?: string | null
+          related_quote_id?: string | null
+          related_referral_event_id?: string | null
+          reversal_reason?: string | null
+          reward_currency?: string
+          reward_type: Database["public"]["Enums"]["reward_type"]
+          reward_value?: number | null
+          status?: Database["public"]["Enums"]["reward_status"]
+          unlock_rule?: Database["public"]["Enums"]["reward_unlock_rule"] | null
+          updated_at?: string
+        }
+        Update: {
+          admin_approved_at?: string | null
+          admin_approved_by?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          margin_check_status?:
+            | Database["public"]["Enums"]["quote_margin_check_status"]
+            | null
+          related_invoice_id?: string | null
+          related_order_id?: string | null
+          related_quote_id?: string | null
+          related_referral_event_id?: string | null
+          reversal_reason?: string | null
+          reward_currency?: string
+          reward_type?: Database["public"]["Enums"]["reward_type"]
+          reward_value?: number | null
+          status?: Database["public"]["Enums"]["reward_status"]
+          unlock_rule?: Database["public"]["Enums"]["reward_unlock_rule"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rewards_related_referral_event_id_fkey"
+            columns: ["related_referral_event_id"]
+            isOneToOne: false
+            referencedRelation: "referral_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           activation_date: string | null
@@ -2725,6 +3151,150 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_points_ledger_view: {
+        Row: {
+          available_at: string | null
+          bill_credit_delta: number | null
+          created_at: string | null
+          customer_id: string | null
+          expires_at: string | null
+          id: string | null
+          points_delta: number | null
+          reason: string | null
+          source_type:
+            | Database["public"]["Enums"]["points_ledger_source"]
+            | null
+          status: Database["public"]["Enums"]["points_ledger_status"] | null
+        }
+        Insert: {
+          available_at?: string | null
+          bill_credit_delta?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          expires_at?: string | null
+          id?: string | null
+          points_delta?: number | null
+          reason?: string | null
+          source_type?:
+            | Database["public"]["Enums"]["points_ledger_source"]
+            | null
+          status?: Database["public"]["Enums"]["points_ledger_status"] | null
+        }
+        Update: {
+          available_at?: string | null
+          bill_credit_delta?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          expires_at?: string | null
+          id?: string | null
+          points_delta?: number | null
+          reason?: string | null
+          source_type?:
+            | Database["public"]["Enums"]["points_ledger_source"]
+            | null
+          status?: Database["public"]["Enums"]["points_ledger_status"] | null
+        }
+        Relationships: []
+      }
+      customer_referral_codes_view: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          customer_id: string | null
+          expires_at: string | null
+          id: string | null
+          max_uses: number | null
+          status: Database["public"]["Enums"]["referral_code_status"] | null
+          usage_count: number | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          expires_at?: string | null
+          id?: string | null
+          max_uses?: number | null
+          status?: Database["public"]["Enums"]["referral_code_status"] | null
+          usage_count?: number | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          expires_at?: string | null
+          id?: string | null
+          max_uses?: number | null
+          status?: Database["public"]["Enums"]["referral_code_status"] | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      customer_reward_accounts_view: {
+        Row: {
+          bill_credit_balance_cached: number | null
+          created_at: string | null
+          customer_id: string | null
+          id: string | null
+          points_balance_cached: number | null
+          status: Database["public"]["Enums"]["reward_account_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          bill_credit_balance_cached?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string | null
+          points_balance_cached?: number | null
+          status?: Database["public"]["Enums"]["reward_account_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          bill_credit_balance_cached?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string | null
+          points_balance_cached?: number | null
+          status?: Database["public"]["Enums"]["reward_account_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      customer_rewards_view: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          id: string | null
+          reward_currency: string | null
+          reward_type: Database["public"]["Enums"]["reward_type"] | null
+          reward_value: number | null
+          status: Database["public"]["Enums"]["reward_status"] | null
+          unlock_rule: Database["public"]["Enums"]["reward_unlock_rule"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string | null
+          reward_currency?: string | null
+          reward_type?: Database["public"]["Enums"]["reward_type"] | null
+          reward_value?: number | null
+          status?: Database["public"]["Enums"]["reward_status"] | null
+          unlock_rule?: Database["public"]["Enums"]["reward_unlock_rule"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string | null
+          reward_currency?: string | null
+          reward_type?: Database["public"]["Enums"]["reward_type"] | null
+          reward_value?: number | null
+          status?: Database["public"]["Enums"]["reward_status"] | null
+          unlock_rule?: Database["public"]["Enums"]["reward_unlock_rule"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       dd_mandates_list: {
         Row: {
           account_holder: string | null
@@ -2781,6 +3351,60 @@ export type Database = {
           },
         ]
       }
+      public_contract_benefits_view: {
+        Row: {
+          active: boolean | null
+          benefit_name: string | null
+          benefit_type:
+            | Database["public"]["Enums"]["contract_benefit_type"]
+            | null
+          customer_type:
+            | Database["public"]["Enums"]["benefit_customer_type"]
+            | null
+          description: string | null
+          ends_at: string | null
+          id: string | null
+          plan_type: Database["public"]["Enums"]["benefit_plan_type"] | null
+          starts_at: string | null
+          terms_text: string | null
+          value_label: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          benefit_name?: string | null
+          benefit_type?:
+            | Database["public"]["Enums"]["contract_benefit_type"]
+            | null
+          customer_type?:
+            | Database["public"]["Enums"]["benefit_customer_type"]
+            | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string | null
+          plan_type?: Database["public"]["Enums"]["benefit_plan_type"] | null
+          starts_at?: string | null
+          terms_text?: string | null
+          value_label?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          benefit_name?: string | null
+          benefit_type?:
+            | Database["public"]["Enums"]["contract_benefit_type"]
+            | null
+          customer_type?:
+            | Database["public"]["Enums"]["benefit_customer_type"]
+            | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string | null
+          plan_type?: Database["public"]["Enums"]["benefit_plan_type"] | null
+          starts_at?: string | null
+          terms_text?: string | null
+          value_label?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       anonymize_old_account_deletions: { Args: never; Returns: number }
@@ -2802,6 +3426,10 @@ export type Database = {
           _window_minutes?: number
         }
         Returns: boolean
+      }
+      current_reward_unlock_rule: {
+        Args: never
+        Returns: Database["public"]["Enums"]["reward_unlock_rule"]
       }
       expire_old_quotes: { Args: never; Returns: number }
       generate_account_number: { Args: never; Returns: string }
@@ -2903,6 +3531,10 @@ export type Database = {
           status: string
         }[]
       }
+      recompute_reward_balances: {
+        Args: { _customer_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
@@ -2915,6 +3547,44 @@ export type Database = {
         | "compliance_admin"
         | "marketing_admin"
         | "auditor"
+      benefit_customer_type: "residential" | "business" | "both"
+      benefit_plan_type: "flex" | "contract_saver" | "both"
+      campaign_approval_status:
+        | "draft"
+        | "margin_check"
+        | "compliance_check"
+        | "admin_approval"
+        | "approved"
+        | "published"
+        | "paused"
+        | "rejected"
+      campaign_compliance_status:
+        | "not_checked"
+        | "passed"
+        | "failed"
+        | "needs_review"
+      campaign_draft_type:
+        | "homepage_banner"
+        | "landing_page"
+        | "referral_offer"
+        | "contract_saver_offer"
+        | "b2b_offer"
+        | "email"
+        | "sms"
+        | "seo_draft"
+        | "ads_copy"
+        | "winback"
+        | "failed_payment_recovery"
+      campaign_margin_status: "not_checked" | "green" | "amber" | "red"
+      contract_benefit_type:
+        | "streaming_reward"
+        | "bill_credit"
+        | "extra_points"
+        | "setup_discount"
+        | "router_delivery"
+        | "digital_voice_setup"
+        | "bundle_discount"
+        | "custom"
       contract_summary_status_kind:
         | "draft"
         | "issued"
@@ -2923,10 +3593,36 @@ export type Database = {
         | "superseded"
         | "expired"
       customer_type_kind: "residential" | "business"
+      fraud_flag_severity: "low" | "medium" | "high"
+      fraud_flag_status: "open" | "reviewed" | "dismissed" | "confirmed"
+      fraud_flag_type:
+        | "self_referral"
+        | "duplicate_email"
+        | "duplicate_phone"
+        | "duplicate_address"
+        | "duplicate_payment"
+        | "suspicious_pattern"
+        | "failed_payment"
+        | "cancellation_before_unlock"
+        | "manual_review"
       margin_status_kind: "unknown" | "green" | "amber" | "red"
       order_status: "pending" | "confirmed" | "active" | "cancelled"
       plan_preference_kind: "flex" | "contract_saver" | "not_sure"
       plan_type_kind: "flex" | "contract_saver"
+      points_ledger_source:
+        | "bill_payment"
+        | "referral"
+        | "contract_bonus"
+        | "admin_adjustment"
+        | "reversal"
+        | "expiry"
+        | "campaign"
+      points_ledger_status:
+        | "pending"
+        | "approved"
+        | "used"
+        | "reversed"
+        | "expired"
       quote_margin_check_status: "unknown" | "green" | "amber" | "red"
       quote_request_status:
         | "new"
@@ -2944,6 +3640,39 @@ export type Database = {
         | "rejected"
         | "expired"
         | "converted"
+      referral_code_status: "active" | "paused" | "expired" | "blocked"
+      referral_event_type:
+        | "clicked"
+        | "quote_started"
+        | "quote_submitted"
+        | "quote_sent"
+        | "contract_accepted"
+        | "payment_cleared"
+        | "service_activated"
+        | "reward_eligible"
+        | "reward_approved"
+        | "reward_reversed"
+      reward_account_status: "active" | "suspended" | "closed"
+      reward_status:
+        | "pending"
+        | "eligible"
+        | "approved"
+        | "issued"
+        | "used"
+        | "reversed"
+        | "expired"
+        | "blocked"
+      reward_type:
+        | "bill_credit"
+        | "points"
+        | "streaming_gift"
+        | "gift_card"
+        | "contract_benefit"
+        | "partner_commission"
+      reward_unlock_rule:
+        | "first_cleared_payment"
+        | "second_cleared_payment"
+        | "custom_rule"
       service_interest_kind:
         | "broadband"
         | "sim"
@@ -3094,6 +3823,48 @@ export const Constants = {
         "marketing_admin",
         "auditor",
       ],
+      benefit_customer_type: ["residential", "business", "both"],
+      benefit_plan_type: ["flex", "contract_saver", "both"],
+      campaign_approval_status: [
+        "draft",
+        "margin_check",
+        "compliance_check",
+        "admin_approval",
+        "approved",
+        "published",
+        "paused",
+        "rejected",
+      ],
+      campaign_compliance_status: [
+        "not_checked",
+        "passed",
+        "failed",
+        "needs_review",
+      ],
+      campaign_draft_type: [
+        "homepage_banner",
+        "landing_page",
+        "referral_offer",
+        "contract_saver_offer",
+        "b2b_offer",
+        "email",
+        "sms",
+        "seo_draft",
+        "ads_copy",
+        "winback",
+        "failed_payment_recovery",
+      ],
+      campaign_margin_status: ["not_checked", "green", "amber", "red"],
+      contract_benefit_type: [
+        "streaming_reward",
+        "bill_credit",
+        "extra_points",
+        "setup_discount",
+        "router_delivery",
+        "digital_voice_setup",
+        "bundle_discount",
+        "custom",
+      ],
       contract_summary_status_kind: [
         "draft",
         "issued",
@@ -3103,10 +3874,39 @@ export const Constants = {
         "expired",
       ],
       customer_type_kind: ["residential", "business"],
+      fraud_flag_severity: ["low", "medium", "high"],
+      fraud_flag_status: ["open", "reviewed", "dismissed", "confirmed"],
+      fraud_flag_type: [
+        "self_referral",
+        "duplicate_email",
+        "duplicate_phone",
+        "duplicate_address",
+        "duplicate_payment",
+        "suspicious_pattern",
+        "failed_payment",
+        "cancellation_before_unlock",
+        "manual_review",
+      ],
       margin_status_kind: ["unknown", "green", "amber", "red"],
       order_status: ["pending", "confirmed", "active", "cancelled"],
       plan_preference_kind: ["flex", "contract_saver", "not_sure"],
       plan_type_kind: ["flex", "contract_saver"],
+      points_ledger_source: [
+        "bill_payment",
+        "referral",
+        "contract_bonus",
+        "admin_adjustment",
+        "reversal",
+        "expiry",
+        "campaign",
+      ],
+      points_ledger_status: [
+        "pending",
+        "approved",
+        "used",
+        "reversed",
+        "expired",
+      ],
       quote_margin_check_status: ["unknown", "green", "amber", "red"],
       quote_request_status: [
         "new",
@@ -3125,6 +3925,43 @@ export const Constants = {
         "rejected",
         "expired",
         "converted",
+      ],
+      referral_code_status: ["active", "paused", "expired", "blocked"],
+      referral_event_type: [
+        "clicked",
+        "quote_started",
+        "quote_submitted",
+        "quote_sent",
+        "contract_accepted",
+        "payment_cleared",
+        "service_activated",
+        "reward_eligible",
+        "reward_approved",
+        "reward_reversed",
+      ],
+      reward_account_status: ["active", "suspended", "closed"],
+      reward_status: [
+        "pending",
+        "eligible",
+        "approved",
+        "issued",
+        "used",
+        "reversed",
+        "expired",
+        "blocked",
+      ],
+      reward_type: [
+        "bill_credit",
+        "points",
+        "streaming_gift",
+        "gift_card",
+        "contract_benefit",
+        "partner_commission",
+      ],
+      reward_unlock_rule: [
+        "first_cleared_payment",
+        "second_cleared_payment",
+        "custom_rule",
       ],
       service_interest_kind: [
         "broadband",

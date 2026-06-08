@@ -97,7 +97,7 @@ const Complaints = () => {
     {
       title: "Independent ADR",
       description:
-        "You can take your complaint to our approved Alternative Dispute Resolution (ADR) scheme after 8 weeks or after receiving a deadlock letter.",
+        "If we cannot resolve your complaint within 6 weeks, or we issue a deadlock letter earlier, you may refer the matter to our approved Alternative Dispute Resolution (ADR) scheme.",
       icon: Scale,
     },
   ];

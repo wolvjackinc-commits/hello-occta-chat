@@ -119,6 +119,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_handoff_rules: {
+        Row: {
+          action: string
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          rule_text: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          rule_text: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          rule_text?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -481,6 +514,101 @@ export type Database = {
         }
         Relationships: []
       }
+      communication_messages: {
+        Row: {
+          attachments_json: Json
+          body: string
+          channel: string
+          created_at: string
+          direction: string
+          id: string
+          metadata_json: Json
+          sender_id: string | null
+          sender_type: string
+          subject: string | null
+          thread_id: string
+        }
+        Insert: {
+          attachments_json?: Json
+          body: string
+          channel: string
+          created_at?: string
+          direction: string
+          id?: string
+          metadata_json?: Json
+          sender_id?: string | null
+          sender_type: string
+          subject?: string | null
+          thread_id: string
+        }
+        Update: {
+          attachments_json?: Json
+          body?: string
+          channel?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          metadata_json?: Json
+          sender_id?: string | null
+          sender_type?: string
+          subject?: string | null
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_threads: {
+        Row: {
+          channel: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          related_complaint_id: string | null
+          related_invoice_id: string | null
+          related_order_id: string | null
+          related_quote_id: string | null
+          related_ticket_id: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          related_complaint_id?: string | null
+          related_invoice_id?: string | null
+          related_order_id?: string | null
+          related_quote_id?: string | null
+          related_ticket_id?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          related_complaint_id?: string | null
+          related_invoice_id?: string | null
+          related_order_id?: string | null
+          related_quote_id?: string | null
+          related_ticket_id?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       communications_log: {
         Row: {
           created_at: string
@@ -560,6 +688,218 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complaint_events: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          complaint_id: string
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          title: string
+          visibility: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          complaint_id: string
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          title: string
+          visibility?: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          complaint_id?: string
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          title?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_events_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complaint_evidence_links: {
+        Row: {
+          added_by: string | null
+          complaint_id: string
+          created_at: string
+          evidence_type: string
+          id: string
+          related_id: string | null
+          title: string
+          url: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          complaint_id: string
+          created_at?: string
+          evidence_type: string
+          id?: string
+          related_id?: string | null
+          title: string
+          url?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          complaint_id?: string
+          created_at?: string
+          evidence_type?: string
+          id?: string
+          related_id?: string | null
+          title?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_evidence_links_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complaint_letters: {
+        Row: {
+          body: string
+          complaint_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          letter_type: string
+          sent_at: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          complaint_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          letter_type: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          body?: string
+          complaint_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          letter_type?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_letters_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complaints: {
+        Row: {
+          adr_provider: string | null
+          adr_reference: string | null
+          assigned_to: string | null
+          category: string
+          closed_at: string | null
+          complaint_reference: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          customer_desired_outcome: string | null
+          customer_id: string | null
+          deadlock_issued_at: string | null
+          first_response_due_at: string | null
+          id: string
+          linked_ticket_id: string | null
+          opened_at: string
+          priority: Database["public"]["Enums"]["complaint_priority"]
+          resolved_at: string | null
+          six_week_adr_eligible_at: string
+          status: Database["public"]["Enums"]["complaint_status"]
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          adr_provider?: string | null
+          adr_reference?: string | null
+          assigned_to?: string | null
+          category: string
+          closed_at?: string | null
+          complaint_reference: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          customer_desired_outcome?: string | null
+          customer_id?: string | null
+          deadlock_issued_at?: string | null
+          first_response_due_at?: string | null
+          id?: string
+          linked_ticket_id?: string | null
+          opened_at?: string
+          priority?: Database["public"]["Enums"]["complaint_priority"]
+          resolved_at?: string | null
+          six_week_adr_eligible_at: string
+          status?: Database["public"]["Enums"]["complaint_status"]
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          adr_provider?: string | null
+          adr_reference?: string | null
+          assigned_to?: string | null
+          category?: string
+          closed_at?: string | null
+          complaint_reference?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          customer_desired_outcome?: string | null
+          customer_id?: string | null
+          deadlock_issued_at?: string | null
+          first_response_due_at?: string | null
+          id?: string
+          linked_ticket_id?: string | null
+          opened_at?: string
+          priority?: Database["public"]["Enums"]["complaint_priority"]
+          resolved_at?: string | null
+          six_week_adr_eligible_at?: string
+          status?: Database["public"]["Enums"]["complaint_status"]
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_linked_ticket_id_fkey"
+            columns: ["linked_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -1416,6 +1756,127 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      kb_article_versions: {
+        Row: {
+          article_id: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+          version: number
+        }
+        Insert: {
+          article_id: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title: string
+          version: number
+        }
+        Update: {
+          article_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_article_versions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "kb_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_articles: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          category_id: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          slug: string
+          status: Database["public"]["Enums"]["kb_status"]
+          title: string
+          updated_at: string
+          version: number
+          visibility: Database["public"]["Enums"]["kb_visibility"]
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category_id?: string | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          slug: string
+          status?: Database["public"]["Enums"]["kb_status"]
+          title: string
+          updated_at?: string
+          version?: number
+          visibility?: Database["public"]["Enums"]["kb_visibility"]
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category_id?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          slug?: string
+          status?: Database["public"]["Enums"]["kb_status"]
+          title?: string
+          updated_at?: string
+          version?: number
+          visibility?: Database["public"]["Enums"]["kb_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_articles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "kb_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       margin_rules: {
         Row: {
@@ -2954,38 +3415,62 @@ export type Database = {
         Row: {
           assigned_to: string | null
           category: string | null
+          closed_at: string | null
           created_at: string
           description: string
+          first_response_due_at: string | null
           id: string
           priority: Database["public"]["Enums"]["ticket_priority"]
+          related_invoice_id: string | null
+          related_order_id: string | null
+          related_quote_id: string | null
+          related_service_id: string | null
+          resolution_due_at: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           subject: string
           updated_at: string
           user_id: string
+          vulnerable_customer_flag: boolean
         }
         Insert: {
           assigned_to?: string | null
           category?: string | null
+          closed_at?: string | null
           created_at?: string
           description: string
+          first_response_due_at?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          related_invoice_id?: string | null
+          related_order_id?: string | null
+          related_quote_id?: string | null
+          related_service_id?: string | null
+          resolution_due_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject: string
           updated_at?: string
           user_id: string
+          vulnerable_customer_flag?: boolean
         }
         Update: {
           assigned_to?: string | null
           category?: string | null
+          closed_at?: string | null
           created_at?: string
           description?: string
+          first_response_due_at?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          related_invoice_id?: string | null
+          related_order_id?: string | null
+          related_quote_id?: string | null
+          related_service_id?: string | null
+          resolution_due_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject?: string
           updated_at?: string
           user_id?: string
+          vulnerable_customer_flag?: boolean
         }
         Relationships: []
       }
@@ -3024,6 +3509,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ticket_internal_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          ticket_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_internal_notes_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ticket_messages: {
         Row: {
@@ -3431,10 +3948,96 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["reward_unlock_rule"]
       }
+      customer_add_ticket_message: {
+        Args: { _message: string; _ticket_id: string }
+        Returns: string
+      }
+      customer_create_complaint: {
+        Args: {
+          _category: string
+          _contact_email?: string
+          _contact_phone?: string
+          _desired_outcome?: string
+          _summary: string
+        }
+        Returns: string
+      }
+      customer_create_ticket: {
+        Args: {
+          _category: string
+          _description: string
+          _priority?: string
+          _subject: string
+          _vulnerable?: boolean
+        }
+        Returns: string
+      }
       expire_old_quotes: { Args: never; Returns: number }
       generate_account_number: { Args: never; Returns: string }
+      generate_complaint_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_user_account_number: { Args: never; Returns: string }
+      get_customer_communication_messages: {
+        Args: { _thread_id: string }
+        Returns: {
+          body: string
+          channel: string
+          created_at: string
+          direction: string
+          id: string
+          sender_type: string
+          subject: string
+        }[]
+      }
+      get_customer_communication_threads: {
+        Args: never
+        Returns: {
+          channel: string
+          created_at: string
+          id: string
+          status: string
+          subject: string
+          updated_at: string
+        }[]
+      }
+      get_customer_complaint_events: {
+        Args: { _complaint_id: string }
+        Returns: {
+          actor_type: string
+          created_at: string
+          event_type: string
+          id: string
+          title: string
+        }[]
+      }
+      get_customer_complaint_letters: {
+        Args: never
+        Returns: {
+          body: string
+          complaint_id: string
+          id: string
+          letter_type: string
+          sent_at: string
+          subject: string
+        }[]
+      }
+      get_customer_complaints: {
+        Args: never
+        Returns: {
+          adr_provider: string
+          adr_reference: string
+          category: string
+          complaint_reference: string
+          deadlock_issued_at: string
+          id: string
+          opened_at: string
+          priority: string
+          resolved_at: string
+          six_week_adr_eligible_at: string
+          status: string
+          summary: string
+        }[]
+      }
       get_customer_points_ledger: {
         Args: { _limit?: number }
         Returns: {
@@ -3481,6 +4084,31 @@ export type Database = {
           unlock_rule: string
         }[]
       }
+      get_customer_ticket_messages: {
+        Args: { _ticket_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          is_staff_reply: boolean
+          message: string
+          sender_role: string
+        }[]
+      }
+      get_customer_tickets: {
+        Args: never
+        Returns: {
+          category: string
+          closed_at: string
+          created_at: string
+          first_response_due_at: string
+          id: string
+          priority: string
+          resolution_due_at: string
+          status: string
+          subject: string
+          updated_at: string
+        }[]
+      }
       get_platform_settings: {
         Args: never
         Returns: {
@@ -3524,6 +4152,17 @@ export type Database = {
           starts_at: string
           terms_text: string
           value_label: string
+        }[]
+      }
+      get_public_kb_articles: {
+        Args: never
+        Returns: {
+          category_id: string
+          content: string
+          id: string
+          slug: string
+          title: string
+          updated_at: string
         }[]
       }
       has_accepted_contract_summary: {
@@ -3637,6 +4276,15 @@ export type Database = {
         | "winback"
         | "failed_payment_recovery"
       campaign_margin_status: "not_checked" | "green" | "amber" | "red"
+      complaint_priority: "normal" | "high" | "urgent"
+      complaint_status:
+        | "open"
+        | "investigating"
+        | "waiting_customer"
+        | "resolved"
+        | "deadlock_issued"
+        | "referred_to_adr"
+        | "closed"
       contract_benefit_type:
         | "streaming_reward"
         | "bill_credit"
@@ -3666,6 +4314,8 @@ export type Database = {
         | "failed_payment"
         | "cancellation_before_unlock"
         | "manual_review"
+      kb_status: "draft" | "approved" | "archived"
+      kb_visibility: "public" | "internal" | "support_only"
       margin_status_kind: "unknown" | "green" | "amber" | "red"
       order_status: "pending" | "confirmed" | "active" | "cancelled"
       plan_preference_kind: "flex" | "contract_saver" | "not_sure"
@@ -3744,8 +4394,14 @@ export type Database = {
         | "other"
       service_type: "broadband" | "sim" | "landline"
       supplier_api_mode: "manual" | "live" | "testing"
-      ticket_priority: "low" | "medium" | "high" | "urgent"
-      ticket_status: "open" | "in_progress" | "resolved" | "closed"
+      ticket_priority: "low" | "medium" | "high" | "urgent" | "normal"
+      ticket_status:
+        | "open"
+        | "in_progress"
+        | "resolved"
+        | "closed"
+        | "waiting_customer"
+        | "waiting_occta"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3916,6 +4572,16 @@ export const Constants = {
         "failed_payment_recovery",
       ],
       campaign_margin_status: ["not_checked", "green", "amber", "red"],
+      complaint_priority: ["normal", "high", "urgent"],
+      complaint_status: [
+        "open",
+        "investigating",
+        "waiting_customer",
+        "resolved",
+        "deadlock_issued",
+        "referred_to_adr",
+        "closed",
+      ],
       contract_benefit_type: [
         "streaming_reward",
         "bill_credit",
@@ -3948,6 +4614,8 @@ export const Constants = {
         "cancellation_before_unlock",
         "manual_review",
       ],
+      kb_status: ["draft", "approved", "archived"],
+      kb_visibility: ["public", "internal", "support_only"],
       margin_status_kind: ["unknown", "green", "amber", "red"],
       order_status: ["pending", "confirmed", "active", "cancelled"],
       plan_preference_kind: ["flex", "contract_saver", "not_sure"],
@@ -4035,8 +4703,15 @@ export const Constants = {
       ],
       service_type: ["broadband", "sim", "landline"],
       supplier_api_mode: ["manual", "live", "testing"],
-      ticket_priority: ["low", "medium", "high", "urgent"],
-      ticket_status: ["open", "in_progress", "resolved", "closed"],
+      ticket_priority: ["low", "medium", "high", "urgent", "normal"],
+      ticket_status: [
+        "open",
+        "in_progress",
+        "resolved",
+        "closed",
+        "waiting_customer",
+        "waiting_occta",
+      ],
     },
   },
 } as const

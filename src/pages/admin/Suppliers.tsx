@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -94,8 +94,8 @@ export const AdminSuppliers = () => {
             ) : (suppliers ?? []).length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">No suppliers yet.</TableCell></TableRow>
             ) : suppliers!.map((s) => (
-              <>
-                <TableRow key={s.id} className="border-b border-foreground/10">
+              <Fragment key={s.id}>
+                <TableRow className="border-b border-foreground/10">
                   <TableCell className="font-medium">{s.supplier_name}</TableCell>
                   <TableCell className="capitalize text-xs">{s.supplier_type}</TableCell>
                   <TableCell><Badge className="border-2 border-foreground capitalize">{s.status}</Badge></TableCell>
@@ -109,7 +109,7 @@ export const AdminSuppliers = () => {
                   </TableCell>
                 </TableRow>
                 {expanded === s.id && (
-                  <TableRow key={`${s.id}-prod`}>
+                  <TableRow>
                     <TableCell colSpan={6} className="bg-muted/30 p-4">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-display text-sm">Products</h3>
@@ -151,7 +151,7 @@ export const AdminSuppliers = () => {
                     </TableCell>
                   </TableRow>
                 )}
-              </>
+              </Fragment>
             ))}
           </TableBody>
         </Table>
@@ -166,12 +166,10 @@ export const AdminSuppliers = () => {
 const SupplierDialog = ({ state, onClose, onSave }: any) => {
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
-  useState(() => { setForm(state.row ?? { supplier_type: "broadband", status: "active", api_mode: "manual", reverse_charge_possible: false }); });
-  // re-init on open
-  if (state.open && form && form.__id !== (state.row?.id ?? "new")) {
-    const init = state.row ?? { supplier_type: "broadband", status: "active", api_mode: "manual", reverse_charge_possible: false };
-    setForm({ ...init, __id: state.row?.id ?? "new" });
-  }
+  useEffect(() => {
+    if (!state.open) return;
+    setForm(state.row ?? { supplier_type: "broadband", status: "active", api_mode: "manual", reverse_charge_possible: false });
+  }, [state.open, state.row]);
   const F = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
   return (
     <Dialog open={state.open} onOpenChange={(o) => !o && onClose()}>
@@ -216,7 +214,7 @@ const SupplierDialog = ({ state, onClose, onSave }: any) => {
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button variant="hero" disabled={saving} onClick={async () => {
-            setSaving(true); const { __id, ...payload } = form; await onSave(state.row ? { ...payload, id: state.row.id } : payload); setSaving(false);
+            setSaving(true); await onSave(state.row ? { ...form, id: state.row.id } : form); setSaving(false);
           }}>{saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Save</Button>
         </DialogFooter>
       </DialogContent>
@@ -227,10 +225,10 @@ const SupplierDialog = ({ state, onClose, onSave }: any) => {
 const ProductDialog = ({ state, onClose, onSave }: any) => {
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
-  if (state.open && form.__id !== (state.row?.id ?? `new-${state.supplierId}`)) {
-    const init = state.row ?? { supplier_id: state.supplierId, service_type: "broadband", supplier_vat_rate: 20, reverse_charge: false, active: true };
-    setForm({ ...init, __id: state.row?.id ?? `new-${state.supplierId}` });
-  }
+  useEffect(() => {
+    if (!state.open) return;
+    setForm(state.row ?? { supplier_id: state.supplierId, service_type: "broadband", supplier_vat_rate: 20, reverse_charge: false, active: true });
+  }, [state.open, state.row, state.supplierId]);
   const F = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
   return (
     <Dialog open={state.open} onOpenChange={(o) => !o && onClose()}>
@@ -271,7 +269,7 @@ const ProductDialog = ({ state, onClose, onSave }: any) => {
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button variant="hero" disabled={saving} onClick={async () => {
-            setSaving(true); const { __id, ...payload } = form; await onSave(state.row ? { ...payload, id: state.row.id } : payload); setSaving(false);
+            setSaving(true); await onSave(state.row ? { ...form, id: state.row.id } : form); setSaving(false);
           }}>{saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Save</Button>
         </DialogFooter>
       </DialogContent>

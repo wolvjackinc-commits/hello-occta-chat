@@ -373,7 +373,7 @@ const HeroSection = () => {
                     "Full Fibre where available",
                     "Works on the Openreach network",
                     "UK-based support when you need it",
-                    "Free installation (limited time)",
+                    "Installation costs (if any) shown in your Contract Summary",
                   ].map(line => (
                     <p key={line} className="flex items-center gap-2 sm:gap-2.5 text-[13px] sm:text-[15px] font-semibold text-foreground">
                       <Check className="w-4 sm:w-[18px] h-4 sm:h-[18px] text-primary flex-shrink-0" />

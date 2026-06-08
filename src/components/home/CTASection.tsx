@@ -78,7 +78,7 @@ const CTASection = () => {
               transition={{ duration: 0.2 }}
             >
               <Sparkles className="w-5 h-5" />
-              <span className="font-display uppercase tracking-wider">Limited Time: Free Installation Worth £60</span>
+              <span className="font-display uppercase tracking-wider">Quote-led signup — confirmed in your Contract Summary</span>
             </motion.div>
           </motion.div>
 
@@ -111,7 +111,7 @@ const CTASection = () => {
             variants={itemVariants}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Link to="/auth?mode=signup">
+            <Link to="/quote/start?interest=broadband">
               <motion.div
                 whileHover={{ 
                   y: -6, 
@@ -122,7 +122,7 @@ const CTASection = () => {
                 transition={{ duration: 0.15 }}
               >
                 <Button variant="hero" size="xl" className="w-full sm:w-auto border-background">
-                  Get Started
+                  Get a personalised quote
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </motion.div>
@@ -154,7 +154,7 @@ const CTASection = () => {
             variants={itemVariants}
             className="mt-4 text-sm text-background/60"
           >
-            Switch in under 60 seconds
+            Final price, contract length, fees, speed and key terms will be confirmed in your Contract Summary before you pay.
           </motion.p>
 
           {/* Trust Note */}

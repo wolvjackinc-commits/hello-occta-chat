@@ -16,7 +16,7 @@ export function OrdersTimelineTab({ userId, userEmail }: { userId: string; userE
     (async () => {
       const [qr, qq, cs, ord, inv, rcpt] = await Promise.all([
         supabase.from("quote_requests").select("created_at,status").or(`customer_id.eq.${userId}${userEmail ? `,email.eq.${userEmail.toLowerCase()}` : ""}`).order("created_at", { ascending: false }).limit(1),
-        supabase.from("quotes").select("created_at,sent_at,status").eq("customer_id", userId).order("created_at", { ascending: false }).limit(1),
+        supabase.from("quotes").select("created_at,status").eq("customer_id", userId).order("created_at", { ascending: false }).limit(1),
         supabase.from("contract_summaries").select("issued_at,accepted_at").eq("customer_id", userId).order("issued_at", { ascending: false }).limit(1),
         supabase.from("orders").select("created_at,status,installation_date").eq("user_id", userId).order("created_at", { ascending: false }).limit(1),
         supabase.from("invoices").select("issue_date,status").eq("user_id", userId).order("issue_date", { ascending: false }).limit(1),
@@ -26,7 +26,7 @@ export function OrdersTimelineTab({ userId, userEmail }: { userId: string; userE
       const ordRow: any = ord.data?.[0]; const invRow: any = inv.data?.[0]; const rcptRow: any = rcpt.data?.[0];
       const steps: Step[] = [
         { key: "qr", label: "Quote requested", at: qrRow?.created_at ?? null },
-        { key: "qs", label: "Quote sent", at: qqRow?.sent_at ?? qqRow?.created_at ?? null },
+        { key: "qs", label: "Quote sent", at: qqRow?.status && qqRow.status !== "draft" ? qqRow.created_at : null },
         { key: "ci", label: "Contract Summary issued", at: csRow?.issued_at ?? null },
         { key: "ca", label: "Contract Summary accepted", at: csRow?.accepted_at ?? null },
         { key: "ip", label: "Payment pending", at: invRow?.status && invRow.status !== "paid" ? invRow.issue_date : null },

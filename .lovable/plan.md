@@ -1,258 +1,148 @@
-Approved — start Phase 5 only, but apply these corrections before coding.
+Approved — start Phase 5 corrections / Phase 5B only, but apply this final correction before coding.
 
-1. Customer-safe views are mandatory
+Main correction:
 
-Do NOT give customers direct SELECT access to tables that contain internal fields.
+Do not create customer-safe views in a way that requires direct customer SELECT access to sensitive base tables.
 
-Create safe customer/public views or RPCs for:
+Use one of these safe approaches:
 
-- customer_rewards_view
+Option A — preferred:
 
-- customer_points_ledger_view
+Create SECURITY DEFINER RPCs for customer-safe reads:
 
-- customer_reward_accounts_view
+- get_customer_reward_account()
 
-- customer_referral_codes_view
+- get_customer_points_ledger()
 
-- public_contract_benefits_view
+- get_customer_rewards()
 
-Reason:
+- get_customer_referral_codes()
 
-RLS restricts rows, not columns. If customers can SELECT from rewards directly, they may be able to request internal columns such as margin_check_status, admin_approved_by, reversal_reason, internal_cost_estimate or fraud-related fields.
+- get_public_contract_benefits()
 
-Customers/dashboard must read only from safe views/RPCs.
+Each RPC must:
 
-2. contract_benefits public access
+- return only safe columns
 
-Do NOT grant anon SELECT directly on contract_benefits because it includes internal_cost_estimate and admin terms.
+- enforce auth.uid() for customer data
 
-Instead:
+- expose no margin, admin, fraud, reversal_reason, internal_cost_estimate, admin notes, token hashes or internal fields
 
-- Keep contract_benefits admin-only table.
+- set search_path = public
 
-- Create public_contract_benefits_view with only:
+Option B:
 
-  benefit_name
+Use safe views only if permissions are confirmed to not allow customers to query the base tables directly.
 
-  benefit_type
+Important:
 
-  plan_type
+RLS controls rows, not columns. Customers must not be able to SELECT directly from rewards, points_ledger, reward_accounts, referral_codes, contract_benefits, fraud_flags or campaign_drafts if those tables contain internal fields.
 
-  customer_type
+Admin pages can continue using admin-only access to base tables through RLS/roles or edge functions.
 
-  description
+Also apply the rest of the Phase 5 corrections exactly:
 
-  value_label
+1. Points ledger must be append-only.
 
-  terms_text
+No UPDATE/DELETE for anon/authenticated.
 
-  starts_at
+Reversals must always be new ledger rows.
 
-  ends_at
+No direct editing of cached balances.
 
-  active
+2. approve-reward must enforce role rules server-side:
 
-Public /rewards page must read from this safe view only.
-
-3. points_ledger append-only trigger
-
-Do not rely on `current_user = 'service_role'` because Supabase may not expose service_role as current_user in the way expected.
-
-Use one of these safer approaches:
-
-- Revoke UPDATE/DELETE from authenticated/anon entirely.
-
-- Only service-role edge functions write ledger changes.
-
-- Add trigger checks using request JWT role if available, e.g. auth.role() or current_setting('request.jwt.claim.role', true), but do not rely only on current_user='service_role'.
-
-Reversals must always be new ledger rows, not edits.
-
-4. rewards approval protection
-
-Do not rely only on a database trigger to know whether actor is admin/super_admin unless role detection is confirmed.
-
-Enforce red-margin override rules inside approve-reward edge function:
-
-- red margin requires override_reason >= 10 chars
-
-- only admin/super_admin can override red margin
+- admin/super_admin can override red margin with reason
 
 - finance_admin can approve bill_credit only when margin is not red
 
 - all approvals/reversals logged
 
-5. reward_accounts cached balances
+3. track-referral-click must store only hashed IP/UA using server-side salt.
 
-Balances are cached only. Truth is points_ledger.
+No raw IP, raw UA, cookie, fingerprint or PII.
 
-No admin/manual UI should directly edit cached balances.
+4. attach-referral-to-quote must never block the quote journey.
 
-Any adjustment must create a ledger row and then call recompute_reward_balances.
+If self-referral or uncertainty is detected, create a manual_review fraud flag and continue.
 
-6. Referral code generation
+5. Campaign publish must be double-guarded in edge function and DB:
 
-Referral codes must avoid confusing characters.
+- margin green/amber
 
-Use uppercase safe charset only:
+- compliance passed
 
-ABCDEFGHJKLMNPQRSTUVWXYZ23456789
+- approval_status approved
 
-No O/0/I/1 confusion.
+- valid date range
 
-7. Referral self-fraud
+- active=true only
 
-attach-referral-to-quote must check as much as possible:
+No email, SMS, homepage change or ad trigger in this phase.
 
-- same logged-in customer
+6. Email/SMS campaign compliance check must fail if missing:
 
-- same email
+- target audience
 
-- same phone
+- opt-in/soft-opt-in wording
 
-- same quote/customer if available
-
-- same active referral owner
-
-If uncertain, create fraud_flag manual_review, but do not block the quote journey.
-
-8. track-referral-click privacy
-
-Hash IP/UA with server-side salt only.
-
-Do not store raw IP, raw user agent, full cookies or full fingerprint.
-
-Rate limit this endpoint.
-
-9. Campaign publish trigger
-
-Do not allow published/active campaign unless:
-
-- margin_check_status is green or amber
-
-- compliance_check_status is passed
-
-- approval_status is approved
-
-- start/end dates valid if provided
-
-Also enforce this in publish-campaign edge function, not only DB trigger.
-
-10. Campaigns do not affect public site automatically
-
-In Phase 5, publishing only marks the campaign active/admin-ready.
-
-Do not auto-change homepage, send email, send SMS, or run ads.
-
-11. Marketing consent
-
-For email/SMS campaign drafts, compliance check must require:
-
-- target audience description
-
-- opt-in/soft-opt-in note
-
-- unsubscribe/opt-out wording
+- unsubscribe/STOP wording
 
 - offer terms
 
-- expiry/eligibility conditions
+- expiry/eligibility
 
-Do not send any marketing in Phase 5.
+- VAT wording
 
-12. Referral capture
+7. Rewards dashboard must read only from safe RPCs/views.
 
-captureReferralFromUrl should:
+If rewards_enabled=false, show coming-soon state.
 
-- store code in sessionStorage only
+If rewards_enabled=true, show referral code, points, bill credit, rewards, ledger and active benefits from safe data only.
 
-- not override an existing referral code unless a new code is intentionally supplied
+8. Public /rewards page must read only public safe benefits data.
 
-- not break normal browsing if track-referral-click fails
+No direct contract_benefits table access from public page.
 
-- not store PII
+9. Referral capture:
 
-13. QuoteStart referral attach
+- read ?ref=
 
-Best-effort only. If attach-referral-to-quote fails, quote submission must still succeed.
+- validate code format
 
-14. Activity logs
+- store only in sessionStorage
 
-Log IDs/statuses only.
+- call track-referral-click best-effort
 
-Do not log:
+- never break navigation
 
-- full PII
+- attach to quote best-effort after quote submission
 
-- IP/UA raw values
+- failure must not block quote request
 
-- reward internal notes
+10. No rewards should affect invoices automatically in this phase.
 
-- payment data
-
-- tokens
-
-- bank/card data
-
-- full campaign recipient lists
-
-15. Finance impact
-
-Rewards and bill credits must not affect invoices automatically in Phase 5.
-
-Phase 5 only creates ledger/reward records.
-
-Invoice application can be done later after finance/VAT export logic is built.
-
-16. Existing project safety
+No invoice credits, no VAT impact, no payment flow changes.
 
 Do not touch:
 
-- Worldpay webhook/HPP
+Worldpay webhook/HPP, invoice generation, DD mandates, /pay, /pay-invoice, public /quote flow, checkout gate, AI chat, SEO pages, finance exports, complaints workflow, Phase 3 pricing/margin pages.
 
-- invoice generation
+After finishing, stop and report:
 
-- DD mandates
+- views/RPCs added
 
-- /pay
+- RLS/grant changes
 
-- /pay-invoice
-
-- public /quote flow
-
-- checkout gate
-
-- AI chat engine
-
-- SEO pages
-
-- finance exports
-
-- complaints workflow
-
-- Phase 3 pricing/margin admin pages, except read-only use where needed
-
-17. Stop after Phase 5
-
-After completion, report:
-
-- tables added
-
-- safe views/RPCs added
-
-- functions added
-
-- admin pages added
+- edge functions changed
 
 - dashboard Rewards changes
 
 - public /rewards changes
 
-- campaign safety behaviour
+- referral capture behaviour
 
-- RLS/policies
-
-- activity logs
+- activity log shape
 
 - what was untouched
 
@@ -260,168 +150,132 @@ After completion, report:
 
 - warnings/errors
 
-Start Phase 5 only.
-
+Start Phase 5 corrections / Phase 5B only.  
   
   
-Phase 5 — Rewards, Referrals, Contract Benefits & Campaign Engine
+Phase 5 Corrections Plan
 
-Build the full structural layer for rewards, referrals, contract benefits and a margin/compliance-gated campaign engine. Everything ships disabled-by-default and gated by `platform_settings.rewards_enabled` + admin approval. No reward values, no auto-publishing, no email/SMS sending.
+Phase 5 scaffolding (tables, edge functions, admin pages) is already in place. This plan applies the 17 corrections you specified before any customer-facing surface is wired up. No work begins on Phase 6.
 
-## Scope guardrails
+### 1. Migration — Customer-safe views & hardening
 
-Untouched: Worldpay webhook, invoice generation, DD mandates, public `/quote/*` flow, `/checkout` gate, `/pay`, `/pay-invoice`, SEO pages, AI chat engine, finance exports, complaints workflow, Phase 3 admin pricing/margin pages, Phase 4 customer dashboard (only the Rewards tab is upgraded).
+New migration creating SECURITY INVOKER views with **only safe columns**, plus revokes/grants:
 
-Existing `campaigns` + `campaign_recipients` tables are left intact. Phase 5 uses a new `campaign_drafts` table as the engine; existing campaigns table is not migrated or repurposed.
+- `public.customer_rewards_view` — id, customer_id, reward_type, reward_value, status, unlock_rule, issued_at, expires_at (no margin_check_status, admin_approved_by, reversal_reason, internal cost fields).
+- `public.customer_points_ledger_view` — id, customer_id, source_type, points_delta, bill_credit_delta, status, reason (sanitised), created_at, available_at (no created_by, no override notes).
+- `public.customer_reward_accounts_view` — customer_id, points_balance_cached, bill_credit_balance_cached, updated_at.
+- `public.customer_referral_codes_view` — id, code, status, usage_count, expires_at, created_at (scoped to `customer_id = auth.uid()`).
+- `public.public_contract_benefits_view` — benefit_name, benefit_type, plan_type, customer_type, description, value_label, terms_text, starts_at, ends_at, active (no internal_cost_estimate, no admin notes). `WHERE active = true`.
 
-## 1. Database migration (single migration)
+Grants:
 
-New enums:
+- `REVOKE SELECT ON public.rewards, points_ledger, reward_accounts, referral_codes, contract_benefits, fraud_flags, campaign_drafts FROM anon, authenticated;` (admin/service_role retained via existing policies + service_role grant).
+- `GRANT SELECT ON customer_*_view TO authenticated;`
+- `GRANT SELECT ON public_contract_benefits_view TO anon, authenticated;`
+- Confirm `fraud_flags` has no customer-readable policy.
 
-- `reward_account_status` — active|suspended|closed
-- `referral_code_status` — active|paused|expired|blocked
-- `referral_event_type` — clicked|quote_started|quote_submitted|quote_sent|contract_accepted|payment_cleared|service_activated|reward_eligible|reward_approved|reward_reversed
-- `points_ledger_source` — bill_payment|referral|contract_bonus|admin_adjustment|reversal|expiry|campaign
-- `points_ledger_status` — pending|approved|used|reversed|expired
-- `reward_type` — bill_credit|points|streaming_gift|gift_card|contract_benefit|partner_commission
-- `reward_status` — pending|eligible|approved|issued|used|reversed|expired|blocked
-- `reward_unlock_rule` — first_cleared_payment|second_cleared_payment|custom_rule
-- `contract_benefit_type` — streaming_reward|bill_credit|extra_points|setup_discount|router_delivery|digital_voice_setup|bundle_discount|custom
-- `benefit_plan_type` — flex|contract_saver|both
-- `benefit_customer_type` — residential|business|both
-- `fraud_flag_type` / `fraud_flag_severity` / `fraud_flag_status`
-- `campaign_draft_type` — homepage_banner|landing_page|referral_offer|contract_saver_offer|b2b_offer|email|sms|seo_draft|ads_copy|winback|failed_payment_recovery
-- `campaign_margin_status` — not_checked|green|amber|red
-- `campaign_compliance_status` — not_checked|passed|failed|needs_review
-- `campaign_approval_status` — draft|margin_check|compliance_check|admin_approval|approved|published|paused|rejected
+### 2. points_ledger append-only — safer enforcement
 
-New tables (each with explicit `GRANT` block + RLS + policies, then triggers):
+Update the trigger function so it does not rely on `current_user = 'service_role'`:
 
-- `reward_accounts` — one per customer, balances cached only (truth = ledger).
-- `referral_codes` — unique `code`, optional `customer_id` / `partner_id`, status, expiry, usage counters.
-- `referral_events` — append-only event stream; only hashed IP/UA stored.
-- `points_ledger` — append-only; UPDATE/DELETE blocked by trigger except `service_role`; reversals are new rows.
-- `rewards` — lifecycle rows with margin/admin approval metadata.
-- `contract_benefits` — admin-defined; `active=false` by default; `requires_margin_green=true` default.
-- `fraud_flags` — internal-only.
-- `campaign_drafts` — full lifecycle; `active=false` default.
+- Hard `REVOKE INSERT, UPDATE, DELETE ON points_ledger FROM anon, authenticated;` so only service_role can write.
+- Keep `trg_points_ledger_no_update` raising on UPDATE/DELETE for ALL roles (including service_role) so even edge functions cannot mutate — reversals must INSERT a new row.
+- Remove any "service_role bypass" branch if present.
 
-Triggers:
+### 3. rewards red-margin guard — enforce in edge function
 
-- `points_ledger_block_mutation` — blocks UPDATE/DELETE unless `current_user = 'service_role'`.
-- `rewards_block_approval_without_margin` — if `status` moves to `approved` or `issued` and `margin_check_status = 'red'` and the actor is not admin/super_admin, raise.
-- `campaign_drafts_block_publish` — on transition to `published`/`active=true`, require `margin_check_status IN ('green','amber')`, `compliance_check_status='passed'`, `approval_status='approved'`, and valid dates; otherwise raise.
-- `set_updated_at` triggers on the six mutable tables.
+Keep DB trigger as a backstop but make `approve-reward` authoritative:
 
-Helper functions (SECURITY DEFINER, `set search_path = public`):
+- Re-verify caller role server-side (admin/super_admin/finance_admin) via `user_roles`.
+- finance_admin → only `bill_credit` AND margin must not be red.
+- red margin → require admin/super_admin + `override_reason` ≥ 10 chars; log override flag in activity_log.
+- Always write ledger row + call `recompute_reward_balances`; never mutate cached balance directly.
 
-- `has_marketing_or_admin(_uid uuid)` — reuse existing role helpers.
-- `recompute_reward_balances(_customer_id uuid)` — sums approved ledger rows into `reward_accounts` caches.
-- `current_reward_unlock_rule()` — reads `platform_settings.rewards_unlock_rule`.
+### 4. reverse-reward — ledger-only
 
-## 2. RLS policies
+Confirm function always inserts a reversal row and re-runs `recompute_reward_balances`. No direct UPDATE on `reward_accounts` anywhere in the codebase. Remove any admin UI affordance to edit cached balances (Rewards admin page reads cache, edits only via approve/reverse).
 
-Pattern: deny-by-default, then explicit policies using existing `has_role`, `is_staff`, `has_finance_access`, `has_marketing_access`, `has_compliance_access`.
+### 5. Referral safety adjustments
 
-- `reward_accounts`, `points_ledger`, `rewards` — customer SELECT where `customer_id = auth.uid()`; admin/super_admin/finance_admin full SELECT; only `service_role` writes. Customer never sees `margin_check_status`, `admin_approved_by`, `reversal_reason` (handled by selecting a safe view in the dashboard tab — see §5).
-- `referral_codes` — customer SELECT own; admin/super_admin/marketing_admin SELECT all; INSERT via edge function (service_role) or admin.
-- `referral_events` — no customer SELECT; admin/super_admin/marketing_admin/support_agent SELECT; only service_role writes.
-- `contract_benefits` — public SELECT where `active = true` only; admin/super_admin/marketing_admin full CRUD.
-- `fraud_flags` — admin/super_admin/compliance_admin only; no customer access.
-- `campaign_drafts` — admin/super_admin/marketing_admin/compliance_admin SELECT; marketing_admin INSERT/UPDATE on own drafts in non-approved statuses; admin/super_admin only for approve/publish; auditor SELECT.
+- `create-referral-code` already uses safe charset `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` — verify and keep.
+- `attach-referral-to-quote` — extend self-referral checks: same logged-in customer_id, same email, same phone, same referral owner; on uncertainty insert `fraud_flags` with `severity='low'`, `flag_type='manual_review'` and **still return ok** so quote journey continues.
+- `track-referral-click` — confirm SHA-256 with `REFERRAL_HASH_SALT`, no raw IP/UA stored, rate limit 20/min already in place. Add explicit comment + ensure no cookie/fingerprint capture.
 
-GRANTs: `authenticated` + `service_role` for customer-readable tables; `service_role` only for the rest; `anon` only on `contract_benefits` SELECT (public marketing page).
+### 6. Campaign publish — double-guard
 
-## 3. Edge functions (all use shared CORS + JWT helpers, all `verify_jwt = false`-compatible with in-code auth)
+`publish-campaign` already checks `approval_status=approved`, margin in (green, amber), compliance=passed. Add explicit start/end validity check (`ends_at > starts_at` when both set). DB trigger `campaign_drafts_block_publish` remains as backstop. Phase 5 publish **only** flips `active=true` — no email, SMS, homepage change, or ad trigger (already true; add code comment + activity_log note).
 
-- `create-referral-code` — POST. Auth required. Generates collision-checked 8-char code, blocks 2nd active code per customer unless admin. Logs `referral_code_created`.
-- `track-referral-click` — POST public, rate-limited via `check_rate_limit`. Hashes IP+UA with SHA-256 + server salt. Inserts `clicked` event. Returns `{ ok: true }`.
-- `attach-referral-to-quote` — POST internal (called from existing `submit-quote-request` after insert OR from client with code + quote_request_id). Validates code active, not self-referral (email/phone match against quote_request), inserts `quote_submitted` event. Does NOT modify the existing submit-quote-request flow's main path; it's called best-effort and failure is swallowed.
-- `evaluate-reward-eligibility` — POST admin/service. Inputs: `customer_id` or `reward_id`. Reads unlock rule from `platform_settings`, checks placeholder activation/payment counts from existing `invoices`/`payment_attempts`, calls `can_send_quote`-style margin lookup if a related quote exists, sets reward to `eligible` or `blocked`. Logs `reward_eligibility_checked`.
-- `approve-reward` — POST admin/super_admin (and finance_admin for `bill_credit` type only). Re-checks margin; if red, requires `override_reason` (≥10 chars) and admin/super_admin role. Inserts approved `points_ledger` row, recomputes `reward_accounts`, sets reward to `approved` then `issued`. Logs `reward_approved`.
-- `reverse-reward` — POST admin/super_admin/finance_admin. Requires `reason` (≥10 chars). Inserts negative `points_ledger` row with `status=reversed`, sets reward to `reversed`. Logs `reward_reversed`.
-- `create-campaign-draft` — POST marketing_admin/admin. Inserts draft, logs `campaign_created`.
-- `run-campaign-margin-check` — POST marketing/admin. Reads optional cost inputs, compares against `margin_rules` floor; sets `green|amber|red`. Logs `campaign_margin_checked`.
-- `run-campaign-compliance-check` — POST marketing/admin/compliance. Runs heuristic checks against `draft_copy` + `offer_terms` (regex for "free", "guaranteed", "no fees" without disclaimer; VAT wording; presence of terms/eligibility/expiry; consent reminder for email/sms types). Sets `passed|failed|needs_review`. Logs `campaign_compliance_checked`.
-- `approve-campaign` — POST admin/super_admin. Requires margin in green/amber AND compliance passed. Sets `approval_status=approved`. Logs `campaign_approved`.
-- `publish-campaign` — POST admin/super_admin. Requires `approval_status=approved`. Sets `published_at=now()`, `active=true`. Does NOT send email/SMS or alter homepage. Logs `campaign_published`.
-- `pause-campaign` — POST admin/super_admin/marketing_admin. Sets `active=false`, `approval_status=paused`. Logs `campaign_paused`.
+### 7. Compliance check — marketing consent
 
-All write the existing `log_event` RPC with safe details (IDs only, no PII).
+Extend `run-campaign-compliance-check` to require, for `email`/`sms` types:
 
-## 4. Admin pages
+- non-empty `target_audience` description
+- opt-in / soft-opt-in wording (`opt-in`, `consent`, `subscribed`)
+- unsubscribe / STOP wording in `offer_terms`
+- expiry/eligibility wording
+- VAT wording
 
-New routes wired in `src/App.tsx` and `AdminLayout.tsx` nav (lazy-loaded, brutalist):
+Already partially implemented — tighten thresholds: missing any of the above for email/sms → `failed` (not `needs_review`).
 
-- `src/pages/admin/Rewards.tsx` — `/admin/rewards`. Search by account/customer; tabs for Pending / Eligible / Approved / Reversed; row actions invoke `approve-reward` / `reverse-reward` (reason dialog); ledger viewer per customer. No "withdraw cash" control anywhere.
-- `src/pages/admin/Referrals.tsx` — `/admin/referrals`. Codes table (pause/block), events feed, funnel counters, suspicious flags from `fraud_flags`, manual review dialog.
-- `src/pages/admin/ContractBenefits.tsx` — `/admin/contract-benefits`. CRUD on `contract_benefits`; plan/customer-type selects, active toggle, terms textarea, margin-required switch. Default new rows inactive.
-- `src/pages/admin/Campaigns.tsx` — `/admin/campaigns`. List of `campaign_drafts` with filters; detail drawer with margin/compliance/approve/publish/pause/reject actions. AI draft button is disabled with tooltip "AI drafting arrives in a later phase". No publish-to-email/SMS UI.
+### 8. Frontend — customer dashboard Rewards tab
 
-Each page uses existing brutalist table/dialog patterns and the admin dialog standards (flex-col, max-h-[90vh], internal scrolling).
+Update `src/components/dashboard/tabs/RewardsTab.tsx`:
 
-## 5. Customer dashboard — Rewards tab upgrade
+- Gated by `platform_settings.rewards_enabled`. If false → keep "coming soon" copy.
+- If true → query **only** safe views: `customer_reward_accounts_view`, `customer_points_ledger_view` (last 20), `customer_referral_codes_view`, `public_contract_benefits_view`.
+- "Create referral code" CTA → invokes `create-referral-code`.
+- Copyable referral link `https://www.occta.co.uk/?ref=CODE`.
+- No internal fields rendered.
 
-Replace `src/components/dashboard/tabs/RewardsTab.tsx` placeholder with a real-but-safe view:
+### 9. Public `/rewards` page
 
-- Reads `usePlatformSettings()`; if `!rewardsEnabled`, render the prepared-state empty card (copy from spec).
-- Else fetch (parallel, all scoped to `auth.uid()`):
-  - `reward_accounts` row (cached balances).
-  - `points_ledger` last 20 approved/pending rows (safe columns only).
-  - `rewards` for the customer — select only customer-safe columns (`reward_type, status, reward_value, reward_currency, created_at, updated_at`); omit `margin_check_status`, `admin_approved_by`, `reversal_reason`.
-  - `referral_codes` for the customer (their active code, copyable link `{origin}/?ref=CODE`).
-  - `contract_benefits` where `active=true` and `plan_type IN (their plan, both)`.
-- "Create referral code" CTA invokes `create-referral-code` if none exists.
-- No hardcoded reward £ values — only render values that come from DB rows.
-- Log `tab_view` with `tab: "rewards"`.
+Update `src/pages/Rewards.tsx` to read `public_contract_benefits_view` (anon). Render benefit_name, value_label, description, terms_text, eligibility window. No customer-specific data, no ledger calls.
 
-## 6. Public `/rewards` page
+### 10. Referral capture utility
 
-Edit `src/pages/Rewards.tsx`:
+New `src/lib/referral.ts`:
 
-- Keep teaser block when `rewardsEnabled=false`.
-- When enabled, fetch active `contract_benefits` (anon SELECT) and render their `benefit_name`, `description`, `value_label`, `terms_text`. Add a fixed disclaimer block: "Values and eligibility are shown before activation. No cash withdrawal. Rewards are subject to activation, successful cleared payment and margin/compliance rules."
+- `captureReferralFromUrl()` — reads `?ref=`, validates charset, stores in `sessionStorage` only, does NOT overwrite an existing stored code unless URL explicitly supplies a new valid code, swallows all errors, fires `track-referral-click` best-effort.
+- `getStoredReferralCode()` / `clearStoredReferralCode()`.
+- Called once from `src/App.tsx` on mount.
 
-## 7. Referral capture (lightweight, non-invasive)
+### 11. QuoteStart attach
 
-- Add `src/lib/referral.ts` with `captureReferralFromUrl()` that reads `?ref=` and stores it in `sessionStorage` under `occta_ref`, plus fires `track-referral-click` (best-effort, swallows errors).
-- Hook called once from `src/App.tsx` mount effect. No changes to `submit-quote-request`; instead, after the existing quote-request submit in `src/pages/quote/QuoteStart.tsx`, fire `attach-referral-to-quote` best-effort with the stored code and the returned `quote_request_id`. If no code or call fails, the user flow is unaffected.
+In `src/pages/quote/QuoteStart.tsx`, after successful quote-request submission, fire-and-forget `attach-referral-to-quote` with stored code. Wrap in try/catch; never block submission or show error to user. Clear stored code on success.
 
-## 8. Activity logging additions
+### 12. Activity logging hygiene
 
-All listed Phase 5 event types are emitted server-side from the new edge functions via existing `log_event` RPC. No new client-side event types added (Phase 4 list stays).
+Audit all new `log_event` calls (approve-reward, reverse-reward, attach-referral, track-referral-click, campaign_*): ensure details contain IDs + statuses only — no email, phone, IP, UA, override note text beyond truncated reason, no recipient lists, no card/bank/token data. Adjust where needed.
 
-## 9. Verification checklist
+### 13. Finance isolation
 
-- `/admin/rewards`, `/admin/referrals`, `/admin/contract-benefits`, `/admin/campaigns` all render with empty states.
-- Customer dashboard Rewards tab shows prepared-state when `rewards_enabled=false`; shows ledger/code/benefits when true (with no hardcoded values).
-- `/rewards` teaser unchanged when disabled; lists active benefits when enabled.
-- `create-referral-code` returns a unique code; second active call for same customer returns 409.
-- `track-referral-click` writes a `clicked` event with hashed IP/UA only.
-- `approve-reward` writes a `points_ledger` row and updates `reward_accounts` cache.
-- `reverse-reward` writes a negative ledger row.
-- `publish-campaign` rejects unless margin∈{green,amber}, compliance=passed, approval_status=approved.
-- Existing routes still render: `/`, `/dashboard`, `/admin/overview`, `/admin/quotes`, `/admin/pricing-rules`, `/quote/start`, `/quote/:token`, `/checkout`, `/pay`, `/pay-invoice`, `/track-order`.
-- Worldpay webhook, invoice generation, DD mandates, AI chat, SEO pages, finance exports, complaints workflow untouched.
+No code path applies rewards to invoices in Phase 5. Confirm `generate-invoices`, `worldpay-webhook`, `process-late-fees` are untouched. Add code comment on `reward_accounts` describing Phase 6 application boundary.
 
-## Files
+### 14. Untouched (verified at end)
 
-New:
+Worldpay webhook/HPP, invoice generation, DD mandates, /pay, /pay-invoice, public /quote flow, checkout gate, AI chat, SEO pages, finance exports, complaints workflow, Phase 3 admin pricing/margin pages (read-only consumption only).
 
-- `supabase/migrations/<ts>_phase5_rewards_campaigns.sql`
-- `supabase/functions/{create-referral-code,track-referral-click,attach-referral-to-quote,evaluate-reward-eligibility,approve-reward,reverse-reward,create-campaign-draft,run-campaign-margin-check,run-campaign-compliance-check,approve-campaign,publish-campaign,pause-campaign}/index.ts`
-- `src/pages/admin/{Rewards,Referrals,ContractBenefits,Campaigns}.tsx`
+### Files to be added / modified
+
+**New:**
+
+- `supabase/migrations/<ts>_phase5_safe_views_and_hardening.sql`
 - `src/lib/referral.ts`
 
-Edited:
+**Modified:**
 
-- `src/App.tsx` (4 lazy routes + referral capture mount)
-- `src/components/admin/layout/AdminLayout.tsx` (4 nav entries)
-- `src/components/dashboard/tabs/RewardsTab.tsx` (real view)
-- `src/pages/Rewards.tsx` (active-benefits section when enabled)
-- `src/pages/quote/QuoteStart.tsx` (best-effort `attach-referral-to-quote` post-submit)
-- `.lovable/plan.md` (Phase 5 notes)
+- `supabase/functions/approve-reward/index.ts` (tighten role checks + logging)
+- `supabase/functions/reverse-reward/index.ts` (logging hygiene only)
+- `supabase/functions/attach-referral-to-quote/index.ts` (extended self-fraud checks, never block)
+- `supabase/functions/track-referral-click/index.ts` (confirm no raw PII, comments)
+- `supabase/functions/run-campaign-compliance-check/index.ts` (stricter email/sms gating)
+- `supabase/functions/publish-campaign/index.ts` (date validity, comments)
+- `src/components/dashboard/tabs/RewardsTab.tsx` (live read of safe views, gated by rewards_enabled)
+- `src/pages/Rewards.tsx` (read `public_contract_benefits_view`)
+- `src/pages/quote/QuoteStart.tsx` (best-effort attach + clear)
+- `src/App.tsx` (one-time `captureReferralFromUrl`)
+- `src/pages/admin/Rewards.tsx` (remove any direct cached-balance edit affordance if present)
 
-## Stop point
+### Stop point
 
-After Phase 5, report tables added, functions added, admin pages added, dashboard changes, public rewards page changes, campaign safety behaviour, RLS/policies, activity logs, what was untouched, verification result, warnings/errors. Do not start Phase 6.
+After implementation I will report: tables added (none new — views only), safe views/RPCs added, edge functions changed, admin pages changed, dashboard Rewards changes, public /rewards changes, campaign safety behaviour, RLS/grant changes, activity log shape, untouched systems, verification result (build + spot-checks), any warnings/errors. I will not start Phase 6.

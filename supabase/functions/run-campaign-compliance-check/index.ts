@@ -15,6 +15,8 @@ function checkCopy(text: string, terms: string, type: string, audience: string) 
     if (!audience || audience.length < 5) issues.push("missing_audience");
     if (!/(opt-in|opt in|consent|subscribed)/.test((audience + " " + tm).toLowerCase())) issues.push("missing_consent_note");
     if (!/(unsubscribe|opt-out|stop)/.test(tm)) issues.push("missing_unsubscribe");
+    if (!/(eligib|qualif|condition|expires|until|valid)/.test(tm)) issues.push("missing_eligibility_or_expiry");
+    if (!/(vat|incl\.? vat|ex\.? vat)/.test(t + " " + tm)) issues.push("missing_vat_wording");
   }
 
   return issues;
@@ -36,8 +38,19 @@ Deno.serve(async (req) => {
 
   const issues = checkCopy(c.draft_copy ?? "", c.offer_terms ?? "", c.campaign_type, c.target_audience ?? "");
   let status: "passed" | "failed" | "needs_review" = "passed";
-  if (issues.some((i) => ["guarantee_claim", "missing_unsubscribe", "missing_consent_note"].includes(i))) status = "failed";
-  else if (issues.length > 0) status = "needs_review";
+  const FAIL_FOR_EMAIL_SMS = [
+    "guarantee_claim", "missing_unsubscribe", "missing_consent_note",
+    "missing_audience", "missing_eligibility_or_expiry", "missing_vat_wording",
+    "free_without_terms", "no_hidden_fees_unqualified",
+  ];
+  const isEmailOrSms = c.campaign_type === "email" || c.campaign_type === "sms";
+  if (issues.some((i) => ["guarantee_claim", "missing_unsubscribe", "missing_consent_note"].includes(i))) {
+    status = "failed";
+  } else if (isEmailOrSms && issues.some((i) => FAIL_FOR_EMAIL_SMS.includes(i))) {
+    status = "failed";
+  } else if (issues.length > 0) {
+    status = "needs_review";
+  }
 
   await svc.from("campaign_drafts").update({
     compliance_check_status: status,

@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { StructuredData } from "@/components/seo";
+import { captureReferralFromUrl } from "@/lib/referral";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -110,6 +111,10 @@ const ScrollToTop = () => {
 const AnimatedRoutes = () => {
   const location = useLocation();
   const isOnline = useOnlineStatus();
+
+  useEffect(() => {
+    captureReferralFromUrl();
+  }, []);
 
   // Show offline page when not connected (except for cached pages)
   if (!isOnline && !navigator.onLine) {

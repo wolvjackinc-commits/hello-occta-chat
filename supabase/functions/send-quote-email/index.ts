@@ -19,6 +19,18 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "contract_length_required" }, 400);
   }
 
+  // Margin guard: block sending if latest margin check is red without override.
+  const { data: canSend } = await supabase.rpc("can_send_quote", { _quote_id: quote_id });
+  if (canSend === false) {
+    await supabase.rpc("log_event", {
+      _actor_type: "admin", _event_type: "quote_blocked_low_margin",
+      _title: `Quote send blocked ${quote.quote_number}`,
+      _details: { quote_id }, _quote_id: quote_id, _source_module: "margin",
+      _severity: "warn",
+    });
+    return jsonResponse({ error: "blocked_low_margin", message: "Latest margin check is red. Override required before sending." }, 409);
+  }
+
   const { data: qr } = await supabase.from("quote_requests").select("email, full_name").eq("id", quote.quote_request_id).single();
 
   // Rotate token if missing

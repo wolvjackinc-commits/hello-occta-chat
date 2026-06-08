@@ -161,16 +161,22 @@ const Support = () => {
         .eq("id", user.id)
         .single();
 
-      const { data: insertedTicket, error } = await supabase.from("support_tickets").insert({
-        user_id: user.id,
-        subject: formData.subject.trim(),
-        description: formData.description.trim(),
-        category: formData.category,
-        priority: "medium",
-        status: "open",
-      }).select('id').single();
-
-      if (error) throw error;
+      const { data: fnData, error } = await supabase.functions.invoke("submit-support-ticket", {
+        body: {
+          name: profile?.full_name || user.email,
+          email: profile?.email || user.email,
+          phone: profile?.phone || null,
+          category: formData.category,
+          priority: "normal",
+          subject: formData.subject.trim(),
+          message: formData.description.trim(),
+        },
+      });
+      const payload = fnData as { ok?: boolean; ticket_id?: string; error?: string } | null;
+      if (error || !payload?.ok) {
+        throw new Error(payload?.error || error?.message || "submit_failed");
+      }
+      const insertedTicket = { id: payload.ticket_id };
 
       // Notify admins about new ticket (fire and forget)
       supabase.functions.invoke('admin-notify', {
@@ -182,7 +188,7 @@ const Support = () => {
             subject: formData.subject.trim(),
             description: formData.description.trim(),
             category: formData.category,
-            priority: "medium",
+            priority: "normal",
             customer_name: profile?.full_name || user.email,
             customer_email: profile?.email || user.email,
             customer_phone: profile?.phone || 'Not provided',

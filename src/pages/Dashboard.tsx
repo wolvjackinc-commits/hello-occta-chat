@@ -14,6 +14,22 @@ import { OrderTracking } from "@/components/dashboard/OrderTracking";
 import { PaymentHistory } from "@/components/dashboard/PaymentHistory";
 import { useAppMode } from "@/hooks/useAppMode";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { OverviewTab } from "@/components/dashboard/tabs/OverviewTab";
+import { ServicesTab } from "@/components/dashboard/tabs/ServicesTab";
+import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab";
+import { QuotesTab } from "@/components/dashboard/tabs/QuotesTab";
+import { ContractSummariesTab } from "@/components/dashboard/tabs/ContractSummariesTab";
+import { InvoicesTab } from "@/components/dashboard/tabs/InvoicesTab";
+import { SupportTab } from "@/components/dashboard/tabs/SupportTab";
+import { ChatHistoryTab } from "@/components/dashboard/tabs/ChatHistoryTab";
+import { ComplaintsTab } from "@/components/dashboard/tabs/ComplaintsTab";
+import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
+import { DocumentsTab } from "@/components/dashboard/tabs/DocumentsTab";
+import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsTab";
+import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
+import { logClientEvent } from "@/lib/activityLog";
+import { useEffect as useEffectAlias } from "react";
 import { 
   Wifi, 
   Smartphone, 

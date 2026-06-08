@@ -67,6 +67,12 @@ import ContractSaverBroadband from "./pages/broadband/ContractSaver";
 import SwitchingPage from "./pages/Switching";
 import RewardsPage from "./pages/Rewards";
 import QuoteStart from "./pages/quote/QuoteStart";
+import QuoteThankYou from "./pages/quote/QuoteThankYou";
+import QuoteView from "./pages/quote/QuoteView";
+import ContractSummaryView from "./pages/quote/ContractSummaryView";
+import QuotePayment from "./pages/quote/QuotePayment";
+import { AdminQuoteRequests } from "./pages/admin/QuoteRequests";
+import { AdminQuotes } from "./pages/admin/Quotes";
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -128,6 +134,8 @@ const AnimatedRoutes = () => {
             <Route path="payment-requests" element={<AdminPaymentRequests />} />
             <Route path="communications" element={<AdminCommunications />} />
             <Route path="chat-transcripts" element={<AdminChatTranscripts />} />
+            <Route path="quote-requests" element={<AdminQuoteRequests />} />
+            <Route path="quotes" element={<AdminQuotes />} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />
@@ -136,6 +144,10 @@ const AnimatedRoutes = () => {
         <Route path="/switching" element={<SwitchingPage />} />
         <Route path="/rewards" element={<RewardsPage />} />
         <Route path="/quote/start" element={<QuoteStart />} />
+        <Route path="/quote/thank-you" element={<QuoteThankYou />} />
+        <Route path="/quote/contract-summary/:token" element={<ContractSummaryView />} />
+        <Route path="/quote/payment/:token" element={<QuotePayment />} />
+        <Route path="/quote/:token" element={<QuoteView />} />
         <Route path="/legal/acceptable-use" element={<AcceptableUse />} />
         <Route path="/legal/complaints-code" element={<ComplaintsCode />} />
         <Route path="/legal/vulnerable-customers" element={<VulnerableCustomers />} />

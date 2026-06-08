@@ -36,8 +36,8 @@ Deno.serve(async (req) => {
   if (selfRef) {
     await svc.from("fraud_flags").insert({
       customer_id: qr.customer_id ?? null,
-      flag_type: "self_referral",
-      severity: "medium",
+      flag_type: "manual_review",
+      severity: "low",
       details: { referral_code_id: rc.id, quote_request_id: qr.id },
     });
     await svc.rpc("log_event", {
@@ -46,7 +46,8 @@ Deno.serve(async (req) => {
       _source_module: "rewards", _severity: "warn",
       _details: { referral_code_id: rc.id, reason: "self_referral" },
     });
-    return jsonResponse({ ok: true, flagged: true });
+    // Never block the quote journey — return ok so submission flow continues
+    return jsonResponse({ ok: true, flagged: true, blocked: false });
   }
 
   await svc.from("referral_events").insert({

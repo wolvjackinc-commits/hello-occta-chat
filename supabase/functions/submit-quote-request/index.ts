@@ -121,5 +121,5 @@ Deno.serve(async (req) => {
     ),
   });
 
-  return jsonResponse({ ok: true, reference: row.reference });
+  return jsonResponse({ ok: true, reference: row.reference, quote_request_id: row.id });
 });

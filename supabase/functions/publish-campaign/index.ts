@@ -17,7 +17,12 @@ Deno.serve(async (req) => {
   if (c.approval_status !== "approved") return jsonResponse({ error: "not_approved" }, 409);
   if (!["green", "amber"].includes(c.margin_check_status)) return jsonResponse({ error: "margin_not_green_or_amber" }, 409);
   if (c.compliance_check_status !== "passed") return jsonResponse({ error: "compliance_not_passed" }, 409);
+  if (c.starts_at && c.ends_at && new Date(c.ends_at) <= new Date(c.starts_at)) {
+    return jsonResponse({ error: "invalid_date_range" }, 409);
+  }
 
+  // Phase 5: publish ONLY flips active/admin-ready. No email, SMS, ad, or
+  // homepage trigger fires from this function. Distribution is a future phase.
   const { error } = await svc.from("campaign_drafts").update({
     approval_status: "published",
     active: true,

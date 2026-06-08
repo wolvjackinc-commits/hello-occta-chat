@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logClientEvent } from "@/lib/activityLog";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { Loader2 } from "lucide-react";
+import { getStoredReferralCode, clearStoredReferralCode } from "@/lib/referral";
 
 const SERVICE_INTERESTS = [
   { value: "broadband", label: "Broadband" },
@@ -146,6 +147,17 @@ export default function QuoteStart() {
         throw new Error((data as any)?.error || error?.message || "submit_failed");
       }
       const reference = (data as any).reference as string;
+      const quoteRequestId = (data as any).quote_request_id as string | undefined;
+      // Best-effort referral attach — never block the quote journey
+      const refCode = getStoredReferralCode();
+      if (refCode && quoteRequestId) {
+        try {
+          await supabase.functions.invoke("attach-referral-to-quote", {
+            body: { code: refCode, quote_request_id: quoteRequestId },
+          });
+          clearStoredReferralCode();
+        } catch { /* swallow */ }
+      }
       logClientEvent({
         event_type: "form_submit",
         title: "Quote request submitted",

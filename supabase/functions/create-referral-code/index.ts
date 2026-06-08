@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
   await svc.rpc("log_event", {
     _actor_type: "customer",
-    _event_type: "form_submit",
+    _event_type: "referral_code_created",
     _title: "Referral code created",
     _customer_id: userId,
     _source_module: "rewards",

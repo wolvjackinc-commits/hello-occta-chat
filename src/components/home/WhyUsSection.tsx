@@ -29,8 +29,8 @@ const reasons = [
   },
   {
     icon: ThumbsUp,
-    title: "98% RECOMMEND US",
-    description: "The other 2% probably just forgot to tick the box.",
+    title: "QUOTE-LED SIGN-UP",
+    description: "You see a full Contract Summary before any payment is taken.",
   },
 ];
 

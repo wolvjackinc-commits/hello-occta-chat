@@ -25,6 +25,12 @@ import { logError } from "@/lib/logger";
 import { CheckCircle, Loader2 } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { useNavigate } from "react-router-dom";
+import {
+  requiresContractSummary,
+  hasAcceptedContractSummary,
+  type CheckoutContext,
+} from "@/lib/requireContractSummary";
 
 const adminEmail = "hello@occta.co.uk";
 
@@ -52,6 +58,23 @@ const BusinessCheckout = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const { isAppMode } = useAppMode();
+  const navigate = useNavigate();
+
+  // Phase 1 pay-gate: business sales must go through Quote → Contract Summary first.
+  useEffect(() => {
+    let cancelled = false;
+    const ctx: CheckoutContext = { kind: "new_telecom_sale", cartId: selectedPlanId || "business" };
+    if (!requiresContractSummary(ctx)) return;
+    hasAcceptedContractSummary(ctx).then((res) => {
+      if (cancelled || res.accepted) return;
+      toast({
+        title: "Contract Summary required",
+        description: "We'll confirm your price and terms before any payment is taken.",
+      });
+      navigate("/quote/start?interest=business", { replace: true });
+    });
+    return () => { cancelled = true; };
+  }, [selectedPlanId, navigate, toast]);
 
   const [formData, setFormData] = useState({
     businessName: "",

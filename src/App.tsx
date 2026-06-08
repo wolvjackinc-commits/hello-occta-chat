@@ -62,6 +62,20 @@ import GuidePage from "./pages/guides/GuidePage";
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import KeywordLanding from "./pages/KeywordLanding";
+import FlexBroadband from "./pages/broadband/Flex";
+import ContractSaverBroadband from "./pages/broadband/ContractSaver";
+import SwitchingPage from "./pages/Switching";
+import RewardsPage from "./pages/Rewards";
+import QuoteStart from "./pages/quote/QuoteStart";
+import AcceptableUse from "./pages/legal/AcceptableUse";
+import ComplaintsCode from "./pages/legal/ComplaintsCode";
+import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
+import Accessibility from "./pages/legal/Accessibility";
+import ModernSlavery from "./pages/legal/ModernSlavery";
+import CodeOfPractice from "./pages/legal/CodeOfPractice";
+import PriceTransparency from "./pages/legal/PriceTransparency";
+import SwitchingPolicy from "./pages/legal/SwitchingPolicy";
+import NetworkManagement from "./pages/legal/NetworkManagement";
 
 import { locations } from "./data/locations";
 
@@ -117,6 +131,20 @@ const AnimatedRoutes = () => {
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />
+        <Route path="/broadband/flex" element={<FlexBroadband />} />
+        <Route path="/broadband/contract-saver" element={<ContractSaverBroadband />} />
+        <Route path="/switching" element={<SwitchingPage />} />
+        <Route path="/rewards" element={<RewardsPage />} />
+        <Route path="/quote/start" element={<QuoteStart />} />
+        <Route path="/legal/acceptable-use" element={<AcceptableUse />} />
+        <Route path="/legal/complaints-code" element={<ComplaintsCode />} />
+        <Route path="/legal/vulnerable-customers" element={<VulnerableCustomers />} />
+        <Route path="/legal/accessibility" element={<Accessibility />} />
+        <Route path="/legal/modern-slavery" element={<ModernSlavery />} />
+        <Route path="/legal/code-of-practice" element={<CodeOfPractice />} />
+        <Route path="/legal/price-transparency" element={<PriceTransparency />} />
+        <Route path="/legal/switching-policy" element={<SwitchingPolicy />} />
+        <Route path="/legal/network-management" element={<NetworkManagement />} />
         <Route path="/sim-plans" element={<SimPlans />} />
         <Route path="/landline" element={<Landline />} />
         <Route path="/checkout" element={<Checkout />} />

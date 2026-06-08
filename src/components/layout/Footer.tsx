@@ -24,6 +24,17 @@ const Footer = () => {
       { name: "Cookie Policy", path: "/cookies" },
       { name: "Complaints", path: "/complaints" },
     ],
+    compliance: [
+      { name: "Code of Practice", path: "/legal/code-of-practice" },
+      { name: "Complaints Code", path: "/legal/complaints-code" },
+      { name: "Vulnerable Customers", path: "/legal/vulnerable-customers" },
+      { name: "Price Transparency", path: "/legal/price-transparency" },
+      { name: "Switching Policy", path: "/legal/switching-policy" },
+      { name: "Acceptable Use", path: "/legal/acceptable-use" },
+      { name: "Network Management", path: "/legal/network-management" },
+      { name: "Accessibility", path: "/legal/accessibility" },
+      { name: "Modern Slavery", path: "/legal/modern-slavery" },
+    ],
     guides: [
       { name: "No Contract Broadband", path: "/guides/no-contract-broadband-uk" },
       { name: "Digital Voice UK", path: "/guides/digital-voice-uk" },
@@ -191,6 +202,22 @@ const Footer = () => {
               ))}
             </ul>
           </div>
+        </div>
+
+        {/* Compliance row */}
+        <div className="mt-12 pt-8 border-t border-background/10">
+          <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+            Compliance &amp; Policies
+          </h4>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
+            {footerLinks.compliance.map((link) => (
+              <li key={link.name}>
+                <Link to={link.path} className="text-background/70 hover:text-primary transition-colors">
+                  {link.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 

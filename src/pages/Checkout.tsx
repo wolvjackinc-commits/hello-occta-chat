@@ -39,6 +39,11 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  requiresContractSummary,
+  hasAcceptedContractSummary,
+  type CheckoutContext,
+} from "@/lib/requireContractSummary";
 
 const addressSchema = z.object({
   postcode: z.string().min(5, "Enter a valid postcode").max(10, "Postcode too long"),
@@ -62,6 +67,7 @@ const Checkout = () => {
   
   const planId = searchParams.get("plan");
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [gateChecked, setGateChecked] = useState(false);
   
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -94,6 +100,36 @@ const Checkout = () => {
       navigate("/broadband");
     }
   }, [planId, navigate]);
+
+  // Phase 1 pay-gate: new telecom sales require an accepted Contract Summary.
+  // Legacy invoices (/pay-invoice) and payment-request links (/pay) are NOT gated.
+  useEffect(() => {
+    if (!planId) return;
+    let cancelled = false;
+    const ctx: CheckoutContext = { kind: "new_telecom_sale", cartId: planId };
+    if (!requiresContractSummary(ctx)) {
+      setGateChecked(true);
+      return;
+    }
+    hasAcceptedContractSummary(ctx).then((res) => {
+      if (cancelled) return;
+      if (!res.accepted) {
+        toast({
+          title: "Contract Summary required",
+          description: "We'll confirm your price and terms before any payment is taken.",
+        });
+        const interest = plan?.serviceType === "sim"
+          ? "sim"
+          : plan?.serviceType === "landline"
+            ? "voice"
+            : "broadband";
+        navigate(`/quote/start?interest=${interest}`, { replace: true });
+      } else {
+        setGateChecked(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [planId, plan?.serviceType, navigate, toast]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

@@ -1,168 +1,150 @@
-# OCCTA Full Build — Amended Plan (Phase 0 + 1 first)
+## Phase 1 Completion Plan
 
-Extend in place. Nothing existing gets broken: Worldpay HPP, invoices, DD mandates, admin panel, AI chat, SEO pages, customer dashboard, ICUK pricing engine and all current Supabase tables stay intact.
+Finish all remaining Phase 1 deliverables. No Phase 2 work, no new Quote/Contract Summary tables, no breaking changes to existing flows.
 
----
+### New pages (placeholder-grade, no hardcoded prices/IDs/speeds/rewards)
 
-## Locked rules (apply across every phase)
+- `src/pages/broadband/ContractSaver.tsx` — explains the Contract Saver track, "indicative pricing — final price confirmed in your Contract Summary" language, single CTA → `/quote/start?interest=broadband_contract_saver`.
+- `src/pages/Switching.tsx` — how OCCTA handles One Touch Switch, no downtime promises, CTA → `/quote/start?interest=switch`.
+- `src/pages/Rewards.tsx` — teaser only. Copy: "Rewards programme launching soon. Final reward values, eligibility and unlock rules will be published before activation." No numbers. Reads `rewards_enabled` from `usePlatformSettings`; if false, shows teaser. Never shows live values in Phase 1.
+- `src/pages/quote/QuoteStart.tsx` — Phase 1 placeholder for the Phase 2 quote flow. Captures interest + postcode + contact intent in local state, shows manual-mode message from `platform_settings.manual_mode_message`, fires `quote_start` low-risk event, and presents two next steps: "Request a callback" (mailto/phone) and "Continue via chat" (opens AI chat). Does NOT create DB rows, does NOT create quote tables.
+- Legal/compliance pages:
+  - `src/pages/legal/AcceptableUse.tsx`
+  - `src/pages/legal/ComplaintsCode.tsx` (mirrors `/complaints` but as the formal Code of Practice document — link from `Complaints.tsx`)
+  - `src/pages/legal/VulnerableCustomers.tsx`
+  - `src/pages/legal/Accessibility.tsx`
+  - `src/pages/legal/Modern Slavery → ModernSlavery.tsx`
+  - `src/pages/legal/CodeOfPractice.tsx`
+  - `src/pages/legal/PriceTransparency.tsx` (Ofcom-aligned, no figures — references the Contract Summary)
+  - `src/pages/legal/SwitchingPolicy.tsx`
+  - `src/pages/legal/NetworkManagement.tsx`
+  Each: H1, short body, "Last updated" date pulled from a constant, link back to home and to `/complaints`.
 
-1. **Manual Mode default ON.** Admin toggles `api_mode` between `manual` and `live`.
-2. **Contract Summary is mandatory in BOTH modes.** Payment/order cannot be initiated without an accepted, versioned contract summary tied to the quote.
-3. **Live mode is not "as-is".** Even live checkout enforces:
-  - accepted Contract Summary first
-  - VAT-inclusive residential pricing everywhere
-  - business ex VAT + incl VAT shown
-  - proper VAT invoice generation
-  - payment status only set to `paid` by Worldpay webhook / server confirmation
-  - browser return never marks paid
-4. **Manual Quote Mode applies to broadband, digital voice, business.** SIM has an admin-level switch `sim_checkout_mode` (`instant` | `quote`), default `quote` until supplier pricing is confirmed.
-5. **Rewards full build, values disabled until margin rules set.** Unlock trigger configurable: `first_cleared_payment` | `second_cleared_payment` | `custom_rule`. Reward values null/zero until admin enables.
-6. **Campaign Engine full build, never auto-publishes.** State machine: `draft → margin_check → compliance_check → admin_approval → published`. AI may draft only.
-7. **VAT invoice gate:** system refuses to issue VAT invoices unless `vat_number` and `vat_effective_date` are set. Below that date or without those values → plain invoice, no VAT line.
-8. **Nothing hardcoded:** supplier prices, product IDs, availability rules, reward values, campaign offers, plan attributes — all DB-driven.
-9. **Universal Activity Log from day one.** Every new module writes to it as it ships.
-10. **Finance/VAT export foundation early.** Tables capture tax_point, net, vat_rate, vat_amount, gross, customer_type (B2C/B2B), customer_vat_number from the start.
-11. **Role-based access + audit from day one** for: VAT changes, price changes, quote approval, invoice edits, payment overrides, reward approval, campaign publishing, contract summary changes.
+### Routing (`src/App.tsx`)
 
----
+Add lazy or direct routes for:
 
-## PHASE 0 — Foundation (build now)
+```
+/broadband/flex                 -> pages/broadband/Flex (already exists)
+/broadband/contract-saver       -> pages/broadband/ContractSaver
+/switching                      -> pages/Switching
+/rewards                        -> pages/Rewards
+/quote/start                    -> pages/quote/QuoteStart
+/legal/acceptable-use
+/legal/complaints-code
+/legal/vulnerable-customers
+/legal/accessibility
+/legal/modern-slavery
+/legal/code-of-practice
+/legal/price-transparency
+/legal/switching-policy
+/legal/network-management
+```
 
-### Migration 0.1 — Platform settings, roles, activity log
+All added ABOVE the `*` catch-all. No removals.
 
-- `app_role` enum extended: add `super_admin`, `finance_admin`, `support_agent`, `sales_agent`, `compliance_admin`, `marketing_admin`, `auditor`. Keep existing `admin`, `user` for back-compat (treat `admin` = `super_admin` in `has_role` checks during transition).
-- `platform_settings` (singleton row):
-  - `api_mode` text default `'manual'`
-  - `sim_checkout_mode` text default `'quote'`
-  - `manual_mode_message` text
-  - `rewards_unlock_rule` text default `'first_cleared_payment'`
-  - `rewards_enabled` bool default `false`
-  - `vat_number` text null
-  - `vat_effective_date` date null
-  - `vat_scheme` text default `'standard'`
-  - `vat_default_rate` numeric default `20`
-  - `residential_vat_display` text default `'inclusive'`
-  - `business_vat_display` text default `'dual'`
-  - `invoice_prefix` text default `'INV-'`
-  - `credit_note_prefix` text default `'CN-'`
-- SECURITY DEFINER `public.get_setting(text)` and `public.is_vat_active()` (true only when vat_number and effective_date set and effective_date <= today).
-- `activity_log` table: id, ts, actor_type (`customer|admin|system|ai`), actor_id, customer_id, order_id, invoice_id, quote_id, contract_summary_id, ticket_id, complaint_id, event_type, title, details jsonb, old_value jsonb, new_value jsonb, ip, ua, source_module, severity, audit_locked bool default true.
-- SECURITY DEFINER `public.log_event(...)` writes to activity_log; called from triggers and edge functions.
-- `admin_audit_log` view filtered for sensitive actions only.
-- Full GRANTs + RLS: only admin roles read; nobody updates (audit-locked).
+### Claims cleanup pass (frontend copy only)
 
-### Migration 0.2 — Claims cleanup data layer
+Scan and rewrite non-compliant claims on:
 
-- `site_copy` table (singleton key/value) so the public site reads risky-claim replacements from DB (admin-editable later) — but Phase 1 also hard-replaces them in JSX so site is correct immediately even before admin edits.
+- `src/components/home/HeroSection.tsx`
+- `src/components/home/CTASection.tsx`
+- `src/components/home/WhyUsSection.tsx`
+- `src/components/home/ServicesSection.tsx`
+- `src/components/home/CustomerLoveSection.tsx`
+- `src/pages/Broadband.tsx`, `src/pages/SimPlans.tsx`, `src/pages/Landline.tsx`, `src/pages/Business.tsx`, `src/pages/BusinessOffers.tsx`, `src/pages/NoContractBroadband.tsx`
+- `src/components/layout/Footer.tsx` (add legal links)
 
-### Frontend 0.x
+Replacement rules:
 
-- `src/hooks/usePlatformMode.ts`
-- `src/lib/activityLog.ts` (client helper that calls a `log-event` edge function for client-side events worth logging)
-- `src/contexts/PlatformSettingsContext.tsx` (loads platform_settings once, exposes `apiMode`, `simMode`, `vatActive`)
+- "Guaranteed 900Mbps" / hard speed claims → "Speeds vary by line — confirmed in your Contract Summary".
+- "Free installation worth £60" → "Installation costs confirmed in your Contract Summary".
+- "Switch in 60 seconds" / instant-order language on broadband/voice/business → "Get a personalised quote in minutes".
+- Hardcoded "£X/mo" hero figures on broadband/voice/business → "From indicative pricing — final price confirmed in your Contract Summary". (SIM page keeps existing copy but routes its CTAs through quote when `simIsQuoteLed`.)
+- Any "guaranteed availability" → "We'll check availability for your address".
+- Reward amounts in marketing copy → removed; replaced with teaser link to `/rewards`.
 
----
+Primary CTAs on broadband / voice / business / homepage that previously went to `/checkout`, `/pre-checkout`, `/auth?mode=signup` for purchase → route to `/quote/start?interest=...`. Existing dashboard, login, support, pay-invoice, track-order, admin links are untouched.
 
-## PHASE 1 — Public site rebuild (extend, no breakage)
+SIM page: when `simIsQuoteLed === true` (default), CTA → `/quote/start?interest=sim`; otherwise current flow.
 
-### Claims cleanup pass (all existing public pages)
+### Pay-gate wiring
 
-Replace risky phrases per spec:
+- `src/pages/Checkout.tsx`: on mount, build a `CheckoutContext` of kind `new_telecom_sale` from URL/cart state. If `requiresContractSummary(ctx)` and `hasAcceptedContractSummary(ctx)` returns `{accepted:false}`, redirect to `/quote/start?interest=<derived>` with a toast: "We'll confirm your Contract Summary before payment." No change to Worldpay HPP code path.
+- `src/pages/BusinessCheckout.tsx`: same gate, kind `new_telecom_sale`, redirect to `/quote/start?interest=business`.
+- `src/pages/PayInvoice.tsx` and `src/pages/Pay.tsx`: classify as `legacy_invoice` / `payment_request`, gate returns `false`, untouched flow.
+- Worldpay edge functions, webhook, DD mandates, invoice generation: untouched.
 
-- "Cancel anytime" → "30-day rolling options available. Cancel with notice."
-- "No hidden fees" → "All monthly and one-off charges shown before you order."
-- "24/7 support" → "24/7 AI support with human escalation when needed."
-- "Free installation" → "Free standard installation where available and shown in your quote."
-- "Available everywhere" → "Availability depends on your exact address."
-- "No credit check" → "Checks or deposits may apply depending on product/supplier."
+### Low-risk activity logging
 
-### Pages — new or rewritten
+Wire `logClientEvent` from `src/lib/activityLog.ts` on:
 
-- `**/` Homepage** — hero "Broadband without the lock-in", Flex vs Contract Saver block, Broadband, SIM, Digital Voice, Business strip, Switching, Rewards teaser, AI support, Why OCCTA, trust/compliance strip, FAQs. CTAs respect `api_mode`: in manual, "View plans" routes into Quote Request flow (Phase 2) — for Phase 1 they route to plan pages with a "Request a confirmed quote" CTA wired to a placeholder `/quote/start` route that Phase 2 will fill.
-- `**/broadband**` — split: Flex Broadband and Contract Saver Broadband. Cards read from `plans` table (existing). No final-price guarantees. Availability disclaimer.
-- `**/broadband/flex**` — 30-day rolling positioning with compliant wording.
-- `**/broadband/contract-saver**` — lower monthly price positioning, reward eligibility note (values hidden until rewards_enabled).
-- `**/sim-plans**` — config-driven attributes. Hide instant-checkout CTA when `sim_checkout_mode = 'quote'`.
-- `**/digital-voice**` — emergency / power-cut warning, vulnerable-customer CTA, porting "where available", quote-led.
-- `**/business**` — B2B quote-led: Business Broadband, Business SIMs, Business VoIP, Managed Telecom, Upload current bill, Request business quote, Book a call. Never instant checkout.
-- `**/switching**` — One Touch Switch explainer.
-- `**/rewards**` — teaser only; values hidden until `rewards_enabled = true`.
-- `**/track-order**` — keep existing, ensure logged-in users see fuller timeline (full pipeline rendering lands in Phase 4).
-- **Legal pages added/updated:** Complaints Code, Contract Summary explainer, Digital Voice & Emergency Calls, Vulnerable Customers, Accessibility, Fair Usage, Cancellation & Cease Charges, Payment Security, DD Guarantee, Price Rise Policy, Rewards Terms, Business Terms.
+- Hero/CTA primary clicks → `cta_click`
+- Postcode check submit → `postcode_check`
+- `/quote/start` mount → `quote_start`
+- Legal page mount → `legal_view`
+- Rewards page mount → `page_view`
+No sensitive payloads. Failures swallowed.
 
-### Routing & checkout guard (Phase 1 enforcement of locked rule 3)
+### Footer
 
-- New helper `requireContractSummaryForPayment()` used by `Pay`, `PayInvoice`, `Checkout`, `BusinessCheckout`. If no accepted contract summary linked to the cart/quote/invoice, redirect to `/quote/contract-summary?ref=...`. Contract Summary table comes online in Phase 2; until then the helper:
-  - in **manual mode**: blocks instant checkout entirely (sends user to quote flow placeholder)
-  - in **live mode**: allows current behaviour BUT shows a clear "Contract Summary required" gate placeholder so Phase 2 wire-up is a drop-in.
-- This guards live mode from regressing once Phase 2 lands.
+Add a "Legal & Compliance" column linking to all new `/legal/*` pages, `/complaints`, `/privacy`, `/cookies`, `/terms`. No other footer changes.
 
-### Activity logging in Phase 1
+### Not in scope (Phase 2)
 
-Every new public action writes to `activity_log` via `log-event` edge function:
+- `quote_requests`, `quotes`, `contract_summaries`, `contract_acceptances` tables.
+- Admin quote builder, margin engine, pricing rules, suppliers, VAT settings UI.
+- Rewards values, points ledger, campaign engine, fraud flags.
+- Live API mode wiring.
+- New supplier integrations, product IDs, real pricing.
 
-- postcode check, quote-CTA click, contract-summary view, legal-page version view, form submission.
+### Verification
 
-### Edge function 0/1.x
+- Build passes.
+- `/`, `/broadband`, `/sim-plans`, `/landline`, `/business`, `/dashboard`, `/admin/overview`, `/pay`, `/pay-invoice`, `/track-order` all still render.
+- New routes render placeholder content.
+- `/checkout` and `/business-checkout` redirect to `/quote/start` when no accepted CS (which is always in Phase 1, since `hasAcceptedContractSummary` is a stub returning false).
+- `/pay-invoice?invoice=INV-...` and `/pay?token=PR-...` are NOT gated.
 
-- `log-event` — JWT optional, validates payload, writes to activity_log via SECURITY DEFINER fn. CORS + rate-limit.
+### Closing summary
 
----
-
-## Pause point
-
-End of Phase 1: stop, summarise what changed (files, tables, settings), and wait for go-ahead before starting Phase 2 (Quote & Contract Summary system).
-
----
-
-## Phases 2–9 unchanged from prior plan, with amendments folded in
-
-2. Quote Requests + Quotes + Contract Summary (mandatory both modes), pay-gate wired, activity log entries per step.
-3. Admin: Leads, Quote Builder (margin-locked), Pricing Rules, Supplier Settings, VAT Settings (gates VAT invoices), KPI cards.
-4. Customer dashboard expansion incl. Contract Summaries, Quotes, Complaints, Rewards & Referrals, Vulnerable Support.
-5. Rewards (values disabled until admin) + Campaign Engine (no auto-publish).
-6. Support, Complaints (ADR 6-week tracker), Communications Centre, AI KB (restricted retrieval).
-7. Finance & VAT Export Centre — uses fields captured from day one in Phase 0/2.
-8. Roles hardening + Compliance Centre + audit deepening.
-9. SEO expansion pages.
-
----
-
-Reply "go" and I'll start with Phase 0 migrations, then Phase 1 frontend.  
+After build, post a summary covering: files changed, routes added, pages changed, claims replaced (bullet list of before → after categories), payment/checkout guard changes, untouched areas (Worldpay, DD, invoices, admin, AI chat, SEO pages, dashboard), and any warnings/errors. Then stop. No Phase 2 work.  
   
+Please apply these final checks while building:  
   
+1. Modern Slavery route/file  
+Use file name:  
+src/pages/legal/ModernSlavery.tsx  
+Route:  
+/legal/modern-slavery  
   
-Add these final safeguards before building:  
+2. Complaints Code  
+Make sure the Complaints Code uses the 6-week ADR escalation wording, not 8 weeks.  
   
-1. Legacy invoice/payment exception:  
-Contract Summary is mandatory for all new telecom sales/orders, but do not block payment links for old/legacy invoices, arrears, manual invoices, or non-contract payment requests where no new telecom contract is being created. Those payments should still work.  
+3. Contract Summary wording  
+Even though Phase 2 will build the actual Contract Summary system, all public copy should now say:  
+“Final price, contract length, fees, speed and key terms will be confirmed in your Contract Summary before you pay.”  
   
-2. Contract Summary linking:  
-Contract Summary should be linkable to quote_id, order_id, cart_id, or invoice_id. In manual mode it will usually link to quote_id. In live mode it may link to cart/order.  
+4. Quote Start placeholder  
+Do not collect full customer data yet in Phase 1. Only collect low-risk intent/postcode/contact-start info locally, and do not create Supabase quote rows until Phase 2.  
   
-3. Sensitive activity logging:  
-Public/client log-event must only accept low-risk events like page views, CTA clicks, quote-start events and form submissions. Sensitive logs such as VAT changes, payment status, quote approval, invoice edit, reward approval and campaign publish must only be created server-side/admin-side, not trusted from client payload.  
+5. Pay-gate  
+Do not block:  
+/pay  
+/pay-invoice  
+legacy invoices  
+payment request links  
+arrears/manual invoice payments  
   
-4. Do not let activity_log store unnecessary sensitive data:  
-No card data, no full bank details, no passwords, no secret tokens. Mask personal data where possible in event details.  
+Only new telecom checkout/order flows should be redirected.  
   
-5. RLS must be tested after every migration:  
-Admin-only tables must not be readable by normal users. Customers should only see their own rows.  
+6. Footer  
+Add legal links, but do not remove existing footer links.  
   
-6. Migration safety:  
-Before changing tables/enums/policies, create migration in a way that does not break existing roles, admin login, customer dashboard, invoices, Worldpay, DD mandates or current SEO pages.  
+7. SEO pages  
+Do not delete or overwrite existing SEO pages. Only clean risky claims and add safe internal links where needed.  
   
-7. Keep current payment links working:  
-Worldpay HPP and payment request links must keep functioning. Only new sales checkout/order flows should be gated by Contract Summary.  
+8. Activity logging  
+Only log low-risk public actions. No sensitive customer/payment data in client logs.  
   
-8. Add a rollback note after Phase 0:  
-At the pause point, list every migration/table/policy/function added so we can reverse or fix if anything breaks.  
-  
-9. Phase 0 + Phase 1 only for now:  
-After Phase 1, stop and show:  
-- tables added  
-- functions added  
-- files changed  
-- pages changed  
-- what was not touched  
-- any errors/warnings
+Continue Phase 1 only. After completion, stop and provide the closing summary.

@@ -47,6 +47,78 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_log: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          audit_locked: boolean
+          complaint_id: string | null
+          contract_summary_id: string | null
+          customer_id: string | null
+          details: Json
+          event_type: string
+          id: string
+          invoice_id: string | null
+          ip: string | null
+          new_value: Json | null
+          old_value: Json | null
+          order_id: string | null
+          quote_id: string | null
+          severity: string
+          source_module: string
+          ticket_id: string | null
+          title: string
+          ts: string
+          ua: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type: string
+          audit_locked?: boolean
+          complaint_id?: string | null
+          contract_summary_id?: string | null
+          customer_id?: string | null
+          details?: Json
+          event_type: string
+          id?: string
+          invoice_id?: string | null
+          ip?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          order_id?: string | null
+          quote_id?: string | null
+          severity?: string
+          source_module?: string
+          ticket_id?: string | null
+          title: string
+          ts?: string
+          ua?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          audit_locked?: boolean
+          complaint_id?: string | null
+          contract_summary_id?: string | null
+          customer_id?: string | null
+          details?: Json
+          event_type?: string
+          id?: string
+          invoice_id?: string | null
+          ip?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          order_id?: string | null
+          quote_id?: string | null
+          severity?: string
+          source_module?: string
+          ticket_id?: string | null
+          title?: string
+          ts?: string
+          ua?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1191,6 +1263,72 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          api_mode: string
+          business_vat_display: string
+          created_at: string
+          credit_note_prefix: string
+          id: string
+          invoice_prefix: string
+          manual_mode_message: string
+          residential_vat_display: string
+          rewards_custom_rule: Json
+          rewards_enabled: boolean
+          rewards_unlock_rule: string
+          sim_checkout_mode: string
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+          vat_default_rate: number
+          vat_effective_date: string | null
+          vat_number: string | null
+          vat_scheme: string
+        }
+        Insert: {
+          api_mode?: string
+          business_vat_display?: string
+          created_at?: string
+          credit_note_prefix?: string
+          id?: string
+          invoice_prefix?: string
+          manual_mode_message?: string
+          residential_vat_display?: string
+          rewards_custom_rule?: Json
+          rewards_enabled?: boolean
+          rewards_unlock_rule?: string
+          sim_checkout_mode?: string
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          vat_default_rate?: number
+          vat_effective_date?: string | null
+          vat_number?: string | null
+          vat_scheme?: string
+        }
+        Update: {
+          api_mode?: string
+          business_vat_display?: string
+          created_at?: string
+          credit_note_prefix?: string
+          id?: string
+          invoice_prefix?: string
+          manual_mode_message?: string
+          residential_vat_display?: string
+          rewards_custom_rule?: Json
+          rewards_enabled?: boolean
+          rewards_unlock_rule?: string
+          sim_checkout_mode?: string
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          vat_default_rate?: number
+          vat_effective_date?: string | null
+          vat_number?: string | null
+          vat_scheme?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_number: string | null
@@ -1355,6 +1493,36 @@ export type Database = {
           suspension_reason?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      site_copy: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          notes: string | null
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
         }
         Relationships: []
       }
@@ -1638,7 +1806,40 @@ export type Database = {
       generate_account_number: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_user_account_number: { Args: never; Returns: string }
+      get_platform_settings: {
+        Args: never
+        Returns: {
+          api_mode: string
+          business_vat_display: string
+          created_at: string
+          credit_note_prefix: string
+          id: string
+          invoice_prefix: string
+          manual_mode_message: string
+          residential_vat_display: string
+          rewards_custom_rule: Json
+          rewards_enabled: boolean
+          rewards_unlock_rule: string
+          sim_checkout_mode: string
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+          vat_default_rate: number
+          vat_effective_date: string | null
+          vat_number: string | null
+          vat_scheme: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "platform_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_billing_access: { Args: never; Returns: boolean }
+      has_compliance_access: { Args: { _user_id: string }; Returns: boolean }
+      has_finance_access: { Args: { _user_id: string }; Returns: boolean }
+      has_marketing_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1647,12 +1848,36 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
+      is_vat_active: { Args: never; Returns: boolean }
       log_audit_action: {
         Args: {
           _action: string
           _entity: string
           _entity_id?: string
           _metadata?: Json
+        }
+        Returns: string
+      }
+      log_event: {
+        Args: {
+          _actor_type: string
+          _complaint_id?: string
+          _contract_summary_id?: string
+          _customer_id?: string
+          _details?: Json
+          _event_type: string
+          _invoice_id?: string
+          _ip?: string
+          _new_value?: Json
+          _old_value?: Json
+          _order_id?: string
+          _quote_id?: string
+          _severity?: string
+          _source_module?: string
+          _ticket_id?: string
+          _title: string
+          _ua?: string
         }
         Returns: string
       }
@@ -1675,7 +1900,16 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role:
+        | "admin"
+        | "user"
+        | "super_admin"
+        | "finance_admin"
+        | "support_agent"
+        | "sales_agent"
+        | "compliance_admin"
+        | "marketing_admin"
+        | "auditor"
       order_status: "pending" | "confirmed" | "active" | "cancelled"
       service_type: "broadband" | "sim" | "landline"
       ticket_priority: "low" | "medium" | "high" | "urgent"
@@ -1807,7 +2041,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: [
+        "admin",
+        "user",
+        "super_admin",
+        "finance_admin",
+        "support_agent",
+        "sales_agent",
+        "compliance_admin",
+        "marketing_admin",
+        "auditor",
+      ],
       order_status: ["pending", "confirmed", "active", "cancelled"],
       service_type: ["broadband", "sim", "landline"],
       ticket_priority: ["low", "medium", "high", "urgent"],

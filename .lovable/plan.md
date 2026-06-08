@@ -1,215 +1,168 @@
-## Homepage Conversion Overhaul — Final Plan
+# OCCTA Full Build — Amended Plan (Phase 0 + 1 first)
 
-### 1. Create `src/contexts/AvailabilityContext.tsx`
-
-Central state + API logic for the entire availability flow.
-
-**State:**
-
-```
-status: 'idle' | 'loading-postcode' | 'addresses' | 'checking-address' | 'success' | 'error'
-postcode, addresses[], selectedAddress, errorType, result (single normalized object)
-```
-
-**Result object** (the ONE source of truth for all UI):
-
-```
-{ available, primaryTechnology, maxDownload, maxUpload, eligibleOcctaPlans[], recommendedPlan, upgradePlan?, message? }
-```
-
-**Recommendation logic (computed on result):**
-
-- FTTC only → `essential`
-- FTTP max 330–549 → recommended: `superfast`
-- FTTP max 550–899 → recommended: `superfast`, upgrade: `ultrafast`
-- FTTP max 900+ → recommended: `superfast` (best value)
-
-**Persistence:** On success, write result + postcode + selectedAddress to `sessionStorage('occta_availability')`. On mount, hydrate from sessionStorage if present. Expose `reset()` to clear both.
-
-**Error types:** `invalid-postcode | no-addresses | backend-unavailable | availability-failed`
-
-**Actions:** `checkPostcode(pc)`, `selectAddress(addr)`, `reset()`
-
-API calls to edge functions (`check-address`, `check-availability`) move here from PostcodeChecker.
+Extend in place. Nothing existing gets broken: Worldpay HPP, invoices, DD mandates, admin panel, AI chat, SEO pages, customer dashboard, ICUK pricing engine and all current Supabase tables stay intact.
 
 ---
 
-### 2. Refactor `src/components/home/PostcodeChecker.tsx`
+## Locked rules (apply across every phase)
 
-Strip API logic — becomes pure UI consuming context.
-
-- Calls `checkPostcode()` and `selectAddress()` from context
-- Accepts `variant?: 'hero' | 'standalone'` prop
-- Hero variant: input 68% + button 32%, max-width 700px desktop; stacked mobile
-- Placeholder: `"E.g. HD3 3WU"` / Button: `"CHECK AVAILABILITY"`
-- Helper line below: `"We'll only show plans actually available at your address."`
-- Shows address dropdown when `status === 'addresses'`
-- Explicit loading states: spinner + text for `loading-postcode` and `checking-address`
-- Error states with distinct messages per `errorType`
-
----
-
-### 3. Rebuild `src/components/home/HeroSection.tsx`
-
-Two-column grid: 52/48 desktop, stacked mobile. Reads from AvailabilityContext.
-
-**Left column:**
-
-1. Eyebrow: `"NO CONTRACTS • NO ANNUAL PRICE HIKES • UK-BASED SUPPORT"`
-2. Headline: `"FINALLY.\nBROADBAND THAT\nDOESN'T LOCK YOU IN."`
-3. Paragraph: `"No contracts. No annual price hikes. No nonsense. Just fast, reliable broadband from £22.99/month."`
-4. Value chips: No Contracts, No Annual Price Hikes, UK-based Support, Openreach Network, Cancel Anytime
-5. Label: `"CHECK WHAT'S AVAILABLE AT YOUR ADDRESS"`
-6. `<PostcodeChecker variant="hero" />`
-7. Result card below checker (reads from context `result`):
-  - FTTP: green border, "Brilliant — Full Fibre is available…" + speed + plan pills
-  - FTTC: "Good news — Fibre is available…" + Essential pill
-  - Unavailable: "We couldn't confirm service online." + "CALL 0800 260 6626"
-
-**Right column — State A (before check / idle):**
-
-- Static card with OCCTA border/shadow
-- "STARTING FROM" → `£22.99/month` → "No contracts • No annual price hikes"
-- Compact category cues (not full plan cards):
-  - Essential — everyday browsing
-  - Superfast — streaming and busy homes
-  - Gigabit — serious speed
-- 3 proof rows: Full Fibre where available, Openreach network, UK-based support
-- Bottom strip: 14-day cooling-off, keep your number, no mid-contract price rises
-
-**Right column — State B (after success):**
-
-- "AVAILABLE AT YOUR ADDRESS" + short address
-- "Up to {maxSpeed}" stat
-- Eligible plan rows only (from `result.eligibleOcctaPlans`), each: name, speed, price, 2-3 benefits, "CHOOSE PLAN"
-- Recommended badge on `result.recommendedPlan`; if `upgradePlan` exists, show subtle "upgrade" label on that plan
-- "CHOOSE PLAN" navigates to broadband page or triggers voice upsell, preserving context in sessionStorage
-- Bottom: "No annual price hikes • Cancel anytime"
-
-Both panels read from the same `result` object — no duplicate state.
+1. **Manual Mode default ON.** Admin toggles `api_mode` between `manual` and `live`.
+2. **Contract Summary is mandatory in BOTH modes.** Payment/order cannot be initiated without an accepted, versioned contract summary tied to the quote.
+3. **Live mode is not "as-is".** Even live checkout enforces:
+  - accepted Contract Summary first
+  - VAT-inclusive residential pricing everywhere
+  - business ex VAT + incl VAT shown
+  - proper VAT invoice generation
+  - payment status only set to `paid` by Worldpay webhook / server confirmation
+  - browser return never marks paid
+4. **Manual Quote Mode applies to broadband, digital voice, business.** SIM has an admin-level switch `sim_checkout_mode` (`instant` | `quote`), default `quote` until supplier pricing is confirmed.
+5. **Rewards full build, values disabled until margin rules set.** Unlock trigger configurable: `first_cleared_payment` | `second_cleared_payment` | `custom_rule`. Reward values null/zero until admin enables.
+6. **Campaign Engine full build, never auto-publishes.** State machine: `draft → margin_check → compliance_check → admin_approval → published`. AI may draft only.
+7. **VAT invoice gate:** system refuses to issue VAT invoices unless `vat_number` and `vat_effective_date` are set. Below that date or without those values → plain invoice, no VAT line.
+8. **Nothing hardcoded:** supplier prices, product IDs, availability rules, reward values, campaign offers, plan attributes — all DB-driven.
+9. **Universal Activity Log from day one.** Every new module writes to it as it ships.
+10. **Finance/VAT export foundation early.** Tables capture tax_point, net, vat_rate, vat_amount, gross, customer_type (B2C/B2B), customer_vat_number from the start.
+11. **Role-based access + audit from day one** for: VAT changes, price changes, quote approval, invoice edits, payment overrides, reward approval, campaign publishing, contract summary changes.
 
 ---
 
-### 4. Update `src/pages/Index.tsx`
+## PHASE 0 — Foundation (build now)
 
-Wrap homepage content with `<AvailabilityProvider>`.
+### Migration 0.1 — Platform settings, roles, activity log
+
+- `app_role` enum extended: add `super_admin`, `finance_admin`, `support_agent`, `sales_agent`, `compliance_admin`, `marketing_admin`, `auditor`. Keep existing `admin`, `user` for back-compat (treat `admin` = `super_admin` in `has_role` checks during transition).
+- `platform_settings` (singleton row):
+  - `api_mode` text default `'manual'`
+  - `sim_checkout_mode` text default `'quote'`
+  - `manual_mode_message` text
+  - `rewards_unlock_rule` text default `'first_cleared_payment'`
+  - `rewards_enabled` bool default `false`
+  - `vat_number` text null
+  - `vat_effective_date` date null
+  - `vat_scheme` text default `'standard'`
+  - `vat_default_rate` numeric default `20`
+  - `residential_vat_display` text default `'inclusive'`
+  - `business_vat_display` text default `'dual'`
+  - `invoice_prefix` text default `'INV-'`
+  - `credit_note_prefix` text default `'CN-'`
+- SECURITY DEFINER `public.get_setting(text)` and `public.is_vat_active()` (true only when vat_number and effective_date set and effective_date <= today).
+- `activity_log` table: id, ts, actor_type (`customer|admin|system|ai`), actor_id, customer_id, order_id, invoice_id, quote_id, contract_summary_id, ticket_id, complaint_id, event_type, title, details jsonb, old_value jsonb, new_value jsonb, ip, ua, source_module, severity, audit_locked bool default true.
+- SECURITY DEFINER `public.log_event(...)` writes to activity_log; called from triggers and edge functions.
+- `admin_audit_log` view filtered for sensitive actions only.
+- Full GRANTs + RLS: only admin roles read; nobody updates (audit-locked).
+
+### Migration 0.2 — Claims cleanup data layer
+
+- `site_copy` table (singleton key/value) so the public site reads risky-claim replacements from DB (admin-editable later) — but Phase 1 also hard-replaces them in JSX so site is correct immediately even before admin edits.
+
+### Frontend 0.x
+
+- `src/hooks/usePlatformMode.ts`
+- `src/lib/activityLog.ts` (client helper that calls a `log-event` edge function for client-side events worth logging)
+- `src/contexts/PlatformSettingsContext.tsx` (loads platform_settings once, exposes `apiMode`, `simMode`, `vatActive`)
 
 ---
 
-### 5. Update `src/pages/Broadband.tsx`
+## PHASE 1 — Public site rebuild (extend, no breakage)
 
-Wrap with `<AvailabilityProvider>`. Read context.
+### Claims cleanup pass (all existing public pages)
 
-**If personalised result exists:**
+Replace risky phrases per spec:
 
-- Note: "Showing plans available at your address"
-- Filter to eligible plans only, recommended first
-- "Recommended for your address" badge
-- FTTC-only note: "Full Fibre isn't currently available at this address"
-- Link: "Clear address check and view all plans" → calls `reset()`
+- "Cancel anytime" → "30-day rolling options available. Cancel with notice."
+- "No hidden fees" → "All monthly and one-off charges shown before you order."
+- "24/7 support" → "24/7 AI support with human escalation when needed."
+- "Free installation" → "Free standard installation where available and shown in your quote."
+- "Available everywhere" → "Availability depends on your exact address."
+- "No credit check" → "Checks or deposits may apply depending on product/supplier."
 
-**If no result:** full plan ladder as today.
+### Pages — new or rewritten
+
+- `**/` Homepage** — hero "Broadband without the lock-in", Flex vs Contract Saver block, Broadband, SIM, Digital Voice, Business strip, Switching, Rewards teaser, AI support, Why OCCTA, trust/compliance strip, FAQs. CTAs respect `api_mode`: in manual, "View plans" routes into Quote Request flow (Phase 2) — for Phase 1 they route to plan pages with a "Request a confirmed quote" CTA wired to a placeholder `/quote/start` route that Phase 2 will fill.
+- `**/broadband**` — split: Flex Broadband and Contract Saver Broadband. Cards read from `plans` table (existing). No final-price guarantees. Availability disclaimer.
+- `**/broadband/flex**` — 30-day rolling positioning with compliant wording.
+- `**/broadband/contract-saver**` — lower monthly price positioning, reward eligibility note (values hidden until rewards_enabled).
+- `**/sim-plans**` — config-driven attributes. Hide instant-checkout CTA when `sim_checkout_mode = 'quote'`.
+- `**/digital-voice**` — emergency / power-cut warning, vulnerable-customer CTA, porting "where available", quote-led.
+- `**/business**` — B2B quote-led: Business Broadband, Business SIMs, Business VoIP, Managed Telecom, Upload current bill, Request business quote, Book a call. Never instant checkout.
+- `**/switching**` — One Touch Switch explainer.
+- `**/rewards**` — teaser only; values hidden until `rewards_enabled = true`.
+- `**/track-order**` — keep existing, ensure logged-in users see fuller timeline (full pipeline rendering lands in Phase 4).
+- **Legal pages added/updated:** Complaints Code, Contract Summary explainer, Digital Voice & Emergency Calls, Vulnerable Customers, Accessibility, Fair Usage, Cancellation & Cease Charges, Payment Security, DD Guarantee, Price Rise Policy, Rewards Terms, Business Terms.
+
+### Routing & checkout guard (Phase 1 enforcement of locked rule 3)
+
+- New helper `requireContractSummaryForPayment()` used by `Pay`, `PayInvoice`, `Checkout`, `BusinessCheckout`. If no accepted contract summary linked to the cart/quote/invoice, redirect to `/quote/contract-summary?ref=...`. Contract Summary table comes online in Phase 2; until then the helper:
+  - in **manual mode**: blocks instant checkout entirely (sends user to quote flow placeholder)
+  - in **live mode**: allows current behaviour BUT shows a clear "Contract Summary required" gate placeholder so Phase 2 wire-up is a drop-in.
+- This guards live mode from regressing once Phase 2 lands.
+
+### Activity logging in Phase 1
+
+Every new public action writes to `activity_log` via `log-event` edge function:
+
+- postcode check, quote-CTA click, contract-summary view, legal-page version view, form submission.
+
+### Edge function 0/1.x
+
+- `log-event` — JWT optional, validates payload, writes to activity_log via SECURITY DEFINER fn. CORS + rate-limit.
 
 ---
 
-### 6. Downstream context preservation
+## Pause point
 
-When "CHOOSE PLAN" is clicked, postcode + address remain in sessionStorage. PreCheckout reads sessionStorage to prefill postcode/address fields where the form supports it.
+End of Phase 1: stop, summarise what changed (files, tables, settings), and wait for go-ahead before starting Phase 2 (Quote & Contract Summary system).
 
 ---
 
-### What does NOT change
+## Phases 2–9 unchanged from prior plan, with amendments folded in
 
-- Global header, footer, nav, colours, fonts, shadows, borders
-- Pricing logic, catalogue, checkout flow
-- Edge functions / ngrok backend
-- Below-hero sections (Services, WhyUs, CustomerLove, CTA)
-- App mode flows, SIM/landline pages
+2. Quote Requests + Quotes + Contract Summary (mandatory both modes), pay-gate wired, activity log entries per step.
+3. Admin: Leads, Quote Builder (margin-locked), Pricing Rules, Supplier Settings, VAT Settings (gates VAT invoices), KPI cards.
+4. Customer dashboard expansion incl. Contract Summaries, Quotes, Complaints, Rewards & Referrals, Vulnerable Support.
+5. Rewards (values disabled until admin) + Campaign Engine (no auto-publish).
+6. Support, Complaints (ADR 6-week tracker), Communications Centre, AI KB (restricted retrieval).
+7. Finance & VAT Export Centre — uses fields captured from day one in Phase 0/2.
+8. Roles hardening + Compliance Centre + audit deepening.
+9. SEO expansion pages.
 
-### Implementation order
+---
 
-1. AvailabilityContext with sessionStorage
-2. PostcodeChecker refactor
-3. HeroSection two-column rebuild
-4. Index.tsx provider wrap
-5. Broadband.tsx filtering + clear link
-6. Test all states  
-Add this above input:
-  ```
-  ENTER YOUR POSTCODE
-  ```
-  Add under checker:
-  ```
-  ✓ Takes 10 seconds • ✓ No commitment • ✓ Real availability
-  ```
-  ### Add ONE psychological trigger:
-  Under price (£22.99):
-  ```
-  Join customers switching away from price rises
-  ```
-  Under plan section:
-  ```
-  Free installation available for a limited time
-  ```
-  ### While checking:
-  Show:
-  ```
-  Checking your address…
-  ```
-  Then:
-  ```
-  Finding the fastest available speeds…
-  ```
-  When postcode returns multiple addresses:
-  👉 Make dropdown clean + large  
-  👉 Show:
-  ```
-  Select your address
-  ```
-  When user lands with results:
-  Add top banner:
-  ```
-  Results for: HD3 3WU
-  [Change postcode]
-  ```
-    
-  You already added error states — improve it:
-  If unavailable:
-  ```
-  We couldn't confirm availability online.
-
-  Call 0800 260 6626 — we'll check instantly and get you connected.
-  ```
-    
-  Make sure Lovable DOES THIS:
-  ```
-  Single source of truth = AvailabilityContext.result
-  ```
-  ## Improve “State B” plan display (MOST IMPORTANT CHANGE)
-  Right now:
-  - You show eligible plans → correct
-  BUT you must:
-  ### 🔥 Add THIS STRUCTURE:
-  For each plan:
-  ```
-  [PLAN NAME]
-  Up to X Mbps
-
-  £XX.XX/month
-
-  ✔ Unlimited usage  
-  ✔ No contracts  
-  ✔ Free router  
-
-  [CHOOSE PLAN]
-  ```
-  AND:
-  ### ⭐ Make ONLY ONE plan visually dominant:
-  -   
-  bigger border  
-
-  -   
-  slightly larger card  
-
-  -   
-  “MOST POPULAR” badge
+Reply "go" and I'll start with Phase 0 migrations, then Phase 1 frontend.  
+  
+  
+  
+Add these final safeguards before building:  
+  
+1. Legacy invoice/payment exception:  
+Contract Summary is mandatory for all new telecom sales/orders, but do not block payment links for old/legacy invoices, arrears, manual invoices, or non-contract payment requests where no new telecom contract is being created. Those payments should still work.  
+  
+2. Contract Summary linking:  
+Contract Summary should be linkable to quote_id, order_id, cart_id, or invoice_id. In manual mode it will usually link to quote_id. In live mode it may link to cart/order.  
+  
+3. Sensitive activity logging:  
+Public/client log-event must only accept low-risk events like page views, CTA clicks, quote-start events and form submissions. Sensitive logs such as VAT changes, payment status, quote approval, invoice edit, reward approval and campaign publish must only be created server-side/admin-side, not trusted from client payload.  
+  
+4. Do not let activity_log store unnecessary sensitive data:  
+No card data, no full bank details, no passwords, no secret tokens. Mask personal data where possible in event details.  
+  
+5. RLS must be tested after every migration:  
+Admin-only tables must not be readable by normal users. Customers should only see their own rows.  
+  
+6. Migration safety:  
+Before changing tables/enums/policies, create migration in a way that does not break existing roles, admin login, customer dashboard, invoices, Worldpay, DD mandates or current SEO pages.  
+  
+7. Keep current payment links working:  
+Worldpay HPP and payment request links must keep functioning. Only new sales checkout/order flows should be gated by Contract Summary.  
+  
+8. Add a rollback note after Phase 0:  
+At the pause point, list every migration/table/policy/function added so we can reverse or fix if anything breaks.  
+  
+9. Phase 0 + Phase 1 only for now:  
+After Phase 1, stop and show:  
+- tables added  
+- functions added  
+- files changed  
+- pages changed  
+- what was not touched  
+- any errors/warnings

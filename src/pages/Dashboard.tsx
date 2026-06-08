@@ -29,7 +29,6 @@ import { DocumentsTab } from "@/components/dashboard/tabs/DocumentsTab";
 import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsTab";
 import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
 import { logClientEvent } from "@/lib/activityLog";
-import { useEffect as useEffectAlias } from "react";
 import { 
   Wifi, 
   Smartphone, 
@@ -156,6 +155,10 @@ const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | GuestOrder | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
+
+  useEffect(() => {
+    logClientEvent({ event_type: "dashboard_view", title: "dashboard.opened", source_module: "dashboard" });
+  }, []);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

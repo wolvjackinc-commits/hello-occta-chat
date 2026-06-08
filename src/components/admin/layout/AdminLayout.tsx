@@ -57,6 +57,8 @@ const navItems = [
   { label: "Contract Benefits", to: "/admin/contract-benefits", icon: FileText },
   { label: "Campaigns", to: "/admin/campaigns", icon: Send },
   { label: "Tickets", to: "/admin/tickets", icon: Ticket },
+  { label: "Complaints", to: "/admin/complaints", icon: Shield },
+  { label: "Knowledge Base", to: "/admin/knowledge-base", icon: FileText },
   { label: "Billing", to: "/admin/billing", icon: BadgeDollarSign },
   { label: "Services", to: "/admin/services", icon: Wrench },
   { label: "Payments & DD", to: "/admin/payments-dd", icon: Activity },

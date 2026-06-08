@@ -82,6 +82,8 @@ import { AdminRewards } from "./pages/admin/Rewards";
 import { AdminReferrals } from "./pages/admin/Referrals";
 import { AdminContractBenefits } from "./pages/admin/ContractBenefits";
 import { AdminCampaigns } from "./pages/admin/Campaigns";
+import { AdminComplaints } from "./pages/admin/Complaints";
+import { AdminKnowledgeBase } from "./pages/admin/KnowledgeBase";
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -157,6 +159,8 @@ const AnimatedRoutes = () => {
             <Route path="referrals" element={<AdminReferrals />} />
             <Route path="contract-benefits" element={<AdminContractBenefits />} />
             <Route path="campaigns" element={<AdminCampaigns />} />
+            <Route path="complaints" element={<AdminComplaints />} />
+            <Route path="knowledge-base" element={<AdminKnowledgeBase />} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

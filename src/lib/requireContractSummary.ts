@@ -1,47 +1,67 @@
 /**
- * Pay-gate helper (Phase 1 scaffolding for the OCCTA Contract Summary rule).
- *
- * Rule: payment/order for NEW telecom sales requires an accepted Contract Summary
- * in BOTH manual and live modes.
- *
- * Legacy/arrears invoice payments and standalone payment-request links are
- * EXEMPT — those existing flows must keep working untouched.
- *
- * The full Contract Summary table and acceptance flow lands in Phase 2.
- * In Phase 1 this helper:
- *  - identifies whether a checkout context is a "new telecom sale" or "legacy payment"
- *  - exposes hasAcceptedContractSummary() which Phase 2 will wire to DB
+ * Pay-gate helper (Phase 2): new telecom sales require an accepted Contract Summary
+ * in BOTH manual and live modes. Legacy invoice payments (/pay-invoice) and admin
+ * payment-request links (/pay) are EXEMPT and untouched.
  */
+import { supabase } from "@/integrations/supabase/client";
+
 export type CheckoutKind =
-  | "new_telecom_sale" // Broadband / Voice / Business sales checkout
-  | "legacy_invoice" // /pay-invoice with an existing INV-... reference
-  | "payment_request" // /pay with PR-... token (admin-generated link)
-  | "sim_instant"; // SIM only when sim_checkout_mode === 'instant'
+  | "new_telecom_sale"
+  | "legacy_invoice"
+  | "payment_request"
+  | "sim_instant";
 
 export interface CheckoutContext {
   kind: CheckoutKind;
   reference?: string;
   quoteId?: string;
+  contractSummaryId?: string;
+  token?: string;
   cartId?: string;
   invoiceId?: string;
 }
 
 export function requiresContractSummary(ctx: CheckoutContext): boolean {
-  // Legacy invoices and admin payment requests are EXEMPT.
   if (ctx.kind === "legacy_invoice") return false;
   if (ctx.kind === "payment_request") return false;
-  // SIM instant: only when explicitly enabled by admin. No CS required for SIM-only.
   if (ctx.kind === "sim_instant") return false;
-  // All new telecom sales require an accepted Contract Summary.
   return true;
 }
 
-/**
- * Phase 1 stub. Phase 2 will query the `contract_summaries` table.
- * Returns `null` to mean "no acceptance found" so the gate redirects to the quote/CS flow.
- */
 export async function hasAcceptedContractSummary(
-  _ctx: CheckoutContext
+  ctx: CheckoutContext
 ): Promise<{ accepted: boolean; contractSummaryId: string | null }> {
-  return { accepted: false, contractSummaryId: null };
+  try {
+    // 1. quoteId → RPC
+    if (ctx.quoteId) {
+      const { data, error } = await (supabase as any).rpc("has_accepted_contract_summary", {
+        _quote_id: ctx.quoteId,
+      });
+      if (error) return { accepted: false, contractSummaryId: null };
+      return { accepted: data === true, contractSummaryId: null };
+    }
+    // 2. token → fetch CS by token; status must be 'accepted'
+    if (ctx.token) {
+      const { data, error } = await supabase.functions.invoke("get-contract-summary-by-token", {
+        body: { token: ctx.token },
+      });
+      if (error || !data) return { accepted: false, contractSummaryId: null };
+      const cs = (data as any).contract_summary ?? data;
+      const accepted = cs?.status === "accepted";
+      return { accepted, contractSummaryId: cs?.id ?? null };
+    }
+    // 3. contractSummaryId → direct select
+    if (ctx.contractSummaryId) {
+      const { data, error } = await (supabase as any)
+        .from("contract_summaries")
+        .select("id, status")
+        .eq("id", ctx.contractSummaryId)
+        .maybeSingle();
+      if (error || !data) return { accepted: false, contractSummaryId: null };
+      return { accepted: data.status === "accepted", contractSummaryId: data.id };
+    }
+    return { accepted: false, contractSummaryId: null };
+  } catch {
+    return { accepted: false, contractSummaryId: null };
+  }
 }

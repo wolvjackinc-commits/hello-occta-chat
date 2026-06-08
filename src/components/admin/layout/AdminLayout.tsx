@@ -21,6 +21,8 @@ import {
   Search,
   ScrollText,
   MessageSquare,
+  FileSignature,
+  Inbox,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -40,6 +42,8 @@ const navItems = [
   { label: "Overview", to: "/admin/overview", icon: LayoutGrid },
   { label: "Customers", to: "/admin/customers", icon: Users },
   { label: "Orders", to: "/admin/orders", icon: ClipboardList },
+  { label: "Quote Requests", to: "/admin/quote-requests", icon: Inbox },
+  { label: "Quotes", to: "/admin/quotes", icon: FileSignature },
   { label: "Tickets", to: "/admin/tickets", icon: Ticket },
   { label: "Billing", to: "/admin/billing", icon: BadgeDollarSign },
   { label: "Services", to: "/admin/services", icon: Wrench },

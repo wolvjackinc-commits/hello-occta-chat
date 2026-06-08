@@ -54,6 +54,8 @@ const BusinessCheckout = () => {
   const [isReady, setIsReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState(searchParams.get("plan") || "");
+  const csTokenParam = searchParams.get("cs") ?? undefined;
+  const quoteIdParam = searchParams.get("quote") ?? undefined;
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -63,7 +65,12 @@ const BusinessCheckout = () => {
   // Phase 1 pay-gate: business sales must go through Quote → Contract Summary first.
   useEffect(() => {
     let cancelled = false;
-    const ctx: CheckoutContext = { kind: "new_telecom_sale", cartId: selectedPlanId || "business" };
+    const ctx: CheckoutContext = {
+      kind: "new_telecom_sale",
+      cartId: selectedPlanId || "business",
+      quoteId: quoteIdParam,
+      token: csTokenParam,
+    };
     if (!requiresContractSummary(ctx)) return;
     hasAcceptedContractSummary(ctx).then((res) => {
       if (cancelled || res.accepted) return;
@@ -74,7 +81,7 @@ const BusinessCheckout = () => {
       navigate("/quote/start?interest=business", { replace: true });
     });
     return () => { cancelled = true; };
-  }, [selectedPlanId, navigate, toast]);
+  }, [selectedPlanId, navigate, toast, quoteIdParam, csTokenParam]);
 
   const [formData, setFormData] = useState({
     businessName: "",

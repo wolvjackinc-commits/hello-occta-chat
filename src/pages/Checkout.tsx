@@ -66,6 +66,8 @@ const Checkout = () => {
   const { toast } = useToast();
   
   const planId = searchParams.get("plan");
+  const csTokenParam = searchParams.get("cs") ?? undefined;
+  const quoteIdParam = searchParams.get("quote") ?? undefined;
   const [plan, setPlan] = useState<Plan | null>(null);
   const [gateChecked, setGateChecked] = useState(false);
   
@@ -106,7 +108,12 @@ const Checkout = () => {
   useEffect(() => {
     if (!planId) return;
     let cancelled = false;
-    const ctx: CheckoutContext = { kind: "new_telecom_sale", cartId: planId };
+    const ctx: CheckoutContext = {
+      kind: "new_telecom_sale",
+      cartId: planId,
+      quoteId: quoteIdParam,
+      token: csTokenParam,
+    };
     if (!requiresContractSummary(ctx)) {
       setGateChecked(true);
       return;
@@ -129,7 +136,7 @@ const Checkout = () => {
       }
     });
     return () => { cancelled = true; };
-  }, [planId, plan?.serviceType, navigate, toast]);
+  }, [planId, plan?.serviceType, navigate, toast, quoteIdParam, csTokenParam]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

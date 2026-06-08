@@ -77,6 +77,10 @@ import { AdminVatSettings } from "./pages/admin/VatSettings";
 import { AdminSuppliers } from "./pages/admin/Suppliers";
 import { AdminPricingRules } from "./pages/admin/PricingRules";
 import { AdminMarginRules } from "./pages/admin/MarginRules";
+import { AdminRewards } from "./pages/admin/Rewards";
+import { AdminReferrals } from "./pages/admin/Referrals";
+import { AdminContractBenefits } from "./pages/admin/ContractBenefits";
+import { AdminCampaigns } from "./pages/admin/Campaigns";
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -144,6 +148,10 @@ const AnimatedRoutes = () => {
             <Route path="suppliers" element={<AdminSuppliers />} />
             <Route path="pricing-rules" element={<AdminPricingRules />} />
             <Route path="margin-rules" element={<AdminMarginRules />} />
+            <Route path="rewards" element={<AdminRewards />} />
+            <Route path="referrals" element={<AdminReferrals />} />
+            <Route path="contract-benefits" element={<AdminContractBenefits />} />
+            <Route path="campaigns" element={<AdminCampaigns />} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

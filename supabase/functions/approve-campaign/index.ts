@@ -1,0 +1,33 @@
+import { corsHeaders, jsonResponse, getServiceClient, requireStaff } from "../_shared/quoteHelpers.ts";
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
+
+  const auth = await requireStaff(req, ["admin", "super_admin"]);
+  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+
+  const { campaign_id } = (await req.json().catch(() => ({}))) as { campaign_id?: string };
+  if (!campaign_id) return jsonResponse({ error: "missing_campaign_id" }, 400);
+
+  const svc = getServiceClient();
+  const { data: c } = await svc.from("campaign_drafts").select("*").eq("id", campaign_id).maybeSingle();
+  if (!c) return jsonResponse({ error: "not_found" }, 404);
+
+  if (!["green", "amber"].includes(c.margin_check_status)) return jsonResponse({ error: "margin_not_green_or_amber" }, 409);
+  if (c.compliance_check_status !== "passed") return jsonResponse({ error: "compliance_not_passed" }, 409);
+
+  await svc.from("campaign_drafts").update({
+    approval_status: "approved",
+    approved_by: auth.userId,
+  }).eq("id", campaign_id);
+
+  await svc.rpc("log_event", {
+    _actor_type: "admin", _event_type: "campaign_approved",
+    _title: "Campaign approved",
+    _source_module: "campaigns",
+    _details: { campaign_id },
+  });
+
+  return jsonResponse({ ok: true });
+});

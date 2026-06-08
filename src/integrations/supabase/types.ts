@@ -501,6 +501,253 @@ export type Database = {
           },
         ]
       }
+      contract_acceptances: {
+        Row: {
+          acceptance_text: string
+          accepted_at: string
+          accepted_by_email: string
+          accepted_by_name: string
+          checkbox_confirmed: boolean
+          contract_summary_id: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          ip: string | null
+          quote_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          acceptance_text: string
+          accepted_at?: string
+          accepted_by_email: string
+          accepted_by_name: string
+          checkbox_confirmed: boolean
+          contract_summary_id: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          ip?: string | null
+          quote_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          acceptance_text?: string
+          accepted_at?: string
+          accepted_by_email?: string
+          accepted_by_name?: string
+          checkbox_confirmed?: boolean
+          contract_summary_id?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          ip?: string | null
+          quote_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_summaries: {
+        Row: {
+          accepted_at: string | null
+          accepted_ip: string | null
+          accepted_user_agent: string | null
+          business_monthly_ex_vat: number | null
+          business_monthly_incl_vat: number | null
+          cease_cancellation_charges: string | null
+          complaints_adr_info: string
+          contract_length: string
+          created_at: string
+          cs_number: string
+          customer_email_snapshot: string
+          customer_id: string | null
+          customer_name_snapshot: string
+          customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          delivery_charge: number
+          digital_voice_warning: string | null
+          emailed_at: string | null
+          estimated_download_speed: number | null
+          estimated_upload_speed: number | null
+          id: string
+          installation_charge: number
+          issued_at: string | null
+          monthly_price_incl_vat: number
+          notice_period: string
+          one_off_charges_json: Json
+          payment_schedule: string
+          pdf_url: string | null
+          plan_name: string
+          plan_type: Database["public"]["Enums"]["plan_type_kind"]
+          price_rise_policy: string
+          privacy_version: string
+          public_token_hash: string | null
+          quote_id: string
+          quote_request_id: string
+          router_charge: number
+          service_address: string
+          service_type: Database["public"]["Enums"]["service_interest_kind"]
+          setup_charge: number
+          speed_notes: string | null
+          status: Database["public"]["Enums"]["contract_summary_status_kind"]
+          terms_version: string
+          token_expires_at: string | null
+          updated_at: string
+          version: number
+          vulnerable_customer_note: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_ip?: string | null
+          accepted_user_agent?: string | null
+          business_monthly_ex_vat?: number | null
+          business_monthly_incl_vat?: number | null
+          cease_cancellation_charges?: string | null
+          complaints_adr_info: string
+          contract_length: string
+          created_at?: string
+          cs_number?: string
+          customer_email_snapshot: string
+          customer_id?: string | null
+          customer_name_snapshot: string
+          customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          delivery_charge?: number
+          digital_voice_warning?: string | null
+          emailed_at?: string | null
+          estimated_download_speed?: number | null
+          estimated_upload_speed?: number | null
+          id?: string
+          installation_charge?: number
+          issued_at?: string | null
+          monthly_price_incl_vat: number
+          notice_period: string
+          one_off_charges_json?: Json
+          payment_schedule: string
+          pdf_url?: string | null
+          plan_name: string
+          plan_type: Database["public"]["Enums"]["plan_type_kind"]
+          price_rise_policy: string
+          privacy_version?: string
+          public_token_hash?: string | null
+          quote_id: string
+          quote_request_id: string
+          router_charge?: number
+          service_address: string
+          service_type: Database["public"]["Enums"]["service_interest_kind"]
+          setup_charge?: number
+          speed_notes?: string | null
+          status?: Database["public"]["Enums"]["contract_summary_status_kind"]
+          terms_version?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          version?: number
+          vulnerable_customer_note?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_ip?: string | null
+          accepted_user_agent?: string | null
+          business_monthly_ex_vat?: number | null
+          business_monthly_incl_vat?: number | null
+          cease_cancellation_charges?: string | null
+          complaints_adr_info?: string
+          contract_length?: string
+          created_at?: string
+          cs_number?: string
+          customer_email_snapshot?: string
+          customer_id?: string | null
+          customer_name_snapshot?: string
+          customer_type?: Database["public"]["Enums"]["customer_type_kind"]
+          delivery_charge?: number
+          digital_voice_warning?: string | null
+          emailed_at?: string | null
+          estimated_download_speed?: number | null
+          estimated_upload_speed?: number | null
+          id?: string
+          installation_charge?: number
+          issued_at?: string | null
+          monthly_price_incl_vat?: number
+          notice_period?: string
+          one_off_charges_json?: Json
+          payment_schedule?: string
+          pdf_url?: string | null
+          plan_name?: string
+          plan_type?: Database["public"]["Enums"]["plan_type_kind"]
+          price_rise_policy?: string
+          privacy_version?: string
+          public_token_hash?: string | null
+          quote_id?: string
+          quote_request_id?: string
+          router_charge?: number
+          service_address?: string
+          service_type?: Database["public"]["Enums"]["service_interest_kind"]
+          setup_charge?: number
+          speed_notes?: string | null
+          status?: Database["public"]["Enums"]["contract_summary_status_kind"]
+          terms_version?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          version?: number
+          vulnerable_customer_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_notes: {
         Row: {
           amount: number
@@ -1377,6 +1624,372 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_events: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          contract_summary_id: string | null
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          quote_id: string | null
+          quote_request_id: string | null
+          title: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          contract_summary_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          quote_id?: string | null
+          quote_request_id?: string | null
+          title: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          contract_summary_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          quote_id?: string | null
+          quote_request_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_events_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_events_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_requests: {
+        Row: {
+          address_line_1: string | null
+          address_line_2: string | null
+          assigned_admin_id: string | null
+          business_name: string | null
+          county: string | null
+          created_at: string
+          current_monthly_bill: number | null
+          current_provider: string | null
+          customer_id: string | null
+          customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          email: string
+          full_name: string
+          id: string
+          ip: string | null
+          marketing_consent: boolean
+          message: string | null
+          phone: string
+          plan_preference: Database["public"]["Enums"]["plan_preference_kind"]
+          postcode: string
+          preferred_contact_method: string
+          reference: string
+          service_interest: Database["public"]["Enums"]["service_interest_kind"]
+          source: string
+          status: Database["public"]["Enums"]["quote_request_status"]
+          town: string | null
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          assigned_admin_id?: string | null
+          business_name?: string | null
+          county?: string | null
+          created_at?: string
+          current_monthly_bill?: number | null
+          current_provider?: string | null
+          customer_id?: string | null
+          customer_type?: Database["public"]["Enums"]["customer_type_kind"]
+          email: string
+          full_name: string
+          id?: string
+          ip?: string | null
+          marketing_consent?: boolean
+          message?: string | null
+          phone: string
+          plan_preference?: Database["public"]["Enums"]["plan_preference_kind"]
+          postcode: string
+          preferred_contact_method?: string
+          reference?: string
+          service_interest: Database["public"]["Enums"]["service_interest_kind"]
+          source?: string
+          status?: Database["public"]["Enums"]["quote_request_status"]
+          town?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          assigned_admin_id?: string | null
+          business_name?: string | null
+          county?: string | null
+          created_at?: string
+          current_monthly_bill?: number | null
+          current_provider?: string | null
+          customer_id?: string | null
+          customer_type?: Database["public"]["Enums"]["customer_type_kind"]
+          email?: string
+          full_name?: string
+          id?: string
+          ip?: string | null
+          marketing_consent?: boolean
+          message?: string | null
+          phone?: string
+          plan_preference?: Database["public"]["Enums"]["plan_preference_kind"]
+          postcode?: string
+          preferred_contact_method?: string
+          reference?: string
+          service_interest?: Database["public"]["Enums"]["service_interest_kind"]
+          source?: string
+          status?: Database["public"]["Enums"]["quote_request_status"]
+          town?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_requests_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_requests_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          admin_notes: string | null
+          cease_fee_gross: number | null
+          contract_length_months: number | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_notes: string | null
+          customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          delivery_gross: number
+          delivery_net: number
+          delivery_vat_amount: number
+          estimated_download_speed: number | null
+          estimated_upload_speed: number | null
+          expires_at: string
+          id: string
+          installation_gross: number
+          installation_net: number
+          installation_vat_amount: number
+          margin_amount: number | null
+          margin_status: Database["public"]["Enums"]["margin_status_kind"]
+          monthly_gross: number
+          monthly_net: number
+          monthly_vat_amount: number
+          monthly_vat_rate: number
+          notice_period: string
+          plan_name: string
+          plan_type: Database["public"]["Enums"]["plan_type_kind"]
+          price_rise_policy: string
+          public_token_hash: string | null
+          quote_number: string
+          quote_request_id: string
+          reward_eligibility: string | null
+          router_gross: number
+          router_net: number
+          router_vat_amount: number
+          service_type: Database["public"]["Enums"]["service_interest_kind"]
+          setup_gross: number
+          setup_net: number
+          setup_vat_amount: number
+          speed_notes: string | null
+          status: Database["public"]["Enums"]["quote_status_kind"]
+          supplier_name: string | null
+          supplier_product_id: string | null
+          supplier_reference: string | null
+          token_expires_at: string | null
+          total_due_today_gross: number
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          cease_fee_gross?: number | null
+          contract_length_months?: number | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_notes?: string | null
+          customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          delivery_gross?: number
+          delivery_net?: number
+          delivery_vat_amount?: number
+          estimated_download_speed?: number | null
+          estimated_upload_speed?: number | null
+          expires_at?: string
+          id?: string
+          installation_gross?: number
+          installation_net?: number
+          installation_vat_amount?: number
+          margin_amount?: number | null
+          margin_status?: Database["public"]["Enums"]["margin_status_kind"]
+          monthly_gross?: number
+          monthly_net?: number
+          monthly_vat_amount?: number
+          monthly_vat_rate?: number
+          notice_period?: string
+          plan_name: string
+          plan_type: Database["public"]["Enums"]["plan_type_kind"]
+          price_rise_policy?: string
+          public_token_hash?: string | null
+          quote_number?: string
+          quote_request_id: string
+          reward_eligibility?: string | null
+          router_gross?: number
+          router_net?: number
+          router_vat_amount?: number
+          service_type: Database["public"]["Enums"]["service_interest_kind"]
+          setup_gross?: number
+          setup_net?: number
+          setup_vat_amount?: number
+          speed_notes?: string | null
+          status?: Database["public"]["Enums"]["quote_status_kind"]
+          supplier_name?: string | null
+          supplier_product_id?: string | null
+          supplier_reference?: string | null
+          token_expires_at?: string | null
+          total_due_today_gross?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          cease_fee_gross?: number | null
+          contract_length_months?: number | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_notes?: string | null
+          customer_type?: Database["public"]["Enums"]["customer_type_kind"]
+          delivery_gross?: number
+          delivery_net?: number
+          delivery_vat_amount?: number
+          estimated_download_speed?: number | null
+          estimated_upload_speed?: number | null
+          expires_at?: string
+          id?: string
+          installation_gross?: number
+          installation_net?: number
+          installation_vat_amount?: number
+          margin_amount?: number | null
+          margin_status?: Database["public"]["Enums"]["margin_status_kind"]
+          monthly_gross?: number
+          monthly_net?: number
+          monthly_vat_amount?: number
+          monthly_vat_rate?: number
+          notice_period?: string
+          plan_name?: string
+          plan_type?: Database["public"]["Enums"]["plan_type_kind"]
+          price_rise_policy?: string
+          public_token_hash?: string | null
+          quote_number?: string
+          quote_request_id?: string
+          reward_eligibility?: string | null
+          router_gross?: number
+          router_net?: number
+          router_vat_amount?: number
+          service_type?: Database["public"]["Enums"]["service_interest_kind"]
+          setup_gross?: number
+          setup_net?: number
+          setup_vat_amount?: number
+          speed_notes?: string | null
+          status?: Database["public"]["Enums"]["quote_status_kind"]
+          supplier_name?: string | null
+          supplier_product_id?: string | null
+          supplier_reference?: string | null
+          token_expires_at?: string | null
+          total_due_today_gross?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rate_limits: {
         Row: {
           action: string
@@ -1803,6 +2416,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      expire_old_quotes: { Args: never; Returns: number }
       generate_account_number: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_user_account_number: { Args: never; Returns: string }
@@ -1835,6 +2449,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      has_accepted_contract_summary: {
+        Args: { _quote_id: string }
+        Returns: boolean
       }
       has_billing_access: { Args: never; Returns: boolean }
       has_compliance_access: { Args: { _user_id: string }; Returns: boolean }
@@ -1910,7 +2528,42 @@ export type Database = {
         | "compliance_admin"
         | "marketing_admin"
         | "auditor"
+      contract_summary_status_kind:
+        | "draft"
+        | "issued"
+        | "viewed"
+        | "accepted"
+        | "superseded"
+        | "expired"
+      customer_type_kind: "residential" | "business"
+      margin_status_kind: "unknown" | "green" | "amber" | "red"
       order_status: "pending" | "confirmed" | "active" | "cancelled"
+      plan_preference_kind: "flex" | "contract_saver" | "not_sure"
+      plan_type_kind: "flex" | "contract_saver"
+      quote_request_status:
+        | "new"
+        | "assigned"
+        | "checking"
+        | "quoted"
+        | "expired"
+        | "rejected"
+        | "converted"
+      quote_status_kind:
+        | "draft"
+        | "sent"
+        | "viewed"
+        | "accepted"
+        | "rejected"
+        | "expired"
+        | "converted"
+      service_interest_kind:
+        | "broadband"
+        | "sim"
+        | "digital_voice"
+        | "business"
+        | "switching"
+        | "bundle"
+        | "other"
       service_type: "broadband" | "sim" | "landline"
       ticket_priority: "low" | "medium" | "high" | "urgent"
       ticket_status: "open" | "in_progress" | "resolved" | "closed"
@@ -2052,7 +2705,46 @@ export const Constants = {
         "marketing_admin",
         "auditor",
       ],
+      contract_summary_status_kind: [
+        "draft",
+        "issued",
+        "viewed",
+        "accepted",
+        "superseded",
+        "expired",
+      ],
+      customer_type_kind: ["residential", "business"],
+      margin_status_kind: ["unknown", "green", "amber", "red"],
       order_status: ["pending", "confirmed", "active", "cancelled"],
+      plan_preference_kind: ["flex", "contract_saver", "not_sure"],
+      plan_type_kind: ["flex", "contract_saver"],
+      quote_request_status: [
+        "new",
+        "assigned",
+        "checking",
+        "quoted",
+        "expired",
+        "rejected",
+        "converted",
+      ],
+      quote_status_kind: [
+        "draft",
+        "sent",
+        "viewed",
+        "accepted",
+        "rejected",
+        "expired",
+        "converted",
+      ],
+      service_interest_kind: [
+        "broadband",
+        "sim",
+        "digital_voice",
+        "business",
+        "switching",
+        "bundle",
+        "other",
+      ],
       service_type: ["broadband", "sim", "landline"],
       ticket_priority: ["low", "medium", "high", "urgent"],
       ticket_status: ["open", "in_progress", "resolved", "closed"],

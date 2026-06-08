@@ -13,11 +13,11 @@ Deno.serve(async (req) => {
   const supabase = getServiceClient();
   const { data: quote, error: qErr } = await supabase
     .from("quotes")
-    .select("id, service_type, plan_type, customer_type, contract_length_months, monthly_net, setup_total_net, supplier_product_id")
+    .select("id, service_type, plan_type, customer_type, contract_length_months, monthly_net, setup_net")
     .eq("id", body.quote_id).maybeSingle();
   if (qErr || !quote) return jsonResponse({ error: "quote_not_found" }, 404);
 
-  const supplierProductId = body.supplier_product_id ?? (quote as any).supplier_product_id ?? null;
+  const supplierProductId = body.supplier_product_id ?? null;
   let supplierCost: number | null = null;
   if (supplierProductId) {
     const { data: prod } = await supabase

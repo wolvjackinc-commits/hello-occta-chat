@@ -1236,6 +1236,66 @@ export type Database = {
           },
         ]
       }
+      margin_rules: {
+        Row: {
+          active: boolean
+          cease_risk_buffer: number
+          created_at: string
+          customer_type: string
+          failed_payment_risk_buffer: number
+          id: string
+          install_cost_buffer: number
+          minimum_contract_margin: number
+          minimum_first_3_month_margin: number
+          minimum_monthly_margin: number
+          payment_processing_buffer: number
+          plan_type: string
+          reward_cost_buffer: number
+          router_cost_buffer: number
+          service_type: string
+          support_cost_buffer: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          cease_risk_buffer?: number
+          created_at?: string
+          customer_type: string
+          failed_payment_risk_buffer?: number
+          id?: string
+          install_cost_buffer?: number
+          minimum_contract_margin?: number
+          minimum_first_3_month_margin?: number
+          minimum_monthly_margin?: number
+          payment_processing_buffer?: number
+          plan_type: string
+          reward_cost_buffer?: number
+          router_cost_buffer?: number
+          service_type: string
+          support_cost_buffer?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          cease_risk_buffer?: number
+          created_at?: string
+          customer_type?: string
+          failed_payment_risk_buffer?: number
+          id?: string
+          install_cost_buffer?: number
+          minimum_contract_margin?: number
+          minimum_first_3_month_margin?: number
+          minimum_monthly_margin?: number
+          payment_processing_buffer?: number
+          plan_type?: string
+          reward_cost_buffer?: number
+          router_cost_buffer?: number
+          service_type?: string
+          support_cost_buffer?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_messages: {
         Row: {
           created_at: string
@@ -1510,6 +1570,42 @@ export type Database = {
           },
         ]
       }
+      plan_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          plan_type: string
+          service_type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          plan_type: string
+          service_type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          plan_type?: string
+          service_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           api_mode: string
@@ -1575,6 +1671,114 @@ export type Database = {
           vat_scheme?: string
         }
         Relationships: []
+      }
+      pricing_rules: {
+        Row: {
+          active: boolean
+          cease_fee_gross: number | null
+          contract_length_months: number | null
+          created_at: string
+          customer_type: string
+          delivery_sell_gross: number
+          delivery_sell_net: number
+          delivery_vat_amount: number
+          id: string
+          install_sell_gross: number
+          install_sell_net: number
+          install_vat_amount: number
+          monthly_sell_gross: number
+          monthly_sell_net: number
+          monthly_vat_amount: number
+          monthly_vat_rate: number
+          notice_period: string | null
+          plan_category_id: string
+          price_rise_policy: string | null
+          public_plan_name: string
+          router_sell_gross: number
+          router_sell_net: number
+          router_vat_amount: number
+          setup_sell_gross: number
+          setup_sell_net: number
+          setup_vat_amount: number
+          supplier_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          cease_fee_gross?: number | null
+          contract_length_months?: number | null
+          created_at?: string
+          customer_type: string
+          delivery_sell_gross?: number
+          delivery_sell_net?: number
+          delivery_vat_amount?: number
+          id?: string
+          install_sell_gross?: number
+          install_sell_net?: number
+          install_vat_amount?: number
+          monthly_sell_gross?: number
+          monthly_sell_net?: number
+          monthly_vat_amount?: number
+          monthly_vat_rate?: number
+          notice_period?: string | null
+          plan_category_id: string
+          price_rise_policy?: string | null
+          public_plan_name: string
+          router_sell_gross?: number
+          router_sell_net?: number
+          router_vat_amount?: number
+          setup_sell_gross?: number
+          setup_sell_net?: number
+          setup_vat_amount?: number
+          supplier_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          cease_fee_gross?: number | null
+          contract_length_months?: number | null
+          created_at?: string
+          customer_type?: string
+          delivery_sell_gross?: number
+          delivery_sell_net?: number
+          delivery_vat_amount?: number
+          id?: string
+          install_sell_gross?: number
+          install_sell_net?: number
+          install_vat_amount?: number
+          monthly_sell_gross?: number
+          monthly_sell_net?: number
+          monthly_vat_amount?: number
+          monthly_vat_rate?: number
+          notice_period?: string | null
+          plan_category_id?: string
+          price_rise_policy?: string | null
+          public_plan_name?: string
+          router_sell_gross?: number
+          router_sell_net?: number
+          router_vat_amount?: number
+          setup_sell_gross?: number
+          setup_sell_net?: number
+          setup_vat_amount?: number
+          supplier_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rules_plan_category_id_fkey"
+            columns: ["plan_category_id"]
+            isOneToOne: false
+            referencedRelation: "plan_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_rules_supplier_product_id_fkey"
+            columns: ["supplier_product_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1681,6 +1885,59 @@ export type Database = {
             columns: ["quote_request_id"]
             isOneToOne: false
             referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_margin_checks: {
+        Row: {
+          checked_at: string
+          checked_by: string | null
+          estimated_contract_margin: number | null
+          estimated_monthly_margin: number | null
+          first_3_month_margin: number | null
+          id: string
+          quote_id: string
+          reason: string | null
+          reward_cost_assumption: number | null
+          status: Database["public"]["Enums"]["quote_margin_check_status"]
+          supplier_monthly_cost: number | null
+          total_monthly_sell: number | null
+        }
+        Insert: {
+          checked_at?: string
+          checked_by?: string | null
+          estimated_contract_margin?: number | null
+          estimated_monthly_margin?: number | null
+          first_3_month_margin?: number | null
+          id?: string
+          quote_id: string
+          reason?: string | null
+          reward_cost_assumption?: number | null
+          status?: Database["public"]["Enums"]["quote_margin_check_status"]
+          supplier_monthly_cost?: number | null
+          total_monthly_sell?: number | null
+        }
+        Update: {
+          checked_at?: string
+          checked_by?: string | null
+          estimated_contract_margin?: number | null
+          estimated_monthly_margin?: number | null
+          first_3_month_margin?: number | null
+          id?: string
+          quote_id?: string
+          reason?: string | null
+          reward_cost_assumption?: number | null
+          status?: Database["public"]["Enums"]["quote_margin_check_status"]
+          supplier_monthly_cost?: number | null
+          total_monthly_sell?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_margin_checks_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
         ]
@@ -2139,6 +2396,134 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_products: {
+        Row: {
+          active: boolean
+          created_at: string
+          download_speed_label: string | null
+          id: string
+          notes: string | null
+          product_name: string
+          reverse_charge: boolean
+          service_type: string
+          supplier_cease_fee_net: number | null
+          supplier_delivery_net: number | null
+          supplier_id: string
+          supplier_install_net: number | null
+          supplier_monthly_net: number | null
+          supplier_product_id: string | null
+          supplier_router_net: number | null
+          supplier_setup_net: number | null
+          supplier_vat_rate: number
+          technology: string | null
+          updated_at: string
+          upload_speed_label: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          download_speed_label?: string | null
+          id?: string
+          notes?: string | null
+          product_name: string
+          reverse_charge?: boolean
+          service_type: string
+          supplier_cease_fee_net?: number | null
+          supplier_delivery_net?: number | null
+          supplier_id: string
+          supplier_install_net?: number | null
+          supplier_monthly_net?: number | null
+          supplier_product_id?: string | null
+          supplier_router_net?: number | null
+          supplier_setup_net?: number | null
+          supplier_vat_rate?: number
+          technology?: string | null
+          updated_at?: string
+          upload_speed_label?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          download_speed_label?: string | null
+          id?: string
+          notes?: string | null
+          product_name?: string
+          reverse_charge?: boolean
+          service_type?: string
+          supplier_cease_fee_net?: number | null
+          supplier_delivery_net?: number | null
+          supplier_id?: string
+          supplier_install_net?: number | null
+          supplier_monthly_net?: number | null
+          supplier_product_id?: string | null
+          supplier_router_net?: number | null
+          supplier_setup_net?: number | null
+          supplier_vat_rate?: number
+          technology?: string | null
+          updated_at?: string
+          upload_speed_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_profiles: {
+        Row: {
+          api_mode: Database["public"]["Enums"]["supplier_api_mode"]
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          portal_url: string | null
+          reverse_charge_possible: boolean
+          status: string
+          supplier_name: string
+          supplier_type: string
+          updated_at: string
+          vat_treatment_notes: string | null
+        }
+        Insert: {
+          api_mode?: Database["public"]["Enums"]["supplier_api_mode"]
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          portal_url?: string | null
+          reverse_charge_possible?: boolean
+          status?: string
+          supplier_name: string
+          supplier_type: string
+          updated_at?: string
+          vat_treatment_notes?: string | null
+        }
+        Update: {
+          api_mode?: Database["public"]["Enums"]["supplier_api_mode"]
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          portal_url?: string | null
+          reverse_charge_possible?: boolean
+          status?: string
+          supplier_name?: string
+          supplier_type?: string
+          updated_at?: string
+          vat_treatment_notes?: string | null
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null
@@ -2407,6 +2792,8 @@ export type Database = {
         }
         Returns: string
       }
+      can_override_red_margin: { Args: { _user_id: string }; Returns: boolean }
+      can_send_quote: { Args: { _quote_id: string }; Returns: boolean }
       check_rate_limit: {
         Args: {
           _action: string
@@ -2540,6 +2927,7 @@ export type Database = {
       order_status: "pending" | "confirmed" | "active" | "cancelled"
       plan_preference_kind: "flex" | "contract_saver" | "not_sure"
       plan_type_kind: "flex" | "contract_saver"
+      quote_margin_check_status: "unknown" | "green" | "amber" | "red"
       quote_request_status:
         | "new"
         | "assigned"
@@ -2565,6 +2953,7 @@ export type Database = {
         | "bundle"
         | "other"
       service_type: "broadband" | "sim" | "landline"
+      supplier_api_mode: "manual" | "live" | "testing"
       ticket_priority: "low" | "medium" | "high" | "urgent"
       ticket_status: "open" | "in_progress" | "resolved" | "closed"
     }
@@ -2718,6 +3107,7 @@ export const Constants = {
       order_status: ["pending", "confirmed", "active", "cancelled"],
       plan_preference_kind: ["flex", "contract_saver", "not_sure"],
       plan_type_kind: ["flex", "contract_saver"],
+      quote_margin_check_status: ["unknown", "green", "amber", "red"],
       quote_request_status: [
         "new",
         "assigned",
@@ -2746,6 +3136,7 @@ export const Constants = {
         "other",
       ],
       service_type: ["broadband", "sim", "landline"],
+      supplier_api_mode: ["manual", "live", "testing"],
       ticket_priority: ["low", "medium", "high", "urgent"],
       ticket_status: ["open", "in_progress", "resolved", "closed"],
     },

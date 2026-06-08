@@ -14,9 +14,8 @@ type QuoteRow = {
   plan_type: string | null;
   customer_type: string | null;
   status: string;
-  monthly_price_incl_vat: number | null;
-  business_monthly_ex_vat: number | null;
-  business_monthly_incl_vat: number | null;
+  monthly_net: number | null;
+  monthly_gross: number | null;
   expires_at: string | null;
   created_at: string;
 };
@@ -40,10 +39,10 @@ export function QuotesTab({ userId }: { userId: string }) {
     (async () => {
       const { data } = await supabase
         .from("quotes")
-        .select("id,quote_number,plan_name,service_type,plan_type,customer_type,status,monthly_price_incl_vat,business_monthly_ex_vat,business_monthly_incl_vat,expires_at,created_at")
+        .select("id,quote_number,plan_name,service_type,plan_type,customer_type,status,monthly_net,monthly_gross,expires_at,created_at")
         .eq("customer_id", userId)
         .order("created_at", { ascending: false });
-      setQuotes((data as QuoteRow[]) || []);
+      setQuotes((data as unknown as QuoteRow[]) || []);
       setLoading(false);
     })();
   }, [userId]);
@@ -74,11 +73,11 @@ export function QuotesTab({ userId }: { userId: string }) {
             <div className="text-right">
               {isBusiness ? (
                 <>
-                  <p className="font-display text-lg">£{Number(q.business_monthly_ex_vat || 0).toFixed(2)} <span className="text-xs">ex VAT</span></p>
-                  <p className="text-xs text-muted-foreground">£{Number(q.business_monthly_incl_vat || 0).toFixed(2)} incl VAT / mo</p>
+                  <p className="font-display text-lg">£{Number(q.monthly_net || 0).toFixed(2)} <span className="text-xs">ex VAT</span></p>
+                  <p className="text-xs text-muted-foreground">£{Number(q.monthly_gross || 0).toFixed(2)} incl VAT / mo</p>
                 </>
               ) : (
-                <p className="font-display text-lg">£{Number(q.monthly_price_incl_vat || 0).toFixed(2)}<span className="text-xs">/mo</span></p>
+                <p className="font-display text-lg">£{Number(q.monthly_gross || 0).toFixed(2)}<span className="text-xs">/mo</span></p>
               )}
               <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 justify-end">
                 <Mail className="w-3 h-3" />

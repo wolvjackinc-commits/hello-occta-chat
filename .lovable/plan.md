@@ -1,148 +1,268 @@
-Approved — start Phase 5 corrections / Phase 5B only, but apply this final correction before coding.
+Approved — start Phase 6 only, but apply these corrections before coding.
 
-Main correction:
+1. support_tickets safety
 
-Do not create customer-safe views in a way that requires direct customer SELECT access to sensitive base tables.
+Before altering support_tickets, inspect the existing table and enum/check constraints.
 
-Use one of these safe approaches:
+Do not break existing ticket statuses or categories.
 
-Option A — preferred:
+If status is a PG enum, only ADD values; do not rename or remove existing values.
 
-Create SECURITY DEFINER RPCs for customer-safe reads:
+If category is text, use a safe check/validation layer only if it will not reject existing rows.
 
-- get_customer_reward_account()
+2. Internal notes/messages must never be customer-visible
 
-- get_customer_points_ledger()
+ticket_internal_notes must be staff-only.
 
-- get_customer_rewards()
+communication_messages with direction='internal' must never be returned by customer RPCs.
 
-- get_customer_referral_codes()
+Customer-safe RPCs must filter out internal notes/messages at the SQL level, not only in frontend.
 
-- get_public_contract_benefits()
+3. Complaint records must be append-first
 
-Each RPC must:
+Do not delete complaint records.
 
-- return only safe columns
+Do not edit complaint_events.
 
-- enforce auth.uid() for customer data
+If correction is needed, add a new event.
 
-- expose no margin, admin, fraud, reversal_reason, internal_cost_estimate, admin notes, token hashes or internal fields
+Complaint status changes must create complaint_events.
 
-- set search_path = public
+4. Six-week ADR date
 
-Option B:
+six_week_adr_eligible_at must be automatically set to opened_at + 42 days / 6 weeks.
 
-Use safe views only if permissions are confirmed to not allow customers to query the base tables directly.
+Do not use 8-week wording anywhere.
 
-Important:
+5. Complaint reference generation
 
-RLS controls rows, not columns. Customers must not be able to SELECT directly from rewards, points_ledger, reward_accounts, referral_codes, contract_benefits, fraud_flags or campaign_drafts if those tables contain internal fields.
+Make complaint_reference unique and human-readable.
 
-Admin pages can continue using admin-only access to base tables through RLS/roles or edge functions.
+If sequence generation is risky, use a safe format like CMP-YYYYMMDD-XXXXXX.
 
-Also apply the rest of the Phase 5 corrections exactly:
+Do not depend on a fragile monthly counter unless transaction-safe.
 
-1. Points ledger must be append-only.
+6. Evidence pack is placeholder only
 
-No UPDATE/DELETE for anon/authenticated.
+Generate Evidence Pack should list linked items only:
 
-Reversals must always be new ledger rows.
+quote, Contract Summary, invoice/payment, ticket, communication, order/service.
 
-No direct editing of cached balances.
+Do not build full PDF export in Phase 6.
 
-2. approve-reward must enforce role rules server-side:
+7. Communications centre body handling
 
-- admin/super_admin can override red margin with reason
+communication_messages may store message body, but activity_log must not store full message body.
 
-- finance_admin can approve bill_credit only when margin is not red
+activity_log details should contain IDs/status/channel only.
 
-- all approvals/reversals logged
+No passwords, tokens, bank/card details, full medical details or unnecessary sensitive data.
 
-3. track-referral-click must store only hashed IP/UA using server-side salt.
+8. Vulnerable customer support
 
-No raw IP, raw UA, cookie, fingerprint or PII.
+Do not ask for medical diagnosis or detailed health information.
 
-4. attach-referral-to-quote must never block the quote journey.
+Use operational wording only:
 
-If self-referral or uncertainty is detected, create a manual_review fraud flag and continue.
+“Tell us what support you need from OCCTA.”
 
-5. Campaign publish must be double-guarded in edge function and DB:
+For Digital Voice, include power-cut and emergency-calling warning.
 
-- margin green/amber
+9. AI Knowledge Base
 
-- compliance passed
+Do not rebuild or weaken the AI chat engine.
 
-- approval_status approved
+Add approved-KB support and handoff rules only.
 
-- valid date range
+AI must not:
 
-- active=true only
+- guess prices
 
-No email, SMS, homepage change or ad trigger in this phase.
+- guess availability
 
-6. Email/SMS campaign compliance check must fail if missing:
+- give legal conclusions
 
-- target audience
+- resolve formal complaints automatically
 
-- opt-in/soft-opt-in wording
+- promise compensation
 
-- unsubscribe/STOP wording
+- promise engineer dates
 
-- offer terms
+- create hidden complaints without customer confirmation
 
-- expiry/eligibility
+AI should escalate:
 
-- VAT wording
+complaints, cancellations, vulnerable customer issues, emergency-call/power-cut issues, payment hardship, legal/ADR requests, and customer requests for a human.
 
-7. Rewards dashboard must read only from safe RPCs/views.
+10. AI handoff action safety
 
-If rewards_enabled=false, show coming-soon state.
+If AI creates a ticket/complaint via handoff, it must:
 
-If rewards_enabled=true, show referral code, points, bill credit, rewards, ledger and active benefits from safe data only.
+- show the user what is being created
 
-8. Public /rewards page must read only public safe benefits data.
+- create a visible customer record
 
-No direct contract_benefits table access from public page.
+- log the event
 
-9. Referral capture:
+- not create duplicate complaints repeatedly from the same conversation
 
-- read ?ref=
+11. Customer-safe RPCs
 
-- validate code format
+Customer dashboard must use customer-safe RPCs:
 
-- store only in sessionStorage
+- get_customer_tickets
 
-- call track-referral-click best-effort
+- get_customer_ticket_messages
 
-- never break navigation
+- get_customer_complaints
 
-- attach to quote best-effort after quote submission
+- get_customer_complaint_events
 
-- failure must not block quote request
+- get_customer_communication_messages
 
-10. No rewards should affect invoices automatically in this phase.
+- get_public_kb_articles
 
-No invoice credits, no VAT impact, no payment flow changes.
+Do not let customers directly query admin/internal tables where internal fields exist.
+
+12. Public complaint/support forms
+
+Forms must be rate-limited.
+
+They should return safe confirmation only.
+
+Do not expose internal IDs, staff assignment, or admin notes.
+
+13. Complaint letters
+
+Letters can be draft/sent.
+
+Only sent letters should appear in customer Documents tab.
+
+Draft letters are admin-only.
+
+14. Role restrictions
+
+support_agent:
+
+- support tickets and communications
+
+- complaints read-only unless converted/escalated by compliance/admin
+
+compliance_admin:
+
+- complaints, complaint letters, evidence, KB compliance content
+
+marketing_admin:
+
+- no complaint management access
+
+auditor:
+
+- read-only
+
+admin/super_admin:
+
+- full access
+
+15. RLS
+
+Use deny-by-default.
+
+Test:
+
+- customer cannot see another customer’s ticket/complaint/messages
+
+- customer cannot see internal notes
+
+- customer cannot see internal/support_only KB articles
+
+- customer cannot see draft complaint letters
+
+16. Do not touch these systems
 
 Do not touch:
 
-Worldpay webhook/HPP, invoice generation, DD mandates, /pay, /pay-invoice, public /quote flow, checkout gate, AI chat, SEO pages, finance exports, complaints workflow, Phase 3 pricing/margin pages.
+- Worldpay webhook/HPP
 
-After finishing, stop and report:
+- invoice generation
 
-- views/RPCs added
+- DD mandates
 
-- RLS/grant changes
+- /pay
 
-- edge functions changed
+- /pay-invoice
 
-- dashboard Rewards changes
+- checkout gate
 
-- public /rewards changes
+- public /quote flow
 
-- referral capture behaviour
+- pricing/margin pages
 
-- activity log shape
+- rewards engine
+
+- campaign engine
+
+- finance exports
+
+- SEO pages
+
+AI chat core may only receive a small read-only KB/handoff hook if absolutely needed.
+
+17. Verification
+
+After build, test:
+
+- /admin/support
+
+- /admin/complaints
+
+- /admin/communications
+
+- /admin/knowledge-base
+
+- customer Support tab
+
+- customer Complaints tab
+
+- customer Chat History tab
+
+- public support form
+
+- public complaint form
+
+- complaint ADR date = opened_at + 6 weeks
+
+- internal note not visible to customer
+
+- draft complaint letter not visible to customer
+
+- sent complaint letter visible to customer Documents
+
+- KB approved article visible, internal/support_only hidden
+
+- /quote/start, /checkout, /pay, /pay-invoice still work
+
+Stop after Phase 6 and report:
+
+- tables added
+
+- functions/RPCs added
+
+- admin pages added
+
+- dashboard changes
+
+- public page/form changes
+
+- complaint SLA/ADR behaviour
+
+- communication centre behaviour
+
+- AI KB behaviour
+
+- RLS/policies
+
+- activity logs
 
 - what was untouched
 
@@ -150,132 +270,110 @@ After finishing, stop and report:
 
 - warnings/errors
 
-Start Phase 5 corrections / Phase 5B only.  
+Start Phase 6 only.  
   
   
-Phase 5 Corrections Plan
+Phase 6: Support, Complaints, Communications & AI Knowledge Base
 
-Phase 5 scaffolding (tables, edge functions, admin pages) is already in place. This plan applies the 17 corrections you specified before any customer-facing surface is wired up. No work begins on Phase 6.
+Build a record-first, customer-safe support operations layer. Do not touch Worldpay/HPP, invoice generation, DD, /pay, /pay-invoice, checkout gate, public /quote flow, pricing/margin pages, rewards engine, campaign engine, finance exports or SEO pages.
 
-### 1. Migration — Customer-safe views & hardening
+### 1. Database migrations
 
-New migration creating SECURITY INVOKER views with **only safe columns**, plus revokes/grants:
+**Migration A — extend existing `support_tickets**` (preserve current columns):
 
-- `public.customer_rewards_view` — id, customer_id, reward_type, reward_value, status, unlock_rule, issued_at, expires_at (no margin_check_status, admin_approved_by, reversal_reason, internal cost fields).
-- `public.customer_points_ledger_view` — id, customer_id, source_type, points_delta, bill_credit_delta, status, reason (sanitised), created_at, available_at (no created_by, no override notes).
-- `public.customer_reward_accounts_view` — customer_id, points_balance_cached, bill_credit_balance_cached, updated_at.
-- `public.customer_referral_codes_view` — id, code, status, usage_count, expires_at, created_at (scoped to `customer_id = auth.uid()`).
-- `public.public_contract_benefits_view` — benefit_name, benefit_type, plan_type, customer_type, description, value_label, terms_text, starts_at, ends_at, active (no internal_cost_estimate, no admin notes). `WHERE active = true`.
+- Add: `vulnerable_customer_flag bool default false`, `related_order_id`, `related_invoice_id`, `related_quote_id`, `related_service_id` (uuid, nullable), `first_response_due_at`, `resolution_due_at`, `closed_at` (timestamptz, nullable).
+- Widen `category` text to accept the new enum values (text already, no change required); enforce via trigger that values are in the allowed list.
+- Widen `status` enum to include `waiting_customer`, `waiting_occta` (add to existing PG enum if user-defined; otherwise use a text check). Keep current values working.
+- New table `ticket_internal_notes` (id, ticket_id, author_id, body, created_at) — never readable by customers, even via RLS. RLS: staff only.
+- Trigger to auto-set `first_response_due_at` = created_at + 4h (urgent), 1d (high), 2d (normal), 5d (low); `resolution_due_at` = created_at + 5/10/20 working-day equivalents.
 
-Grants:
+**Migration B — complaints**:
 
-- `REVOKE SELECT ON public.rewards, points_ledger, reward_accounts, referral_codes, contract_benefits, fraud_flags, campaign_drafts FROM anon, authenticated;` (admin/service_role retained via existing policies + service_role grant).
-- `GRANT SELECT ON customer_*_view TO authenticated;`
-- `GRANT SELECT ON public_contract_benefits_view TO anon, authenticated;`
-- Confirm `fraud_flags` has no customer-readable policy.
+- `complaints` (all fields per spec). Trigger sets `six_week_adr_eligible_at = opened_at + interval '6 weeks'`. `complaint_reference` generated as `CMP-YYMM-NNNN` via sequence-style function (mirrors `generate_invoice_number`).
+- `complaint_events` — append-only (trigger blocks UPDATE/DELETE for all non-service roles).
+- `complaint_evidence_links`.
+- `complaint_letters`.
+- Status transitions enforced by trigger (no jumping past `deadlock_issued` without an event row, etc.).
 
-### 2. points_ledger append-only — safer enforcement
+**Migration C — communications centre**:
 
-Update the trigger function so it does not rely on `current_user = 'service_role'`:
+- `communication_threads`, `communication_messages` per spec.
+- `direction='internal'` messages strictly admin-only (RLS).
+- Keep existing `communications_log` (email tracking) untouched; new tables sit alongside.
 
-- Hard `REVOKE INSERT, UPDATE, DELETE ON points_ledger FROM anon, authenticated;` so only service_role can write.
-- Keep `trg_points_ledger_no_update` raising on UPDATE/DELETE for ALL roles (including service_role) so even edge functions cannot mutate — reversals must INSERT a new row.
-- Remove any "service_role bypass" branch if present.
+**Migration D — knowledge base**:
 
-### 3. rewards red-margin guard — enforce in edge function
+- `kb_categories`, `kb_articles` (with `slug` unique), `kb_article_versions` (snapshot on every approve), `ai_handoff_rules`.
+- Trigger: on `status='approved'` insert a version row and stamp `approved_at`/`approved_by`.
 
-Keep DB trigger as a backstop but make `approve-reward` authoritative:
+**Migration E — RLS / GRANTs / roles**:
 
-- Re-verify caller role server-side (admin/super_admin/finance_admin) via `user_roles`.
-- finance_admin → only `bill_credit` AND margin must not be red.
-- red margin → require admin/super_admin + `override_reason` ≥ 10 chars; log override flag in activity_log.
-- Always write ledger row + call `recompute_reward_balances`; never mutate cached balance directly.
+- GRANT pattern per project standard for every new table.
+- Customers: own tickets/complaints, own non-internal communication_messages via thread membership; cannot see `ticket_internal_notes`, internal messages, or `support_only`/`internal` KB articles.
+- `support_agent`: tickets + communication threads CRUD; complaints read-only.
+- `compliance_admin`: complaints, complaint_letters, evidence, KB compliance articles.
+- `marketing_admin`: read public KB only; no complaints access.
+- `auditor`: read-only everywhere.
+- `admin`/`super_admin`: full.
+- Customer-safe read RPCs (SECURITY DEFINER, search_path=public): `get_customer_tickets`, `get_customer_ticket_messages(_ticket_id)`, `get_customer_complaints`, `get_customer_complaint_events(_complaint_id)`, `get_customer_communication_messages(_thread_id)`, `get_public_kb_articles`. These strip internal fields (assigned_to, internal notes, fraud refs, etc.).
+- Customer-safe write RPCs: `customer_create_ticket(...)`, `customer_create_complaint(...)`, `customer_add_ticket_message(...)` — each writes an `activity_log` row.
 
-### 4. reverse-reward — ledger-only
+### 2. Edge functions
 
-Confirm function always inserts a reversal row and re-runs `recompute_reward_balances`. No direct UPDATE on `reward_accounts` anywhere in the codebase. Remove any admin UI affordance to edit cached balances (Rewards admin page reads cache, edits only via approve/reverse).
+- `submit-support-ticket` — public+auth form ingress; creates thread+message+ticket; rate-limited (5/15min per email).
+- `submit-complaint` — creates complaint + initial event + acknowledgement letter (draft) + linked thread; logs `complaint_created`; rate-limited.
+- `submit-callback-request` — creates thread + ticket (category=general, priority=high).
+- `submit-vulnerable-support` — ticket category=`vulnerable_support`, flag=true; copy explicitly avoids medical detail capture; logs `vulnerable_support_requested`.
+- `add-complaint-event` — admin/compliance only; inserts append-only event; updates complaint status transitions; can issue deadlock (sets `deadlock_issued_at`, creates letter draft).
+- `send-complaint-letter` — moves letter draft → sent; reuses existing email infra; logs activity.
+- `kb-approve-article` — admin/compliance only; snapshots version + flips status.
+- `generate-evidence-pack` — admin-only stub returning JSON list of linked Contract Summary, quote, invoice/payment, tickets, communications, order/service. No PDF in this phase.
 
-### 5. Referral safety adjustments
+AI chat engine: untouched. Add KB read helper in `ai-chat` (read-only SELECT on public KB only — single small additive change), and consult `ai_handoff_rules` to decide when to insert a ticket/complaint via existing RPCs. No prompt/personality changes.
 
-- `create-referral-code` already uses safe charset `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` — verify and keep.
-- `attach-referral-to-quote` — extend self-referral checks: same logged-in customer_id, same email, same phone, same referral owner; on uncertainty insert `fraud_flags` with `severity='low'`, `flag_type='manual_review'` and **still return ok** so quote journey continues.
-- `track-referral-click` — confirm SHA-256 with `REFERRAL_HASH_SALT`, no raw IP/UA stored, rate limit 20/min already in place. Add explicit comment + ensure no cookie/fingerprint capture.
+### 3. Admin pages (new, wired into `App.tsx` + `AdminLayout.tsx` nav)
 
-### 6. Campaign publish — double-guard
+- `/admin/support` — ticket list (filters: status/category/priority/assigned/vulnerable), detail drawer with reply, internal note, assign, link to order/invoice/quote/customer, "Create complaint from ticket" action, SLA badges (overdue / due soon / on track) derived from `first_response_due_at`/`resolution_due_at`.
+- `/admin/complaints` — register, filters incl. ADR-eligible date; detail page with timeline, evidence links, status transitions, deadlock draft, resolution notes, "Generate Evidence Pack" button (calls stub).
+- `/admin/communications` — unified inbox grouped by thread, channel filter, customer search, link panel; internal toggle hides/shows internal messages (admin-only).
+- `/admin/knowledge-base` — categories CRUD, articles with draft/approve/archive workflow, version history viewer, visibility selector, AI handoff rules CRUD.
 
-`publish-campaign` already checks `approval_status=approved`, margin in (green, amber), compliance=passed. Add explicit start/end validity check (`ends_at > starts_at` when both set). DB trigger `campaign_drafts_block_publish` remains as backstop. Phase 5 publish **only** flips `active=true` — no email, SMS, homepage change, or ad trigger (already true; add code comment + activity_log note).
+All admin dialogs follow `mem://style/admin-dialog-layout-standards` (flex-col, max-h-[90vh], internal scrolling).
 
-### 7. Compliance check — marketing consent
+### 4. Customer dashboard tab updates (Phase 4 surfaces)
 
-Extend `run-campaign-compliance-check` to require, for `email`/`sms` types:
+- `SupportTab.tsx` — show real open/closed lists from `get_customer_tickets`, click row → side drawer with `get_customer_ticket_messages` and reply box (calls `customer_add_ticket_message`). AI chat CTA + "Request human" CTA (creates ticket with priority=high).
+- `ComplaintsTab.tsx` — replace placeholder: list customer's complaints with status badge + six-week ADR date; "Raise complaint" opens form; detail drawer shows timeline (`get_customer_complaint_events`); link to /legal/complaints-code.
+- `ChatHistoryTab.tsx` — already exists; switch to `get_customer_communication_messages` filtered to non-internal AI/human chat threads owned by the customer.
+- `DocumentsTab.tsx` — append complaint letters where `status='sent'` and linked to the customer.
+- `VulnerableSupportTab.tsx` — CTA invokes `submit-vulnerable-support`; copy includes Digital Voice power-cut warning; no medical data fields.
 
-- non-empty `target_audience` description
-- opt-in / soft-opt-in wording (`opt-in`, `consent`, `subscribed`)
-- unsubscribe / STOP wording in `offer_terms`
-- expiry/eligibility wording
-- VAT wording
+### 5. Public pages / forms
 
-Already partially implemented — tighten thresholds: missing any of the above for email/sms → `failed` (not `needs_review`).
+- `/support` (existing) — refactor submit path to `submit-support-ticket`.
+- `/complaints` — add explicit "Raise a complaint" form (link to a new `ComplaintForm` component) invoking `submit-complaint`. Update copy to six-week ADR wording (replace current "8 weeks").
+- `/legal/complaints-code` — copy refresh to match six-week ADR wording.
+- `/legal/vulnerable-customers` — add Digital Voice warning block + CTA to vulnerable support request.
+- `/digital-voice` (if route exists; if not, copy lives on `/landline`/`/sim-plans` digital-voice section) — add power-cut/emergency-calling block per spec.
 
-### 8. Frontend — customer dashboard Rewards tab
+### 6. Activity logging
 
-Update `src/components/dashboard/tabs/RewardsTab.tsx`:
+All edge functions and RPCs emit `log_event` rows with the exact event types listed in the brief. Details JSON contains IDs/statuses only — no medical info, card/bank/payment data, passwords, tokens, or message bodies for complaint events (subject only).
 
-- Gated by `platform_settings.rewards_enabled`. If false → keep "coming soon" copy.
-- If true → query **only** safe views: `customer_reward_accounts_view`, `customer_points_ledger_view` (last 20), `customer_referral_codes_view`, `public_contract_benefits_view`.
-- "Create referral code" CTA → invokes `create-referral-code`.
-- Copyable referral link `https://www.occta.co.uk/?ref=CODE`.
-- No internal fields rendered.
+### 7. Verification (after build)
 
-### 9. Public `/rewards` page
+- Each new admin page renders, gated by role.
+- Customer dashboard tabs read only from safe RPCs.
+- Insert a test complaint → `six_week_adr_eligible_at` exactly opened_at + 42 days.
+- Internal note created in a ticket → not returned by `get_customer_ticket_messages`.
+- KB draft → approve → version row created, customer sees only `visibility='public'`.
+- Spot-check that /quote/start, /checkout gate, /pay, /pay-invoice, /admin/rewards, /admin/campaigns still render (route smoke).
+- Run supabase linter; resolve any new findings.
 
-Update `src/pages/Rewards.tsx` to read `public_contract_benefits_view` (anon). Render benefit_name, value_label, description, terms_text, eligibility window. No customer-specific data, no ledger calls.
+### What is NOT touched
 
-### 10. Referral capture utility
-
-New `src/lib/referral.ts`:
-
-- `captureReferralFromUrl()` — reads `?ref=`, validates charset, stores in `sessionStorage` only, does NOT overwrite an existing stored code unless URL explicitly supplies a new valid code, swallows all errors, fires `track-referral-click` best-effort.
-- `getStoredReferralCode()` / `clearStoredReferralCode()`.
-- Called once from `src/App.tsx` on mount.
-
-### 11. QuoteStart attach
-
-In `src/pages/quote/QuoteStart.tsx`, after successful quote-request submission, fire-and-forget `attach-referral-to-quote` with stored code. Wrap in try/catch; never block submission or show error to user. Clear stored code on success.
-
-### 12. Activity logging hygiene
-
-Audit all new `log_event` calls (approve-reward, reverse-reward, attach-referral, track-referral-click, campaign_*): ensure details contain IDs + statuses only — no email, phone, IP, UA, override note text beyond truncated reason, no recipient lists, no card/bank/token data. Adjust where needed.
-
-### 13. Finance isolation
-
-No code path applies rewards to invoices in Phase 5. Confirm `generate-invoices`, `worldpay-webhook`, `process-late-fees` are untouched. Add code comment on `reward_accounts` describing Phase 6 application boundary.
-
-### 14. Untouched (verified at end)
-
-Worldpay webhook/HPP, invoice generation, DD mandates, /pay, /pay-invoice, public /quote flow, checkout gate, AI chat, SEO pages, finance exports, complaints workflow, Phase 3 admin pricing/margin pages (read-only consumption only).
-
-### Files to be added / modified
-
-**New:**
-
-- `supabase/migrations/<ts>_phase5_safe_views_and_hardening.sql`
-- `src/lib/referral.ts`
-
-**Modified:**
-
-- `supabase/functions/approve-reward/index.ts` (tighten role checks + logging)
-- `supabase/functions/reverse-reward/index.ts` (logging hygiene only)
-- `supabase/functions/attach-referral-to-quote/index.ts` (extended self-fraud checks, never block)
-- `supabase/functions/track-referral-click/index.ts` (confirm no raw PII, comments)
-- `supabase/functions/run-campaign-compliance-check/index.ts` (stricter email/sms gating)
-- `supabase/functions/publish-campaign/index.ts` (date validity, comments)
-- `src/components/dashboard/tabs/RewardsTab.tsx` (live read of safe views, gated by rewards_enabled)
-- `src/pages/Rewards.tsx` (read `public_contract_benefits_view`)
-- `src/pages/quote/QuoteStart.tsx` (best-effort attach + clear)
-- `src/App.tsx` (one-time `captureReferralFromUrl`)
-- `src/pages/admin/Rewards.tsx` (remove any direct cached-balance edit affordance if present)
+Worldpay webhook/HPP, invoice generation, DD mandates, /pay, /pay-invoice, checkout gate, public /quote flow, pricing/margin admin pages, rewards engine, campaign engine, finance exports, SEO pages, AI chat engine core (only read-only KB hook + handoff rule consult added).
 
 ### Stop point
 
-After implementation I will report: tables added (none new — views only), safe views/RPCs added, edge functions changed, admin pages changed, dashboard Rewards changes, public /rewards changes, campaign safety behaviour, RLS/grant changes, activity log shape, untouched systems, verification result (build + spot-checks), any warnings/errors. I will not start Phase 6.
+Stop after Phase 6 and report: tables added, functions added, admin pages added, dashboard changes, public page changes, complaint SLA/ADR behaviour, communication centre behaviour, AI KB behaviour, RLS/policies, activity logs, what was untouched, verification result, warnings/errors. Do not start Phase 7 until approved.

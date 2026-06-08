@@ -1,333 +1,204 @@
-Continue Phase 2 only — finish the remaining items, but apply these corrections before coding.
+&nbsp;
 
-Do NOT restart Phase 2.
+```
 
-Do NOT re-run migrations.
+```
 
-Do NOT recreate existing edge functions.
+```
+Approved — start Phase 3 only.
 
-Do NOT touch Worldpay webhook, invoices, DD mandates, AI chat, existing dashboard, SEO pages, /pay or /pay-invoice.
+Apply these corrections before coding:
 
-Do NOT start Phase 3.
+1. Do not duplicate existing enums
+Check existing Phase 2 enums first. If `margin_status_kind` already exists, reuse it or create a clearly separate enum like `quote_margin_check_status`. Do not create conflicting enum names such as `margin_status` if it causes migration errors.
 
-Use the existing Phase 2 DB schema and edge functions already created.
+2. Quote/product linking
+Do not assume the `quotes` table already has a proper FK to `supplier_products`.
 
-CORRECTIONS BEFORE BUILDING
+If you need to link a quote to a supplier product, either:
+- use the existing `quotes.supplier_product_id` field only if it matches the current schema safely, or
+- store supplier/product/cost snapshot inside `quote_margin_checks`.
 
-1. Quote request status mismatch
+Do not add risky quote-table changes unless absolutely necessary.
 
-The admin screen must use the existing DB enum statuses:
+3. Margin unknown should not hard-block
+If no supplier product, pricing rule, or margin rule exists yet, margin status should be `unknown`, not `red`.
 
-new | assigned | checking | quoted | expired | rejected | converted
+Rules:
+- `red` = known bad margin or missing critical data after a margin rule is expected.
+- `unknown` = not enough data yet.
+- Only `red` blocks sending.
+- `unknown` should show warning but still allow admin/sales process in this early setup.
 
-Do NOT use:
+4. Red override
+Only `admin` and `super_admin` can override red margin.
+`finance_admin` can manage VAT/pricing/margin rules but should not override a red quote unless you explicitly add that permission later.
 
-contacted | won | lost | spam
+5. VAT settings
+VAT settings must be updated only through `admin-update-vat-settings`, not direct client table writes.
 
-If needed, map UI labels like:
+If `is_vat_active()` is not callable from the frontend because of RPC permissions, use an admin edge function to return VAT status safely.
 
-assigned = assigned/contacted
+6. VAT number logging
+VAT number is business information, but still do not over-log it repeatedly. Activity log can record that VAT settings changed and old/new field names, but avoid unnecessary full snapshots if not needed.
 
-converted = won
+7. Pricing rule activation
+Do not allow `active=true` pricing rule if VAT settings are incomplete.
 
-rejected = lost
+8. Send quote margin check
+Update `send-quote-email` so:
+- red latest margin check blocks sending unless override exists.
+- amber allows sending but shows warning.
+- unknown allows sending with warning.
+- green allows sending.
 
-expired = expired
-
-2. Quotes table field names
-
-Use the fields that exist in the Phase 2 schema:
-
-monthly_net
-
-monthly_vat_rate
-
-monthly_vat_amount
-
-monthly_gross
-
-Do NOT reference non-existing fields like monthly_price_incl_vat unless already present.
-
-For customer email/name in /admin/quotes, join via quote_request_id → quote_requests.email/full_name, or use whatever snapshot fields already exist. Do not assume customer_email_snapshot exists unless it was created.
-
-3. VAT active check
-
-Use the RPC:
-
-supabase.rpc('is_vat_active')
-
-Do not call platform_[settings.is](http://settings.is)_vat_active() as if it is a table method.
-
-4. Token handling
-
-Raw public tokens are not stored. They are only available when created/sent.
-
-So:
-
-- Do not attempt to display raw token links from stored DB rows unless the function returns a link at action time.
-
-- Admin “view tokenised quote link” should either:
-
-  a) show link immediately after Send Quote action, or
-
-  b) offer “resend/regenerate secure link” if needed.
-
-- Do not expose token hashes to the frontend.
-
-5. Quote page to Contract Summary link
-
-Because raw Contract Summary tokens are not stored, /quote/:token should not assume it can reconstruct a CS token.
-
-Safe behaviour:
-
-- If get-quote-by-token returns a valid contract summary link/token, show “View Contract Summary”.
-
-- If not, show:
-
-  “Your Contract Summary is being prepared. We’ll email you once it is ready.”
-
-- Do not fake or derive CS token client-side.
-
-6. Contract Summary acceptance
-
-Acceptance must validate against either:
-
-- customer_email_snapshot on contract_summaries, if it exists, or
-
-- quote_[requests.email](http://requests.email) via quote_id / quote_request_id.
-
-Do not rely on a missing email field.
-
-7. Admin quote builder
-
-Keep it basic:
-
-- create/edit draft quote
-
-- send quote
-
-- generate Contract Summary
-
-- view acceptance status
-
-Do not build:
-
-- pricing rules engine
-
-- supplier catalogue
-
-- margin engine
-
-- VAT settings UI
-
-- finance export
-
+9. Scope
+Do not touch:
+- Worldpay webhook/HPP
+- invoices
+- DD mandates
+- AI chat
+- SEO pages
+- /pay
+- /pay-invoice
+- customer dashboard
+- public /quote/* flow
 - rewards
-
 - campaign engine
+- finance export centre
+- live supplier API integration
 
-8. Checkout pass-through
-
-For /checkout and /business-checkout:
-
-- If ?quote=<uuid>, check has_accepted_contract_summary RPC.
-
-- If ?cs=<token>, call get-contract-summary-by-token and check status accepted.
-
-- If accepted, allow existing checkout flow.
-
-- If not accepted/missing, redirect to /quote/start.
-
-Do not gate /pay or /pay-invoice.
-
-9. Activity logging
-
-Only log low-risk client events from frontend.
-
-Sensitive logs must remain server-side only.
-
-Do not log full email, full address, full phone, tokens, payment data, card data, or bank details.
-
-10. Scope
-
-Only touch these files unless absolutely necessary:
-
-- src/lib/requireContractSummary.ts
-
-- src/App.tsx
-
-- src/pages/quote/QuoteStart.tsx
-
-- src/pages/Checkout.tsx
-
-- src/pages/BusinessCheckout.tsx
-
-- src/components/admin/layout/AdminLayout.tsx
-
-- create src/pages/admin/QuoteRequests.tsx
-
-- create src/pages/admin/Quotes.tsx
-
-11. Verification
-
-After finishing, test:
-
-- /quote/start renders and submits
-
-- /quote/thank-you renders
-
-- /quote/:token renders through get-quote-by-token
-
-- /quote/contract-summary/:token renders and accepts
-
-- /checkout without accepted CS redirects
-
-- /checkout?quote=<accepted-id> passes
-
-- /checkout?cs=<accepted-token> passes
-
-- /pay and /pay-invoice remain unchanged
-
-- /admin/quote-requests renders
-
-- /admin/quotes renders
-
-- /, /dashboard, /admin/overview, /track-order still render
-
-Stop after Phase 2 and report:
-
-- files changed
-
-- routes added
-
+10. Phase 3 stop point
+After Phase 3, stop and report:
+- migration/tables added
+- functions added/changed
 - admin pages added
-
-- pay-gate changes
-
-- token handling
-
-- what was untouched
-
+- quote builder changes
+- VAT settings behaviour
+- margin guard behaviour
+- RLS/policy summary
+- activity logs added
+- what was not touched
 - verification result
-
 - warnings/errors
 
-Continue Phase 2 only.  
+Start Phase 3 only.
+```
+
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-Phase 2 — Finish Remaining Items
+Phase 3 — Admin Pricing, Suppliers, VAT Settings & Margin Guard
 
-Scope is strictly the open items. No Phase 3, no new migrations, no changes to Worldpay webhook, invoices, DD mandates, AI chat, dashboard, SEO pages, /pay or /pay-invoice.
+Scope strictly Phase 3. No changes to Worldpay webhook, invoices, DD mandates, AI chat, SEO pages, `/pay`, `/pay-invoice`, customer dashboard, or `/quote/*` public flow. Manual Mode stays default ON.
 
-## 1. Pay-gate — `src/lib/requireContractSummary.ts`
+## 1. Database migration (single migration)
 
-Replace the Phase 1 stub with a real check.
+New tables (all in `public`, with GRANT to `authenticated` + `service_role`, RLS enabled, `updated_at` trigger):
 
-- `CheckoutContext` extended with optional `quoteId`, `contractSummaryId`, `token`.
-- `hasAcceptedContractSummary(ctx)`:
-  - If `ctx.quoteId` → `supabase.rpc('has_accepted_contract_summary', { _quote_id })`.
-  - Else if `ctx.token` → call `get-contract-summary-by-token` edge function (already exists) and check `status === 'accepted'`.
-  - Else if `ctx.contractSummaryId` → select `contract_summaries.status` directly.
-  - Returns `{ accepted, contractSummaryId }`.
-- `requiresContractSummary` unchanged: legacy invoice, payment request, SIM-instant remain exempt.
-- Add helper `enforceContractSummaryGate(ctx, navigate, toast)` that redirects to `/quote/start?interest=<derived>` with toast when not accepted, and returns boolean.
+- `supplier_profiles` — fields as specified (supplier_name, supplier_type, status, contact_*, portal_url, api_mode, vat_treatment_notes, reverse_charge_possible, notes).
+- `supplier_products` — FK `supplier_id → supplier_profiles`, fields as specified (product_name, service_type, supplier_product_id, technology, speed labels, cost fields nullable, vat rate, reverse_charge, active, notes).
+- `plan_categories` — name, service_type, plan_type, description, active, display_order.
+- `pricing_rules` — FK `plan_category_id`, optional `supplier_product_id`, all sell/VAT/gross fields, price_rise_policy, notice_period, active.
+- `margin_rules` — service_type, plan_type, customer_type, margin floors + cost buffers, active.
+- `quote_margin_checks` — FK `quote_id → quotes`, computed margins, status enum `unknown|green|amber|red`, reason, checked_at, checked_by.
 
-## 2. Real Quote Start form — `src/pages/quote/QuoteStart.tsx`
+Two new enums: `margin_status` and `supplier_api_mode`. Other categorical fields kept as TEXT with CHECK constraints to stay flexible.
 
-Full rewrite (Phase 1 placeholder removed). Fields:
+RLS policies via existing helpers (`has_role`, `has_finance_access`):
 
-- service interest (radio: Broadband / SIM / Digital Home Phone / Business / Switching / Not sure) — preselected from `?interest=`
-- plan preference (Flex / Contract Saver / Not sure) shown when broadband
-- residential or business toggle
-- business name (required when business)
-- postcode, address line 1, address line 2, town, county
-- full name, email, phone
-- preferred contact method (email / phone / either)
-- current provider (optional), current monthly bill (optional)
-- message (optional, max 1000)
-- marketing consent checkbox (default off)
-- privacy acknowledgement checkbox (required)
+- super_admin/admin/finance_admin: full read/write on suppliers, products, plan_categories, pricing_rules, margin_rules, quote_margin_checks.
+- sales_agent: SELECT on suppliers/products/plan_categories/pricing_rules; INSERT on quote_margin_checks; no UPDATE on VAT/margin/pricing/supplier rows.
+- support_agent/auditor: SELECT only.
+- marketing_admin/compliance_admin: no access to these tables (auditor read still applies).
 
-Validation with `zod` (already a project dep pattern via existing forms). Submit via `supabase.functions.invoke('submit-quote-request', { body })`. On success → `navigate('/quote/thank-you?ref=' + reference)`. Errors → toast. Only low-risk fields logged via `logClientEvent` (event_type, interest, residential vs business — never PII).
+New DB functions (SECURITY DEFINER, `search_path = public`):
 
-## 3. Routes — `src/App.tsx`
+- `can_override_red_margin()` — true for super_admin/admin only.
+- `compute_quote_margin(_quote_id uuid)` — pulls supplier_product cost from linked pricing_rule (if any) vs quote sell fields, applies active `margin_rules` buffers, inserts a `quote_margin_checks` row, returns status. Used by edge function.
+- `can_send_quote(_quote_id uuid)` — returns boolean: blocks if latest margin check is `red` and no override row exists.
 
-Add imports + routes above catch-all:
+No changes to existing tables. `platform_settings` already has every VAT field needed.
 
-- `/quote/thank-you` → `QuoteThankYou`
-- `/quote/:token` → `QuoteView`
-- `/quote/contract-summary/:token` → `ContractSummaryView`
-- `/quote/payment/:token` → `QuotePayment`
-- Inside `/admin/*`: `quote-requests` → `AdminQuoteRequests`, `quotes` → `AdminQuotes`
+## 2. Edge functions (new)
 
-No existing route removed.
+- `admin-update-vat-settings` — validates role (super_admin/admin/finance_admin), updates `platform_settings`, writes `vat_settings_updated` to `activity_log` with old/new diff (excluding nothing sensitive — VAT data only).
+- `admin-upsert-supplier` / `admin-upsert-supplier-product` — role-checked, logs `supplier_*` events.
+- `admin-upsert-pricing-rule` — role-checked, refuses to set `active=true` when `is_vat_active()` is false, logs `pricing_rule_*`.
+- `admin-upsert-margin-rule` — role-checked, logs `margin_rule_*`.
+- `run-quote-margin-check` — invokes `compute_quote_margin`, logs `quote_margin_checked`.
+- `override-quote-margin` — super_admin/admin only, requires `reason` string ≥ 10 chars, inserts override row (a new `quote_margin_checks` row with status `green` + `reason` prefixed `OVERRIDE:` + `checked_by`), logs `quote_margin_override`.
+- Existing `send-quote-email` updated to call `can_send_quote`; if false, returns 409 and logs `quote_blocked_low_margin`.
 
-## 4. Minimum admin screens
+All functions: explicit CORS, JWT validation, Zod input validation, no secret/PII logging.
 
-New files:
+## 3. Admin pages (new, wrapped by `AdminLayout` + `ProtectedAdminRoute`)
 
-- `src/pages/admin/QuoteRequests.tsx`
-  - Table from `quote_requests` (id, created_at, full_name, email, service_interest, postcode, status, assigned_to).
-  - Search by name/email/postcode, status filter (`new | contacted | quoted | won | lost | spam`).
-  - Row click → side `Sheet` with detail; buttons: "Mark contacted", "Assign to me", "Create quote" (opens quote draft dialog).
-- `src/pages/admin/Quotes.tsx`
-  - Table from `quotes` (id, customer email snapshot, plan name, monthly_price_incl_vat, status, expires_at).
-  - Create/edit draft dialog: plan name, monthly price (ex VAT), setup fee, term months, notes, customer email/name, link to quote_request_id.
-  - Actions per row: Send (invokes `send-quote-email`), Generate Contract Summary (invokes `generate-contract-summary` — disabled with tooltip if `platform_settings.is_vat_active()` indicates VAT incomplete), view tokenised quote link, view Contract Summary link, view printable PDF link (calls `generate-contract-summary-pdf`).
-  - Shows acceptance status badge per quote (joins latest contract_summary status).
-  - Yellow warning banner if VAT not active (queried once on mount).
+- `src/pages/admin/VatSettings.tsx` — form for every listed `platform_settings` field. VAT scheme dropdown limited to "Standard VAT Accounting". Residential display locked to inclusive, business to "ex VAT + incl VAT" preview. Warning banner when VAT incomplete. Edit disabled for non-finance roles.
+- `src/pages/admin/Suppliers.tsx` — list + create/edit dialogs for supplier_profiles, expand row to manage supplier_products (add/edit/pause/archive). No price-book upload yet (placeholder button disabled with tooltip "Coming in Phase 4").
+- `src/pages/admin/PricingRules.tsx` — list + create/edit dialog. Selects plan_category + optional supplier_product. Auto-computes VAT amounts from `vat_default_rate` (override per row). Residential preview gross, business preview net+VAT+gross. Publish toggle disabled when VAT incomplete.
+- `src/pages/admin/MarginRules.tsx` — list + create/edit dialog for margin floors and buffers per service_type/plan_type/customer_type.
 
-Both pages wrapped by existing `AdminLayout`. No new RLS, no new tables. Limited to staff via existing `ProtectedAdminRoute`.
+Sidebar (`AdminLayout.tsx`) adds: VAT Settings, Suppliers, Pricing Rules, Margin Rules (grouped under a "Commercial" section above Quotes).
 
-## 5. Admin sidebar
+## 4. Quote Builder upgrade (`src/pages/admin/Quotes.tsx`)
 
-Edit `src/components/admin/layout/AdminLayout.tsx` (or its nav config) to add:
+In the create/edit quote dialog:
 
-- "Quote Requests" → `/admin/quote-requests`
-- "Quotes" → `/admin/quotes`
+- Optional Supplier → Supplier Product → Plan Category cascading selects.
+- "Auto-fill from supplier" button populates supplier cost fields on the quote (using `supplier_*_net` columns added to `quotes`? — NO new columns; we store cost snapshot inside `quote_margin_checks` only, leaving `quotes` schema untouched).
+- "Auto-calc VAT" button computes `monthly_vat_amount` and `monthly_gross` from `monthly_net` × active VAT rate.
+- "Run margin check" button → invokes `run-quote-margin-check`, displays Green/Amber/Red badge with reason.
+- Red badge disables "Send Quote" for non-admins; admin/super_admin sees "Override & Send" requiring a reason textarea (≥10 chars) → calls `override-quote-margin` then `send-quote-email`.
+- VAT inactive banner remains.
+- Customer dual preview: residential incl VAT / business ex+incl VAT.
 
-Existing nav order preserved; inserted in a sensible spot (after Orders).
+Supplier/product fields are **optional** — manual quotes without them simply yield margin status `unknown` (not red).
 
-## 6. Checkout pass-through
+## 5. Admin Overview cards (`src/components/admin/overview/KPICards.tsx`)
 
-Edit `src/pages/Checkout.tsx` and `src/pages/BusinessCheckout.tsx`:
+Append (do not remove existing):
 
-- On mount, read `?cs=<token>` or `?quote=<id>` from URL.
-- Build `CheckoutContext { kind: 'new_telecom_sale', quoteId, token }` and run `enforceContractSummaryGate`.
-- If not accepted → redirect to `/quote/start?interest=broadband` (or `business`) with toast "Please complete your Contract Summary before paying".
-- If accepted → continue to existing Worldpay flow unchanged.
-- `/pay`, `/pay-invoice`, `/payment-result` untouched.
+- VAT settings status (Active / Incomplete) → links `/admin/vat-settings`.
+- Suppliers active count → `/admin/suppliers`.
+- Supplier products active count → `/admin/suppliers`.
+- Pricing rules active count → `/admin/pricing-rules`.
+- Low-margin quotes (latest check amber) → `/admin/quotes?margin=amber`.
+- Quotes blocked by margin (latest check red, not overridden) → `/admin/quotes?margin=red`.
+- API mode (manual/live) → `/admin/vat-settings`.
+- SIM checkout mode → `/admin/vat-settings`.
 
-## 7. Verification
+KPICards grid stays brutalist; switch to wrap layout to fit the new cards.
 
-After build, smoke-test in preview:
+## 6. Routes (`src/App.tsx`)
 
-- `/quote/start` renders form and POST succeeds (validation works).
-- `/quote/thank-you?ref=TEST` renders.
-- `/quote/:token`, `/quote/contract-summary/:token`, `/quote/payment/:token` render (token-fetch edge function paths existing).
-- `/checkout` with no `cs`/`quote` → redirects to `/quote/start`.
-- `/checkout?quote=<accepted-id>` → continues (verified against RPC).
-- `/pay` and `/pay-invoice` load unchanged.
-- `/admin/quote-requests`, `/admin/quotes` render under AdminLayout.
-- `/`, `/dashboard`, `/admin/overview`, `/track-order` still render.
+Add inside `/admin/*` above catch-all:
 
-## 8. Final summary
+- `vat-settings` → `AdminVatSettings`
+- `suppliers` → `AdminSuppliers`
+- `pricing-rules` → `AdminPricingRules`
+- `margin-rules` → `AdminMarginRules`
 
-Stop after this and report: files changed, routes added, admin pages added, gate changes, what was already done, what was untouched (Worldpay webhook/HPP, invoices, DD, AI chat, SEO, payment requests, dashboard), verification result, any warnings.
+## 7. Activity logging
 
-## Files touched
+All sensitive writes call `log_event` server-side with the event types listed in the request. Client never logs supplier costs, VAT numbers, margin amounts, or override reasons — only low-risk "page_view"/"cta_click" via existing `logClientEvent`.
 
-- Edit: `src/lib/requireContractSummary.ts`, `src/App.tsx`, `src/pages/quote/QuoteStart.tsx`, `src/pages/Checkout.tsx`, `src/pages/BusinessCheckout.tsx`, `src/components/admin/layout/AdminLayout.tsx` (nav only).
-- Create: `src/pages/admin/QuoteRequests.tsx`, `src/pages/admin/Quotes.tsx`.
+## 8. Verification (post-build smoke test)
 
-No DB migration. No edge function changes. No changes outside the listed files.
+- New admin routes render under AdminLayout.
+- VAT settings save round-trip + warning visibility.
+- Supplier + product CRUD + pause/archive.
+- Pricing rule CRUD + publish gate when VAT incomplete.
+- Margin rule CRUD.
+- Quote builder: auto-VAT, margin check, red block + admin override.
+- `send-quote-email` rejects red quotes without override.
+- Existing `/quote/start`, `/quote/:token`, `/quote/contract-summary/:token`, `/checkout` gate, `/pay`, `/pay-invoice`, `/`, `/dashboard`, `/admin/overview`, `/track-order` untouched and rendering.
+
+## What is NOT touched
+
+Worldpay HPP/webhook, invoices, DD mandates, AI chat, SEO pages, `/pay`, `/pay-invoice`, customer dashboard, public `/quote/*` flow, rewards engine, campaign engine, finance export, ICUK live integration, existing edge functions other than `send-quote-email`.
+
+## Files
+
+- Migration: `supabase/migrations/<ts>_phase3_commercial.sql`
+- Edge functions: `admin-update-vat-settings`, `admin-upsert-supplier`, `admin-upsert-supplier-product`, `admin-upsert-pricing-rule`, `admin-upsert-margin-rule`, `run-quote-margin-check`, `override-quote-margin` + edit `send-quote-email`.
+- New pages: `VatSettings.tsx`, `Suppliers.tsx`, `PricingRules.tsx`, `MarginRules.tsx`.
+- Edits: `App.tsx`, `AdminLayout.tsx`, `KPICards.tsx`, `Quotes.tsx`.

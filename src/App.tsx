@@ -73,6 +73,10 @@ import ContractSummaryView from "./pages/quote/ContractSummaryView";
 import QuotePayment from "./pages/quote/QuotePayment";
 import { AdminQuoteRequests } from "./pages/admin/QuoteRequests";
 import { AdminQuotes } from "./pages/admin/Quotes";
+import { AdminVatSettings } from "./pages/admin/VatSettings";
+import { AdminSuppliers } from "./pages/admin/Suppliers";
+import { AdminPricingRules } from "./pages/admin/PricingRules";
+import { AdminMarginRules } from "./pages/admin/MarginRules";
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -136,6 +140,10 @@ const AnimatedRoutes = () => {
             <Route path="chat-transcripts" element={<AdminChatTranscripts />} />
             <Route path="quote-requests" element={<AdminQuoteRequests />} />
             <Route path="quotes" element={<AdminQuotes />} />
+            <Route path="vat-settings" element={<AdminVatSettings />} />
+            <Route path="suppliers" element={<AdminSuppliers />} />
+            <Route path="pricing-rules" element={<AdminPricingRules />} />
+            <Route path="margin-rules" element={<AdminMarginRules />} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

@@ -9,7 +9,11 @@ import {
   Wrench, 
   Ticket, 
   AlertCircle, 
-  CreditCard 
+  CreditCard,
+  Receipt,
+  Truck,
+  Percent,
+  TrendingDown,
 } from "lucide-react";
 
 export const KPICards = () => {
@@ -25,6 +29,13 @@ export const KPICards = () => {
         openTickets,
         failedPayments,
         pendingDD,
+        vatActive,
+        suppliersActive,
+        productsActive,
+        pricingActive,
+        marginAmber,
+        marginRed,
+        settings,
       ] = await Promise.all([
         supabase
           .from("invoices")
@@ -47,6 +58,13 @@ export const KPICards = () => {
           .from("dd_mandates")
           .select("id", { count: "exact", head: true })
           .in("status", ["pending", "submitted"]),
+        (supabase as any).rpc("is_vat_active"),
+        (supabase as any).from("supplier_profiles").select("id", { count: "exact", head: true }).eq("status", "active"),
+        (supabase as any).from("supplier_products").select("id", { count: "exact", head: true }).eq("active", true),
+        (supabase as any).from("pricing_rules").select("id", { count: "exact", head: true }).eq("active", true),
+        (supabase as any).from("quote_margin_checks").select("id", { count: "exact", head: true }).eq("status", "amber"),
+        (supabase as any).from("quote_margin_checks").select("id", { count: "exact", head: true }).eq("status", "red"),
+        (supabase as any).from("platform_settings").select("api_mode, sim_checkout_mode").eq("singleton", true).maybeSingle(),
       ]);
 
       const totalOutstanding = outstandingInvoices.data?.reduce(
@@ -61,6 +79,14 @@ export const KPICards = () => {
         openTickets: openTickets.count || 0,
         failedPayments: failedPayments.count || 0,
         pendingDD: pendingDD.count || 0,
+        vatActive: vatActive?.data === true,
+        suppliersActive: suppliersActive.count || 0,
+        productsActive: productsActive.count || 0,
+        pricingActive: pricingActive.count || 0,
+        marginAmber: marginAmber.count || 0,
+        marginRed: marginRed.count || 0,
+        apiMode: settings.data?.api_mode ?? "manual",
+        simMode: settings.data?.sim_checkout_mode ?? "quote",
       };
     },
     refetchInterval: 60000, // Refresh every minute
@@ -107,10 +133,47 @@ export const KPICards = () => {
       onClick: () => navigate("/admin/payments-dd?tab=mandates"),
       color: kpis?.pendingDD ? "text-amber-600" : "text-muted-foreground",
     },
+    {
+      label: "VAT Settings",
+      value: kpis?.vatActive ? "Active" : "Incomplete",
+      icon: Receipt,
+      onClick: () => navigate("/admin/vat-settings"),
+      color: kpis?.vatActive ? "text-green-600" : "text-destructive",
+    },
+    {
+      label: "Suppliers Active",
+      value: kpis?.suppliersActive || 0,
+      subValue: `${kpis?.productsActive || 0} products`,
+      icon: Truck,
+      onClick: () => navigate("/admin/suppliers"),
+      color: "text-muted-foreground",
+    },
+    {
+      label: "Pricing Rules Active",
+      value: kpis?.pricingActive || 0,
+      icon: Percent,
+      onClick: () => navigate("/admin/pricing-rules"),
+      color: "text-muted-foreground",
+    },
+    {
+      label: "Low-Margin Quotes",
+      value: kpis?.marginAmber || 0,
+      subValue: `${kpis?.marginRed || 0} blocked (red)`,
+      icon: TrendingDown,
+      onClick: () => navigate("/admin/quotes"),
+      color: kpis?.marginRed ? "text-destructive" : "text-amber-600",
+    },
+    {
+      label: "API / SIM mode",
+      value: `${kpis?.apiMode ?? "manual"} / ${kpis?.simMode ?? "quote"}`,
+      icon: AlertCircle,
+      onClick: () => navigate("/admin/vat-settings"),
+      color: "text-muted-foreground",
+    },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5">
       {cards.map((card) => (
         <Card
           key={card.label}

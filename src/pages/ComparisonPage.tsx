@@ -166,7 +166,7 @@ const ComparisonPage = () => {
               Ready to Switch from {comparison.competitor}?
             </h2>
             <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              No contracts, no hidden fees, no price rises. Check what's available at your address.
+              Price Lock 24 or Flex 30 where eligible. No confusing mid-contract rises on Price Lock. Check what's available at your address.
             </p>
             <Link to="/broadband">
               <Button variant="hero" size="lg">

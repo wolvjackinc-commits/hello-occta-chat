@@ -1,61 +1,204 @@
-## Phase 3D Seed: Giacom Broadband Ratecard v3.8.1
+  
+Approved for Phase 3D-QA only, with these corrections before running.
 
-Parsed the uploaded broadband ratecard. Only broadband rows are seeded — WLR and Mobile rate cards are out of scope for Phase 3D (resolver only consumes broadband). Mobile/WLR can be ingested in a later phase via the same admin import UI.
+Do not start Phase 7.  
+Do not add new features.  
+Do not touch Worldpay HPP/webhook, invoice generation, DD mandates, /pay, /pay-invoice, checkout gate, rewards, campaigns, complaints, finance exports, SEO setup or AI chat.
 
-All rows seeded as `active = false`, `source = 'giacom_ratecard_v3.8.1'`, `source_version = '2026-04-01'`. Admin enables them in `/admin/suppliers/giacom-import` after sanity check.
+Corrections:
 
-### Seed migration content
+1. Price Lock 24 term safety
 
-**Sky Business Wholesale** (network `Sky`)
-- FTTP 80/20, 160/30, 330/50, 550/75, 1000/115 — 1m / 24m / 36m tiers
-- SOGEA 80/20 — 1m / 24m / 36m
-- Connection fees: No Site Visit / Standard / Premium / Advanced (FTTP + SOGEA)
+For live pricing, Price Lock 24 should prefer 24-month supplier rows only.
 
-**CityFibre** (network `CityFibre`)
-- FTTP 160Mb (25.50), 1Gb (31.75), 1Gb Premium (37.00) — 1m only
-- Install: Standard 59.00, Non-Standard 119.00, Migration 56.00
+Do not automatically use 36-month supplier rows for a 24-month customer plan unless:
 
-**BT Wholesale** (network `BT`)
-- FTTP 0.5/0.5, 40/10, 80/20, 115/20, 160/30, 220/30, 330/50, 550/75, 1000/115 — 12m / 24m / 36m
-- SOGEA 0.5/0.5, 40/10, 80/20 — 1m / 24m / 36m where available
-- Connection fees per install type
+- admin explicitly marks the row as allowed for Price Lock 24, and
+- extra supplier-risk buffer is applied, or
+- the customer-facing product is changed to Price Lock 36.
 
-**Vodafone** (network `Vodafone`)
-- FTTP 0.5/0.5 through 1000/115 — 1m only
-- SOGEA 0.5/0.5, 40/10, 80/20 — 1m only
-- Install: NSV / Standard 69 / Premium 105.50 (SOGEA), 110.50 (FTTP)
+For this QA starter set, all selected Price Lock rows are 24-month, so this is fine.
 
-**Termination / ETF flags** populated from the ratecard's Termination Fees section (page 11): all rows flagged `etf_applies = true`, with `disconnect_fee_in_12m_net` and `disconnect_fee_after_12m_net` from the published table (e.g. Vodafone 75 / 25).
+2. Superfast 115Mbps wording
 
-**Care levels** stored as `tags` (Standard included, Enhanced/Premium uplift values) — not separate rows, since resolver already maps care via `platform_settings.fair_pricing.care`.
+`VF-FTTP-115` can be activated for testing, but if it is mapped to Superfast, customer wording must not imply 150–330Mbps only.
 
-**bucket_hint** derived from download_speed_mbps using existing bucket boundaries (Essential 80/20, Family 160-220, Power 330-550, Ultra 1000). Rows below 40Mbps marked `bucket_hint = null, quote_only = true`.
+Use one of these:
 
-### What this delivers (full Phase 3D summary)
+- Superfast: 100–330Mbps options  
+or
+- show exact matched speed in the Build Plan result, e.g. “up to 115Mbps at your address”.
 
-**Products seeded:** ~55 broadband rows across 4 networks, all `active = false` pending admin review. Zero WLR/Mobile rows (deferred).
+Do not show “150–330Mbps” if the resolver selected a 115Mbps product.
 
-**Supplier networks added:** Giacom profile + BT, Sky, CityFibre, Vodafone tagged via `network` column.
+3. SQL activation audit
 
-**Resolver behaviour:** DB-driven, term-aware, ETF-risk-aware, no literal fallback. `quote_only` when no match.
+Using SQL update is acceptable for QA, but make sure activation is auditable.
 
-**Availability mapping:** Filters by `max_download` and `primary_technology` from ICUK. Network filtering deferred.
+Either:
 
-**Router/setup mapping:** Own router £0; standard/premium read from `platform_settings.fair_pricing.router`; connection fees pull from seeded `connection_fee_net` per install type with `quote_only` fallback.
+- create an activity_log entry for the 10 activated rows, or
+- add a clear QA note listing the activated supplier_product_id values, timestamp and reason.
 
-**Warning behaviour:** Contract Summary auto-appends ETF/disconnect warnings and "subject to address confirmation" / "final price confirmed in writing" copy where flags trigger.
+Do not activate rows silently without record.
 
-**Customer data security:** `stripInternal()` enforced in all four resolver edge functions — no supplier IDs, costs, margin, or `internal` block ever reaches the browser. Verified by allowlist response schema.
+4. Scenario F correction
 
-**Untouched:** Worldpay HPP, webhooks, invoices, DD mandates, `/pay`, `/pay-invoice`, checkout gate, rewards, campaigns, complaints, finance exports, SEO setup, AI chat.
+Scenario F is valid, but deactivate only the relevant 1-month rows needed to prove fallback.
 
-**Verification:** Apply migration → confirm rows present → activate one row per bucket via admin UI → smoke /build-plan with priced bucket (returns matched price) and empty bucket (returns quote_only) → smoke `?test=1` with fake postcode → confirm `/quote/start`, `/checkout`, `/pay`, `/pay-invoice`, `/admin/fair-pricing`, `/admin/quotes` unchanged → `bun run build` passes.
+For Essential Flex 30, deactivate the active Essential 1-month row:
 
-**Warnings/errors:** None expected from seed migration. WLR + Mobile ratecards intentionally not seeded — flagged for separate phase.
+- `BT-SOGEA-80-1M`
 
-### Files to change
+Then confirm Flex 30 does not wrongly fall back to a 24-month product unless explicitly allowed.
 
-- `supabase/migrations/<new>_seed_giacom_broadband_v3_8_1.sql` — single seed migration, ~55 INSERT rows, idempotent via `ON CONFLICT (supplier_id, supplier_product_id) DO UPDATE`.
-- `docs/giacom-supplier-catalogue.md` — append seed manifest + source version.
+After test, reactivate the row.
 
-No other files change. Resolver, edge functions, admin UI from prior Phase 3D commit already handle the seeded rows.
+5. Admin pricing test cleanup
+
+When bumping a headline price by £1 in `/admin/fair-pricing`, restore the original value after the test.
+
+Record:
+
+- original price
+- temporary test price
+- restored price
+
+6. Contract Summary check
+
+In the Contract Summary, do not show:
+
+- supplier name
+- Giacom name
+- wholesale fee value
+- supplier product code
+- source document/page
+
+Only show customer-safe wording:  
+“Cease, disconnection or early termination charges may apply depending on your selected service and when it ends. Any known charges are shown before you order.”
+
+7. Security allowlist
+
+Keep the strict allowlist check.
+
+Public response keys must not include:
+
+- supplier cost
+- supplier product ID
+- supplier selected internally
+- network/provider
+- margin
+- margin floor
+- internal block
+- source document/page/section
+- wholesale ratecard values
+
+8. Run the QA exactly as described
+
+Activate the 10 starter rows only.  
+Keep the other 81 rows inactive.  
+Run scenarios A–F.  
+Check First Bill Preview vs create-quote vs Contract Summary.  
+Check route smoke tests.  
+Stop after QA and report.
+
+Final report should include:
+
+- 10 products activated
+- 81 products kept inactive
+- scenario A–F pricing result
+- quote-only fallback result
+- First Bill Preview match result
+- Contract Summary warning result
+- supplier-data security verdict
+- unchanged route checks
+- any warnings/errors  
+Phase 3D-QA: Giacom Activation + Live Pricing Test
+
+Activate a minimal starter set of Giacom broadband products covering each bucket and both term preferences (Flex 30 = 1m, Price Lock 24 = 24m), then run the full Build Plan → Quote → Contract Summary pricing journey and verify no supplier data leaks.
+
+### Starter activation set (10 rows)
+
+Selected to give the resolver at least one short-term (1m or 12m) and one 24m row per bucket, mixing networks so Sky FTTP, BT FTTP, Vodafone FTTP and CityFibre are all represented.
+
+
+| Bucket    | Activate                                                                                                                                  |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| essential | `BT-SOGEA-80-1M` (£23.75, 1m), `BT-FTTP-80-24M` (£24.50, 24m), `SKY-SOGEA-80-24M` (£25.00, 24m)                                           |
+| superfast | `VF-FTTP-115` (£24.50, 1m), `BT-FTTP-160-24M` (£27.50, 24m), `BT-FTTP-330-24M` (£30.00, 24m) — 330/50 selected here for test scenario C/D |
+| ultrafast | `SKY-FTTP-550-1M` (£38.50, 1m), `BT-FTTP-550-24M` (£36.00, 24m)                                                                           |
+| gigabit   | `CF-FTTP-1G` (£31.75, 1m), `BT-FTTP-1000-24M` (£40.50, 24m)                                                                               |
+
+
+All 10 rows pass the review checklist: known supplier monthly cost, known speed/term, ETF flag present, bucket_hint set, quote_only false, source = `giacom_broadband_ratecard_v3.8.1`. All other 81 seeded rows stay inactive.
+
+### Activation mechanism
+
+Toggle `active = true` for the 10 IDs above via a data-only SQL update (insert tool). The admin UI at `/admin/suppliers/giacom-import` already exposes the same toggle — using SQL is equivalent and audit-logged via the same row history, but faster and avoids 10 browser clicks. Nothing else changes.
+
+### Pricing tests on `/build-plan`
+
+Run server-side via `resolve-build-plan-price` (`?test=1` short-circuit) to avoid touching ICUK and to keep test predictable. For each scenario, capture the JSON response and check it.
+
+
+| #   | Scenario                                                                                                                                                                                       | Expected                                                |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| A   | essential, Price Lock 24, own router, remote setup                                                                                                                                             | matched, monthly = retail derived from £24.50 cost band |
+| B   | essential, Flex 30, own router, remote setup                                                                                                                                                   | matched, monthly from 1m row £23.75                     |
+| C   | superfast (330/50), Price Lock 24, standard router monthly                                                                                                                                     | matched + router add-on                                 |
+| D   | ultrafast (550/75), Price Lock 24, premium router monthly                                                                                                                                      | matched + premium router uplift                         |
+| E   | gigabit, Price Lock 24, own router, remote setup                                                                                                                                               | matched from BT-FTTP-1000-24M                           |
+| F   | After deactivating `BT-SOGEA-80-1M` + `VF-FTTP-115` and asking for essential on Flex 30 with no other 1m essential row, expect `quote_only` with address-confirmation copy. Re-activate after. | &nbsp;                                                  |
+
+
+### Customer-data security check
+
+For every response (A–F), assert the JSON body and the network request payload contain **none** of:
+
+- `supplier_monthly_net`, `supplier_setup_net`, any `supplier_*` field
+- `supplier_product_id`, supplier row UUIDs
+- `network` / `provider` chosen internally
+- `margin`, `margin_floor`, `internal` block
+- `source_document`, `source_page`, `source_section`
+- Raw ratecard wholesale values
+
+Allowlist check: response keys must be a strict subset of the existing public response schema (monthly, oneOff, vat, warnings, quoteOnly, bucket, term, router, setup, notes).
+
+### First Bill Preview check
+
+On `/build-plan` review step for scenario C, confirm:
+
+- broadband monthly, router monthly or one-off, setup line, add-ons, VAT line, estimated first bill total
+- Same figures appear when invoking `create-quote` (same payload echoes back identical numbers)
+- Same figures appear in the generated Contract Summary
+
+### Contract Summary check
+
+Generate a CS for scenario D (ultrafast, ETF row, premium router). Verify:
+
+- Speed bucket = Ultrafast
+- "Price Lock 24" wording
+- Router choice, setup option, add-ons listed
+- Monthly total + first bill estimate
+- Warning paragraph: "Cease, disconnection or early termination charges may apply depending on your selected service and when it ends. Any known charges are shown before you order."
+- No wholesale fee values, no supplier name, no Giacom reference appears
+
+### Admin pricing check
+
+Open `/admin/fair-pricing` and confirm:
+
+- Headline prices, router prices, setup prices, buffers, margin floors, quote-only fallback all render
+- Bump one headline by £1, re-run scenario A — verify retail price moves accordingly
+
+### Unchanged-route smoke checks
+
+Load each and confirm 200 + render with no console errors:
+`/`, `/build-plan`, `/quote/start`, `/quote/thank-you`, `/checkout`, `/pay`, `/pay-invoice`, `/admin/fair-pricing`, `/admin/quotes`, `/admin/suppliers/giacom-import`.
+
+### Untouched
+
+Worldpay HPP/webhook, invoice generation, DD mandates, `/pay` & `/pay-invoice` business logic, checkout gate, rewards, campaigns, complaints, finance exports, SEO setup, AI chat.
+
+### Output
+
+Final report will include: products activated, products kept inactive (count + bucket breakdown), 6 pricing scenario results, quote_only fallback result, First Bill Preview vs CS match, Contract Summary content check, supplier-data security verdict per scenario, unchanged-route checks, any warnings/errors. No new features. No Phase 7.

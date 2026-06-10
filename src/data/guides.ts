@@ -31,10 +31,10 @@ export const guides: Guide[] = [
     title: 'No Contract Broadband UK: The Complete Guide',
     metaTitle: 'No Contract Broadband UK — Flexible Internet',
     description: 'Looking for no contract broadband in the UK? Learn how rolling monthly broadband works, who it suits, and how to get connected without lock-ins or exit fees.',
-    keywords: 'no contract broadband UK, flexible broadband, cancel anytime broadband, rolling monthly broadband, no lock-in broadband, no exit fee broadband',
+    keywords: 'no contract broadband UK, flexible broadband, flexible broadband, rolling monthly broadband, no lock-in broadband, no exit fee broadband',
     category: 'broadband',
     categoryLabel: 'Broadband',
-    intro: 'Fed up with 18 or 24-month broadband contracts? You are not alone. More UK households are switching to no-contract broadband — rolling monthly plans that let you cancel anytime without exit fees. Here is everything you need to know.',
+    intro: 'Fed up with 18 or 24-month broadband contracts? You are not alone. More UK households are switching to no-contract broadband — rolling monthly plans that let you 30-day rolling options available where eligible without exit fees. Here is everything you need to know.',
     sections: [
       {
         heading: 'What Is No Contract Broadband?',
@@ -64,14 +64,14 @@ export const guides: Guide[] = [
       {
         heading: 'How to Get Started',
         paragraphs: [
-          'Getting set up is straightforward. Check your postcode on our broadband page, choose a speed tier, and complete your order. Installation typically takes around 7 working days, and your router is included at no extra cost.',
+          'Getting set up is straightforward. Check your postcode on our broadband page, choose a speed tier, and complete your order. Installation typically takes around 7 working days, and your router options available at checkout.',
         ],
       },
     ],
     faqs: [
       { question: 'Is no contract broadband slower than contract broadband?', answer: 'No. At OCCTA, you get the same speeds regardless of contract type — up to 900Mbps on our fastest plan.' },
       { question: 'Can I cancel at any time?', answer: 'Yes. Give us 30 days notice and you can leave whenever you like, no exit fees.' },
-      { question: 'Is there a setup fee?', answer: 'Installation is free during promotional periods. Check our broadband page for the latest offers.' },
+      { question: 'Is there a setup fee?', answer: 'Setup from £0 where available during promotional periods. Check our broadband page for the latest offers.' },
       { question: 'Do I need to return the router?', answer: 'Yes, the router should be returned if you cancel within the first 12 months.' },
     ],
     ctaText: 'View Broadband Plans',
@@ -322,7 +322,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA SIM Plans',
         paragraphs: [
-          'OCCTA SIM plans start from £7.99 per month with no contract, no credit check, and 5G included. All plans come with unlimited UK calls and texts plus EU roaming. Switch up, down, or cancel any time.',
+          'OCCTA SIM plans start from £7.99 per month with no contract, no credit check, and 5G included. All plans come with unlimited UK calls and texts plus EU roaming. Switch up, down, or leave any time.',
         ],
       },
     ],
@@ -515,7 +515,7 @@ export const guides: Guide[] = [
           'No credit check — many students have no credit history',
           'Enough speed for a shared house (100Mbps+ for 3-4 people)',
           'Unlimited data for streaming, gaming, and studying',
-          'Easy setup with a free router',
+          'Easy setup with a Bring your own router for £0, or choose a router at checkout',
           'Affordable — keep the monthly bill low',
         ],
       },
@@ -528,7 +528,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Students',
         paragraphs: [
-          'OCCTA broadband starts from £22.99/mo with no contract, no credit check, and free installation. Perfect for student accommodation of any length. When you move out, give us 30 days notice and that is it — no exit fees.',
+          'OCCTA broadband starts from £22.99/mo with no contract, no credit check, and Setup from £0 where available. Perfect for student accommodation of any length. When you move out, give us 30 days notice and that is it — no exit fees.',
         ],
       },
     ],

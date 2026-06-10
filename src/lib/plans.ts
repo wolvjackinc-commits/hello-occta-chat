@@ -55,25 +55,25 @@ export const simPlans: Plan[] = [
   {
     id: "sim-starter", name: "Starter", data: "5GB", price: "7.99", priceNum: 7.99,
     description: "For light users and second phones",
-    features: ["5GB 5G data", "Unlimited UK calls", "Unlimited texts", "EU roaming included", "No contracts — 30-day rolling options available where eligible", "Free SIM delivery"],
+    features: ["5GB 5G data", "Unlimited UK calls", "Unlimited texts", "EU roaming included", "30-day rolling options available where eligible", "Free SIM delivery"],
     popular: false, serviceType: "sim",
   },
   {
     id: "sim-essential", name: "Essential", data: "15GB", price: "11.99", priceNum: 11.99,
     description: "Perfect for everyday use",
-    features: ["15GB 5G data", "Unlimited UK calls", "Unlimited texts", "EU roaming included", "No contracts — 30-day rolling options available where eligible", "Data rollover"],
+    features: ["15GB 5G data", "Unlimited UK calls", "Unlimited texts", "EU roaming included", "30-day rolling options available where eligible", "Data rollover"],
     popular: false, serviceType: "sim",
   },
   {
     id: "sim-plus", name: "Plus", data: "50GB", price: "17.99", priceNum: 17.99,
     description: "For the social media enthusiasts",
-    features: ["50GB 5G data", "Unlimited UK calls", "Unlimited texts", "30GB EU roaming", "No contracts — 30-day rolling options available where eligible", "Data rollover"],
+    features: ["50GB 5G data", "Unlimited UK calls", "Unlimited texts", "30GB EU roaming", "30-day rolling options available where eligible", "Data rollover"],
     popular: true, serviceType: "sim",
   },
   {
     id: "sim-unlimited", name: "Unlimited", data: "∞", price: "27.99", priceNum: 27.99,
     description: "Never worry about data again",
-    features: ["Unlimited 5G data", "Unlimited UK calls", "Unlimited texts", "50GB EU roaming", "No contracts — 30-day rolling options available where eligible", "Free intl calls (50 countries)"],
+    features: ["Unlimited 5G data", "Unlimited UK calls", "Unlimited texts", "50GB EU roaming", "30-day rolling options available where eligible", "Free intl calls (50 countries)"],
     popular: false, serviceType: "sim",
   },
 ];

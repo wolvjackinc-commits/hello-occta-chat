@@ -136,7 +136,7 @@ const GuidePage = () => {
           <div className="card-brutal bg-card p-6 md:p-8 text-center">
             <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">Ready to Get Started?</h2>
             <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              No contracts, no hidden fees. See what OCCTA can offer you.
+              Price Lock 24 or Flex 30 where eligible. See what OCCTA can offer you.
             </p>
             <Link to={guide.ctaLink}>
               <Button variant="hero" size="lg">

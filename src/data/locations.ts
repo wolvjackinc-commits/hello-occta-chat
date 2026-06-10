@@ -41,7 +41,7 @@ export const locations: Location[] = [
     slug: "birmingham",
     city: "Birmingham",
     region: "West Midlands",
-    intro: "Affordable fibre broadband in Birmingham with no contracts and no surprises. OCCTA offers speeds up to 900Mbps across the West Midlands \u2014 straightforward internet at a fair price, with Setup from £0 where available and a router included.",
+    intro: "Affordable fibre broadband in Birmingham with Price Lock 24 or Flex 30 where eligible and no surprises. OCCTA offers speeds up to 900Mbps across the West Midlands \u2014 straightforward internet at a fair price, with Setup from £0 where available and a router option included.",
     metaDescription: "Cheap broadband in Birmingham from \u00A334.99/mo. No contract fibre up to 900Mbps across the West Midlands. 30-day rolling options available where eligible, no price rises.",
     faqs: [
       { question: "Can I get OCCTA broadband in Birmingham?", answer: "Yes \u2014 OCCTA broadband is available across Birmingham and the wider West Midlands through the Openreach fibre network. Enter your postcode to check what speeds are available." },

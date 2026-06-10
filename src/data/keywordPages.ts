@@ -34,7 +34,7 @@ export const keywordPages: KeywordPage[] = [
     keywords: "cheap broadband near me, affordable broadband near me, broadband deals near me, internet near me cheap, best broadband near me, local broadband deals",
     heroTitle: "CHEAP BROADBAND",
     heroHighlight: "NEAR YOU",
-    heroSubtitle: "Fast fibre internet from \u00A334.99/mo. No contracts. No credit check.",
+    heroSubtitle: "Fast fibre internet from \u00A334.99/mo. 30-day rolling options where eligible. No credit check.",
     sections: [
       {
         heading: "Find Cheap Broadband at Your Address",
@@ -47,7 +47,7 @@ export const keywordPages: KeywordPage[] = [
         heading: "Why OCCTA Is the Cheapest Option",
         paragraphs: ["Here\u2019s why OCCTA consistently beats the big providers on price:"],
         bullets: [
-          "No contracts \u2014 rolling monthly, 30-day rolling options available where eligible",
+          "30-day rolling options available where eligible",
           "No mid-contract price rises \u2014 your price is fixed",
           "No credit check required",
           "Setup from £0 where available. Bring your own router for £0, or choose a router at checkout",
@@ -81,7 +81,7 @@ export const keywordPages: KeywordPage[] = [
     keywords: "broadband no credit check, internet no credit check, wifi no credit check, broadband without credit check UK, no credit check broadband deals",
     heroTitle: "BROADBAND",
     heroHighlight: "NO CREDIT CHECK",
-    heroSubtitle: "Fast fibre internet. No credit check. No contracts. From \u00A334.99/mo.",
+    heroSubtitle: "Fast fibre internet. No credit check. 30-day rolling options where eligible. From \u00A334.99/mo.",
     sections: [
       {
         heading: "Why We Don\u2019t Run Credit Checks",
@@ -188,7 +188,7 @@ export const keywordPages: KeywordPage[] = [
         paragraphs: ["Here\u2019s what sets OCCTA apart from other broadband deals:"],
         bullets: [
           "From \u00A334.99/mo \u2014 one of the lowest prices in the UK",
-          "No contracts \u2014 rolling monthly, 30-day rolling options available where eligible",
+          "30-day rolling options available where eligible",
           "No mid-contract price rises \u2014 your price is guaranteed",
           "No credit check required",
           "Setup from £0 where available and Wi-Fi router",
@@ -238,7 +238,7 @@ export const keywordPages: KeywordPage[] = [
           "Speeds up to 900Mbps \u2014 fast enough for any game",
           "Low latency on the Openreach fibre network",
           "Unlimited data \u2014 no throttling or fair usage caps",
-          "No contracts \u2014 upgrade or switch speeds anytime",
+          "Upgrade or switch speeds where eligible",
           "Perfect for streaming and downloading large game files",
           "Supports multiple devices without slowdown",
         ],
@@ -285,7 +285,7 @@ export const keywordPages: KeywordPage[] = [
           "Fast upload speeds for file sharing and cloud apps",
           "Unlimited data \u2014 no caps even during peak hours",
           "Speeds up to 900Mbps for heavy workloads",
-          "No contracts \u2014 flexible if your work situation changes",
+          "Flexible if your work situation changes",
           "Bring your own router for £0, or choose a router at checkout with strong whole-home Wi-Fi",
         ],
       },

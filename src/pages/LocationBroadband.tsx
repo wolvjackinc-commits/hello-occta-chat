@@ -22,7 +22,7 @@ const LocationBroadband = () => {
   const prices = getFromPrices();
   const broadbandServiceSchema = createServiceSchema({
     name: `OCCTA Broadband in ${location.city}`,
-    description: `Fast, reliable fibre broadband in ${location.city} with speeds up to 900Mbps. No contracts, no price rises.`,
+    description: `Fast, reliable fibre broadband in ${location.city} with speeds up to 900Mbps. Price Lock 24 or Flex 30 where eligible.`,
     url: `/broadband-${location.slug}`,
     price: prices.broadband,
   });
@@ -244,7 +244,7 @@ const LocationBroadband = () => {
               Ready for Better Broadband in {location.city}?
             </h2>
             <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              No contracts, no hidden fees, no price rises. Check what's available at your address.
+              Price Lock 24 or Flex 30 where eligible. No confusing mid-contract rises on Price Lock. Check what's available at your address.
             </p>
             <Link to="/broadband">
               <Button variant="hero" size="lg">

@@ -16,11 +16,11 @@ interface SEOProps {
 const BASE_URL = 'https://www.occta.co.uk';
 const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
 const SITE_NAME = 'OCCTA';
-const DEFAULT_KEYWORDS = 'cheap broadband UK, no contract broadband, flexible broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband, fibre broadband no contract, unlimited broadband UK, OCCTA';
+const DEFAULT_KEYWORDS = 'UK broadband, price lock broadband, 30 day rolling broadband, flexible broadband, fibre broadband UK, 5G SIM UK, SIM only deals UK, OCCTA';
 
 export const SEO = ({
   title,
-  description = `Cheap UK broadband from £${getFromPrices().broadband}/mo. No contracts, no credit check, 30-day rolling options available where eligible. 900Mbps fibre, SIM & landline.`,
+  description = `UK fibre broadband from £${getFromPrices().broadband}/mo. Price Lock 24 or Flex 30 where eligible. Clear first bill. UK-based support.`,
   canonical,
   type = 'website',
   image = DEFAULT_IMAGE,
@@ -31,7 +31,7 @@ export const SEO = ({
 }: SEOProps) => {
   const fullTitle = title
     ? `${title} | ${SITE_NAME}`
-    : `${SITE_NAME} — Cheap UK Broadband & SIM, No Contracts`;
+    : `${SITE_NAME} — UK Broadband, SIM & Landline · Price Lock 24 or Flex 30`;
   const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : undefined;
 
   return (

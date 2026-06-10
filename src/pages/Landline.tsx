@@ -76,7 +76,7 @@ const Landline = () => {
     <LayoutComponent>
       <SEO 
         title="Digital Home Phone UK - Add to Broadband"
-        description={`Add Digital Home Phone from £${getFromPrices().landline}/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts.`}
+        description={`Add Digital Home Phone from £${getFromPrices().landline}/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. 30-day rolling options where eligible.`}
         canonical="/landline"
         keywords="digital home phone, digital voice UK, VoIP home phone, home phone broadband, cheap home phone UK, no contract home phone"
         price={getFromPrices().landline}

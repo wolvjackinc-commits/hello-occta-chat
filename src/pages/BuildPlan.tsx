@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
@@ -41,6 +41,34 @@ const ADDON_DEFS = [
   { id: "paper_billing" as const, label: "Paper billing", monthly: FAIR_PRICING_DEFAULTS.addons.paperBillingMonthly },
 ];
 
+const QUOTE_ONLY_ADDONS: { id: string; label: string }[] = [
+  { id: "wifi_mesh", label: "WiFi extender / mesh" },
+];
+
+const SPEED_LABELS: Record<SpeedBucket, string> = {
+  essential: "Essential Fibre",
+  superfast: "Superfast Fibre",
+  ultrafast: "Ultrafast Fibre",
+  gigabit:   "Gigabit Fibre",
+};
+const TERM_LABELS: Record<PlanTerm, string> = {
+  price_lock_24: "Price Lock 24",
+  flex_30:       "Flex 30",
+};
+const ROUTER_LABELS: Record<string, string> = {
+  own: "My own compatible router (£0)",
+  standard: "Standard WiFi 6 router",
+  premium: "Premium WiFi / mesh",
+  business: "Business router (by quote)",
+};
+const SETUP_LABELS: Record<string, string> = {
+  remote: "Remote / no-site activation",
+  standard: "Standard setup",
+  engineer: "Engineer / new install",
+  complex: "Complex install (by quote)",
+};
+const TOTAL_STEPS = 7;
+
 function BuildPlanInner() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
@@ -53,23 +81,38 @@ function BuildPlanInner() {
   const [step, setStep] = useState(1);
   const [bucket, setBucket] = useState<SpeedBucket | null>(null);
   const [term, setTerm] = useState<PlanTerm | null>(null);
-  const [router, setRouter] = useState<RouterChoice>("own");
+  const [router, setRouter] = useState<RouterChoice | null>(null);
   const [routerPay, setRouterPay] = useState<RouterPaymentType>("none");
-  const [setup, setSetup] = useState<SetupChoice>("remote");
+  const [setup, setSetup] = useState<SetupChoice | null>(null);
   const [addons, setAddons] = useState<string[]>([]);
+  const [quoteOnlyAddons, setQuoteOnlyAddons] = useState<string[]>([]);
   const [resolved, setResolved] = useState<Resolved | null>(null);
   const [resolving, setResolving] = useState(false);
   const initialPostcode = searchParams.get("postcode") || "";
   const [contact, setContact] = useState({ full_name: "", email: "", phone: "", postcode: initialPostcode, marketing_consent: false, privacy_ack: false });
   const [submitting, setSubmitting] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+
+  // Whenever the step changes, scroll to top and focus the new heading (a11y).
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Defer focus to after render
+    const t = setTimeout(() => headingRef.current?.focus(), 60);
+    return () => clearTimeout(t);
+  }, [step]);
 
   const eligibleBuckets = useMemo<SpeedBucket[]>(() => {
-    if (isFallback) return ["essential", "superfast", "ultrafast", "gigabit"];
-    const plans = result?.eligibleOcctaPlans ?? [];
     const all: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
+    // National policy: every valid UK postcode sees all main buckets.
+    // Live availability data, when present, only personalises confirmation copy.
+    if (isFallback) return all;
+    const plans = result?.eligibleOcctaPlans ?? [];
     if (!plans.length) return all;
     return all.filter((b) => plans.includes(b));
   }, [result, isFallback]);
+
+  // True when we have not personalised plans for this address.
+  const isUnpersonalised = isFallback || !result;
 
   // Resolve price server-side whenever choices change
   useEffect(() => {
@@ -113,8 +156,9 @@ function BuildPlanInner() {
     if (step === 2) return !!term;
     if (step === 3) return !!router && (router === "own" || router === "business" || routerPay !== "none");
     if (step === 4) return !!setup;
-    if (step === 5) return true;
-    return contact.full_name.length >= 2 && /^[^@]+@[^@]+\.[^@]+$/.test(contact.email) && contact.phone.length >= 7 && contact.postcode.length >= 5 && contact.privacy_ack;
+    if (step === 5) return true; // optional add-ons
+    if (step === 6) return contact.full_name.length >= 2 && /^[^@]+@[^@]+\.[^@]+$/.test(contact.email) && contact.phone.length >= 7 && contact.postcode.length >= 5 && contact.privacy_ack;
+    return true; // step 7 review
   };
 
   const submitBuildPlan = async () => {
@@ -155,7 +199,21 @@ function BuildPlanInner() {
         toast({ title: "Thanks — we'll confirm availability", description: "We'll confirm availability and send your final quote before order." });
       }
       const reference = (data as any).reference as string;
-      nav(`/quote/thank-you?ref=${encodeURIComponent(reference)}`);
+      nav(`/quote/thank-you?ref=${encodeURIComponent(reference)}`, {
+        state: {
+          bucketLabel: bucket ? SPEED_LABELS[bucket] : undefined,
+          termLabel: term ? TERM_LABELS[term] : undefined,
+          routerLabel: router ? ROUTER_LABELS[router] : undefined,
+          setupLabel: setup ? SETUP_LABELS[setup] : undefined,
+          addons: [
+            ...addons.map((id) => ADDON_DEFS.find((a) => a.id === id)?.label).filter(Boolean) as string[],
+            ...quoteOnlyAddons.map((id) => `${QUOTE_ONLY_ADDONS.find((a) => a.id === id)?.label ?? id} (by quote)`),
+          ],
+          postcode: (contact.postcode || "").toUpperCase(),
+          monthlyEstimate: resolved?.monthly_total_incl_vat ?? resolved?.monthly_broadband_incl_vat,
+          firstBillEstimate: resolved?.first_bill_incl_vat,
+        },
+      });
     } catch (_err) {
       toast({ title: "Couldn't submit your plan", description: "Please try again shortly.", variant: "destructive" });
     } finally {
@@ -163,36 +221,27 @@ function BuildPlanInner() {
     }
   };
 
-  if (!isTestMode && !isFallback && (status !== "success" || !result)) {
-    return (
-      <Layout>
-        <SEO title="Build Your Plan" canonical="/build-plan" />
-        <div className="container mx-auto px-4 py-20 text-center">
-          <h1 className="font-display text-3xl uppercase mb-4">Check your address first</h1>
-          <p className="text-muted-foreground mb-6">We need to confirm what's available before you build your plan.</p>
-          <Button onClick={() => nav("/")}>Back to address check</Button>
-        </div>
-      </Layout>
-    );
-  }
+  // National policy: no hard gate. Anyone with (or without) a confirmed
+  // address can view and build a plan. We confirm the final order details
+  // before they proceed.
 
   return (
     <Layout>
       <SEO title="Build Your Plan — OCCTA Fair Broadband" canonical="/build-plan" />
-      <div className="container mx-auto px-4 py-10 md:py-14">
+      <div className="container mx-auto px-4 py-10 md:py-14 pb-40 lg:pb-14">
         <div className="mb-6">
-          <p className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground">Step {step} of 6</p>
+          <p className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>
           <h1 className="font-display text-3xl md:text-4xl uppercase mt-1">Build your plan</h1>
           <p className="text-sm text-muted-foreground mt-2">{FROM_PRICE_DISCLOSURE}</p>
         </div>
 
-        {isFallback && (
+        {isUnpersonalised && (
           <div className="mb-6 border-4 border-foreground bg-primary/5 p-4 flex items-start gap-3">
             <Info className="w-5 h-5 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
-              <p className="font-display uppercase tracking-wider">Subject to availability at your address</p>
+              <p className="font-display uppercase tracking-wider">Broadband plans available to view</p>
               <p className="text-muted-foreground mt-1">
-                We couldn't confirm live availability online. Pick the plan you're interested in — final availability, speed, setup and price will be confirmed before order. No payment is taken until your Contract Summary is confirmed.
+                Choose the plan you're interested in. We'll confirm the final speed, setup and order details before you proceed. No payment is taken until your Contract Summary is confirmed.
               </p>
             </div>
           </div>
@@ -201,7 +250,7 @@ function BuildPlanInner() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
           <div className="border-4 border-foreground bg-background p-6 md:p-8">
             {step === 1 && (
-              <Step title="Choose your speed">
+              <Step title="Choose your speed" headingRef={headingRef}>
                 <div className="grid gap-3">
                   {(["essential","superfast","ultrafast","gigabit"] as SpeedBucket[]).map((b) => {
                     const meta = SPEED_BUCKET_META[b];
@@ -219,7 +268,7 @@ function BuildPlanInner() {
                             <p className="text-xs text-muted-foreground mt-2">
                               Price Lock 24 from £{headline.lock24.toFixed(2)}/month · Flex 30 from £{headline.flex30.toFixed(2)}/month
                             </p>
-                            {isFallback && (
+                            {isUnpersonalised && (
                               <p className="text-[11px] uppercase tracking-wider font-display mt-2 inline-block border-2 border-foreground/40 px-2 py-0.5">
                                 Subject to confirmation
                               </p>
@@ -236,7 +285,7 @@ function BuildPlanInner() {
             )}
 
             {step === 2 && (
-              <Step title="Choose plan type">
+              <Step title="Choose plan type" headingRef={headingRef}>
                 <div className="grid gap-3">
                   <OptionCard selected={term === "price_lock_24"} onClick={() => setTerm("price_lock_24")}
                     title="Price Lock 24" subtitle="Fixed monthly broadband price for 24 months." body={PRICE_LOCK_WORDING} />
@@ -247,7 +296,7 @@ function BuildPlanInner() {
             )}
 
             {step === 3 && (
-              <Step title="Choose your router">
+              <Step title="Choose your router" headingRef={headingRef}>
                 <div className="grid gap-3">
                   <OptionCard selected={router === "own"} onClick={() => { setRouter("own"); setRouterPay("none"); }}
                     title="Use my own compatible router" subtitle="£0" body="Save by bringing your own. We'll send a compatibility checklist." />
@@ -262,13 +311,13 @@ function BuildPlanInner() {
                     paymentType={routerPay} onPaymentChange={setRouterPay}
                   />
                   <OptionCard selected={router === "business"} onClick={() => { setRouter("business"); setRouterPay("none"); }}
-                    title="Business router" subtitle="Quoted before order" body="We'll quote a business-grade router for your needs." />
+                    title="Business router" subtitle="Available by quote." body="We'll quote a business-grade router for your needs." />
                 </div>
               </Step>
             )}
 
             {step === 4 && (
-              <Step title="Choose setup">
+              <Step title="Choose setup" headingRef={headingRef}>
                 <div className="grid gap-3">
                   <OptionCard selected={setup === "remote"} onClick={() => setSetup("remote")}
                     title="Remote / no-site activation" subtitle="£0 where available" body="No engineer needed for most existing fibre lines." />
@@ -277,13 +326,13 @@ function BuildPlanInner() {
                   <OptionCard selected={setup === "engineer"} onClick={() => setSetup("engineer")}
                     title="Engineer / new install" subtitle="From £99.99" body="For new lines that need an engineer visit." />
                   <OptionCard selected={setup === "complex"} onClick={() => setSetup("complex")}
-                    title="Complex install / survey / ECC" subtitle="Quoted before order" body="If the site needs a survey or excess construction charge." />
+                    title="Complex install / survey / ECC" subtitle="Available by quote." body="If the site needs a survey or excess construction charge." />
                 </div>
               </Step>
             )}
 
             {step === 5 && (
-              <Step title="Optional add-ons">
+              <Step title="Optional extras" headingRef={headingRef}>
                 <div className="grid gap-3">
                   {ADDON_DEFS.map((a) => {
                     const on = addons.includes(a.id);
@@ -298,12 +347,25 @@ function BuildPlanInner() {
                       </button>
                     );
                   })}
+                  {QUOTE_ONLY_ADDONS.map((a) => {
+                    const on = quoteOnlyAddons.includes(a.id);
+                    return (
+                      <button key={a.id} onClick={() => setQuoteOnlyAddons((xs) => on ? xs.filter(x => x !== a.id) : [...xs, a.id])}
+                        className={`text-left p-5 border-4 transition-colors flex items-center justify-between gap-3 ${on ? "border-foreground bg-primary/10" : "border-foreground/20 hover:border-foreground"}`}>
+                        <div>
+                          <p className="font-display uppercase">{a.label}</p>
+                          <p className="text-sm text-muted-foreground">Available by quote.</p>
+                        </div>
+                        {on && <Check className="w-5 h-5" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </Step>
             )}
 
             {step === 6 && (
-              <Step title="Your details">
+              <Step title="Your details" headingRef={headingRef}>
                 <div className="grid gap-4">
                   <div>
                     <Label className="text-sm">Full name *</Label>
@@ -340,11 +402,35 @@ function BuildPlanInner() {
               </Step>
             )}
 
+            {step === 7 && (
+              <Step title="Review your plan" headingRef={headingRef}>
+                <div className="space-y-3 text-sm">
+                  <ReviewLine label="Speed" value={bucket ? SPEED_LABELS[bucket] : "—"} />
+                  <ReviewLine label="Plan type" value={term ? TERM_LABELS[term] : "—"} />
+                  <ReviewLine label="Router" value={router ? ROUTER_LABELS[router] : "—"} />
+                  <ReviewLine label="Setup" value={setup ? SETUP_LABELS[setup] : "—"} />
+                  <ReviewLine label="Add-ons" value={
+                    [...addons.map((id) => ADDON_DEFS.find(a => a.id === id)?.label).filter(Boolean) as string[],
+                     ...quoteOnlyAddons.map((id) => `${QUOTE_ONLY_ADDONS.find(a => a.id === id)?.label} (by quote)`)
+                    ].join(", ") || "None"
+                  } />
+                  <ReviewLine label="Postcode" value={(contact.postcode || "").toUpperCase() || "—"} />
+                  <div className="border-t-4 border-foreground pt-3 mt-3 space-y-1">
+                    <ReviewLine label="Estimated monthly total" value={resolved?.monthly_total_incl_vat != null ? `£${resolved.monthly_total_incl_vat.toFixed(2)}` : (resolved?.monthly_broadband_incl_vat != null ? `From £${resolved.monthly_broadband_incl_vat.toFixed(2)}` : "—")} bold />
+                    <ReviewLine label="Estimated first bill" value={resolved?.first_bill_incl_vat != null ? `£${resolved.first_bill_incl_vat.toFixed(2)}` : "—"} bold />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Estimate — final speed, setup and order details confirmed before you proceed. No payment is taken until your Contract Summary is confirmed.
+                  </p>
+                </div>
+              </Step>
+            )}
+
             <div className="flex justify-between mt-8 pt-6 border-t-2 border-foreground/10">
               <Button variant="outline" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1}>
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
-              {step < 6 ? (
+              {step < TOTAL_STEPS ? (
                 <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext()}>
                   Next <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -356,18 +442,61 @@ function BuildPlanInner() {
             </div>
           </div>
 
-          <FirstBillPreview resolved={resolved} resolving={resolving} isFallback={isFallback} />
+          <FirstBillPreview resolved={resolved} resolving={resolving} isFallback={isUnpersonalised} />
         </div>
       </div>
+
+      {/* Mobile sticky bottom estimate bar */}
+      <MobileEstimateBar
+        bucket={bucket}
+        term={term}
+        resolved={resolved}
+        isUnpersonalised={isUnpersonalised}
+      />
     </Layout>
   );
 }
 
-function Step({ title, children }: { title: string; children: React.ReactNode }) {
+function Step({ title, children, headingRef }: { title: string; children: React.ReactNode; headingRef?: React.RefObject<HTMLHeadingElement> }) {
   return (
     <div>
-      <h2 className="font-display text-2xl uppercase mb-5">{title}</h2>
+      <h2 ref={headingRef} tabIndex={-1} className="font-display text-2xl uppercase mb-5 outline-none">{title}</h2>
       {children}
+    </div>
+  );
+}
+
+function ReviewLine({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+  return (
+    <div className={`flex justify-between gap-2 ${bold ? "font-display uppercase" : ""}`}>
+      <span className="text-muted-foreground">{label}</span>
+      <span className={bold ? "" : "font-medium text-right"}>{value}</span>
+    </div>
+  );
+}
+
+function MobileEstimateBar({ bucket, term, resolved, isUnpersonalised }: {
+  bucket: SpeedBucket | null;
+  term: PlanTerm | null;
+  resolved: Resolved | null;
+  isUnpersonalised: boolean;
+}) {
+  const monthly = resolved?.monthly_total_incl_vat ?? resolved?.monthly_broadband_incl_vat;
+  return (
+    <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-background border-t-4 border-foreground p-3 z-40" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground truncate">
+            {bucket ? SPEED_LABELS[bucket] : "Choose your plan"}{term ? ` · ${TERM_LABELS[term]}` : ""}
+          </p>
+          <p className="font-display text-lg leading-tight">
+            {monthly != null ? `${isUnpersonalised ? "From " : ""}£${monthly.toFixed(2)}/mo` : "Estimate —"}
+          </p>
+        </div>
+        <p className="text-[10px] text-muted-foreground text-right max-w-[45%] leading-tight">
+          Estimate — final details confirmed before you proceed.
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,17 @@
 import type { FromPrices, OrderSummary, ServiceFamily, VatMode } from './types';
 import { catalogueProducts, voiceProducts, installScenarios, careLevels, bundleConfigs, addonCatalogue, portingOptions, numberTypes, smsTiers, callTariffs, GLOBAL_CEASE_FEE } from './catalogue';
 import { broadbandRetailCards, landlineRetailCard, simRetailCards } from './retailCards';
+import { FAIR_PRICING_DEFAULTS } from './fairPricing';
+
+// ── Fair Pricing display map (Price Lock 24 / Flex 30) ──
+// This is the public source of truth for "from" prices on cards.
+// The server-side resolver remains authoritative for the final price.
+const FAIR_DISPLAY: Record<string, { lock24: number; flex30: number; speedLabel: string }> = {
+  essential: { lock24: FAIR_PRICING_DEFAULTS.headline.essential.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.essential.flex30, speedLabel: 'Up to 80Mbps' },
+  superfast: { lock24: FAIR_PRICING_DEFAULTS.headline.superfast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.superfast.flex30, speedLabel: '150–330Mbps options' },
+  ultrafast: { lock24: FAIR_PRICING_DEFAULTS.headline.ultrafast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.ultrafast.flex30, speedLabel: '500Mbps–1Gbps where available' },
+  gigabit:   { lock24: FAIR_PRICING_DEFAULTS.headline.gigabit.lock24,   flex30: FAIR_PRICING_DEFAULTS.headline.gigabit.flex30,   speedLabel: 'Up to 1Gbps where available' },
+};
 
 // ── Resolve cheapest eligible product for a broadband card ──
 function getCheapestForCard(eligibleIds: string[]): number | null {
@@ -21,11 +32,8 @@ const SIM_PRICES: Record<string, number> = {
 
 // ── The ONE helper all UI reads from ──
 export function getFromPrices(): FromPrices {
-  // Broadband: cheapest across all public retail cards
-  const bbPrices = broadbandRetailCards
-    .map(c => getCheapestForCard(c.eligibleProductIds))
-    .filter((p): p is number => p !== null);
-  const bbMin = bbPrices.length > 0 ? Math.min(...bbPrices) : 22.99;
+  // Broadband: cheapest Price Lock 24 across Fair Pricing buckets (Essential = £34.99).
+  const bbMin = Math.min(...Object.values(FAIR_DISPLAY).map(v => v.lock24));
 
   // SIM: cheapest SIM card
   const simMin = Math.min(...Object.values(SIM_PRICES));
@@ -44,7 +52,9 @@ export function getFromPrices(): FromPrices {
 // ── Retail broadband cards with resolved "from" prices ──
 export function getRetailBroadbandCards() {
   return broadbandRetailCards.map(card => {
-    const fromPrice = getCheapestForCard(card.eligibleProductIds);
+    const fair = FAIR_DISPLAY[card.id];
+    const fromPrice = fair?.lock24 ?? getCheapestForCard(card.eligibleProductIds) ?? 0;
+    const flex30Price = fair?.flex30 ?? null;
     // Resolve speed from eligible products
     const eligible = catalogueProducts.filter(
       p => card.eligibleProductIds.includes(p.id) && p.productStatus === 'public' && p.wholesaleContractTerm === 1
@@ -53,8 +63,10 @@ export function getRetailBroadbandCards() {
     
     return {
       ...card,
-      fromPrice: fromPrice?.toFixed(2) ?? '0.00',
-      fromPriceNum: fromPrice ?? 0,
+      fromPrice: fromPrice.toFixed(2),
+      fromPriceNum: fromPrice,
+      flex30Price: flex30Price !== null ? flex30Price.toFixed(2) : null,
+      flex30PriceNum: flex30Price,
       maxSpeed,
     };
   });

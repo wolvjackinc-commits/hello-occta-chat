@@ -4099,8 +4099,20 @@ export type Database = {
       }
     }
     Functions: {
+      admin_approve_final_quote: {
+        Args: { _quote_id: string }
+        Returns: undefined
+      }
       admin_link_quote_request: {
         Args: { _new_user_id: string; _qr_id: string; _reason: string }
+        Returns: undefined
+      }
+      admin_reject_quote_request: {
+        Args: { _qr_id: string; _reason: string }
+        Returns: undefined
+      }
+      admin_request_more_info: {
+        Args: { _message: string; _qr_id: string }
         Returns: undefined
       }
       anonymize_old_account_deletions: { Args: never; Returns: number }
@@ -4231,11 +4243,43 @@ export type Database = {
           status: string
         }[]
       }
+      get_customer_quote_by_id: {
+        Args: { _id: string }
+        Returns: {
+          approved_at: string
+          contract_length_months: number
+          customer_notes: string
+          customer_type: string
+          delivery_gross: number
+          estimated_download_speed: number
+          estimated_upload_speed: number
+          expires_at: string
+          id: string
+          installation_gross: number
+          monthly_gross: number
+          monthly_net: number
+          monthly_vat_amount: number
+          notice_period: string
+          plan_name: string
+          plan_type: string
+          price_rise_policy: string
+          quote_number: string
+          quote_request_reference: string
+          router_gross: number
+          service_type: string
+          setup_gross: number
+          speed_notes: string
+          status: string
+          total_due_today_gross: number
+        }[]
+      }
       get_customer_quote_requests: {
         Args: never
         Returns: {
           created_at: string
+          customer_facing_message: string
           customer_type: string
+          final_quote_id: string
           id: string
           message: string
           plan_preference: string
@@ -4244,6 +4288,32 @@ export type Database = {
           service_interest: string
           source: string
           status: string
+        }[]
+      }
+      get_customer_quotes: {
+        Args: never
+        Returns: {
+          approved_at: string
+          contract_length_months: number
+          created_at: string
+          customer_notes: string
+          customer_type: string
+          delivery_gross: number
+          expires_at: string
+          id: string
+          installation_gross: number
+          monthly_gross: number
+          monthly_net: number
+          notice_period: string
+          plan_name: string
+          plan_type: string
+          quote_number: string
+          quote_request_reference: string
+          router_gross: number
+          service_type: string
+          setup_gross: number
+          status: string
+          total_due_today_gross: number
         }[]
       }
       get_customer_referral_codes: {

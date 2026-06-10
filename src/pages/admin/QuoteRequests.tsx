@@ -21,7 +21,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Loader2 } from "lucide-react";
+import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX } from "lucide-react";
+import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
 
 const STATUS_OPTIONS = ["all", "new", "assigned", "checking", "quoted", "expired", "rejected", "converted"] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -52,13 +53,15 @@ export const AdminQuoteRequests = () => {
     customer_notes: "",
   });
   const [creating, setCreating] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkTarget, setLinkTarget] = useState<any>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-quote-requests", status, search],
     queryFn: async () => {
       let q = (supabase as any)
         .from("quote_requests")
-        .select("*")
+        .select("*, customer:profiles!quote_requests_customer_id_fkey(id, full_name, email, account_number)")
         .order("created_at", { ascending: false })
         .limit(200);
       if (status !== "all") q = q.eq("status", status);
@@ -182,6 +185,7 @@ export const AdminQuoteRequests = () => {
               <TableHead className="font-display uppercase">Received</TableHead>
               <TableHead className="font-display uppercase">Reference</TableHead>
               <TableHead className="font-display uppercase">Name</TableHead>
+              <TableHead className="font-display uppercase">Account</TableHead>
               <TableHead className="font-display uppercase">Service</TableHead>
               <TableHead className="font-display uppercase">Postcode</TableHead>
               <TableHead className="font-display uppercase">Status</TableHead>
@@ -189,9 +193,9 @@ export const AdminQuoteRequests = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : (data ?? []).length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No quote requests.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No quote requests.</TableCell></TableRow>
             ) : (
               (data ?? []).map((r: any) => (
                 <TableRow key={r.id} className="cursor-pointer border-b-2 border-foreground/10 hover:bg-muted/40"
@@ -199,6 +203,18 @@ export const AdminQuoteRequests = () => {
                   <TableCell className="text-sm">{format(new Date(r.created_at), "dd MMM HH:mm")}</TableCell>
                   <TableCell className="text-xs font-mono">{r.reference}</TableCell>
                   <TableCell className="text-sm">{r.full_name}</TableCell>
+                  <TableCell className="text-xs">
+                    {r.customer_id ? (
+                      <div className="flex items-center gap-1">
+                        <UserCheck className="w-3 h-3 text-primary" />
+                        <span className="font-mono">{r.customer?.account_number ?? "linked"}</span>
+                      </div>
+                    ) : (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <UserX className="w-3 h-3" /> Guest
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-xs">{r.service_interest} · {r.customer_type}</TableCell>
                   <TableCell className="text-xs font-mono">{r.postcode}</TableCell>
                   <TableCell>
@@ -219,6 +235,19 @@ export const AdminQuoteRequests = () => {
           </SheetHeader>
           {selected && (
             <div className="space-y-4 mt-4 text-sm">
+              <div className="border-2 border-foreground/20 bg-muted/40 p-2 text-xs">
+                {selected.customer_id ? (
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-primary" />
+                    Linked to <strong>{selected.customer?.full_name ?? "customer"}</strong>
+                    {selected.customer?.account_number && <span className="font-mono">· {selected.customer.account_number}</span>}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <UserX className="w-4 h-4" /> Guest quote — no account linked
+                  </div>
+                )}
+              </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase">Customer</p>
                 <p className="font-medium">{selected.full_name}</p>
@@ -257,6 +286,14 @@ export const AdminQuoteRequests = () => {
                 {selected.status !== "rejected" && (
                   <Button size="sm" variant="outline" onClick={() => updateStatus(selected.id, "rejected")}>Reject</Button>
                 )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setLinkTarget(selected); setLinkOpen(true); }}
+                >
+                  <Link2 className="w-4 h-4 mr-1" />
+                  {selected.customer_id ? "Re-link account" : "Link to account"}
+                </Button>
                 <Button size="sm" variant="hero" onClick={() => openQuoteDialog(selected)}>Create quote</Button>
               </div>
             </div>
@@ -313,6 +350,15 @@ export const AdminQuoteRequests = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <LinkQuoteRequestDialog
+        open={linkOpen}
+        onOpenChange={setLinkOpen}
+        quoteRequestId={linkTarget?.id ?? null}
+        quoteRequestEmail={linkTarget?.email ?? null}
+        currentCustomerId={linkTarget?.customer_id ?? null}
+        onLinked={() => qc.invalidateQueries({ queryKey: ["admin-quote-requests"] })}
+      />
     </div>
   );
 };

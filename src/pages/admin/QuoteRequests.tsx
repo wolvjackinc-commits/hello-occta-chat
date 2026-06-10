@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,6 +117,11 @@ export const AdminQuoteRequests = () => {
     () => (data ?? []).find((r: any) => r.id === selectedId) ?? null,
     [data, selectedId],
   );
+
+  useEffect(() => {
+    if (selected?.id) { loadLatestQuote(selected.id); } else { setLatestQuote(null); setMarginInfo(null); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     const { error } = await (supabase as any)
@@ -403,6 +408,51 @@ export const AdminQuoteRequests = () => {
                 </Button>
                 <Button size="sm" variant="hero" onClick={() => openQuoteDialog(selected)}>Create quote</Button>
               </div>
+
+              {latestQuote && (
+                <div className="mt-4 border-2 border-foreground/20 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-display uppercase text-[10px] tracking-widest">Latest draft quote</p>
+                      <p className="font-mono text-xs">{latestQuote.quote_number} · {latestQuote.status}</p>
+                      <p className="text-xs">{latestQuote.plan_name} · £{Number(latestQuote.monthly_gross ?? 0).toFixed(2)}/mo incl. VAT</p>
+                      {latestQuote.supplier_name && <p className="text-[10px] text-muted-foreground">Supplier (internal): {latestQuote.supplier_name}</p>}
+                    </div>
+                    <Button size="sm" variant="outline" onClick={runMargin} disabled={busy === "margin"}>
+                      {busy === "margin" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Run margin check
+                    </Button>
+                  </div>
+                  {marginInfo && (
+                    <div className={`text-xs p-2 border-2 ${marginInfo.status === "green" ? "border-primary bg-primary/5" : marginInfo.status === "red" ? "border-destructive bg-destructive/5" : "border-warning bg-warning/5"}`}>
+                      Margin: <strong className="uppercase">{marginInfo.status}</strong>{marginInfo.reason ? ` — ${marginInfo.reason}` : ""}
+                    </div>
+                  )}
+                  {latestQuote.status !== "approved" && (
+                    <Button size="sm" variant="hero" onClick={approveFinal} disabled={busy === "approve"}>
+                      {busy === "approve" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Approve final quote
+                    </Button>
+                  )}
+                  {latestQuote.status === "approved" && (
+                    <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-4 border-2 border-foreground/20 p-3 space-y-2">
+                <p className="font-display uppercase text-[10px] tracking-widest">Request more info from customer</p>
+                <Textarea value={needsInfoMsg} onChange={(e) => setNeedsInfoMsg(e.target.value)} rows={2} placeholder="Customer-safe message (no internal notes)…" />
+                <Button size="sm" variant="outline" onClick={requestMoreInfo} disabled={busy === "info"}>
+                  {busy === "info" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Send & set Needs info
+                </Button>
+              </div>
+
+              <div className="mt-4 border-2 border-foreground/20 p-3 space-y-2">
+                <p className="font-display uppercase text-[10px] tracking-widest">Reject request</p>
+                <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={2} placeholder="Internal reason (audit only)…" />
+                <Button size="sm" variant="outline" onClick={rejectRequest} disabled={busy === "reject"}>
+                  {busy === "reject" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Reject (audit logged)
+                </Button>
+              </div>
             </div>
           )}
         </SheetContent>
@@ -416,6 +466,36 @@ export const AdminQuoteRequests = () => {
             <div>
               <Label className="text-xs">Plan name</Label>
               <Input value={draft.plan_name} onChange={(e) => setDraft((p) => ({ ...p, plan_name: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">Backend supplier product (admin-only)</Label>
+              <Select value={draft.supplier_product_id} onValueChange={(v) => {
+                const p = products.find((x: any) => x.supplier_product_id === v);
+                setDraft((d) => ({ ...d, supplier_product_id: v, supplier_name: p?.product_name ?? "" }));
+              }}>
+                <SelectTrigger><SelectValue placeholder={products.length ? "Pick supplier product…" : "Loading…"} /></SelectTrigger>
+                <SelectContent>
+                  {products.map((p: any) => (
+                    <SelectItem key={p.id} value={p.supplier_product_id}>
+                      [{p.bucket_hint ?? "?"}] {p.product_name} · {p.download_speed_mbps}/{p.upload_speed_mbps}Mbps · {p.min_term_months}m · cost £{Number(p.supplier_monthly_net ?? 0).toFixed(2)}{p.quote_only ? " · quote-only" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selected && draft.supplier_product_id && (() => {
+                const sel = products.find((x: any) => x.supplier_product_id === draft.supplier_product_id);
+                const customerBucket = String(selected?.message ?? "").match(/Build Plan:\s*([^·]+)·/)?.[1]?.trim().toLowerCase();
+                const productBucket = String(sel?.bucket_hint ?? "").toLowerCase();
+                if (customerBucket && productBucket && !customerBucket.includes(productBucket) && !productBucket.includes(customerBucket)) {
+                  return (
+                    <div className="mt-2 border-2 border-warning bg-warning/10 p-2 text-xs">
+                      ⚠ Bucket override: customer chose <strong>{customerBucket}</strong> but product is <strong>{productBucket}</strong>. Reason required.
+                      <Textarea className="mt-1" rows={2} value={draft.bucket_override_reason} onChange={(e) => setDraft((p) => ({ ...p, bucket_override_reason: e.target.value }))} placeholder="Reason for bucket override (audit)…" />
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

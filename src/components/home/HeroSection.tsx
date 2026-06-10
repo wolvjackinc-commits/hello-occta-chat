@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Shield, Wifi, Phone, X, RefreshCcw, Star, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";
@@ -9,7 +9,7 @@ import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/Av
 const HeroSection = () => {
   const prices = getFromPrices();
   const navigate = useNavigate();
-  const { status, result, postcode, selectedAddress, addresses, reset, selectAddress } = useAvailability();
+  const { status, result, postcode, selectedAddress, addresses, errorType, reset, selectAddress, triggerFallback } = useAvailability();
   const retailCards = getRetailBroadbandCards();
 
   const hasResult = status === "success" && result;
@@ -25,11 +25,11 @@ const HeroSection = () => {
   };
 
   const benefits = [
-    { icon: X, text: "No Contracts" },
-    { icon: Shield, text: "No Price Hikes" },
-    { icon: Phone, text: "UK Support" },
-    { icon: Wifi, text: "Openreach" },
-    { icon: RefreshCcw, text: "30-Day Rolling Where Eligible" },
+    { icon: Lock, text: "Price Lock 24" },
+    { icon: RefreshCcw, text: "Flex 30 where eligible" },
+    { icon: Shield, text: "No confusing mid-contract rises on Price Lock" },
+    { icon: Receipt, text: "First bill before order" },
+    { icon: Phone, text: "UK-based support" },
   ];
 
   const getSpeedLabel = (speed: number) => speed >= 1000 ? "1Gbps" : `${speed}Mbps`;
@@ -91,19 +91,17 @@ const HeroSection = () => {
           {/* ─── LEFT COLUMN ─── */}
           <motion.div className="space-y-3" variants={containerVariants} initial="hidden" animate="visible">
             <motion.p variants={itemVariants} className="font-display text-[10px] sm:text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
-              No Contracts • No Annual Price Hikes • UK-based Support
+              Price Lock 24 • Flex 30 • Clear First Bill • UK-based Support
             </motion.p>
 
             <motion.h1 variants={itemVariants} className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-foreground">
               Finally.
               <br />
-              Broadband that
-              <br />
-              <span className="text-gradient">doesn't lock you in.</span>
+              <span className="text-gradient">Broadband without the price-rise nonsense.</span>
             </motion.h1>
 
             <motion.p variants={itemVariants} className="text-base text-muted-foreground max-w-[580px]">
-              No contracts. No annual price hikes. No nonsense. Just fast, reliable broadband from £{prices.broadband}/month.
+              Choose Price Lock 24 for a fixed monthly broadband price for the agreed term, or Flex 30 where available. See your first bill before you order.
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-wrap gap-1.5">
@@ -137,25 +135,43 @@ const HeroSection = () => {
               </motion.p>
             )}
 
-            {/* Error state */}
-            {status === "error" && (
+            {/* Fallback when availability API can't confirm */}
+            {status === "error" && errorType !== "invalid-postcode" && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 border-4 border-destructive bg-destructive/10 max-w-[600px]"
+                className="p-4 border-4 border-foreground bg-card max-w-[600px]"
               >
-                <p className="font-display text-sm uppercase mb-1">
-                  We couldn't confirm availability online.
+                <div className="flex items-start gap-2">
+                  <Info className="w-5 h-5 text-foreground flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-display uppercase text-sm tracking-wider">Broadband options available to view</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. We'll confirm the final availability, speed, setup and price before you order.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => {
+                    triggerFallback(postcode);
+                    navigate(`/build-plan?availability=fallback${postcode ? `&postcode=${encodeURIComponent(postcode)}` : ""}`);
+                  }}
+                  size="lg"
+                  className="mt-4 w-full sm:w-auto h-12 font-display uppercase tracking-wider"
+                >
+                  View plans <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  No payment is taken until your final quote and Contract Summary are confirmed.
                 </p>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Call 0800 260 6626 — we'll check instantly and get you connected.
+                <p className="text-xs text-muted-foreground mt-2">
+                  Prefer to speak to us? <a href="tel:08002606626" className="underline font-medium">Call 0800 260 6626</a>.
                 </p>
-                <a href="tel:08002606626">
-                  <Button variant="outline" size="sm" className="font-display uppercase text-xs">
-                    Call 0800 260 6626
-                  </Button>
-                </a>
               </motion.div>
+            )}
+
+            {status === "error" && errorType === "invalid-postcode" && (
+              <p className="text-sm text-destructive">That doesn't look like a proper postcode — please check and try again.</p>
             )}
           </motion.div>
 
@@ -293,7 +309,7 @@ const HeroSection = () => {
                       </div>
 
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 mb-3">
-                        {["Unlimited usage", "No contracts", "Bring your own router"].map(f => (
+                        {["Unlimited usage", "Price Lock or Flex 30", "Bring your own router"].map(f => (
                           <span key={f} className="flex items-center gap-1 text-[11px] text-muted-foreground">
                             <Check className="w-2.5 h-2.5 text-primary" />
                             {f}
@@ -324,7 +340,7 @@ const HeroSection = () => {
                 </div>
 
                 <p className="text-center text-[10px] text-muted-foreground pt-2">
-                  No annual price hikes • 30-day rolling options available where eligible
+                  Price Lock 24 or Flex 30 • Final price confirmed before order
                 </p>
               </motion.div>
             )}
@@ -349,7 +365,7 @@ const HeroSection = () => {
                   *Subject to availability at your address
                 </p>
                 <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
-                  No contracts • No annual price hikes
+                  Price Lock 24 or Flex 30 • Final price confirmed before order
                 </p>
                 <p className="text-[11px] sm:text-xs text-primary font-medium mb-3 sm:mb-4">
                   Join customers switching away from price rises
@@ -385,7 +401,7 @@ const HeroSection = () => {
                 <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-[9px] sm:text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
                   <span>14-day cooling-off period</span>
                   <span>Keep your number on home phone</span>
-                  <span>No mid-contract price rises</span>
+                  <span>No confusing mid-contract rises on Price Lock</span>
                 </div>
               </motion.div>
             )}

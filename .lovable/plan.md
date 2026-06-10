@@ -1,274 +1,128 @@
-Approve Broadband Beta Readiness Check with corrections below.
+Approved — run the OCCTA Go-Live Readiness Audit exactly as scoped.
 
-Do not start a new phase.  
+Additional safety requirements before starting:
+
+1. Do not mutate live settings unless necessary.  
+If any setting must be temporarily changed for testing, record:
+
+- original value
+- test value
+- restored value
+
+2. Do not create real orders, real payments, or real customer obligations.  
+Any quote/request created during testing must be clearly marked TEST / INTERNAL where possible.
+3. Test permissions with three views:
+
+- anonymous/public user
+- normal customer user
+- admin/staff user
+
+Confirm admin-only data is never visible to public/customer users.
+
+4. Confirm test artefacts are either:
+
+- deleted after testing, or
+- clearly labelled TEST / INTERNAL so they cannot be mistaken for real customer activity.
+
+5. For Contract Summary tests, do not proceed into real payment. Stop after verifying CS content and acceptance gate behaviour.
+6. For real-address beta tests, do not submit real payment or supplier order. This is journey verification only.
+7. If any serious issue is found, stop and report before attempting a broad fix.
+
+Final report must clearly say one of:
+
+- Safe for controlled beta
+- Needs small fixes before beta
+- Do not launch yet
+
 Do not start Phase 7.  
-Do not add new features/pages.  
-Do not touch Worldpay, invoices, DD mandates, /pay, /pay-invoice, checkout gate, rewards, campaigns, complaints, finance exports, SEO or AI chat.
-
-Proceed with fair-pricing tuning and beta readiness testing, but correct these items before applying the settings:
-
-1. Essential Price Lock correction
-
-Do not expect Essential / Price Lock 24 to pass at £33.99.
-
-With:
-
-- supplier cost £24.50 ex VAT
-- support buffer £1.00
-- payment failure buffer £0.50
-- lock risk buffer £1.00
-- floor £1.50
-
-Required customer ex VAT is £28.50.  
-That means gross price must be at least £34.20, so the safe .99 price is:
-
-Essential Price Lock 24 = £34.99
-
-Set:  
-headline.essential.lock24: £34.99
-
-2. Essential Flex 30
-
-£37.99 is safe but may be slightly high. It can remain for now.
-
-Set:  
-headline.essential.flex30: £37.99
-
-3. Superfast monthly total wording
-
-For Superfast / Price Lock 24 / standard router monthly / standard setup:
-
-If broadband base auto-bumps to £40.99 and standard router is £4.99/month, then customer monthly total is:
-
-£45.98/month
-
-First bill with £49.99 setup is:
-
-£95.97
-
-Do not report only £40.99 as the monthly if router monthly is selected. Show both:
-
-- broadband monthly
-- router monthly
-- total monthly
-- first bill
-
-4. Ultrafast cost check
-
-Verify the active 24-month Ultrafast supplier row.
-
-The report says Ultrafast 24m cost is £30.00, but that looks like a 330/50 product, not a 550/75 Ultrafast product.
-
-Before testing D, confirm:
-
-- selected product speed is 550/75 or equivalent
-- bucket_hint = ultrafast
-- monthly supplier cost is correct
-- 330/50 is not accidentally being used as Ultrafast
-
-If D is Ultrafast 550/75 with premium router monthly:  
-Expected customer total monthly should be shown as:  
-broadband monthly + £7.99 premium router monthly
-
-Do not hide the router monthly from the total.
-
-5. Gigabit correction
-
-Do not assume Gigabit Price Lock 24 stays quote-only after setting headline to £52.99.
-
-With supplier cost £40.50 ex VAT, buffers £2.50 and floor £4.50, required customer ex VAT is about £47.50, so required gross is about £57.00.
-
-With auto-bump enabled, Gigabit may price at around:
-
-£57.99/month
-
-So choose one of these deliberately:
-
-Option A — Allow Gigabit to auto-bump:  
-Set gigabit.lock24 = £52.99 and expect final price around £57.99 if auto-bump passes.
-
-Option B — Keep Gigabit quote-only:  
-Mark Gigabit public fallback as quote-only / not live until we decide final pricing.
-
-Do not report E as quote-only unless the system is intentionally configured to keep Gigabit quote-only.
-
-6. Suggested corrected headline settings
-
-Apply:
-
-headline.essential.lock24: £34.99  
-headline.essential.flex30: £37.99
-
-headline.superfast.lock24: £39.99  
-headline.superfast.flex30: £42.99
-
-headline.ultrafast.lock24: £44.99  
-headline.ultrafast.flex30: £49.99
-
-headline.gigabit.lock24: £52.99 only if auto-bump is acceptable  
-headline.gigabit.flex30: £54.99 only if auto-bump is acceptable
-
-If we want Gigabit quote-only for beta, mark Gigabit quote-only instead of relying on failed margin.
-
-7. Run A–E tests with corrected expectations
-
-A Essential / Price Lock 24 / own / remote  
-Expected: £34.99, priced
-
-B Essential / Flex 30 / own / remote  
-Expected: £37.99, priced
-
-C Superfast / Price Lock 24 / standard router monthly / standard setup  
-Expected:
-
-- broadband base likely £40.99 after bump
-- router monthly £4.99
-- total monthly £45.98
-- setup £49.99
-- first bill £95.97
-
-D Ultrafast / Price Lock 24 / premium router monthly / standard setup  
-Expected:
-
-- verify real ultrafast supplier row first
-- broadband monthly + £7.99 premium router
-- setup £49.99
-- quote_only only if margin fails
-
-E Gigabit / Price Lock 24 / own / remote  
-Expected:
-
-- either auto-bumped price around £57.99 if allowed
-- or quote_only if Gigabit is intentionally marked quote-only for beta
-
-8. Contract Summary checks
-
-For each priced scenario, Contract Summary must show:
-
-- speed bucket
-- plan term
-- broadband monthly
-- router monthly or one-off
-- setup charge
-- add-ons
-- total monthly
-- first bill estimate
-- VAT-inclusive residential price
-- Price Lock / Flex wording
-- “If it is not shown in your Contract Summary, we do not add it without your agreement.”
-
-Do not show:
-
-- supplier name
-- Giacom name
-- supplier product code
-- wholesale fee value
-- supplier cost
-- margin
-- source document/page
-
-9. Final verdict
-
-After corrected tests, report:
-
-- exact fair-pricing changes applied
-- A–E final prices
-- whether Gigabit is priced or intentionally quote-only
-- Contract Summary pass/fail
-- supplier-data security pass/fail
-- route smoke pass/fail
-- controlled beta readiness verdict
-
-Stop after the readiness check.  
+Do not start any new feature.  
+Do not redesign anything.  
   
   
-Broadband Beta Readiness Check
+  
+  
+OCCTA Go-Live Readiness Audit — Plan
 
-Scope: tune `platform_settings.fair_pricing` so starter scenarios A–E either price safely or fall to a clean quote-only, re-run pricing tests, verify Contract Summary output, and smoke the listed routes. No new phase, no new features, no public copy changes (except accuracy if needed), and nothing touched in Worldpay/HPP, invoices, DD mandates, `/pay`, `/pay-invoice`, checkout gate, rewards, campaigns, complaints, finance, SEO, or AI chat.
+QA-only sweep. No new phase, no Phase 7, no new features, no redesign. Fixes only if a route is broken or a calculation is clearly wrong, and strictly scoped to recent OCCTA work.
 
-## 1. Current state (read-only checks already done)
+## 1. Build & code checks
 
-Active Giacom rows by bucket / term (cheapest supplier monthly inc. care uplift):
+- Run TypeScript check, production build, and lint (if configured) on the frontend.
+- Type-check Supabase edge functions where a tsconfig/deno-check is available.
+- Report pass/fail with exact errors. Only fix regressions caused by recent OCCTA work.
 
+## 2. Public route smoke
 
-| Bucket    | 1m (Flex30) | 24m (PL24) |
-| --------- | ----------- | ---------- |
-| Essential | £23.75      | £24.50     |
-| Superfast | £24.50      | £27.50     |
-| Ultrafast | £38.50      | £30.00     |
-| Gigabit   | £31.75      | £40.50     |
+Load each route, check console errors, broken buttons/images, CTA targets, mobile layout:
+`/`, `/broadband`, `/broadband/flex`, `/broadband/contract-saver`, `/switching`, `/rewards`, `/quote/start`, `/quote/thank-you`, `/build-plan`, `/checkout`, `/pay`, `/pay-invoice`, legal pages, support/contact.
+Flag any forbidden copy: "free router", "free installation", "cancel anytime", "guaranteed speed", "free static IP included".
 
+## 3. Homepage + pricing copy
 
-Current headline (incl. VAT), buffers (`support 1.00`, `paymentFailure 0.50`, `lockRisk 1.00`, `flexRisk 2.00`), and floors (`essLockByo 1.50`, `essFlex 3.50`, `superfast 3.50`, `ultrafast 4.50`, `gigabit 4.50`) are too tight against current supplier costs — that is why C and E previously returned `quote_only`.
+Verify Fair Broadband positioning lines and pricing cards:
 
-## 2. Proposed fair-pricing tune (via /admin/fair-pricing → `platform_settings.fair_pricing`)
+- Essential PL24 £34.99 / Flex30 £37.99
+- Superfast PL24 £39.99 / Flex30 £42.99
+- Ultrafast PL24 £49.99 / Flex30 £52.99
+- Gigabit PL24 £52.99 / Flex30 £54.99 (auto-bump)
+- Disclosure present (address/plan/router/setup dependent; final price confirmed before order).
 
-Strategy from the brief: Essential sharp, Superfast protected, Ultrafast/Gigabit not forced cheap (quote-only acceptable). Buffers and floors unchanged — only headlines tuned so the auto-bump resolves within its 6-step cap.
+## 4. Build Plan A–E
 
-```text
-headline.essential.lock24:  29.99 → 33.99
-headline.essential.flex30:  32.99 → 37.99
-headline.superfast.lock24:  34.99 → 39.99
-headline.superfast.flex30:  37.99 → 42.99
-headline.ultrafast.lock24:  39.99 → 44.99
-headline.ultrafast.flex30:  44.99 → 49.99
-headline.gigabit.lock24:    44.99 → 52.99   (still likely quote-only — see §3)
-headline.gigabit.flex30:    49.99 → 54.99
-```
+Test via `/build-plan?test=1` (admin) for scenarios A–E. For each: option availability, PL24/Flex30 rules, router pricing (own £0, monthly, one-off), setup charge, add-ons, VAT, first-bill preview, quote_only fallback, no supplier data in response.
 
-Buffers, floors, router/setup/add-on prices, `fallback=auto_bump`, and the Price-Lock/Flex enabled flags all stay as-is.
+## 5. Resolver / margin safety
 
-## 3. Expected A–E outcomes after the tune
+Re-read `_shared/buildPlanResolver.ts` and confirm: only `active=true`, `quote_only=false`, correct bucket+term+max_download+broadband service_type; Flex30→1-month rows; PL24→24-month (or tagged 36m); empty bucket→quote_only; loader failure→quote_only; no legacy hardcoded fallback.
 
-Margin formula: `customerEx − supplierEx − support − paymentFailure − termBuffer ≥ floor`.
+## 6. Supplier-data security
 
+Inspect network responses for: `resolve-build-plan-price`, `submit-build-plan`, `create-quote`, `generate-contract-summary`, customer quote page, Contract Summary page. Confirm no supplier cost, supplier_product_id, supplier/Giacom name, network, margin, floor, internal block, ratecard, source document/page, or admin notes leak.
 
-| #   | Scenario                                                    | Expected monthly (incl. VAT)                           | Bumped? | quote_only                                                                      |
-| --- | ----------------------------------------------------------- | ------------------------------------------------------ | ------- | ------------------------------------------------------------------------------- |
-| A   | Essential / PL24 / own / remote                             | £33.99                                                 | no      | false                                                                           |
-| B   | Essential / Flex30 / own / remote                           | £37.99                                                 | no      | false                                                                           |
-| C   | Superfast / PL24 / standard router monthly / standard setup | £40.99 (£39.99 → 1 bump) + £4.99 router + £49.99 setup | yes     | false                                                                           |
-| D   | Ultrafast / PL24 / premium router monthly / standard setup  | £44.99 + £7.99 router + £49.99 setup                   | no      | false                                                                           |
-| E   | Gigabit / PL24 / own / remote                               | —                                                      | —       | **true** (margin can't be met within 6 bumps at £40.50 wholesale + £4.50 floor) |
+## 7. Quote flow
 
+Test `/quote/start` manual flow and `/build-plan → submit-build-plan` flow. Confirm client prices are ignored, server re-resolves, quote_only fallback path works, admin and customer token views render correctly.
 
-E remains quote-only by design — flagged in the report as "needs higher public price, cheaper active supplier row, or floor review". No safety lowering to force E to price.
+## 8. Contract Summary
 
-## 4. Contract Summary re-verify
+Generate CS for: PL24 priced, Flex30 priced, router monthly, setup charge, add-on, ETF/disconnect, quote_only case. Verify required fields present and forbidden supplier/margin/source fields absent.
 
-Generate a CS for each of these via existing `generate-contract-summary` (no edits):
+## 9. Admin routes
 
-1. A — PL24 priced
-2. B — Flex 30 priced
-3. C — router monthly priced (also exercises one-off setup)
-4. An ETF/disconnect-flagged scenario (any active row with `etf_applies=true` or `disconnect_fee_in_12m_net>0`) to confirm the `ETF_DISCONNECT_WORDING` addendum
-5. E — quote-only path: confirm `generate-contract-summary` returns `409 build_plan_unsafe` (CS not issued), which is the intended behaviour
+Load: `/admin`, `/admin/fair-pricing`, `/admin/pricing-rules`, `/admin/margin-rules`, `/admin/suppliers`, `/admin/suppliers/giacom-import`, `/admin/quotes`, `/admin/quote-requests`, `/admin/vat-settings`, `/admin/rewards`, `/admin/referrals`, `/admin/contract-benefits`, `/admin/campaigns`, `/admin/tickets`, `/admin/complaints`, `/admin/knowledge-base`, `/admin/communications`. Confirm permissions, Giacom rows admin-only, active/inactive toggles, fair-pricing render, quote_only fallback settings, audit logging on sensitive changes.
 
-For 1–4, confirm the CS shows: speed bucket, plan term, Price Lock / Flex wording, router option, setup option, add-ons, monthly total, one-off total, first-bill estimate, VAT-inclusive residential price, the "If it is not shown in your Contract Summary…" promise, and the ETF wording on scenario 4. Confirm it does NOT show supplier/Giacom name, supplier product code, wholesale fee, supplier cost, margin, or source document.
+## 10. Customer dashboard
 
-## 5. Route smoke test
+Check all tabs: Overview, Services, Orders, Quotes, Contract Summaries, Invoices & Payments, Support, Chat History, Complaints, Rewards & Referrals, Documents, Account Settings, Vulnerable Support. Confirm own-data scoping and no supplier/margin/internal leakage.
 
-GET each and confirm 200 + no console/network errors:
-`/`, `/build-plan`, `/quote/start`, `/quote/thank-you`, `/checkout`, `/pay`, `/pay-invoice`, `/admin/fair-pricing`, `/admin/quotes`, `/admin/suppliers/giacom-import`.
+## 11. Support / complaints / KB
 
-## 6. Deliverables (report only — no further code)
+Confirm support form, vulnerable support form, complaint form, complaint status tracking, admin complaints page, public vs admin-only KB articles, hidden internal notes.
 
-- Fair-pricing diff applied
-- A–E final pricing table with `monthly`, `one_off`, `first_bill`, `quote_only`, `bumped`
-- Which plans remain quote-only and why
-- CS results for the 5 scenarios with field-level pass/fail
-- Supplier-data security: confirmed `internal` block stripped + no `supplier_*` / `margin` / `ratecard` fields in any public response
-- Route smoke pass/fail
-- Any warnings/errors
-- Beta-readiness verdict for controlled broadband beta
+## 12. Rewards & campaigns
 
-## Technical notes
+Pages load; campaigns draft/admin only; no auto public publishing; no rewards applied to invoices unintentionally; no cash withdrawal wording.
 
-- Tune is a single `UPDATE public.platform_settings SET fair_pricing = jsonb_set(...) WHERE singleton=true` (data update via insert tool, not a migration).
-- No schema, no edge function, no resolver, no public-page code changes.
-- `RESOLVER_VERSION = "phase_3d_hotfix"` stays.
-- Tests use existing `resolve-build-plan-price` and `generate-contract-summary` invocations (admin-authed) plus a `curl` smoke for the public routes.
+## 13. Payment route safety (no real payment)
 
-## Out of scope (will not touch)
+Smoke `/checkout`, `/pay`, `/pay-invoice`. Confirm CS gate still enforced for new telecom sales, legacy payment links not blocked, browser return cannot mark Worldpay paid, no payment logic touched.
 
-Phase 7, any new feature/page, public copy beyond accuracy fixes, Worldpay HPP/webhook, invoices, DD mandates, `/pay`, `/pay-invoice`, checkout gate, rewards, campaigns, complaints, finance exports, SEO, AI chat.
+## 14. VAT & pricing display
+
+Residential VAT-inclusive, business ex+VAT where shown, `/admin/vat-settings` loads, VAT-inactive guard intact, no Phase 7 VAT export work started.
+
+## 15. Mobile / WLR
+
+SIM not accidentally public self-checkout; WLR/ISDN manual-quote-only; supplier costs hidden; placeholders admin/reference only.
+
+## 16. Real-address beta (read-only)
+
+2–3 ICUK test addresses (normal, fibre/gigabit, limited): availability → buckets → builder → quote outcome → quote_only behaviour. No real orders/payments.
+
+## 17. Final report
+
+Single consolidated report covering: build, public routes, admin routes, dashboard, A–E, pricing/margin, supplier security, quote flow, CS, payment safety, support/complaints/KB, rewards/campaigns, VAT, mobile/WLR, remaining issues, beta-readiness verdict, files changed (if any), what was untouched.
+
+## Scope guardrails
+
+Untouched unless strictly required to fix a broken route: Worldpay HPP/webhook, invoice generation, DD mandates, `/pay`, `/pay-invoice`, checkout gate, rewards logic, campaigns logic, complaints workflow, finance exports, SEO setup, AI chat. No Phase 7. No new features. No redesign. No pricing changes unless a calculation is clearly broken.

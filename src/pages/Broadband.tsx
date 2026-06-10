@@ -55,7 +55,7 @@ const BroadbandInner = () => {
   };
 
   const features = [
-    { icon: X, text: "Cancel Anytime" },
+    { icon: X, text: "30-Day Rolling Where Eligible" },
     { icon: Shield, text: "No Hidden Fees" },
     { icon: Clock, text: "7-Day Setup" },
   ];
@@ -125,7 +125,7 @@ const BroadbandInner = () => {
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
     name: `OCCTA ${plan.name}`,
-    description: `Fibre broadband up to ${plan.speed}Mbps. No contract, cancel anytime. ${plan.features.slice(0, 3).join(', ')}.`,
+    description: `Fibre broadband up to ${plan.speed}Mbps. No contract, 30-day rolling options available where eligible. ${plan.features.slice(0, 3).join(', ')}.`,
     price: plan.price.toString(),
     url: `/pre-checkout?plans=${plan.id}`,
     sku: plan.id,
@@ -141,9 +141,9 @@ const BroadbandInner = () => {
     <LayoutComponent>
       <SEO 
         title="Cheap Broadband UK - No Contract Fibre"
-        description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, cancel anytime. Best budget broadband 2025.`}
+        description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, 30-day rolling options available where eligible. Best budget broadband 2025.`}
         canonical="/broadband"
-        keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
+        keywords="cheap broadband UK, no contract broadband, flexible broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
         price={getFromPrices().broadband}
       />
       <StructuredData customSchema={combinedSchemas} />
@@ -240,7 +240,7 @@ const BroadbandInner = () => {
             >
               <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
                 <Zap className="w-4 h-4 inline mr-2" />
-                Free installation available for a limited time
+                Setup from £0 where available for a limited time
               </div>
               <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display uppercase leading-[0.9] mb-3 sm:mb-4 text-foreground">
                 BROADBAND
@@ -250,7 +250,7 @@ const BroadbandInner = () => {
               <p className="text-sm sm:text-lg text-muted-foreground mb-4 sm:mb-6 max-w-lg">
                 Fast, reliable internet without the corporate nonsense. 
                 From £{getFromPrices().broadband}/month with no price rises mid-contract — cheap broadband UK
-                that stays no contract broadband and cancel anytime broadband.
+                that stays flexible with 30-day rolling options available where eligible.
               </p>
               <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
                 Want flexible terms?{" "}
@@ -451,7 +451,7 @@ const BroadbandInner = () => {
           <div className="card-brutal bg-card p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl md:text-3xl font-display uppercase mb-2">
-                Cancel anytime / No fixed term
+                30-day rolling options available where eligible / No fixed term
               </h2>
               <p className="text-muted-foreground max-w-2xl">
                 Need broadband without a long tie-in? See how our rolling plans keep you flexible with no fixed term commitments.

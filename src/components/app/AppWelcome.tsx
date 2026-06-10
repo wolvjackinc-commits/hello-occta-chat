@@ -16,7 +16,7 @@ import { getFromPrices } from "@/lib/pricing/engine";
 import { Button } from "@/components/ui/button";
 
 const benefits = [
-  { icon: Shield, title: "No Contract", desc: "Cancel anytime, no hidden fees" },
+  { icon: Shield, title: "No Contract", desc: "30-day rolling options available where eligible, no hidden fees" },
   { icon: Zap, title: "Super Fast", desc: "Ultra-fast broadband speeds" },
   { icon: Clock, title: "24/7 Support", desc: "Always here to help you" },
   { icon: Headphones, title: "UK Support", desc: "UK-based team, real humans" },
@@ -137,7 +137,7 @@ const AppWelcome = () => {
           <div className="space-y-2">
             {[
               "Unlimited data on all broadband plans",
-              "Free router included",
+              "Bring your own router for £0, or choose a router at checkout",
               "No activation fees",
               "Switch from any provider easily",
               "Easy online account management"

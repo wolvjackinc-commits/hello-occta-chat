@@ -162,7 +162,7 @@ const CTASection = () => {
             variants={itemVariants}
             className="mt-4 text-sm text-background/70 font-display uppercase tracking-wider"
           >
-            No CPI price rises • Cancel anytime • Same networks, lower prices
+            No CPI price rises • 30-day rolling options available where eligible • Same networks, lower prices
           </motion.p>
         </motion.div>
       </div>

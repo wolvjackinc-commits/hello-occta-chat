@@ -21,10 +21,10 @@ export interface AddonChoice {
 /** Defaults shown before the server resolver responds. */
 export const FAIR_PRICING_DEFAULTS = {
   headline: {
-    essential: { lock24: 29.99, flex30: 32.99 },
-    superfast: { lock24: 34.99, flex30: 37.99 },
-    ultrafast: { lock24: 39.99, flex30: 44.99 },
-    gigabit:   { lock24: 44.99, flex30: 49.99 },
+    essential: { lock24: 34.99, flex30: 37.99 },
+    superfast: { lock24: 39.99, flex30: 42.99 },
+    ultrafast: { lock24: 49.99, flex30: 52.99 },
+    gigabit:   { lock24: 52.99, flex30: 54.99 },
   },
   router: {
     standardOneOff: 79.99, standardMonthly: 4.99,

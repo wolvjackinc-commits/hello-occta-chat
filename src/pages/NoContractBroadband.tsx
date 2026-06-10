@@ -48,7 +48,7 @@ const whySwitchReasons = [
   "No 12, 18, or 24-month contracts",
   "No CPI-linked annual price rises",
   "No 'intro price then shock bill'",
-  "Cancel anytime without penalties",
+  "30-day rolling options available where eligible without penalties",
   "Clear monthly pricing",
   "Human UK-based support",
 ];
@@ -58,7 +58,7 @@ const comparisonData = [
   { feature: "Price rises", occta: "None", others: "Annual CPI increases" },
   { feature: "Exit fees", occta: "None", others: "Up to £200+" },
   { feature: "Transparency", occta: "Clear pricing", others: "Complex bundles" },
-  { feature: "Flexibility", occta: "Cancel anytime", others: "Locked in" },
+  { feature: "Flexibility", occta: "30-day rolling options available where eligible", others: "Locked in" },
 ];
 
 const faqs = [
@@ -67,7 +67,7 @@ const faqs = [
     answer: "Yes, genuinely. You pay monthly and can cancel whenever you like. No minimum term, no exit fees, no catches. We believe if our service is good enough, you'll stay because you want to — not because you're trapped.",
   },
   {
-    question: "Can I cancel anytime?",
+    question: "Can I 30-day rolling options available where eligible?",
     answer: "Absolutely. Give us 30 days notice and you're free to go. No penalties, no hassle, no 'retention team' trying to convince you otherwise. We make leaving as easy as joining.",
   },
   {
@@ -107,7 +107,7 @@ const NoContractBroadband = () => {
         title="No Contract Broadband UK | Cheap & Flexible Broadband"
         description="Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband with no lock-ins, no hidden fees, and no surprise price rises."
         canonical="/no-contract-broadband-uk"
-        keywords="no contract broadband UK, flexible broadband, cancel anytime broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
+        keywords="no contract broadband UK, flexible broadband, 30-day rolling options available where eligible broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
         price={prices.broadband}
       />
       <JsonLd data={offerSchema} />
@@ -137,7 +137,7 @@ const NoContractBroadband = () => {
             >
               Broadband from{" "}
               <span className="text-foreground">£{prices.broadband}/month</span>. No
-              contracts, no hidden fees, cancel anytime.
+              contracts, no hidden fees, 30-day rolling options available where eligible.
             </motion.p>
 
             <motion.p

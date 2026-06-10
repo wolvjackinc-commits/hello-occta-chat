@@ -1,128 +1,320 @@
-Approved — run the OCCTA Go-Live Readiness Audit exactly as scoped.
+Approved — proceed with OCCTA Live Website Consistency Fix exactly as scoped, with the corrections below.
 
-Additional safety requirements before starting:
-
-1. Do not mutate live settings unless necessary.  
-If any setting must be temporarily changed for testing, record:
-
-- original value
-- test value
-- restored value
-
-2. Do not create real orders, real payments, or real customer obligations.  
-Any quote/request created during testing must be clearly marked TEST / INTERNAL where possible.
-3. Test permissions with three views:
-
-- anonymous/public user
-- normal customer user
-- admin/staff user
-
-Confirm admin-only data is never visible to public/customer users.
-
-4. Confirm test artefacts are either:
-
-- deleted after testing, or
-- clearly labelled TEST / INTERNAL so they cannot be mistaken for real customer activity.
-
-5. For Contract Summary tests, do not proceed into real payment. Stop after verifying CS content and acceptance gate behaviour.
-6. For real-address beta tests, do not submit real payment or supplier order. This is journey verification only.
-7. If any serious issue is found, stop and report before attempting a broad fix.
-
-Final report must clearly say one of:
-
-- Safe for controlled beta
-- Needs small fixes before beta
-- Do not launch yet
+This is a launch-blocker fix, not a new phase.
 
 Do not start Phase 7.  
-Do not start any new feature.  
-Do not redesign anything.  
+Do not add new features.  
+Do not redesign the site.  
+Do not touch Worldpay HPP/webhook, /pay, /pay-invoice, payment_requests logic, invoice generation, DD mandates, rewards logic, campaigns logic, complaints workflow, finance exports, AI chat, supplier resolver, supplier pricing DB rows, quote resolver, Contract Summary logic, server-side Build Plan price resolver or RLS/security.
+
+Critical corrections before coding:
+
+1. Broadband checkout gating only
+
+Do not globally remove “Complete Your Order” or checkout wording if SIM-only or landline-only flows still need it.
+
+The rule is:
+
+- Broadband cart / broadband plan / broadband checkout = block and redirect to /build-plan
+- SIM-only / landline-only = leave existing checkout behaviour unchanged unless broken
+
+For broadband only, do not show:
+
+- £22.99
+- £32.95
+- £33.95
+- £27.59
+- Router included
+- FREE setup/install
+- Complete Your Order
+- Place order securely
+- Due today £0
+
+Broadband must follow:  
+Address check → /build-plan → First Bill Preview → Quote → Contract Summary → payment only after CS acceptance.
+
+2. Digital Home Phone safety
+
+Update wording:
+
+- “Keep your existing number” → “Keep your existing number where porting is available.”
+- “no extra line needed” → “Works over compatible broadband — no traditional landline required.”
+- “£4.95/month” → “from £4.95/month — final price confirmed before order.”
+
+Do not allow Digital Home Phone to become an automatic live checkout add-on unless its pricing and fulfilment are confirmed. If uncertain, keep it quote-led or add-on preview only.
+
+3. Add-ons safety
+
+For Static IP, WiFi Extender, Mesh Node, Norton, Parental Controls and Priority Support:
+
+- If supplier-backed and margin-confirmed, keep them.
+- If not confirmed, mark “available by quote” or hide from broadband checkout.
+- Static IP must say: “Static IP available on selected services.”
+
+4. Fair Pricing must be the public source
+
+Replace all old static broadband display prices with:
+
+Essential:
+
+- Price Lock 24 from £34.99/month
+- Flex 30 from £37.99/month
+
+Superfast:
+
+- Price Lock 24 from £39.99/month
+- Flex 30 from £42.99/month
+
+Ultrafast:
+
+- Price Lock 24 from £49.99/month
+- Flex 30 from £52.99/month
+
+Gigabit:
+
+- Price Lock 24 from £52.99/month, auto-bump where needed
+- Flex 30 from £54.99/month, auto-bump where needed
+
+Server-side resolver remains authoritative.
+
+5. Price Lock / Flex must be visible to customers
+
+Customers must clearly see:
+
+- Price Lock 24
+- Flex 30
+
+This must be visible on:
+
+- broadband cards
+- /build-plan
+- First Bill Preview
+- quote summary
+- Contract Summary view/read-only label
+
+Use the approved wording from fairPricing.ts.
+
+6. Postcode checker must route to Build Plan
+
+After postcode/address check, route customers to /build-plan, not /pre-checkout or /checkout.
+
+Availability messages:
+
+If full fibre appears available:  
+“Full Fibre appears available at your address. Final speed, setup and price are confirmed before order.”
+
+If broadband options are found:  
+“Broadband options found for your address. Choose your plan and we’ll confirm the final speed, setup and price before order.”
+
+If uncertain:  
+“We couldn’t confirm availability online. You can request a manual quote or call 0800 260 6626.”
+
+7. Dashboard Add Service route
+
+Customer dashboard Add Service must not route broadband customers to old checkout.
+
+Broadband Add Service should route to:
+
+- /build-plan  
+or
+- /quote/start
+
+SIM and landline can keep their own routes.
+
+8. Admin dashboard counts
+
+Check:
+
+- Suppliers Active
+- Pricing Rules Active
+- VAT Settings
+
+If the counts are stale, fix the queries.  
+If VAT is truly incomplete, do not change VAT settings; report exactly what is missing.
+
+9. Search sweep
+
+After changes, run search for:
+
+- 22.99
+- 32.95
+- 33.95
+- 27.59
+- cancel anytime
+- free router
+- free installation
+- guaranteed speed
+- Router included
+- free static IP included
+
+No public customer-facing broadband page should contain those.
+
+It is acceptable only if a phrase appears in an internal test/comment/document clearly not rendered publicly, but report it.
+
+10. Published URL verification required
+
+After deployment, verify the actual published customer URL, not only Lovable preview.
+
+Check:
+
+- hard refresh / incognito
+- desktop
+- mobile
+- homepage
+- /broadband
+- /broadband/flex
+- /broadband/contract-saver
+- /build-plan
+- /checkout with broadband cart
+- dashboard Add Service
+
+Required customer test paths:
+
+A) Homepage → postcode → Build Plan → Essential → Price Lock 24 → own router  
+Expected: £34.99/month, not £22.99
+
+B) Homepage → postcode → Build Plan → Essential → Flex 30 → own router  
+Expected: £37.99/month
+
+C) Broadband page → Superfast → Build Plan  
+Expected: Price Lock/Flex choice, not old checkout
+
+D) Direct /checkout with broadband cart  
+Expected: blocked/redirected to Build Plan
+
+E) Dashboard → Add Service  
+Expected: Build Plan or quote start, not old checkout
+
+11. Build checks
+
+Run:
+
+- TypeScript
+- production build
+- phrase sweep
+
+Do not fix old unrelated lint debt.
+
+12. Final report
+
+Stop after the fix and report:
+
+- exact root cause confirmed
+- files changed
+- old prices removed
+- Price Lock/Flex visibility result
+- old checkout gating result
+- postcode checker route result
+- dashboard Add Service result
+- Digital Home Phone wording result
+- add-on handling result
+- admin dashboard count finding
+- published URL verification result
+- mobile verification result
+- build result
+- what was untouched
+- whether public customer website is now consistent and safe for controlled beta  
   
-  
-  
-  
-OCCTA Go-Live Readiness Audit — Plan
+OCCTA Live Website Consistency Fix
 
-QA-only sweep. No new phase, no Phase 7, no new features, no redesign. Fixes only if a route is broken or a calculation is clearly wrong, and strictly scoped to recent OCCTA work.
+## Root cause (from code audit)
 
-## 1. Build & code checks
+The published site is built from the same code as preview — there is no stale-deploy issue. The old prices are showing because the **broadband retail cards still come from `src/lib/pricing/catalogue.ts` retailMonthly values (£22.99 / £32.95 / £33.95)**, fed into `getRetailBroadbandCards()` → `plans.ts` → `Broadband.tsx`, `Index.tsx` services section, location pages, comparison pages, and keyword landing pages.
 
-- Run TypeScript check, production build, and lint (if configured) on the frontend.
-- Type-check Supabase edge functions where a tsconfig/deno-check is available.
-- Report pass/fail with exact errors. Only fix regressions caused by recent OCCTA work.
+The old checkout flow is showing because:
 
-## 2. Public route smoke
+- `/pre-checkout` and `/checkout` still accept broadband line items and render "Router included", "FREE" setup, "Place order securely", "Complete Your Order".
+- "Choose Plan" / "Add Service" CTAs on `Broadband.tsx`, `Index.tsx`, dashboard `ServicesTab.tsx`, location pages route into `/pre-checkout` / `/checkout` rather than `/build-plan`.
 
-Load each route, check console errors, broken buttons/images, CTA targets, mobile layout:
-`/`, `/broadband`, `/broadband/flex`, `/broadband/contract-saver`, `/switching`, `/rewards`, `/quote/start`, `/quote/thank-you`, `/build-plan`, `/checkout`, `/pay`, `/pay-invoice`, legal pages, support/contact.
-Flag any forbidden copy: "free router", "free installation", "cancel anytime", "guaranteed speed", "free static IP included".
+Files holding hard-coded legacy prices:
 
-## 3. Homepage + pricing copy
+- `src/lib/pricing/catalogue.ts` (retailMonthly fields — feeds cards)
+- `src/lib/pricing/constants.ts` (`broadband: '22.99'` fallback)
+- `src/lib/pricing/engine.ts` (`22.99` fallback in `getFromPrices`)
+- `src/lib/pricing/fairPricing.ts` (already correct — defaults £34.99 / £39.99 / £49.99 / £52.99)
+- `src/data/locations.ts` (50 city meta descriptions — `£22.99`)
+- `src/data/comparisons.ts` (`£22.99` rows)
+- `src/data/keywordPages.ts` / `src/pages/KeywordLanding.tsx` (`"22.99"` default)
+- `public/llms.txt` (£22.99)
 
-Verify Fair Broadband positioning lines and pricing cards:
+## What changes
 
-- Essential PL24 £34.99 / Flex30 £37.99
-- Superfast PL24 £39.99 / Flex30 £42.99
-- Ultrafast PL24 £49.99 / Flex30 £52.99
-- Gigabit PL24 £52.99 / Flex30 £54.99 (auto-bump)
-- Disclosure present (address/plan/router/setup dependent; final price confirmed before order).
+### 1. Make Fair Pricing the public source of truth
 
-## 4. Build Plan A–E
+- New helper `src/lib/pricing/fairPricingDisplay.ts` exporting `getFairCards()` that returns four cards (Essential / Superfast / Ultrafast / Gigabit) using `FAIR_PRICING_DEFAULTS.headline` and `SPEED_BUCKET_META`, each with `lock24FromPrice`, `flex30FromPrice`, speed range, badges, tagline.
+- Update `getFromPrices()` in `engine.ts` and `constants.ts` fallback from `22.99` → `34.99` so "from" prices anywhere are Essential Price Lock 24.
 
-Test via `/build-plan?test=1` (admin) for scenarios A–E. For each: option availability, PL24/Flex30 rules, router pricing (own £0, monthly, one-off), setup charge, add-ons, VAT, first-bill preview, quote_only fallback, no supplier data in response.
+### 2. Update Broadband cards to use Fair Pricing
 
-## 5. Resolver / margin safety
+- `src/pages/Broadband.tsx`: replace `broadbandPlans` mapping with `getFairCards()`. Each card shows:
+  - Title (Essential / Superfast / Ultrafast / Gigabit Fibre)
+  - "From £X/month with Price Lock 24"
+  - "Flex 30 from £Y/month"
+  - Speed range
+  - Approved badges (Bring your own router for £0, Router options at checkout, Setup from £0 where available, Final price confirmed before order, Price Lock 24 or Flex 30, Speeds depend on your address)
+  - CTA: "Check availability" / "Build your plan" → `/build-plan?bucket=<bucket>` (no `/pre-checkout`, no `/checkout`)
+- `src/components/home/ServicesSection.tsx` & `Index.tsx`: same data source, same CTA target.
+- `src/pages/broadband/Flex.tsx` & `src/pages/broadband/ContractSaver.tsx`: refresh price chips and route CTAs to `/build-plan`.
+- `src/pages/LocationBroadband.tsx` & `src/data/locations.ts`: replace `£22.99` with `£34.99`, "Price Lock 24 from £34.99/mo or Flex 30 from £37.99/mo".
+- `src/data/comparisons.ts`: replace `£22.99` with `From £34.99/mo (Price Lock 24)`.
+- `src/data/keywordPages.ts` + `KeywordLanding.tsx`: default price `34.99`, route CTAs to `/build-plan`.
+- `public/llms.txt`: update broadband from-price to £34.99.
 
-Re-read `_shared/buildPlanResolver.ts` and confirm: only `active=true`, `quote_only=false`, correct bucket+term+max_download+broadband service_type; Flex30→1-month rows; PL24→24-month (or tagged 36m); empty bucket→quote_only; loader failure→quote_only; no legacy hardcoded fallback.
+### 3. Gate the legacy /checkout and /pre-checkout for broadband
 
-## 6. Supplier-data security
+- In `src/pages/PreCheckout.tsx` and `src/pages/Checkout.tsx`, at the top of the component check the cart/plan-id. If any item is a broadband plan (id starts with `broadband-` or service type `broadband`), render a small notice card:
+  > "Broadband orders now require an address check, first bill preview and Contract Summary before payment."
+  > with a primary CTA → `/build-plan`. Auto-redirect after 4 s.
+- Remove the strings "Router included", "FREE" setup line, "Place order securely", "Complete Your Order" from the broadband branch. SIM-only and landline-only carts continue to work unchanged.
+- This does NOT touch `/pay`, `/pay-invoice`, Worldpay HPP, invoice generation, DD mandates, quote resolver, or Contract Summary logic.
 
-Inspect network responses for: `resolve-build-plan-price`, `submit-build-plan`, `create-quote`, `generate-contract-summary`, customer quote page, Contract Summary page. Confirm no supplier cost, supplier_product_id, supplier/Giacom name, network, margin, floor, internal block, ratecard, source document/page, or admin notes leak.
+### 4. Postcode checker → Build Plan
 
-## 7. Quote flow
+- `src/components/home/PostcodeChecker.tsx` already routes to `/build-plan` after availability — keep, but update the success copy:
+  - FTTP: "Full Fibre appears available at your address. Final speed, setup and price are confirmed before order."
+  - FTTC: "Broadband options found for your address. Choose your plan and we'll confirm the final speed, setup and price before order."
+  - Unknown: "We couldn't confirm availability online. You can request a manual quote or call 0800 260 6626." with quote CTA.
 
-Test `/quote/start` manual flow and `/build-plan → submit-build-plan` flow. Confirm client prices are ignored, server re-resolves, quote_only fallback path works, admin and customer token views render correctly.
+### 5. Customer dashboard "Add Service"
 
-## 8. Contract Summary
+- `src/components/dashboard/tabs/ServicesTab.tsx` (and any "Add Service" in `AppHome.tsx` / `Dashboard.tsx`): change `Add Service` link from `/checkout` / `/broadband` → `/build-plan` for broadband, `/sim-plans` for SIM, `/landline` for landline. No old £22.99 cards.
 
-Generate CS for: PL24 priced, Flex30 priced, router monthly, setup charge, add-on, ETF/disconnect, quote_only case. Verify required fields present and forbidden supplier/margin/source fields absent.
+### 6. Price Lock 24 / Flex 30 visibility
 
-## 9. Admin routes
+- New small component `src/components/pricing/TermChoiceBadge.tsx` rendering the two options with the approved wording from `fairPricing.ts` (PRICE_LOCK_WORDING, FLEX_30_WORDING).
+- Embed it on: Broadband cards (compact), `/build-plan` (full selector — verify it's already present, add if missing), First Bill Preview, quote summary, Contract Summary view (read-only label).
 
-Load: `/admin`, `/admin/fair-pricing`, `/admin/pricing-rules`, `/admin/margin-rules`, `/admin/suppliers`, `/admin/suppliers/giacom-import`, `/admin/quotes`, `/admin/quote-requests`, `/admin/vat-settings`, `/admin/rewards`, `/admin/referrals`, `/admin/contract-benefits`, `/admin/campaigns`, `/admin/tickets`, `/admin/complaints`, `/admin/knowledge-base`, `/admin/communications`. Confirm permissions, Giacom rows admin-only, active/inactive toggles, fair-pricing render, quote_only fallback settings, audit logging on sensitive changes.
+### 7. Digital Home Phone modal copy
 
-## 10. Customer dashboard
+- In the landline plan/modal component, change:
+  - "Keep your existing number" → "Keep your existing number where porting is available."
+  - "no extra line needed" → "Works over compatible broadband — no traditional landline required."
+  - "£4.95/month" → "from £4.95/month — final price confirmed before order."
 
-Check all tabs: Overview, Services, Orders, Quotes, Contract Summaries, Invoices & Payments, Support, Chat History, Complaints, Rewards & Referrals, Documents, Account Settings, Vulnerable Support. Confirm own-data scoping and no supplier/margin/internal leakage.
+### 8. Add-ons safety pass
 
-## 11. Support / complaints / KB
+- In broadband cards / add-ons selector, audit Static IP, WiFi Extender, Mesh Node, Norton, Parental Controls, Priority Support. Anything not in approved Fair Pricing add-ons gets either hidden from public checkout or marked "available by quote". Static IP wording → "Static IP available on selected services."
 
-Confirm support form, vulnerable support form, complaint form, complaint status tracking, admin complaints page, public vs admin-only KB articles, hidden internal notes.
+### 9. Admin dashboard counts (small fix)
 
-## 12. Rewards & campaigns
+- `src/pages/admin/Overview.tsx`: investigate the "Suppliers Active 0 / Pricing Rules Active 0 / VAT Settings Incomplete" widget. Likely a stale query. Fix the queries to count from `supplier_products` (distinct active suppliers), `pricing_rules` (active = true), and report VAT completeness based on `platform_settings.vat_*` fields. If VAT is truly incomplete, surface a precise reason.
 
-Pages load; campaigns draft/admin only; no auto public publishing; no rewards applied to invoices unintentionally; no cash withdrawal wording.
+### 10. Sweep & verify
 
-## 13. Payment route safety (no real payment)
+- Run repo-wide `rg` for: `22\.99`, `32\.95`, `33\.95`, `27\.59`, `cancel anytime`, `free router`, `free installation`, `guaranteed speed`, `Router included`, `Complete Your Order`, `Place order securely`. Replace residual matches.
+- TypeScript + production build.
+- Verify on published URL via browser tool with hard reload (cache-buster query) on `/`, `/broadband`, `/broadband/flex`, `/broadband/contract-saver`, `/build-plan`, `/checkout` (with broadband cart), `/dashboard` Add Service, mobile viewport.
 
-Smoke `/checkout`, `/pay`, `/pay-invoice`. Confirm CS gate still enforced for new telecom sales, legacy payment links not blocked, browser return cannot mark Worldpay paid, no payment logic touched.
+## Untouched (explicit)
 
-## 14. VAT & pricing display
+Worldpay HPP/webhook, `/pay`, `/pay-invoice`, payment_requests logic, invoice generation, DD mandates, rewards logic, campaigns logic, complaints workflow, finance exports, SEO technical setup (only copy/price text inside meta strings changes), AI chat, supplier resolver, supplier pricing DB rows, quote resolver, Contract Summary logic, server-side Build Plan price resolver, RLS/security.
 
-Residential VAT-inclusive, business ex+VAT where shown, `/admin/vat-settings` loads, VAT-inactive guard intact, no Phase 7 VAT export work started.
+## Deliverables / final report
 
-## 15. Mobile / WLR
-
-SIM not accidentally public self-checkout; WLR/ISDN manual-quote-only; supplier costs hidden; placeholders admin/reference only.
-
-## 16. Real-address beta (read-only)
-
-2–3 ICUK test addresses (normal, fibre/gigabit, limited): availability → buckets → builder → quote outcome → quote_only behaviour. No real orders/payments.
-
-## 17. Final report
-
-Single consolidated report covering: build, public routes, admin routes, dashboard, A–E, pricing/margin, supplier security, quote flow, CS, payment safety, support/complaints/KB, rewards/campaigns, VAT, mobile/WLR, remaining issues, beta-readiness verdict, files changed (if any), what was untouched.
-
-## Scope guardrails
-
-Untouched unless strictly required to fix a broken route: Worldpay HPP/webhook, invoice generation, DD mandates, `/pay`, `/pay-invoice`, checkout gate, rewards logic, campaigns logic, complaints workflow, finance exports, SEO setup, AI chat. No Phase 7. No new features. No redesign. No pricing changes unless a calculation is clearly broken.
+- Files changed list
+- Removed prices/phrases sweep result
+- Before/after screenshots of the gated `/checkout` notice
+- Build + TypeScript result
+- Published URL verification result (desktop + mobile)
+- Admin Overview count finding
+- Verdict: public site consistent and safe for controlled beta

@@ -212,6 +212,7 @@ function BuildPlanInner() {
           postcode: (contact.postcode || "").toUpperCase(),
           monthlyEstimate: resolved?.monthly_total_incl_vat ?? resolved?.monthly_broadband_incl_vat,
           firstBillEstimate: resolved?.first_bill_incl_vat,
+          email: contact.email,
         },
       });
     } catch (_err) {

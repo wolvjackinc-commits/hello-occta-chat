@@ -1,15 +1,15 @@
-import { Router, Lock, Receipt, Calendar, LifeBuoy } from "lucide-react";
+import { Router, Lock, Receipt, Calendar, LifeBuoy, CheckCircle2 } from "lucide-react";
 
 const promises = [
   {
-    icon: Router,
-    title: "No forced router",
-    body: "Use your own compatible router for £0, or add one only if you need it.",
+    icon: Lock,
+    title: "No confusing mid-contract price rises",
+    body: "Choose Price Lock 24 and your monthly broadband price stays fixed for the agreed term.",
   },
   {
-    icon: Lock,
-    title: "No confusing annual rises on Price Lock",
-    body: "Choose a Price Lock plan and your monthly broadband price stays fixed for the agreed term.",
+    icon: Calendar,
+    title: "Price Lock or Flex 30",
+    body: "Pick a fixed Price Lock plan or a 30-day rolling option where available.",
   },
   {
     icon: Receipt,
@@ -17,9 +17,14 @@ const promises = [
     body: "We show your monthly price, router, setup and add-ons before you order.",
   },
   {
-    icon: Calendar,
-    title: "No long contract if you choose Flex 30",
-    body: "Prefer freedom? Choose a 30-day rolling plan where available.",
+    icon: CheckCircle2,
+    title: "Final price confirmed before order",
+    body: "Availability, speed, setup and final price are confirmed before you proceed.",
+  },
+  {
+    icon: Router,
+    title: "Router choice",
+    body: "Use your own compatible router for £0, or choose a router only if you need one.",
   },
   {
     icon: LifeBuoy,
@@ -40,16 +45,30 @@ export default function FairBroadbandPromise() {
             Broadband built around you.
           </h2>
           <p className="mt-4 text-base md:text-lg text-foreground/80 max-w-2xl">
-            Bring your own router and save. Choose Price Lock or Flex 30. See your first bill before you order.
+            Choose the plan style that suits you. Price Lock 24 keeps your monthly broadband price fixed for the agreed term. Flex 30 gives you a rolling option where available. We show your first bill before you order.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0 border-4 border-foreground">
           {promises.map((p, i) => {
             const Icon = p.icon;
+            const isLastRowLg = i >= 3; // 6 items, 3-col grid → second row
+            const isLastRowSm = i >= 4; // 6 items, 2-col grid → last row
             return (
               <div
                 key={p.title}
-                className={`p-6 md:p-7 border-foreground bg-background ${i % 3 !== 2 ? "lg:border-r-4" : ""} ${i < promises.length - (promises.length % 3 || 3) ? "lg:border-b-4" : ""} ${i % 2 !== 1 ? "sm:border-r-4 lg:border-r-4" : ""} border-b-4 last:border-b-0`}
+                className={[
+                  "p-6 md:p-7 border-foreground bg-background",
+                  // right border (lg: every col except 3rd)
+                  i % 3 !== 2 ? "lg:border-r-4" : "",
+                  // right border (sm: every col except 2nd)
+                  i % 2 !== 1 ? "sm:border-r-4" : "",
+                  // bottom border (lg: not last row)
+                  !isLastRowLg ? "lg:border-b-4" : "lg:border-b-0",
+                  // bottom border (sm: not last row)
+                  !isLastRowSm ? "sm:border-b-4" : "sm:border-b-0",
+                  // mobile single column borders
+                  i < promises.length - 1 ? "border-b-4" : "",
+                ].filter(Boolean).join(" ")}
               >
                 <Icon className="w-7 h-7 mb-4" strokeWidth={2.5} />
                 <h3 className="font-display text-lg uppercase tracking-wide mb-2 leading-tight">

@@ -33,6 +33,9 @@ const Schema = z.object({
     primary_technology: z.string().max(40).optional(),
   }).optional(),
   test_mode: z.boolean().optional(),
+  // Fallback mode (availability API unavailable). Forces manual quote_request only.
+  force_quote_only: z.boolean().optional(),
+  availability_mode: z.enum(["live","fallback"]).optional(),
   // contact
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email().max(180),
@@ -80,6 +83,7 @@ Deno.serve(async (req) => {
     }
   }
   const inTestMode = !!(i.test_mode && isAdmin);
+  const isFallback = !!(i.force_quote_only || i.availability_mode === "fallback");
   // Honour test_availability override only for admins
   const effectiveMaxDownload = (isAdmin && i.test_availability?.max_download != null)
     ? i.test_availability.max_download : i.max_download;
@@ -101,9 +105,9 @@ Deno.serve(async (req) => {
     plan_preference: i.plan_term === "flex_30" ? "flex" : "contract_saver",
     customer_type: i.customer_type,
     preferred_contact_method: i.preferred_contact_method,
-    message: `${inTestMode ? "[TEST] " : ""}Build Plan: ${speedBucketLabel(i.speed_bucket)} · ${planTermLabel(i.plan_term)} · router=${i.router_option}/${i.router_payment_type} · setup=${i.setup_option} · addons=${(i.addons ?? []).join(",") || "none"}`,
+    message: `${inTestMode ? "[TEST] " : ""}${isFallback ? "[FALLBACK — availability unconfirmed] " : ""}Build Plan: ${speedBucketLabel(i.speed_bucket)} · ${planTermLabel(i.plan_term)} · router=${i.router_option}/${i.router_payment_type} · setup=${i.setup_option} · addons=${(i.addons ?? []).join(",") || "none"}`,
     marketing_consent: i.marketing_consent,
-    source: inTestMode ? "build_plan_test" : "build_plan",
+    source: inTestMode ? "build_plan_test" : (isFallback ? "build_plan_fallback" : "build_plan"),
     ip,
     user_agent: req.headers.get("user-agent")?.slice(0, 400) ?? null,
   }).select("id, reference").single();
@@ -118,7 +122,9 @@ Deno.serve(async (req) => {
   } catch (_e) {
     candidates = null;
   }
-  const resolved = candidates === null
+  const resolved = isFallback
+    ? { ok: true as const, quote_only: true as const, message: "Availability not confirmed online — we'll verify and send your final quote before order." }
+    : candidates === null
     ? { ok: true as const, quote_only: true as const, message: "Final price needs manual confirmation for this address." }
     : resolveBuildPlanPrice({
     speed_bucket: i.speed_bucket,

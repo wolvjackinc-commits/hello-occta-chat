@@ -70,9 +70,9 @@ const HeroSection = () => {
 
   const inlineConfirmation = hasResult ? (
     result.primaryTechnology === "FTTP"
-      ? "Full Fibre available at your address"
+      ? "Full Fibre appears available at your address"
       : result.available
-        ? "Fibre available at your address"
+        ? "Broadband options found for your address"
         : null
   ) : null;
 

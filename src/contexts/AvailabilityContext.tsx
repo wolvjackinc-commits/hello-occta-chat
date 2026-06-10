@@ -19,6 +19,7 @@ export type AvailabilityStatus =
   | "addresses"
   | "checking-address"
   | "success"
+  | "fallback"
   | "error";
 
 export interface AvailabilityResult {
@@ -45,6 +46,7 @@ interface AvailabilityState {
 interface AvailabilityActions {
   checkPostcode: (pc: string) => Promise<void>;
   selectAddress: (addr: ICUKAddress) => Promise<void>;
+  triggerFallback: (pc?: string) => void;
   reset: () => void;
 }
 
@@ -292,9 +294,19 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
     setState(defaultState);
   }, []);
 
+  const triggerFallback = useCallback((pc?: string) => {
+    setState((s) => ({
+      ...s,
+      status: "fallback",
+      postcode: pc || s.postcode,
+      errorType: null,
+      errorMessage: "",
+    }));
+  }, []);
+
   return (
     <AvailabilityContext.Provider
-      value={{ ...state, checkPostcode, selectAddress, reset }}
+      value={{ ...state, checkPostcode, selectAddress, reset, triggerFallback }}
     >
       {children}
     </AvailabilityContext.Provider>

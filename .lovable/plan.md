@@ -1,59 +1,70 @@
-Approved — proceed with OCCTA Live Website Consistency Fix exactly as scoped, with the corrections below.
+Approved — proceed with Postcode Availability Fallback Mode, with one critical correction.
 
-This is a launch-blocker fix, not a new phase.
+This is a temporary fallback safety fix, not a new phase.
 
 Do not start Phase 7.  
-Do not add new features.  
-Do not redesign the site.  
-Do not touch Worldpay HPP/webhook, /pay, /pay-invoice, payment_requests logic, invoice generation, DD mandates, rewards logic, campaigns logic, complaints workflow, finance exports, AI chat, supplier resolver, supplier pricing DB rows, quote resolver, Contract Summary logic, server-side Build Plan price resolver or RLS/security.
+Do not touch Worldpay, /pay, /pay-invoice, invoice generation, DD mandates, rewards, campaigns, complaints, finance exports, AI chat, supplier resolver, quote resolver, Contract Summary logic or supplier_products.
 
-Critical corrections before coding:
+Critical correction:
 
-1. Broadband checkout gating only
+Server-side submit-build-plan must explicitly honour fallback mode.
 
-Do not globally remove “Complete Your Order” or checkout wording if SIM-only or landline-only flows still need it.
+When request body includes:
 
-The rule is:
+- force_quote_only: true
+- availability_mode: "fallback"
 
-- Broadband cart / broadband plan / broadband checkout = block and redirect to /build-plan
-- SIM-only / landline-only = leave existing checkout behaviour unchanged unless broken
+Then submit-build-plan must:
 
-For broadband only, do not show:
+- create quote_request only
+- mark request as manual review / fallback availability
+- not create customer-ready quote
+- not create order
+- not create payment link
+- not generate Contract Summary
+- not send wording that implies confirmed availability
+- show customer: “Thanks — we’ll confirm availability and send your final quote before order.”
 
-- £22.99
-- £32.95
-- £33.95
-- £27.59
-- Router included
-- FREE setup/install
-- Complete Your Order
-- Place order securely
-- Due today £0
+Do not rely only on “no max_download” to cause quote_only. Make fallback/manual-review behaviour explicit and safe.
 
-Broadband must follow:  
-Address check → /build-plan → First Bill Preview → Quote → Contract Summary → payment only after CS acceptance.
+Everything else in the plan is approved:
 
-2. Digital Home Phone safety
+1. Postcode checker fallback
 
-Update wording:
+If live availability fails, times out, returns no addresses, or throws:  
+Show:
 
-- “Keep your existing number” → “Keep your existing number where porting is available.”
-- “no extra line needed” → “Works over compatible broadband — no traditional landline required.”
-- “£4.95/month” → “from £4.95/month — final price confirmed before order.”
+Title:  
+“Broadband options available to view”
 
-Do not allow Digital Home Phone to become an automatic live checkout add-on unless its pricing and fulfilment are confirmed. If uncertain, keep it quote-led or add-on preview only.
+Body:  
+“We couldn’t confirm live availability online right now, but you can still choose the plan you’re interested in. We’ll confirm the final availability, speed, setup and price before you order.”
 
-3. Add-ons safety
+Note:  
+“No payment is taken until your final quote and Contract Summary are confirmed.”
 
-For Static IP, WiFi Extender, Mesh Node, Norton, Parental Controls and Priority Support:
+CTA:  
+“View plans” → /build-plan?availability=fallback
 
-- If supplier-backed and margin-confirmed, keep them.
-- If not confirmed, mark “available by quote” or hide from broadband checkout.
-- Static IP must say: “Static IP available on selected services.”
+2. Build Plan fallback
 
-4. Fair Pricing must be the public source
+In /build-plan?availability=fallback:
 
-Replace all old static broadband display prices with:
+- show all 4 buckets: Essential, Superfast, Ultrafast, Gigabit
+- show Price Lock 24 and Flex 30
+- show router options
+- show setup options
+- show first bill preview as estimate only
+- clearly label everything “Subject to confirmation”
+- do not call it confirmed availability
+- do not create customer-ready quote automatically
+
+Use:  
+“Estimate — subject to confirmation”
+
+3. Fallback pricing display
+
+Use current Fair Pricing display values:
 
 Essential:
 
@@ -72,249 +83,116 @@ Ultrafast:
 
 Gigabit:
 
-- Price Lock 24 from £52.99/month, auto-bump where needed
-- Flex 30 from £54.99/month, auto-bump where needed
+- Price Lock 24 from £52.99/month
+- Flex 30 from £54.99/month
 
-Server-side resolver remains authoritative.
+Add on each card:  
+“Subject to availability at your address.”
 
-5. Price Lock / Flex must be visible to customers
+4. Do not mislead
 
-Customers must clearly see:
+In fallback mode, never say:
 
-- Price Lock 24
-- Flex 30
-
-This must be visible on:
-
-- broadband cards
-- /build-plan
-- First Bill Preview
-- quote summary
-- Contract Summary view/read-only label
-
-Use the approved wording from fairPricing.ts.
-
-6. Postcode checker must route to Build Plan
-
-After postcode/address check, route customers to /build-plan, not /pre-checkout or /checkout.
-
-Availability messages:
-
-If full fibre appears available:  
-“Full Fibre appears available at your address. Final speed, setup and price are confirmed before order.”
-
-If broadband options are found:  
-“Broadband options found for your address. Choose your plan and we’ll confirm the final speed, setup and price before order.”
-
-If uncertain:  
-“We couldn’t confirm availability online. You can request a manual quote or call 0800 260 6626.”
-
-7. Dashboard Add Service route
-
-Customer dashboard Add Service must not route broadband customers to old checkout.
-
-Broadband Add Service should route to:
-
-- /build-plan  
-or
-- /quote/start
-
-SIM and landline can keep their own routes.
-
-8. Admin dashboard counts
-
-Check:
-
-- Suppliers Active
-- Pricing Rules Active
-- VAT Settings
-
-If the counts are stale, fix the queries.  
-If VAT is truly incomplete, do not change VAT settings; report exactly what is missing.
-
-9. Search sweep
-
-After changes, run search for:
-
-- 22.99
-- 32.95
-- 33.95
-- 27.59
-- cancel anytime
-- free router
-- free installation
+- Full Fibre available
+- guaranteed availability
 - guaranteed speed
-- Router included
-- free static IP included
+- confirmed installation
+- order now
+- pay now
 
-No public customer-facing broadband page should contain those.
+Use:
 
-It is acceptable only if a phrase appears in an internal test/comment/document clearly not rendered publicly, but report it.
+- subject to confirmation
+- final availability confirmed before order
+- final price confirmed before order
+- no payment until Contract Summary
 
-10. Published URL verification required
+5. Dashboard Add Service
 
-After deployment, verify the actual published customer URL, not only Lovable preview.
+If there is no confirmed availability in session:  
+Dashboard Add Service should route to:  
+/build-plan?availability=fallback
 
-Check:
+Not old checkout.
 
-- hard refresh / incognito
-- desktop
-- mobile
-- homepage
-- /broadband
-- /broadband/flex
-- /broadband/contract-saver
-- /build-plan
-- /checkout with broadband cart
-- dashboard Add Service
+6. Verification
 
-Required customer test paths:
+After implementation:
 
-A) Homepage → postcode → Build Plan → Essential → Price Lock 24 → own router  
-Expected: £34.99/month, not £22.99
+- enter bogus postcode
+- fallback card appears
+- View plans opens /build-plan?availability=fallback
+- all 4 plan buckets show
+- Price Lock 24 and Flex 30 are visible
+- all cards say subject to confirmation
+- first bill preview says estimate only
+- submission creates manual quote_request only
+- no customer-ready quote/order/payment is created
+- no old prices appear
+- no customer is sent to old checkout
+- TypeScript and build pass
 
-B) Homepage → postcode → Build Plan → Essential → Flex 30 → own router  
-Expected: £37.99/month
+7. Final report
 
-C) Broadband page → Superfast → Build Plan  
-Expected: Price Lock/Flex choice, not old checkout
+Stop after this fix and report:
 
-D) Direct /checkout with broadband cart  
-Expected: blocked/redirected to Build Plan
-
-E) Dashboard → Add Service  
-Expected: Build Plan or quote start, not old checkout
-
-11. Build checks
-
-Run:
-
-- TypeScript
-- production build
-- phrase sweep
-
-Do not fix old unrelated lint debt.
-
-12. Final report
-
-Stop after the fix and report:
-
-- exact root cause confirmed
 - files changed
-- old prices removed
-- Price Lock/Flex visibility result
+- fallback behaviour
+- Build Plan fallback behaviour
+- submit-build-plan server safety behaviour
+- manual quote request result
 - old checkout gating result
-- postcode checker route result
-- dashboard Add Service result
-- Digital Home Phone wording result
-- add-on handling result
-- admin dashboard count finding
-- published URL verification result
-- mobile verification result
 - build result
-- what was untouched
-- whether public customer website is now consistent and safe for controlled beta  
+- whether the public site is safe while postcode API is unavailable  
   
-OCCTA Live Website Consistency Fix
+  
+Postcode Availability Fallback Mode
 
-## Root cause (from code audit)
+When the live availability API fails / times out / returns no result, customers must not be blocked. Show the main broadband plans in a "subject to confirmation" mode and route them to `/build-plan?availability=fallback`, which submits as a manual quote request rather than a confirmable order.
 
-The published site is built from the same code as preview — there is no stale-deploy issue. The old prices are showing because the **broadband retail cards still come from `src/lib/pricing/catalogue.ts` retailMonthly values (£22.99 / £32.95 / £33.95)**, fed into `getRetailBroadbandCards()` → `plans.ts` → `Broadband.tsx`, `Index.tsx` services section, location pages, comparison pages, and keyword landing pages.
+## Files to change
 
-The old checkout flow is showing because:
+1. `**src/contexts/AvailabilityContext.tsx**`
+  - Add a new status `"fallback"` and a `triggerFallback(postcode?)` action.
+  - On `backend-unavailable` / `availability-failed` / `no-addresses` (or postcode lookup throw), keep `errorType` for diagnostics but also persist a fallback flag in session so `/build-plan` knows it's a fallback flow.
+  - Add helper `isFallback` derived from status or session.
+2. `**src/components/home/PostcodeChecker.tsx**`
+  - When status is `error` (any of the fallback-eligible error types), replace the bare error block with the approved fallback card:
+    - Title: "Broadband options available to view"
+    - Body: "We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. We'll confirm the final availability, speed, setup and price before you order."
+    - Small note: "No payment is taken until your final quote and Contract Summary are confirmed."
+    - Primary CTA "View plans" → `navigate('/build-plan?availability=fallback')` (also calls `triggerFallback`).
+  - On confirmed success (FTTP): "Full Fibre appears available at your address. Final speed, setup and price are confirmed before order."
+  - On confirmed success (non-FTTP): "Broadband options found for your address. Choose your plan and we'll confirm the final speed, setup and price before order."
+  - Remove any wording that asserts "available" without confirmation.
+3. `**src/pages/BuildPlan.tsx**`
+  - Read `searchParams.get('availability') === 'fallback'` → `isFallback`.
+  - Change the gate at line 148: if `isFallback` (or test mode) is true, allow rendering even without `result`.
+  - In `eligibleBuckets`: when `isFallback`, return `['essential','superfast','ultrafast','gigabit']` — all shown, none disabled.
+  - Render gigabit card in step 1 list (extend `["essential","superfast","ultrafast","gigabit"]`).
+  - Show a banner above the wizard when `isFallback`:
+    - "Subject to availability at your address. Final availability, speed, setup and price will be confirmed before order."
+  - On each plan card in fallback mode, render a small "Subject to confirmation" pill.
+  - In the resolver `useEffect`: when `isFallback`, skip the resolver call and synthesise a `Resolved` with `quote_only: true`, `message: "We'll confirm the final price after we verify availability at your address."`, and show the headline from `FAIR_PRICING_DEFAULTS.headline[bucket][term]` as estimate-only in the summary panel (clearly labelled "Estimate — subject to confirmation").
+  - In `submitBuildPlan`: when `isFallback`, pass `force_quote_only: true` and `availability_mode: 'fallback'` in the body so the server creates a quote_request / manual review record instead of an actionable order.
+  - After submit success in fallback mode, toast/redirect copy: "Thanks — we'll confirm availability and send your final quote before order."
+4. `**src/pages/Dashboard.tsx**` (Add Service)
+  - Already routes to `/build-plan`. Update to `/build-plan?availability=fallback` only when no confirmed availability exists in session; otherwise leave as `/build-plan`.
+5. **Server safety (no edge function change required)**
+  - The fallback submission relies on `submit-build-plan` honouring `quote_only`/no max_download. Current resolver already produces `quote_only: true` when availability is unknown, so behaviour is preserved. We pass `availability_mode: 'fallback'` for logging only — no schema change.
 
-- `/pre-checkout` and `/checkout` still accept broadband line items and render "Router included", "FREE" setup, "Place order securely", "Complete Your Order".
-- "Choose Plan" / "Add Service" CTAs on `Broadband.tsx`, `Index.tsx`, dashboard `ServicesTab.tsx`, location pages route into `/pre-checkout` / `/checkout` rather than `/build-plan`.
+## Wording rules enforced
 
-Files holding hard-coded legacy prices:
+Allowed: "appears available", "subject to confirmation", "final price confirmed before order", "no payment until Contract Summary".
+Forbidden in fallback: "Full Fibre available" (unconfirmed), "guaranteed availability", "guaranteed speed", "confirmed installation", "order now", "pay now".
 
-- `src/lib/pricing/catalogue.ts` (retailMonthly fields — feeds cards)
-- `src/lib/pricing/constants.ts` (`broadband: '22.99'` fallback)
-- `src/lib/pricing/engine.ts` (`22.99` fallback in `getFromPrices`)
-- `src/lib/pricing/fairPricing.ts` (already correct — defaults £34.99 / £39.99 / £49.99 / £52.99)
-- `src/data/locations.ts` (50 city meta descriptions — `£22.99`)
-- `src/data/comparisons.ts` (`£22.99` rows)
-- `src/data/keywordPages.ts` / `src/pages/KeywordLanding.tsx` (`"22.99"` default)
-- `public/llms.txt` (£22.99)
+## Verification
 
-## What changes
+- `rg "Full Fibre available"` must only appear inside the confirmed-FTTP branch.
+- `rg "£22.99|£32.95|£33.95|£27.59"` returns nothing in customer-facing files.
+- Manual flow: enter bogus postcode → fallback card → click "View plans" → `/build-plan?availability=fallback` shows all 4 buckets with "Subject to confirmation" → submit creates quote_request (not order) → user sees thank-you with quote messaging.
+- Build + TypeScript pass.
 
-### 1. Make Fair Pricing the public source of truth
+## Untouched
 
-- New helper `src/lib/pricing/fairPricingDisplay.ts` exporting `getFairCards()` that returns four cards (Essential / Superfast / Ultrafast / Gigabit) using `FAIR_PRICING_DEFAULTS.headline` and `SPEED_BUCKET_META`, each with `lock24FromPrice`, `flex30FromPrice`, speed range, badges, tagline.
-- Update `getFromPrices()` in `engine.ts` and `constants.ts` fallback from `22.99` → `34.99` so "from" prices anywhere are Essential Price Lock 24.
-
-### 2. Update Broadband cards to use Fair Pricing
-
-- `src/pages/Broadband.tsx`: replace `broadbandPlans` mapping with `getFairCards()`. Each card shows:
-  - Title (Essential / Superfast / Ultrafast / Gigabit Fibre)
-  - "From £X/month with Price Lock 24"
-  - "Flex 30 from £Y/month"
-  - Speed range
-  - Approved badges (Bring your own router for £0, Router options at checkout, Setup from £0 where available, Final price confirmed before order, Price Lock 24 or Flex 30, Speeds depend on your address)
-  - CTA: "Check availability" / "Build your plan" → `/build-plan?bucket=<bucket>` (no `/pre-checkout`, no `/checkout`)
-- `src/components/home/ServicesSection.tsx` & `Index.tsx`: same data source, same CTA target.
-- `src/pages/broadband/Flex.tsx` & `src/pages/broadband/ContractSaver.tsx`: refresh price chips and route CTAs to `/build-plan`.
-- `src/pages/LocationBroadband.tsx` & `src/data/locations.ts`: replace `£22.99` with `£34.99`, "Price Lock 24 from £34.99/mo or Flex 30 from £37.99/mo".
-- `src/data/comparisons.ts`: replace `£22.99` with `From £34.99/mo (Price Lock 24)`.
-- `src/data/keywordPages.ts` + `KeywordLanding.tsx`: default price `34.99`, route CTAs to `/build-plan`.
-- `public/llms.txt`: update broadband from-price to £34.99.
-
-### 3. Gate the legacy /checkout and /pre-checkout for broadband
-
-- In `src/pages/PreCheckout.tsx` and `src/pages/Checkout.tsx`, at the top of the component check the cart/plan-id. If any item is a broadband plan (id starts with `broadband-` or service type `broadband`), render a small notice card:
-  > "Broadband orders now require an address check, first bill preview and Contract Summary before payment."
-  > with a primary CTA → `/build-plan`. Auto-redirect after 4 s.
-- Remove the strings "Router included", "FREE" setup line, "Place order securely", "Complete Your Order" from the broadband branch. SIM-only and landline-only carts continue to work unchanged.
-- This does NOT touch `/pay`, `/pay-invoice`, Worldpay HPP, invoice generation, DD mandates, quote resolver, or Contract Summary logic.
-
-### 4. Postcode checker → Build Plan
-
-- `src/components/home/PostcodeChecker.tsx` already routes to `/build-plan` after availability — keep, but update the success copy:
-  - FTTP: "Full Fibre appears available at your address. Final speed, setup and price are confirmed before order."
-  - FTTC: "Broadband options found for your address. Choose your plan and we'll confirm the final speed, setup and price before order."
-  - Unknown: "We couldn't confirm availability online. You can request a manual quote or call 0800 260 6626." with quote CTA.
-
-### 5. Customer dashboard "Add Service"
-
-- `src/components/dashboard/tabs/ServicesTab.tsx` (and any "Add Service" in `AppHome.tsx` / `Dashboard.tsx`): change `Add Service` link from `/checkout` / `/broadband` → `/build-plan` for broadband, `/sim-plans` for SIM, `/landline` for landline. No old £22.99 cards.
-
-### 6. Price Lock 24 / Flex 30 visibility
-
-- New small component `src/components/pricing/TermChoiceBadge.tsx` rendering the two options with the approved wording from `fairPricing.ts` (PRICE_LOCK_WORDING, FLEX_30_WORDING).
-- Embed it on: Broadband cards (compact), `/build-plan` (full selector — verify it's already present, add if missing), First Bill Preview, quote summary, Contract Summary view (read-only label).
-
-### 7. Digital Home Phone modal copy
-
-- In the landline plan/modal component, change:
-  - "Keep your existing number" → "Keep your existing number where porting is available."
-  - "no extra line needed" → "Works over compatible broadband — no traditional landline required."
-  - "£4.95/month" → "from £4.95/month — final price confirmed before order."
-
-### 8. Add-ons safety pass
-
-- In broadband cards / add-ons selector, audit Static IP, WiFi Extender, Mesh Node, Norton, Parental Controls, Priority Support. Anything not in approved Fair Pricing add-ons gets either hidden from public checkout or marked "available by quote". Static IP wording → "Static IP available on selected services."
-
-### 9. Admin dashboard counts (small fix)
-
-- `src/pages/admin/Overview.tsx`: investigate the "Suppliers Active 0 / Pricing Rules Active 0 / VAT Settings Incomplete" widget. Likely a stale query. Fix the queries to count from `supplier_products` (distinct active suppliers), `pricing_rules` (active = true), and report VAT completeness based on `platform_settings.vat_*` fields. If VAT is truly incomplete, surface a precise reason.
-
-### 10. Sweep & verify
-
-- Run repo-wide `rg` for: `22\.99`, `32\.95`, `33\.95`, `27\.59`, `cancel anytime`, `free router`, `free installation`, `guaranteed speed`, `Router included`, `Complete Your Order`, `Place order securely`. Replace residual matches.
-- TypeScript + production build.
-- Verify on published URL via browser tool with hard reload (cache-buster query) on `/`, `/broadband`, `/broadband/flex`, `/broadband/contract-saver`, `/build-plan`, `/checkout` (with broadband cart), `/dashboard` Add Service, mobile viewport.
-
-## Untouched (explicit)
-
-Worldpay HPP/webhook, `/pay`, `/pay-invoice`, payment_requests logic, invoice generation, DD mandates, rewards logic, campaigns logic, complaints workflow, finance exports, SEO technical setup (only copy/price text inside meta strings changes), AI chat, supplier resolver, supplier pricing DB rows, quote resolver, Contract Summary logic, server-side Build Plan price resolver, RLS/security.
-
-## Deliverables / final report
-
-- Files changed list
-- Removed prices/phrases sweep result
-- Before/after screenshots of the gated `/checkout` notice
-- Build + TypeScript result
-- Published URL verification result (desktop + mobile)
-- Admin Overview count finding
-- Verdict: public site consistent and safe for controlled beta
+Worldpay, `/pay`, `/pay-invoice`, invoice generation, DD mandates, rewards, campaigns, complaints, finance exports, AI chat, supplier resolver, quote resolver, Contract Summary logic, `supplier_products`.

@@ -167,7 +167,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
         <p className="text-xs text-muted-foreground mt-3 flex flex-wrap gap-x-3 gap-y-1">
           <span>✓ Takes 10 seconds</span>
           <span>✓ No commitment</span>
-          <span>✓ Real availability</span>
+          <span>✓ Final availability confirmed before order</span>
         </p>
       )}
     </div>

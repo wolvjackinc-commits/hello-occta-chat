@@ -24,14 +24,19 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX } from "lucide-react";
 import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
 
-const STATUS_OPTIONS = ["all", "new", "assigned", "checking", "quoted", "expired", "rejected", "converted"] as const;
+const STATUS_OPTIONS = ["all", "new", "in_review", "needs_info", "assigned", "checking", "draft_quote_created", "quoted", "final_quote_ready", "expired", "rejected", "closed", "converted"] as const;
 const STATUS_COLORS: Record<string, string> = {
-  new: "bg-primary text-primary-foreground",
+  new: "bg-muted",
+  in_review: "bg-accent text-accent-foreground",
   assigned: "bg-accent text-accent-foreground",
   checking: "bg-secondary",
+  needs_info: "bg-warning text-warning-foreground",
+  draft_quote_created: "bg-secondary",
   quoted: "bg-primary/70 text-primary-foreground",
+  final_quote_ready: "bg-primary text-primary-foreground",
   expired: "bg-muted text-muted-foreground",
   rejected: "bg-destructive text-destructive-foreground",
+  closed: "bg-muted text-muted-foreground",
   converted: "bg-primary text-primary-foreground",
 };
 
@@ -51,10 +56,43 @@ export const AdminQuoteRequests = () => {
     contract_length_months: "",
     expires_in_days: "14",
     customer_notes: "",
+    supplier_product_id: "",
+    supplier_name: "",
+    bucket_override_reason: "",
   });
   const [creating, setCreating] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkTarget, setLinkTarget] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [latestQuote, setLatestQuote] = useState<any>(null);
+  const [marginInfo, setMarginInfo] = useState<{ status: string; reason?: string } | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [needsInfoMsg, setNeedsInfoMsg] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+
+  // Load active broadband supplier products when dialog opens
+  const loadProducts = async () => {
+    const { data } = await (supabase as any)
+      .from("supplier_products")
+      .select("id, supplier_product_id, product_name, service_type, bucket_hint, download_speed_mbps, upload_speed_mbps, min_term_months, supplier_monthly_net, supplier_setup_net, active, quote_only")
+      .eq("active", true)
+      .order("supplier_monthly_net", { ascending: true })
+      .limit(200);
+    setProducts(data ?? []);
+  };
+
+  // Load latest quote for selected request
+  const loadLatestQuote = async (qrId: string) => {
+    const { data } = await (supabase as any)
+      .from("quotes")
+      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name")
+      .eq("quote_request_id", qrId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLatestQuote(data ?? null);
+    setMarginInfo(null);
+  };
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-quote-requests", status, search],
@@ -109,7 +147,11 @@ export const AdminQuoteRequests = () => {
       contract_length_months: qr.plan_preference === "contract_saver" ? "12" : "",
       expires_in_days: "14",
       customer_notes: "",
+      supplier_product_id: "",
+      supplier_name: "",
+      bucket_override_reason: "",
     });
+    loadProducts();
     setQuoteDialogOpen(true);
   };
 
@@ -136,18 +178,83 @@ export const AdminQuoteRequests = () => {
           ? Number(draft.contract_length_months || 12) : null,
         expires_in_days: Number(draft.expires_in_days || 14),
         customer_notes: draft.customer_notes || null,
+        supplier_product_id: draft.supplier_product_id || null,
+        supplier_name: draft.supplier_name || null,
+        admin_notes: draft.bucket_override_reason ? `[BUCKET OVERRIDE] ${draft.bucket_override_reason}` : null,
       };
       const { data, error } = await supabase.functions.invoke("create-quote", { body });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
       toast({ title: `Quote ${(data as any).quote_number} created` });
+      await (supabase as any).from("quote_requests").update({ status: "draft_quote_created" }).eq("id", selected.id);
       setQuoteDialogOpen(false);
-      setSelectedId(null);
+      await loadLatestQuote(selected.id);
       qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
     } catch (e: any) {
       toast({ title: "Create failed", description: e?.message, variant: "destructive" });
     } finally {
       setCreating(false);
     }
+  };
+
+  const runMargin = async () => {
+    if (!latestQuote) { toast({ title: "Create draft first", variant: "destructive" }); return; }
+    setBusy("margin");
+    try {
+      const { data, error } = await supabase.functions.invoke("run-quote-margin-check", {
+        body: { quote_id: latestQuote.id, supplier_product_id: latestQuote.supplier_product_id ?? undefined },
+      });
+      if (error) throw error;
+      const check = (data as any)?.check;
+      setMarginInfo({ status: check?.status ?? "unknown", reason: check?.reason });
+      toast({ title: `Margin: ${check?.status ?? "unknown"}`, description: check?.reason });
+    } catch (e: any) {
+      toast({ title: "Margin check failed", description: e?.message, variant: "destructive" });
+    } finally { setBusy(null); }
+  };
+
+  const approveFinal = async () => {
+    if (!latestQuote) return;
+    setBusy("approve");
+    try {
+      const { error } = await (supabase as any).rpc("admin_approve_final_quote", { _quote_id: latestQuote.id });
+      if (error) throw error;
+      toast({ title: "Final quote approved" });
+      qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
+      if (selected) await loadLatestQuote(selected.id);
+    } catch (e: any) {
+      toast({ title: "Approve failed", description: e?.message, variant: "destructive" });
+    } finally { setBusy(null); }
+  };
+
+  const requestMoreInfo = async () => {
+    if (!selected) return;
+    if (needsInfoMsg.trim().length < 4) { toast({ title: "Message too short", variant: "destructive" }); return; }
+    setBusy("info");
+    try {
+      const { error } = await (supabase as any).rpc("admin_request_more_info", { _qr_id: selected.id, _message: needsInfoMsg });
+      if (error) throw error;
+      toast({ title: "Customer asked for more info" });
+      setNeedsInfoMsg("");
+      qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
+    } catch (e: any) {
+      toast({ title: "Failed", description: e?.message, variant: "destructive" });
+    } finally { setBusy(null); }
+  };
+
+  const rejectRequest = async () => {
+    if (!selected) return;
+    if (rejectReason.trim().length < 4) { toast({ title: "Reason too short", variant: "destructive" }); return; }
+    setBusy("reject");
+    try {
+      const { error } = await (supabase as any).rpc("admin_reject_quote_request", { _qr_id: selected.id, _reason: rejectReason });
+      if (error) throw error;
+      toast({ title: "Request rejected" });
+      setRejectReason("");
+      setSelectedId(null);
+      qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
+    } catch (e: any) {
+      toast({ title: "Failed", description: e?.message, variant: "destructive" });
+    } finally { setBusy(null); }
   };
 
   return (

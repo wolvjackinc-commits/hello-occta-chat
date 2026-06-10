@@ -38,7 +38,7 @@ export const comparisons: Comparison[] = [
       { feature: "Contract length", occta: "No contract \u2014 rolling monthly", competitor: "24-month contract" },
       { feature: "Mid-contract price rises", occta: "None \u2014 price fixed", competitor: "CPI + 3.9% annual increase" },
       { feature: "Setup fees", occta: "Setup from £0 where available. Bring your own router for £0, or choose a router at checkout", competitor: "\u00A39.99\u2013\u00A359.99 setup fee" },
-      { feature: "Exit fees", occta: "None \u2014 cancel anytime", competitor: "Up to \u00A3230+ early termination" },
+      { feature: "Exit fees", occta: "None \u2014 30-day rolling options available where eligible", competitor: "Up to \u00A3230+ early termination" },
       { feature: "Credit check required", occta: "No", competitor: "Yes" },
       { feature: "Network used", occta: "Openreach", competitor: "Openreach" },
       { feature: "Speeds available", occta: "Up to 900Mbps", competitor: "Up to 900Mbps" },

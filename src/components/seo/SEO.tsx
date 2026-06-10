@@ -16,11 +16,11 @@ interface SEOProps {
 const BASE_URL = 'https://www.occta.co.uk';
 const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
 const SITE_NAME = 'OCCTA';
-const DEFAULT_KEYWORDS = 'cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband, fibre broadband no contract, unlimited broadband UK, OCCTA';
+const DEFAULT_KEYWORDS = 'cheap broadband UK, no contract broadband, flexible broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband, fibre broadband no contract, unlimited broadband UK, OCCTA';
 
 export const SEO = ({
   title,
-  description = `Cheap UK broadband from £${getFromPrices().broadband}/mo. No contracts, no credit check, cancel anytime. 900Mbps fibre, SIM & landline.`,
+  description = `Cheap UK broadband from £${getFromPrices().broadband}/mo. No contracts, no credit check, 30-day rolling options available where eligible. 900Mbps fibre, SIM & landline.`,
   canonical,
   type = 'website',
   image = DEFAULT_IMAGE,

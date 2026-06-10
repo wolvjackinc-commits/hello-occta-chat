@@ -29,7 +29,7 @@ const HeroSection = () => {
     { icon: Shield, text: "No Price Hikes" },
     { icon: Phone, text: "UK Support" },
     { icon: Wifi, text: "Openreach" },
-    { icon: RefreshCcw, text: "Cancel Anytime" },
+    { icon: RefreshCcw, text: "30-Day Rolling Where Eligible" },
   ];
 
   const getSpeedLabel = (speed: number) => speed >= 1000 ? "1Gbps" : `${speed}Mbps`;
@@ -293,7 +293,7 @@ const HeroSection = () => {
                       </div>
 
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 mb-3">
-                        {["Unlimited usage", "No contracts", "Free router"].map(f => (
+                        {["Unlimited usage", "No contracts", "Bring your own router"].map(f => (
                           <span key={f} className="flex items-center gap-1 text-[11px] text-muted-foreground">
                             <Check className="w-2.5 h-2.5 text-primary" />
                             {f}
@@ -324,7 +324,7 @@ const HeroSection = () => {
                 </div>
 
                 <p className="text-center text-[10px] text-muted-foreground pt-2">
-                  No annual price hikes • Cancel anytime
+                  No annual price hikes • 30-day rolling options available where eligible
                 </p>
               </motion.div>
             )}

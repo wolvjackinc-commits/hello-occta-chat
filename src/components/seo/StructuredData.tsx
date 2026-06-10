@@ -48,7 +48,7 @@ const localBusinessSchema = {
   '@id': `${BASE_URL}/#localbusiness`,
   name: companyConfig.tradingName,
   legalName: companyConfig.name,
-  description: 'Cheap UK broadband, SIM plans, and digital home phone services. No contracts, no hidden fees, cancel anytime.',
+  description: 'Cheap UK broadband, SIM plans, and digital home phone services. No contracts, no hidden fees, 30-day rolling options available where eligible.',
   url: BASE_URL,
   telephone: companyConfig.phone.display,
   email: companyConfig.email.general,

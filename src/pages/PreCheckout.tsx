@@ -710,7 +710,7 @@ const PreCheckout = () => {
                       <ul className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
                         <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />Unlimited usage</li>
                         <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />Router included</li>
-                        <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />No contract — cancel anytime</li>
+                        <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />No contract — 30-day rolling options available where eligible</li>
                         <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />UK-based support</li>
                       </ul>
                       <p className="mt-2.5 text-[11px] text-muted-foreground">Setup may apply depending on your line</p>
@@ -1204,7 +1204,7 @@ const PreCheckout = () => {
                       <p className="text-muted-foreground text-xs mt-0.5">
                         I agree to the{" "}
                         <Link to="/terms" className="underline text-foreground">Terms of Service</Link> and{" "}
-                        <Link to="/privacy" className="underline text-foreground">Privacy Policy</Link>. No contracts — cancel anytime.
+                        <Link to="/privacy" className="underline text-foreground">Privacy Policy</Link>. No contracts — 30-day rolling options available where eligible.
                       </p>
                     </div>
                   </label>

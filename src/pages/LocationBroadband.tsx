@@ -29,7 +29,7 @@ const LocationBroadband = () => {
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
     name: `OCCTA ${plan.name}`,
-    description: `Fibre broadband up to ${plan.speed}Mbps in ${location.city}. No contract, cancel anytime. ${plan.features.slice(0, 3).join(', ')}.`,
+    description: `Fibre broadband up to ${plan.speed}Mbps in ${location.city}. No contract, 30-day rolling options available where eligible. ${plan.features.slice(0, 3).join(', ')}.`,
     price: plan.price.toString(),
     url: `/pre-checkout?plans=${plan.id}`,
     sku: plan.id,
@@ -54,7 +54,7 @@ const LocationBroadband = () => {
   };
 
   const features = [
-    { icon: X, text: "Cancel Anytime" },
+    { icon: X, text: "30-Day Rolling Where Eligible" },
     { icon: Shield, text: "No Hidden Fees" },
     { icon: Clock, text: "7-Day Setup" },
   ];

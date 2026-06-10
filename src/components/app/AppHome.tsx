@@ -132,7 +132,7 @@ const AppHome = () => {
             </div>
             <div className="flex-1">
               <p className="font-semibold text-foreground">No Contract Broadband!</p>
-              <p className="text-sm text-muted-foreground">Cancel anytime, no hidden fees</p>
+              <p className="text-sm text-muted-foreground">30-day rolling options available where eligible, no hidden fees</p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </motion.div>

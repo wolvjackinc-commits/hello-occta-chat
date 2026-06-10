@@ -240,7 +240,7 @@ const BroadbandInner = () => {
             >
               <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
                 <Zap className="w-4 h-4 inline mr-2" />
-                Free installation available for a limited time
+                Setup from £0 where available for a limited time
               </div>
               <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display uppercase leading-[0.9] mb-3 sm:mb-4 text-foreground">
                 BROADBAND
@@ -451,7 +451,7 @@ const BroadbandInner = () => {
           <div className="card-brutal bg-card p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl md:text-3xl font-display uppercase mb-2">
-                Cancel anytime / No fixed term
+                30-day rolling options available where eligible / No fixed term
               </h2>
               <p className="text-muted-foreground max-w-2xl">
                 Need broadband without a long tie-in? See how our rolling plans keep you flexible with no fixed term commitments.

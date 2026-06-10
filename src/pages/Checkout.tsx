@@ -94,6 +94,16 @@ const Checkout = () => {
     if (planId) {
       const foundPlan = getPlanById(planId);
       if (foundPlan) {
+        // ── Broadband checkout gate ──
+        // Broadband orders must go through Build Plan → First Bill Preview → Contract Summary.
+        if (foundPlan.serviceType === 'broadband') {
+          toast({
+            title: "Broadband now uses Build Plan",
+            description: "Broadband orders require an address check, first bill preview and Contract Summary before payment.",
+          });
+          navigate("/build-plan", { replace: true });
+          return;
+        }
         setPlan(foundPlan);
       } else {
         navigate("/broadband");
@@ -101,7 +111,7 @@ const Checkout = () => {
     } else {
       navigate("/broadband");
     }
-  }, [planId, navigate]);
+  }, [planId, navigate, toast]);
 
   // Phase 1 pay-gate: new telecom sales require an accepted Contract Summary.
   // Legacy invoices (/pay-invoice) and payment-request links (/pay) are NOT gated.

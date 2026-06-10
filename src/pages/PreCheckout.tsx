@@ -222,6 +222,19 @@ const PreCheckout = () => {
       navigate("/broadband");
       return;
     }
+
+    // ── Broadband checkout gate ──
+    // Broadband orders must go through Build Plan → First Bill Preview → Contract Summary.
+    // Keep SIM-only / landline-only flows unchanged.
+    const hasBroadband = plans.some(p => p.serviceType === 'broadband');
+    if (hasBroadband) {
+      toast({
+        title: "Broadband now uses Build Plan",
+        description: "Broadband orders require an address check, first bill preview and Contract Summary before payment.",
+      });
+      navigate("/build-plan", { replace: true });
+      return;
+    }
     
     setSelectedPlans(plans);
     
@@ -236,7 +249,7 @@ const PreCheckout = () => {
       const addonIds = addonParam.split(",").filter(Boolean);
       setSelectedAddons(addonIds);
     }
-  }, [planIds, navigate, searchParams]);
+  }, [planIds, navigate, searchParams, toast]);
 
   const toggleAddon = (addonId: string) => {
     setSelectedAddons(prev => 

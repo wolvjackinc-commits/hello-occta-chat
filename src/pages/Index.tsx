@@ -56,7 +56,7 @@ const Index = () => {
       <Layout>
         <SEO 
           title="Cheap UK Broadband & SIM Plans"
-          description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £${getFromPrices().sim}, digital home phone from £${getFromPrices().landline}. No credit check, 30-day rolling options available where eligible. Get connected today!`}
+          description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. Price Lock 24 or Flex 30 where available, 900Mbps speeds, 5G SIM plans from £${getFromPrices().sim}, digital home phone from £${getFromPrices().landline}. 30-day rolling options available where eligible. Get connected today!`}
           canonical="/"
           keywords="cheap broadband UK, no contract broadband, flexible broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband"
           price={getFromPrices().broadband}

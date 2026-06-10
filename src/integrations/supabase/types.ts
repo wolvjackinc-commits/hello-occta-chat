@@ -2657,9 +2657,11 @@ export type Database = {
           created_at: string
           current_monthly_bill: number | null
           current_provider: string | null
+          customer_facing_message: string | null
           customer_id: string | null
           customer_type: Database["public"]["Enums"]["customer_type_kind"]
           email: string
+          final_quote_id: string | null
           full_name: string
           id: string
           ip: string | null
@@ -2686,9 +2688,11 @@ export type Database = {
           created_at?: string
           current_monthly_bill?: number | null
           current_provider?: string | null
+          customer_facing_message?: string | null
           customer_id?: string | null
           customer_type?: Database["public"]["Enums"]["customer_type_kind"]
           email: string
+          final_quote_id?: string | null
           full_name: string
           id?: string
           ip?: string | null
@@ -2715,9 +2719,11 @@ export type Database = {
           created_at?: string
           current_monthly_bill?: number | null
           current_provider?: string | null
+          customer_facing_message?: string | null
           customer_id?: string | null
           customer_type?: Database["public"]["Enums"]["customer_type_kind"]
           email?: string
+          final_quote_id?: string | null
           full_name?: string
           id?: string
           ip?: string | null
@@ -2764,11 +2770,21 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "quote_requests_final_quote_id_fkey"
+            columns: ["final_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
         ]
       }
       quotes: {
         Row: {
           admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          bucket_override_reason: string | null
           cease_fee_gross: number | null
           contract_length_months: number | null
           created_at: string
@@ -2782,6 +2798,7 @@ export type Database = {
           estimated_download_speed: number | null
           estimated_upload_speed: number | null
           expires_at: string
+          final_snapshot: Json | null
           id: string
           installation_gross: number
           installation_net: number
@@ -2823,6 +2840,9 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          bucket_override_reason?: string | null
           cease_fee_gross?: number | null
           contract_length_months?: number | null
           created_at?: string
@@ -2836,6 +2856,7 @@ export type Database = {
           estimated_download_speed?: number | null
           estimated_upload_speed?: number | null
           expires_at?: string
+          final_snapshot?: Json | null
           id?: string
           installation_gross?: number
           installation_net?: number
@@ -2877,6 +2898,9 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          bucket_override_reason?: string | null
           cease_fee_gross?: number | null
           contract_length_months?: number | null
           created_at?: string
@@ -2890,6 +2914,7 @@ export type Database = {
           estimated_download_speed?: number | null
           estimated_upload_speed?: number | null
           expires_at?: string
+          final_snapshot?: Json | null
           id?: string
           installation_gross?: number
           installation_net?: number
@@ -4517,6 +4542,11 @@ export type Database = {
         | "expired"
         | "rejected"
         | "converted"
+        | "in_review"
+        | "needs_info"
+        | "draft_quote_created"
+        | "final_quote_ready"
+        | "closed"
       quote_status_kind:
         | "draft"
         | "sent"
@@ -4525,6 +4555,7 @@ export type Database = {
         | "rejected"
         | "expired"
         | "converted"
+        | "approved"
       referral_code_status: "active" | "paused" | "expired" | "blocked"
       referral_event_type:
         | "clicked"
@@ -4819,6 +4850,11 @@ export const Constants = {
         "expired",
         "rejected",
         "converted",
+        "in_review",
+        "needs_info",
+        "draft_quote_created",
+        "final_quote_ready",
+        "closed",
       ],
       quote_status_kind: [
         "draft",
@@ -4828,6 +4864,7 @@ export const Constants = {
         "rejected",
         "expired",
         "converted",
+        "approved",
       ],
       referral_code_status: ["active", "paused", "expired", "blocked"],
       referral_event_type: [

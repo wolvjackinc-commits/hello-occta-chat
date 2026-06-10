@@ -80,7 +80,15 @@ Deno.serve(async (req) => {
   let bumped = false;
 
   if (i.build_plan) {
-    const candidates = await loadGiacomCandidates(supabase, i.build_plan.speed_bucket);
+    let candidates;
+    try {
+      candidates = await loadGiacomCandidates(supabase, i.build_plan.speed_bucket);
+    } catch (_e) {
+      return jsonResponse({
+        error: "quote_only",
+        message: "Final price needs manual confirmation for this address.",
+      }, 409);
+    }
     const resolved = resolveBuildPlanPrice(i.build_plan as any, settings?.fair_pricing ?? {}, candidates);
     if (resolved.quote_only) {
       return jsonResponse({

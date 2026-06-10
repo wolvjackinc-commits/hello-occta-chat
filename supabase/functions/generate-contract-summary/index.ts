@@ -3,6 +3,10 @@ import {
   LEGAL_TEXT_VERSION, COMPLAINTS_ADR_INFO_TEXT, DIGITAL_VOICE_WARNING_TEXT,
   PRICE_RISE_POLICY_TEXT, PAYMENT_SCHEDULE_TEXT_MONTHLY, VULNERABLE_CUSTOMER_NOTE_TEXT,
 } from "../_shared/legalText.ts";
+import {
+  resolveBuildPlanPrice, planTermLabel, speedBucketLabel,
+  PRICE_LOCK_WORDING, FLEX_30_WORDING, FIRST_BILL_PROMISE,
+} from "../_shared/buildPlanResolver.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -27,6 +31,58 @@ Deno.serve(async (req) => {
 
   const { data: q, error: qErr } = await supabase.from("quotes").select("*").eq("id", quote_id).maybeSingle();
   if (qErr || !q) return jsonResponse({ error: "quote_not_found" }, 404);
+
+  // ── Build Plan re-verify (if quote came from /build-plan) ──
+  let bpAddendum = "";
+  let bpFields: Record<string, unknown> = {};
+  let extraOneOff: { label: string; amount: number }[] = [];
+  if (q.speed_bucket && q.plan_term) {
+    const ro = (q.router_option ?? {}) as any;
+    const so = (q.setup_option  ?? {}) as any;
+    const addons = Array.isArray(q.selected_addons) ? (q.selected_addons as any[]).map((a) => a.id).filter(Boolean) : [];
+    const { data: settings } = await supabase
+      .from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();
+    const resolved = resolveBuildPlanPrice({
+      speed_bucket: q.speed_bucket,
+      plan_term: q.plan_term,
+      router_option: ro.option ?? "own",
+      router_payment_type: ro.payment_type ?? "none",
+      setup_option: so.option ?? "remote",
+      addons,
+      customer_type: q.customer_type,
+    }, settings?.fair_pricing ?? {});
+    if (resolved.quote_only) {
+      return jsonResponse({
+        error: "build_plan_unsafe",
+        message: "This combination is no longer safe to issue — please re-quote from a fresh Build Plan.",
+      }, 409);
+    }
+    const drift = Math.abs(Number(q.monthly_gross) - resolved.monthly_total_incl_vat);
+    if (drift > 0.02) {
+      return jsonResponse({
+        error: "price_drift",
+        message: `Stored monthly price (£${Number(q.monthly_gross).toFixed(2)}) no longer matches resolver (£${resolved.monthly_total_incl_vat.toFixed(2)}). Re-quote required.`,
+      }, 409);
+    }
+    const termCopy = q.plan_term === "price_lock_24" ? PRICE_LOCK_WORDING : FLEX_30_WORDING;
+    bpAddendum =
+      `\n\nPlan: ${speedBucketLabel(q.speed_bucket as any)} — ${planTermLabel(q.plan_term as any)}.` +
+      `\nRouter: ${resolved.router.label} (${resolved.router.payment_type === "monthly" ? `£${resolved.router.monthly.toFixed(2)}/mo` : resolved.router.oneOff > 0 ? `£${resolved.router.oneOff.toFixed(2)} one-off` : "£0"}).` +
+      `\nSetup: ${resolved.setup.label}${resolved.setup.oneOff > 0 ? ` (£${resolved.setup.oneOff.toFixed(2)} one-off)` : " (£0)"}.` +
+      (resolved.addons.length ? `\nAdd-ons: ${resolved.addons.map((a) => `${a.label} £${a.monthly.toFixed(2)}/mo`).join("; ")}.` : "") +
+      `\n\n${termCopy}` +
+      `\n\nEstimated first bill: £${resolved.first_bill_incl_vat.toFixed(2)} (incl. VAT).` +
+      `\n\n${FIRST_BILL_PROMISE}`;
+    bpFields = {
+      speed_bucket: q.speed_bucket,
+      plan_term: q.plan_term,
+      router_option: q.router_option,
+      setup_option: q.setup_option,
+      selected_addons: q.selected_addons,
+    };
+    if (resolved.router.oneOff > 0) extraOneOff.push({ label: resolved.router.label, amount: resolved.router.oneOff });
+    if (resolved.setup.oneOff  > 0) extraOneOff.push({ label: resolved.setup.label,  amount: resolved.setup.oneOff });
+  }
 
   const { data: qr } = await supabase
     .from("quote_requests")
@@ -67,6 +123,8 @@ Deno.serve(async (req) => {
     { label: "Delivery", amount: Number(q.delivery_gross) },
     { label: "Installation", amount: Number(q.installation_gross) },
   ].filter((x) => x.amount > 0);
+  // For Build Plan quotes, replace generic Setup/Router with the labelled lines.
+  const finalOneOff = q.speed_bucket && q.plan_term && extraOneOff.length ? extraOneOff : oneOffJson;
 
   const addr = [qr?.address_line_1, qr?.address_line_2, qr?.town, qr?.county, qr?.postcode].filter(Boolean).join(", ");
 
@@ -88,7 +146,7 @@ Deno.serve(async (req) => {
     monthly_price_incl_vat: q.monthly_gross,
     business_monthly_ex_vat: q.customer_type === "business" ? q.monthly_net : null,
     business_monthly_incl_vat: q.customer_type === "business" ? q.monthly_gross : null,
-    one_off_charges_json: oneOffJson,
+    one_off_charges_json: finalOneOff,
     setup_charge: q.setup_gross,
     router_charge: q.router_gross,
     delivery_charge: q.delivery_gross,
@@ -96,13 +154,17 @@ Deno.serve(async (req) => {
     cease_cancellation_charges: q.cease_fee_gross
       ? `Cease/early termination charges (if applicable): £${Number(q.cease_fee_gross).toFixed(2)}.`
       : "No cease or early termination charges apply to this plan beyond statutory notice.",
-    contract_length: q.plan_type === "flex"
-      ? "30-day rolling. Cancel with 30 days' notice."
-      : `${q.contract_length_months} months minimum term.`,
+    contract_length: q.plan_term === "price_lock_24"
+      ? `Price Lock 24 — 24 months minimum term.`
+      : q.plan_term === "flex_30"
+        ? "Flex 30 — 30-day rolling. Cancel with 30 days' notice."
+        : (q.plan_type === "flex"
+            ? "30-day rolling. Cancel with 30 days' notice."
+            : `${q.contract_length_months} months minimum term.`),
     notice_period: q.notice_period ?? "30 days",
     estimated_download_speed: q.estimated_download_speed,
     estimated_upload_speed: q.estimated_upload_speed,
-    speed_notes: q.speed_notes,
+    speed_notes: (q.speed_notes ?? "") + bpAddendum,
     price_rise_policy: q.price_rise_policy ?? PRICE_RISE_POLICY_TEXT,
     digital_voice_warning: isVoice ? DIGITAL_VOICE_WARNING_TEXT : null,
     vulnerable_customer_note: VULNERABLE_CUSTOMER_NOTE_TEXT,
@@ -113,6 +175,7 @@ Deno.serve(async (req) => {
     public_token_hash: hash,
     token_expires_at: tokenExpiresAt,
     issued_at: new Date().toISOString(),
+    ...bpFields,
   }).select("id, cs_number").single();
 
   if (csErr || !cs) return jsonResponse({ error: "create_failed", details: csErr?.message }, 500);

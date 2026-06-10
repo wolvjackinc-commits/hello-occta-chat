@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, ChevronRight, Check } from "lucide-react";
+import { Search, Loader2, ChevronRight, Check, Info } from "lucide-react";
 import { useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 
 interface PostcodeCheckerProps {
@@ -12,7 +12,7 @@ interface PostcodeCheckerProps {
 }
 
 const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false }: PostcodeCheckerProps) => {
-  const { status, postcode: ctxPostcode, addresses, selectedAddress, result, checkPostcode, selectAddress, reset } = useAvailability();
+  const { status, postcode: ctxPostcode, addresses, selectedAddress, result, errorType, checkPostcode, selectAddress, reset, triggerFallback } = useAvailability();
   const [localPostcode, setLocalPostcode] = useState(ctxPostcode || "");
   const navigate = useNavigate();
 
@@ -32,6 +32,13 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
   const isLoading = status === "loading-postcode" || status === "checking-address";
   const showInlineAddresses = !externalAddressSelect && status === "addresses" && addresses.length > 0;
   const showInlineResult = !externalAddressSelect && status === "success" && result;
+  const showFallback = !externalAddressSelect && status === "error" &&
+    (errorType === "backend-unavailable" || errorType === "availability-failed" || errorType === "no-addresses");
+
+  const goToFallbackPlans = () => {
+    triggerFallback(localPostcode);
+    navigate(`/build-plan?availability=fallback${localPostcode ? `&postcode=${encodeURIComponent(localPostcode)}` : ""}`);
+  };
 
   return (
     <div className={`w-full ${isHero ? "max-w-[700px]" : "max-w-xl"}`}>
@@ -103,7 +110,9 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
         <div className="mt-3 flex items-center gap-2">
           <Check className="w-4 h-4 text-primary flex-shrink-0" />
           <p className="text-sm font-medium text-foreground">
-            {result.primaryTechnology === "FTTP" ? "Full Fibre" : "Fibre"} available — {getShortAddress(selectedAddress)}
+            {result.primaryTechnology === "FTTP"
+              ? "Full Fibre appears available"
+              : "Broadband options found"} — {getShortAddress(selectedAddress)}
           </p>
           <button onClick={reset} className="text-xs text-primary hover:underline ml-auto font-medium">
             Change
@@ -112,17 +121,49 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
       )}
 
       {showInlineResult && (
-        <Button
-          onClick={() => navigate("/build-plan")}
-          size="lg"
-          className="mt-3 w-full h-12 font-display uppercase tracking-wider"
-        >
-          Build your plan <ChevronRight className="w-4 h-4 ml-1" />
-        </Button>
+        <>
+          <p className="text-xs text-muted-foreground mt-2">
+            {result?.primaryTechnology === "FTTP"
+              ? "Final speed, setup and price are confirmed before order."
+              : "Choose your plan and we'll confirm the final speed, setup and price before order."}
+          </p>
+          <Button
+            onClick={() => navigate("/build-plan")}
+            size="lg"
+            className="mt-3 w-full h-12 font-display uppercase tracking-wider"
+          >
+            Build your plan <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </>
+      )}
+
+      {/* Fallback when availability API can't confirm */}
+      {showFallback && (
+        <div className="mt-3 border-4 border-foreground bg-card p-4">
+          <div className="flex items-start gap-2">
+            <Info className="w-5 h-5 text-foreground flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-display uppercase text-sm tracking-wider">Broadband options available to view</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. We'll confirm the final availability, speed, setup and price before you order.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={goToFallbackPlans}
+            size="lg"
+            className="mt-4 w-full h-12 font-display uppercase tracking-wider"
+          >
+            View plans <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            No payment is taken until your final quote and Contract Summary are confirmed.
+          </p>
+        </div>
       )}
 
       {/* Helper line */}
-      {!showInlineAddresses && !showInlineResult && (
+      {!showInlineAddresses && !showInlineResult && !showFallback && (
         <p className="text-xs text-muted-foreground mt-3 flex flex-wrap gap-x-3 gap-y-1">
           <span>✓ Takes 10 seconds</span>
           <span>✓ No commitment</span>

@@ -125,7 +125,7 @@ const BroadbandInner = () => {
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
     name: `OCCTA ${plan.name}`,
-    description: `Fibre broadband up to ${plan.speed}Mbps. No contract, cancel anytime. ${plan.features.slice(0, 3).join(', ')}.`,
+    description: `Fibre broadband up to ${plan.speed}Mbps. No contract, 30-day rolling options available where eligible. ${plan.features.slice(0, 3).join(', ')}.`,
     price: plan.price.toString(),
     url: `/pre-checkout?plans=${plan.id}`,
     sku: plan.id,
@@ -141,9 +141,9 @@ const BroadbandInner = () => {
     <LayoutComponent>
       <SEO 
         title="Cheap Broadband UK - No Contract Fibre"
-        description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, cancel anytime. Best budget broadband 2025.`}
+        description={`Cheap broadband UK from £${getFromPrices().broadband}/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, 30-day rolling options available where eligible. Best budget broadband 2025.`}
         canonical="/broadband"
-        keywords="cheap broadband UK, no contract broadband, cancel anytime broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
+        keywords="cheap broadband UK, no contract broadband, flexible broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
         price={getFromPrices().broadband}
       />
       <StructuredData customSchema={combinedSchemas} />
@@ -250,7 +250,7 @@ const BroadbandInner = () => {
               <p className="text-sm sm:text-lg text-muted-foreground mb-4 sm:mb-6 max-w-lg">
                 Fast, reliable internet without the corporate nonsense. 
                 From £{getFromPrices().broadband}/month with no price rises mid-contract — cheap broadband UK
-                that stays no contract broadband and cancel anytime broadband.
+                that stays flexible with 30-day rolling options available where eligible.
               </p>
               <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
                 Want flexible terms?{" "}

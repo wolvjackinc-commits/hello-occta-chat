@@ -220,6 +220,11 @@ const Auth = () => {
                 : "Create an account to manage your services, view bills, and more."
               }
             </CardDescription>
+            {linkQr && (
+              <div className="text-xs border-2 border-foreground/30 bg-muted/40 p-2 mt-2">
+                Use the same email address from your quote request so we can link it to your dashboard.
+              </div>
+            )}
           </CardHeader>
           
           <Tabs value={activeTab} onValueChange={setActiveTab}>

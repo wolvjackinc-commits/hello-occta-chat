@@ -1,16 +1,16 @@
 import { motion } from "framer-motion";
-import { Phone, Clock, PoundSterling, Users, Zap, ThumbsUp } from "lucide-react";
+import { Phone, Lock, PoundSterling, Users, Zap, ThumbsUp } from "lucide-react";
 
 const reasons = [
   {
-    icon: Clock,
-    title: "NO CONTRACTS",
-    description: "Leave anytime. No exit fees. No tricks.",
+    icon: Lock,
+    title: "PRICE LOCK 24 OR FLEX 30",
+    description: "Pick a fixed Price Lock plan, or a 30-day rolling option where available.",
   },
   {
     icon: PoundSterling,
-    title: "NO PRICE HIKES",
-    description: "What you see is what you pay.",
+    title: "NO CONFUSING MID-CONTRACT RISES",
+    description: "On Price Lock 24 your monthly broadband price stays fixed for the agreed term.",
   },
   {
     icon: Zap,

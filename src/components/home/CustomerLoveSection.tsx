@@ -13,7 +13,7 @@ But I know when the Wi-Fi is slow.
 With OCCTA, my games load faster, my videos don't buffer, and nobody yells "WHO'S USING ALL THE INTERNET?" anymore.
 
 I don't know what a telecom provider is, but this one didn't break anything. So… 10/10.`,
-    caption: "Fast broadband. No contracts. Even kids notice.",
+    caption: "Fast broadband. Clear pricing. Even kids notice.",
   },
   {
     icon: User,

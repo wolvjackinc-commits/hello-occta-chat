@@ -118,7 +118,7 @@ const BroadbandInner = () => {
 
   const broadbandServiceSchema = createServiceSchema({
     name: 'OCCTA Broadband',
-    description: 'Fast, reliable fibre broadband with speeds up to 900Mbps. No contracts, no price rises.',
+    description: 'Fast, reliable fibre broadband with speeds up to 900Mbps. Price Lock 24 or Flex 30 where available.',
     url: '/broadband',
     price: getFromPrices().broadband,
   });
@@ -583,7 +583,7 @@ const BroadbandInner = () => {
             ✔ Setup usually within 7 days · ✔ We notify your current provider · ✔ No downtime during switch
           </p>
           <p className="text-center text-xs text-muted-foreground/70 mt-2">
-            No contracts. No pressure. Just better broadband.
+            Price Lock 24 or Flex 30 where available. Final price confirmed before order.
           </p>
         </div>
       </section>
@@ -651,11 +651,10 @@ const BroadbandInner = () => {
               </div>
               <div>
                 <h2 className="text-2xl md:text-3xl font-display uppercase mb-2">
-                  Router Included
+                  Router Choice
                 </h2>
                 <p className="text-muted-foreground max-w-2xl">
-                  Your broadband plan includes a Wi-Fi router. If you add Digital Home Phone, 
-                  simply plug your phone into the router. Most standard home phones are supported.
+                  Bring your own compatible router for £0, or pick a router at checkout. If you add Digital Home Phone, simply plug your phone into your router — most standard home phones are supported.
                 </p>
               </div>
             </div>

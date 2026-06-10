@@ -34,7 +34,7 @@ export const comparisons: Comparison[] = [
     heroSubtitle: "Same network. Better deal.",
     intro: "BT is the UK\u2019s biggest broadband provider, but bigger doesn\u2019t always mean better value. Both OCCTA and BT use the same Openreach fibre network, so you get the same infrastructure \u2014 but at very different prices. Here\u2019s how they compare.",
     points: [
-      { feature: "Monthly price (superfast)", occta: "From \u00A322.99/mo", competitor: "From \u00A331.99/mo" },
+      { feature: "Monthly price (superfast)", occta: "From \u00A334.99/mo", competitor: "From \u00A331.99/mo" },
       { feature: "Contract length", occta: "No contract \u2014 rolling monthly", competitor: "24-month contract" },
       { feature: "Mid-contract price rises", occta: "None \u2014 price fixed", competitor: "CPI + 3.9% annual increase" },
       { feature: "Setup fees", occta: "Setup from £0 where available. Bring your own router for £0, or choose a router at checkout", competitor: "\u00A39.99\u2013\u00A359.99 setup fee" },
@@ -61,7 +61,7 @@ export const comparisons: Comparison[] = [
     heroSubtitle: "Cut the bundle. Keep the speed.",
     intro: "Sky is known for TV bundles, but if you just want fast, cheap broadband without the extras, you might be overpaying. OCCTA offers the same Openreach-powered fibre without the bundle bloat.",
     points: [
-      { feature: "Monthly price (superfast)", occta: "From \u00A322.99/mo", competitor: "From \u00A329/mo" },
+      { feature: "Monthly price (superfast)", occta: "From \u00A334.99/mo", competitor: "From \u00A329/mo" },
       { feature: "Contract length", occta: "No contract", competitor: "18-month contract" },
       { feature: "Mid-contract price rises", occta: "None", competitor: "CPI + 3.9% annual" },
       { feature: "Setup fees", occta: "Free", competitor: "\u00A329.95 setup" },
@@ -88,7 +88,7 @@ export const comparisons: Comparison[] = [
     heroSubtitle: "Different network. Better value.",
     intro: "Virgin Media uses its own cable network, while OCCTA uses Openreach fibre. Both offer ultrafast speeds, but the pricing and contract terms are very different.",
     points: [
-      { feature: "Monthly price (superfast)", occta: "From \u00A322.99/mo", competitor: "From \u00A333/mo" },
+      { feature: "Monthly price (superfast)", occta: "From \u00A334.99/mo", competitor: "From \u00A333/mo" },
       { feature: "Contract length", occta: "No contract", competitor: "18-month contract" },
       { feature: "Mid-contract price rises", occta: "None", competitor: "CPI + 3.9% annual" },
       { feature: "Setup fees", occta: "Free", competitor: "\u00A335 setup fee" },
@@ -115,7 +115,7 @@ export const comparisons: Comparison[] = [
     heroSubtitle: "Budget broadband. Without the catch.",
     intro: "TalkTalk is known for budget broadband, but their contracts still come with lock-ins and annual price rises. OCCTA matches the low price and removes the restrictions.",
     points: [
-      { feature: "Monthly price (superfast)", occta: "From \u00A322.99/mo", competitor: "From \u00A324/mo" },
+      { feature: "Monthly price (superfast)", occta: "From \u00A334.99/mo", competitor: "From \u00A324/mo" },
       { feature: "Contract length", occta: "No contract", competitor: "18 or 24 months" },
       { feature: "Mid-contract price rises", occta: "None", competitor: "CPI + 3.7% annual" },
       { feature: "Setup fees", occta: "Free", competitor: "Free (promotional)" },
@@ -126,7 +126,7 @@ export const comparisons: Comparison[] = [
     ],
     summary: "TalkTalk competes on price but still locks you into contracts with annual increases. OCCTA gives you the same budget pricing with more speed options and complete flexibility.",
     faqs: [
-      { question: "Is OCCTA cheaper than TalkTalk?", answer: "OCCTA starts from \u00A322.99/mo. When you factor in TalkTalk\u2019s annual price rises, OCCTA is often cheaper over 12 months." },
+      { question: "Is OCCTA cheaper than TalkTalk?", answer: "OCCTA starts from \u00A334.99/mo. When you factor in TalkTalk\u2019s annual price rises, OCCTA is often cheaper over 12 months." },
       { question: "Does OCCTA have faster speeds than TalkTalk?", answer: "Yes. OCCTA offers speeds up to 900Mbps, while TalkTalk tops out at around 500Mbps." },
       { question: "Can I switch from TalkTalk to OCCTA?", answer: "Yes. Both use Openreach, so the One Touch Switch process handles everything automatically." },
     ],
@@ -141,7 +141,7 @@ export const comparisons: Comparison[] = [
     heroSubtitle: "Real value. No strings attached.",
     intro: "Plusnet (owned by BT) markets itself as friendly, good-value broadband. OCCTA takes that further with no contracts, no price rises, and genuinely fixed pricing.",
     points: [
-      { feature: "Monthly price (superfast)", occta: "From \u00A322.99/mo", competitor: "From \u00A325.99/mo" },
+      { feature: "Monthly price (superfast)", occta: "From \u00A334.99/mo", competitor: "From \u00A325.99/mo" },
       { feature: "Contract length", occta: "No contract", competitor: "18 or 24 months" },
       { feature: "Mid-contract price rises", occta: "None", competitor: "CPI + 3.9% annual" },
       { feature: "Setup fees", occta: "Free", competitor: "\u00A35\u2013\u00A310 activation" },

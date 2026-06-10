@@ -46,7 +46,7 @@ export function usePlatformSettings() {
     queryKey: ["platform_settings"],
     queryFn: async (): Promise<PlatformSettings> => {
       const { data, error } = await (supabase as any)
-        .from("platform_settings")
+        .from("platform_settings_public")
         .select("*")
         .eq("singleton", true)
         .maybeSingle();

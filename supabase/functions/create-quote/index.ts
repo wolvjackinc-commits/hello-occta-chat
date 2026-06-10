@@ -1,21 +1,24 @@
 import { corsHeaders, jsonResponse, getServiceClient, requireStaff, generateTokenPair } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import {
+  resolveBuildPlanPrice, planTermLabel, speedBucketLabel,
+} from "../_shared/buildPlanResolver.ts";
 
 const Schema = z.object({
   quote_request_id: z.string().uuid(),
-  plan_name: z.string().min(2).max(120),
-  service_type: z.enum(["broadband","sim","digital_voice","business","switching","bundle","other"]),
-  plan_type: z.enum(["flex","contract_saver"]),
-  customer_type: z.enum(["residential","business"]),
+  plan_name: z.string().min(2).max(120).optional(),
+  service_type: z.enum(["broadband","sim","digital_voice","business","switching","bundle","other"]).optional(),
+  plan_type: z.enum(["flex","contract_saver"]).optional(),
+  customer_type: z.enum(["residential","business"]).optional(),
   contract_length_months: z.number().int().min(0).max(60).nullable().optional(),
   supplier_name: z.string().max(120).nullable().optional(),
   supplier_product_id: z.string().max(120).nullable().optional(),
   supplier_reference: z.string().max(120).nullable().optional(),
-  monthly_net: z.number().min(0).max(100000),
-  setup_net: z.number().min(0).max(100000).default(0),
-  router_net: z.number().min(0).max(100000).default(0),
-  delivery_net: z.number().min(0).max(100000).default(0),
-  installation_net: z.number().min(0).max(100000).default(0),
+  monthly_net: z.number().min(0).max(100000).optional(),
+  setup_net: z.number().min(0).max(100000).default(0).optional(),
+  router_net: z.number().min(0).max(100000).default(0).optional(),
+  delivery_net: z.number().min(0).max(100000).default(0).optional(),
+  installation_net: z.number().min(0).max(100000).default(0).optional(),
   cease_fee_gross: z.number().min(0).max(100000).nullable().optional(),
   estimated_download_speed: z.number().int().min(0).max(100000).nullable().optional(),
   estimated_upload_speed: z.number().int().min(0).max(100000).nullable().optional(),
@@ -24,6 +27,19 @@ const Schema = z.object({
   expires_in_days: z.number().int().min(1).max(60).default(14),
   admin_notes: z.string().max(2000).nullable().optional(),
   customer_notes: z.string().max(2000).nullable().optional(),
+  // Build Plan re-resolve mode: when present, server recalculates pricing
+  // from selections — ignoring all *_net fields above. Selections only.
+  build_plan: z.object({
+    speed_bucket: z.enum(["essential","superfast","ultrafast","gigabit"]),
+    plan_term: z.enum(["price_lock_24","flex_30"]),
+    router_option: z.enum(["own","standard","premium","business"]),
+    router_payment_type: z.enum(["none","one_off","monthly"]).default("none"),
+    setup_option: z.enum(["remote","standard","engineer","complex"]),
+    addons: z.array(z.enum(["priority_support","static_ip","digital_voice","paper_billing"])).default([]),
+    customer_type: z.enum(["residential","business"]).default("residential"),
+    max_download: z.number().int().min(0).max(100000).optional(),
+    primary_technology: z.string().max(40).optional(),
+  }).optional(),
 });
 
 function round2(n: number) { return Math.round(n * 100) / 100; }
@@ -51,11 +67,61 @@ Deno.serve(async (req) => {
     return { net: round2(net), vat, gross: round2(net + vat) };
   };
 
-  const m = compute(i.monthly_net);
-  const s = compute(i.setup_net);
-  const r = compute(i.router_net);
-  const d = compute(i.delivery_net);
-  const ins = compute(i.installation_net);
+  // ── Build Plan re-resolve path ──
+  let bpFields: Record<string, unknown> = {};
+  let bpAdminNote = "";
+  let m, s, r, d, ins;
+  let resolvedPlanName: string | undefined;
+  let resolvedServiceType: string | undefined;
+  let resolvedPlanType: string | undefined;
+  let resolvedCustomerType: string | undefined;
+  let resolvedContractMonths: number | null | undefined;
+  let bumped = false;
+
+  if (i.build_plan) {
+    const resolved = resolveBuildPlanPrice(i.build_plan as any, settings?.fair_pricing ?? {});
+    if (resolved.quote_only) {
+      return jsonResponse({
+        error: "quote_only",
+        message: resolved.message,
+        hint: "This address needs a manual quote so we can confirm the best available option.",
+      }, 409);
+    }
+    bumped = resolved.bumped;
+    const monthlyExVat = resolved.internal.monthly_broadband_ex_vat + resolved.internal.router_monthly_ex_vat + resolved.internal.addons_monthly_ex_vat;
+    m   = compute(monthlyExVat);
+    s   = compute(resolved.internal.setup_one_off_ex_vat);
+    r   = compute(resolved.internal.router_one_off_ex_vat);
+    d   = compute(0);
+    ins = compute(0);
+    resolvedPlanName     = i.plan_name ?? `${speedBucketLabel(i.build_plan.speed_bucket)} — ${planTermLabel(i.build_plan.plan_term)}`;
+    resolvedServiceType  = "broadband";
+    resolvedPlanType     = i.build_plan.plan_term === "flex_30" ? "flex" : "contract_saver";
+    resolvedCustomerType = i.build_plan.customer_type;
+    resolvedContractMonths = i.build_plan.plan_term === "price_lock_24" ? 24 : null;
+    bpFields = {
+      speed_bucket: i.build_plan.speed_bucket,
+      plan_term: i.build_plan.plan_term,
+      router_option: { option: resolved.router.option, label: resolved.router.label, monthly: resolved.router.monthly, oneOff: resolved.router.oneOff, payment_type: resolved.router.payment_type },
+      setup_option:  { option: resolved.setup.option,  label: resolved.setup.label,  oneOff: resolved.setup.oneOff },
+      selected_addons: resolved.addons,
+    };
+    if (bumped) bpAdminNote = "[Build Plan: price auto-bumped to safe amount]\n";
+  } else {
+    if (i.monthly_net == null || !i.plan_name || !i.service_type || !i.plan_type || !i.customer_type) {
+      return jsonResponse({ error: "validation", message: "monthly_net, plan_name, service_type, plan_type, customer_type are required when build_plan is not provided" }, 400);
+    }
+    m   = compute(i.monthly_net);
+    s   = compute(i.setup_net ?? 0);
+    r   = compute(i.router_net ?? 0);
+    d   = compute(i.delivery_net ?? 0);
+    ins = compute(i.installation_net ?? 0);
+    resolvedPlanName     = i.plan_name;
+    resolvedServiceType  = i.service_type;
+    resolvedPlanType     = i.plan_type;
+    resolvedCustomerType = i.customer_type;
+    resolvedContractMonths = i.contract_length_months ?? null;
+  }
   const totalDueToday = round2(s.gross + r.gross + d.gross + ins.gross);
 
   const { raw, hash } = await generateTokenPair();
@@ -73,11 +139,11 @@ Deno.serve(async (req) => {
     supplier_name: i.supplier_name ?? null,
     supplier_product_id: i.supplier_product_id ?? null,
     supplier_reference: i.supplier_reference ?? null,
-    plan_name: i.plan_name,
-    service_type: i.service_type,
-    plan_type: i.plan_type,
-    customer_type: i.customer_type,
-    contract_length_months: i.contract_length_months ?? null,
+    plan_name: resolvedPlanName,
+    service_type: resolvedServiceType,
+    plan_type: resolvedPlanType,
+    customer_type: resolvedCustomerType,
+    contract_length_months: resolvedContractMonths,
     monthly_net: m.net, monthly_vat_rate: vatActive ? vatRate : 0, monthly_vat_amount: m.vat, monthly_gross: m.gross,
     setup_net: s.net, setup_vat_amount: s.vat, setup_gross: s.gross,
     router_net: r.net, router_vat_amount: r.vat, router_gross: r.gross,
@@ -92,10 +158,11 @@ Deno.serve(async (req) => {
     expires_at: expiresAt,
     token_expires_at: expiresAt,
     public_token_hash: hash,
-    admin_notes: (vatActive ? "" : "[VAT inactive in platform_settings]\n") + (i.admin_notes ?? ""),
+    admin_notes: (vatActive ? "" : "[VAT inactive in platform_settings]\n") + bpAdminNote + (i.admin_notes ?? ""),
     customer_notes: i.customer_notes ?? null,
     created_by: auth.userId,
     status: "draft",
+    ...bpFields,
   }).select("id, quote_number").single();
 
   if (error || !quote) return jsonResponse({ error: "create_failed", details: error?.message }, 500);
@@ -104,7 +171,7 @@ Deno.serve(async (req) => {
   await supabase.rpc("log_event", {
     _actor_type: "admin", _event_type: "quote_created",
     _title: `Quote created ${quote.quote_number}`,
-    _details: { quote_id: quote.id, quote_request_id: i.quote_request_id, service: i.service_type, plan_type: i.plan_type, vat_active: vatActive },
+    _details: { quote_id: quote.id, quote_request_id: i.quote_request_id, service: resolvedServiceType, plan_type: resolvedPlanType, vat_active: vatActive, build_plan: !!i.build_plan, bumped },
     _source_module: "quote", _quote_id: quote.id,
   });
   await supabase.from("quote_events").insert({
@@ -114,5 +181,5 @@ Deno.serve(async (req) => {
   });
 
   // Return raw token ONCE so admin UI can show the customer link and copy to clipboard if needed.
-  return jsonResponse({ ok: true, quote_id: quote.id, quote_number: quote.quote_number, public_token: raw });
+  return jsonResponse({ ok: true, quote_id: quote.id, quote_number: quote.quote_number, public_token: raw, bumped });
 });

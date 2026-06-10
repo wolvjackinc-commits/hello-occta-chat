@@ -3961,6 +3961,63 @@ export type Database = {
           },
         ]
       }
+      platform_settings_public: {
+        Row: {
+          api_mode: string | null
+          business_vat_display: string | null
+          created_at: string | null
+          id: string | null
+          manual_mode_message: string | null
+          residential_vat_display: string | null
+          rewards_custom_rule: Json | null
+          rewards_enabled: boolean | null
+          rewards_unlock_rule: string | null
+          sim_checkout_mode: string | null
+          singleton: boolean | null
+          updated_at: string | null
+          vat_default_rate: number | null
+          vat_effective_date: string | null
+          vat_number: string | null
+          vat_scheme: string | null
+        }
+        Insert: {
+          api_mode?: string | null
+          business_vat_display?: string | null
+          created_at?: string | null
+          id?: string | null
+          manual_mode_message?: string | null
+          residential_vat_display?: string | null
+          rewards_custom_rule?: Json | null
+          rewards_enabled?: boolean | null
+          rewards_unlock_rule?: string | null
+          sim_checkout_mode?: string | null
+          singleton?: boolean | null
+          updated_at?: string | null
+          vat_default_rate?: number | null
+          vat_effective_date?: string | null
+          vat_number?: string | null
+          vat_scheme?: string | null
+        }
+        Update: {
+          api_mode?: string | null
+          business_vat_display?: string | null
+          created_at?: string | null
+          id?: string | null
+          manual_mode_message?: string | null
+          residential_vat_display?: string | null
+          rewards_custom_rule?: Json | null
+          rewards_enabled?: boolean | null
+          rewards_unlock_rule?: string | null
+          sim_checkout_mode?: string | null
+          singleton?: boolean | null
+          updated_at?: string | null
+          vat_default_rate?: number | null
+          vat_effective_date?: string | null
+          vat_number?: string | null
+          vat_scheme?: string | null
+        }
+        Relationships: []
+      }
       public_contract_benefits_view: {
         Row: {
           active: boolean | null

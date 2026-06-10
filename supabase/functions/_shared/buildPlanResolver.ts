@@ -359,23 +359,28 @@ export function stripInternal<T extends Record<string, any>>(obj: T): Record<str
 
 /** Load the Giacom broadband candidate set from supplier_products via service client. */
 export async function loadGiacomCandidates(supabase: any, bucket: SpeedBucket): Promise<SupplierProductCandidate[]> {
-  try {
-    const { data: profile } = await supabase
-      .from("supplier_profiles")
-      .select("id")
-      .eq("supplier_name", "Giacom")
-      .maybeSingle();
-    if (!profile) return [];
-    const { data } = await supabase
-      .from("supplier_products")
-      .select("id, product_name, network, technology, download_speed_mbps, upload_speed_mbps, min_term_months, supplier_monthly_net, care_level_uplift_net, connection_fee_net, router_required, router_compatible, etf_applies, disconnect_fee_in_12m_net, disconnect_fee_after_12m_net, bucket_hint, quote_only, active, service_type")
-      .eq("supplier_id", profile.id)
-      .eq("active", true)
-      .eq("quote_only", false)
-      .eq("bucket_hint", bucket)
-      .eq("service_type", "broadband");
-    return (data ?? []) as SupplierProductCandidate[];
-  } catch {
-    return [];
-  }
+  const { data: profile, error: profErr } = await supabase
+    .from("supplier_profiles")
+    .select("id")
+    .eq("supplier_name", "Giacom")
+    .maybeSingle();
+  if (profErr) throw new Error("supplier_profile_load_failed");
+  if (!profile) return [];
+  const { data, error } = await supabase
+    .from("supplier_products")
+    .select("id, product_name, network, technology, download_speed_mbps, upload_speed_mbps, min_term_months, supplier_monthly_net, care_level_uplift_net, connection_fee_net, router_required, router_compatible, etf_applies, disconnect_fee_in_12m_net, disconnect_fee_after_12m_net, bucket_hint, quote_only, active, service_type, tags")
+    .eq("supplier_id", profile.id)
+    .eq("active", true)
+    .eq("quote_only", false)
+    .eq("bucket_hint", bucket)
+    .eq("service_type", "broadband");
+  if (error) throw new Error("supplier_products_load_failed");
+  return (data ?? []) as SupplierProductCandidate[];
 }
+
+/** Safe quote-only result for loader failures. Never returns priced fallback. */
+export const LOADER_FAILURE_QUOTE_ONLY: ResolvedQuoteOnly = {
+  ok: true,
+  quote_only: true,
+  message: "Final price needs manual confirmation for this address.",
+};

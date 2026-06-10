@@ -722,7 +722,7 @@ const PreCheckout = () => {
                       </div>
                       <ul className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
                         <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />Unlimited usage</li>
-                        <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />Router included</li>
+                        <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />Bring your own router for £0, or add one at checkout</li>
                         <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />No contract — 30-day rolling options available where eligible</li>
                         <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-foreground flex-shrink-0" strokeWidth={2.5} />UK-based support</li>
                       </ul>

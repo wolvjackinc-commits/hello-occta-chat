@@ -1,364 +1,335 @@
-Approved — start Phase 3C only, with these corrections before coding.
+Approved to proceed with Phase 3D only, but apply these corrections first.
 
-Critical correction:
+Do not start Phase 7.  
+Do not touch Worldpay HPP/webhook, invoice generation, DD mandates, /pay, /pay-invoice, checkout gate, rewards, campaigns, complaints, finance exports, SEO setup or AI chat.
 
-Do not run margin guard or supplier-cost calculations in the browser.
+Corrections before coding:
 
-The customer-facing Build Your Plan UI can show safe prices and options, but supplier cost, supplier product IDs, Giacom cost rows, margin calculations and internal pricing logic must stay server-side.
+1. Include 36-month terms
 
-Use this structure:
+Update `min_term_months` to support:
 
-1. Client-side Build Your Plan
+- 1
+- 12
+- 24
+- 36
 
-- Shows speed bucket, Price Lock/Flex, router options, setup options and add-ons.
-- Shows safe returned customer price only.
-- Shows first bill preview using customer-safe returned values.
-- Never receives supplier cost, supplier product ID, margin result details or Giacom ratecard values.
+The Giacom broadband ratecard includes 36-month pricing for some Sky Business Wholesale and BT Wholesale products, so 36 must not be excluded.
 
-2. Server-side pricing resolver
+2. Add missing product fields
 
-Create an edge function or RPC:
+Add these fields if they do not already exist:
 
-resolve-build-plan-price
+- `technology` text: FTTP / SOGEA / SOADSL / FTTC / ADSL / CityFibre FTTP
+- `source_document` text
+- `source_page` text or int
+- `source_section` text
+- `supplier_router_net` numeric nullable
+- `router_required` bool default false
+- `router_notes` text nullable
 
-Input:
+Every imported row should show where it came from in the ratecard.
 
-- address/availability reference
-- speed_bucket
-- plan_term
-- router_option
-- router_payment_type
-- setup_option
-- addons
-- customer_type
+3. Do not create any guessed rows
 
-Server does:
+If the actual Giacom Broadband Ratecard is not uploaded inside the Lovable workspace, do not seed representative pricing.
 
-- finds available internal supplier products
-- maps them to Essential/Superfast/Ultrafast
-- selects safe product
-- applies fair_pricing settings
-- applies router/setup/add-on pricing
-- applies margin guard
-- auto-bumps price if margin fails
-- falls back to “available by quote” if no safe price exists
+Use this order:
 
-Return only:
+- best: parse the re-uploaded ratecard and seed real rows
+- fallback: build schema + admin import UI with zero rows
+- avoid: guessed starter rows
 
-- customer monthly incl VAT
-- customer monthly ex VAT if business
-- VAT amount
-- one-off charges
-- add-ons
-- first bill total
-- eligibility wording
-- Price Lock/Flex wording
-- quote-only flag if needed
+All imported rows must be `active=false` by default until admin reviews them.
 
-Do not return:
+4. Resolver must use only active rows for customer pricing
 
-- supplier cost
-- supplier product ID
-- margin calculation
-- internal notes
-- Giacom document values
-- margin floor
-- selected wholesale provider unless admin later enables network branding safely
+Live `/build-plan` pricing must use only:
 
-3. Contract Summary / Quote safety
+`active = true`  
+`quote_only = false`  
+`bucket_hint IS NOT NULL`  
+Giacom broadband products only
 
-Do not trust client-submitted prices.
+Inactive rows may be visible in admin and test mode only, clearly labelled inactive/test.
 
-When create-quote receives selected options, server must recalculate the final pricing using the same server-side resolver.
+5. Gigabit handling
 
-Client can submit:
+Keep the public website as 3 main customer cards:
 
-- selected speed bucket
-- selected term
-- router option
-- setup option
-- add-ons
+- Essential
+- Superfast
+- Ultrafast
 
-Server must calculate:
+Gigabit can exist internally as a bucket or upgrade, but do not create a confusing fourth public card unless it is shown as:  
+“Gigabit upgrade where available.”
 
-- monthly charge
-- VAT
-- one-off charges
-- first bill
-- margin pass/fail
-- Contract Summary line items
+6. CSV importer safety
 
-4. Price Lock wording
+`admin-import-supplier-products` must:
 
-Do not use “No price rises” as a general claim.
+- require admin/super_admin role server-side
+- validate every numeric field
+- use an allowlist of accepted columns
+- reject unknown dangerous fields
+- mark imported rows active=false by default
+- add source document/page/section
+- log import activity
+- never expose imported supplier costs publicly
 
-Use only:  
-“No confusing annual rises on Price Lock plans.”
+7. Test mode safety
 
-Customer wording:  
-“Your monthly broadband price stays the same for the agreed Price Lock term. Optional add-ons, usage charges, services added later, or charges outside the Price Lock scope may change only where shown or agreed.”
+`/build-plan?test=1&postcode=TEST` must be admin-only.
 
-5. Flex 30 wording
+In test mode:
+
+- no real customer email
+- no normal admin email unless clearly marked TEST
+- no real order
+- no payment link
+- no live Contract Summary
+- quote_request/quote, if created, must be labelled TEST / INTERNAL
+- test quote must not proceed to payment
+
+8. Remove or replace `mem://pricing/giacom-supplier-catalogue`
+
+Do not rely on `mem://` memory for the application.
+
+Instead, create normal project documentation:
+
+- `docs/giacom-supplier-catalogue.md`
+- `docs/build-plan-test-mode.md`
+
+The source of truth must remain database rows + uploaded ratecard + admin import page.
+
+9. Contract Summary warnings
+
+Good: add customer-safe ETF/disconnection wording.
+
+But do not show wholesale fee values to the customer.
 
 Use:  
-“30-day rolling broadband where available. If your monthly broadband price needs to change, we tell you first and you can leave before the change.”
+“Cease, disconnection or early termination charges may apply depending on your selected service and when it ends. Any known charges are shown before you order.”
 
-Do not say:  
-“cancel anytime”
+10. Data leak protection
 
-6. Public pricing
+Use an explicit response allowlist in every public edge function.
 
-The public headline cards can show:
-
-- Essential Fibre from £29.99/month
-- Superfast Fibre from £34.99/month
-- Ultrafast Fibre from £39.99/month
-
-But the disclosure must say:  
-“From prices depend on address availability, selected plan type, router choice, setup type and margin-safe availability. Final charges are confirmed before order.”
-
-7. First Bill Preview
-
-First Bill Preview must use returned safe pricing from the server.
-
-It must show:
-
-- broadband monthly
-- router monthly or one-off
-- setup
-- add-ons
-- VAT
-- first bill estimate
-
-Copy:  
-“If it is not shown in your Contract Summary, we do not add it without your agreement.”
-
-8. Admin Fair Pricing controls
-
-Good to use `platform_settings.fair_pricing` JSONB.
-
-Admin controls should include:
-
-- headline prices
-- Price Lock enabled
-- Flex 30 enabled
-- router prices
-- setup prices
-- add-on prices
-- buffers
-- margin floors
-- fallback behaviour: auto-bump / quote-only
-
-Only admin/super_admin/finance_admin should edit.
-
-9. Contract Summary carry-through
-
-Contract Summary must include:
-
-- speed bucket
-- plan term: Price Lock 24 or Flex 30
-- router choice
-- router payment type
-- setup option
-- add-ons
-- monthly total
-- one-off total
-- first bill estimate
-- VAT-inclusive residential pricing
-- business ex VAT + VAT where relevant
-- known cease/disconnection/termination warnings where applicable
-
-10. Do not expose supplier data
-
-No public/customer route or network response should expose:
+Public responses must never include:
 
 - supplier cost
 - supplier product ID
-- internal provider selection
-- margin data
-- Giacom ratecard values
+- supplier selected internally
+- margin
+- margin floor
+- ratecard values
 - admin notes
+- source document/page
+- internal fields
 
-11. Keep untouched
+11. Verification required
 
-Do not touch:
+After Phase 3D:
 
-- Worldpay webhook/HPP
-- invoice generation
-- DD mandates
-- /pay
-- /pay-invoice
-- checkout gate
-- rewards
-- campaigns
-- complaints workflow
-- finance exports
-- SEO technical setup
-- AI chat
+- migration applies cleanly
+- `/admin/suppliers/giacom-import` works
+- imported rows are visible but inactive by default
+- admin can activate one Essential, Superfast, Ultrafast and Gigabit test row
+- resolver uses active real rows
+- Price Lock prefers 24/36-month eligible products
+- Flex 30 prefers 1-month products
+- quote-only fallback works
+- `/build-plan?test=1&postcode=TEST` works only for admin
+- no supplier data appears in browser/network responses
+- Contract Summary warning appears where ETF/disconnection risk exists
+- `/`, `/quote/start`, `/quote/thank-you`, `/checkout`, `/pay`, `/pay-invoice`, `/admin/fair-pricing`, `/admin/quotes` still work
+- build passes
 
-12. Verification
-
-After Phase 3C:
-
-- public cards show the new attractive wording
-- Fair Broadband Promise section renders
-- /build-plan works
-- own router is £0
-- router one-off/monthly options work
-- First Bill Preview works
-- server-side resolver returns safe customer prices only
-- unsafe prices are bumped or marked quote-only
-- Contract Summary includes all selected charges
-- no supplier cost/product ID appears in browser/network responses
-- /quote/start, checkout gate, /pay, /pay-invoice still work
-
-Stop after Phase 3C and report.  
-Do not start Phase 7.  
+Stop after Phase 3D and report.  
   
-Phase 3C — OCCTA Fair Broadband Pricing + Problem-Solving Plan Builder
+  
+Phase 3D — Giacom Product Import + Real Availability Mapping
 
-Reposition broadband around customer problem-solving. Adds Price Lock 24 / Flex 30, BYO-router, transparent first-bill preview, plan-builder funnel, margin guard and admin pricing controls.
-
-Out of scope (untouched): Worldpay HPP/webhook, invoice generation, DD mandates, /pay, /pay-invoice, checkout payment gate, rewards, campaigns, complaints workflow, finance exports, SEO technical setup, AI chat.
+Scope is limited to `supplier_products`, `buildPlanResolver`, the four pricing edge functions already touched in 3C-bis, one new admin page, and one new admin-only test fixture. Worldpay HPP/webhook, invoice generation, DD mandates, `/pay`, `/pay-invoice`, checkout gate, rewards, campaigns, complaints, finance exports, SEO setup and AI chat are not touched. Phase 7 is not started.
 
 ---
 
-### 1. Public pricing copy rewrite
+### 1. Schema additions (one migration)
 
-Rewrite `src/lib/pricing/retailCards.ts` for the three buckets — Essential / Superfast / Ultrafast — using the new badges from the brief. Strip all forbidden phrases: "free router included", "free installation", "cancel anytime", "guaranteed speed", "free static IP included", "no price rises".
+Add columns to `public.supplier_products` to capture the ratecard fields the resolver needs:
 
-Per card show: from-price (£29.99 / £34.99 / £39.99), speed range, problem-solving badges, "Final price confirmed before order" footer.
+- `network` text — `'BT Wholesale' | 'CityFibre' | 'Sky Business Wholesale' | 'Vodafone'`
+- `download_speed_mbps` int, `upload_speed_mbps` int
+- `min_term_months` int (1, 12, 24)
+- `connection_fee_net` numeric, `migration_fee_net` numeric
+- `care_level` text, `care_level_uplift_net` numeric
+- `router_compatible` text
+- `etf_applies` bool, `disconnect_fee_in_12m_net` numeric, `disconnect_fee_after_12m_net` numeric
+- `quote_only` bool default false
+- `bucket_hint` text nullable — `'essential'|'superfast'|'ultrafast'|'gigabit'`
+- `tags` text[] default '{}'
 
-Update `HeroSection` and `ServicesSection` copy to lead with: *"Broadband built around you. Bring your own router and save. Choose Price Lock or Flex 30. See your first bill before you order."*
+Plus a Giacom row in `supplier_profiles` (idempotent). No RLS changes — existing admin-only policies still apply. No new GRANTs needed (table already has them).
 
-### 2. New `FairBroadbandPromise` home section
+Update `src/integrations/supabase/types.ts` consumers only by waiting for regenerated types after the migration is approved.
 
-New `src/components/home/FairBroadbandPromise.tsx` with 5 brutalist cards:
+---
 
-- No forced router
-- No confusing annual rises (Price Lock)
-- No hidden first bill
-- No long contract (Flex 30)
-- No support black hole
+### 2. Ratecard ingest
 
-Mount in `src/pages/Index.tsx` between hero and services.
+User is re-uploading **Giacom Broadband Ratecard V3.8.1**. Once present at `/mnt/user-uploads/...`, build mode will:
 
-### 3. Build Your Plan journey
+1. Parse it with `document--parse_document` (PDF) or pandas (XLSX).
+2. Generate a deterministic seed migration that upserts rows into `supplier_products` keyed by `(supplier_id, supplier_product_id)` with `active = false`, mapped fields above, and an inferred `bucket_hint` per the mapping table below.
+3. Never expose any of these values in client code.
 
-New route `/build-plan` → `src/pages/BuildPlan.tsx`, kicked off from `PostcodeChecker` after a successful address check (availability already stored in `AvailabilityContext`).
+Speed → bucket mapping used during seed and at resolve time:
 
-Five-step wizard (one component per step under `src/components/build-plan/`):
 
-1. **Speed** — Essential / Superfast / Ultrafast (filtered by what the address supports)
-2. **Plan type** — Price Lock 24 / Flex 30 (only options the supplier product + margin guard allow)
-3. **Router** — Own (£0) / Standard WiFi 6 (£79.99 once or £4.99/mo) / Premium mesh (£129.99 once or £7.99/mo) / Business (quote)
-4. **Setup** — Remote £0 / Standard £49.99 / Engineer £99.99 / Complex (quoted)
-5. **Add-ons** — Priority support £6.99/mo, Static IP, Digital Voice, paper billing
+| Bucket    | Download speeds matched             |
+| --------- | ----------------------------------- |
+| essential | 40, 80                              |
+| superfast | 150, 160, 220, 330                  |
+| ultrafast | 500, 550, 900, 1000 (non-CityFibre) |
+| gigabit   | 900, 1000 CityFibre 1Gb FTTP        |
 
-Footer of every step shows live **First Bill Preview** panel (component below).
 
-### 4. Pricing engine extensions
+WLR/ISDN and Mobile/SIM rows are **not** imported. Only a documented `bucket_hint = null, quote_only = true, tags = ['wlr_placeholder' | 'mobile_placeholder']` stub row per category for admin visibility.
 
-`src/lib/pricing/engine.ts` + `types.ts` extended with:
+---
 
-- `PlanTerm = 'price_lock_24' | 'flex_30'`
-- Per-bucket headline matrix (own-router):
-  - Price Lock 24: Essential £29.99, Superfast £34.99, Ultrafast £39.99, Gigabit £44.99
-  - Flex 30: Essential £32.99, Superfast £37.99, Ultrafast £44.99, Gigabit £49.99
-- Router add-ons: +£4.99/mo standard, +£7.99/mo premium (or one-off equivalents)
-- `resolvePlanQuote(address, bucket, term, router, setup, addons)` → returns monthly, one-offs, first-bill total, term rules, eligibility, marginPassed flag.
-- Address→bucket mapping (internal only):
-  - Essential: 40/10, 80/20
-  - Superfast: 150/160/30, 220/30, 330/50
-  - Ultrafast: 500/550/75, 900/1000/115, CityFibre 1Gb
-- Supplier cost, product ID, internal notes never returned to client.
+### 3. Resolver upgrade — `supabase/functions/_shared/buildPlanResolver.ts`
 
-### 5. Margin guard
+Replace the hard-coded `supplierMonthlyEstimate(bucket)` with a DB-driven selector. Resolver signature gains an optional `supplierProducts` array (callers pass it; resolver stays pure).
 
-New `src/lib/pricing/marginGuard.ts`:
+Selection algorithm (server-side only):
 
-```text
-customer_ex_vat = monthly_incl_vat / 1.2
-margin = customer_ex_vat
-       − supplier_monthly_net
-       − router_recovery_if_included
-       − support_buffer (£1.00)
-       − payment_failure_buffer (£0.50)
-       − term_risk_buffer (Lock £1.00 / Flex £2.00)
-       − rewards_buffer (0 unless enabled)
-```
+1. Filter `active = true` Giacom broadband rows.
+2. Filter by `bucket_hint = input.speed_bucket`.
+3. Filter by address: `download_speed_mbps <= input.max_download` when `max_download` is known (per the "Max speed + technology only" decision); when `primary_technology` is known, prefer matching `technology`.
+4. Filter by term: Price Lock 24 → prefer `min_term_months = 24`, then 12; Flex 30 → prefer `min_term_months = 1`, then 12.
+5. Run existing margin guard against each candidate's `supplier_monthly_net + care_level_uplift_net` plus current buffers.
+6. Choose the lowest customer price that passes the floor. Ties broken by best absolute margin.
+7. If none pass, run the existing `nextSafe99` auto-bump loop against the cheapest candidate; if still unsafe or no rows match, return `quote_only`.
+8. Strip everything supplier-shaped from the returned object — only the existing public fields and the existing `internal` block remain. Add `internal.supplier_product_id` and `internal.supplier_monthly_ex` for persistence by callers; existing code already deletes `safe.internal` before responding.
 
-Floors: Essential Lock-BYO £1.50, Essential Flex £3.50, Superfast £3.50, Ultrafast/Gigabit £4.50. First-3-month margin must be ≥0 (admin/super_admin override with reason).
+Fallback when no rows exist for a bucket (empty catalogue): keep the current literal `supplierMonthlyEstimate` so dev/preview doesn't break, but tag the result `internal.using_fallback = true` and admins see a warning banner on `/admin/fair-pricing`.
 
-If fail: bump to next safe `.99`, else mark plan as "Available by quote" and route to `/quote/start`.
+Edge functions already calling the resolver (`resolve-build-plan-price`, `submit-build-plan`, `create-quote`, `generate-contract-summary`) get a small change: they read candidate `supplier_products` via service-role client and pass them in. No public response shape changes.
 
-Buffer values + floors are read from `platform_settings` / `margin_rules` (already in DB) so admin can tune without code changes.
+---
 
-### 6. Price Lock & Flex 30 eligibility rules
+### 4. Address availability mapping
 
-`isPriceLockEligible(product)`: supplier supports 24-month term + margin pass + clear router/setup + acceptable supplier risk.
+Per decision, ICUK currently returns max speed + technology only. Behaviour:
 
-`isFlex30Eligible(product)`: supplier offers 1-month min term OR risk priced in + cease/disconnection risk shown + margin pass.
+- Pass `max_download` and `primary_technology` from existing availability response into the resolver.
+- `bucketEligibleForAddress` stays as-is.
+- When availability is missing/errored: keep existing fail-soft behaviour — buckets render but resolver returns `quote_only` with the message *"subject to address confirmation"* if no supplier row matches the bucket safely.
+- Never invent network coverage. Network/provider filtering is left for a later phase when ICUK exposes it.
 
-Surface customer wording verbatim from brief on selection cards and Contract Summary.
+---
 
-### 7. First Bill Preview
+### 5. Router & setup mapping
 
-`src/components/build-plan/FirstBillPreview.tsx` — sticky panel showing monthly broadband, router monthly/one-off, setup, add-ons, VAT-inclusive total (residential) / ex-VAT + VAT (business), estimated first bill.
+- `own` router stays £0 customer-side (no change).
+- `standard`/`premium` continues to read from `platform_settings.fair_pricing.router`. Internal `supplier_router_net` (now per-product) is included in margin calc when the chosen supplier product mandates a specific router; if `router_compatible = 'supplier_only'`, the `own` option is downgraded to `quote_only` for that product.
+- Setup: when chosen supplier row has `connection_fee_net IS NULL` or unknown install type, customer-side setup is forced to `quote_only` with wording *"Setup confirmed before order."*
 
-Footer copy: *"If it is not shown in your Contract Summary, we do not add it without your agreement."*
+---
 
-### 8. "Included at no extra cost" section
+### 6. Contract Summary warnings
 
-New `src/components/home/IncludedFreeSection.tsx` listing the 11 items from the brief. Mounted under FairBroadbandPromise.
+`generate-contract-summary` already re-runs the resolver. Add:
 
-### 9. Contract Summary carry-through
+- If chosen supplier product has `etf_applies = true` OR a non-zero `disconnect_fee_in_12m_net`, append the standard customer-safe paragraph:
+  > "Cease, disconnection or early termination charges may apply depending on your selected service and when it ends. Any known charges are shown before you order."
+- If `quote_only` path was taken, append: *"Final price confirmed in writing before order."*
+- Wholesale fee values are **never** written to customer-facing fields.
 
-Update `supabase/functions/create-quote/index.ts` + `generate-contract-summary/index.ts` to accept and persist: `speed_bucket`, `plan_term` (lock_24/flex_30), `router_option`, `setup_option`, `addons[]`, and surface all selected charges in the CS (already has the columns for monthly/setup/router/delivery/installation — add `plan_term`, `speed_bucket` to `quotes` + `contract_summaries` via migration).
+---
 
-Existing checkout-gate on CS acceptance stays untouched and continues to enforce "no payment without CS".
+### 7. Admin import/review page — `/admin/suppliers/giacom-import`
 
-### 10. Admin controls
+New page `src/pages/admin/SuppliersGiacomImport.tsx`, route added to `src/App.tsx`, link added to the Suppliers nav in `AdminLayout`. Features:
 
-New `src/pages/admin/FairPricing.tsx` (linked from admin nav under Pricing) — single page editing the singleton row in `platform_settings` plus per-bucket overrides table:
+- Table of Giacom rows with filters: network, technology, bucket_hint, term, active, quote_only.
+- Inline activate/deactivate, mark quote-only, edit notes.
+- Warning badges for `etf_applies` and `disconnect_fee_in_12m_net > 0`.
+- "Re-import staged CSV" action that calls a new admin-only edge function `admin-import-supplier-products` (service-role, requires admin role check) that accepts a CSV body and upserts rows. CSV format documented in-page.
+- No customer-facing surface.
 
-- Headline from-prices per bucket × term
-- Price Lock enable/disable
-- Flex 30 enable/disable
-- Router prices (standard / premium / monthly add-ons)
-- Setup prices (remote / standard / engineer)
-- Buffer amounts (support / payment-failure / lock-risk / flex-risk / rewards)
-- Margin floors per bucket
-- Public display status (Live / Hidden / Quote-only fallback)
+Admin-only via existing `is_admin()` check pattern.
 
-Backed by new `fair_pricing_settings` table (or extend `platform_settings` with a JSONB `fair_pricing` column — preferred to avoid extra GRANT/RLS surface) plus existing `margin_rules` table for floors.
+---
 
-### 11. Database
+### 8. Test-mode fixture (minimal)
 
-One migration:
+Per decision — admin-only documented test path, no settings UI:
 
-- `ALTER TABLE platform_settings ADD COLUMN fair_pricing JSONB DEFAULT '{}'::jsonb` (singleton, already RLS-locked).
-- `ALTER TABLE quotes ADD COLUMN speed_bucket text, ADD COLUMN plan_term text;`
-- `ALTER TABLE contract_summaries ADD COLUMN speed_bucket text, ADD COLUMN plan_term text;`
+- Add `?test=1&postcode=TEST` query-param recognition to `/build-plan`.
+- When set AND user is admin (verified client-side then re-verified server-side), `resolve-build-plan-price` and `submit-build-plan` accept a `test_availability` body block (`{ max_download, primary_technology }`) and short-circuit the ICUK call.
+- `submit-build-plan` in test mode: skips customer email + admin email, prefixes `quote_request.notes` with `[TEST]`, never creates an order or payment.
+- Test path documented in a new `docs/build-plan-test-mode.md` (reference only, not user-facing).
 
-No new tables → no new GRANT/RLS needed.
+---
 
-### 12. Verification checklist
+### 9. WLR / Mobile placeholders
 
-- Public cards show problem-solving badges, no forbidden phrases.
-- `/build-plan` flow works end-to-end and feeds `create-quote`.
-- Price Lock + Flex 30 selectable only where eligible.
-- BYO router = £0, router monthly/one-off math correct.
-- First Bill Preview matches Contract Summary line items.
-- Margin guard blocks unsafe combos, auto-bumps or falls back to quote-only.
-- CS includes speed_bucket / plan_term / router / setup / add-ons.
-- No supplier cost or product ID visible in any network response.
-- `/quote/start`, checkout gate, `/pay`, `/pay-invoice` still work.
+Admin-only. Two seed rows tagged `wlr_placeholder` and `mobile_placeholder`, `quote_only = true`, never returned by the public resolver (filtered by `bucket_hint IS NOT NULL`). No public UI.
 
-### Files (new / edited)
+---
 
-New: `src/components/home/FairBroadbandPromise.tsx`, `IncludedFreeSection.tsx`, `src/pages/BuildPlan.tsx`, `src/components/build-plan/{StepSpeed,StepTerm,StepRouter,StepSetup,StepAddons,FirstBillPreview}.tsx`, `src/lib/pricing/marginGuard.ts`, `src/pages/admin/FairPricing.tsx`, one Supabase migration.
+### 10. Files changed
 
-Edited: `src/lib/pricing/retailCards.ts`, `engine.ts`, `types.ts`, `constants.ts`, `src/components/home/HeroSection.tsx`, `ServicesSection.tsx`, `PostcodeChecker.tsx`, `src/pages/Index.tsx`, `src/App.tsx` (route), `src/components/admin/layout/AdminLayout.tsx` (nav link), `supabase/functions/create-quote/index.ts`, `generate-contract-summary/index.ts`.
+Migrations
 
-Stop after Phase 3C. Do not start Phase 7.
+- `supabase/migrations/<ts>_supplier_products_giacom_fields.sql` (schema + Giacom supplier row)
+- `supabase/migrations/<ts>_seed_giacom_broadband.sql` (generated after ratecard parsed)
+
+Edge functions
+
+- `supabase/functions/_shared/buildPlanResolver.ts` — DB-driven selector
+- `supabase/functions/resolve-build-plan-price/index.ts` — load supplier_products, pass to resolver, accept `test_availability` for admin
+- `supabase/functions/submit-build-plan/index.ts` — same, plus test-mode email suppression
+- `supabase/functions/create-quote/index.ts` — pass supplier_products
+- `supabase/functions/generate-contract-summary/index.ts` — pass supplier_products + ETF warning wording
+- `supabase/functions/admin-import-supplier-products/index.ts` — new admin-only CSV importer
+
+Frontend
+
+- `src/pages/admin/SuppliersGiacomImport.tsx` — new
+- `src/components/admin/layout/AdminLayout.tsx` — nav link
+- `src/App.tsx` — route
+- `src/pages/BuildPlan.tsx` — read `?test=1`, pass `test_availability` when admin
+
+Docs
+
+- `docs/build-plan-test-mode.md`
+
+Memory
+
+- `mem://pricing/giacom-supplier-catalogue` — new reference memory describing the supplier_products usage and the do-not-expose rule.
+
+---
+
+### 11. Verification after build
+
+1. Apply migration; confirm columns present and types regenerated.
+2. Hit `/admin/suppliers/giacom-import`, confirm seeded rows visible and filter chips work.
+3. Set one Essential, one Superfast, one Ultrafast and one Gigabit row to `active = true`.
+4. On `/build-plan` walk through Essential 80/20 + Price Lock 24 + own router + remote setup — confirm price renders, network responses show no supplier cost / supplier_product_id / margin fields.
+5. Repeat for Flex 30 — confirm a 1-month product is selected internally.
+6. Force an empty bucket (deactivate all Gigabit rows) — confirm Gigabit returns `quote_only`.
+7. `?test=1` flow as admin: change `test_availability.max_download` to 35 — confirm Superfast/Ultrafast/Gigabit return `quote_only` with the "subject to address confirmation" wording.
+8. Generate a contract summary for an active ETF product — confirm the disconnect warning appears.
+9. Smoke check unchanged routes: `/`, `/quote/start`, `/quote/thank-you`, `/checkout`, `/pay`, `/pay-invoice`, `/admin/fair-pricing`, `/admin/quotes`.
+10. `bun run build` passes cleanly.
+
+---
+
+### Risks & mitigations
+
+- **Ratecard not yet uploaded:** without the file I cannot generate the seed migration. If it doesn't arrive before build, I will ship steps 1, 3–9 against the existing literal fallback and stop before step 2's seed migration, then report back asking for the file.
+- **Resolver regression:** all four callers re-run server-side, fallback keeps the literal table so `/build-plan` never goes blank.
+- **Data leak risk:** explicit allowlist of public fields in each edge function response, plus a unit-style assertion in `resolve-build-plan-price` that the serialized response contains none of: `supplier_`, `margin`, `floor`, `ratecard`.

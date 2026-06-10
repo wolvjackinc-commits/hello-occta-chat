@@ -45,6 +45,7 @@ function BuildPlanInner() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
   const isTestMode = searchParams.get("test") === "1";
+  const isFallback = searchParams.get("availability") === "fallback";
   const testMaxDownload = Number(searchParams.get("max_download") ?? "0") || undefined;
   const testTech = searchParams.get("primary_technology") || undefined;
   const { toast } = useToast();
@@ -58,19 +59,32 @@ function BuildPlanInner() {
   const [addons, setAddons] = useState<string[]>([]);
   const [resolved, setResolved] = useState<Resolved | null>(null);
   const [resolving, setResolving] = useState(false);
-  const [contact, setContact] = useState({ full_name: "", email: "", phone: "", postcode: "", marketing_consent: false, privacy_ack: false });
+  const initialPostcode = searchParams.get("postcode") || "";
+  const [contact, setContact] = useState({ full_name: "", email: "", phone: "", postcode: initialPostcode, marketing_consent: false, privacy_ack: false });
   const [submitting, setSubmitting] = useState(false);
 
   const eligibleBuckets = useMemo<SpeedBucket[]>(() => {
+    if (isFallback) return ["essential", "superfast", "ultrafast", "gigabit"];
     const plans = result?.eligibleOcctaPlans ?? [];
-    const all: SpeedBucket[] = ["essential", "superfast", "ultrafast"];
+    const all: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
     if (!plans.length) return all;
     return all.filter((b) => plans.includes(b));
-  }, [result]);
+  }, [result, isFallback]);
 
   // Resolve price server-side whenever choices change
   useEffect(() => {
     if (!bucket || !term) { setResolved(null); return; }
+    if (isFallback) {
+      const headline = FAIR_PRICING_DEFAULTS.headline[bucket][term];
+      setResolved({
+        ok: true,
+        quote_only: true,
+        message: "Estimate only — we'll confirm the final price after we verify availability at your address.",
+        monthly_broadband_incl_vat: headline,
+      });
+      setResolving(false);
+      return;
+    }
     let cancelled = false;
     setResolving(true);
     supabase.functions.invoke("resolve-build-plan-price", {
@@ -92,7 +106,7 @@ function BuildPlanInner() {
       else { setResolved(data as Resolved); }
     }).finally(() => !cancelled && setResolving(false));
     return () => { cancelled = true; };
-  }, [bucket, term, router, routerPay, setup, addons, result]);
+  }, [bucket, term, router, routerPay, setup, addons, result, isFallback]);
 
   const canNext = () => {
     if (step === 1) return !!bucket;
@@ -114,9 +128,10 @@ function BuildPlanInner() {
           router_option: router, router_payment_type: routerPay,
           setup_option: setup, addons,
           customer_type: "residential",
-          max_download: isTestMode ? testMaxDownload : result?.maxDownload,
-          primary_technology: isTestMode ? testTech : result?.primaryTechnology,
+          max_download: isFallback ? undefined : (isTestMode ? testMaxDownload : result?.maxDownload),
+          primary_technology: isFallback ? undefined : (isTestMode ? testTech : result?.primaryTechnology),
           ...(isTestMode ? { test_mode: true, test_availability: testMaxDownload != null ? { max_download: testMaxDownload, primary_technology: testTech } : undefined } : {}),
+          ...(isFallback ? { force_quote_only: true, availability_mode: "fallback" } : {}),
           full_name: contact.full_name,
           email: contact.email,
           phone: contact.phone,
@@ -136,6 +151,9 @@ function BuildPlanInner() {
         setSubmitting(false);
         return;
       }
+      if (isFallback) {
+        toast({ title: "Thanks — we'll confirm availability", description: "We'll confirm availability and send your final quote before order." });
+      }
       const reference = (data as any).reference as string;
       nav(`/quote/thank-you?ref=${encodeURIComponent(reference)}`);
     } catch (_err) {
@@ -145,7 +163,7 @@ function BuildPlanInner() {
     }
   };
 
-  if (!isTestMode && (status !== "success" || !result)) {
+  if (!isTestMode && !isFallback && (status !== "success" || !result)) {
     return (
       <Layout>
         <SEO title="Build Your Plan" canonical="/build-plan" />
@@ -168,15 +186,28 @@ function BuildPlanInner() {
           <p className="text-sm text-muted-foreground mt-2">{FROM_PRICE_DISCLOSURE}</p>
         </div>
 
+        {isFallback && (
+          <div className="mb-6 border-4 border-foreground bg-primary/5 p-4 flex items-start gap-3">
+            <Info className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <div className="text-sm">
+              <p className="font-display uppercase tracking-wider">Subject to availability at your address</p>
+              <p className="text-muted-foreground mt-1">
+                We couldn't confirm live availability online. Pick the plan you're interested in — final availability, speed, setup and price will be confirmed before order. No payment is taken until your Contract Summary is confirmed.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
           <div className="border-4 border-foreground bg-background p-6 md:p-8">
             {step === 1 && (
               <Step title="Choose your speed">
                 <div className="grid gap-3">
-                  {(["essential","superfast","ultrafast"] as SpeedBucket[]).map((b) => {
+                  {(["essential","superfast","ultrafast","gigabit"] as SpeedBucket[]).map((b) => {
                     const meta = SPEED_BUCKET_META[b];
                     const isEligible = eligibleBuckets.includes(b);
                     const selected = bucket === b;
+                    const headline = FAIR_PRICING_DEFAULTS.headline[b];
                     return (
                       <button key={b} onClick={() => isEligible && setBucket(b)} disabled={!isEligible}
                         className={`text-left p-5 border-4 transition-colors ${selected ? "border-foreground bg-primary/10" : "border-foreground/20 hover:border-foreground"} ${!isEligible ? "opacity-50 cursor-not-allowed" : ""}`}>
@@ -185,6 +216,14 @@ function BuildPlanInner() {
                             <p className="font-display uppercase text-lg">{meta.title}</p>
                             <p className="text-sm text-muted-foreground">{meta.speedRange}</p>
                             <p className="text-sm mt-1">{meta.tagline}</p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Price Lock 24 from £{headline.lock24.toFixed(2)}/month · Flex 30 from £{headline.flex30.toFixed(2)}/month
+                            </p>
+                            {isFallback && (
+                              <p className="text-[11px] uppercase tracking-wider font-display mt-2 inline-block border-2 border-foreground/40 px-2 py-0.5">
+                                Subject to confirmation
+                              </p>
+                            )}
                           </div>
                           {selected && <Check className="w-5 h-5" />}
                         </div>

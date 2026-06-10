@@ -22,8 +22,10 @@ const Auth = () => {
   
   const initialMode = searchParams.get("mode") === "signup" ? "signup" : "signin";
   const [activeTab, setActiveTab] = useState(initialMode);
-  
-  const [email, setEmail] = useState("");
+  const linkQr = searchParams.get("link") === "qr";
+  const prefillEmail = searchParams.get("email") || "";
+
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +74,18 @@ const Auth = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate(redirectTarget);
+        // After successful sign-in/sign-up, attempt to link any guest quote
+        // requests submitted with this user's email. Function is RLS-safe.
+        (supabase as any)
+          .rpc("link_quote_requests_to_user", { _user_id: session.user.id })
+          .then(({ data, error }: any) => {
+            if (!error && typeof data === "number" && data > 0) {
+              toast({
+                title: `Linked ${data} quote request${data === 1 ? "" : "s"} to your account`,
+              });
+            }
+          })
+          .finally(() => navigate(redirectTarget));
       }
     });
 

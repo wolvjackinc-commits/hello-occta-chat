@@ -34,7 +34,7 @@ export const keywordPages: KeywordPage[] = [
     keywords: "cheap broadband near me, affordable broadband near me, broadband deals near me, internet near me cheap, best broadband near me, local broadband deals",
     heroTitle: "CHEAP BROADBAND",
     heroHighlight: "NEAR YOU",
-    heroSubtitle: "Fast fibre internet from \u00A334.99/mo. No contracts. No credit check.",
+    heroSubtitle: "Fast fibre internet from \u00A334.99/mo. 30-day rolling options where eligible. No credit check.",
     sections: [
       {
         heading: "Find Cheap Broadband at Your Address",
@@ -81,7 +81,7 @@ export const keywordPages: KeywordPage[] = [
     keywords: "broadband no credit check, internet no credit check, wifi no credit check, broadband without credit check UK, no credit check broadband deals",
     heroTitle: "BROADBAND",
     heroHighlight: "NO CREDIT CHECK",
-    heroSubtitle: "Fast fibre internet. No credit check. No contracts. From \u00A334.99/mo.",
+    heroSubtitle: "Fast fibre internet. No credit check. 30-day rolling options where eligible. From \u00A334.99/mo.",
     sections: [
       {
         heading: "Why We Don\u2019t Run Credit Checks",

@@ -4,7 +4,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://esm.sh/zod@3.23.8";
-import { resolveBuildPlanPrice } from "../_shared/buildPlanResolver.ts";
+import { resolveBuildPlanPrice, loadGiacomCandidates, stripInternal } from "../_shared/buildPlanResolver.ts";
 
 const BodySchema = z.object({
   speed_bucket: z.enum(["essential", "superfast", "ultrafast", "gigabit"]),
@@ -16,6 +16,11 @@ const BodySchema = z.object({
   customer_type: z.enum(["residential", "business"]).default("residential"),
   max_download: z.number().int().min(0).max(100000).optional(),
   primary_technology: z.string().max(40).optional(),
+  // Admin-only test fixture. Server re-verifies admin role before honouring.
+  test_availability: z.object({
+    max_download: z.number().int().min(0).max(100000),
+    primary_technology: z.string().max(40).optional(),
+  }).optional(),
 });
 
 Deno.serve(async (req) => {
@@ -33,13 +38,34 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
+
+  // Admin gate for test_availability — verify the JWT belongs to an admin.
+  let isAdmin = false;
+  const authHeader = req.headers.get("Authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const { data: u } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (u?.user) {
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
+      isAdmin = (roles ?? []).some((r: any) => r.role === "admin" || r.role === "super_admin");
+    }
+  }
+
+  const input: any = { ...parsed.data };
+  if (parsed.data.test_availability && isAdmin) {
+    input.max_download = parsed.data.test_availability.max_download;
+    if (parsed.data.test_availability.primary_technology) {
+      input.primary_technology = parsed.data.test_availability.primary_technology;
+    }
+  }
+  delete input.test_availability;
+
   const { data: settings } = await supabase
     .from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();
+  const candidates = await loadGiacomCandidates(supabase, parsed.data.speed_bucket);
 
-  const result = resolveBuildPlanPrice(parsed.data as any, settings?.fair_pricing ?? {});
+  const result = resolveBuildPlanPrice(input as any, settings?.fair_pricing ?? {}, candidates);
 
-  // Strip internal block before returning to browser.
-  const safe = { ...result } as any;
-  if ("internal" in safe) delete safe.internal;
+  // Strip internal block + any supplier_ / margin / ratecard fields.
+  const safe = stripInternal(result as any);
   return new Response(JSON.stringify(safe), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 });

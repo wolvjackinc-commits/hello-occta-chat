@@ -2,6 +2,7 @@ import { corsHeaders, jsonResponse, getServiceClient, requireStaff, generateToke
 import { z } from "https://esm.sh/zod@3.23.8";
 import {
   resolveBuildPlanPrice, planTermLabel, speedBucketLabel,
+  loadGiacomCandidates,
 } from "../_shared/buildPlanResolver.ts";
 
 const Schema = z.object({
@@ -79,7 +80,8 @@ Deno.serve(async (req) => {
   let bumped = false;
 
   if (i.build_plan) {
-    const resolved = resolveBuildPlanPrice(i.build_plan as any, settings?.fair_pricing ?? {});
+    const candidates = await loadGiacomCandidates(supabase, i.build_plan.speed_bucket);
+    const resolved = resolveBuildPlanPrice(i.build_plan as any, settings?.fair_pricing ?? {}, candidates);
     if (resolved.quote_only) {
       return jsonResponse({
         error: "quote_only",

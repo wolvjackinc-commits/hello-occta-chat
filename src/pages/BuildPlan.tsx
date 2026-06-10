@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,10 @@ const ADDON_DEFS = [
 
 function BuildPlanInner() {
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isTestMode = searchParams.get("test") === "1";
+  const testMaxDownload = Number(searchParams.get("max_download") ?? "0") || undefined;
+  const testTech = searchParams.get("primary_technology") || undefined;
   const { toast } = useToast();
   const { status, result, selectedAddress } = useAvailability();
   const [step, setStep] = useState(1);
@@ -78,8 +82,9 @@ function BuildPlanInner() {
         setup_option: setup,
         addons,
         customer_type: "residential",
-        max_download: result?.maxDownload,
-        primary_technology: result?.primaryTechnology,
+        max_download: isTestMode ? testMaxDownload : result?.maxDownload,
+        primary_technology: isTestMode ? testTech : result?.primaryTechnology,
+        ...(isTestMode && testMaxDownload != null ? { test_availability: { max_download: testMaxDownload, primary_technology: testTech } } : {}),
       },
     }).then(({ data, error }) => {
       if (cancelled) return;
@@ -109,7 +114,9 @@ function BuildPlanInner() {
           router_option: router, router_payment_type: routerPay,
           setup_option: setup, addons,
           customer_type: "residential",
-          max_download: result?.maxDownload, primary_technology: result?.primaryTechnology,
+          max_download: isTestMode ? testMaxDownload : result?.maxDownload,
+          primary_technology: isTestMode ? testTech : result?.primaryTechnology,
+          ...(isTestMode ? { test_mode: true, test_availability: testMaxDownload != null ? { max_download: testMaxDownload, primary_technology: testTech } : undefined } : {}),
           full_name: contact.full_name,
           email: contact.email,
           phone: contact.phone,
@@ -124,6 +131,11 @@ function BuildPlanInner() {
       if (error || !data || (data as any).error) {
         throw new Error((data as any)?.error || error?.message || "submit_failed");
       }
+      if (isTestMode) {
+        toast({ title: "[TEST] Submitted", description: `Mode: ${(data as any).mode} · Ref: ${(data as any).reference}` });
+        setSubmitting(false);
+        return;
+      }
       const reference = (data as any).reference as string;
       nav(`/quote/thank-you?ref=${encodeURIComponent(reference)}`);
     } catch (_err) {
@@ -133,7 +145,7 @@ function BuildPlanInner() {
     }
   };
 
-  if (status !== "success" || !result) {
+  if (!isTestMode && (status !== "success" || !result)) {
     return (
       <Layout>
         <SEO title="Build Your Plan" canonical="/build-plan" />

@@ -6,6 +6,8 @@ import {
 import {
   resolveBuildPlanPrice, planTermLabel, speedBucketLabel,
   PRICE_LOCK_WORDING, FLEX_30_WORDING, FIRST_BILL_PROMISE,
+  ETF_DISCONNECT_WORDING, SETUP_CONFIRMED_BEFORE_ORDER,
+  loadGiacomCandidates,
 } from "../_shared/buildPlanResolver.ts";
 
 Deno.serve(async (req) => {
@@ -42,6 +44,7 @@ Deno.serve(async (req) => {
     const addons = Array.isArray(q.selected_addons) ? (q.selected_addons as any[]).map((a) => a.id).filter(Boolean) : [];
     const { data: settings } = await supabase
       .from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();
+    const candidates = await loadGiacomCandidates(supabase, q.speed_bucket as any);
     const resolved = resolveBuildPlanPrice({
       speed_bucket: q.speed_bucket,
       plan_term: q.plan_term,
@@ -50,7 +53,7 @@ Deno.serve(async (req) => {
       setup_option: so.option ?? "remote",
       addons,
       customer_type: q.customer_type,
-    }, settings?.fair_pricing ?? {});
+    }, settings?.fair_pricing ?? {}, candidates);
     if (resolved.quote_only) {
       return jsonResponse({
         error: "build_plan_unsafe",
@@ -65,6 +68,8 @@ Deno.serve(async (req) => {
       }, 409);
     }
     const termCopy = q.plan_term === "price_lock_24" ? PRICE_LOCK_WORDING : FLEX_30_WORDING;
+    const etfNote = resolved.internal.etf_risk ? `\n\n${ETF_DISCONNECT_WORDING}` : "";
+    const setupNote = resolved.internal.setup_unknown ? `\n\n${SETUP_CONFIRMED_BEFORE_ORDER}` : "";
     bpAddendum =
       `\n\nPlan: ${speedBucketLabel(q.speed_bucket as any)} — ${planTermLabel(q.plan_term as any)}.` +
       `\nRouter: ${resolved.router.label} (${resolved.router.payment_type === "monthly" ? `£${resolved.router.monthly.toFixed(2)}/mo` : resolved.router.oneOff > 0 ? `£${resolved.router.oneOff.toFixed(2)} one-off` : "£0"}).` +
@@ -72,6 +77,8 @@ Deno.serve(async (req) => {
       (resolved.addons.length ? `\nAdd-ons: ${resolved.addons.map((a) => `${a.label} £${a.monthly.toFixed(2)}/mo`).join("; ")}.` : "") +
       `\n\n${termCopy}` +
       `\n\nEstimated first bill: £${resolved.first_bill_incl_vat.toFixed(2)} (incl. VAT).` +
+      etfNote +
+      setupNote +
       `\n\n${FIRST_BILL_PROMISE}`;
     bpFields = {
       speed_bucket: q.speed_bucket,
@@ -82,6 +89,10 @@ Deno.serve(async (req) => {
     };
     if (resolved.router.oneOff > 0) extraOneOff.push({ label: resolved.router.label, amount: resolved.router.oneOff });
     if (resolved.setup.oneOff  > 0) extraOneOff.push({ label: resolved.setup.label,  amount: resolved.setup.oneOff });
+    // If ETF risk and no explicit cease fee set, append plain-English warning.
+    if (resolved.internal.etf_risk && !q.cease_fee_gross) {
+      // Note: customer-safe wording — no wholesale numbers exposed.
+    }
   }
 
   const { data: qr } = await supabase

@@ -13,6 +13,7 @@ import { z } from "https://esm.sh/zod@3.23.8";
 import {
   resolveBuildPlanPrice, planTermLabel, speedBucketLabel,
   PRICE_LOCK_WORDING, FLEX_30_WORDING,
+  loadGiacomCandidates,
 } from "../_shared/buildPlanResolver.ts";
 
 const Schema = z.object({
@@ -26,6 +27,12 @@ const Schema = z.object({
   customer_type: z.enum(["residential","business"]).default("residential"),
   max_download: z.number().int().min(0).max(100000).optional(),
   primary_technology: z.string().max(40).optional(),
+  // Admin-only test fixture. Server verifies role.
+  test_availability: z.object({
+    max_download: z.number().int().min(0).max(100000),
+    primary_technology: z.string().max(40).optional(),
+  }).optional(),
+  test_mode: z.boolean().optional(),
   // contact
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email().max(180),
@@ -62,11 +69,22 @@ Deno.serve(async (req) => {
 
   // Link to logged-in user if present
   let customer_id: string | null = null;
+  let isAdmin = false;
   const authHeader = req.headers.get("Authorization");
   if (authHeader?.startsWith("Bearer ")) {
     const { data } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (data?.user) customer_id = data.user.id;
+    if (data?.user) {
+      customer_id = data.user.id;
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      isAdmin = (roles ?? []).some((r: any) => r.role === "admin" || r.role === "super_admin");
+    }
   }
+  const inTestMode = !!(i.test_mode && isAdmin);
+  // Honour test_availability override only for admins
+  const effectiveMaxDownload = (isAdmin && i.test_availability?.max_download != null)
+    ? i.test_availability.max_download : i.max_download;
+  const effectivePrimaryTech = (isAdmin && i.test_availability?.primary_technology)
+    ? i.test_availability.primary_technology : i.primary_technology;
 
   // ── Always create a quote_request ──
   const { data: qr, error: qrErr } = await supabase.from("quote_requests").insert({
@@ -83,9 +101,9 @@ Deno.serve(async (req) => {
     plan_preference: i.plan_term === "flex_30" ? "flex" : "contract_saver",
     customer_type: i.customer_type,
     preferred_contact_method: i.preferred_contact_method,
-    message: `Build Plan: ${speedBucketLabel(i.speed_bucket)} · ${planTermLabel(i.plan_term)} · router=${i.router_option}/${i.router_payment_type} · setup=${i.setup_option} · addons=${(i.addons ?? []).join(",") || "none"}`,
+    message: `${inTestMode ? "[TEST] " : ""}Build Plan: ${speedBucketLabel(i.speed_bucket)} · ${planTermLabel(i.plan_term)} · router=${i.router_option}/${i.router_payment_type} · setup=${i.setup_option} · addons=${(i.addons ?? []).join(",") || "none"}`,
     marketing_consent: i.marketing_consent,
-    source: "build_plan",
+    source: inTestMode ? "build_plan_test" : "build_plan",
     ip,
     user_agent: req.headers.get("user-agent")?.slice(0, 400) ?? null,
   }).select("id, reference").single();
@@ -94,6 +112,7 @@ Deno.serve(async (req) => {
   // ── Re-resolve server-side ──
   const { data: settings } = await supabase
     .from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();
+  const candidates = await loadGiacomCandidates(supabase, i.speed_bucket);
   const resolved = resolveBuildPlanPrice({
     speed_bucket: i.speed_bucket,
     plan_term: i.plan_term,
@@ -102,27 +121,28 @@ Deno.serve(async (req) => {
     setup_option: i.setup_option,
     addons: i.addons as any,
     customer_type: i.customer_type,
-    max_download: i.max_download,
-    primary_technology: i.primary_technology,
-  }, settings?.fair_pricing ?? {});
+    max_download: effectiveMaxDownload,
+    primary_technology: effectivePrimaryTech,
+  }, settings?.fair_pricing ?? {}, candidates);
 
   await supabase.rpc("log_event", {
     _actor_type: "public",
-    _event_type: "build_plan_submitted",
-    _title: `Build Plan ${qr.reference}`,
+    _event_type: inTestMode ? "build_plan_submitted_test" : "build_plan_submitted",
+    _title: `${inTestMode ? "[TEST] " : ""}Build Plan ${qr.reference}`,
     _details: {
       reference: qr.reference,
       speed_bucket: i.speed_bucket,
       plan_term: i.plan_term,
       quote_only: resolved.quote_only,
       email_masked: maskEmail(i.email),
+      test_mode: inTestMode,
     },
     _source_module: "quote",
   });
 
-  // Fire-and-forget admin notification
+  // Admin notification (suppressed in test mode unless tagged)
   const adminEmail = Deno.env.get("RESEND_FROM_EMAIL") || "hello@occta.co.uk";
-  void sendResendEmail({
+  if (!inTestMode) void sendResendEmail({
     to: adminEmail,
     subject: `[Build Plan] ${qr.reference} — ${i.speed_bucket}/${i.plan_term}${resolved.quote_only ? " (quote-only)" : ""}`,
     html: brutalistEmailShell(
@@ -140,7 +160,7 @@ Deno.serve(async (req) => {
 
   // ── Quote-only path: just a request, manual quote will follow ──
   if (resolved.quote_only) {
-    void sendResendEmail({
+    if (!inTestMode) void sendResendEmail({
       to: i.email,
       subject: `We're preparing your quote — ${qr.reference}`,
       html: brutalistEmailShell(
@@ -154,9 +174,26 @@ Deno.serve(async (req) => {
     return jsonResponse({
       ok: true,
       mode: "quote_only",
+      test_mode: inTestMode,
       reference: qr.reference,
       quote_request_id: qr.id,
       message: resolved.message,
+    });
+  }
+
+  // ── Test mode: do NOT create a quote, no emails, no payment link ──
+  if (inTestMode) {
+    return jsonResponse({
+      ok: true,
+      mode: "test",
+      test_mode: true,
+      reference: qr.reference,
+      quote_request_id: qr.id,
+      preview: {
+        monthly_total_incl_vat: (resolved as any).monthly_total_incl_vat,
+        first_bill_incl_vat: (resolved as any).first_bill_incl_vat,
+        bumped: (resolved as any).bumped,
+      },
     });
   }
 

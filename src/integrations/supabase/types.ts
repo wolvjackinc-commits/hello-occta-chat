@@ -3319,13 +3319,31 @@ export type Database = {
       supplier_products: {
         Row: {
           active: boolean
+          bucket_hint: string | null
+          care_level: string | null
+          care_level_uplift_net: number | null
+          connection_fee_net: number | null
           created_at: string
+          disconnect_fee_after_12m_net: number | null
+          disconnect_fee_in_12m_net: number | null
           download_speed_label: string | null
+          download_speed_mbps: number | null
+          etf_applies: boolean
           id: string
+          migration_fee_net: number | null
+          min_term_months: number | null
+          network: string | null
           notes: string | null
           product_name: string
+          quote_only: boolean
           reverse_charge: boolean
+          router_compatible: string | null
+          router_notes: string | null
+          router_required: boolean
           service_type: string
+          source_document: string | null
+          source_page: string | null
+          source_section: string | null
           supplier_cease_fee_net: number | null
           supplier_delivery_net: number | null
           supplier_id: string
@@ -3335,19 +3353,39 @@ export type Database = {
           supplier_router_net: number | null
           supplier_setup_net: number | null
           supplier_vat_rate: number
+          tags: string[]
           technology: string | null
           updated_at: string
           upload_speed_label: string | null
+          upload_speed_mbps: number | null
         }
         Insert: {
           active?: boolean
+          bucket_hint?: string | null
+          care_level?: string | null
+          care_level_uplift_net?: number | null
+          connection_fee_net?: number | null
           created_at?: string
+          disconnect_fee_after_12m_net?: number | null
+          disconnect_fee_in_12m_net?: number | null
           download_speed_label?: string | null
+          download_speed_mbps?: number | null
+          etf_applies?: boolean
           id?: string
+          migration_fee_net?: number | null
+          min_term_months?: number | null
+          network?: string | null
           notes?: string | null
           product_name: string
+          quote_only?: boolean
           reverse_charge?: boolean
+          router_compatible?: string | null
+          router_notes?: string | null
+          router_required?: boolean
           service_type: string
+          source_document?: string | null
+          source_page?: string | null
+          source_section?: string | null
           supplier_cease_fee_net?: number | null
           supplier_delivery_net?: number | null
           supplier_id: string
@@ -3357,19 +3395,39 @@ export type Database = {
           supplier_router_net?: number | null
           supplier_setup_net?: number | null
           supplier_vat_rate?: number
+          tags?: string[]
           technology?: string | null
           updated_at?: string
           upload_speed_label?: string | null
+          upload_speed_mbps?: number | null
         }
         Update: {
           active?: boolean
+          bucket_hint?: string | null
+          care_level?: string | null
+          care_level_uplift_net?: number | null
+          connection_fee_net?: number | null
           created_at?: string
+          disconnect_fee_after_12m_net?: number | null
+          disconnect_fee_in_12m_net?: number | null
           download_speed_label?: string | null
+          download_speed_mbps?: number | null
+          etf_applies?: boolean
           id?: string
+          migration_fee_net?: number | null
+          min_term_months?: number | null
+          network?: string | null
           notes?: string | null
           product_name?: string
+          quote_only?: boolean
           reverse_charge?: boolean
+          router_compatible?: string | null
+          router_notes?: string | null
+          router_required?: boolean
           service_type?: string
+          source_document?: string | null
+          source_page?: string | null
+          source_section?: string | null
           supplier_cease_fee_net?: number | null
           supplier_delivery_net?: number | null
           supplier_id?: string
@@ -3379,9 +3437,11 @@ export type Database = {
           supplier_router_net?: number | null
           supplier_setup_net?: number | null
           supplier_vat_rate?: number
+          tags?: string[]
           technology?: string | null
           updated_at?: string
           upload_speed_label?: string | null
+          upload_speed_mbps?: number | null
         }
         Relationships: [
           {

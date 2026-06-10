@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, ArrowRight, Check, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AvailabilityProvider, useAvailability } from "@/contexts/AvailabilityContext";
@@ -39,6 +43,7 @@ const ADDON_DEFS = [
 
 function BuildPlanInner() {
   const nav = useNavigate();
+  const { toast } = useToast();
   const { status, result, selectedAddress } = useAvailability();
   const [step, setStep] = useState(1);
   const [bucket, setBucket] = useState<SpeedBucket | null>(null);
@@ -49,6 +54,8 @@ function BuildPlanInner() {
   const [addons, setAddons] = useState<string[]>([]);
   const [resolved, setResolved] = useState<Resolved | null>(null);
   const [resolving, setResolving] = useState(false);
+  const [contact, setContact] = useState({ full_name: "", email: "", phone: "", postcode: "", marketing_consent: false, privacy_ack: false });
+  const [submitting, setSubmitting] = useState(false);
 
   const eligibleBuckets = useMemo<SpeedBucket[]>(() => {
     const plans = result?.eligibleOcctaPlans ?? [];
@@ -87,15 +94,43 @@ function BuildPlanInner() {
     if (step === 2) return !!term;
     if (step === 3) return !!router && (router === "own" || router === "business" || routerPay !== "none");
     if (step === 4) return !!setup;
-    return true;
+    if (step === 5) return true;
+    return contact.full_name.length >= 2 && /^[^@]+@[^@]+\.[^@]+$/.test(contact.email) && contact.phone.length >= 7 && contact.postcode.length >= 5 && contact.privacy_ack;
   };
 
-  const goToQuote = () => {
-    sessionStorage.setItem("occta_build_plan", JSON.stringify({
-      bucket, term, router, routerPay, setup, addons, resolved,
-      address: selectedAddress,
-    }));
-    nav("/quote/start");
+  const submitBuildPlan = async () => {
+    if (!bucket || !term) return;
+    setSubmitting(true);
+    try {
+      const addr: any = selectedAddress ?? {};
+      const { data, error } = await supabase.functions.invoke("submit-build-plan", {
+        body: {
+          speed_bucket: bucket, plan_term: term,
+          router_option: router, router_payment_type: routerPay,
+          setup_option: setup, addons,
+          customer_type: "residential",
+          max_download: result?.maxDownload, primary_technology: result?.primaryTechnology,
+          full_name: contact.full_name,
+          email: contact.email,
+          phone: contact.phone,
+          postcode: contact.postcode || (addr.postcode as string) || "",
+          address_line_1: [addr.sub_premises, addr.premises_name, addr.thoroughfare_number, addr.thoroughfare_name].filter(Boolean).join(" ") || null,
+          town: (addr.post_town as string) || null,
+          county: (addr.county as string) || null,
+          preferred_contact_method: "email",
+          marketing_consent: contact.marketing_consent,
+        },
+      });
+      if (error || !data || (data as any).error) {
+        throw new Error((data as any)?.error || error?.message || "submit_failed");
+      }
+      const reference = (data as any).reference as string;
+      nav(`/quote/thank-you?ref=${encodeURIComponent(reference)}`);
+    } catch (_err) {
+      toast({ title: "Couldn't submit your plan", description: "Please try again shortly.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (status !== "success" || !result) {
@@ -116,7 +151,7 @@ function BuildPlanInner() {
       <SEO title="Build Your Plan — OCCTA Fair Broadband" canonical="/build-plan" />
       <div className="container mx-auto px-4 py-10 md:py-14">
         <div className="mb-6">
-          <p className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground">Step {step} of 5</p>
+          <p className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground">Step {step} of 6</p>
           <h1 className="font-display text-3xl md:text-4xl uppercase mt-1">Build your plan</h1>
           <p className="text-sm text-muted-foreground mt-2">{FROM_PRICE_DISCLOSURE}</p>
         </div>
@@ -216,17 +251,55 @@ function BuildPlanInner() {
               </Step>
             )}
 
+            {step === 6 && (
+              <Step title="Your details">
+                <div className="grid gap-4">
+                  <div>
+                    <Label className="text-sm">Full name *</Label>
+                    <Input value={contact.full_name} onChange={(e) => setContact((c) => ({ ...c, full_name: e.target.value }))} className="mt-1" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm">Email *</Label>
+                      <Input type="email" value={contact.email} onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))} className="mt-1" />
+                    </div>
+                    <div>
+                      <Label className="text-sm">Phone *</Label>
+                      <Input value={contact.phone} onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))} className="mt-1" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Postcode *</Label>
+                    <Input value={contact.postcode || ((selectedAddress as any)?.postcode as string) || ""} onChange={(e) => setContact((c) => ({ ...c, postcode: e.target.value.toUpperCase() }))} className="mt-1 font-mono" maxLength={10} />
+                  </div>
+                  <label className="flex items-start gap-3 text-sm">
+                    <Checkbox checked={contact.marketing_consent} onCheckedChange={(v) => setContact((c) => ({ ...c, marketing_consent: !!v }))} />
+                    <span className="text-muted-foreground">I'm happy to receive occasional OCCTA updates. Unsubscribe anytime.</span>
+                  </label>
+                  <label className="flex items-start gap-3 text-sm">
+                    <Checkbox checked={contact.privacy_ack} onCheckedChange={(v) => setContact((c) => ({ ...c, privacy_ack: !!v }))} />
+                    <span>I've read the Privacy Policy and agree to OCCTA contacting me about this quote. *</span>
+                  </label>
+                  {resolved?.quote_only && (
+                    <p className="text-xs text-muted-foreground border-t-2 border-foreground/10 pt-3">
+                      This address needs a manual quote so we can confirm the best available option.
+                    </p>
+                  )}
+                </div>
+              </Step>
+            )}
+
             <div className="flex justify-between mt-8 pt-6 border-t-2 border-foreground/10">
               <Button variant="outline" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1}>
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
-              {step < 5 ? (
+              {step < 6 ? (
                 <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext()}>
                   Next <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button onClick={goToQuote} disabled={!resolved || resolved.quote_only === true && !addons.length /* allow quote-only path */}>
-                  Continue to quote <ArrowRight className="w-4 h-4 ml-2" />
+                <Button onClick={submitBuildPlan} disabled={!canNext() || submitting}>
+                  {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</> : <>Get my quote <ArrowRight className="w-4 h-4 ml-2" /></>}
                 </Button>
               )}
             </div>

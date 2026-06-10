@@ -4,7 +4,10 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://esm.sh/zod@3.23.8";
-import { resolveBuildPlanPrice, loadGiacomCandidates, stripInternal } from "../_shared/buildPlanResolver.ts";
+import {
+  resolveBuildPlanPrice, loadGiacomCandidates, stripInternal,
+  RESOLVER_VERSION, LOADER_FAILURE_QUOTE_ONLY,
+} from "../_shared/buildPlanResolver.ts";
 
 const BodySchema = z.object({
   speed_bucket: z.enum(["essential", "superfast", "ultrafast", "gigabit"]),
@@ -61,11 +64,21 @@ Deno.serve(async (req) => {
 
   const { data: settings } = await supabase
     .from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();
-  const candidates = await loadGiacomCandidates(supabase, parsed.data.speed_bucket);
+
+  let candidates;
+  try {
+    candidates = await loadGiacomCandidates(supabase, parsed.data.speed_bucket);
+  } catch (_e) {
+    const safe = stripInternal(LOADER_FAILURE_QUOTE_ONLY as any);
+    if (parsed.data.test_availability && isAdmin) (safe as any).resolver_version = RESOLVER_VERSION;
+    return new Response(JSON.stringify(safe), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   const result = resolveBuildPlanPrice(input as any, settings?.fair_pricing ?? {}, candidates);
 
   // Strip internal block + any supplier_ / margin / ratecard fields.
   const safe = stripInternal(result as any);
+  // Admin/test-only deployment parity marker. Never exposes supplier data.
+  if (parsed.data.test_availability && isAdmin) (safe as any).resolver_version = RESOLVER_VERSION;
   return new Response(JSON.stringify(safe), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 });

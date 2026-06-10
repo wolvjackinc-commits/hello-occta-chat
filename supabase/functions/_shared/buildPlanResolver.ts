@@ -36,6 +36,9 @@ export interface SupplierProductCandidate {
   disconnect_fee_after_12m_net: number | null;
   bucket_hint: SpeedBucket | null;
   quote_only: boolean | null;
+  active?: boolean | null;
+  service_type?: string | null;
+  tags?: string[] | null;
 }
 
 export interface ResolverInput {
@@ -85,6 +88,22 @@ export interface ResolvedPriced {
   };
 }
 export type ResolvedResult = ResolvedPriced | ResolvedQuoteOnly;
+
+/** Deployment parity marker. Bumped per hotfix. */
+export const RESOLVER_VERSION = "phase_3d_hotfix";
+
+/** Strict term eligibility — no fallback to other terms. */
+function isTermAllowed(c: SupplierProductCandidate, term: PlanTerm): boolean {
+  const m = c.min_term_months;
+  if (m == null) return false;
+  if (term === "flex_30") return m === 1;
+  if (term === "price_lock_24") {
+    if (m === 24) return true;
+    if (m === 36 && Array.isArray(c.tags) && c.tags.includes("allow_price_lock_24_from_36m")) return true;
+    return false;
+  }
+  return false;
+}
 
 export const VAT_RATE = 0.20;
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -183,14 +202,16 @@ export function resolveBuildPlanPrice(
     return { ok: true, quote_only: true, message: "This speed isn't on a standard plan here — we'll quote it." };
   }
 
-  // Supplier candidates — bucket + address + active + non quote-only
-  const eligible = candidates.filter((c) =>
-    c.bucket_hint === i.speed_bucket &&
-    !c.quote_only &&
-    c.supplier_monthly_net != null,
-  ).filter((c) => {
+  // Strict eligibility — every gate must pass or we return quote_only.
+  const eligible = candidates.filter((c) => {
+    if (c.active === false) return false;
+    if (c.quote_only === true) return false;
+    if (c.bucket_hint !== i.speed_bucket) return false;
+    if (c.supplier_monthly_net == null) return false;
+    if (c.service_type != null && c.service_type !== "broadband") return false;
+    if (!isTermAllowed(c, i.plan_term)) return false;
     if (i.max_download != null && c.download_speed_mbps != null) {
-      return c.download_speed_mbps <= i.max_download + 5;
+      if (c.download_speed_mbps > i.max_download + 5) return false;
     }
     return true;
   });
@@ -202,23 +223,8 @@ export function resolveBuildPlanPrice(
     };
   }
 
-  const termRank = (months: number | null): number => {
-    const m = months ?? 12;
-    if (i.plan_term === "price_lock_24") {
-      if (m === 24) return 0;
-      if (m === 36) return 1;
-      if (m === 12) return 2;
-      return 3;
-    } else {
-      if (m === 1) return 0;
-      if (m === 12) return 1;
-      return 2;
-    }
-  };
-
+  // All survivors have an allowed term — rank by lowest cost then lowest ETF risk.
   const ranked = [...eligible].sort((a, b) => {
-    const r = termRank(a.min_term_months) - termRank(b.min_term_months);
-    if (r !== 0) return r;
     const ca = (a.supplier_monthly_net ?? 0) + (a.care_level_uplift_net ?? 0);
     const cb = (b.supplier_monthly_net ?? 0) + (b.care_level_uplift_net ?? 0);
     if (ca !== cb) return ca - cb;
@@ -353,23 +359,28 @@ export function stripInternal<T extends Record<string, any>>(obj: T): Record<str
 
 /** Load the Giacom broadband candidate set from supplier_products via service client. */
 export async function loadGiacomCandidates(supabase: any, bucket: SpeedBucket): Promise<SupplierProductCandidate[]> {
-  try {
-    const { data: profile } = await supabase
-      .from("supplier_profiles")
-      .select("id")
-      .eq("supplier_name", "Giacom")
-      .maybeSingle();
-    if (!profile) return [];
-    const { data } = await supabase
-      .from("supplier_products")
-      .select("id, product_name, network, technology, download_speed_mbps, upload_speed_mbps, min_term_months, supplier_monthly_net, care_level_uplift_net, connection_fee_net, router_required, router_compatible, etf_applies, disconnect_fee_in_12m_net, disconnect_fee_after_12m_net, bucket_hint, quote_only, active, service_type")
-      .eq("supplier_id", profile.id)
-      .eq("active", true)
-      .eq("quote_only", false)
-      .eq("bucket_hint", bucket)
-      .eq("service_type", "broadband");
-    return (data ?? []) as SupplierProductCandidate[];
-  } catch {
-    return [];
-  }
+  const { data: profile, error: profErr } = await supabase
+    .from("supplier_profiles")
+    .select("id")
+    .eq("supplier_name", "Giacom")
+    .maybeSingle();
+  if (profErr) throw new Error("supplier_profile_load_failed");
+  if (!profile) return [];
+  const { data, error } = await supabase
+    .from("supplier_products")
+    .select("id, product_name, network, technology, download_speed_mbps, upload_speed_mbps, min_term_months, supplier_monthly_net, care_level_uplift_net, connection_fee_net, router_required, router_compatible, etf_applies, disconnect_fee_in_12m_net, disconnect_fee_after_12m_net, bucket_hint, quote_only, active, service_type, tags")
+    .eq("supplier_id", profile.id)
+    .eq("active", true)
+    .eq("quote_only", false)
+    .eq("bucket_hint", bucket)
+    .eq("service_type", "broadband");
+  if (error) throw new Error("supplier_products_load_failed");
+  return (data ?? []) as SupplierProductCandidate[];
 }
+
+/** Safe quote-only result for loader failures. Never returns priced fallback. */
+export const LOADER_FAILURE_QUOTE_ONLY: ResolvedQuoteOnly = {
+  ok: true,
+  quote_only: true,
+  message: "Final price needs manual confirmation for this address.",
+};

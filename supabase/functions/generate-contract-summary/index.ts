@@ -44,7 +44,15 @@ Deno.serve(async (req) => {
     const addons = Array.isArray(q.selected_addons) ? (q.selected_addons as any[]).map((a) => a.id).filter(Boolean) : [];
     const { data: settings } = await supabase
       .from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();
-    const candidates = await loadGiacomCandidates(supabase, q.speed_bucket as any);
+    let candidates;
+    try {
+      candidates = await loadGiacomCandidates(supabase, q.speed_bucket as any);
+    } catch (_e) {
+      return jsonResponse({
+        error: "build_plan_unsafe",
+        message: "Final price needs manual confirmation for this address.",
+      }, 409);
+    }
     const resolved = resolveBuildPlanPrice({
       speed_bucket: q.speed_bucket,
       plan_term: q.plan_term,

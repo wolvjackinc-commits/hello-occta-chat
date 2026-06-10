@@ -112,8 +112,15 @@ Deno.serve(async (req) => {
   // ── Re-resolve server-side ──
   const { data: settings } = await supabase
     .from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();
-  const candidates = await loadGiacomCandidates(supabase, i.speed_bucket);
-  const resolved = resolveBuildPlanPrice({
+  let candidates;
+  try {
+    candidates = await loadGiacomCandidates(supabase, i.speed_bucket);
+  } catch (_e) {
+    candidates = null;
+  }
+  const resolved = candidates === null
+    ? { ok: true as const, quote_only: true as const, message: "Final price needs manual confirmation for this address." }
+    : resolveBuildPlanPrice({
     speed_bucket: i.speed_bucket,
     plan_term: i.plan_term,
     router_option: i.router_option,

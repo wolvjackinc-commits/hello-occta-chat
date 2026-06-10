@@ -69,9 +69,9 @@ const BroadbandInner = () => {
   ];
 
   const handleChoosePlan = (planId: string) => {
-    setSelectedBroadbandPlanId(planId);
-    setSelectedCallPlans([]);
-    setShowVoiceDialog(true);
+    // Broadband now routes via Build Plan → First Bill Preview → Contract Summary.
+    const bucket = planId.replace("broadband-", "");
+    navigate(`/build-plan?bucket=${bucket}`);
   };
 
   const toggleCallPlan = (id: string) => {
@@ -157,7 +157,7 @@ const BroadbandInner = () => {
               Add Digital Home Phone?
             </DialogTitle>
             <DialogDescription className="text-base">
-              Stay connected with crystal-clear calls — no extra line needed.
+              Stay connected with crystal-clear calls — works over compatible broadband, no traditional landline required.
             </DialogDescription>
           </DialogHeader>
 
@@ -173,7 +173,7 @@ const BroadbandInner = () => {
               </div>
               <ul className="text-xs text-muted-foreground space-y-0.5 mb-2">
                 <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Works through your broadband</li>
-                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Keep your existing number</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Keep your existing number where porting is available</li>
                 <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Plug into your router</li>
               </ul>
               {selectedCallPlans.length === 0 && (
@@ -419,7 +419,10 @@ const BroadbandInner = () => {
                             <div className="text-right flex items-center gap-3">
                               <div>
                                 <p className="font-display text-2xl text-primary">£{plan.price}</p>
-                                <p className="text-xs text-foreground font-semibold">/month</p>
+                                <p className="text-[10px] text-foreground font-semibold">/mo · Price Lock 24</p>
+                                {plan.flex30Price && (
+                                  <p className="text-[10px] text-muted-foreground">Flex 30 £{plan.flex30Price}</p>
+                                )}
                               </div>
                               <ArrowRight className="w-5 h-5 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
@@ -541,7 +544,12 @@ const BroadbandInner = () => {
                       <span className="font-display text-4xl">£{plan.price}</span>
                       <span className="text-foreground/70 text-sm font-medium">/mo</span>
                     </div>
-                    
+                    <div className="flex flex-wrap gap-1 mb-3 text-[11px] font-medium">
+                      <span className="px-2 py-0.5 bg-primary/10 border border-primary/30 text-foreground">Price Lock 24</span>
+                      {plan.flex30Price && (
+                        <span className="px-2 py-0.5 bg-secondary border border-foreground/15 text-muted-foreground">Flex 30 from £{plan.flex30Price}/mo</span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-accent border-2 border-foreground inline-block">
                       <Wifi className="w-3 h-3 text-accent-foreground" />
                       <span className="font-display text-accent-foreground text-sm">Up to {plan.speed}Mbps</span>

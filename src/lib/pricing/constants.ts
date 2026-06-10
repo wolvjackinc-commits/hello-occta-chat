@@ -6,7 +6,7 @@
  * When catalogue prices change, update these too.
  */
 export const SEO_PRICES = {
-  broadband: '22.99',
+  broadband: '34.99',
   sim: '7.99',
   landline: '4.95',
 } as const;

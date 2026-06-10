@@ -73,7 +73,7 @@ const KeywordLanding = () => {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
               <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
                 <Zap className="w-4 h-4 inline mr-2" />
-                From £{page.price || "22.99"}/mo
+                From £{page.price || "34.99"}/mo
               </div>
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
                 {page.heroTitle}

@@ -18,7 +18,7 @@ export const locations: Location[] = [
     city: "London",
     region: "Greater London",
     intro: "Looking for cheap broadband in London? OCCTA delivers fast, reliable fibre broadband across Greater London with no contracts, no price rises, and speeds up to 900Mbps. Whether you\u2019re in Zone 1 or the suburbs, get connected without the big-provider price tag.",
-    metaDescription: "Cheap broadband in London from \u00A322.99/mo. No contract fibre up to 900Mbps across Greater London. No price rises, 30-day rolling options available where eligible. Get connected today.",
+    metaDescription: "Cheap broadband in London from \u00A334.99/mo. No contract fibre up to 900Mbps across Greater London. No price rises, 30-day rolling options available where eligible. Get connected today.",
     faqs: [
       { question: "Can I get OCCTA broadband in London?", answer: "Yes \u2014 OCCTA broadband is available across Greater London via the Openreach fibre network. Enter your postcode on our broadband page to check speeds and availability at your address." },
       { question: "How fast is OCCTA broadband in London?", answer: "Speeds depend on your address and the infrastructure available. Most London postcodes can access speeds from 36Mbps up to 900Mbps through FTTP (full fibre) or FTTC connections." },
@@ -30,7 +30,7 @@ export const locations: Location[] = [
     city: "Manchester",
     region: "Greater Manchester",
     intro: "Get affordable, no-contract broadband in Manchester. OCCTA provides fibre broadband across Greater Manchester with speeds up to 900Mbps and no hidden fees. Simple, honest internet for a city that doesn\u2019t do nonsense.",
-    metaDescription: "Cheap broadband in Manchester from \u00A322.99/mo. No contract fibre up to 900Mbps. No hidden fees, 30-day rolling options available where eligible. Check availability now.",
+    metaDescription: "Cheap broadband in Manchester from \u00A334.99/mo. No contract fibre up to 900Mbps. No hidden fees, 30-day rolling options available where eligible. Check availability now.",
     faqs: [
       { question: "Is OCCTA broadband available in Manchester?", answer: "Yes \u2014 OCCTA covers most of Greater Manchester via the Openreach network. Check your postcode on our broadband page to confirm availability and speeds at your address." },
       { question: "What speeds can I get in Manchester?", answer: "Most Manchester addresses can access speeds from 36Mbps to 900Mbps depending on whether your area has FTTC or full fibre (FTTP) coverage." },
@@ -42,7 +42,7 @@ export const locations: Location[] = [
     city: "Birmingham",
     region: "West Midlands",
     intro: "Affordable fibre broadband in Birmingham with no contracts and no surprises. OCCTA offers speeds up to 900Mbps across the West Midlands \u2014 straightforward internet at a fair price, with Setup from £0 where available and a router included.",
-    metaDescription: "Cheap broadband in Birmingham from \u00A322.99/mo. No contract fibre up to 900Mbps across the West Midlands. 30-day rolling options available where eligible, no price rises.",
+    metaDescription: "Cheap broadband in Birmingham from \u00A334.99/mo. No contract fibre up to 900Mbps across the West Midlands. 30-day rolling options available where eligible, no price rises.",
     faqs: [
       { question: "Can I get OCCTA broadband in Birmingham?", answer: "Yes \u2014 OCCTA broadband is available across Birmingham and the wider West Midlands through the Openreach fibre network. Enter your postcode to check what speeds are available." },
       { question: "What broadband speeds are available in Birmingham?", answer: "Depending on your address, you can get speeds from 36Mbps (FTTC) up to 900Mbps (FTTP full fibre). Many Birmingham postcodes now have access to ultrafast full fibre." },
@@ -54,7 +54,7 @@ export const locations: Location[] = [
     city: "Leeds",
     region: "West Yorkshire",
     intro: "Fast, cheap broadband in Leeds with no contract tie-ins. OCCTA serves homes across West Yorkshire with fibre speeds up to 900Mbps, Setup from £0 where available, and a price that won\u2019t change. Honest broadband for Yorkshire.",
-    metaDescription: "Cheap broadband in Leeds from \u00A322.99/mo. No contract fibre up to 900Mbps in West Yorkshire. No price rises, 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Leeds from \u00A334.99/mo. No contract fibre up to 900Mbps in West Yorkshire. No price rises, 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Leeds?", answer: "Yes \u2014 OCCTA broadband covers Leeds and much of West Yorkshire via the Openreach network. Check your postcode to see available speeds at your address." },
       { question: "What fibre speeds can I get in Leeds?", answer: "Most Leeds postcodes have access to speeds from 36Mbps up to 900Mbps, depending on whether your street has FTTC or full fibre (FTTP) infrastructure." },
@@ -66,7 +66,7 @@ export const locations: Location[] = [
     city: "Glasgow",
     region: "Scotland",
     intro: "Affordable broadband in Glasgow with no contracts and no catches. OCCTA brings fast fibre internet to homes across Scotland\u2019s largest city \u2014 from the city centre to the suburbs \u2014 with speeds up to 900Mbps and honest, fixed pricing.",
-    metaDescription: "Cheap broadband in Glasgow from \u00A322.99/mo. No contract fibre up to 900Mbps. No hidden fees, 30-day rolling options available where eligible. Check Glasgow availability.",
+    metaDescription: "Cheap broadband in Glasgow from \u00A334.99/mo. No contract fibre up to 900Mbps. No hidden fees, 30-day rolling options available where eligible. Check Glasgow availability.",
     faqs: [
       { question: "Can I get OCCTA broadband in Glasgow?", answer: "Yes \u2014 OCCTA provides broadband across Glasgow through the Openreach fibre network. Enter your postcode to check what speeds and plans are available at your address." },
       { question: "What broadband speeds are available in Glasgow?", answer: "Glasgow has good fibre coverage. Most addresses can access speeds from 36Mbps to 900Mbps depending on local infrastructure. Full fibre (FTTP) is expanding rapidly across the city." },
@@ -78,7 +78,7 @@ export const locations: Location[] = [
     city: "Liverpool",
     region: "Merseyside",
     intro: "Get cheap, no-contract broadband in Liverpool. OCCTA delivers fibre internet across Merseyside with speeds up to 900Mbps, Setup from £0 where available, and a price that stays the same. No drama, just broadband.",
-    metaDescription: "Cheap broadband in Liverpool from \u00A322.99/mo. No contract fibre up to 900Mbps across Merseyside. 30-day rolling options available where eligible, no price rises.",
+    metaDescription: "Cheap broadband in Liverpool from \u00A334.99/mo. No contract fibre up to 900Mbps across Merseyside. 30-day rolling options available where eligible, no price rises.",
     faqs: [
       { question: "Is OCCTA broadband available in Liverpool?", answer: "Yes \u2014 OCCTA covers Liverpool and surrounding areas in Merseyside via the Openreach network. Check your postcode to confirm availability." },
       { question: "How fast is broadband in Liverpool with OCCTA?", answer: "Speeds in Liverpool range from 36Mbps to 900Mbps depending on your address and whether full fibre (FTTP) has been rolled out to your street." },
@@ -90,7 +90,7 @@ export const locations: Location[] = [
     city: "Sheffield",
     region: "South Yorkshire",
     intro: "Reliable, affordable broadband in Sheffield \u2014 no contracts, no gimmicks. OCCTA offers fibre internet across South Yorkshire with speeds up to 900Mbps, Setup from £0 where available, and monthly pricing that never changes.",
-    metaDescription: "Cheap broadband in Sheffield from \u00A322.99/mo. No contract fibre up to 900Mbps in South Yorkshire. No hidden fees, 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Sheffield from \u00A334.99/mo. No contract fibre up to 900Mbps in South Yorkshire. No hidden fees, 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA broadband in Sheffield?", answer: "Yes \u2014 OCCTA broadband is available across Sheffield and South Yorkshire through the Openreach fibre network. Enter your postcode to see what is available." },
       { question: "What speeds are available in Sheffield?", answer: "Sheffield has growing full fibre coverage. Most addresses can access at least 36Mbps, with many areas now offering up to 900Mbps via FTTP." },
@@ -102,7 +102,7 @@ export const locations: Location[] = [
     city: "Bristol",
     region: "South West England",
     intro: "Cheap fibre broadband in Bristol with no contracts. OCCTA provides fast, honest internet across the South West with speeds up to 900Mbps, Bring your own router for £0, or choose a router at checkout and installation, and a fixed monthly price. Broadband that respects your wallet.",
-    metaDescription: "Cheap broadband in Bristol from \u00A322.99/mo. No contract fibre up to 900Mbps in the South West. 30-day rolling options available where eligible, no price rises.",
+    metaDescription: "Cheap broadband in Bristol from \u00A334.99/mo. No contract fibre up to 900Mbps in the South West. 30-day rolling options available where eligible, no price rises.",
     faqs: [
       { question: "Is OCCTA broadband available in Bristol?", answer: "Yes \u2014 OCCTA covers Bristol and surrounding areas in the South West via the Openreach network. Check your postcode to see available plans and speeds." },
       { question: "What broadband speeds can I get in Bristol?", answer: "Bristol has strong fibre coverage. Depending on your address, you can access speeds from 36Mbps up to 900Mbps with OCCTA." },
@@ -114,7 +114,7 @@ export const locations: Location[] = [
     city: "Leicester",
     region: "East Midlands",
     intro: "Affordable, no-contract broadband in Leicester. OCCTA offers fibre internet across the East Midlands with speeds up to 900Mbps, Setup from £0 where available, and fixed pricing. Get online without the hassle or hidden costs.",
-    metaDescription: "Cheap broadband in Leicester from \u00A322.99/mo. No contract fibre up to 900Mbps in the East Midlands. No hidden fees, 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Leicester from \u00A334.99/mo. No contract fibre up to 900Mbps in the East Midlands. No hidden fees, 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA broadband in Leicester?", answer: "Yes \u2014 OCCTA broadband is available in Leicester and surrounding East Midlands areas through the Openreach fibre network. Check your postcode to confirm." },
       { question: "What fibre speeds are available in Leicester?", answer: "Most Leicester postcodes can access speeds from 36Mbps up to 900Mbps. Full fibre (FTTP) availability is expanding across the city." },
@@ -126,7 +126,7 @@ export const locations: Location[] = [
     city: "Nottingham",
     region: "East Midlands",
     intro: "Fast, cheap broadband in Nottingham with no contracts and no price rises. OCCTA serves the East Midlands with fibre speeds up to 900Mbps and a refreshingly simple service \u2014 fixed pricing, Setup from £0 where available, and no lock-in.",
-    metaDescription: "Cheap broadband in Nottingham from \u00A322.99/mo. No contract fibre up to 900Mbps in the East Midlands. 30-day rolling options available where eligible, no hidden fees.",
+    metaDescription: "Cheap broadband in Nottingham from \u00A334.99/mo. No contract fibre up to 900Mbps in the East Midlands. 30-day rolling options available where eligible, no hidden fees.",
     faqs: [
       { question: "Is OCCTA broadband available in Nottingham?", answer: "Yes \u2014 OCCTA covers Nottingham and the wider East Midlands via the Openreach network. Enter your postcode to check speeds and plans available at your address." },
       { question: "What speeds can I get in Nottingham?", answer: "Nottingham has expanding fibre coverage. Speeds from 36Mbps to 900Mbps are available depending on your address and local infrastructure." },
@@ -139,7 +139,7 @@ export const locations: Location[] = [
     city: "Edinburgh",
     region: "Scotland",
     intro: "Get cheap broadband in Edinburgh with no contracts. OCCTA delivers fast fibre internet across Scotland\u2019s capital with speeds up to 900Mbps, Setup from £0 where available, and a price that stays the same every month.",
-    metaDescription: "Cheap broadband in Edinburgh from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible, no hidden fees.",
+    metaDescription: "Cheap broadband in Edinburgh from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible, no hidden fees.",
     faqs: [
       { question: "Can I get OCCTA broadband in Edinburgh?", answer: "Yes \u2014 OCCTA covers Edinburgh through the Openreach fibre network. Check your postcode to see available speeds." },
       { question: "What speeds are available in Edinburgh?", answer: "Most Edinburgh addresses can access speeds from 36Mbps to 900Mbps depending on local FTTP/FTTC coverage." },
@@ -151,7 +151,7 @@ export const locations: Location[] = [
     city: "Cardiff",
     region: "Wales",
     intro: "Affordable fibre broadband in Cardiff with no contracts. OCCTA brings fast, reliable internet to Wales\u2019 capital with speeds up to 900Mbps and honest, fixed pricing.",
-    metaDescription: "Cheap broadband in Cardiff from \u00A322.99/mo. No contract fibre up to 900Mbps in Wales. 30-day rolling options available where eligible, no price rises.",
+    metaDescription: "Cheap broadband in Cardiff from \u00A334.99/mo. No contract fibre up to 900Mbps in Wales. 30-day rolling options available where eligible, no price rises.",
     faqs: [
       { question: "Is OCCTA broadband available in Cardiff?", answer: "Yes \u2014 OCCTA covers Cardiff via the Openreach network. Enter your postcode to check availability." },
       { question: "What broadband speeds can I get in Cardiff?", answer: "Cardiff has strong fibre coverage with speeds from 36Mbps to 900Mbps available." },
@@ -163,7 +163,7 @@ export const locations: Location[] = [
     city: "Newcastle",
     region: "Tyne and Wear",
     intro: "Cheap broadband in Newcastle upon Tyne with no contracts. OCCTA delivers fibre internet across Tyne and Wear with speeds up to 900Mbps, Bring your own router for £0, or choose a router at checkout, and a price that never changes.",
-    metaDescription: "Cheap broadband in Newcastle from \u00A322.99/mo. No contract fibre up to 900Mbps. No hidden fees, 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Newcastle from \u00A334.99/mo. No contract fibre up to 900Mbps. No hidden fees, 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Newcastle?", answer: "Yes \u2014 OCCTA covers Newcastle and Tyne and Wear via the Openreach network. Check your postcode for availability." },
       { question: "What speeds are available in Newcastle?", answer: "Most Newcastle postcodes can access 36Mbps to 900Mbps depending on infrastructure." },
@@ -175,7 +175,7 @@ export const locations: Location[] = [
     city: "Southampton",
     region: "Hampshire",
     intro: "Fast, affordable broadband in Southampton with no contracts. OCCTA serves Hampshire with fibre speeds up to 900Mbps, Setup from £0 where available, and fixed monthly pricing.",
-    metaDescription: "Cheap broadband in Southampton from \u00A322.99/mo. No contract fibre up to 900Mbps in Hampshire. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Southampton from \u00A334.99/mo. No contract fibre up to 900Mbps in Hampshire. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Southampton?", answer: "Yes \u2014 OCCTA covers Southampton and Hampshire via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps are available depending on your address." },
@@ -187,7 +187,7 @@ export const locations: Location[] = [
     city: "Coventry",
     region: "West Midlands",
     intro: "No-contract broadband in Coventry from OCCTA. Get fibre speeds up to 900Mbps across the West Midlands with Setup from £0 where available and honest, fixed pricing.",
-    metaDescription: "Cheap broadband in Coventry from \u00A322.99/mo. No contract fibre up to 900Mbps. No hidden fees, 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Coventry from \u00A334.99/mo. No contract fibre up to 900Mbps. No hidden fees, 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Coventry?", answer: "Yes \u2014 OCCTA covers Coventry and the West Midlands via Openreach. Check your postcode." },
       { question: "What speeds are available?", answer: "Most Coventry addresses can access 36Mbps to 900Mbps." },
@@ -199,7 +199,7 @@ export const locations: Location[] = [
     city: "Brighton",
     region: "East Sussex",
     intro: "Cheap broadband in Brighton with no contracts. OCCTA delivers fast fibre internet across East Sussex with speeds up to 900Mbps and a price that stays the same.",
-    metaDescription: "Cheap broadband in Brighton from \u00A322.99/mo. No contract fibre up to 900Mbps in East Sussex. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Brighton from \u00A334.99/mo. No contract fibre up to 900Mbps in East Sussex. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Brighton?", answer: "Yes \u2014 OCCTA covers Brighton and East Sussex via the Openreach network." },
       { question: "What speeds can I get in Brighton?", answer: "Brighton has excellent fibre coverage with speeds from 36Mbps to 900Mbps." },
@@ -211,7 +211,7 @@ export const locations: Location[] = [
     city: "Plymouth",
     region: "Devon",
     intro: "Affordable fibre broadband in Plymouth with no contracts. OCCTA provides fast internet across Devon with speeds up to 900Mbps, Setup from £0 where available, and fixed pricing.",
-    metaDescription: "Cheap broadband in Plymouth from \u00A322.99/mo. No contract fibre up to 900Mbps in Devon. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Plymouth from \u00A334.99/mo. No contract fibre up to 900Mbps in Devon. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Plymouth?", answer: "Yes \u2014 OCCTA covers Plymouth and Devon via the Openreach network." },
       { question: "What speeds are available in Plymouth?", answer: "Speeds from 36Mbps to 900Mbps depending on your postcode." },
@@ -223,7 +223,7 @@ export const locations: Location[] = [
     city: "Stoke-on-Trent",
     region: "Staffordshire",
     intro: "Cheap broadband in Stoke-on-Trent with no contracts. OCCTA serves Staffordshire with fibre speeds up to 900Mbps and honest, fixed monthly pricing.",
-    metaDescription: "Cheap broadband in Stoke-on-Trent from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Stoke-on-Trent from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Stoke-on-Trent?", answer: "Yes \u2014 OCCTA covers Stoke-on-Trent via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most Stoke addresses can access 36Mbps to 900Mbps." },
@@ -235,7 +235,7 @@ export const locations: Location[] = [
     city: "Wolverhampton",
     region: "West Midlands",
     intro: "No-contract broadband in Wolverhampton. OCCTA delivers fibre internet across the West Midlands with speeds up to 900Mbps, Setup from £0 where available, and fixed pricing.",
-    metaDescription: "Cheap broadband in Wolverhampton from \u00A322.99/mo. No contract fibre up to 900Mbps. No hidden fees.",
+    metaDescription: "Cheap broadband in Wolverhampton from \u00A334.99/mo. No contract fibre up to 900Mbps. No hidden fees.",
     faqs: [
       { question: "Can I get OCCTA in Wolverhampton?", answer: "Yes \u2014 OCCTA covers Wolverhampton and the West Midlands via Openreach." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
@@ -247,7 +247,7 @@ export const locations: Location[] = [
     city: "Derby",
     region: "East Midlands",
     intro: "Affordable broadband in Derby with no contracts. OCCTA offers fibre internet across the East Midlands with speeds up to 900Mbps and a fixed monthly price.",
-    metaDescription: "Cheap broadband in Derby from \u00A322.99/mo. No contract fibre up to 900Mbps in the East Midlands. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Derby from \u00A334.99/mo. No contract fibre up to 900Mbps in the East Midlands. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Derby?", answer: "Yes \u2014 OCCTA covers Derby and the East Midlands via the Openreach network." },
       { question: "What speeds can I get in Derby?", answer: "Most Derby postcodes can access 36Mbps to 900Mbps." },
@@ -259,7 +259,7 @@ export const locations: Location[] = [
     city: "Swansea",
     region: "Wales",
     intro: "Cheap broadband in Swansea with no contracts. OCCTA delivers fast fibre internet across Wales with speeds up to 900Mbps and honest, fixed pricing.",
-    metaDescription: "Cheap broadband in Swansea from \u00A322.99/mo. No contract fibre up to 900Mbps in Wales. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Swansea from \u00A334.99/mo. No contract fibre up to 900Mbps in Wales. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Swansea?", answer: "Yes \u2014 OCCTA covers Swansea via the Openreach network. Check your postcode." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on local infrastructure." },
@@ -271,7 +271,7 @@ export const locations: Location[] = [
     city: "Aberdeen",
     region: "Scotland",
     intro: "Fast broadband in Aberdeen with no contracts. OCCTA serves Scotland with fibre speeds up to 900Mbps, Setup from £0 where available, and a price that never changes.",
-    metaDescription: "Cheap broadband in Aberdeen from \u00A322.99/mo. No contract fibre up to 900Mbps in Scotland. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Aberdeen from \u00A334.99/mo. No contract fibre up to 900Mbps in Scotland. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Aberdeen?", answer: "Yes \u2014 OCCTA covers Aberdeen via the Openreach fibre network." },
       { question: "What speeds can I get?", answer: "Most Aberdeen addresses can access 36Mbps to 900Mbps." },
@@ -283,7 +283,7 @@ export const locations: Location[] = [
     city: "Reading",
     region: "Berkshire",
     intro: "Affordable broadband in Reading with no contracts. OCCTA delivers fibre internet across Berkshire with speeds up to 900Mbps and fixed monthly pricing.",
-    metaDescription: "Cheap broadband in Reading from \u00A322.99/mo. No contract fibre up to 900Mbps in Berkshire. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Reading from \u00A334.99/mo. No contract fibre up to 900Mbps in Berkshire. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Reading?", answer: "Yes \u2014 OCCTA covers Reading and Berkshire via the Openreach network." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your postcode." },
@@ -295,7 +295,7 @@ export const locations: Location[] = [
     city: "Sunderland",
     region: "Tyne and Wear",
     intro: "Cheap broadband in Sunderland with no contracts. OCCTA serves Tyne and Wear with fibre speeds up to 900Mbps and honest pricing.",
-    metaDescription: "Cheap broadband in Sunderland from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Sunderland from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Sunderland?", answer: "Yes \u2014 OCCTA covers Sunderland via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most Sunderland postcodes can access 36Mbps to 900Mbps." },
@@ -307,7 +307,7 @@ export const locations: Location[] = [
     city: "Norwich",
     region: "Norfolk",
     intro: "No-contract broadband in Norwich. OCCTA delivers fibre internet across Norfolk with speeds up to 900Mbps, Setup from £0 where available, and a fixed monthly price.",
-    metaDescription: "Cheap broadband in Norwich from \u00A322.99/mo. No contract fibre up to 900Mbps in Norfolk. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Norwich from \u00A334.99/mo. No contract fibre up to 900Mbps in Norfolk. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Norwich?", answer: "Yes \u2014 OCCTA covers Norwich and Norfolk via the Openreach network." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
@@ -319,7 +319,7 @@ export const locations: Location[] = [
     city: "Luton",
     region: "Bedfordshire",
     intro: "Affordable broadband in Luton with no contracts. OCCTA offers fibre internet across Bedfordshire with speeds up to 900Mbps and fixed pricing.",
-    metaDescription: "Cheap broadband in Luton from \u00A322.99/mo. No contract fibre up to 900Mbps. No hidden fees.",
+    metaDescription: "Cheap broadband in Luton from \u00A334.99/mo. No contract fibre up to 900Mbps. No hidden fees.",
     faqs: [
       { question: "Is OCCTA available in Luton?", answer: "Yes \u2014 OCCTA covers Luton and Bedfordshire via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most Luton addresses can access 36Mbps to 900Mbps." },
@@ -331,7 +331,7 @@ export const locations: Location[] = [
     city: "Preston",
     region: "Lancashire",
     intro: "Cheap broadband in Preston with no contracts. OCCTA serves Lancashire with fibre speeds up to 900Mbps and honest, fixed monthly pricing.",
-    metaDescription: "Cheap broadband in Preston from \u00A322.99/mo. No contract fibre up to 900Mbps in Lancashire. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Preston from \u00A334.99/mo. No contract fibre up to 900Mbps in Lancashire. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Preston?", answer: "Yes \u2014 OCCTA covers Preston and Lancashire via the Openreach network." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your postcode." },
@@ -343,7 +343,7 @@ export const locations: Location[] = [
     city: "Milton Keynes",
     region: "Buckinghamshire",
     intro: "Fast, affordable broadband in Milton Keynes with no contracts. OCCTA delivers fibre internet across Buckinghamshire with speeds up to 900Mbps.",
-    metaDescription: "Cheap broadband in Milton Keynes from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Milton Keynes from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Milton Keynes?", answer: "Yes \u2014 OCCTA covers Milton Keynes via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most MK postcodes can access 36Mbps to 900Mbps." },
@@ -355,7 +355,7 @@ export const locations: Location[] = [
     city: "Northampton",
     region: "Northamptonshire",
     intro: "No-contract broadband in Northampton. OCCTA provides fibre internet across Northamptonshire with speeds up to 900Mbps and fixed pricing.",
-    metaDescription: "Cheap broadband in Northampton from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Northampton from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Northampton?", answer: "Yes \u2014 OCCTA covers Northampton via the Openreach network." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
@@ -367,7 +367,7 @@ export const locations: Location[] = [
     city: "Dundee",
     region: "Scotland",
     intro: "Affordable broadband in Dundee with no contracts. OCCTA delivers fibre internet across Scotland with speeds up to 900Mbps and honest pricing.",
-    metaDescription: "Cheap broadband in Dundee from \u00A322.99/mo. No contract fibre up to 900Mbps in Scotland. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Dundee from \u00A334.99/mo. No contract fibre up to 900Mbps in Scotland. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Dundee?", answer: "Yes \u2014 OCCTA covers Dundee via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most Dundee postcodes can access 36Mbps to 900Mbps." },
@@ -379,7 +379,7 @@ export const locations: Location[] = [
     city: "York",
     region: "North Yorkshire",
     intro: "Cheap broadband in York with no contracts. OCCTA serves North Yorkshire with fibre speeds up to 900Mbps, Setup from £0 where available, and a fixed monthly price.",
-    metaDescription: "Cheap broadband in York from \u00A322.99/mo. No contract fibre up to 900Mbps in North Yorkshire. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in York from \u00A334.99/mo. No contract fibre up to 900Mbps in North Yorkshire. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in York?", answer: "Yes \u2014 OCCTA covers York and North Yorkshire via the Openreach network." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
@@ -391,7 +391,7 @@ export const locations: Location[] = [
     city: "Portsmouth",
     region: "Hampshire",
     intro: "Fast, no-contract broadband in Portsmouth. OCCTA delivers fibre internet across Hampshire with speeds up to 900Mbps and honest, fixed pricing.",
-    metaDescription: "Cheap broadband in Portsmouth from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Portsmouth from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Portsmouth?", answer: "Yes \u2014 OCCTA covers Portsmouth and Hampshire via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most Portsmouth addresses can access 36Mbps to 900Mbps." },
@@ -403,7 +403,7 @@ export const locations: Location[] = [
     city: "Exeter",
     region: "Devon",
     intro: "Affordable broadband in Exeter with no contracts. OCCTA provides fibre internet across Devon with speeds up to 900Mbps and fixed monthly pricing.",
-    metaDescription: "Cheap broadband in Exeter from \u00A322.99/mo. No contract fibre up to 900Mbps in Devon. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Exeter from \u00A334.99/mo. No contract fibre up to 900Mbps in Devon. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Exeter?", answer: "Yes \u2014 OCCTA covers Exeter and Devon via the Openreach network." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your postcode." },
@@ -415,7 +415,7 @@ export const locations: Location[] = [
     city: "Cambridge",
     region: "Cambridgeshire",
     intro: "Cheap broadband in Cambridge with no contracts. OCCTA delivers fast fibre internet across Cambridgeshire with speeds up to 900Mbps and a fixed monthly price.",
-    metaDescription: "Cheap broadband in Cambridge from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Cambridge from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Cambridge?", answer: "Yes \u2014 OCCTA covers Cambridge via the Openreach fibre network." },
       { question: "What speeds can I get?", answer: "Cambridge has excellent fibre coverage with speeds from 36Mbps to 900Mbps." },
@@ -427,7 +427,7 @@ export const locations: Location[] = [
     city: "Oxford",
     region: "Oxfordshire",
     intro: "No-contract broadband in Oxford. OCCTA offers fibre internet across Oxfordshire with speeds up to 900Mbps, Setup from £0 where available, and honest pricing.",
-    metaDescription: "Cheap broadband in Oxford from \u00A322.99/mo. No contract fibre up to 900Mbps in Oxfordshire. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Oxford from \u00A334.99/mo. No contract fibre up to 900Mbps in Oxfordshire. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Oxford?", answer: "Yes \u2014 OCCTA covers Oxford and Oxfordshire via the Openreach network." },
       { question: "What speeds are available?", answer: "Most Oxford postcodes can access 36Mbps to 900Mbps." },
@@ -439,7 +439,7 @@ export const locations: Location[] = [
     city: "Bath",
     region: "Somerset",
     intro: "Affordable fibre broadband in Bath with no contracts. OCCTA delivers fast internet across Somerset with speeds up to 900Mbps and fixed pricing.",
-    metaDescription: "Cheap broadband in Bath from \u00A322.99/mo. No contract fibre up to 900Mbps in Somerset. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Bath from \u00A334.99/mo. No contract fibre up to 900Mbps in Somerset. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Bath?", answer: "Yes \u2014 OCCTA covers Bath and Somerset via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
@@ -451,7 +451,7 @@ export const locations: Location[] = [
     city: "Bournemouth",
     region: "Dorset",
     intro: "Cheap broadband in Bournemouth with no contracts. OCCTA serves Dorset with fibre speeds up to 900Mbps and honest, fixed monthly pricing.",
-    metaDescription: "Cheap broadband in Bournemouth from \u00A322.99/mo. No contract fibre up to 900Mbps in Dorset. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Bournemouth from \u00A334.99/mo. No contract fibre up to 900Mbps in Dorset. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Bournemouth?", answer: "Yes \u2014 OCCTA covers Bournemouth and Dorset via the Openreach network." },
       { question: "What speeds are available?", answer: "Most Bournemouth postcodes can access 36Mbps to 900Mbps." },
@@ -463,7 +463,7 @@ export const locations: Location[] = [
     city: "Middlesbrough",
     region: "North Yorkshire",
     intro: "No-contract broadband in Middlesbrough. OCCTA delivers fibre internet with speeds up to 900Mbps and fixed pricing across Teesside.",
-    metaDescription: "Cheap broadband in Middlesbrough from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Middlesbrough from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Middlesbrough?", answer: "Yes \u2014 OCCTA covers Middlesbrough via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps depending on your postcode." },
@@ -475,7 +475,7 @@ export const locations: Location[] = [
     city: "Bolton",
     region: "Greater Manchester",
     intro: "Affordable broadband in Bolton with no contracts. OCCTA serves Greater Manchester with fibre speeds up to 900Mbps and a price that never changes.",
-    metaDescription: "Cheap broadband in Bolton from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Bolton from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Bolton?", answer: "Yes \u2014 OCCTA covers Bolton and Greater Manchester via the Openreach network." },
       { question: "What speeds are available?", answer: "Most Bolton addresses can access 36Mbps to 900Mbps." },
@@ -487,7 +487,7 @@ export const locations: Location[] = [
     city: "Blackpool",
     region: "Lancashire",
     intro: "Cheap broadband in Blackpool with no contracts. OCCTA delivers fast fibre internet across Lancashire with speeds up to 900Mbps.",
-    metaDescription: "Cheap broadband in Blackpool from \u00A322.99/mo. No contract fibre up to 900Mbps in Lancashire. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Blackpool from \u00A334.99/mo. No contract fibre up to 900Mbps in Lancashire. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Blackpool?", answer: "Yes \u2014 OCCTA covers Blackpool via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
@@ -499,7 +499,7 @@ export const locations: Location[] = [
     city: "Ipswich",
     region: "Suffolk",
     intro: "No-contract broadband in Ipswich. OCCTA provides fibre internet across Suffolk with speeds up to 900Mbps and honest pricing.",
-    metaDescription: "Cheap broadband in Ipswich from \u00A322.99/mo. No contract fibre up to 900Mbps in Suffolk. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Ipswich from \u00A334.99/mo. No contract fibre up to 900Mbps in Suffolk. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Ipswich?", answer: "Yes \u2014 OCCTA covers Ipswich and Suffolk via the Openreach network." },
       { question: "What speeds are available?", answer: "Most Ipswich postcodes can access 36Mbps to 900Mbps." },
@@ -511,7 +511,7 @@ export const locations: Location[] = [
     city: "Peterborough",
     region: "Cambridgeshire",
     intro: "Affordable broadband in Peterborough with no contracts. OCCTA delivers fibre internet across Cambridgeshire with speeds up to 900Mbps.",
-    metaDescription: "Cheap broadband in Peterborough from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Peterborough from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Peterborough?", answer: "Yes \u2014 OCCTA covers Peterborough via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps depending on your postcode." },
@@ -523,7 +523,7 @@ export const locations: Location[] = [
     city: "Huddersfield",
     region: "West Yorkshire",
     intro: "Cheap broadband in Huddersfield with no contracts. OCCTA serves West Yorkshire with fibre speeds up to 900Mbps and fixed monthly pricing.",
-    metaDescription: "Cheap broadband in Huddersfield from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Huddersfield from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Huddersfield?", answer: "Yes \u2014 OCCTA covers Huddersfield and West Yorkshire via the Openreach network." },
       { question: "What speeds are available?", answer: "Most Huddersfield postcodes can access 36Mbps to 900Mbps." },
@@ -535,7 +535,7 @@ export const locations: Location[] = [
     city: "Wakefield",
     region: "West Yorkshire",
     intro: "No-contract broadband in Wakefield. OCCTA delivers fibre internet across West Yorkshire with speeds up to 900Mbps and honest pricing.",
-    metaDescription: "Cheap broadband in Wakefield from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Wakefield from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Wakefield?", answer: "Yes \u2014 OCCTA covers Wakefield via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
@@ -547,7 +547,7 @@ export const locations: Location[] = [
     city: "Hull",
     region: "East Yorkshire",
     intro: "Affordable broadband in Hull with no contracts. OCCTA provides fibre internet across East Yorkshire with speeds up to 900Mbps.",
-    metaDescription: "Cheap broadband in Hull from \u00A322.99/mo. No contract fibre up to 900Mbps in East Yorkshire. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Hull from \u00A334.99/mo. No contract fibre up to 900Mbps in East Yorkshire. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Hull?", answer: "Yes \u2014 OCCTA covers Hull via the Openreach fibre network. Check your postcode for availability." },
       { question: "What speeds are available?", answer: "Most Hull postcodes can access 36Mbps to 900Mbps." },
@@ -559,7 +559,7 @@ export const locations: Location[] = [
     city: "Warrington",
     region: "Cheshire",
     intro: "Cheap broadband in Warrington with no contracts. OCCTA delivers fibre internet across Cheshire with speeds up to 900Mbps.",
-    metaDescription: "Cheap broadband in Warrington from \u00A322.99/mo. No contract fibre up to 900Mbps in Cheshire. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Warrington from \u00A334.99/mo. No contract fibre up to 900Mbps in Cheshire. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Warrington?", answer: "Yes \u2014 OCCTA covers Warrington and Cheshire via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps depending on your postcode." },
@@ -571,7 +571,7 @@ export const locations: Location[] = [
     city: "Doncaster",
     region: "South Yorkshire",
     intro: "No-contract broadband in Doncaster. OCCTA serves South Yorkshire with fibre speeds up to 900Mbps and fixed monthly pricing.",
-    metaDescription: "Cheap broadband in Doncaster from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Doncaster from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Doncaster?", answer: "Yes \u2014 OCCTA covers Doncaster via the Openreach network." },
       { question: "What speeds are available?", answer: "Most Doncaster addresses can access 36Mbps to 900Mbps." },
@@ -583,7 +583,7 @@ export const locations: Location[] = [
     city: "Stockport",
     region: "Greater Manchester",
     intro: "Affordable broadband in Stockport with no contracts. OCCTA delivers fibre internet across Greater Manchester with speeds up to 900Mbps.",
-    metaDescription: "Cheap broadband in Stockport from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Stockport from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Stockport?", answer: "Yes \u2014 OCCTA covers Stockport and Greater Manchester via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most Stockport postcodes can access 36Mbps to 900Mbps." },
@@ -595,7 +595,7 @@ export const locations: Location[] = [
     city: "Wigan",
     region: "Greater Manchester",
     intro: "Cheap broadband in Wigan with no contracts. OCCTA serves Greater Manchester with fibre speeds up to 900Mbps and honest pricing.",
-    metaDescription: "Cheap broadband in Wigan from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Wigan from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Can I get OCCTA in Wigan?", answer: "Yes \u2014 OCCTA covers Wigan via the Openreach network." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
@@ -607,7 +607,7 @@ export const locations: Location[] = [
     city: "Cheltenham",
     region: "Gloucestershire",
     intro: "No-contract broadband in Cheltenham. OCCTA delivers fibre internet across Gloucestershire with speeds up to 900Mbps and fixed pricing.",
-    metaDescription: "Cheap broadband in Cheltenham from \u00A322.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
+    metaDescription: "Cheap broadband in Cheltenham from \u00A334.99/mo. No contract fibre up to 900Mbps. 30-day rolling options available where eligible.",
     faqs: [
       { question: "Is OCCTA available in Cheltenham?", answer: "Yes \u2014 OCCTA covers Cheltenham and Gloucestershire via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most Cheltenham postcodes can access 36Mbps to 900Mbps." },

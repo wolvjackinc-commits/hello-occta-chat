@@ -36,6 +36,9 @@ export interface SupplierProductCandidate {
   disconnect_fee_after_12m_net: number | null;
   bucket_hint: SpeedBucket | null;
   quote_only: boolean | null;
+  active?: boolean | null;
+  service_type?: string | null;
+  tags?: string[] | null;
 }
 
 export interface ResolverInput {
@@ -85,6 +88,22 @@ export interface ResolvedPriced {
   };
 }
 export type ResolvedResult = ResolvedPriced | ResolvedQuoteOnly;
+
+/** Deployment parity marker. Bumped per hotfix. */
+export const RESOLVER_VERSION = "phase_3d_hotfix";
+
+/** Strict term eligibility — no fallback to other terms. */
+function isTermAllowed(c: SupplierProductCandidate, term: PlanTerm): boolean {
+  const m = c.min_term_months;
+  if (m == null) return false;
+  if (term === "flex_30") return m === 1;
+  if (term === "price_lock_24") {
+    if (m === 24) return true;
+    if (m === 36 && Array.isArray(c.tags) && c.tags.includes("allow_price_lock_24_from_36m")) return true;
+    return false;
+  }
+  return false;
+}
 
 export const VAT_RATE = 0.20;
 const round2 = (n: number) => Math.round(n * 100) / 100;

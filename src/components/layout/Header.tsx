@@ -62,7 +62,7 @@ const Header = () => {
       <div className="bg-foreground text-background overflow-hidden">
         <div className="py-2 flex whitespace-nowrap">
           <span className="marquee font-display tracking-wider text-sm">
-            30-DAY ROLLING • CANCEL ANYTIME • UK-BASED SUPPORT • FREE INSTALLATION •
+            30-DAY ROLLING • 30-DAY ROLLING WHERE ELIGIBLE • UK-BASED SUPPORT • SETUP FROM £0 WHERE AVAILABLE •
           </span>
         </div>
       </div>

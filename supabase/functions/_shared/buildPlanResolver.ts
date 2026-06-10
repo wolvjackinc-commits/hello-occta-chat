@@ -202,14 +202,16 @@ export function resolveBuildPlanPrice(
     return { ok: true, quote_only: true, message: "This speed isn't on a standard plan here — we'll quote it." };
   }
 
-  // Supplier candidates — bucket + address + active + non quote-only
-  const eligible = candidates.filter((c) =>
-    c.bucket_hint === i.speed_bucket &&
-    !c.quote_only &&
-    c.supplier_monthly_net != null,
-  ).filter((c) => {
+  // Strict eligibility — every gate must pass or we return quote_only.
+  const eligible = candidates.filter((c) => {
+    if (c.active === false) return false;
+    if (c.quote_only === true) return false;
+    if (c.bucket_hint !== i.speed_bucket) return false;
+    if (c.supplier_monthly_net == null) return false;
+    if (c.service_type != null && c.service_type !== "broadband") return false;
+    if (!isTermAllowed(c, i.plan_term)) return false;
     if (i.max_download != null && c.download_speed_mbps != null) {
-      return c.download_speed_mbps <= i.max_download + 5;
+      if (c.download_speed_mbps > i.max_download + 5) return false;
     }
     return true;
   });
@@ -221,23 +223,8 @@ export function resolveBuildPlanPrice(
     };
   }
 
-  const termRank = (months: number | null): number => {
-    const m = months ?? 12;
-    if (i.plan_term === "price_lock_24") {
-      if (m === 24) return 0;
-      if (m === 36) return 1;
-      if (m === 12) return 2;
-      return 3;
-    } else {
-      if (m === 1) return 0;
-      if (m === 12) return 1;
-      return 2;
-    }
-  };
-
+  // All survivors have an allowed term — rank by lowest cost then lowest ETF risk.
   const ranked = [...eligible].sort((a, b) => {
-    const r = termRank(a.min_term_months) - termRank(b.min_term_months);
-    if (r !== 0) return r;
     const ca = (a.supplier_monthly_net ?? 0) + (a.care_level_uplift_net ?? 0);
     const cb = (b.supplier_monthly_net ?? 0) + (b.care_level_uplift_net ?? 0);
     if (ca !== cb) return ca - cb;

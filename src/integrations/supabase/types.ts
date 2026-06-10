@@ -1062,6 +1062,7 @@ export type Database = {
           payment_schedule: string
           pdf_url: string | null
           plan_name: string
+          plan_term: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
           price_rise_policy: string
           privacy_version: string
@@ -1069,9 +1070,13 @@ export type Database = {
           quote_id: string
           quote_request_id: string
           router_charge: number
+          router_option: Json | null
+          selected_addons: Json | null
           service_address: string
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_charge: number
+          setup_option: Json | null
+          speed_bucket: string | null
           speed_notes: string | null
           status: Database["public"]["Enums"]["contract_summary_status_kind"]
           terms_version: string
@@ -1109,6 +1114,7 @@ export type Database = {
           payment_schedule: string
           pdf_url?: string | null
           plan_name: string
+          plan_term?: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
           price_rise_policy: string
           privacy_version?: string
@@ -1116,9 +1122,13 @@ export type Database = {
           quote_id: string
           quote_request_id: string
           router_charge?: number
+          router_option?: Json | null
+          selected_addons?: Json | null
           service_address: string
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_charge?: number
+          setup_option?: Json | null
+          speed_bucket?: string | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["contract_summary_status_kind"]
           terms_version?: string
@@ -1156,6 +1166,7 @@ export type Database = {
           payment_schedule?: string
           pdf_url?: string | null
           plan_name?: string
+          plan_term?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type_kind"]
           price_rise_policy?: string
           privacy_version?: string
@@ -1163,9 +1174,13 @@ export type Database = {
           quote_id?: string
           quote_request_id?: string
           router_charge?: number
+          router_option?: Json | null
+          selected_addons?: Json | null
           service_address?: string
           service_type?: Database["public"]["Enums"]["service_interest_kind"]
           setup_charge?: number
+          setup_option?: Json | null
+          speed_bucket?: string | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["contract_summary_status_kind"]
           terms_version?: string
@@ -2254,6 +2269,7 @@ export type Database = {
           business_vat_display: string
           created_at: string
           credit_note_prefix: string
+          fair_pricing: Json
           id: string
           invoice_prefix: string
           manual_mode_message: string
@@ -2275,6 +2291,7 @@ export type Database = {
           business_vat_display?: string
           created_at?: string
           credit_note_prefix?: string
+          fair_pricing?: Json
           id?: string
           invoice_prefix?: string
           manual_mode_message?: string
@@ -2296,6 +2313,7 @@ export type Database = {
           business_vat_display?: string
           created_at?: string
           credit_note_prefix?: string
+          fair_pricing?: Json
           id?: string
           invoice_prefix?: string
           manual_mode_message?: string
@@ -2776,6 +2794,7 @@ export type Database = {
           monthly_vat_rate: number
           notice_period: string
           plan_name: string
+          plan_term: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
           price_rise_policy: string
           public_token_hash: string | null
@@ -2784,11 +2803,15 @@ export type Database = {
           reward_eligibility: string | null
           router_gross: number
           router_net: number
+          router_option: Json | null
           router_vat_amount: number
+          selected_addons: Json | null
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_gross: number
           setup_net: number
+          setup_option: Json | null
           setup_vat_amount: number
+          speed_bucket: string | null
           speed_notes: string | null
           status: Database["public"]["Enums"]["quote_status_kind"]
           supplier_name: string | null
@@ -2825,6 +2848,7 @@ export type Database = {
           monthly_vat_rate?: number
           notice_period?: string
           plan_name: string
+          plan_term?: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
           price_rise_policy?: string
           public_token_hash?: string | null
@@ -2833,11 +2857,15 @@ export type Database = {
           reward_eligibility?: string | null
           router_gross?: number
           router_net?: number
+          router_option?: Json | null
           router_vat_amount?: number
+          selected_addons?: Json | null
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_gross?: number
           setup_net?: number
+          setup_option?: Json | null
           setup_vat_amount?: number
+          speed_bucket?: string | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["quote_status_kind"]
           supplier_name?: string | null
@@ -2874,6 +2902,7 @@ export type Database = {
           monthly_vat_rate?: number
           notice_period?: string
           plan_name?: string
+          plan_term?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type_kind"]
           price_rise_policy?: string
           public_token_hash?: string | null
@@ -2882,11 +2911,15 @@ export type Database = {
           reward_eligibility?: string | null
           router_gross?: number
           router_net?: number
+          router_option?: Json | null
           router_vat_amount?: number
+          selected_addons?: Json | null
           service_type?: Database["public"]["Enums"]["service_interest_kind"]
           setup_gross?: number
           setup_net?: number
+          setup_option?: Json | null
           setup_vat_amount?: number
+          speed_bucket?: string | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["quote_status_kind"]
           supplier_name?: string | null
@@ -4116,6 +4149,7 @@ export type Database = {
           business_vat_display: string
           created_at: string
           credit_note_prefix: string
+          fair_pricing: Json
           id: string
           invoice_prefix: string
           manual_mode_message: string

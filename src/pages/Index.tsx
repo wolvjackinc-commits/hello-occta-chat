@@ -13,6 +13,8 @@ const ServicesSection = lazy(() => import("@/components/home/ServicesSection"));
 const WhyUsSection = lazy(() => import("@/components/home/WhyUsSection"));
 const CustomerLoveSection = lazy(() => import("@/components/home/CustomerLoveSection"));
 const CTASection = lazy(() => import("@/components/home/CTASection"));
+const FairBroadbandPromise = lazy(() => import("@/components/home/FairBroadbandPromise"));
+const IncludedFreeSection = lazy(() => import("@/components/home/IncludedFreeSection"));
 const AppHome = lazy(() => import("@/components/app/AppHome"));
 const AppWelcome = lazy(() => import("@/components/app/AppWelcome"));
 
@@ -61,7 +63,9 @@ const Index = () => {
         />
         <HeroSection />
         <Suspense fallback={null}>
+          <FairBroadbandPromise />
           <ServicesSection />
+          <IncludedFreeSection />
           <WhyUsSection />
           <CustomerLoveSection />
           <CTASection />

@@ -51,6 +51,7 @@ const navItems = [
   { label: "VAT Settings", to: "/admin/vat-settings", icon: Receipt },
   { label: "Suppliers", to: "/admin/suppliers", icon: Truck },
   { label: "Pricing Rules", to: "/admin/pricing-rules", icon: Percent },
+  { label: "Fair Pricing", to: "/admin/fair-pricing", icon: BadgeDollarSign },
   { label: "Margin Rules", to: "/admin/margin-rules", icon: TrendingUp },
   { label: "Rewards", to: "/admin/rewards", icon: BadgeDollarSign },
   { label: "Referrals", to: "/admin/referrals", icon: Users },

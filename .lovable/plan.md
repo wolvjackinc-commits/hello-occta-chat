@@ -1,379 +1,364 @@
-Approved — start Phase 6 only, but apply these corrections before coding.
+Approved — start Phase 3C only, with these corrections before coding.
 
-1. support_tickets safety
+Critical correction:
 
-Before altering support_tickets, inspect the existing table and enum/check constraints.
+Do not run margin guard or supplier-cost calculations in the browser.
 
-Do not break existing ticket statuses or categories.
+The customer-facing Build Your Plan UI can show safe prices and options, but supplier cost, supplier product IDs, Giacom cost rows, margin calculations and internal pricing logic must stay server-side.
 
-If status is a PG enum, only ADD values; do not rename or remove existing values.
+Use this structure:
 
-If category is text, use a safe check/validation layer only if it will not reject existing rows.
+1. Client-side Build Your Plan
 
-2. Internal notes/messages must never be customer-visible
+- Shows speed bucket, Price Lock/Flex, router options, setup options and add-ons.
+- Shows safe returned customer price only.
+- Shows first bill preview using customer-safe returned values.
+- Never receives supplier cost, supplier product ID, margin result details or Giacom ratecard values.
 
-ticket_internal_notes must be staff-only.
+2. Server-side pricing resolver
 
-communication_messages with direction='internal' must never be returned by customer RPCs.
+Create an edge function or RPC:
 
-Customer-safe RPCs must filter out internal notes/messages at the SQL level, not only in frontend.
+resolve-build-plan-price
 
-3. Complaint records must be append-first
+Input:
 
-Do not delete complaint records.
+- address/availability reference
+- speed_bucket
+- plan_term
+- router_option
+- router_payment_type
+- setup_option
+- addons
+- customer_type
 
-Do not edit complaint_events.
+Server does:
 
-If correction is needed, add a new event.
+- finds available internal supplier products
+- maps them to Essential/Superfast/Ultrafast
+- selects safe product
+- applies fair_pricing settings
+- applies router/setup/add-on pricing
+- applies margin guard
+- auto-bumps price if margin fails
+- falls back to “available by quote” if no safe price exists
 
-Complaint status changes must create complaint_events.
+Return only:
 
-4. Six-week ADR date
+- customer monthly incl VAT
+- customer monthly ex VAT if business
+- VAT amount
+- one-off charges
+- add-ons
+- first bill total
+- eligibility wording
+- Price Lock/Flex wording
+- quote-only flag if needed
 
-six_week_adr_eligible_at must be automatically set to opened_at + 42 days / 6 weeks.
+Do not return:
 
-Do not use 8-week wording anywhere.
+- supplier cost
+- supplier product ID
+- margin calculation
+- internal notes
+- Giacom document values
+- margin floor
+- selected wholesale provider unless admin later enables network branding safely
 
-5. Complaint reference generation
+3. Contract Summary / Quote safety
 
-Make complaint_reference unique and human-readable.
+Do not trust client-submitted prices.
 
-If sequence generation is risky, use a safe format like CMP-YYYYMMDD-XXXXXX.
+When create-quote receives selected options, server must recalculate the final pricing using the same server-side resolver.
 
-Do not depend on a fragile monthly counter unless transaction-safe.
+Client can submit:
 
-6. Evidence pack is placeholder only
+- selected speed bucket
+- selected term
+- router option
+- setup option
+- add-ons
 
-Generate Evidence Pack should list linked items only:
+Server must calculate:
 
-quote, Contract Summary, invoice/payment, ticket, communication, order/service.
+- monthly charge
+- VAT
+- one-off charges
+- first bill
+- margin pass/fail
+- Contract Summary line items
 
-Do not build full PDF export in Phase 6.
+4. Price Lock wording
 
-7. Communications centre body handling
+Do not use “No price rises” as a general claim.
 
-communication_messages may store message body, but activity_log must not store full message body.
+Use only:  
+“No confusing annual rises on Price Lock plans.”
 
-activity_log details should contain IDs/status/channel only.
+Customer wording:  
+“Your monthly broadband price stays the same for the agreed Price Lock term. Optional add-ons, usage charges, services added later, or charges outside the Price Lock scope may change only where shown or agreed.”
 
-No passwords, tokens, bank/card details, full medical details or unnecessary sensitive data.
+5. Flex 30 wording
 
-8. Vulnerable customer support
+Use:  
+“30-day rolling broadband where available. If your monthly broadband price needs to change, we tell you first and you can leave before the change.”
 
-Do not ask for medical diagnosis or detailed health information.
+Do not say:  
+“cancel anytime”
 
-Use operational wording only:
+6. Public pricing
 
-“Tell us what support you need from OCCTA.”
+The public headline cards can show:
 
-For Digital Voice, include power-cut and emergency-calling warning.
+- Essential Fibre from £29.99/month
+- Superfast Fibre from £34.99/month
+- Ultrafast Fibre from £39.99/month
 
-9. AI Knowledge Base
+But the disclosure must say:  
+“From prices depend on address availability, selected plan type, router choice, setup type and margin-safe availability. Final charges are confirmed before order.”
 
-Do not rebuild or weaken the AI chat engine.
+7. First Bill Preview
 
-Add approved-KB support and handoff rules only.
+First Bill Preview must use returned safe pricing from the server.
 
-AI must not:
+It must show:
 
-- guess prices
+- broadband monthly
+- router monthly or one-off
+- setup
+- add-ons
+- VAT
+- first bill estimate
 
-- guess availability
+Copy:  
+“If it is not shown in your Contract Summary, we do not add it without your agreement.”
 
-- give legal conclusions
+8. Admin Fair Pricing controls
 
-- resolve formal complaints automatically
+Good to use `platform_settings.fair_pricing` JSONB.
 
-- promise compensation
+Admin controls should include:
 
-- promise engineer dates
+- headline prices
+- Price Lock enabled
+- Flex 30 enabled
+- router prices
+- setup prices
+- add-on prices
+- buffers
+- margin floors
+- fallback behaviour: auto-bump / quote-only
 
-- create hidden complaints without customer confirmation
+Only admin/super_admin/finance_admin should edit.
 
-AI should escalate:
+9. Contract Summary carry-through
 
-complaints, cancellations, vulnerable customer issues, emergency-call/power-cut issues, payment hardship, legal/ADR requests, and customer requests for a human.
+Contract Summary must include:
 
-10. AI handoff action safety
+- speed bucket
+- plan term: Price Lock 24 or Flex 30
+- router choice
+- router payment type
+- setup option
+- add-ons
+- monthly total
+- one-off total
+- first bill estimate
+- VAT-inclusive residential pricing
+- business ex VAT + VAT where relevant
+- known cease/disconnection/termination warnings where applicable
 
-If AI creates a ticket/complaint via handoff, it must:
+10. Do not expose supplier data
 
-- show the user what is being created
+No public/customer route or network response should expose:
 
-- create a visible customer record
+- supplier cost
+- supplier product ID
+- internal provider selection
+- margin data
+- Giacom ratecard values
+- admin notes
 
-- log the event
-
-- not create duplicate complaints repeatedly from the same conversation
-
-11. Customer-safe RPCs
-
-Customer dashboard must use customer-safe RPCs:
-
-- get_customer_tickets
-
-- get_customer_ticket_messages
-
-- get_customer_complaints
-
-- get_customer_complaint_events
-
-- get_customer_communication_messages
-
-- get_public_kb_articles
-
-Do not let customers directly query admin/internal tables where internal fields exist.
-
-12. Public complaint/support forms
-
-Forms must be rate-limited.
-
-They should return safe confirmation only.
-
-Do not expose internal IDs, staff assignment, or admin notes.
-
-13. Complaint letters
-
-Letters can be draft/sent.
-
-Only sent letters should appear in customer Documents tab.
-
-Draft letters are admin-only.
-
-14. Role restrictions
-
-support_agent:
-
-- support tickets and communications
-
-- complaints read-only unless converted/escalated by compliance/admin
-
-compliance_admin:
-
-- complaints, complaint letters, evidence, KB compliance content
-
-marketing_admin:
-
-- no complaint management access
-
-auditor:
-
-- read-only
-
-admin/super_admin:
-
-- full access
-
-15. RLS
-
-Use deny-by-default.
-
-Test:
-
-- customer cannot see another customer’s ticket/complaint/messages
-
-- customer cannot see internal notes
-
-- customer cannot see internal/support_only KB articles
-
-- customer cannot see draft complaint letters
-
-16. Do not touch these systems
+11. Keep untouched
 
 Do not touch:
 
 - Worldpay webhook/HPP
-
 - invoice generation
-
 - DD mandates
-
 - /pay
-
 - /pay-invoice
-
 - checkout gate
-
-- public /quote flow
-
-- pricing/margin pages
-
-- rewards engine
-
-- campaign engine
-
+- rewards
+- campaigns
+- complaints workflow
 - finance exports
+- SEO technical setup
+- AI chat
 
-- SEO pages
+12. Verification
 
-AI chat core may only receive a small read-only KB/handoff hook if absolutely needed.
+After Phase 3C:
 
-17. Verification
+- public cards show the new attractive wording
+- Fair Broadband Promise section renders
+- /build-plan works
+- own router is £0
+- router one-off/monthly options work
+- First Bill Preview works
+- server-side resolver returns safe customer prices only
+- unsafe prices are bumped or marked quote-only
+- Contract Summary includes all selected charges
+- no supplier cost/product ID appears in browser/network responses
+- /quote/start, checkout gate, /pay, /pay-invoice still work
 
-After build, test:
-
-- /admin/support
-
-- /admin/complaints
-
-- /admin/communications
-
-- /admin/knowledge-base
-
-- customer Support tab
-
-- customer Complaints tab
-
-- customer Chat History tab
-
-- public support form
-
-- public complaint form
-
-- complaint ADR date = opened_at + 6 weeks
-
-- internal note not visible to customer
-
-- draft complaint letter not visible to customer
-
-- sent complaint letter visible to customer Documents
-
-- KB approved article visible, internal/support_only hidden
-
-- /quote/start, /checkout, /pay, /pay-invoice still work
-
-Stop after Phase 6 and report:
-
-- tables added
-
-- functions/RPCs added
-
-- admin pages added
-
-- dashboard changes
-
-- public page/form changes
-
-- complaint SLA/ADR behaviour
-
-- communication centre behaviour
-
-- AI KB behaviour
-
-- RLS/policies
-
-- activity logs
-
-- what was untouched
-
-- verification result
-
-- warnings/errors
-
-Start Phase 6 only.  
+Stop after Phase 3C and report.  
+Do not start Phase 7.  
   
-  
-Phase 6: Support, Complaints, Communications & AI Knowledge Base
+Phase 3C — OCCTA Fair Broadband Pricing + Problem-Solving Plan Builder
 
-Build a record-first, customer-safe support operations layer. Do not touch Worldpay/HPP, invoice generation, DD, /pay, /pay-invoice, checkout gate, public /quote flow, pricing/margin pages, rewards engine, campaign engine, finance exports or SEO pages.
+Reposition broadband around customer problem-solving. Adds Price Lock 24 / Flex 30, BYO-router, transparent first-bill preview, plan-builder funnel, margin guard and admin pricing controls.
 
-### 1. Database migrations
+Out of scope (untouched): Worldpay HPP/webhook, invoice generation, DD mandates, /pay, /pay-invoice, checkout payment gate, rewards, campaigns, complaints workflow, finance exports, SEO technical setup, AI chat.
 
-**Migration A — extend existing `support_tickets**` (preserve current columns):
+---
 
-- Add: `vulnerable_customer_flag bool default false`, `related_order_id`, `related_invoice_id`, `related_quote_id`, `related_service_id` (uuid, nullable), `first_response_due_at`, `resolution_due_at`, `closed_at` (timestamptz, nullable).
-- Widen `category` text to accept the new enum values (text already, no change required); enforce via trigger that values are in the allowed list.
-- Widen `status` enum to include `waiting_customer`, `waiting_occta` (add to existing PG enum if user-defined; otherwise use a text check). Keep current values working.
-- New table `ticket_internal_notes` (id, ticket_id, author_id, body, created_at) — never readable by customers, even via RLS. RLS: staff only.
-- Trigger to auto-set `first_response_due_at` = created_at + 4h (urgent), 1d (high), 2d (normal), 5d (low); `resolution_due_at` = created_at + 5/10/20 working-day equivalents.
+### 1. Public pricing copy rewrite
 
-**Migration B — complaints**:
+Rewrite `src/lib/pricing/retailCards.ts` for the three buckets — Essential / Superfast / Ultrafast — using the new badges from the brief. Strip all forbidden phrases: "free router included", "free installation", "cancel anytime", "guaranteed speed", "free static IP included", "no price rises".
 
-- `complaints` (all fields per spec). Trigger sets `six_week_adr_eligible_at = opened_at + interval '6 weeks'`. `complaint_reference` generated as `CMP-YYMM-NNNN` via sequence-style function (mirrors `generate_invoice_number`).
-- `complaint_events` — append-only (trigger blocks UPDATE/DELETE for all non-service roles).
-- `complaint_evidence_links`.
-- `complaint_letters`.
-- Status transitions enforced by trigger (no jumping past `deadlock_issued` without an event row, etc.).
+Per card show: from-price (£29.99 / £34.99 / £39.99), speed range, problem-solving badges, "Final price confirmed before order" footer.
 
-**Migration C — communications centre**:
+Update `HeroSection` and `ServicesSection` copy to lead with: *"Broadband built around you. Bring your own router and save. Choose Price Lock or Flex 30. See your first bill before you order."*
 
-- `communication_threads`, `communication_messages` per spec.
-- `direction='internal'` messages strictly admin-only (RLS).
-- Keep existing `communications_log` (email tracking) untouched; new tables sit alongside.
+### 2. New `FairBroadbandPromise` home section
 
-**Migration D — knowledge base**:
+New `src/components/home/FairBroadbandPromise.tsx` with 5 brutalist cards:
 
-- `kb_categories`, `kb_articles` (with `slug` unique), `kb_article_versions` (snapshot on every approve), `ai_handoff_rules`.
-- Trigger: on `status='approved'` insert a version row and stamp `approved_at`/`approved_by`.
+- No forced router
+- No confusing annual rises (Price Lock)
+- No hidden first bill
+- No long contract (Flex 30)
+- No support black hole
 
-**Migration E — RLS / GRANTs / roles**:
+Mount in `src/pages/Index.tsx` between hero and services.
 
-- GRANT pattern per project standard for every new table.
-- Customers: own tickets/complaints, own non-internal communication_messages via thread membership; cannot see `ticket_internal_notes`, internal messages, or `support_only`/`internal` KB articles.
-- `support_agent`: tickets + communication threads CRUD; complaints read-only.
-- `compliance_admin`: complaints, complaint_letters, evidence, KB compliance articles.
-- `marketing_admin`: read public KB only; no complaints access.
-- `auditor`: read-only everywhere.
-- `admin`/`super_admin`: full.
-- Customer-safe read RPCs (SECURITY DEFINER, search_path=public): `get_customer_tickets`, `get_customer_ticket_messages(_ticket_id)`, `get_customer_complaints`, `get_customer_complaint_events(_complaint_id)`, `get_customer_communication_messages(_thread_id)`, `get_public_kb_articles`. These strip internal fields (assigned_to, internal notes, fraud refs, etc.).
-- Customer-safe write RPCs: `customer_create_ticket(...)`, `customer_create_complaint(...)`, `customer_add_ticket_message(...)` — each writes an `activity_log` row.
+### 3. Build Your Plan journey
 
-### 2. Edge functions
+New route `/build-plan` → `src/pages/BuildPlan.tsx`, kicked off from `PostcodeChecker` after a successful address check (availability already stored in `AvailabilityContext`).
 
-- `submit-support-ticket` — public+auth form ingress; creates thread+message+ticket; rate-limited (5/15min per email).
-- `submit-complaint` — creates complaint + initial event + acknowledgement letter (draft) + linked thread; logs `complaint_created`; rate-limited.
-- `submit-callback-request` — creates thread + ticket (category=general, priority=high).
-- `submit-vulnerable-support` — ticket category=`vulnerable_support`, flag=true; copy explicitly avoids medical detail capture; logs `vulnerable_support_requested`.
-- `add-complaint-event` — admin/compliance only; inserts append-only event; updates complaint status transitions; can issue deadlock (sets `deadlock_issued_at`, creates letter draft).
-- `send-complaint-letter` — moves letter draft → sent; reuses existing email infra; logs activity.
-- `kb-approve-article` — admin/compliance only; snapshots version + flips status.
-- `generate-evidence-pack` — admin-only stub returning JSON list of linked Contract Summary, quote, invoice/payment, tickets, communications, order/service. No PDF in this phase.
+Five-step wizard (one component per step under `src/components/build-plan/`):
 
-AI chat engine: untouched. Add KB read helper in `ai-chat` (read-only SELECT on public KB only — single small additive change), and consult `ai_handoff_rules` to decide when to insert a ticket/complaint via existing RPCs. No prompt/personality changes.
+1. **Speed** — Essential / Superfast / Ultrafast (filtered by what the address supports)
+2. **Plan type** — Price Lock 24 / Flex 30 (only options the supplier product + margin guard allow)
+3. **Router** — Own (£0) / Standard WiFi 6 (£79.99 once or £4.99/mo) / Premium mesh (£129.99 once or £7.99/mo) / Business (quote)
+4. **Setup** — Remote £0 / Standard £49.99 / Engineer £99.99 / Complex (quoted)
+5. **Add-ons** — Priority support £6.99/mo, Static IP, Digital Voice, paper billing
 
-### 3. Admin pages (new, wired into `App.tsx` + `AdminLayout.tsx` nav)
+Footer of every step shows live **First Bill Preview** panel (component below).
 
-- `/admin/support` — ticket list (filters: status/category/priority/assigned/vulnerable), detail drawer with reply, internal note, assign, link to order/invoice/quote/customer, "Create complaint from ticket" action, SLA badges (overdue / due soon / on track) derived from `first_response_due_at`/`resolution_due_at`.
-- `/admin/complaints` — register, filters incl. ADR-eligible date; detail page with timeline, evidence links, status transitions, deadlock draft, resolution notes, "Generate Evidence Pack" button (calls stub).
-- `/admin/communications` — unified inbox grouped by thread, channel filter, customer search, link panel; internal toggle hides/shows internal messages (admin-only).
-- `/admin/knowledge-base` — categories CRUD, articles with draft/approve/archive workflow, version history viewer, visibility selector, AI handoff rules CRUD.
+### 4. Pricing engine extensions
 
-All admin dialogs follow `mem://style/admin-dialog-layout-standards` (flex-col, max-h-[90vh], internal scrolling).
+`src/lib/pricing/engine.ts` + `types.ts` extended with:
 
-### 4. Customer dashboard tab updates (Phase 4 surfaces)
+- `PlanTerm = 'price_lock_24' | 'flex_30'`
+- Per-bucket headline matrix (own-router):
+  - Price Lock 24: Essential £29.99, Superfast £34.99, Ultrafast £39.99, Gigabit £44.99
+  - Flex 30: Essential £32.99, Superfast £37.99, Ultrafast £44.99, Gigabit £49.99
+- Router add-ons: +£4.99/mo standard, +£7.99/mo premium (or one-off equivalents)
+- `resolvePlanQuote(address, bucket, term, router, setup, addons)` → returns monthly, one-offs, first-bill total, term rules, eligibility, marginPassed flag.
+- Address→bucket mapping (internal only):
+  - Essential: 40/10, 80/20
+  - Superfast: 150/160/30, 220/30, 330/50
+  - Ultrafast: 500/550/75, 900/1000/115, CityFibre 1Gb
+- Supplier cost, product ID, internal notes never returned to client.
 
-- `SupportTab.tsx` — show real open/closed lists from `get_customer_tickets`, click row → side drawer with `get_customer_ticket_messages` and reply box (calls `customer_add_ticket_message`). AI chat CTA + "Request human" CTA (creates ticket with priority=high).
-- `ComplaintsTab.tsx` — replace placeholder: list customer's complaints with status badge + six-week ADR date; "Raise complaint" opens form; detail drawer shows timeline (`get_customer_complaint_events`); link to /legal/complaints-code.
-- `ChatHistoryTab.tsx` — already exists; switch to `get_customer_communication_messages` filtered to non-internal AI/human chat threads owned by the customer.
-- `DocumentsTab.tsx` — append complaint letters where `status='sent'` and linked to the customer.
-- `VulnerableSupportTab.tsx` — CTA invokes `submit-vulnerable-support`; copy includes Digital Voice power-cut warning; no medical data fields.
+### 5. Margin guard
 
-### 5. Public pages / forms
+New `src/lib/pricing/marginGuard.ts`:
 
-- `/support` (existing) — refactor submit path to `submit-support-ticket`.
-- `/complaints` — add explicit "Raise a complaint" form (link to a new `ComplaintForm` component) invoking `submit-complaint`. Update copy to six-week ADR wording (replace current "8 weeks").
-- `/legal/complaints-code` — copy refresh to match six-week ADR wording.
-- `/legal/vulnerable-customers` — add Digital Voice warning block + CTA to vulnerable support request.
-- `/digital-voice` (if route exists; if not, copy lives on `/landline`/`/sim-plans` digital-voice section) — add power-cut/emergency-calling block per spec.
+```text
+customer_ex_vat = monthly_incl_vat / 1.2
+margin = customer_ex_vat
+       − supplier_monthly_net
+       − router_recovery_if_included
+       − support_buffer (£1.00)
+       − payment_failure_buffer (£0.50)
+       − term_risk_buffer (Lock £1.00 / Flex £2.00)
+       − rewards_buffer (0 unless enabled)
+```
 
-### 6. Activity logging
+Floors: Essential Lock-BYO £1.50, Essential Flex £3.50, Superfast £3.50, Ultrafast/Gigabit £4.50. First-3-month margin must be ≥0 (admin/super_admin override with reason).
 
-All edge functions and RPCs emit `log_event` rows with the exact event types listed in the brief. Details JSON contains IDs/statuses only — no medical info, card/bank/payment data, passwords, tokens, or message bodies for complaint events (subject only).
+If fail: bump to next safe `.99`, else mark plan as "Available by quote" and route to `/quote/start`.
 
-### 7. Verification (after build)
+Buffer values + floors are read from `platform_settings` / `margin_rules` (already in DB) so admin can tune without code changes.
 
-- Each new admin page renders, gated by role.
-- Customer dashboard tabs read only from safe RPCs.
-- Insert a test complaint → `six_week_adr_eligible_at` exactly opened_at + 42 days.
-- Internal note created in a ticket → not returned by `get_customer_ticket_messages`.
-- KB draft → approve → version row created, customer sees only `visibility='public'`.
-- Spot-check that /quote/start, /checkout gate, /pay, /pay-invoice, /admin/rewards, /admin/campaigns still render (route smoke).
-- Run supabase linter; resolve any new findings.
+### 6. Price Lock & Flex 30 eligibility rules
 
-### What is NOT touched
+`isPriceLockEligible(product)`: supplier supports 24-month term + margin pass + clear router/setup + acceptable supplier risk.
 
-Worldpay webhook/HPP, invoice generation, DD mandates, /pay, /pay-invoice, checkout gate, public /quote flow, pricing/margin admin pages, rewards engine, campaign engine, finance exports, SEO pages, AI chat engine core (only read-only KB hook + handoff rule consult added).
+`isFlex30Eligible(product)`: supplier offers 1-month min term OR risk priced in + cease/disconnection risk shown + margin pass.
 
-### Stop point
+Surface customer wording verbatim from brief on selection cards and Contract Summary.
 
-Stop after Phase 6 and report: tables added, functions added, admin pages added, dashboard changes, public page changes, complaint SLA/ADR behaviour, communication centre behaviour, AI KB behaviour, RLS/policies, activity logs, what was untouched, verification result, warnings/errors. Do not start Phase 7 until approved.
+### 7. First Bill Preview
+
+`src/components/build-plan/FirstBillPreview.tsx` — sticky panel showing monthly broadband, router monthly/one-off, setup, add-ons, VAT-inclusive total (residential) / ex-VAT + VAT (business), estimated first bill.
+
+Footer copy: *"If it is not shown in your Contract Summary, we do not add it without your agreement."*
+
+### 8. "Included at no extra cost" section
+
+New `src/components/home/IncludedFreeSection.tsx` listing the 11 items from the brief. Mounted under FairBroadbandPromise.
+
+### 9. Contract Summary carry-through
+
+Update `supabase/functions/create-quote/index.ts` + `generate-contract-summary/index.ts` to accept and persist: `speed_bucket`, `plan_term` (lock_24/flex_30), `router_option`, `setup_option`, `addons[]`, and surface all selected charges in the CS (already has the columns for monthly/setup/router/delivery/installation — add `plan_term`, `speed_bucket` to `quotes` + `contract_summaries` via migration).
+
+Existing checkout-gate on CS acceptance stays untouched and continues to enforce "no payment without CS".
+
+### 10. Admin controls
+
+New `src/pages/admin/FairPricing.tsx` (linked from admin nav under Pricing) — single page editing the singleton row in `platform_settings` plus per-bucket overrides table:
+
+- Headline from-prices per bucket × term
+- Price Lock enable/disable
+- Flex 30 enable/disable
+- Router prices (standard / premium / monthly add-ons)
+- Setup prices (remote / standard / engineer)
+- Buffer amounts (support / payment-failure / lock-risk / flex-risk / rewards)
+- Margin floors per bucket
+- Public display status (Live / Hidden / Quote-only fallback)
+
+Backed by new `fair_pricing_settings` table (or extend `platform_settings` with a JSONB `fair_pricing` column — preferred to avoid extra GRANT/RLS surface) plus existing `margin_rules` table for floors.
+
+### 11. Database
+
+One migration:
+
+- `ALTER TABLE platform_settings ADD COLUMN fair_pricing JSONB DEFAULT '{}'::jsonb` (singleton, already RLS-locked).
+- `ALTER TABLE quotes ADD COLUMN speed_bucket text, ADD COLUMN plan_term text;`
+- `ALTER TABLE contract_summaries ADD COLUMN speed_bucket text, ADD COLUMN plan_term text;`
+
+No new tables → no new GRANT/RLS needed.
+
+### 12. Verification checklist
+
+- Public cards show problem-solving badges, no forbidden phrases.
+- `/build-plan` flow works end-to-end and feeds `create-quote`.
+- Price Lock + Flex 30 selectable only where eligible.
+- BYO router = £0, router monthly/one-off math correct.
+- First Bill Preview matches Contract Summary line items.
+- Margin guard blocks unsafe combos, auto-bumps or falls back to quote-only.
+- CS includes speed_bucket / plan_term / router / setup / add-ons.
+- No supplier cost or product ID visible in any network response.
+- `/quote/start`, checkout gate, `/pay`, `/pay-invoice` still work.
+
+### Files (new / edited)
+
+New: `src/components/home/FairBroadbandPromise.tsx`, `IncludedFreeSection.tsx`, `src/pages/BuildPlan.tsx`, `src/components/build-plan/{StepSpeed,StepTerm,StepRouter,StepSetup,StepAddons,FirstBillPreview}.tsx`, `src/lib/pricing/marginGuard.ts`, `src/pages/admin/FairPricing.tsx`, one Supabase migration.
+
+Edited: `src/lib/pricing/retailCards.ts`, `engine.ts`, `types.ts`, `constants.ts`, `src/components/home/HeroSection.tsx`, `ServicesSection.tsx`, `PostcodeChecker.tsx`, `src/pages/Index.tsx`, `src/App.tsx` (route), `src/components/admin/layout/AdminLayout.tsx` (nav link), `supabase/functions/create-quote/index.ts`, `generate-contract-summary/index.ts`.
+
+Stop after Phase 3C. Do not start Phase 7.

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2, ChevronRight, Check } from "lucide-react";
@@ -13,6 +14,7 @@ interface PostcodeCheckerProps {
 const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false }: PostcodeCheckerProps) => {
   const { status, postcode: ctxPostcode, addresses, selectedAddress, result, checkPostcode, selectAddress, reset } = useAvailability();
   const [localPostcode, setLocalPostcode] = useState(ctxPostcode || "");
+  const navigate = useNavigate();
 
   const handleCheck = () => {
     checkPostcode(localPostcode);
@@ -107,6 +109,16 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
             Change
           </button>
         </div>
+      )}
+
+      {showInlineResult && (
+        <Button
+          onClick={() => navigate("/build-plan")}
+          size="lg"
+          className="mt-3 w-full h-12 font-display uppercase tracking-wider"
+        >
+          Build your plan <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
       )}
 
       {/* Helper line */}

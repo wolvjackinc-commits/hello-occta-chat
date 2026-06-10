@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { useSearchParams, Link, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuoteThankYouState {
   bucketLabel?: string;
@@ -12,6 +14,7 @@ interface QuoteThankYouState {
   postcode?: string;
   monthlyEstimate?: number;
   firstBillEstimate?: number;
+  email?: string;
 }
 
 export default function QuoteThankYou() {
@@ -20,6 +23,12 @@ export default function QuoteThankYou() {
   const { state } = useLocation();
   const s = (state ?? {}) as QuoteThankYouState;
   const hasDetails = !!(s.bucketLabel || s.termLabel || s.routerLabel || s.setupLabel || (s.addons && s.addons.length) || s.postcode);
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setIsAuthed(!!data.session));
+  }, []);
+  const emailQS = s.email ? `&email=${encodeURIComponent(s.email)}` : "";
+  const refQS = ref ? `&ref=${encodeURIComponent(ref)}` : "";
   return (
     <Layout>
       <SEO title="Quote request received" description="Thanks — OCCTA will check the best available option for your address." canonical="/quote/thank-you" />
@@ -68,9 +77,37 @@ export default function QuoteThankYou() {
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link to="/auth" className="font-display uppercase underline">Sign in to your dashboard</Link>
-          <span className="text-muted-foreground">·</span>
-          <Link to="/" className="font-display uppercase underline">Back to home</Link>
+          {isAuthed ? (
+            <>
+              <Link to="/dashboard" className="font-display uppercase underline">View this quote in your dashboard</Link>
+              <span className="text-muted-foreground">·</span>
+              <Link to="/" className="font-display uppercase underline">Back to home</Link>
+            </>
+          ) : (
+            <div className="w-full">
+              <div className="border-4 border-foreground p-4 bg-muted/30 mb-3">
+                <p className="font-display uppercase text-sm mb-2">Track your quote in your OCCTA dashboard</p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Use the same email address ({s.email ?? "the one you submitted"}) so we can link this quote to your account automatically.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to={`/auth?mode=signup&link=qr${emailQS}${refQS}`}
+                    className="inline-block border-4 border-foreground bg-primary text-primary-foreground px-4 py-2 font-display uppercase text-sm"
+                  >
+                    Create dashboard account
+                  </Link>
+                  <Link
+                    to={`/auth?mode=signin&link=qr${emailQS}${refQS}`}
+                    className="inline-block border-4 border-foreground bg-background px-4 py-2 font-display uppercase text-sm"
+                  >
+                    Sign in to dashboard
+                  </Link>
+                </div>
+              </div>
+              <Link to="/" className="font-display uppercase underline text-sm">Back to home</Link>
+            </div>
+          )}
         </div>
       </section>
     </Layout>

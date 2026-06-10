@@ -19,6 +19,7 @@ import { OverviewTab } from "@/components/dashboard/tabs/OverviewTab";
 import { ServicesTab } from "@/components/dashboard/tabs/ServicesTab";
 import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab";
 import { QuotesTab } from "@/components/dashboard/tabs/QuotesTab";
+import { QuoteRequestsTab } from "@/components/dashboard/tabs/QuoteRequestsTab";
 import { ContractSummariesTab } from "@/components/dashboard/tabs/ContractSummariesTab";
 import { InvoicesTab } from "@/components/dashboard/tabs/InvoicesTab";
 import { SupportTab } from "@/components/dashboard/tabs/SupportTab";
@@ -185,6 +186,18 @@ const Dashboard = () => {
         navigate("/auth");
       } else {
         fetchUserData(session.user.id);
+        // Best-effort: backfill any guest quote_requests submitted with the
+        // same email before this user signed up. RPC is auth-only and
+        // verifies email match server-side.
+        (supabase as any)
+          .rpc("link_quote_requests_to_user", { _user_id: session.user.id })
+          .then(({ data, error }: any) => {
+            if (!error && typeof data === "number" && data > 0) {
+              toast({
+                title: `Linked ${data} quote request${data === 1 ? "" : "s"} to your account`,
+              });
+            }
+          });
       }
     });
 
@@ -459,6 +472,7 @@ const Dashboard = () => {
                 ["services", "My Services"],
                 ["orders", "My Orders"],
                 ["quotes", "Quotes"],
+                ["quoteRequests", "Quote Requests"],
                 ["cs", "Contract Summaries"],
                 ["invoices", "Invoices & Payments"],
                 ["support", "Support"],
@@ -493,6 +507,7 @@ const Dashboard = () => {
             <TabsContent value="services"><ServicesTab userId={user.id} /></TabsContent>
             <TabsContent value="orders"><OrdersTimelineTab userId={user.id} userEmail={user.email ?? null} /></TabsContent>
             <TabsContent value="quotes"><QuotesTab userId={user.id} /></TabsContent>
+            <TabsContent value="quoteRequests"><QuoteRequestsTab userId={user.id} /></TabsContent>
             <TabsContent value="cs"><ContractSummariesTab userId={user.id} /></TabsContent>
             <TabsContent value="invoices"><InvoicesTab userId={user.id} /></TabsContent>
             <TabsContent value="support"><SupportTab tickets={tickets} /></TabsContent>

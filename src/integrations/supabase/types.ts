@@ -4074,6 +4074,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_link_quote_request: {
+        Args: { _new_user_id: string; _qr_id: string; _reason: string }
+        Returns: undefined
+      }
       anonymize_old_account_deletions: { Args: never; Returns: number }
       calculate_next_invoice_date: {
         Args: {
@@ -4199,6 +4203,21 @@ export type Database = {
           points_delta: number
           reason: string
           source_type: string
+          status: string
+        }[]
+      }
+      get_customer_quote_requests: {
+        Args: never
+        Returns: {
+          created_at: string
+          customer_type: string
+          id: string
+          message: string
+          plan_preference: string
+          postcode: string
+          reference: string
+          service_interest: string
+          source: string
           status: string
         }[]
       }
@@ -4334,6 +4353,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       is_vat_active: { Args: never; Returns: boolean }
+      link_quote_requests_to_user: {
+        Args: { _user_id: string }
+        Returns: number
+      }
       log_audit_action: {
         Args: {
           _action: string

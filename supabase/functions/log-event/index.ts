@@ -27,6 +27,14 @@ const LOW_RISK_EVENT_TYPES = new Set([
   "form_submit",
   "contract_summary_view",
   "legal_view",
+  "dashboard_view",
+  "tab_view",
+  "quote_view_from_dashboard",
+  "contract_summary_view_from_dashboard",
+  "invoice_view_from_dashboard",
+  "support_cta_click",
+  "vulnerable_support_view",
+  "marketing_preference_change",
 ]);
 
 const FORBIDDEN_DETAIL_KEYS = new Set([

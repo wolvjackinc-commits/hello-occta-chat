@@ -67,6 +67,7 @@ import FlexBroadband from "./pages/broadband/Flex";
 import ContractSaverBroadband from "./pages/broadband/ContractSaver";
 import SwitchingPage from "./pages/Switching";
 import RewardsPage from "./pages/Rewards";
+import BuildPlan from "./pages/BuildPlan";
 import QuoteStart from "./pages/quote/QuoteStart";
 import QuoteThankYou from "./pages/quote/QuoteThankYou";
 import QuoteView from "./pages/quote/QuoteView";
@@ -84,6 +85,7 @@ import { AdminContractBenefits } from "./pages/admin/ContractBenefits";
 import { AdminCampaigns } from "./pages/admin/Campaigns";
 import { AdminComplaints } from "./pages/admin/Complaints";
 import { AdminKnowledgeBase } from "./pages/admin/KnowledgeBase";
+import { AdminFairPricing } from "./pages/admin/FairPricing";
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -161,9 +163,11 @@ const AnimatedRoutes = () => {
             <Route path="campaigns" element={<AdminCampaigns />} />
             <Route path="complaints" element={<AdminComplaints />} />
             <Route path="knowledge-base" element={<AdminKnowledgeBase />} />
+            <Route path="fair-pricing" element={<AdminFairPricing />} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />
+        <Route path="/build-plan" element={<BuildPlan />} />
         <Route path="/broadband/flex" element={<FlexBroadband />} />
         <Route path="/broadband/contract-saver" element={<ContractSaverBroadband />} />
         <Route path="/switching" element={<SwitchingPage />} />

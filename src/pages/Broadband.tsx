@@ -55,7 +55,7 @@ const BroadbandInner = () => {
   };
 
   const features = [
-    { icon: X, text: "Cancel Anytime" },
+    { icon: X, text: "30-Day Rolling Where Eligible" },
     { icon: Shield, text: "No Hidden Fees" },
     { icon: Clock, text: "7-Day Setup" },
   ];

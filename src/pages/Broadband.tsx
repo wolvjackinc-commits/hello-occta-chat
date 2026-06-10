@@ -157,7 +157,7 @@ const BroadbandInner = () => {
               Add Digital Home Phone?
             </DialogTitle>
             <DialogDescription className="text-base">
-              Stay connected with crystal-clear calls — no extra line needed.
+              Stay connected with crystal-clear calls — works over compatible broadband, no traditional landline required.
             </DialogDescription>
           </DialogHeader>
 
@@ -173,7 +173,7 @@ const BroadbandInner = () => {
               </div>
               <ul className="text-xs text-muted-foreground space-y-0.5 mb-2">
                 <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Works through your broadband</li>
-                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Keep your existing number</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Keep your existing number where porting is available</li>
                 <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-primary flex-shrink-0" /> Plug into your router</li>
               </ul>
               {selectedCallPlans.length === 0 && (

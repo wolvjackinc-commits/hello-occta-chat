@@ -1,375 +1,484 @@
-Approved — proceed with OCCTA Phase B: Quote-to-Account Linking + Dashboard Invite + Account Numbers, with the corrections below.
+Approved — proceed with OCCTA Phase C: Admin Product Assignment + Final Quote Approval, with the critical security corrections below.
 
-This is Phase B only.
+This is Phase C only.
 
-Do not start Phase C.  
 Do not start Phase D.  
 Do not start Phase 7.  
-Do not touch Worldpay, /pay, /pay-invoice, invoices, DD mandates, supplier ordering, supplier_products, supplier resolver, quote resolver, Contract Summary generation/acceptance, rewards, campaigns, complaints, finance exports, AI chat or magic-link auth.
+Do not build payments.  
+Do not create orders.  
+Do not create supplier orders.  
+Do not generate Contract Summary.  
+Do not build Contract Summary acceptance.  
+Do not touch Worldpay, /pay, /pay-invoice, invoices, DD mandates, services activation, supplier ordering, rewards, campaigns, complaints, finance exports, AI chat or magic-link auth.
 
-Critical corrections before coding:
+Critical correction 1 — customer quote visibility must not use raw quotes table
 
-1. Fix linker function design
+The quotes table contains admin/internal fields such as:
 
-The customer-facing RPC:
+- supplier_name
+- supplier_product_id
+- supplier_reference
+- supplier costs
+- margin_status
+- margin data
+- admin/internal notes
 
-link_quote_requests_to_user(_user_id uuid)
+RLS protects rows, not columns. Therefore, if authenticated customers can SELECT directly from quotes, they may be able to query internal columns for their own quote.
 
-must verify:
+Before Phase C customer quote visibility is enabled:
 
-- auth.uid() is not null
-- *user*id = auth.uid()
-- the authenticated user email matches the quote_request email
+- audit grants/RLS on quotes
+- prevent normal customers from reading raw quotes table directly if supplier/internal columns exist
+- expose customer quote data only through a safe RPC or safe view, for example:
+  - get_customer_quotes()
+  - get_customer_quote_by_id()
+  - get_public_quote_by_token()
+  - customer_quotes_public view
 
-This function is for logged-in customer self-linking only.
+Customer-safe output may include only:
 
-However, do not rely on this same function inside handle_new_user() if it depends on auth.uid(), because auth.uid() may not exist in the auth trigger context.
-
-For signup auto-linking, either:
-
-- perform the quote_request update directly inside handle_new_user() using [NEW.id](http://NEW.id) and [NEW.email](http://NEW.email), or
-- create a separate internal SECURITY DEFINER helper used only by handle_new_user()
-
-Do not create a function that lets arbitrary user IDs link quotes without email verification.
-
-2. RLS email-match policy must use verified auth email safely
-
-Do not write an RLS policy that depends on directly selecting from auth.users in a way that may fail or expose data.
-
-Preferred customer select policy logic:
-
-- customer_id = auth.uid()  
-OR
-- customer_id IS NULL AND lower(email) = lower(auth.jwt() ->> 'email')
-
-Only allow this if the user is authenticated.
-
-This lets a newly signed-up customer see their guest quote before backfill, but does not expose quotes publicly.
-
-3. Admin manual linking must be tightly controlled
-
-Admin link override must require:
-
-- staff/admin role
-- selected quote_request_id
-- selected target profile/user
-- reason text
-- audit log
-- old customer_id
-- new customer_id
-- actor/admin user id
-- timestamp
-
-If email does not match, show a strong warning:  
-“Email does not match this quote request. Confirm manual override reason.”
-
-Do not allow normal support/customer users to use this RPC.
-
-Phase B scope approved:
-
-1. Account number workflow
-
-Use existing:
-
-- profiles.account_number
-- unique/indexed account number
-- trigger_assign_profile_account_number
-- handle_new_user()
-
-Confirm account number format:  
-OCC########
-
-Show account number in:
-
-- dashboard header
-- admin quote request/customer context
-- linked quote request details
-
-2. Quote request linking
-
-Guest Build Plan submission:
-
-- creates quote_request with email, phone, postcode, selections
-- customer_id remains null initially
-- thank-you page shows dashboard creation/sign-in CTAs
-
-Logged-in Build Plan submission:
-
-- creates quote_request with customer_id immediately
-- dashboard shows quote immediately
-
-Later signup/sign-in with same email:
-
-- link matching unlinked quote_requests to that authenticated user
-- only match same email
-- backfill customer_id
-- dashboard shows linked quote
-
-Wrong user:
-
-- must not see another customer’s quote
-
-3. Customer dashboard quote requests
-
-Add Quote Requests tab or extend Quotes tab.
-
-Customer should see:
-
-- quote reference
-- request date
-- selected speed bucket
+- quote id/reference
+- quote request reference
+- customer/account number
+- package name
 - Price Lock 24 or Flex 30
-- postcode
-- status
-- message: “No payment has been taken. We’ll confirm final speed, setup and order details before you proceed.”
+- monthly customer price
+- setup price
+- router price
+- add-ons customer price
+- VAT/customer totals
+- estimated first bill
+- validity date
+- quote status
+- customer-facing notes
+- “No payment has been taken”
+- “Contract Summary will follow before you can order”
 
-Customer must not see:
+Customer-safe output must not include:
 
 - supplier name
 - Giacom name
+- supplier_product_id
+- supplier_reference
 - supplier cost
+- wholesale cost
 - margin
-- internal product ID
+- margin_status if it reveals internal margin state
 - admin notes
-- backend product assignment
+- override reason
+- ratecard/source document
+- internal product IDs
 
-4. Thank-you page dashboard CTAs
+Admin/staff can continue to access raw quotes table through admin/staff RLS.
 
-If logged in:  
-Show:  
-“View this quote in your dashboard”
+Critical correction 2 — final quote must be linked cleanly to quote_request
 
-If guest:  
-Show:
+When admin approves a final quote, the customer dashboard must know which quote to show.
 
-- “Create your OCCTA dashboard”
-- “Sign in to dashboard”
+Use one of these safe approaches:
 
-Prefill email using query parameter or location state.
+Option A:  
+Add `quote_requests.final_quote_id uuid references quotes(id)` and set it during approval.
 
-Safe fallback copy:  
-“Use the same email address when creating your dashboard account so we can link your quote.”
+Option B:  
+Derive latest approved quote from `quotes.quote_request_id`, if that relationship already exists and is reliable.
 
-5. Auth page
+Do not make the customer dashboard guess from message text.
 
-Auth page should:
+The “View final quote” CTA must open the correct safe quote view.
 
-- read email query param
-- prefill email field
-- if link=qr is present, show:  
-“Use the same email address from your quote request so we can link it to your dashboard.”
-- after successful signup/sign-in, call link_quote_requests_to_user(auth.uid())
-- show toast:  
-“Linked X quote request(s) to your account” if X > 0
+Critical correction 3 — approval must not mean contract acceptance
 
-Do not build magic-link auth in this phase.
+Use clear status wording.
 
-6. Admin Quote Requests page
+Quote approval in Phase C means:
+
+- admin has approved the final quote for customer viewing
+- margin check passed or authorised override was logged
+- customer can view final quote
+
+It does NOT mean:
+
+- customer accepted the quote
+- customer accepted a contract
+- Contract Summary was generated
+- payment can be taken
+- order can be placed
+
+Customer-facing wording must say:  
+“Final quote ready”  
+“Contract Summary will be provided before you can order”  
+“No payment has been taken”
+
+Do not show:
+
+- Accept contract
+- Pay now
+- Place order
+- Start order
+- Continue to payment
+
+Critical correction 4 — approved quote immutability
+
+The approved quote immutability trigger is good.
+
+But make sure:
+
+- approving the quote can still stamp `approved_at`, `approved_by`, `final_snapshot`
+- after approval, customer-facing financial/core fields cannot be changed silently
+- if a price/detail changes, admin must create a new quote or revision
+- final_snapshot includes the customer-facing quote values and relevant internal assignment reference for audit
+- final_snapshot must never be sent to customer raw if it contains internal fields
+
+Critical correction 5 — public token safety
+
+If using quote token pages:
+
+- never expose `public_token_hash`
+- only return safe quote fields from the token edge function
+- token should not allow listing or guessing other quotes
+- token should not expose supplier/cost/margin/admin fields
+- token page must not contain payment/accept buttons in Phase C
+
+Phase C approved scope:
+
+1. Migration
+
+Add/verify:
+
+- quote_request_status values:
+  - in_review
+  - needs_info
+  - draft_quote_created
+  - final_quote_ready
+  - closed
+  - rejected
+
+Keep legacy statuses new/quoted if already used.
+
+Add/verify quote_status:
+
+- approved
 
 Add:
 
-- Guest / Linked customer badge
-- account number if linked
-- customer_id/user_id indicator
-- dashboard invited/account created status where derivable
-- “Link to account…” admin action
-- warning if profile exists with matching email but quote_request is still unlinked
+- quote_requests.customer_facing_message text
+- quotes.approved_at timestamptz
+- quotes.approved_by uuid
+- quotes.final_snapshot jsonb
 
-Manual link dialog:
+Add approval RPC:  
+admin_approve_final_quote(_quote_id uuid)
 
-- search/select existing customer profile
-- require reason
-- call admin_link_quote_request
-- audit log must be written
+It must:
 
-7. Email placeholder only
+- be SECURITY DEFINER
+- have search_path = public
+- require staff/admin role
+- require can_send_quote(id) = true or equivalent margin gate
+- set quote.status = approved
+- set quote_request.status = final_quote_ready
+- link final quote to quote_request
+- write quote_events
+- write audit/activity log
+- create no order/payment/CS/invoice/service/supplier order
 
-Do not build full communications automation.
+Add RPC:  
+admin_request_more_info(_qr_id uuid, _message text)
 
-A simple preview/draft is okay:
+It must:
 
-Subject:  
-“Your OCCTA quote request has been received”
+- staff only
+- set quote_request.status = needs_info
+- store customer_facing_message
+- write audit/activity log
+- expose only customer-safe message
 
-Body includes:
+Add RPC:  
+admin_reject_quote_request(_qr_id uuid, _reason text)
 
-- customer name
+It must:
+
+- staff only
+- set rejected/closed
+- write audit/activity log
+- not expose internal rejection notes unless marked customer-facing
+
+2. Admin ReviewQuoteRequestDialog
+
+Build one admin review dialog from QuoteRequests page.
+
+Sections:
+
+- Customer & selection
+- Backend product assignment
+- Customer-facing price
+- Margin check
+- Actions
+
+Admin can:
+
+- view customer details and account number
+- view customer Build Plan selections
+- assign active broadband supplier product
+- filter supplier products by bucket and term
+- see supplier cost/speed/term/setup/admin-only data
+- set customer-facing final price
+- calculate VAT/first bill
+- run margin check
+- save draft quote
+- request more info
+- reject
+- approve final quote
+
+3. Backend product assignment
+
+Show active broadband supplier_products only.
+
+Admin-only fields allowed:
+
+- supplier
+- supplier product
+- speed
+- term
+- supplier cost ex VAT
+- setup cost
+- quote_only
+- active status
+- internal notes/source
+
+Customer must never see these.
+
+If admin assigns a product outside the customer-selected bucket/term:
+
+- show warning
+- require bucket_override_reason
+- write quote_events/audit log
+
+4. Margin check
+
+Before final approval:
+
+- run margin check
+- block red/below-margin approval
+- allow override only for authorised admin/super_admin/finance role
+- reason required
+- quote_margin_checks record required
+- audit log required
+
+Do not expose margin result/customer cost comparison to customer.
+
+5. Customer dashboard
+
+Quote Requests tab:
+
+- show final_quote_ready pill
+- show “View final quote” CTA
+- show needs_info customer_facing_message if present
+
+Quotes tab:
+
+- show approved/final quotes using safe customer quote RPC/view only
+- show package, monthly price, first bill, validity, status
+- show:  
+“No payment has been taken”  
+“Contract Summary will follow before you can order”
+
+Do not use raw quotes table for customer display if it exposes internal columns.
+
+6. Public/customer QuoteView
+
+QuoteView must display only safe fields:
+
 - quote reference
-- selected plan summary
-- postcode
-- “No payment has been taken”
-- dashboard sign-in/create account link
-- “We’ll confirm final speed, setup and order details before you proceed.”
+- account number if linked
+- package
+- Price Lock 24 / Flex 30
+- monthly price
+- setup
+- router
+- add-ons
+- first bill
+- validity
+- next step: Contract Summary will follow
 
-If email sending is not configured, keep this as preview/draft only and report it.
+No:
 
-8. Security/RLS tests required
+- Pay button
+- Accept contract button
+- supplier/Giacom/cost/margin/internal IDs/admin notes
 
-Test:
+7. Request more info
 
-- anonymous cannot list quote_requests
-- customer can see own linked quote_requests only
-- newly signed-up same-email customer can see their guest quote
-- wrong user cannot see another customer’s quote
-- admin/staff can see quote queue
-- admin manual link writes audit log
-- supplier/internal pricing remains hidden
+Admin can set needs_info with a customer-safe message.
 
-9. Must remain untouched
+Customer dashboard shows:  
+“We need a little more information to finalise your quote.”
 
-Confirm no:
+Do not expose internal admin notes.
 
-- live order
-- payment link
-- Contract Summary
-- invoice
-- DD mandate
-- active service
-- supplier order
+8. Verification tests
 
-10. Required verification tests
+Test A — admin assigns product:
 
-Test A — guest quote:
+- open QR-2606-20fa0e58
+- assign suitable active broadband backend product
+- set/confirm final customer price
+- run margin check
+- save draft quote
 
-- submit Build Plan as guest
-- quote_request created
-- customer_id null initially
-- thank-you shows dashboard CTA
-- no order/payment/Contract Summary/invoice/service created
+Test B — approve final quote:
 
-Test B — signup/sign-in same email:
+- approve final quote
+- quote_request status becomes final_quote_ready
+- quote status becomes approved
+- final_quote_id or equivalent relationship is set
+- customer dashboard shows Final quote ready
+- customer can view final quote
 
-- create/sign in with same email
-- quote_request links to user
-- account number exists
-- dashboard shows quote
+Test C — data safety:
 
-Test C — logged-in quote:
+- customer quote page/dashboard shows no supplier/Giacom/cost/margin/internal IDs
+- inspect network response, not only UI
 
-- submit Build Plan while logged in
-- quote_request created with customer_id immediately
-- dashboard shows quote immediately
+Test D — raw quotes table security:
 
-Test D — wrong user:
+- normal customer cannot directly query raw quote internal columns
+- customer quote visibility uses safe RPC/view
+- admin can still see internal columns
 
-- different user cannot see quote
+Test E — margin safety:
 
-Test E — admin:
+- below-margin approval is blocked unless authorised override with reason
+- quote_margin_checks/audit log written
 
-- admin sees guest/linked status
-- admin sees account number when linked
-- admin manual override requires reason
-- audit_logs row created
+Test F — wrong user:
 
-Test F — RLS:
+- wrong customer cannot see another user’s quote
 
-- anonymous cannot list quote_requests
-- customer sees only own quote_requests
-- admin sees queue
+Test G — downstream artefacts:  
+Confirm zero created:
 
-11. Final report
+- orders
+- payment_requests
+- Contract Summaries
+- invoices
+- DD mandates
+- services
+- supplier orders
 
-Stop after Phase B and report:
+9. Build checks
 
+Run:
+
+- TypeScript
+- production build
+
+10. Final report
+
+Stop after Phase C and report:
+
+- audit findings
 - files changed
 - migrations added
-- account number workflow verification
-- quote-to-user linking behaviour
-- handle_new_user/linker implementation detail
-- dashboard invite behaviour
-- customer dashboard quote visibility
-- admin quote ownership visibility
+- raw quotes security fix/result
+- safe customer quote view/RPC used
+- admin review workflow
+- backend product assignment behaviour
+- margin check behaviour
+- override/audit behaviour
+- approved quote immutability result
+- final quote approval behaviour
+- quote_request to final quote linking result
+- customer dashboard final quote view
+- public/token QuoteView safety result
+- network response safety result
 - RLS/security test result
-- guest quote test result
-- same-email signup/link test result
-- logged-in quote test result
-- wrong-user test result
-- admin manual link/audit log result
+- no downstream artefacts confirmation
 - TypeScript/build result
 - what was untouched
-- remaining blockers before full automation  
-  
-  
-  
-Phase B — Quote-to-Account Linking, Dashboard Invite, Account Numbers
+- remaining blockers before Phase D  
+Phase C — Admin Product Assignment + Final Quote Approval
 
-### Audit findings (no work needed in these areas)
+### Audit summary (what already exists, reusable)
 
-- `profiles.account_number` — already exists, unique, indexed.
-- Trigger `trigger_assign_profile_account_number` already auto-generates `OCC########` on every new profile, and `handle_new_user()` creates the profile on signup. **Account number workflow is already live for every signup** — no schema change needed.
-- `quote_requests` already has `customer_id` (nullable FK → profiles), `email`, `reference`, status enum.
-- `submit-build-plan` edge function already sets `customer_id` when the caller is authenticated.
-- RLS on `quote_requests`: customer self-select via `customer_id = auth.uid()`, staff full access, no public INSERT policy (guest writes go through service-role edge fn — correct).
-- Customer dashboard `QuotesTab` reads `quotes` table only; it does NOT show `quote_requests`. **Gap.**
-- Admin `QuoteRequests` page has no manual-link UI and doesn't display linked-customer / account_number context. **Gap.**
-- No automatic email-match backfill when a user later signs up. **Gap.**
+- `quote_requests` (27 cols, statuses incl. `new`, `quoted`) + `qr_staff_*` / `qr_customer_select_own` RLS — reusable.
+- `quotes` (52 cols incl. `supplier_name`, `supplier_product_id`, `supplier_reference`, `monthly_*`, `setup_*`, `router_*`, `margin_status`, `public_token_hash`, `expires_at`, `status` enum draft/sent/viewed/expired) + `q_staff_*` / `q_customer_select_own` RLS — reusable.
+- `quote_events` (append-only history) + `quote_margin_checks` (with `can_send_quote()` gate + green/amber/red) — reusable.
+- `supplier_products` (40 cols incl. bucket, term, cost, active, quote_only) — admin-only RLS already enforced.
+- Edge functions present: `create-quote`, `run-quote-margin-check`, `override-quote-margin`, `get-quote-by-token`, `send-quote-email`, `submit-quote-request`.
+- Admin pages: `src/pages/admin/QuoteRequests.tsx` (365 lines, queue + LinkQuoteRequestDialog), `src/pages/admin/Quotes.tsx` (342 lines, list).
+- Customer dashboard: `QuoteRequestsTab.tsx`, `QuotesTab.tsx`, public `pages/quote/QuoteView.tsx`.
 
-### What Phase B will build
+**Gaps to fill in Phase C (no greenfield rebuild needed):**
 
-#### 1. DB — minimal additions (one migration)
+1. `quote_requests.status` enum lacks `in_review`, `needs_info`, `draft_quote_created`, `final_quote_ready`, `closed`, `rejected`.
+2. `quotes.status` enum lacks `approved`.
+3. No admin "Review request → assign product → approve quote" flow in one place.
+4. No backend product picker UI scoped to bucket/term.
+5. No bucket-override audit when admin picks a product in a different bucket than the customer chose.
+6. `customer_notes` field exists on quotes but no `needs_info` message channel on `quote_requests`.
+7. Customer dashboard has no "Final quote ready" pill / CTA → QuotesTab link.
 
-- `link_quote_requests_to_user(_user_id uuid)` — SECURITY DEFINER function that backfills `quote_requests.customer_id = _user_id` for rows where `customer_id IS NULL` and `lower(email) = lower(auth.users.email)`. Runs only for the calling user; verifies `_user_id = auth.uid()`. Returns the count linked.
-- Trigger on `auth.users` is not editable, so instead extend `handle_new_user()` to call the linker for the new user's id+email. Keeps backfill automatic on signup.
-- `admin_link_quote_request(_qr_id uuid, _new_user_id uuid, _reason text)` — SECURITY DEFINER, staff-only. Writes to `audit_logs` (old `customer_id`, new, reason, actor). Used by admin manual override.
-- New RLS INSERT policy: NONE added (guest writes stay edge-fn only — correct).
-- Verify `qr_customer_select_own` covers email-only matches too: extend to `(customer_id = auth.uid()) OR (customer_id IS NULL AND lower(email) = lower((SELECT email FROM auth.users WHERE id = auth.uid())))`  so a freshly-signed-up user sees their guest quote even before the linker runs. (Belt-and-braces.)
+### Plan
 
-#### 2. Customer dashboard
+**Part 1 — Migration (single file)**
 
-- New tab/section `QuoteRequestsTab` (or extend `QuotesTab`) showing rows from `quote_requests` for `auth.uid()`:
-  - reference, created_at, derived "speed bucket" + "Price Lock 24 / Flex 30" parsed from `message` (already encoded by submit-build-plan), postcode, status, "No payment taken / final details to be confirmed" notice.
-  - Never displays supplier / margin / internal product id (those columns aren't on quote_requests anyway).
-- Add account_number to dashboard header (already in profile — surface it).
+- Extend `quote_request_status` enum: add `in_review`, `needs_info`, `draft_quote_created`, `final_quote_ready`, `closed`, `rejected` (keep `new`, `quoted` as legacy aliases).
+- Extend `quote_status` enum: add `approved`.
+- Add `quote_requests.customer_facing_message text` (shown to customer when `needs_info`/`final_quote_ready`).
+- Add `quotes.approved_at timestamptz`, `quotes.approved_by uuid`, `quotes.final_snapshot jsonb` (immutable snapshot written at approval).
+- Trigger on `quotes` UPDATE: when `status` transitions to `approved`, require `can_send_quote(id) = true`, stamp `approved_at`/`approved_by`, write `final_snapshot` and a `quote_events` row; reject mutation of approved quote core fields (price, plan_name, supplier_*) — admin must clone to a new quote.
+- New SECURITY DEFINER RPC `admin_approve_final_quote(_quote_id uuid)`: staff-only, sets quote.status=`approved`, parent quote_request.status=`final_quote_ready`, emits `quote_events` + `audit_logs`.
+- New RPC `admin_request_more_info(_qr_id uuid, _message text)`: staff-only, sets status=`needs_info`, stores `customer_facing_message`, audit log.
+- New RPC `admin_reject_quote_request(_qr_id uuid, _reason text)`: staff-only, sets status=`rejected`/`closed`, audit log.
+- Update `get_customer_quote_requests()` to also return `customer_facing_message` and the new statuses.
 
-#### 3. Thank-you page
+**Part 2 — New admin component: `ReviewQuoteRequestDialog.tsx**`
+Single dialog opened from `QuoteRequests.tsx` rows. Tabs/sections:
 
-- After submission, if user is logged in → show "View this quote in your dashboard" link to `/dashboard`.
-- If guest → two CTAs:
-  - "Create your OCCTA dashboard" → `/auth?mode=signup&email=<prefilled>&link=qr&ref=<ref>`
-  - "Sign in to dashboard" → `/auth?mode=signin&email=<prefilled>`
-- Fallback copy: "Use the same email address when creating your dashboard account so we can link your quote."
-- Pass `email` from submission state so QuoteStart includes it in navigation state.
+1. **Customer & selection** (read-only): name, email, phone, account_number (via profiles join), guest/linked badge, postcode, customer_type, bucket, term, router, setup, addons, build-plan estimate, source.
+2. **Backend product assignment**: dropdown of active `supplier_products` filtered by service_type=broadband, with bucket and term filters defaulting to customer's selection. Shows supplier cost ex VAT, setup, contract term, speeds, `quote_only`/`active` flags. If admin picks a product in a different bucket than the customer's choice → warning + mandatory `bucket_override_reason` textarea.
+3. **Customer-facing price**: editable monthly_net, setup_net, router_net, addons. Live VAT calc using existing `is_vat_active()` + `vat_default_rate`. Live first-bill estimate.
+4. **Margin check**: button calling `run-quote-margin-check` edge function. Shows green/amber/red + reason. Red block unless override via `override-quote-margin` (admin/super_admin only, reason ≥10 chars).
+5. **Actions**: Save Draft (calls existing `create-quote`, sets qr → `draft_quote_created`), Approve Final (calls `admin_approve_final_quote` RPC), Request More Info (RPC), Reject (RPC).
 
-#### 4. Auth flow
+**Part 3 — `QuoteRequests.tsx` updates**
 
-- `Auth.tsx` reads `email` query param and prefills. After successful sign-in/signup, calls `link_quote_requests_to_user(auth.uid())` RPC and toasts "Linked N quote request(s) to your account" if N > 0.
-- No magic-link build — re-use existing email/password + Google. Add a small note on auth page when `?link=qr` is present.
+- Add status filter pills for new statuses.
+- Replace existing "Build Quote" stub with "Review" → opens `ReviewQuoteRequestDialog`.
+- Show linked customer badge + account_number column.
 
-#### 5. Admin Quote Requests page
+**Part 4 — Customer dashboard**
 
-- New columns: "Customer" (linked badge with account_number) vs "Guest", `user_id` indicator.
-- Row action "Link to account…" → dialog: search by email/name (reuse existing `CustomerLookup`/`CustomerPicker`), require reason text, calls `admin_link_quote_request` RPC. Writes audit log automatically.
-- Highlight rows where `customer_id IS NULL` but a profile exists with matching email (suggest auto-link).
+- `QuoteRequestsTab.tsx`: render `final_quote_ready` as a yellow "Final quote ready" pill with "View final quote" CTA → `/quotes/:token` (or `/dashboard?tab=quotes`). Render `needs_info` with the `customer_facing_message`.
+- `QuotesTab.tsx`: surface approved quotes with reference, package, monthly, first bill, validity, status badges, "No payment has been taken" + "Contract Summary will follow" notes.
+- `pages/quote/QuoteView.tsx`: strip any supplier_name/supplier_product_id/supplier_reference/admin_notes/margin info from the public view (verify current shape and the `get-quote-by-token` edge function returns only safe fields).
 
-#### 6. Verification tests
+**Part 5 — Safety guarantees (must remain untouched)**
 
-After build, run:
+- No new payment, order, invoice, DD, service, Contract Summary, supplier order code paths.
+- `QuoteView.tsx` shows no Pay/Accept buttons in Phase C (only "Contract Summary will follow").
+- RLS untouched on quotes/quote_requests beyond enum extension; new RPCs are SECURITY DEFINER + `is_staff()` gated.
 
-- A: guest submit (already verified in last test).
-- B: sign up with same email → confirm `customer_id` backfilled; quote shows in dashboard with account_number visible.
-- C: logged-in submit → confirm `customer_id` set immediately.
-- D: second user logs in → cannot see the first user's quote (RLS).
-- E: admin manual link → audit_logs row written.
-- F: anonymous select on `quote_requests` returns 0 rows.
+**Part 6 — Verification (after implementation)**
 
-### Untouched (per constraints)
+- TypeScript + production build.
+- Live tests A-F per the spec on `QR-2606-20fa0e58`: assign product, margin green, approve → customer sees "Final quote ready" → QuoteView token page shows no supplier/cost/margin data; below-margin attempt blocked without override; wrong-user isolation; confirm zero orders/payments/CS/invoices/DD/services/supplier orders created.
 
-Worldpay, `/pay`, `/pay-invoice`, invoices, DD mandates, supplier ordering, `supplier_products`, supplier resolver, quote resolver, Contract Summary generation/acceptance, rewards, campaigns, complaints, finance exports, AI chat, magic-link auth.
+### Technical notes
 
-### Technical details
+- Approved-quote immutability is enforced via the new trigger; admin who needs to change a price after approval must create a new quote (versioning lite — `final_snapshot` jsonb on approval is the audit artefact, no separate `quote_versions` table per spec).
+- All status transitions write a `quote_events` row (already append-only) and `log_event(...)` to `activity_log` plus `audit_logs` for sensitive ones (override, bucket override, rejection).
+- VAT, fair pricing, build-plan resolver and `can_send_quote()` gate are reused as-is — no business-logic forks.
 
-**Files to add:**
+### What stays untouched
 
-- `supabase/migrations/<ts>_phase_b_linking.sql` — `link_quote_requests_to_user`, `admin_link_quote_request`, extend `handle_new_user`, replace `qr_customer_select_own` policy.
-- `src/components/dashboard/tabs/QuoteRequestsTab.tsx` — new tab.
-- `src/components/admin/LinkQuoteRequestDialog.tsx` — admin manual link UI.
+Worldpay, `/pay`, `/pay-invoice`, invoices, DD mandates, supplier ordering, services activation, supplier_products write paths, supplier resolver, build-plan resolver internals, Contract Summary tables, rewards, campaigns, complaints, finance exports, AI chat, magic-link auth, all Phase B code.
 
-**Files to edit:**
+### Remaining blockers expected after Phase C → Phase D
 
-- `src/pages/quote/QuoteStart.tsx` — pass email/loggedIn flag to thank-you state.
-- `src/pages/quote/QuoteThankYou.tsx` — dashboard CTAs branched on auth state.
-- `src/pages/Auth.tsx` — email prefill + post-auth linker RPC call.
-- `src/pages/Dashboard.tsx` — mount new tab, surface account_number in header.
-- `src/pages/admin/QuoteRequests.tsx` — link badges, manual-link action.
-
-**No edits to:** `submit-build-plan` (already links logged-in users), payment functions, supplier/quote resolvers, contract-summary code, types.ts.
+- Contract Summary generation from an approved quote.
+- Contract Summary acceptance + customer "Accept & continue" CTA.
+- Linking approved+accepted quote to Worldpay setup payment.
+- Supplier order placement once contract accepted and payment cleared.

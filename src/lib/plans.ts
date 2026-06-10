@@ -29,6 +29,8 @@ export interface Plan {
   data?: string;
   callRate?: string;
   catalogueProductId?: string;
+  flex30Price?: string | null;
+  flex30PriceNum?: number | null;
 }
 
 // ── Broadband plans derived from pricing engine ──
@@ -39,6 +41,8 @@ export const broadbandPlans: Plan[] = bbCards.map(card => ({
   speed: String(card.maxSpeed),
   price: card.fromPrice,
   priceNum: card.fromPriceNum,
+  flex30Price: card.flex30Price ?? null,
+  flex30PriceNum: card.flex30PriceNum ?? null,
   description: card.tagline,
   features: card.publicFeatures,
   popular: card.popular,

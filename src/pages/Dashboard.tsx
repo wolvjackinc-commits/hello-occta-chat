@@ -365,7 +365,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex gap-3">
-              <Link to="/build-plan">
+              <Link to="/build-plan?availability=fallback">
                 <motion.div whileHover={{ y: -4, x: -4, boxShadow: "8px 8px 0px 0px hsl(var(--foreground))" }}>
                   <Button variant="hero">
                     <Plus className="w-4 h-4" />

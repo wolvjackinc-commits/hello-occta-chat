@@ -33,6 +33,9 @@ const Schema = z.object({
     primary_technology: z.string().max(40).optional(),
   }).optional(),
   test_mode: z.boolean().optional(),
+  // Fallback mode (availability API unavailable). Forces manual quote_request only.
+  force_quote_only: z.boolean().optional(),
+  availability_mode: z.enum(["live","fallback"]).optional(),
   // contact
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email().max(180),

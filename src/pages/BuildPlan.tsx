@@ -356,7 +356,7 @@ function BuildPlanInner() {
             </div>
           </div>
 
-          <FirstBillPreview resolved={resolved} resolving={resolving} />
+          <FirstBillPreview resolved={resolved} resolving={resolving} isFallback={isFallback} />
         </div>
       </div>
     </Layout>
@@ -414,11 +414,13 @@ function RouterOptionGroup({ label, selected, onSelect, oneOffLabel, monthlyLabe
   );
 }
 
-function FirstBillPreview({ resolved, resolving }: { resolved: Resolved | null; resolving: boolean }) {
+function FirstBillPreview({ resolved, resolving, isFallback }: { resolved: Resolved | null; resolving: boolean; isFallback?: boolean }) {
   return (
     <aside className="border-4 border-foreground bg-background p-6 self-start lg:sticky lg:top-24">
-      <p className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">First bill preview</p>
-      <h3 className="font-display text-xl uppercase mb-4">Your first bill</h3>
+      <p className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
+        {isFallback ? "Estimate — subject to confirmation" : "First bill preview"}
+      </p>
+      <h3 className="font-display text-xl uppercase mb-4">{isFallback ? "Estimated price" : "Your first bill"}</h3>
 
       {resolving && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Calculating…</div>}
 
@@ -429,6 +431,14 @@ function FirstBillPreview({ resolved, resolving }: { resolved: Resolved | null; 
       {!resolving && resolved?.quote_only && (
         <div className="text-sm space-y-2">
           <p className="flex items-start gap-2"><Info className="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{resolved.message ?? "Available by quote."}</span></p>
+          {isFallback && resolved.monthly_broadband_incl_vat != null && (
+            <p className="text-base font-display mt-2">
+              From £{resolved.monthly_broadband_incl_vat.toFixed(2)}/month
+              <span className="block text-xs text-muted-foreground font-normal mt-1">
+                Estimate only. Final price confirmed before order.
+              </span>
+            </p>
+          )}
         </div>
       )}
 

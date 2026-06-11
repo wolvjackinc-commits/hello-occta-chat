@@ -34,6 +34,26 @@ Deno.serve(async (req) => {
   const { data: q, error: qErr } = await supabase.from("quotes").select("*").eq("id", quote_id).maybeSingle();
   if (qErr || !q) return jsonResponse({ error: "quote_not_found" }, 404);
 
+  // ── Phase D guards ──
+  if (q.status !== "approved" && q.status !== "contract_summary_generated") {
+    return jsonResponse({ error: "quote_not_approved", message: `Quote status is ${q.status}; must be approved.` }, 409);
+  }
+  if (!q.customer_id) {
+    return jsonResponse({ error: "no_customer", message: "Quote is not linked to a customer account." }, 409);
+  }
+  const { data: qrGuard } = await supabase
+    .from("quote_requests")
+    .select("id, status, final_quote_id")
+    .eq("id", q.quote_request_id)
+    .maybeSingle();
+  if (!qrGuard) return jsonResponse({ error: "quote_request_not_found" }, 404);
+  if (!["final_quote_ready", "contract_summary_generated"].includes(qrGuard.status as string)) {
+    return jsonResponse({ error: "quote_request_not_final", message: `Quote request status is ${qrGuard.status}.` }, 409);
+  }
+  if (qrGuard.final_quote_id !== q.id) {
+    return jsonResponse({ error: "final_quote_mismatch", message: "This is not the active final quote for the request." }, 409);
+  }
+
   // ── Build Plan re-verify (if quote came from /build-plan) ──
   let bpAddendum = "";
   let bpFields: Record<string, unknown> = {};
@@ -108,6 +128,9 @@ Deno.serve(async (req) => {
     .select("full_name, email, postcode, address_line_1, address_line_2, town, county")
     .eq("id", q.quote_request_id).single();
 
+  const { data: prof } = await supabase
+    .from("profiles").select("account_number").eq("id", q.customer_id).maybeSingle();
+
   // Check for existing CS
   const { data: existing } = await supabase
     .from("contract_summaries")
@@ -155,6 +178,7 @@ Deno.serve(async (req) => {
     customer_id: q.customer_id,
     version: nextVersion,
     status: "issued",
+    account_number: prof?.account_number ?? null,
     customer_email_snapshot: qr!.email,
     customer_name_snapshot: qr!.full_name,
     service_address: addr || qr!.postcode,
@@ -199,6 +223,27 @@ Deno.serve(async (req) => {
 
   if (csErr || !cs) return jsonResponse({ error: "create_failed", details: csErr?.message }, 500);
 
+  // Flip statuses (Phase D)
+  await supabase.from("quotes").update({ status: "contract_summary_generated" }).eq("id", q.id);
+  await supabase.from("quote_requests").update({ status: "contract_summary_generated", updated_at: new Date().toISOString() }).eq("id", q.quote_request_id);
+
+  // Kick off PDF generation (best-effort, synchronous so the row gets pdf_storage_key)
+  let pdfPending = false;
+  try {
+    const projectUrl = Deno.env.get("SUPABASE_URL")!;
+    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const r = await fetch(`${projectUrl}/functions/v1/generate-contract-summary-pdf`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${svcKey}`,
+        "Content-Type": "application/json",
+        "x-internal-service": "1",
+      },
+      body: JSON.stringify({ contract_summary_id: cs.id, internal: true, actor_id: auth.userId }),
+    });
+    if (!r.ok) pdfPending = true;
+  } catch { pdfPending = true; }
+
   await supabase.rpc("log_event", {
     _actor_type: "admin", _event_type: "contract_summary_generated",
     _title: `CS ${cs.cs_number} v${nextVersion}`,
@@ -212,5 +257,5 @@ Deno.serve(async (req) => {
     actor_type: "admin", actor_id: auth.userId,
   });
 
-  return jsonResponse({ ok: true, contract_summary_id: cs.id, cs_number: cs.cs_number, public_token: raw, version: nextVersion });
+  return jsonResponse({ ok: true, contract_summary_id: cs.id, cs_number: cs.cs_number, public_token: raw, version: nextVersion, pdf_pending: pdfPending });
 });

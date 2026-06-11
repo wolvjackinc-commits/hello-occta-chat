@@ -1421,6 +1421,7 @@ export type Database = {
       }
       email_templates: {
         Row: {
+          auto_send: boolean
           category: string
           created_at: string
           created_by: string | null
@@ -1434,6 +1435,7 @@ export type Database = {
           variables: string[] | null
         }
         Insert: {
+          auto_send?: boolean
           category?: string
           created_at?: string
           created_by?: string | null
@@ -1447,6 +1449,7 @@ export type Database = {
           variables?: string[] | null
         }
         Update: {
+          auto_send?: boolean
           category?: string
           created_at?: string
           created_by?: string | null
@@ -1861,6 +1864,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      journey_internal_notes: {
+        Row: {
+          author_user_id: string
+          body: string
+          contract_summary_id: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          payment_request_id: string | null
+          quote_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          contract_summary_id?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          payment_request_id?: string | null
+          quote_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          contract_summary_id?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          payment_request_id?: string | null
+          quote_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       kb_article_versions: {
         Row: {

@@ -1371,6 +1371,54 @@ export type Database = {
           },
         ]
       }
+      draft_order_packs: {
+        Row: {
+          contract_summary_id: string
+          created_at: string
+          generated_at: string
+          generated_by: string | null
+          id: string
+          payment_request_id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          contract_summary_id: string
+          created_at?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          payment_request_id: string
+          snapshot: Json
+          version?: number
+        }
+        Update: {
+          contract_summary_id?: string
+          created_at?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          payment_request_id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_order_packs_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_order_packs_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           category: string
@@ -2638,6 +2686,63 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      provisioning_readiness: {
+        Row: {
+          admin_review_complete: boolean
+          contract_summary_id: string
+          created_at: string
+          id: string
+          installation_confirmed: boolean
+          internal_notes_reviewed: boolean
+          payment_request_id: string
+          reviewer_notes: string | null
+          reviewer_user_id: string | null
+          router_confirmed: boolean
+          updated_at: string
+        }
+        Insert: {
+          admin_review_complete?: boolean
+          contract_summary_id: string
+          created_at?: string
+          id?: string
+          installation_confirmed?: boolean
+          internal_notes_reviewed?: boolean
+          payment_request_id: string
+          reviewer_notes?: string | null
+          reviewer_user_id?: string | null
+          router_confirmed?: boolean
+          updated_at?: string
+        }
+        Update: {
+          admin_review_complete?: boolean
+          contract_summary_id?: string
+          created_at?: string
+          id?: string
+          installation_confirmed?: boolean
+          internal_notes_reviewed?: boolean
+          payment_request_id?: string
+          reviewer_notes?: string | null
+          reviewer_user_id?: string | null
+          router_confirmed?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provisioning_readiness_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provisioning_readiness_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: true
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quote_events: {
         Row: {

@@ -15,6 +15,7 @@ import { format } from "date-fns";
 
 type PaymentRequestData = {
   id: string;
+  payment_request_number?: string | null;
   amount: number;
   currency: string;
   customer_name: string;
@@ -24,6 +25,18 @@ type PaymentRequestData = {
   due_date: string | null;
   status: string;
   expires_at: string | null;
+  contract_summary_id?: string | null;
+  cs?: {
+    cs_number?: string;
+    plan_name?: string;
+    monthly_price_incl_vat?: number;
+    setup_charge?: number;
+    router_charge?: number;
+    delivery_charge?: number;
+    installation_charge?: number;
+    contract_length?: string;
+    customer_type?: string;
+  } | null;
 };
 
 type PaymentDetails = {
@@ -56,52 +69,65 @@ export default function Pay() {
   const [error, setError] = useState<string | null>(null);
   const [paymentData, setPaymentData] = useState<PaymentRequestData | null>(null);
   const [paymentResult, setPaymentResult] = useState<"success" | "failed" | "cancelled" | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [webhookVerified, setWebhookVerified] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
 
-  // Handle return from Worldpay - VERIFY PAYMENT with backend
+  // Handle return from Worldpay. The browser return is NEVER authoritative —
+  // we poll the backend until the worldpay-webhook marks the request paid+verified.
   useEffect(() => {
     if (!status || !requestId) return;
-    
-    const verifyPayment = async () => {
-      console.log('[Pay] Verifying payment with backend:', { requestId, status });
-      
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 20; // ~60s at 3s intervals
+
+    const tick = async () => {
+      attempts++;
       try {
-        // Call verify-payment to trigger backend processing (invoice update, receipt, email)
-        const { data, error } = await supabase.functions.invoke("payment-request", {
-          body: {
-            action: "verify-payment",
-            requestId,
-            status,
-          },
+        const { data } = await supabase.functions.invoke("payment-request", {
+          body: { action: "verify-payment", requestId, status },
         });
-        
-        if (error) {
-          console.error('[Pay] Verification function error:', error);
-          // Still show result based on Worldpay status (payment already went through)
-        } else if (!data?.success) {
-          console.error('[Pay] Verification failed:', data?.error);
-          // Still show result - Worldpay already processed the payment
-        } else {
-          console.log('[Pay] Payment verified successfully:', data);
+        if (cancelled) return;
+        const verified = data?.webhook_verified === true && data?.status === "paid";
+        if (verified) {
+          setWebhookVerified(true);
+          setPaymentResult("success");
+          setVerifying(false);
+          setIsLoading(false);
+          return;
         }
       } catch (err) {
-        console.error('[Pay] Error calling verify-payment:', err);
-        // Don't block UI - the payment already happened at Worldpay
-      } finally {
-        // Set result based on URL status (Worldpay's determination)
-        if (status === "success") {
-          setPaymentResult("success");
-        } else if (status === "failed") {
-          setPaymentResult("failed");
-        } else if (status === "cancelled") {
-          setPaymentResult("cancelled");
-        }
-        setIsLoading(false);
+        console.warn("[Pay] verify-payment poll error:", err);
       }
+      if (cancelled) return;
+
+      if (status === "failed") {
+        setPaymentResult("failed");
+        setVerifying(false);
+        setIsLoading(false);
+        return;
+      }
+      if (status === "cancelled") {
+        setPaymentResult("cancelled");
+        setVerifying(false);
+        setIsLoading(false);
+        return;
+      }
+
+      if (attempts >= maxAttempts) {
+        // Stop polling; UI will show pending state with manual refresh.
+        setVerifying(false);
+        setIsLoading(false);
+        return;
+      }
+      setTimeout(tick, 3000);
     };
-    
-    verifyPayment();
+
+    setVerifying(true);
+    setIsLoading(false);
+    tick();
+    return () => { cancelled = true; };
   }, [status, requestId]);
 
   // Check auth state
@@ -298,6 +324,46 @@ export default function Pay() {
   };
 
   // Result screens
+  if (status && !paymentResult && verifying) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-4 border-foreground">
+          <CardHeader className="bg-foreground text-background">
+            <CardTitle className="font-display text-2xl text-center tracking-widest">OCCTA</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-8 pb-8 text-center space-y-4">
+            <Loader2 className="h-10 w-10 animate-spin mx-auto" />
+            <h1 className="font-display text-2xl">Confirming your payment…</h1>
+            <p className="text-muted-foreground text-sm">
+              We're waiting for confirmation from Worldpay. This can take a few moments. Please don't close this page.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (status && !paymentResult && !verifying) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-4 border-foreground">
+          <CardHeader className="bg-foreground text-background">
+            <CardTitle className="font-display text-2xl text-center tracking-widest">OCCTA</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-8 pb-8 text-center space-y-4">
+            <Clock className="h-10 w-10 mx-auto" />
+            <h1 className="font-display text-2xl">Payment still confirming</h1>
+            <p className="text-muted-foreground text-sm">
+              Your payment is being processed. Refresh this page in a moment to check the status, or contact us if it stays pending.
+            </p>
+            <Button className="w-full" onClick={() => window.location.reload()}>Refresh status</Button>
+            <p className="text-xs text-muted-foreground">Questions? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (paymentResult) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">

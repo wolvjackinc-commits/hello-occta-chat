@@ -119,6 +119,101 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_task_notes: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_task_notes_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "admin_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_tasks: {
+        Row: {
+          assigned_to: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          related_account_number: string | null
+          related_contract_summary_id: string | null
+          related_customer_id: string | null
+          related_payment_request_id: string | null
+          related_quote_id: string | null
+          resolved_at: string | null
+          status: string
+          task_number: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_account_number?: string | null
+          related_contract_summary_id?: string | null
+          related_customer_id?: string | null
+          related_payment_request_id?: string | null
+          related_quote_id?: string | null
+          resolved_at?: string | null
+          status?: string
+          task_number?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_account_number?: string | null
+          related_contract_summary_id?: string | null
+          related_customer_id?: string | null
+          related_payment_request_id?: string | null
+          related_quote_id?: string | null
+          resolved_at?: string | null
+          status?: string
+          task_number?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_handoff_rules: {
         Row: {
           action: string

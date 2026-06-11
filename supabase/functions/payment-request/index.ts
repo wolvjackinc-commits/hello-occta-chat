@@ -126,6 +126,7 @@ serve(async (req) => {
       'view-dd-bank-details',
       'record-phone-payment',
       'send-email',
+      'create-cs-payment',
     ]);
     let verifiedAdminUserId: string | null = null;
     if (ADMIN_ACTIONS.has(action)) {

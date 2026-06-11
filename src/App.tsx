@@ -88,6 +88,7 @@ import { AdminComplaints } from "./pages/admin/Complaints";
 import { AdminKnowledgeBase } from "./pages/admin/KnowledgeBase";
 import { AdminFairPricing } from "./pages/admin/FairPricing";
 import { AdminSuppliersGiacomImport } from "./pages/admin/SuppliersGiacomImport";
+import { AdminReadiness } from "./pages/admin/Readiness";
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -167,6 +168,7 @@ const AnimatedRoutes = () => {
             <Route path="knowledge-base" element={<AdminKnowledgeBase />} />
             <Route path="fair-pricing" element={<AdminFairPricing />} />
             <Route path="suppliers/giacom-import" element={<AdminSuppliersGiacomImport />} />
+            <Route path="readiness" element={<AdminReadiness />} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

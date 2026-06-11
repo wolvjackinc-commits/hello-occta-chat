@@ -27,6 +27,7 @@ import {
   Truck,
   TrendingUp,
   Receipt,
+  ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,7 @@ const navItems = [
   { label: "Communications", to: "/admin/communications", icon: Send },
   { label: "Chat Transcripts", to: "/admin/chat-transcripts", icon: MessageSquare },
   { label: "Installations", to: "/admin/installations", icon: CalendarDays },
+  { label: "Readiness", to: "/admin/readiness", icon: ShieldCheck },
   { label: "Plans", to: "/admin/plans", icon: FileText },
   { label: "Compliance", to: "/admin/compliance", icon: Shield },
   { label: "Audit Log", to: "/admin/audit-log", icon: ScrollText },

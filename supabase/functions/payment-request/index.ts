@@ -126,6 +126,7 @@ serve(async (req) => {
       'view-dd-bank-details',
       'record-phone-payment',
       'send-email',
+      'create-cs-payment',
     ]);
     let verifiedAdminUserId: string | null = null;
     if (ADMIN_ACTIONS.has(action)) {
@@ -190,7 +191,7 @@ serve(async (req) => {
 
         const { data: request, error } = await supabase
           .from('payment_requests')
-          .select('id, amount, currency, customer_name, customer_email, account_number, invoice_id, due_date, status, expires_at, type, user_id')
+          .select('id, amount, currency, customer_name, customer_email, account_number, invoice_id, due_date, status, expires_at, type, user_id, contract_summary_id, contract_acceptance_id, payment_request_number, webhook_verified, paid_at')
           .eq('token_hash', tokenHash)
           .eq('type', type)
           .single();
@@ -262,10 +263,22 @@ serve(async (req) => {
           invoiceNumber = invoice?.invoice_number;
         }
 
+        // Get CS-safe context if CS-linked (customer-safe fields only)
+        let csContext: any = null;
+        if (request.contract_summary_id) {
+          const { data: cs } = await supabase
+            .from('contract_summaries')
+            .select('cs_number, plan_name, monthly_price_incl_vat, setup_charge, router_charge, delivery_charge, installation_charge, contract_length, customer_type')
+            .eq('id', request.contract_summary_id)
+            .single();
+          if (cs) csContext = cs;
+        }
+
         return new Response(JSON.stringify({
           success: true,
           request: {
             id: request.id,
+            payment_request_number: request.payment_request_number,
             amount: request.amount,
             currency: request.currency,
             customer_name: request.customer_name,
@@ -276,6 +289,8 @@ serve(async (req) => {
             status: request.status,
             expires_at: request.expires_at,
             user_id: request.user_id,
+            contract_summary_id: request.contract_summary_id,
+            cs: csContext,
           },
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -409,7 +424,11 @@ serve(async (req) => {
           .from('payment_requests')
           .update({ 
             provider: 'worldpay',
-            provider_reference: transactionRef 
+            provider_reference: transactionRef,
+            provider_checkout_url: checkoutUrl,
+            provider_session_id: result?._links?.self?.href ?? null,
+            // For CS-linked rows, advance to checkout_created. Legacy invoice rows keep prior status.
+            ...(request.contract_summary_id ? { status: 'checkout_created' } : {}),
           })
           .eq('id', request.id);
 
@@ -1021,7 +1040,7 @@ serve(async (req) => {
         // the current status from the database so the UI can render it.
         const { data: request, error } = await supabase
           .from('payment_requests')
-          .select('id, status, amount, currency, customer_name, customer_email, account_number, invoice_id, provider_reference')
+          .select('id, status, amount, currency, customer_name, customer_email, account_number, invoice_id, provider_reference, webhook_verified, paid_at, contract_summary_id')
           .eq('id', requestId)
           .single();
 
@@ -1042,13 +1061,172 @@ serve(async (req) => {
           }).catch(() => {});
         }
 
-        const completed = request.status === 'completed';
+        const isPaid = request.status === 'paid' || request.status === 'completed';
         return new Response(JSON.stringify({
-          success: completed,
-          status: completed ? 'paid' : request.status,
+          success: isPaid && (request.contract_summary_id ? request.webhook_verified === true : true),
+          status: isPaid ? 'paid' : request.status,
+          webhook_verified: !!request.webhook_verified,
+          paid_at: request.paid_at || null,
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      }
+
+      // ==========================================
+      // CREATE CS-LINKED PAYMENT REQUEST (admin)
+      // ==========================================
+      case 'create-cs-payment': {
+        const { contract_summary_id, amount_override, amount_override_reason, expires_in_days, notes } = data;
+        if (!contract_summary_id) {
+          return new Response(JSON.stringify({ success: false, error: 'contract_summary_id required' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Load CS + verify accepted + pdf stored
+        const { data: cs, error: csErr } = await supabase
+          .from('contract_summaries')
+          .select('id, cs_number, status, customer_id, customer_email_snapshot, customer_name_snapshot, plan_name, monthly_price_incl_vat, setup_charge, router_charge, delivery_charge, installation_charge, pdf_storage_key, pdf_sha256, quote_id, quote_request_id, account_number, customer_type, business_monthly_incl_vat')
+          .eq('id', contract_summary_id)
+          .single();
+        if (csErr || !cs) {
+          return new Response(JSON.stringify({ success: false, error: 'Contract Summary not found' }), {
+            status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (cs.status !== 'accepted') {
+          return new Response(JSON.stringify({ success: false, error: 'Contract Summary not accepted' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (!cs.pdf_storage_key || !cs.pdf_sha256) {
+          return new Response(JSON.stringify({ success: false, error: 'Accepted CS PDF missing' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (!cs.customer_id) {
+          return new Response(JSON.stringify({ success: false, error: 'CS has no linked customer' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Load acceptance row
+        const { data: acceptance } = await supabase
+          .from('contract_acceptances')
+          .select('id')
+          .eq('contract_summary_id', cs.id)
+          .order('accepted_at', { ascending: true })
+          .limit(1)
+          .single();
+        if (!acceptance) {
+          return new Response(JSON.stringify({ success: false, error: 'No acceptance record' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Derive amount strictly from accepted CS snapshot (customer-facing totals).
+        // For residential CS the monthly_price_incl_vat already includes VAT.
+        // For business CS use business_monthly_incl_vat when present, else monthly_price_incl_vat.
+        const firstMonth = Number(
+          (cs.customer_type === 'business' && cs.business_monthly_incl_vat != null)
+            ? cs.business_monthly_incl_vat
+            : cs.monthly_price_incl_vat
+        ) || 0;
+        const oneOff = Number(cs.setup_charge || 0)
+          + Number(cs.router_charge || 0)
+          + Number(cs.delivery_charge || 0)
+          + Number(cs.installation_charge || 0);
+        let amount = Math.round((firstMonth + oneOff) * 100) / 100;
+
+        const metadata: Record<string, unknown> = {
+          source: 'create-cs-payment',
+          cs_number: cs.cs_number,
+          breakdown: {
+            first_month: firstMonth,
+            setup: Number(cs.setup_charge || 0),
+            router: Number(cs.router_charge || 0),
+            delivery: Number(cs.delivery_charge || 0),
+            installation: Number(cs.installation_charge || 0),
+          },
+        };
+
+        if (amount_override != null) {
+          const overrideAmount = Number(amount_override);
+          if (!isFinite(overrideAmount) || overrideAmount <= 0) {
+            return new Response(JSON.stringify({ success: false, error: 'invalid amount_override' }), {
+              status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          if (!amount_override_reason || String(amount_override_reason).trim().length < 4) {
+            return new Response(JSON.stringify({ success: false, error: 'amount_override_reason required (min 4 chars)' }), {
+              status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          metadata.amount_override = { from: amount, to: overrideAmount, reason: String(amount_override_reason).slice(0, 500), by: verifiedAdminUserId };
+          amount = Math.round(overrideAmount * 100) / 100;
+        }
+
+        // Generate token
+        const rawBytes = new Uint8Array(32);
+        crypto.getRandomValues(rawBytes);
+        const rawToken = btoa(String.fromCharCode(...rawBytes))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const tokenHash = await hashToken(rawToken);
+
+        const days = Math.max(1, Math.min(60, Number(expires_in_days) || 14));
+        const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+
+        const { data: inserted, error: insErr } = await supabase
+          .from('payment_requests')
+          .insert({
+            user_id: cs.customer_id,
+            type: 'card_payment',
+            status: 'pending',
+            amount,
+            currency: 'GBP',
+            customer_name: cs.customer_name_snapshot,
+            customer_email: cs.customer_email_snapshot,
+            account_number: cs.account_number,
+            notes: notes ? String(notes).slice(0, 1000) : null,
+            token_hash: tokenHash,
+            expires_at: expiresAt,
+            created_by: verifiedAdminUserId,
+            contract_summary_id: cs.id,
+            contract_acceptance_id: acceptance.id,
+            quote_id: cs.quote_id,
+            quote_request_id: cs.quote_request_id,
+            metadata,
+          })
+          .select('id, payment_request_number, amount, currency, expires_at')
+          .single();
+
+        if (insErr || !inserted) {
+          console.error('create-cs-payment insert error:', insErr);
+          return new Response(JSON.stringify({ success: false, error: insErr?.message || 'Failed to create payment request' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        await supabase.from('payment_request_events').insert({
+          request_id: inserted.id,
+          event_type: 'created_cs_linked',
+          metadata: { cs_number: cs.cs_number, created_by: verifiedAdminUserId },
+        }).catch(() => {});
+
+        await supabase.from('audit_logs').insert({
+          actor_user_id: verifiedAdminUserId,
+          action: 'create',
+          entity: 'payment_request',
+          entity_id: inserted.id,
+          metadata: { cs_id: cs.id, cs_number: cs.cs_number, amount: inserted.amount },
+        }).catch(() => {});
+
+        return new Response(JSON.stringify({
+          success: true,
+          payment_request: inserted,
+          token: rawToken,
+          pay_url_path: `/pay?token=${encodeURIComponent(rawToken)}`,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       default:

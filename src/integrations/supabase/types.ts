@@ -2166,6 +2166,8 @@ export type Database = {
           account_number: string | null
           amount: number | null
           completed_at: string | null
+          contract_acceptance_id: string | null
+          contract_summary_id: string | null
           created_at: string
           created_by: string | null
           currency: string
@@ -2173,22 +2175,34 @@ export type Database = {
           customer_name: string
           due_date: string | null
           expires_at: string | null
+          failed_at: string | null
           id: string
           invoice_id: string | null
           last_opened_at: string | null
+          metadata: Json
           notes: string | null
+          paid_at: string | null
+          payment_request_number: string | null
           provider: string | null
+          provider_checkout_url: string | null
+          provider_payment_id: string | null
           provider_reference: string | null
+          provider_session_id: string | null
+          quote_id: string | null
+          quote_request_id: string | null
           status: string
           token_hash: string | null
           type: string
           updated_at: string
           user_id: string | null
+          webhook_verified: boolean
         }
         Insert: {
           account_number?: string | null
           amount?: number | null
           completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_summary_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -2196,22 +2210,34 @@ export type Database = {
           customer_name: string
           due_date?: string | null
           expires_at?: string | null
+          failed_at?: string | null
           id?: string
           invoice_id?: string | null
           last_opened_at?: string | null
+          metadata?: Json
           notes?: string | null
+          paid_at?: string | null
+          payment_request_number?: string | null
           provider?: string | null
+          provider_checkout_url?: string | null
+          provider_payment_id?: string | null
           provider_reference?: string | null
+          provider_session_id?: string | null
+          quote_id?: string | null
+          quote_request_id?: string | null
           status?: string
           token_hash?: string | null
           type: string
           updated_at?: string
           user_id?: string | null
+          webhook_verified?: boolean
         }
         Update: {
           account_number?: string | null
           amount?: number | null
           completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_summary_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -2219,19 +2245,43 @@ export type Database = {
           customer_name?: string
           due_date?: string | null
           expires_at?: string | null
+          failed_at?: string | null
           id?: string
           invoice_id?: string | null
           last_opened_at?: string | null
+          metadata?: Json
           notes?: string | null
+          paid_at?: string | null
+          payment_request_number?: string | null
           provider?: string | null
+          provider_checkout_url?: string | null
+          provider_payment_id?: string | null
           provider_reference?: string | null
+          provider_session_id?: string | null
+          quote_id?: string | null
+          quote_request_id?: string | null
           status?: string
           token_hash?: string | null
           type?: string
           updated_at?: string
           user_id?: string | null
+          webhook_verified?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_requests_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_requests_created_by_fkey"
             columns: ["created_by"]
@@ -2251,6 +2301,20 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
             referencedColumns: ["id"]
           },
           {
@@ -4259,6 +4323,7 @@ export type Database = {
       generate_account_number: { Args: never; Returns: string }
       generate_complaint_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
+      generate_payment_request_number: { Args: never; Returns: string }
       generate_user_account_number: { Args: never; Returns: string }
       get_customer_communication_messages: {
         Args: { _thread_id: string }

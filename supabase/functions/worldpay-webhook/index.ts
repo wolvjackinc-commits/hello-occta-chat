@@ -171,7 +171,7 @@ serve(async (req) => {
           // Find payment request by provider_reference
           const { data: paymentRequest, error: prError } = await supabase
             .from('payment_requests')
-            .select('id, invoice_id, user_id, amount, status, customer_name, customer_email')
+            .select('id, invoice_id, user_id, amount, currency, status, customer_name, customer_email, contract_summary_id, webhook_verified')
             .eq('provider_reference', transactionRef)
             .single();
           
@@ -180,7 +180,7 @@ serve(async (req) => {
             // Try prefix match as fallback
             const { data: prByPrefix } = await supabase
               .from('payment_requests')
-              .select('id, invoice_id, user_id, amount, status, customer_name, customer_email')
+              .select('id, invoice_id, user_id, amount, currency, status, customer_name, customer_email, contract_summary_id, webhook_verified')
               .like('provider_reference', `PR-${prIdPrefix}%`)
               .order('created_at', { ascending: false })
               .limit(1)
@@ -194,8 +194,8 @@ serve(async (req) => {
             // Use the found request
             await processPaymentRequestWebhook(supabase, prByPrefix, eventId, payload);
           } else {
-            // Already completed? Skip to avoid duplicates
-            if (paymentRequest.status === 'completed') {
+            // Already paid/completed and webhook-verified? Skip to avoid duplicates (idempotent)
+            if ((paymentRequest.status === 'paid' || paymentRequest.status === 'completed') && paymentRequest.webhook_verified) {
               console.log(`Payment request ${paymentRequest.id} already completed, skipping`);
               break;
             }
@@ -356,6 +356,10 @@ async function processPaymentRequestWebhook(
     invoice_id: string | null;
     user_id: string | null;
     amount: number | null;
+    currency?: string | null;
+    contract_summary_id?: string | null;
+    webhook_verified?: boolean | null;
+    status?: string;
     customer_name: string;
     customer_email: string;
   },
@@ -363,16 +367,62 @@ async function processPaymentRequestWebhook(
   payload: any
 ) {
   console.log(`Processing webhook for payment request: ${paymentRequest.id}`);
-  
-  // Mark payment request as completed
-  await supabase
+
+  const isCsLinked = !!paymentRequest.contract_summary_id;
+  const nowIso = new Date().toISOString();
+
+  // Amount + currency check from provider payload (minor units → major).
+  const providerAmountMinor = Number(payload?.instruction?.value?.amount ?? payload?.value?.amount ?? 0);
+  const providerCurrency = String(payload?.instruction?.value?.currency ?? payload?.value?.currency ?? 'GBP').toUpperCase();
+  const expectedAmountMinor = Math.round(Number(paymentRequest.amount || 0) * 100);
+  const expectedCurrency = String(paymentRequest.currency || 'GBP').toUpperCase();
+
+  const amountMatches = providerAmountMinor === expectedAmountMinor;
+  const currencyMatches = providerCurrency === expectedCurrency;
+
+  if (isCsLinked && (!amountMatches || !currencyMatches)) {
+    console.error('CS-linked PR amount/currency mismatch; refusing to mark paid', {
+      providerAmountMinor, expectedAmountMinor, providerCurrency, expectedCurrency,
+    });
+    await supabase.from('audit_logs').insert({
+      action: 'worldpay_webhook_amount_mismatch',
+      entity: 'payment_request',
+      entity_id: paymentRequest.id,
+      metadata: { providerAmountMinor, expectedAmountMinor, providerCurrency, expectedCurrency, eventId },
+    }).catch(() => {});
+    await supabase.from('payment_request_events').insert({
+      request_id: paymentRequest.id,
+      event_type: 'webhook_amount_mismatch',
+      metadata: { providerAmountMinor, expectedAmountMinor, providerCurrency, expectedCurrency, eventId },
+    }).catch(() => {});
+    return;
+  }
+
+  // CS-linked: write authoritative paid state via service role.
+  // Legacy invoice flow: keep historical 'completed' status untouched for downstream code paths.
+  const updatePayload: Record<string, unknown> = isCsLinked
+    ? {
+        status: 'paid',
+        paid_at: nowIso,
+        webhook_verified: true,
+        provider_payment_id: payload?.paymentInstrument?.paymentId ?? payload?.paymentId ?? eventId,
+        completed_at: nowIso,
+        updated_at: nowIso,
+      }
+    : {
+        status: 'completed',
+        completed_at: nowIso,
+        updated_at: nowIso,
+      };
+
+  const { error: updErr } = await supabase
     .from('payment_requests')
-    .update({ 
-      status: 'completed', 
-      completed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+    .update(updatePayload)
     .eq('id', paymentRequest.id);
+  if (updErr) {
+    console.error('Failed to update payment_request from webhook:', updErr);
+    return;
+  }
   
   // Update payment attempt to success
   await supabase
@@ -380,9 +430,9 @@ async function processPaymentRequestWebhook(
     .update({ status: 'success' })
     .eq('provider_ref', payload.transactionReference)
     .eq('status', 'pending');
-  
-  // If there's a linked invoice, mark it as paid and create receipt
-  if (paymentRequest.invoice_id) {
+
+  // Legacy: invoice-linked PRs create a receipt + mark invoice paid (Phase E does NOT create invoices for CS flow).
+  if (!isCsLinked && paymentRequest.invoice_id) {
     // Mark invoice as paid
     await supabase
       .from('invoices')
@@ -406,8 +456,8 @@ async function processPaymentRequestWebhook(
   // Log event
   await supabase.from('payment_request_events').insert({
     request_id: paymentRequest.id,
-    event_type: 'completed_via_webhook',
-    metadata: { worldpay_event_id: eventId },
+    event_type: isCsLinked ? 'paid_via_webhook' : 'completed_via_webhook',
+    metadata: { worldpay_event_id: eventId, amount_minor: providerAmountMinor, currency: providerCurrency, cs_linked: isCsLinked },
   });
   
   // Audit log
@@ -419,6 +469,7 @@ async function processPaymentRequestWebhook(
       invoice_id: paymentRequest.invoice_id,
       amount: paymentRequest.amount,
       worldpay_event_id: eventId,
+      cs_linked: isCsLinked,
     },
   });
   

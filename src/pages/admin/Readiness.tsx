@@ -67,7 +67,7 @@ export const AdminReadiness = () => {
       const pMap = new Map((profiles ?? []).map((r: any) => [r.id, r]));
       const aMap = new Map<string, any>();
       (accs ?? []).forEach((a: any) => { if (!aMap.has(a.contract_summary_id)) aMap.set(a.contract_summary_id, a); });
-      const rMap = new Map((ready ?? []).map((r: any) => [r.payment_request_id, r]));
+      const rMap = new Map<string, any>((ready ?? []).map((r: any) => [r.payment_request_id, r]));
       const packMap = new Map<string, number>();
       (packs ?? []).forEach((p: any) => {
         const cur = packMap.get(p.payment_request_id) ?? 0;
@@ -84,7 +84,7 @@ export const AdminReadiness = () => {
             qr: pr.quote_request_id ? (qrMap.get(pr.quote_request_id) as any) ?? null : null,
             profile: pr.user_id ? (pMap.get(pr.user_id) as any) ?? null : null,
             acceptance: aMap.get(pr.contract_summary_id) ?? null,
-            readiness: rMap.get(pr.id) ?? null,
+            readiness: (rMap.get(pr.id) as any) ?? null,
             hasDraftPack: packMap.has(pr.id),
           },
           pr_number: pr.payment_request_number,

@@ -1,13 +1,15 @@
 import { ReadinessStatus, statusLabel, statusTone } from "@/lib/launchSafety/checks";
 
+type FactValue = string | number | boolean | null;
+interface Fact { label: string; value: FactValue }
 interface ReadinessCardProps {
   title: string;
   status: ReadinessStatus;
   reason?: string;
-  facts?: Array<{ label: string; value: string | number | boolean | null }>;
+  facts?: Fact[];
 }
 
-function renderValue(v: ReadinessCardProps["facts"][number]["value"]) {
+function renderValue(v: FactValue) {
   if (v === null || v === undefined) return "—";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   return String(v);

@@ -353,6 +353,8 @@ serve(async (req) => {
         const authHeader = 'Basic ' + btoa(`${worldpayUsername}:${worldpayPassword}`);
         const hppHeaders = {
           'Authorization': authHeader,
+          'WP-CorrelationId': crypto.randomUUID(),
+          'User-Agent': 'OCCTA-LovableCloud-HPP/1.0',
           'Accept': 'application/vnd.worldpay.payment_pages-v1.hal+json',
           'Content-Type': 'application/vnd.worldpay.payment_pages-v1.hal+json',
         };

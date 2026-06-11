@@ -310,7 +310,10 @@ serve(async (req) => {
           });
         }
         
-        console.log('[create-worldpay-session] Origin params:', { paymentOrigin, returnUrl });
+        console.log('[create-worldpay-session] Origin params received:', {
+          hasPaymentOrigin: !!paymentOrigin,
+          hasReturnUrl: !!returnUrl,
+        });
 
         const tokenHash = await hashToken(token);
 
@@ -345,7 +348,14 @@ serve(async (req) => {
         }
 
         const baseUrl = isLiveMode ? WORLDPAY_LIVE_URL : WORLDPAY_TRY_URL;
+        const endpointUrl = `${baseUrl}/payment_pages`;
+        const endpointHost = new URL(endpointUrl).host;
         const authHeader = 'Basic ' + btoa(`${worldpayUsername}:${worldpayPassword}`);
+        const hppHeaders = {
+          'Authorization': authHeader,
+          'Accept': 'application/vnd.worldpay.payment_pages-v1.hal+json',
+          'Content-Type': 'application/vnd.worldpay.payment_pages-v1.hal+json',
+        };
 
         // Get invoice number if linked
         let invoiceNumber = null;
@@ -360,13 +370,20 @@ serve(async (req) => {
 
         const transactionRef = `PR-${request.id.slice(0, 8)}-${Date.now()}`;
 
-        const response = await fetch(`${baseUrl}/payment_pages`, {
+        console.log('[create-worldpay-session] HPP request diagnostics:', {
+          endpointHost,
+          liveMode: isLiveMode,
+          headerNames: Object.keys(hppHeaders),
+          accept: hppHeaders.Accept,
+          contentType: hppHeaders['Content-Type'],
+          hasUsername: !!worldpayUsername,
+          hasPassword: !!worldpayPassword,
+          hasEntity: !!worldpayEntityId,
+        });
+
+        const response = await fetch(endpointUrl, {
           method: 'POST',
-          headers: {
-            'Authorization': authHeader,
-            'Accept': 'application/vnd.worldpay.payment_pages-v1.hal+json',
-            'Content-Type': 'application/vnd.worldpay.payment_pages-v1.hal+json',
-          },
+          headers: hppHeaders,
           body: JSON.stringify({
             transactionReference: transactionRef,
             merchant: { entity: worldpayEntityId },
@@ -388,9 +405,17 @@ serve(async (req) => {
 
         const result = await response.json();
         
-        console.log('[create-worldpay-session] Worldpay response status:', response.status);
+        console.log('[create-worldpay-session] Worldpay response diagnostics:', {
+          status: response.status,
+          errorName: result?.errorName ?? null,
+          message: result?.message ?? null,
+        });
         if (!response.ok) {
-          console.error('[create-worldpay-session] Worldpay error response:', JSON.stringify(result));
+          console.error('[create-worldpay-session] Worldpay error response:', {
+            status: response.status,
+            errorName: result?.errorName ?? null,
+            message: result?.message ?? null,
+          });
           return new Response(JSON.stringify({ 
             success: false, 
             error: result.message || 'Failed to create payment session' 

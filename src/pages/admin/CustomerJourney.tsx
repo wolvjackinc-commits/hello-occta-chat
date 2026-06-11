@@ -17,7 +17,7 @@ export default function AdminCustomerJourney() {
     queryFn: async () => {
       const { data: profile, error } = await supabase
         .from("profiles")
-        .select("id,account_number,email,first_name,last_name")
+        .select("id,account_number,email,full_name")
         .eq("account_number", accountNumber!)
         .maybeSingle();
       if (error || !profile) throw new Error("Customer not found");
@@ -37,7 +37,7 @@ export default function AdminCustomerJourney() {
           </Link>
         </Button>
         <h2 className="font-display uppercase text-xl">
-          Journey · {data.first_name ?? ""} {data.last_name ?? ""} · {data.account_number}
+          Journey · {data.full_name ?? data.email ?? ""} · {data.account_number}
         </h2>
       </div>
 

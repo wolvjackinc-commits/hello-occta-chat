@@ -195,6 +195,14 @@ export const AdminCustomerDetail = () => {
             <RouteIcon className="w-4 h-4 mr-2" />
             Journey
           </Button>
+          <Button
+            variant="outline"
+            className="border-2 border-foreground"
+            onClick={() => navigate(`/admin/tasks?account=${overview.account_number}`)}
+            disabled={!overview.account_number}
+          >
+            Tasks
+          </Button>
           <CustomerEditDialog
             customer={overview}
             onSaved={refetch}

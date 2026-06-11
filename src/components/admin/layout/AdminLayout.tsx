@@ -72,6 +72,7 @@ const navItems = [
   { label: "Installations", to: "/admin/installations", icon: CalendarDays },
   { label: "Readiness", to: "/admin/readiness", icon: ShieldCheck },
   { label: "Launch Safety", to: "/admin/launch-safety", icon: ShieldAlert },
+  { label: "Tasks", to: "/admin/tasks", icon: ClipboardList },
   { label: "Plans", to: "/admin/plans", icon: FileText },
   { label: "Compliance", to: "/admin/compliance", icon: Shield },
   { label: "Audit Log", to: "/admin/audit-log", icon: ScrollText },

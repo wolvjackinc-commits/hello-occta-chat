@@ -28,6 +28,7 @@ import {
   TrendingUp,
   Receipt,
   ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ const navItems = [
   { label: "Chat Transcripts", to: "/admin/chat-transcripts", icon: MessageSquare },
   { label: "Installations", to: "/admin/installations", icon: CalendarDays },
   { label: "Readiness", to: "/admin/readiness", icon: ShieldCheck },
+  { label: "Launch Safety", to: "/admin/launch-safety", icon: ShieldAlert },
   { label: "Plans", to: "/admin/plans", icon: FileText },
   { label: "Compliance", to: "/admin/compliance", icon: Shield },
   { label: "Audit Log", to: "/admin/audit-log", icon: ScrollText },

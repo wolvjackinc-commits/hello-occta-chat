@@ -1,368 +1,271 @@
-Approved — proceed with Phase G0: Customer/Admin Status Timeline + Notification Readiness, with the corrections below.
+Approved — proceed with Phase H0: Admin Launch Safety Dashboard / System Readiness Audit.
 
-This is visibility-only.
+This phase is read-only visibility only.
 
 Do not start supplier ordering.  
 Do not activate services.  
 Do not create invoices.  
 Do not create DD mandates.  
 Do not trigger provisioning.  
-Do not touch Worldpay/payment logic.  
-Do not mark Phase E complete.  
-Do not send automatic emails.
+Do not change Worldpay/payment logic.  
+Do not send automatic emails.  
+Do not mark Phase E complete.
 
-Phase E webhook sign-off is still blocked until the real Worldpay Live webhook signing secret is obtained and a valid signed webhook marks a payment as paid with `webhook_verified=true`.
+Mandatory corrections before build:
 
-Mandatory correction 1 — customer timeline must use safe data only
+1. Secret masking
 
-Customer timeline must not query broad raw rows if those rows contain internal fields.
+The launch-safety-report edge function must return booleans only.
 
-Use either:
+Allowed:
 
-- existing safe customer RPCs/views, or
-- tightly selected columns only.
+- worldpay_live_mode true/false
+- worldpay_entity_id_present true/false
+- worldpay_api_username_present true/false
+- worldpay_api_password_present true/false
+- worldpay_webhook_secret_present true/false
+- contract_pdfs_bucket_exists true/false
+- supplier_submission_enabled false
 
-Customer timeline must never receive:
+Do not return:
 
-- supplier cost
-- margin
-- supplier internal IDs
-- admin notes
-- raw webhook payload
-- payment_attempts raw_response
-- audit_logs internal detail
-- token_hash
-- provider secrets/references beyond safe payment status
+- API username
+- API password
+- Entity ID value
+- webhook secret
+- Authorization header
+- Worldpay checkout URL secrets
+- customer PII
 
-Inspect network payloads, not just UI.
+2. VAT masking
 
-Mandatory correction 2 — do not invent statuses
+If VAT number is shown, mask it.
 
-Only use statuses that actually exist in the database.
+Allowed:
 
-For quote request stages, map from real statuses such as:
+- VAT active true/false
+- VAT number present true/false
+- masked VAT like `GB*******789`
 
-- new
-- in_review
-- draft_quote_created
-- final_quote_ready
-- contract_summary_generated
-- contract_summary_accepted
+Do not show full VAT number if avoidable.
 
-Do not use `reviewing` or `in_progress` unless those values truly exist.
+Also include a warning if VAT looks like a placeholder/test value.
 
-If a status is missing, show a generic safe milestone based on available timestamps/events.
+3. Webhook status wording
 
-Mandatory correction 3 — notification templates must be draft-only and idempotent
+Even if `WORLDPAY_WEBHOOK_SECRET` is present, do not mark Payment as ready unless there is proof that:
 
-Insert the 8 journey email templates only if they do not already exist.
+- a valid signed webhook marked a test PR paid
+- `webhook_verified=true`
+- amount/currency matched
+- invalid signature/wrong amount was rejected
 
-Use unique keys like:
+Until then, payment card must show:
 
-- journey_quote_received
-- journey_final_quote_ready
-- journey_cs_ready
-- journey_cs_accepted
-- journey_payment_request_ready
-- journey_payment_pending_confirmation
-- journey_payment_received
-- journey_setup_preparation_started
+`Blocked — live signed webhook verification pending`
 
-Required:
+4. No side effects
 
-- status = draft
-- auto_send = false
-- no triggers
-- no cron
-- no automatic sending
-- no customer email sent in Phase G0
+Opening `/admin/launch-safety` must not write anything.
 
-communications_log count must remain unchanged during verification.
+No inserts.  
+No updates.  
+No deletes.  
+No payment state changes.  
+No email sends.  
+No webhook calls.  
+No supplier/service/invoice/DD/provisioning writes.
 
-Mandatory correction 4 — internal notes safety
+5. Counts only, no PII
 
-`journey_internal_notes` must be admin-only.
-
-Customer must never see these notes.
-
-Rules:
-
-- no anon access
-- no customer access
-- admin/staff only
-- audit insert/update
-- delete blocked
-- if edit window exists, it must preserve audit trail
-- notes cannot change business state
-
-Mandatory correction 5 — timeline is read-only
-
-Opening the customer or admin timeline must not mutate business records.
-
-No writes to:
-
-- payment_requests
-- contract_summaries
-- contract_acceptances
-- quotes
-- quote_requests
-- services
-- invoices
-- dd_mandates
-- orders
-- installation_bookings
-- provisioning tables
-- Worldpay/webhook functions
-
-Only allowed write:
-
-- admin manually adding/editing an internal journey note
-- admin previewing draft email templates if existing UI supports preview without sending
-
-Mandatory correction 6 — payment wording
-
-Since Phase E is not fully complete, customer-facing payment wording must be careful.
-
-If `payment_request.status='checkout_created'` and `webhook_verified=false`, show:
-
-“Payment is being confirmed.”
+Audit cards may show counts only.
 
 Do not show:
 
-- Payment received
-- Order processing
-- Supplier order started
-- Service activation started
+- customer names
+- emails
+- phone numbers
+- addresses
+- account numbers
+- payment tokens
+- provider references
+- raw webhook/payment data
 
-Only show “Payment received” when:
+6. Admin-only access
 
-- status = paid
-- webhook_verified = true
-- paid_at is not null
+The page and edge function must be admin-only.
 
-Mandatory correction 7 — admin timeline can show more, but safely
+Required:
 
-Admin timeline may show:
-
-- payment_request status
-- provider reference
-- webhook_verified
-- paid_at
-- payment_request_events summary
-- readiness checklist state
-- draft order pack status
-
-But do not expose raw sensitive webhook/card/payment payloads unless already safely stored and intended for admin diagnostics.
+- ProtectedAdminRoute on frontend
+- edge function verifies JWT
+- edge function checks admin role
+- normal customer blocked
+- anon blocked
 
 Approved build scope:
 
-1. Add customer-safe dashboard timeline.
-2. Add admin journey timeline.
-3. Add admin-only journey_internal_notes.
-4. Add draft-only email templates.
-5. Add next-step copy.
-6. Add admin route `/admin/customers/:id/journey`.
-7. Add timeline in customer Overview/OrdersTimeline.
-8. Confirm no automatic email sending.
-9. Confirm no payment/supplier/service/invoice/DD/provisioning writes.
+- `/admin/launch-safety`
+- readiness cards
+- blocker list
+- go-live warning banner
+- config presence checks
+- masked VAT check
+- safe operational counts
+- sidebar link
+- edge function `launch-safety-report`
 
 Verification required:
 
-A — customer timeline:  
-Use internal test customer/chain.  
-Expected:
+A — admin access:
 
-- shows safe milestones only
-- stops at payment confirming/awaiting verification where appropriate
-- no supplier/internal/payment-secret fields in UI or network payload
+- admin can open `/admin/launch-safety`
+- all cards render
+- banner shown
+- blockers shown
 
-B — admin timeline:  
-Expected:
+B — customer/anon denial:
 
-- shows richer internal journey
-- shows readiness/payment state
-- shows webhook_verified=false where relevant
-- shows Phase E still blocked
+- normal customer blocked
+- anon blocked
+- launch-safety-report denied without admin JWT
 
-C — internal notes:  
-Expected:
+C — secret safety:
 
-- admin can add note
-- audit row written
-- customer cannot see note
-- delete blocked
+- network payload contains no secret values
+- only booleans/masked values
 
-D — email templates:  
-Expected:
+D — card accuracy:
 
-- 8 templates exist
-- draft/manual only
-- auto_send=false
-- no communications_log increase
-- no email sent
+- Quote Capture ready
+- Account Linking ready
+- Quote Approval ready
+- Contract Summary ready
+- Payment blocked
+- Provisioning Readiness prepared but locked
+- Supplier Ordering locked
+- Service Activation locked
+- Billing/Invoices/DD locked
+- Communications draft-only
 
-E — RLS:  
-Expected:
+E — no side effects:  
+Before/after counts unchanged for:
 
-- wrong customer cannot see another customer journey
-- anon cannot list data
-- non-admin cannot access admin journey or notes
-
-F — zero downstream artefacts:  
-Confirm no new:
-
-- supplier orders
+- payment_requests
+- orders
 - services
 - invoices
-- DD mandates
-- provisioning rows
-- payment status changes
-- Worldpay/webhook changes
-- automatic emails
+- dd_mandates
+- installation_bookings
+- communications_log
+- provisioning_readiness
+- draft_order_packs
 
-G — build:  
-Run:
+F — build:
 
-- TypeScript
-- Vite production build
+- TypeScript passes
+- Vite production build passes
 
 Final report must include:
 
-- audit findings
 - files changed
-- migration details
-- customer timeline result
-- admin timeline result
-- internal notes result
-- draft template result
-- no auto-email result
-- RLS/wrong-user/anon result
-- network payload safety result
+- edge function result
+- readiness cards result
+- blocker list result
+- config checks result
+- secret masking result
+- admin-only access result
+- customer/anon denial result
+- no-side-effect result
 - no downstream artefacts result
 - TypeScript/build result
-- confirmation Phase E webhook remains the blocker before supplier ordering  
-Phase G0 — Customer/Admin Status Timeline + Notification Readiness
+- confirmation that Phase E webhook remains the blocker before supplier-order planning  
+  
+Phase H0 — Admin Launch Safety Dashboard
 
-Visibility-only phase. No supplier orders, services, invoices, DD mandates, provisioning, Worldpay/webhook changes, automatic emails, or payment-status writes. Phase E webhook sign-off remains blocked.
+Read-only, admin-only visibility page that aggregates operational readiness, configuration checks, blockers, and audit counts. No writes, no emails, no payment/supplier/service changes. Phase E webhook remains the gating blocker.
 
-### Part 1 — Audit findings (existing, reusable)
+## Scope
 
-Already in DB / code, reused as the source of truth:
+- Adds one admin page `/admin/launch-safety`.
+- Adds one Supabase Edge Function `launch-safety-report` for safe config/secret presence checks (returns booleans only).
+- No DB migration, no schema change, no business state writes.
 
-- `quote_requests`, `quotes`, `quote_events` — quote lifecycle events
-- `contract_summaries`, `contract_acceptances` — CS issuance/acceptance (+ `pdf_sha256`)
-- `payment_requests`, `payment_request_events`, `payment_attempts` — payment lifecycle
-- `provisioning_readiness`, `draft_order_packs` (Phase F0) — admin readiness state
-- `activity_log` (rich, per-entity) + `audit_logs` (admin actions) — event history
-- `communications_log` — email send/delivery log
-- `email_templates` table + `send-transactional-email` edge function — manual-send infra
-- UI: `src/components/dashboard/tabs/OrdersTimelineTab.tsx` (customer), `src/pages/admin/Readiness.tsx` (admin), `CustomerCommunicationsTimeline.tsx`, `OrderTracking.tsx`
+## Part 1 — New files
 
-Gaps: no admin event-stream view per customer/PR; no internal-notes table scoped to a PR/order journey; notification template drafts for the 8 G0 milestones don't exist; existing customer timeline is hard-coded to one order row and doesn't include payment_request / readiness milestones; nothing exposes "next step" copy.
+- `src/pages/admin/LaunchSafety.tsx` — page shell, cards, banner, blocker list, counts. Wrapped by existing `ProtectedAdminRoute` via App.tsx route registration.
+- `src/components/admin/launch/ReadinessCard.tsx` — small card primitive (title, status pill: ready / blocked / locked / draft-only / prepared, bullet facts).
+- `src/components/admin/launch/BlockerList.tsx` — hard-blocker list.
+- `src/components/admin/launch/GoLiveBanner.tsx` — "safe for controlled testing only" banner.
+- `src/lib/launchSafety/checks.ts` — pure derivation helpers (statuses + labels). No DB writes.
+- `supabase/functions/launch-safety-report/index.ts` — admin-gated edge function (verifies JWT + `has_role(...,'admin')`). Returns:
+  - `worldpay_live_mode`: boolean (from `WORLDPAY_LIVE_MODE`)
+  - `worldpay_entity_id_present`, `worldpay_api_username_present`, `worldpay_api_password_present`, `worldpay_webhook_secret_present`: booleans
+  - `expected_webhook_url`: fixed string
+  - `contract_pdfs_bucket_exists`: boolean (storage.list bucket)
+  - `supplier_submission_enabled`: false (mirrors `SUPPLIER_SUBMISSION_ENABLED`)
+  - No secret values ever returned.
 
-### Part 2 — Customer journey timeline (read-only)
+## Part 2 — Edited files
 
-New component `src/components/dashboard/CustomerJourneyTimeline.tsx`, mounted in `OverviewTab` and replacing the body of `OrdersTimelineTab`. Derives milestones from existing rows only:
+- `src/App.tsx` — lazy route `<Route path="launch-safety" element={<LaunchSafety/>}/>` inside the existing admin protected branch.
+- `src/components/admin/layout/AdminLayout.tsx` — add sidebar link "Launch Safety" (admin only, already gated).
+
+## Part 3 — Data sources (read-only)
+
+Counts via `supabase.from(...).select('id', { count: 'exact', head: true })` against:
+
+- `quote_requests`
+- `quotes` filtered `status in ('approved','sent')`
+- `contract_acceptances`
+- `payment_requests`
+- `payment_requests` filtered `status='paid' AND webhook_verified=true AND paid_at IS NOT NULL`
+- `provisioning_readiness`
+- `draft_order_packs`
+- `services`, `invoices`, `dd_mandates`
+
+Latest/most-recent for Quote Capture card: `quote_requests` max `created_at`. VAT info via existing `usePlatformSettings()` (`vatActive`, masked VAT number — only show last 4 chars). No PII columns selected.
+
+## Part 4 — Card statuses (hard-coded business truth this phase)
 
 
-| Milestone                  | Source                                                                            |
-| -------------------------- | --------------------------------------------------------------------------------- |
-| Quote request received     | `quote_requests.created_at`                                                       |
-| Quote being reviewed       | `quote_requests.status in ('reviewing','in_progress')`                            |
-| Final quote ready          | `quotes.status in ('sent','approved')`                                            |
-| Contract Summary generated | `contract_summaries.issued_at`                                                    |
-| Contract Summary accepted  | `contract_acceptances.accepted_at`                                                |
-| Payment request created    | `payment_requests.created_at`                                                     |
-| Awaiting payment           | `payment_requests.status='pending'`                                               |
-| Payment being confirmed    | `status='checkout_created'` AND `webhook_verified=false`                          |
-| Payment received           | `status='paid'` AND `webhook_verified=true` AND `paid_at IS NOT NULL`             |
-| Preparing your setup       | `provisioning_readiness.status='admin_review_complete'`                           |
-| Supplier order pending     | `draft_order_packs` row exists (always tagged "Supplier order not yet submitted") |
+| Card                    | Status              | Source                              |
+| ----------------------- | ------------------- | ----------------------------------- |
+| Quote Capture           | ready               | count + last date                   |
+| Account Linking         | ready               | static facts                        |
+| Quote Approval          | ready               | static (margin guard live)          |
+| Contract Summary        | ready               | bucket check + counts               |
+| Payment                 | blocked             | Phase E pending                     |
+| Provisioning Readiness  | prepared but locked | `SUPPLIER_SUBMISSION_ENABLED=false` |
+| Supplier Ordering       | locked              | not built                           |
+| Service Activation      | locked              | not built                           |
+| Billing / Invoices / DD | locked              | not built                           |
+| Communications          | draft-only          | journey templates `auto_send=false` |
 
 
-Customer-safe rule: query only the columns above. Never read supplier cost, margin, supplier IDs, admin notes, webhook payload, error logs, or `payment_attempts.raw_response`. With Phase E blocked, real chains will visibly stop at "Payment being confirmed" — copy includes a calm "Next step: we're waiting on the bank to confirm your payment" message.
+## Part 5 — Hard blockers list (static)
 
-### Part 3 — Admin journey timeline
+Real Live Worldpay webhook signing secret · valid signed webhook PR transition · invalid webhook/wrong amount rejection · supplier order phase · service activation phase · billing/DD/invoice automation.
 
-New page `src/pages/admin/CustomerJourney.tsx` (route `/admin/customers/:id/journey`, also embedded as a tab inside `CustomerDetail`). Fuller stream built by merging, in time order:
+## Part 6 — Banner
 
-- `quote_events` (request → reviewed → sent → approved)
-- `quote_margin_checks` (floor/margin guard summary — pass/fail only, no margin %)
-- `contract_summaries` row + `contract_acceptances` (incl. `pdf_sha256` short hash)
-- `payment_requests` row, `payment_request_events`, `payment_attempts` summaries (status only)
-- `provisioning_readiness` checklist state
-- `draft_order_packs` versions
-- `journey_internal_notes` (Part 5)
-- `audit_logs` filtered to entity
+Fixed copy: "OCCTA is safe for controlled quote/contract/payment-page testing only. It is not yet safe for full live customer provisioning."
 
-No new business state — purely a SELECT-and-merge view component.
+## Part 7 — Security
 
-### Part 4 — Notification template drafts
+- Page wrapped by existing `ProtectedAdminRoute`.
+- Edge function: verify `Authorization` Bearer JWT → `auth.getUser()` → `has_role(user.id,'admin')`; deny otherwise. CORS headers per project standard.
+- No secret values returned, only `*_present` booleans.
+- No PII fields selected anywhere on this page.
 
-Insert 8 rows into existing `email_templates` table with `status='draft'` and `auto_send=false` (add `auto_send boolean default false` column if missing). Templates: `journey_quote_received`, `journey_final_quote_ready`, `journey_cs_ready`, `journey_cs_accepted`, `journey_payment_request_ready`, `journey_payment_pending_confirmation`, `journey_payment_received`, `journey_setup_preparation_started`. Each has subject + body + declared variables + `channel='email'`, customer-safe copy, brutalist aesthetic, escaped via existing `escapeHtml()`. No trigger wiring, no cron, no automatic invocation — admins can preview only in this phase. Admin templates page already exists (`Communications` → Templates) and will list them.
+## Part 8 — Verification
 
-### Part 5 — Admin manual internal notes
+- Admin opens `/admin/launch-safety` → all cards render, banner shown, blockers shown, counts shown.
+- Customer + anon hit page → access denied (existing `ProtectedAdminRoute`).
+- Network payload inspection: no secret values; only booleans + counts.
+- Zero-delta check: before/after row counts unchanged on `services`, `invoices`, `dd_mandates`, `payment_requests`, `orders`, `installation_bookings`, `communications_log`.
+- `tsc --noEmit` + Vite build pass.
 
-New table `public.journey_internal_notes`:
+## Explicitly NOT touched
 
-```text
-id uuid pk
-customer_id uuid not null
-payment_request_id uuid null
-quote_id uuid null
-contract_summary_id uuid null
-author_user_id uuid not null            -- admin who wrote it
-body text not null                       -- max 4000 chars
-created_at timestamptz default now()
-```
-
-GRANT: `authenticated` select/insert/update gated by `has_role(auth.uid(),'admin')`; `service_role` all; no `anon`. RLS: admin-only for all operations. Append-only update window of 15 minutes; deletes blocked by trigger. Every insert/update is mirrored into `audit_logs`. Never selected by customer queries. Rendered only in the admin journey view.
-
-### Part 6 — Source of truth
-
-The customer and admin timelines are pure read views over existing rows + the new notes table. No trigger writes to `services`, `invoices`, `dd_mandates`, `orders`, `installation_bookings`, `payment_requests`, or Worldpay tables. No status-flip side effects.
-
-### Part 7 — RLS / security
-
-- Customer timeline queries filter by `auth.uid()` (or own email for guest-linked `quote_requests`); existing RLS on `quote_requests`, `quotes`, `contract_summaries`, `payment_requests`, `contract_acceptances` already enforces self-only.
-- Admin journey page wrapped in `ProtectedAdminRoute` + server-side `has_role(...,'admin')` checks on `journey_internal_notes`.
-- `anon` cannot read any timeline table; no anon GRANT on the new notes table.
-- Cross-customer probe test: signed-in user requesting another `customer_id` must return 0 rows.
-
-### Part 8 — Verification
-
-- Manual QA against `CS-2606-4c6c38a4` / `PR-2606-LIVE1`: customer view stops at "Payment being confirmed"; admin view shows readiness checklist + webhook_verified=false + paid_at=null.
-- Zero-delta queries before/after on `services`, `invoices`, `dd_mandates`, `orders`, `installation_bookings`, `payment_requests` to prove no writes.
-- `communications_log` count unchanged (no auto-sent emails).
-- Cross-tenant + anon denial test.
-
-### Part 9 — Build checks
-
-TypeScript + Vite production build via the harness.
-
-### Files / migrations
-
-Migration (one):
-
-- `CREATE TABLE public.journey_internal_notes` + GRANTs + RLS policies + append-only triggers + audit-mirror trigger.
-- Optional `ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS auto_send boolean DEFAULT false`.
-- 8 `INSERT` rows into `email_templates` (status='draft', auto_send=false). (Run via insert tool after migration.)
-
-New files:
-
-- `src/lib/journey/milestones.ts` — pure derivation logic + customer-safe field whitelist + "next step" copy map.
-- `src/components/dashboard/CustomerJourneyTimeline.tsx`
-- `src/components/admin/AdminJourneyTimeline.tsx`
-- `src/components/admin/JourneyInternalNotes.tsx`
-- `src/pages/admin/CustomerJourney.tsx` + route in `App.tsx` and link from `CustomerDetail`
-
-Edited files:
-
-- `src/components/dashboard/tabs/OrdersTimelineTab.tsx` (replace body with new shared component)
-- `src/components/dashboard/tabs/OverviewTab.tsx` (mount the new timeline card)
-- `src/pages/admin/CustomerDetail.tsx` (add "Journey" tab/link)
-- `src/App.tsx` (admin route)
-
-### Explicitly NOT touched
-
-Worldpay edge functions, `payment_requests` writes, billing automation, supplier APIs, `services`/`invoices`/`dd_mandates`/`orders`/`installation_bookings`, auto-email triggers, cron schedules, Phase E webhook secret. Phase E remains blocked; nothing in this phase can flip a chain past "Payment being confirmed".
+Worldpay edge functions, payment_requests writes, billing, supplier APIs, services/invoices/dd_mandates/orders/installation_bookings, auto-email triggers, cron, Phase E webhook secret. Phase E remains the sole payment blocker before supplier-order planning.

@@ -163,21 +163,57 @@ Deno.serve(async (req) => {
 
   if (!cs) return jsonResponse({ error: "not_found" }, 404);
 
-  // If PDF already stored, just re-sign and return (immutability after acceptance, and avoid wasted work).
+  // IMMUTABILITY: once a PDF exists, it is the single source of truth.
+  // Never regenerate, never overwrite — only re-sign. Applies to all callers
+  // including service-role / staff / internal.
   let storageKey: string | null = cs.pdf_storage_key ?? null;
   let sha: string | null = cs.pdf_sha256 ?? null;
+  let reused = false;
 
-  if (!storageKey) {
-    // Generate fresh
+  if (storageKey) {
+    reused = true;
+    // Audit reuse via log_event RPC (best-effort)
+    try {
+      await supabase.rpc("log_event", {
+        _actor_type: internal ? "system" : (actorId ? "user" : "anon"),
+        _event_type: "contract_pdf_existing_reused",
+        _title: "Existing Contract Summary PDF reused (no regeneration)",
+        _details: { pdf_storage_key: storageKey, pdf_sha256: sha, cs_status: cs.status },
+        _customer_id: cs.customer_id ?? null,
+        _contract_summary_id: cs.id,
+        _source_module: "contract_summaries",
+        _severity: "info",
+      });
+    } catch (_) { /* noop */ }
+  } else {
+    // HARD BLOCK: an accepted CS must already have a PDF.
+    // Never silently create legal evidence after acceptance.
+    if (cs.status === "accepted") {
+      return jsonResponse({
+        error: "accepted_cs_missing_pdf",
+        details: "Accepted Contract Summary has no stored PDF. Admin investigation required; refusing to generate replacement evidence.",
+        contract_summary_id: cs.id,
+      }, 409);
+    }
+
+    // First-time generation (status: draft/issued/viewed)
     const bytes = renderPdf(cs);
     sha = await sha256HexFromBytes(bytes);
     const customerId = cs.customer_id ?? "anon";
     storageKey = `${customerId}/${cs.id}/v${cs.version}.pdf`;
     const up = await supabase.storage.from(BUCKET).upload(storageKey, bytes, {
       contentType: "application/pdf",
-      upsert: false,
+      upsert: false, // never overwrite
     });
-    if (up.error && !/already exists/i.test(up.error.message)) {
+    if (up.error) {
+      // If the object already exists in storage but CS row missing the key, treat as inconsistency — do NOT overwrite.
+      if (/already exists|duplicate/i.test(up.error.message)) {
+        return jsonResponse({
+          error: "storage_object_exists_without_db_link",
+          details: "Storage object already exists for this CS but pdf_storage_key is null. Refusing to overwrite. Admin investigation required.",
+          contract_summary_id: cs.id,
+        }, 409);
+      }
       return jsonResponse({ error: "upload_failed", details: up.error.message }, 500);
     }
     await supabase.from("contract_summaries").update({
@@ -186,6 +222,19 @@ Deno.serve(async (req) => {
       pdf_generated_at: new Date().toISOString(),
       pdf_generated_by: actorId,
     }).eq("id", cs.id);
+
+    try {
+      await supabase.rpc("log_event", {
+        _actor_type: internal ? "system" : (actorId ? "user" : "anon"),
+        _event_type: "contract_pdf_generated",
+        _title: "Contract Summary PDF generated (first time)",
+        _details: { pdf_storage_key: storageKey, pdf_sha256: sha, cs_status: cs.status },
+        _customer_id: cs.customer_id ?? null,
+        _contract_summary_id: cs.id,
+        _source_module: "contract_summaries",
+        _severity: "info",
+      });
+    } catch (_) { /* noop */ }
   }
 
   const { data: signed, error: sErr } = await supabase.storage.from(BUCKET).createSignedUrl(storageKey!, SIGNED_URL_TTL);
@@ -193,6 +242,7 @@ Deno.serve(async (req) => {
 
   return jsonResponse({
     ok: true,
+    reused,
     signed_url: signed.signedUrl,
     pdf_storage_key: storageKey,
     pdf_sha256: sha,

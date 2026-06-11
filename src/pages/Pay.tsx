@@ -585,6 +585,33 @@ export default function Pay() {
             </p>
           </div>
 
+          {paymentData.cs && (
+            <div className="border-4 border-foreground p-4 mb-4 bg-muted/40">
+              <p className="text-sm font-semibold mb-2">Your Contract Summary has been accepted.</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Payment is required before we process your order.
+              </p>
+              <div className="space-y-1 text-sm">
+                {paymentData.cs.cs_number && (
+                  <div className="flex justify-between"><span className="text-muted-foreground">CS Reference</span><span className="font-mono">{paymentData.cs.cs_number}</span></div>
+                )}
+                {paymentData.cs.plan_name && (
+                  <div className="flex justify-between"><span className="text-muted-foreground">Plan</span><span>{paymentData.cs.plan_name}</span></div>
+                )}
+                {paymentData.payment_request_number && (
+                  <div className="flex justify-between"><span className="text-muted-foreground">Payment Ref</span><span className="font-mono">{paymentData.payment_request_number}</span></div>
+                )}
+              </div>
+              <div className="mt-3 pt-3 border-t-2 border-foreground space-y-1 text-xs">
+                {Number(paymentData.cs.setup_charge || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Setup</span><span>£{Number(paymentData.cs.setup_charge).toFixed(2)}</span></div>}
+                {Number(paymentData.cs.router_charge || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Router</span><span>£{Number(paymentData.cs.router_charge).toFixed(2)}</span></div>}
+                {Number(paymentData.cs.delivery_charge || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>£{Number(paymentData.cs.delivery_charge).toFixed(2)}</span></div>}
+                {Number(paymentData.cs.installation_charge || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Installation</span><span>£{Number(paymentData.cs.installation_charge).toFixed(2)}</span></div>}
+                {Number(paymentData.cs.monthly_price_incl_vat || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">First month</span><span>£{Number(paymentData.cs.monthly_price_incl_vat).toFixed(2)}</span></div>}
+              </div>
+            </div>
+          )}
+
           <div className="border-4 border-foreground p-4 mb-6">
             <div className="space-y-3">
               <div className="flex justify-between">

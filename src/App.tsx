@@ -89,6 +89,7 @@ import { AdminKnowledgeBase } from "./pages/admin/KnowledgeBase";
 import { AdminFairPricing } from "./pages/admin/FairPricing";
 import { AdminSuppliersGiacomImport } from "./pages/admin/SuppliersGiacomImport";
 import { AdminReadiness } from "./pages/admin/Readiness";
+import AdminCustomerJourney from "./pages/admin/CustomerJourney";
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -141,6 +142,7 @@ const AnimatedRoutes = () => {
             <Route path="overview" element={<AdminOverview />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="customers/:accountNumber" element={<AdminCustomerDetail />} />
+            <Route path="customers/:accountNumber/journey" element={<AdminCustomerJourney />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="tickets" element={<AdminTickets />} />
             <Route path="billing" element={<AdminBilling />} />

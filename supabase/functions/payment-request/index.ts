@@ -423,7 +423,11 @@ serve(async (req) => {
           .from('payment_requests')
           .update({ 
             provider: 'worldpay',
-            provider_reference: transactionRef 
+            provider_reference: transactionRef,
+            provider_checkout_url: checkoutUrl,
+            provider_session_id: result?._links?.self?.href ?? null,
+            // For CS-linked rows, advance to checkout_created. Legacy invoice rows keep prior status.
+            ...(request.contract_summary_id ? { status: 'checkout_created' } : {}),
           })
           .eq('id', request.id);
 

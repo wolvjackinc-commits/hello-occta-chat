@@ -36,17 +36,26 @@ Deno.serve(async (req) => {
   const acceptedAt = new Date().toISOString();
   const ua = req.headers.get("user-agent")?.slice(0, 400) ?? null;
 
-  // Insert acceptance (append-only)
+  // Insert acceptance (append-only) with full Phase D vault snapshot
   const { error: aErr } = await supabase.from("contract_acceptances").insert({
     contract_summary_id: cs.id,
     quote_id: cs.quote_id,
+    quote_request_id: cs.quote_request_id,
     customer_id: cs.customer_id,
     accepted_by_name: i.accepted_by_name,
     accepted_by_email: i.accepted_by_email,
+    accepted_by_user: cs.customer_id,
     accepted_at: acceptedAt,
     ip, user_agent: ua,
     acceptance_text: ACCEPTANCE_CHECKBOX_TEXT,
+    acceptance_text_version: cs.terms_version,
     checkbox_confirmed: true,
+    cs_version: cs.version,
+    terms_version: cs.terms_version,
+    privacy_version: cs.privacy_version,
+    pdf_storage_key: cs.pdf_storage_key,
+    pdf_sha256: cs.pdf_sha256,
+    account_number: cs.account_number,
   });
   if (aErr) return jsonResponse({ error: "accept_failed", details: aErr.message }, 500);
 
@@ -59,8 +68,8 @@ Deno.serve(async (req) => {
   }).eq("id", cs.id);
   if (csErr) return jsonResponse({ error: "cs_update_failed", details: csErr.message }, 500);
 
-  await supabase.from("quotes").update({ status: "accepted" }).eq("id", cs.quote_id);
-  await supabase.from("quote_requests").update({ status: "converted" }).eq("id", cs.quote_request_id);
+  await supabase.from("quotes").update({ status: "contract_summary_accepted" }).eq("id", cs.quote_id);
+  await supabase.from("quote_requests").update({ status: "contract_summary_accepted", updated_at: acceptedAt }).eq("id", cs.quote_request_id);
 
   await supabase.rpc("log_event", {
     _actor_type: "public", _event_type: "contract_summary_accepted",

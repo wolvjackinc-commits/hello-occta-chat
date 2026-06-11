@@ -190,7 +190,7 @@ serve(async (req) => {
 
         const { data: request, error } = await supabase
           .from('payment_requests')
-          .select('id, amount, currency, customer_name, customer_email, account_number, invoice_id, due_date, status, expires_at, type, user_id')
+          .select('id, amount, currency, customer_name, customer_email, account_number, invoice_id, due_date, status, expires_at, type, user_id, contract_summary_id, contract_acceptance_id, payment_request_number, webhook_verified, paid_at')
           .eq('token_hash', tokenHash)
           .eq('type', type)
           .single();
@@ -262,10 +262,22 @@ serve(async (req) => {
           invoiceNumber = invoice?.invoice_number;
         }
 
+        // Get CS-safe context if CS-linked (customer-safe fields only)
+        let csContext: any = null;
+        if (request.contract_summary_id) {
+          const { data: cs } = await supabase
+            .from('contract_summaries')
+            .select('cs_number, plan_name, monthly_price_incl_vat, setup_charge, router_charge, delivery_charge, installation_charge, contract_length, customer_type')
+            .eq('id', request.contract_summary_id)
+            .single();
+          if (cs) csContext = cs;
+        }
+
         return new Response(JSON.stringify({
           success: true,
           request: {
             id: request.id,
+            payment_request_number: request.payment_request_number,
             amount: request.amount,
             currency: request.currency,
             customer_name: request.customer_name,
@@ -276,6 +288,8 @@ serve(async (req) => {
             status: request.status,
             expires_at: request.expires_at,
             user_id: request.user_id,
+            contract_summary_id: request.contract_summary_id,
+            cs: csContext,
           },
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

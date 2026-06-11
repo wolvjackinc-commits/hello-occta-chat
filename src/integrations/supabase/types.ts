@@ -907,44 +907,71 @@ export type Database = {
       contract_acceptances: {
         Row: {
           acceptance_text: string
+          acceptance_text_version: string | null
           accepted_at: string
           accepted_by_email: string
           accepted_by_name: string
+          accepted_by_user: string | null
+          account_number: string | null
           checkbox_confirmed: boolean
           contract_summary_id: string
           created_at: string
+          cs_version: number | null
           customer_id: string | null
           id: string
           ip: string | null
+          pdf_sha256: string | null
+          pdf_storage_key: string | null
+          privacy_version: string | null
           quote_id: string
+          quote_request_id: string | null
+          terms_version: string | null
           user_agent: string | null
         }
         Insert: {
           acceptance_text: string
+          acceptance_text_version?: string | null
           accepted_at?: string
           accepted_by_email: string
           accepted_by_name: string
+          accepted_by_user?: string | null
+          account_number?: string | null
           checkbox_confirmed: boolean
           contract_summary_id: string
           created_at?: string
+          cs_version?: number | null
           customer_id?: string | null
           id?: string
           ip?: string | null
+          pdf_sha256?: string | null
+          pdf_storage_key?: string | null
+          privacy_version?: string | null
           quote_id: string
+          quote_request_id?: string | null
+          terms_version?: string | null
           user_agent?: string | null
         }
         Update: {
           acceptance_text?: string
+          acceptance_text_version?: string | null
           accepted_at?: string
           accepted_by_email?: string
           accepted_by_name?: string
+          accepted_by_user?: string | null
+          account_number?: string | null
           checkbox_confirmed?: boolean
           contract_summary_id?: string
           created_at?: string
+          cs_version?: number | null
           customer_id?: string | null
           id?: string
           ip?: string | null
+          pdf_sha256?: string | null
+          pdf_storage_key?: string | null
+          privacy_version?: string | null
           quote_id?: string
+          quote_request_id?: string | null
+          terms_version?: string | null
           user_agent?: string | null
         }
         Relationships: [
@@ -1037,6 +1064,7 @@ export type Database = {
           accepted_at: string | null
           accepted_ip: string | null
           accepted_user_agent: string | null
+          account_number: string | null
           business_monthly_ex_vat: number | null
           business_monthly_incl_vat: number | null
           cease_cancellation_charges: string | null
@@ -1060,6 +1088,10 @@ export type Database = {
           notice_period: string
           one_off_charges_json: Json
           payment_schedule: string
+          pdf_generated_at: string | null
+          pdf_generated_by: string | null
+          pdf_sha256: string | null
+          pdf_storage_key: string | null
           pdf_url: string | null
           plan_name: string
           plan_term: string | null
@@ -1089,6 +1121,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_ip?: string | null
           accepted_user_agent?: string | null
+          account_number?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null
           cease_cancellation_charges?: string | null
@@ -1112,6 +1145,10 @@ export type Database = {
           notice_period: string
           one_off_charges_json?: Json
           payment_schedule: string
+          pdf_generated_at?: string | null
+          pdf_generated_by?: string | null
+          pdf_sha256?: string | null
+          pdf_storage_key?: string | null
           pdf_url?: string | null
           plan_name: string
           plan_term?: string | null
@@ -1141,6 +1178,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_ip?: string | null
           accepted_user_agent?: string | null
+          account_number?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null
           cease_cancellation_charges?: string | null
@@ -1164,6 +1202,10 @@ export type Database = {
           notice_period?: string
           one_off_charges_json?: Json
           payment_schedule?: string
+          pdf_generated_at?: string | null
+          pdf_generated_by?: string | null
+          pdf_sha256?: string | null
+          pdf_storage_key?: string | null
           pdf_url?: string | null
           plan_name?: string
           plan_term?: string | null
@@ -4179,6 +4221,16 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["reward_unlock_rule"]
       }
+      customer_accept_contract_summary: {
+        Args: {
+          _acceptance_text: string
+          _checkbox_confirmed: boolean
+          _cs_id: string
+          _ip: string
+          _user_agent: string
+        }
+        Returns: Json
+      }
       customer_add_ticket_message: {
         Args: { _message: string; _ticket_id: string }
         Returns: string
@@ -4267,6 +4319,65 @@ export type Database = {
           six_week_adr_eligible_at: string
           status: string
           summary: string
+        }[]
+      }
+      get_customer_contract_summary_acceptance: {
+        Args: { _cs_id: string }
+        Returns: {
+          acceptance_text: string
+          accepted_at: string
+          accepted_by_email: string
+          accepted_by_name: string
+          contract_summary_id: string
+          cs_version: number
+          id: string
+          pdf_sha256: string
+          privacy_version: string
+          terms_version: string
+        }[]
+      }
+      get_customer_contract_summary_by_id: {
+        Args: { _id: string }
+        Returns: {
+          accepted_at: string
+          account_number: string
+          business_monthly_ex_vat: number
+          business_monthly_incl_vat: number
+          cease_cancellation_charges: string
+          complaints_adr_info: string
+          contract_length: string
+          cs_number: string
+          customer_email_snapshot: string
+          customer_name_snapshot: string
+          customer_type: string
+          delivery_charge: number
+          digital_voice_warning: string
+          estimated_download_speed: number
+          estimated_upload_speed: number
+          id: string
+          installation_charge: number
+          issued_at: string
+          monthly_price_incl_vat: number
+          notice_period: string
+          one_off_charges_json: Json
+          payment_schedule: string
+          pdf_sha256: string
+          pdf_storage_key: string
+          plan_name: string
+          plan_type: string
+          price_rise_policy: string
+          privacy_version: string
+          quote_id: string
+          quote_request_id: string
+          router_charge: number
+          service_address: string
+          service_type: string
+          setup_charge: number
+          speed_notes: string
+          status: string
+          terms_version: string
+          version: number
+          vulnerable_customer_note: string
         }[]
       }
       get_customer_points_ledger: {
@@ -4661,6 +4772,8 @@ export type Database = {
         | "draft_quote_created"
         | "final_quote_ready"
         | "closed"
+        | "contract_summary_generated"
+        | "contract_summary_accepted"
       quote_status_kind:
         | "draft"
         | "sent"
@@ -4670,6 +4783,8 @@ export type Database = {
         | "expired"
         | "converted"
         | "approved"
+        | "contract_summary_generated"
+        | "contract_summary_accepted"
       referral_code_status: "active" | "paused" | "expired" | "blocked"
       referral_event_type:
         | "clicked"
@@ -4969,6 +5084,8 @@ export const Constants = {
         "draft_quote_created",
         "final_quote_ready",
         "closed",
+        "contract_summary_generated",
+        "contract_summary_accepted",
       ],
       quote_status_kind: [
         "draft",
@@ -4979,6 +5096,8 @@ export const Constants = {
         "expired",
         "converted",
         "approved",
+        "contract_summary_generated",
+        "contract_summary_accepted",
       ],
       referral_code_status: ["active", "paused", "expired", "blocked"],
       referral_event_type: [

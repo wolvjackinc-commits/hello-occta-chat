@@ -1,620 +1,314 @@
-Approved — proceed with Phase 7 / Phase E: Payment Readiness After Contract Summary Acceptance, with the corrections below.
+Approved — proceed with Phase F0: Post-Payment Readiness Pack / Admin Provisioning Checklist, with the corrections below.
 
-This phase is payment readiness only.
+This is preparation only.
 
-Do not create supplier orders.  
+Do not start supplier ordering.  
+Do not submit supplier orders.  
 Do not activate services.  
 Do not create live telecom orders.  
 Do not create DD mandates.  
-Do not create services.  
 Do not trigger provisioning.  
-Do not touch supplier ordering, service activation, billing automation, rewards, campaigns, complaints, finance exports or AI chat.
+Do not create invoices.  
+Do not touch Worldpay/payment logic.  
+Do not mark Phase E complete.
 
-Keep `/pay-invoice` and the legacy `worldpay-payment` invoice flow untouched unless a bug is found directly related to this phase.
+Current blocker:  
+Phase E is still on hold until the real Worldpay Live webhook signing secret is obtained and a valid signed webhook marks a payment as paid with `webhook_verified=true`.
 
-Current verified state:
+Therefore, Phase F0 must only prepare admin readiness views and must not allow any real progression beyond readiness display.
 
-- Phase B complete.
-- Phase C complete.
-- Phase D fully closed.
-- Contract Summary is generated, PDF stored, accepted, immutable, and customer acceptance is recorded.
-- Accepted PDF cannot be overwritten.
-- No downstream order/payment/invoice/DD/service/supplier-order artefacts were created.
+Mandatory correction 1 — DB-level draft pack guard
 
-Build Phase E with these mandatory corrections.
+Do not rely only on frontend checklist logic.
 
-Correction 1 — audit existing payment status values before adding constraint
+Add a DB-level guard/trigger on `draft_order_packs` insert.
 
-Before adding a status CHECK/trigger, query existing `payment_requests.status` values.
+Draft Order Pack insertion must require:
 
-Do not break old/legacy payment requests.
-
-If existing statuses are outside:  
-draft, pending, checkout_created, paid, failed, cancelled, expired
-
-Then either:
-
-- migrate/map old statuses safely, or
-- allow legacy statuses only for non-CS-linked records, or
-- use a controlled trigger only for new CS-linked payment requests.
-
-Do not deploy a constraint that breaks `/pay`, `/pay-invoice`, old payment links, admin lists, or existing records.
-
-Correction 2 — CS-linked payment only after accepted Contract Summary
-
-For new CS-linked payment requests, require:
-
+- payment_request exists
+- payment_request.status = `paid`
+- payment_request.webhook_verified = true
+- payment_request.paid_at is not null
 - contract_summary.status = accepted
+- contract_acceptance row exists
+- accepted PDF exists with pdf_storage_key and pdf_sha256
 - quote.status = contract_summary_accepted
 - quote_request.status = contract_summary_accepted
-- contract_acceptance row exists
-- accepted PDF has pdf_storage_key and pdf_sha256
-- customer_id exists
-- account_number exists where available
-- no active duplicate payment request for the same accepted CS
 
-Active duplicate statuses:  
-pending, checkout_created, paid
+If these do not pass:
 
-Also include draft if draft payment requests are used in this project.
+- block insert
+- return clear error:  
+`verified payment required before draft order pack generation`
 
-If these checks fail:
+Because Phase E is not fully complete, current live/internal records should not be able to generate a Draft Order Pack.
 
-- block creation
-- return clear error
-- do not create checkout/session/payment link
+Mandatory correction 2 — append-only draft packs
 
-Correction 3 — amount must come from accepted CS snapshot
+`draft_order_packs` should be append-only.
 
-Payment amount must be derived from the accepted Contract Summary customer-facing values.
+- admins can INSERT
+- admins can SELECT
+- no UPDATE
+- no DELETE
+- service_role only for controlled maintenance if needed
+- version increments per payment_request_id
 
-Use the CS/accepted quote snapshot for:
+If a pack must change later, create a new version. Do not silently edit old packs.
 
-- first month
-- setup/install
-- router
-- delivery
-- one-off charges
-- VAT/customer totals
+Mandatory correction 3 — admin-only RLS
 
-Do not use supplier costs.  
-Do not use margin.  
-Do not recalculate from live supplier product.  
-Do not allow accidental admin undercharge.
+Use the project’s existing staff/admin helper consistently.
 
-If admin override is allowed:
-
-- require explicit amount_override reason
-- audit log required
-- show difference from CS amount
-- do not allow customer-facing amount to be lower than accepted CS without senior override
-
-Correction 4 — minor units and currency safety
-
-Store/submit provider amount using minor units where provider requires it.
-
-Verify:
-
-- decimal precision
-- GBP currency
-- amount sent to Worldpay equals payment_request.amount
-- webhook amount/currency exactly match the payment_request before marking paid
-
-No floating-point rounding mistakes.
-
-Correction 5 — tokenised `/pay/:token` safety
-
-The `/pay/:token` route can remain tokenised, but must be safe.
+If the project uses `is_staff(auth.uid())`, use that.  
+If it uses `has_role(auth.uid(),'admin')`, confirm it includes the intended admin/staff roles.
 
 Required:
 
-- token stored only as SHA-256 hash
-- token must be high entropy
-- token must expire
-- invalid/expired/cancelled/paid token must not create new checkout
-- token page returns only customer-safe payment fields
-- no supplier/cost/margin/admin/internal fields
-- no token hash exposed
-- no ability to alter amount/status/customer/provider refs from frontend
+- anon no access
+- normal customer no access
+- admin/staff access only
+- customer dashboard must not import or query readiness/order-pack tables
 
-The customer can pay from token page, but token access must not expose private internal data.
+Mandatory correction 4 — no supplier/provisioning handler
 
-Correction 6 — customer cannot create or mutate payment requests
+The disabled “Submit to supplier” button is allowed only as a disabled placeholder.
 
-Remove the broken customer INSERT policy.
+Required:
 
-Customers must not be able to:
+- no working onClick
+- no edge function
+- no DB function
+- no API call
+- no supplier order table creation
+- no service creation
+- no provisioning write
+- no invoice/DD write
 
-- create payment requests
-- change amount
-- change status
-- set paid
-- set webhook_verified
-- edit provider_reference
-- edit checkout URL
-- edit metadata
+Keep `SUPPLIER_SUBMISSION_ENABLED = false`.
 
-Only admin/staff or service-role edge function paths can create/manage payment requests.
+If any future handler exists, it must immediately throw and write no data.
 
-Webhook/service-role only can set:
+Mandatory correction 5 — read-only view must not mutate
 
-- status = paid
-- webhook_verified = true
-- paid_at
-- provider_payment_id
+Opening `/admin/readiness` must not create records automatically.
 
-Correction 7 — paid payment immutability
+Allowed:
 
-Once payment_request.status = paid:
+- read computed checklist data
+- admin manually saves checklist ticks into `provisioning_readiness`
 
-- amount cannot change
-- currency cannot change
-- customer_id/user_id cannot change
-- contract_summary_id cannot change
-- contract_acceptance_id cannot change
-- quote_id cannot change
-- quote_request_id cannot change
-- provider_reference cannot change
-- paid_at cannot be cleared
-- webhook_verified cannot be set false
+Not allowed:
 
-If a correction is needed, create adjustment/refund/admin note later, not silent mutation.
-
-Correction 8 — webhook must be authoritative
-
-Browser return must never mark paid.
-
-Only verified webhook/server confirmation can mark paid.
-
-Webhook must:
-
-- verify Worldpay signature using raw request body
-- fail closed if webhook secret missing
-- match provider reference to payment_request
-- verify amount
-- verify currency
-- verify paid/failed status
-- be idempotent
-- record event/audit
-- not create supplier order
-- not create service
-- not create invoice
-- not create DD mandate
-
-Repeated valid webhook should not duplicate events or change paid record incorrectly.
-
-Invalid signature or wrong amount:
-
-- do not mark paid
-- record safe audit/failure
-
-Correction 9 — payment events table
-
-If `payment_request_events` already exists, reuse it.
-
-If missing, add a small append-only event table:
-
-- id
-- payment_request_id
-- provider
-- event_type
-- provider_event_id
-- provider_reference
-- status_before
-- status_after
-- amount
-- currency
-- webhook_verified
-- raw_event_hash
-- received_at
-- created_at
-
-Do not store full sensitive payload if not needed. Store raw hash/safe metadata.
-
-Use this for webhook idempotency and audit trail.
-
-Correction 10 — checkout idempotency
-
-If customer clicks “Pay securely” multiple times:
-
-- do not create duplicate payment requests
-- do not create uncontrolled duplicate checkout sessions
-- if existing checkout_created and not expired, return same checkout URL/session if provider supports it
-- if expired, create a new checkout session and record event
-- paid request should not create another checkout
-
-Correction 11 — no downstream side effects
-
-Even after paid webhook:
-
-Do not create:
-
-- supplier order
-- active service
-- provisioning record
-- invoice unless already explicitly existing receipt-only logic
-- DD mandate
-
-Payment received only prepares the next phase.
-
-Correction 12 — `/pay-invoice` legacy path
-
-Do not refactor or break:
-
-- `/pay-invoice`
-- `worldpay-payment`
-- legacy invoice payment logic
-
-Only extend shared webhook logic carefully if needed, and confirm old `INV-` references still work.
+- auto-create draft packs
+- auto-create provisioning rows
+- auto-create service rows
+- auto-change payment status
+- auto-change quote/CS status
 
 Approved build scope:
 
-1. Migration
+1. Add admin-only `/admin/readiness`.
+2. Show accepted CS/payment chain readiness checklist.
+3. Show current records as “Awaiting verified payment” when payment is not webhook-verified.
+4. Allow admin checklist ticks only in `provisioning_readiness`.
+5. Allow Draft Order Pack generation only after DB guard confirms verified payment.
+6. Keep supplier submission locked and disabled.
+7. Add admin-only printable Draft Order Pack view.
+8. Confirm customer/no-auth access blocked.
+9. Confirm no supplier/service/invoice/DD/provisioning writes.
 
-Add CS-linked fields to payment_requests:
+Verification required:
 
-- contract_summary_id
-- contract_acceptance_id
-- quote_id
-- quote_request_id
-- payment_request_number
-- provider_session_id
-- provider_checkout_url
-- provider_payment_id
-- paid_at
-- failed_at
-- webhook_verified
-- metadata jsonb
+A — open readiness page as admin:
 
-Add indexes:
+- page loads
+- unpaid/unverified records show “Awaiting verified payment”
+- PR-2606-LIVE1 / PR-2606-0007 style records do not qualify for draft pack
 
-- contract_summary_id
-- provider_reference
-- token_hash if missing
+B — try generating Draft Order Pack before webhook-verified payment:
 
-Add or reuse payment_request_events.
+- blocked by DB guard
+- no pack row created
 
-Harden RLS:
+C — admin checklist ticks:
 
-- customers SELECT own only
-- customers cannot INSERT/UPDATE/DELETE
-- admin/staff can manage
-- webhook/service-role can update paid fields
+- admin can save installation/router/internal review ticks
+- normal customer cannot
 
-Add DB triggers:
+D — disabled supplier button:
 
-- require accepted CS for CS-linked request
-- prevent customer mutation
-- prevent non-service setting paid/webhook_verified
-- protect paid record immutability
-- generate payment_request_number
+- visible only as locked/disabled placeholder
+- no handler creates anything
 
-2. Edge function `payment-request`
+E — access control:
 
-Extend actions:
+- non-admin redirected/blocked
+- anon direct table access returns no rows
+- customer cannot query readiness/order pack data
 
-- create CS-linked payment request
-- create Worldpay checkout/session
-- verify-payment read-only
-
-Create action must:
-
-- require staff/admin
-- accept contract_summary_id
-- load accepted CS and acceptance
-- derive amount from accepted CS snapshot
-- link quote, quote_request, contract_summary, acceptance
-- create token hash
-- create payment_request_number
-- status pending
-- no checkout until pay action or admin/customer checkout action
-
-create-worldpay-session must:
-
-- use server-side provider secret only
-- create checkout/session
-- store provider_session_id
-- store provider_checkout_url
-- store provider_reference
-- set status checkout_created
-- not set paid
-
-verify-payment must:
-
-- be read-only
-- return status, webhook_verified, paid_at
-- not mutate payment state
-
-3. Edge function `worldpay-webhook`
-
-Patch for PR references:
-
-- verify signature
-- verify amount/currency
-- update paid only when valid
-- set paid_at
-- set webhook_verified true
-- set provider_payment_id if available
-- write payment_request_events/audit
-- idempotent repeated event
-- failed events set failed_at/status failed
-- invalid events do not mark paid
-
-Do not break INV legacy references.
-
-4. Admin UI
-
-Add “Create payment request” only after CS accepted.
-
-Admin sees:
-
-- customer
-- account number
-- CS reference
-- quote reference
-- amount breakdown
-- expiry
-- current status
-- provider reference
-- webhook verified badge
-- paid_at
-
-Hide button if:
-
-- CS not accepted
-- active PR already exists
-- paid PR exists
-
-5. Customer UI
-
-`/pay/:token` shows:
-
-- payment request number
-- Contract Summary reference
-- package/payment purpose
-- amount due
-- customer-safe breakdown
-- “Your Contract Summary has been accepted”
-- “Payment is required before we process your order”
-- Pay securely button
-
-No supplier/cost/margin/internal fields.
-
-Payment result page:
-
-- “Confirming your payment”
-- polls read-only verify-payment
-- shows “Payment received” only when webhook_verified=true
-- if pending, says still confirming
-- if failed, gives retry link
-
-No order/service/supplier wording.
-
-6. Dashboard
-
-After CS accepted and PR exists:
-
-- show Pay now link
-- show payment status
-- show paid receipt state after webhook verified
-
-No supplier/internal fields.
-
-7. Verification tests
-
-Test A — block before CS accepted:  
-Try creating PR for unaccepted CS/non-CS quote.  
-Expected blocked.
-
-Test B — create CS-linked payment request:  
-Use accepted CS from Phase D.  
-Expected PR created with correct links and amount.
-
-Test C — customer pay page:  
-Open `/pay/:token`.  
-Expected safe fields only.
-
-Test D — checkout creation:  
-Click Pay securely.  
-Expected provider checkout/session created server-side, status checkout_created, not paid.
-
-Test E — browser return:  
-Return page must not mark paid.  
-Expected pending unless webhook already verified.
-
-Test F — valid webhook:  
-Send valid signed Worldpay test webhook.  
-Expected paid, paid_at set, webhook_verified true, amount/currency checked, idempotent repeat.
-
-Test G — invalid webhook:  
-Wrong signature or wrong amount.  
-Expected not paid.
-
-Test H — duplicate protection:  
-Second PR for same accepted CS blocked while active/paid PR exists.  
-Repeated checkout click does not create uncontrolled duplicates.
-
-Test I — wrong user:  
-Wrong customer cannot view/pay another customer’s PR.
-
-Test J — anonymous:  
-Anonymous can only access token page if token is valid and safe.  
-Anonymous cannot list payment_requests or access internal data.
-
-Test K — paid immutability:  
-After paid, attempt to change amount/status/linked CS/provider data.  
-Expected blocked except controlled admin/service correction path if explicitly defined.
-
-Test L — downstream:  
-Confirm zero:
+F — no downstream artefacts:  
+Confirm zero new:
 
 - supplier orders
 - services
-- provisioning records
+- provisioning rows
+- telecom orders
+- invoices
 - DD mandates
-- invoices unless receipt-only existing logic intentionally creates one
+- installation bookings unless manually unrelated
 
-8. Build checks
+G — build:
 
-Run:
+- TypeScript passes
+- Vite production build passes
 
-- TypeScript
-- Vite production build
+Final report must include:
 
-9. Final report
-
-Stop after Phase E and report:
-
-- existing status audit result
-- migration details
-- RLS hardening result
-- accepted-CS guard result
-- payment amount derivation result
-- admin create PR result
-- customer pay page result
-- Worldpay checkout/session result
-- browser return safety result
-- webhook verification result
-- invalid webhook result
-- duplicate/idempotency result
-- paid immutability result
-- legacy `/pay-invoice` unaffected result
-- RLS/security result
-- network payload safety result
-- no supplier/provisioning side effects result
+- files changed
+- migrations added
+- DB draft-pack guard result
+- append-only draft pack result
+- readiness checklist behaviour
+- “Awaiting verified payment” behaviour
+- admin checklist tick behaviour
+- disabled supplier button result
+- admin-only RLS result
+- customer/anon denial result
+- no downstream artefacts result
 - TypeScript/build result
-- what was untouched
-- remaining blockers before supplier order/provisioning phase  
+- confirmation that Phase E webhook sign-off remains the blocker before real supplier ordering  
   
   
-Phase 7 / Phase E — Payment Readiness After CS Acceptance
+Phase F0 — Post-Payment Readiness Pack (Preparation Only)
 
-Scope: payment request creation, customer pay page, Worldpay session, return UI, webhook verification. No supplier orders, no service activation, no DD changes, no invoice auto-creation.
+Pure preparation layer. Adds an admin-only view that surfaces the accepted-quote → accepted-CS → payment-request chain, runs a readiness checklist, and generates a read-only "Draft Order Pack". **No supplier orders, services, invoices, DD mandates, provisioning rows, or activations are created or mutated.**
 
-## Part 1 — Audit findings
+## Part 1 — Audit findings (already gathered)
 
-**Already exists (reusable):**
+What exists today:
 
-- `payment_requests` table (21 cols): `id, user_id, account_number, type, status, amount, currency, invoice_id, due_date, customer_email, customer_name, notes, token_hash, expires_at, last_opened_at, completed_at, provider, provider_reference, created_by, created_at, updated_at`.
-- Edge function `payment-request` (~1.6k LOC) with admin actions: `create`, `create-worldpay-session`, `verify-payment`, `send-email`, plus DD/phone-payment actions (out of scope here).
-- Edge function `worldpay-webhook` (~425 LOC): HMAC-SHA256 signature verification, fail-closed on missing `WORLDPAY_WEBHOOK_SECRET`, processes both `INV-` and `PR-` refs.
-- Edge function `worldpay-payment` (legacy invoice path) — used by `/pay-invoice`.
-- Frontend: `Pay.tsx` (tokenized payment-request page), `PayInvoice.tsx` (legacy invoice pay), `PaymentResult.tsx` (return handler), `WorldpayCheckout.tsx`.
-- RLS on `payment_requests`: customer SELECT own; admin full; customer INSERT policy exists but has NULL qual (effectively permissive — see gap below).
-- Token hashing pattern (SHA-256) per memory; webhook verification per memory.
+- `orders` (legacy customer-initiated orders), `services` (admin-write only), `installation_bookings`, `installation_slots`, `technicians`.
+- `supplier_profiles`, `supplier_products`, plus 3 admin import edge functions (`admin-import-supplier-products`, `admin-upsert-supplier`, `admin-upsert-supplier-product`). These are catalogue-management only — no order submission.
+- `quotes`, `quote_requests`, `contract_summaries` (+ `contract_acceptances` append-only), `payment_requests`, `payment_attempts`, `payment_request_events`.
+- Admin pages: `Orders.tsx`, `Services.tsx`, `Installations.tsx`, `PaymentRequests.tsx`, `Quotes.tsx`, `Suppliers.tsx`, `SuppliersGiacomImport.tsx`.
 
-**Gaps vs Phase E requirements:**
+What does NOT exist (and stays that way for F0):
 
-1. `payment_requests` has **no link to `contract_summary_id`, `contract_acceptance_id`, `quote_id`, `quote_request_id**` — cannot enforce "CS-accepted gate" or show CS reference to customer.
-2. No `webhook_verified` boolean, no `paid_at` (uses `completed_at`), no `failed_at`, no `provider_session_id` / `provider_checkout_url` / `provider_payment_id` distinct fields, no `metadata jsonb`, no `payment_request_number` (only UUID).
-3. Status field is free-text — no enum, accepts any string. Need constrained set: `draft|pending|checkout_created|paid|failed|cancelled|expired`.
-4. No DB-level guard that blocks creation unless CS is accepted; current `create` action only checks admin role.
-5. Customer INSERT policy on `payment_requests` has `WITH CHECK NULL` — needs to be **removed** (customers must never create payment requests directly).
-6. `/pay-invoice` is a **legacy** invoice-only path (`worldpay-payment` function). Leave untouched; new flow uses `/pay/:token` (already tokenized) extended with CS context.
-7. Worldpay sandbox/live toggle exists (`WORLDPAY_LIVE_MODE`). Webhook secret already wired. No code path currently marks paid from browser return — `PaymentResult.tsx` calls `verify-payment` which is read-only against DB (good).
-8. `verify-payment` in `payment-request` returns success based on `status === 'paid'` only — safe, but we'll ensure it also surfaces `webhook_verified` for UI.
-9. No side effects today create orders/services/supplier orders on payment success — confirmed clean.
+- No `supplier_orders` table, no `order_status_history`, no provisioning tables.
+- No DB functions matching `%supplier%`, `%provision%`, `%activate%`.
+- No edge function that submits to Giacom/DWS/ICUK or activates a service.
 
-## Part 2 — Migration (single file)
+Reusable: `payment_requests`, `contract_summaries`, `contract_acceptances`, `quotes`, `supplier_products`, `installation_slots`.
+Untouched: Worldpay functions, webhook verification, billing automation, DD code, invoice generation, rewards, campaigns.
 
-Add to `payment_requests`:
+Conclusion: nothing in the codebase can currently submit a supplier order or auto-activate a service. Safe to add a read-only readiness layer.
 
-- `contract_summary_id uuid REFERENCES contract_summaries(id)`
-- `contract_acceptance_id uuid REFERENCES contract_acceptances(id)`
-- `quote_id uuid REFERENCES quotes(id)`
-- `quote_request_id uuid REFERENCES quote_requests(id)`
-- `payment_request_number text UNIQUE` (format `PR-YYMM-####`, generated by trigger)
-- `provider_session_id text`, `provider_checkout_url text`, `provider_payment_id text`
-- `paid_at timestamptz`, `failed_at timestamptz`
-- `webhook_verified boolean NOT NULL DEFAULT false`
-- `metadata jsonb NOT NULL DEFAULT '{}'`
+## Part 2 — Readiness checklist (admin-only)
 
-Constraints / triggers:
+New admin page `**/admin/readiness**` ("Provisioning Readiness") listing every accepted Contract Summary with its linked payment request, newest first. Each row expands into a checklist:
 
-- CHECK on `status IN ('draft','pending','checkout_created','paid','failed','cancelled','expired')` (added as trigger to remain immutable-safe).
-- Trigger `pr_guard_requires_accepted_cs()` BEFORE INSERT: if `contract_summary_id IS NOT NULL`, require `contract_summaries.status='accepted'` AND matching `contract_acceptances` row AND `pdf_storage_key` + `pdf_sha256` not null. If CS-linked, require no existing PR for same CS in status `('pending','checkout_created','paid')`.
-- Trigger `pr_block_customer_mutation()`: only `service_role` or staff can INSERT/UPDATE; customers blocked entirely (defense-in-depth alongside RLS).
-- Trigger `pr_block_paid_from_non_service()`: only `service_role` can set `status='paid'` / `webhook_verified=true` / `paid_at`. Blocks any UI path from marking paid.
-- Generator function for `payment_request_number` + BEFORE INSERT trigger.
+```text
+[x] Customer profile exists
+[x] Account number assigned
+[x] Quote request linked
+[x] Final quote approved
+[x] Contract Summary accepted
+[x] Accepted CS PDF present (storage_key + sha256)
+[x] Payment request exists
+[ ] Payment status = paid
+[ ] webhook_verified = true
+[ ] paid_at not null
+[x] Supplier product assigned (from quote.supplier_product_id)
+[ ] Installation/setup choice confirmed (admin tick)
+[ ] Router choice confirmed (admin tick)
+[x] Address/postcode confirmed
+[x] Customer contact confirmed
+[ ] Internal admin notes reviewed (admin tick)
+[ ] Admin final review complete (admin tick)
+```
 
-RLS changes:
+Computed checks come from existing rows. The five admin-tick items are stored in a new `provisioning_readiness` table (see Technical section). A row is "ready" only when **all** checks pass — but for F0 we never submit, we just display.
 
-- DROP the broken `Users can create own payment requests` insert policy.
-- Keep customer SELECT own; admin full. Add explicit `WITH CHECK (false)` insert policy for `authenticated` to be explicit.
+Top-of-row status label (Part 6):
 
-Index: `(contract_summary_id)`, `(provider_reference)`.
+- payment not verified → **"Awaiting verified payment"**
+- payment verified, ticks incomplete → **"Payment verified — ready for admin review"**
+- ticks complete, no draft pack → **"Admin review complete"**
+- draft pack generated → **"Draft order pack prepared"**
+- always show secondary tag: **"Supplier order not yet submitted"**
 
-GRANTs already exist (table pre-existed); no new public tables created.
+Because the Live webhook secret isn't in place, virtually every real row will sit at "Awaiting verified payment" — that is expected and correct.
 
-## Part 3 — Edge function changes
+## Part 3 — Draft Order Pack (read-only)
 
-`**payment-request` function — extend `create` action:**
+When all checklist items pass, admin can click **"Generate Draft Order Pack"**. This inserts one row into `draft_order_packs` (snapshot JSON) and renders a printable pack containing:
 
-- Accept `contract_summary_id` (required for new CS-gated requests; legacy invoice path keeps working when `invoice_id` is passed without CS).
-- Server-side load CS + acceptance + quote; derive `amount` from CS one-off charges + first month (admin can override only via explicit `amount_override` with audit metadata).
-- Populate all new FK columns + `customer_email/name` snapshots from CS.
-- Reject if guard trigger would fire (pre-flight friendly error).
-- Status starts `pending`.
+- customer name, account number, service address, postcode, email, phone
+- quote_number, cs_number, payment_request_number
+- selected package (plan_name, plan_type, monthly £ inc/ex VAT, contract length)
+- supplier product assignment (supplier_name, supplier_product_id, internal SKU)
+- router/setup choice, installation notes, customer notes
+- admin checklist snapshot + reviewer name/timestamp
 
-`**payment-request` function — extend `create-worldpay-session`:**
+No supplier API call, no service row, no invoice, no DD mandate, no provisioning row. Pack is regenerable (versioned) and downloadable as HTML/print.
 
-- After Worldpay returns checkoutUrl, store `provider_session_id`, `provider_checkout_url`, set status=`checkout_created`.
-- `transactionReference` stays `PR-{id8}-{ts}` (webhook already matches).
+## Part 4 — Data safety
 
-`**worldpay-webhook`:**
+- `provisioning_readiness` and `draft_order_packs`: RLS allows `authenticated` only via `has_role(auth.uid(),'admin')`; `service_role` full. No `anon` grant. No customer-facing routes, hooks, or RPCs read these tables.
+- Pack rendering uses an admin-only React route under `ProtectedAdminRoute`. Customer dashboard untouched.
+- Supplier cost, margin, supplier internal IDs, admin notes, and pack contents never appear in any customer query or component.
 
-- On verified PAID event for `PR-…` ref: set `status='paid'`, `paid_at=now()`, `webhook_verified=true`, `provider_payment_id`. Idempotent (no-op if already paid + webhook_verified).
-- On FAILED: `status='failed'`, `failed_at`.
-- Verify `amount` and `currency` match `payment_requests` row; on mismatch → audit + do NOT mark paid.
-- Write `payment_request_events` row + `log_event` audit entry.
+## Part 5 — Future-proof guard
 
-`**verify-payment` action:** return `{status, webhook_verified, paid_at}` — no mutation.
+Any "Submit to supplier" / "Activate service" / "Provision" button shipped now (in the new readiness page only) is rendered **disabled** with tooltip + label:
 
-## Part 4 — Admin UI
+> "Supplier order is locked until verified payment is received."
 
-New action on accepted CS in `src/pages/admin/CustomerDetail.tsx` (and CS detail view):
+There is no handler wired up — the button literally has no onClick that performs supplier/service/invoice/DD writes. A code-level constant `SUPPLIER_SUBMISSION_ENABLED = false` is exported from `src/lib/provisioning/flags.ts` and asserted in the (placeholder) handler so any future regression throws.
 
-- "Create payment request" button, visible only when CS `status='accepted'` and no live PR exists.
-- Dialog shows: customer, account_number, CS reference, quote reference, computed amount + line breakdown (setup/router/delivery/installation/first month), expiry (default 14 days), notes.
-- Calls `payment-request` `create` with `contract_summary_id`.
-- Admin PR list (`src/pages/admin/PaymentRequests.tsx`) — add columns: CS ref, webhook_verified badge, provider_reference, paid_at; filter by status.
+## Part 6 — Status labels
 
-## Part 5 — Customer UI
+Centralised in `src/lib/provisioning/status.ts`:
+`awaiting_verified_payment | payment_verified_ready_for_review | admin_review_complete | draft_order_pack_prepared`.
+Forbidden labels (`order_submitted`, `service_active`, `provisioned`, `live`) are not introduced.
 
-`Pay.tsx` (tokenized `/pay/:token`):
+## Part 7 — Verification
 
-- When PR is CS-linked, render CS-context panel: PR number, CS reference, plan name, amount, itemized breakdown (safe fields only — no supplier name, no margin, no supplier_product_id, no admin notes).
-- "Your Contract Summary has been accepted. Payment is required before we process your order." copy.
-- "Pay securely" CTA → `create-worldpay-session` → redirect via `redirectToExternal`.
+Manual QA against current data:
 
-`PaymentResult.tsx`:
+- Existing unpaid/unverified PRs (incl. `PR-2606-LIVE1`) appear with **"Awaiting verified payment"**, checklist greys out admin-tick items.
+- `SELECT count(*)` before/after on `services`, `invoices`, `dd_mandates`, `orders`, `installation_bookings` to confirm zero deltas after exercising the new UI.
+- Log into a non-admin session → `/admin/readiness` redirects (existing `ProtectedAdminRoute`); direct table SELECT via anon key returns 0 rows.
 
-- Always show "Confirming your payment…" until `verify-payment` returns `webhook_verified=true`.
-- Poll every 3s up to 60s; then show pending state with manual refresh.
-- On verified paid: "Payment received. Our team will now process your setup." No mention of order created / service active.
-- On failed/cancelled: clear retry CTA back to `/pay/:token`.
+## Part 8 — Build checks
 
-Customer dashboard (`ContractSummariesTab` / `OverviewTab`): if accepted CS has live PR, surface "Pay now" link to `/pay/:token`. Hide all supplier/internal fields (already the case for CS views).
+TypeScript + Vite production build run automatically by the harness after changes.
 
-## Part 6 — Verification tests (manual via curl + UI)
+## Part 9 — Final report (delivered after build)
 
-A–J as specified. Will run via `supabase--curl_edge_functions` plus DB reads. Test G uses signed but wrong-amount webhook → must not mark paid. Test F uses correct signature → idempotent re-post check.
+Will cover: audit findings, files added/changed, migration summary, checklist behaviour, draft-pack behaviour, payment-gate behaviour, admin-only access proof, customer no-access proof, zero supplier/service/invoice/DD/provisioning writes confirmation, TS/build result, and explicit note that everything past "Draft order pack prepared" remains blocked until the real Worldpay Live webhook secret lands and Phase E closes.
 
-## Part 7 — Out of scope (explicitly untouched)
+---
 
-- supplier orders, supplier_products writes
-- service activation / `services` table
-- DD mandate creation flow (`submit-dd-mandate` left as-is)
-- invoice auto-generation (none triggered by PR paid)
-- rewards, campaigns, complaints, finance exports, AI chat
-- `/pay-invoice` legacy invoice path + `worldpay-payment` function
+## Technical section
 
-## Technical summary
+**Migration** (`supabase/migrations/<ts>_provisioning_readiness.sql`):
 
-- 1 migration: schema + triggers + RLS hardening on `payment_requests`.
-- 3 edge function edits: `payment-request`, `worldpay-webhook`, (no change to `worldpay-payment`).
-- ~4 frontend files touched: `Pay.tsx`, `PaymentResult.tsx`, `admin/PaymentRequests.tsx` (or CS detail), one new admin dialog component.
-- No changes to contract_summaries / contract_acceptances tables (already immutable).
-- Final report will cover all 16 items from the brief.
+1. `CREATE TABLE public.provisioning_readiness` — `id`, `payment_request_id` (FK, unique), `contract_summary_id` (FK), `installation_confirmed bool`, `router_confirmed bool`, `internal_notes_reviewed bool`, `admin_review_complete bool`, `reviewer_user_id uuid`, `reviewer_notes text`, `created_at`, `updated_at`.
+2. `CREATE TABLE public.draft_order_packs` — `id`, `payment_request_id` (FK), `contract_summary_id` (FK), `version int`, `snapshot jsonb`, `generated_by uuid`, `generated_at`, `created_at`.
+3. GRANTs: `SELECT, INSERT, UPDATE, DELETE` to `authenticated`; `ALL` to `service_role`. No `anon`.
+4. `ENABLE ROW LEVEL SECURITY` on both.
+5. Policies: `USING (has_role(auth.uid(),'admin'))` (and `WITH CHECK` same) for all ops; `draft_order_packs` is insert-only for admins (no UPDATE/DELETE policy → effectively append-only).
+6. `update_updated_at_column` trigger on `provisioning_readiness`.
 
-Awaiting approval to switch to build mode.
+**Frontend**:
+
+- `src/lib/provisioning/flags.ts` — `SUPPLIER_SUBMISSION_ENABLED = false`.
+- `src/lib/provisioning/status.ts` — status enum + label map.
+- `src/lib/provisioning/checklist.ts` — pure computation from PR + CS + quote + profile.
+- `src/pages/admin/Readiness.tsx` — list + detail dialog + checklist toggles + "Generate Draft Order Pack" (gated) + disabled "Submit to supplier" button.
+- `src/components/admin/readiness/DraftOrderPackView.tsx` — printable read-only render.
+- Route registered in `App.tsx` under `ProtectedAdminRoute`; nav entry added to `AdminLayout` sidebar.
+
+**Explicitly NOT touched**: `services`, `invoices`, `dd_mandates`, `orders`, `installation_bookings`, `payment_requests` (no status writes), Worldpay edge functions, billing automation, AI chat, complaints, rewards, campaigns, finance exports.

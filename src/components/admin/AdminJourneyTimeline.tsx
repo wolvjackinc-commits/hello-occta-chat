@@ -37,7 +37,7 @@ export function AdminJourneyTimeline({ customerId }: { customerId: string }) {
       const [readinessRes, packRes, eventsRes] = await Promise.all([
         pr ? (supabase as any).from("provisioning_readiness").select("status,updated_at").eq("payment_request_id", pr.id).maybeSingle() : Promise.resolve({ data: null }),
         pr ? (supabase as any).from("draft_order_packs").select("id", { count: "exact", head: true }).eq("payment_request_id", pr.id) : Promise.resolve({ count: 0 }),
-        pr ? supabase.from("payment_request_events").select("created_at,event_type").eq("payment_request_id", pr.id).order("created_at", { ascending: false }).limit(15) : Promise.resolve({ data: [] }),
+        pr ? supabase.from("payment_request_events").select("created_at,event_type").eq("request_id", pr.id).order("created_at", { ascending: false }).limit(15) : Promise.resolve({ data: [] }),
       ]);
 
       if (cancelled) return;

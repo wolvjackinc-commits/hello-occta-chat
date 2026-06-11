@@ -1039,7 +1039,7 @@ serve(async (req) => {
         // the current status from the database so the UI can render it.
         const { data: request, error } = await supabase
           .from('payment_requests')
-          .select('id, status, amount, currency, customer_name, customer_email, account_number, invoice_id, provider_reference')
+          .select('id, status, amount, currency, customer_name, customer_email, account_number, invoice_id, provider_reference, webhook_verified, paid_at, contract_summary_id')
           .eq('id', requestId)
           .single();
 
@@ -1060,10 +1060,12 @@ serve(async (req) => {
           }).catch(() => {});
         }
 
-        const completed = request.status === 'completed';
+        const isPaid = request.status === 'paid' || request.status === 'completed';
         return new Response(JSON.stringify({
-          success: completed,
-          status: completed ? 'paid' : request.status,
+          success: isPaid && (request.contract_summary_id ? request.webhook_verified === true : true),
+          status: isPaid ? 'paid' : request.status,
+          webhook_verified: !!request.webhook_verified,
+          paid_at: request.paid_at || null,
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

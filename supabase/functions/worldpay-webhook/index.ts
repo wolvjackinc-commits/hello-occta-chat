@@ -171,7 +171,7 @@ serve(async (req) => {
           // Find payment request by provider_reference
           const { data: paymentRequest, error: prError } = await supabase
             .from('payment_requests')
-            .select('id, invoice_id, user_id, amount, status, customer_name, customer_email')
+            .select('id, invoice_id, user_id, amount, currency, status, customer_name, customer_email, contract_summary_id, webhook_verified')
             .eq('provider_reference', transactionRef)
             .single();
           
@@ -180,7 +180,7 @@ serve(async (req) => {
             // Try prefix match as fallback
             const { data: prByPrefix } = await supabase
               .from('payment_requests')
-              .select('id, invoice_id, user_id, amount, status, customer_name, customer_email')
+              .select('id, invoice_id, user_id, amount, currency, status, customer_name, customer_email, contract_summary_id, webhook_verified')
               .like('provider_reference', `PR-${prIdPrefix}%`)
               .order('created_at', { ascending: false })
               .limit(1)
@@ -194,8 +194,8 @@ serve(async (req) => {
             // Use the found request
             await processPaymentRequestWebhook(supabase, prByPrefix, eventId, payload);
           } else {
-            // Already completed? Skip to avoid duplicates
-            if (paymentRequest.status === 'completed') {
+            // Already paid/completed and webhook-verified? Skip to avoid duplicates (idempotent)
+            if ((paymentRequest.status === 'paid' || paymentRequest.status === 'completed') && paymentRequest.webhook_verified) {
               console.log(`Payment request ${paymentRequest.id} already completed, skipping`);
               break;
             }

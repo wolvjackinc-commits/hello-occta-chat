@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
+import { CreateCSPaymentDialog } from "@/components/admin/CreateCSPaymentDialog";
 
 const STATUS_OPTIONS = ["all", "draft", "sent", "viewed", "accepted", "rejected", "expired", "converted"];
 
@@ -29,6 +30,7 @@ export const AdminQuotes = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [overrideDialog, setOverrideDialog] = useState<{ open: boolean; quoteId?: string; quoteNumber?: string }>({ open: false });
   const [overrideReason, setOverrideReason] = useState("");
+  const [payDialog, setPayDialog] = useState<{ open: boolean; csId?: string | null }>({ open: false, csId: null });
 
   const { data: vatActive } = useQuery({
     queryKey: ["is-vat-active"],
@@ -69,13 +71,27 @@ export const AdminQuotes = () => {
       if (quoteIds.length) {
         const { data: cs } = await (supabase as any)
           .from("contract_summaries")
-          .select("quote_id, cs_number, status, version")
+          .select("id, quote_id, cs_number, status, version")
           .in("quote_id", quoteIds)
           .order("version", { ascending: false });
         (cs ?? []).forEach((c: any) => { if (!csMap.has(c.quote_id)) csMap.set(c.quote_id, c); });
       }
 
-      return (rows ?? []).map((r: any) => ({ ...r, request: reqMap.get(r.quote_request_id), cs: csMap.get(r.id) }));
+      // hydrate active/paid payment requests per CS (block duplicate create)
+      const csIds = Array.from(csMap.values()).map((c: any) => c.id).filter(Boolean);
+      let prMap = new Map<string, any>();
+      if (csIds.length) {
+        const { data: prs } = await (supabase as any)
+          .from("payment_requests")
+          .select("id, contract_summary_id, status")
+          .in("contract_summary_id", csIds)
+          .in("status", ["draft","pending","checkout_created","sent","opened","paid","completed"]);
+        (prs ?? []).forEach((p: any) => { if (!prMap.has(p.contract_summary_id)) prMap.set(p.contract_summary_id, p); });
+      }
+      return (rows ?? []).map((r: any) => {
+        const cs = csMap.get(r.id);
+        return { ...r, request: reqMap.get(r.quote_request_id), cs, activePr: cs ? prMap.get(cs.id) : null };
+      });
     },
   });
 
@@ -280,6 +296,16 @@ export const AdminQuotes = () => {
                       {r.cs && (
                         <Button size="sm" variant="outline" onClick={() => openPdf(r.id)}>View CS</Button>
                       )}
+                      {r.cs && r.cs.status === "accepted" && !r.activePr && (
+                        <Button size="sm" variant="hero" onClick={() => setPayDialog({ open: true, csId: r.cs.id })}>
+                          Create payment request
+                        </Button>
+                      )}
+                      {r.cs && r.cs.status === "accepted" && r.activePr && (
+                        <Badge variant="outline" className="border-2 border-foreground capitalize text-xs">
+                          PR: {r.activePr.status}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -336,6 +362,12 @@ export const AdminQuotes = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CreateCSPaymentDialog
+        open={payDialog.open}
+        onOpenChange={(o) => { setPayDialog({ open: o, csId: o ? payDialog.csId : null }); if (!o) qc.invalidateQueries({ queryKey: ["admin-quotes"] }); }}
+        contractSummaryId={payDialog.csId ?? null}
+      />
     </div>
   );
 };

@@ -1,0 +1,1 @@
+UPDATE payment_requests SET status='sent' WHERE payment_request_number='PR-2606-0007' AND status='pending';

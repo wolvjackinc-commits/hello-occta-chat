@@ -1,0 +1,1 @@
+UPDATE public.platform_settings SET vat_number='GB123456789', updated_at=now() WHERE singleton=true;

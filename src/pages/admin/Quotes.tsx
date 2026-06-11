@@ -296,6 +296,16 @@ export const AdminQuotes = () => {
                       {r.cs && (
                         <Button size="sm" variant="outline" onClick={() => openPdf(r.id)}>View CS</Button>
                       )}
+                      {r.cs && r.cs.status === "accepted" && !r.activePr && (
+                        <Button size="sm" variant="hero" onClick={() => setPayDialog({ open: true, csId: r.cs.id })}>
+                          Create payment request
+                        </Button>
+                      )}
+                      {r.cs && r.cs.status === "accepted" && r.activePr && (
+                        <Badge variant="outline" className="border-2 border-foreground capitalize text-xs">
+                          PR: {r.activePr.status}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -352,6 +362,12 @@ export const AdminQuotes = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CreateCSPaymentDialog
+        open={payDialog.open}
+        onOpenChange={(o) => { setPayDialog({ open: o, csId: o ? payDialog.csId : null }); if (!o) qc.invalidateQueries({ queryKey: ["admin-quotes"] }); }}
+        contractSummaryId={payDialog.csId ?? null}
+      />
     </div>
   );
 };

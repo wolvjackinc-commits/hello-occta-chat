@@ -10,7 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Json } from "@/integrations/supabase/types";
-import { Copy, ArrowLeft, Pencil, StickyNote } from "lucide-react";
+import { Copy, ArrowLeft, Pencil, StickyNote, Route as RouteIcon } from "lucide-react";
 import { format } from "date-fns";
 import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
 import { CustomerEditDialog } from "@/components/admin/CustomerEditDialog";
@@ -185,16 +185,27 @@ export const AdminCustomerDetail = () => {
           <p className="text-muted-foreground">{overview.full_name || "Customer"}</p>
           <p className="text-muted-foreground">{overview.email}</p>
         </div>
-        <CustomerEditDialog
-          customer={overview}
-          onSaved={refetch}
-          trigger={
-            <Button variant="outline" className="border-2 border-foreground">
-              <Pencil className="w-4 h-4 mr-2" />
-              Edit Customer
-            </Button>
-          }
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="border-2 border-foreground"
+            onClick={() => navigate(`/admin/customers/${overview.account_number}/journey`)}
+            disabled={!overview.account_number}
+          >
+            <RouteIcon className="w-4 h-4 mr-2" />
+            Journey
+          </Button>
+          <CustomerEditDialog
+            customer={overview}
+            onSaved={refetch}
+            trigger={
+              <Button variant="outline" className="border-2 border-foreground">
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit Customer
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       <Tabs defaultValue="overview">

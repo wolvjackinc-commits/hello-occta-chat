@@ -1,314 +1,368 @@
-Approved — proceed with Phase F0: Post-Payment Readiness Pack / Admin Provisioning Checklist, with the corrections below.
+Approved — proceed with Phase G0: Customer/Admin Status Timeline + Notification Readiness, with the corrections below.
 
-This is preparation only.
+This is visibility-only.
 
 Do not start supplier ordering.  
-Do not submit supplier orders.  
 Do not activate services.  
-Do not create live telecom orders.  
+Do not create invoices.  
 Do not create DD mandates.  
 Do not trigger provisioning.  
-Do not create invoices.  
 Do not touch Worldpay/payment logic.  
-Do not mark Phase E complete.
+Do not mark Phase E complete.  
+Do not send automatic emails.
 
-Current blocker:  
-Phase E is still on hold until the real Worldpay Live webhook signing secret is obtained and a valid signed webhook marks a payment as paid with `webhook_verified=true`.
+Phase E webhook sign-off is still blocked until the real Worldpay Live webhook signing secret is obtained and a valid signed webhook marks a payment as paid with `webhook_verified=true`.
 
-Therefore, Phase F0 must only prepare admin readiness views and must not allow any real progression beyond readiness display.
+Mandatory correction 1 — customer timeline must use safe data only
 
-Mandatory correction 1 — DB-level draft pack guard
+Customer timeline must not query broad raw rows if those rows contain internal fields.
 
-Do not rely only on frontend checklist logic.
+Use either:
 
-Add a DB-level guard/trigger on `draft_order_packs` insert.
+- existing safe customer RPCs/views, or
+- tightly selected columns only.
 
-Draft Order Pack insertion must require:
+Customer timeline must never receive:
 
-- payment_request exists
-- payment_request.status = `paid`
-- payment_request.webhook_verified = true
-- payment_request.paid_at is not null
-- contract_summary.status = accepted
-- contract_acceptance row exists
-- accepted PDF exists with pdf_storage_key and pdf_sha256
-- quote.status = contract_summary_accepted
-- quote_request.status = contract_summary_accepted
+- supplier cost
+- margin
+- supplier internal IDs
+- admin notes
+- raw webhook payload
+- payment_attempts raw_response
+- audit_logs internal detail
+- token_hash
+- provider secrets/references beyond safe payment status
 
-If these do not pass:
+Inspect network payloads, not just UI.
 
-- block insert
-- return clear error:  
-`verified payment required before draft order pack generation`
+Mandatory correction 2 — do not invent statuses
 
-Because Phase E is not fully complete, current live/internal records should not be able to generate a Draft Order Pack.
+Only use statuses that actually exist in the database.
 
-Mandatory correction 2 — append-only draft packs
+For quote request stages, map from real statuses such as:
 
-`draft_order_packs` should be append-only.
+- new
+- in_review
+- draft_quote_created
+- final_quote_ready
+- contract_summary_generated
+- contract_summary_accepted
 
-- admins can INSERT
-- admins can SELECT
-- no UPDATE
-- no DELETE
-- service_role only for controlled maintenance if needed
-- version increments per payment_request_id
+Do not use `reviewing` or `in_progress` unless those values truly exist.
 
-If a pack must change later, create a new version. Do not silently edit old packs.
+If a status is missing, show a generic safe milestone based on available timestamps/events.
 
-Mandatory correction 3 — admin-only RLS
+Mandatory correction 3 — notification templates must be draft-only and idempotent
 
-Use the project’s existing staff/admin helper consistently.
+Insert the 8 journey email templates only if they do not already exist.
 
-If the project uses `is_staff(auth.uid())`, use that.  
-If it uses `has_role(auth.uid(),'admin')`, confirm it includes the intended admin/staff roles.
+Use unique keys like:
 
-Required:
-
-- anon no access
-- normal customer no access
-- admin/staff access only
-- customer dashboard must not import or query readiness/order-pack tables
-
-Mandatory correction 4 — no supplier/provisioning handler
-
-The disabled “Submit to supplier” button is allowed only as a disabled placeholder.
+- journey_quote_received
+- journey_final_quote_ready
+- journey_cs_ready
+- journey_cs_accepted
+- journey_payment_request_ready
+- journey_payment_pending_confirmation
+- journey_payment_received
+- journey_setup_preparation_started
 
 Required:
 
-- no working onClick
-- no edge function
-- no DB function
-- no API call
-- no supplier order table creation
-- no service creation
-- no provisioning write
-- no invoice/DD write
+- status = draft
+- auto_send = false
+- no triggers
+- no cron
+- no automatic sending
+- no customer email sent in Phase G0
 
-Keep `SUPPLIER_SUBMISSION_ENABLED = false`.
+communications_log count must remain unchanged during verification.
 
-If any future handler exists, it must immediately throw and write no data.
+Mandatory correction 4 — internal notes safety
 
-Mandatory correction 5 — read-only view must not mutate
+`journey_internal_notes` must be admin-only.
 
-Opening `/admin/readiness` must not create records automatically.
+Customer must never see these notes.
 
-Allowed:
+Rules:
 
-- read computed checklist data
-- admin manually saves checklist ticks into `provisioning_readiness`
+- no anon access
+- no customer access
+- admin/staff only
+- audit insert/update
+- delete blocked
+- if edit window exists, it must preserve audit trail
+- notes cannot change business state
 
-Not allowed:
+Mandatory correction 5 — timeline is read-only
 
-- auto-create draft packs
-- auto-create provisioning rows
-- auto-create service rows
-- auto-change payment status
-- auto-change quote/CS status
+Opening the customer or admin timeline must not mutate business records.
+
+No writes to:
+
+- payment_requests
+- contract_summaries
+- contract_acceptances
+- quotes
+- quote_requests
+- services
+- invoices
+- dd_mandates
+- orders
+- installation_bookings
+- provisioning tables
+- Worldpay/webhook functions
+
+Only allowed write:
+
+- admin manually adding/editing an internal journey note
+- admin previewing draft email templates if existing UI supports preview without sending
+
+Mandatory correction 6 — payment wording
+
+Since Phase E is not fully complete, customer-facing payment wording must be careful.
+
+If `payment_request.status='checkout_created'` and `webhook_verified=false`, show:
+
+“Payment is being confirmed.”
+
+Do not show:
+
+- Payment received
+- Order processing
+- Supplier order started
+- Service activation started
+
+Only show “Payment received” when:
+
+- status = paid
+- webhook_verified = true
+- paid_at is not null
+
+Mandatory correction 7 — admin timeline can show more, but safely
+
+Admin timeline may show:
+
+- payment_request status
+- provider reference
+- webhook_verified
+- paid_at
+- payment_request_events summary
+- readiness checklist state
+- draft order pack status
+
+But do not expose raw sensitive webhook/card/payment payloads unless already safely stored and intended for admin diagnostics.
 
 Approved build scope:
 
-1. Add admin-only `/admin/readiness`.
-2. Show accepted CS/payment chain readiness checklist.
-3. Show current records as “Awaiting verified payment” when payment is not webhook-verified.
-4. Allow admin checklist ticks only in `provisioning_readiness`.
-5. Allow Draft Order Pack generation only after DB guard confirms verified payment.
-6. Keep supplier submission locked and disabled.
-7. Add admin-only printable Draft Order Pack view.
-8. Confirm customer/no-auth access blocked.
-9. Confirm no supplier/service/invoice/DD/provisioning writes.
+1. Add customer-safe dashboard timeline.
+2. Add admin journey timeline.
+3. Add admin-only journey_internal_notes.
+4. Add draft-only email templates.
+5. Add next-step copy.
+6. Add admin route `/admin/customers/:id/journey`.
+7. Add timeline in customer Overview/OrdersTimeline.
+8. Confirm no automatic email sending.
+9. Confirm no payment/supplier/service/invoice/DD/provisioning writes.
 
 Verification required:
 
-A — open readiness page as admin:
+A — customer timeline:  
+Use internal test customer/chain.  
+Expected:
 
-- page loads
-- unpaid/unverified records show “Awaiting verified payment”
-- PR-2606-LIVE1 / PR-2606-0007 style records do not qualify for draft pack
+- shows safe milestones only
+- stops at payment confirming/awaiting verification where appropriate
+- no supplier/internal/payment-secret fields in UI or network payload
 
-B — try generating Draft Order Pack before webhook-verified payment:
+B — admin timeline:  
+Expected:
 
-- blocked by DB guard
-- no pack row created
+- shows richer internal journey
+- shows readiness/payment state
+- shows webhook_verified=false where relevant
+- shows Phase E still blocked
 
-C — admin checklist ticks:
+C — internal notes:  
+Expected:
 
-- admin can save installation/router/internal review ticks
-- normal customer cannot
+- admin can add note
+- audit row written
+- customer cannot see note
+- delete blocked
 
-D — disabled supplier button:
+D — email templates:  
+Expected:
 
-- visible only as locked/disabled placeholder
-- no handler creates anything
+- 8 templates exist
+- draft/manual only
+- auto_send=false
+- no communications_log increase
+- no email sent
 
-E — access control:
+E — RLS:  
+Expected:
 
-- non-admin redirected/blocked
-- anon direct table access returns no rows
-- customer cannot query readiness/order pack data
+- wrong customer cannot see another customer journey
+- anon cannot list data
+- non-admin cannot access admin journey or notes
 
-F — no downstream artefacts:  
-Confirm zero new:
+F — zero downstream artefacts:  
+Confirm no new:
 
 - supplier orders
 - services
-- provisioning rows
-- telecom orders
 - invoices
 - DD mandates
-- installation bookings unless manually unrelated
+- provisioning rows
+- payment status changes
+- Worldpay/webhook changes
+- automatic emails
 
-G — build:
+G — build:  
+Run:
 
-- TypeScript passes
-- Vite production build passes
+- TypeScript
+- Vite production build
 
 Final report must include:
 
+- audit findings
 - files changed
-- migrations added
-- DB draft-pack guard result
-- append-only draft pack result
-- readiness checklist behaviour
-- “Awaiting verified payment” behaviour
-- admin checklist tick behaviour
-- disabled supplier button result
-- admin-only RLS result
-- customer/anon denial result
+- migration details
+- customer timeline result
+- admin timeline result
+- internal notes result
+- draft template result
+- no auto-email result
+- RLS/wrong-user/anon result
+- network payload safety result
 - no downstream artefacts result
 - TypeScript/build result
-- confirmation that Phase E webhook sign-off remains the blocker before real supplier ordering  
-  
-  
-Phase F0 — Post-Payment Readiness Pack (Preparation Only)
+- confirmation Phase E webhook remains the blocker before supplier ordering  
+Phase G0 — Customer/Admin Status Timeline + Notification Readiness
 
-Pure preparation layer. Adds an admin-only view that surfaces the accepted-quote → accepted-CS → payment-request chain, runs a readiness checklist, and generates a read-only "Draft Order Pack". **No supplier orders, services, invoices, DD mandates, provisioning rows, or activations are created or mutated.**
+Visibility-only phase. No supplier orders, services, invoices, DD mandates, provisioning, Worldpay/webhook changes, automatic emails, or payment-status writes. Phase E webhook sign-off remains blocked.
 
-## Part 1 — Audit findings (already gathered)
+### Part 1 — Audit findings (existing, reusable)
 
-What exists today:
+Already in DB / code, reused as the source of truth:
 
-- `orders` (legacy customer-initiated orders), `services` (admin-write only), `installation_bookings`, `installation_slots`, `technicians`.
-- `supplier_profiles`, `supplier_products`, plus 3 admin import edge functions (`admin-import-supplier-products`, `admin-upsert-supplier`, `admin-upsert-supplier-product`). These are catalogue-management only — no order submission.
-- `quotes`, `quote_requests`, `contract_summaries` (+ `contract_acceptances` append-only), `payment_requests`, `payment_attempts`, `payment_request_events`.
-- Admin pages: `Orders.tsx`, `Services.tsx`, `Installations.tsx`, `PaymentRequests.tsx`, `Quotes.tsx`, `Suppliers.tsx`, `SuppliersGiacomImport.tsx`.
+- `quote_requests`, `quotes`, `quote_events` — quote lifecycle events
+- `contract_summaries`, `contract_acceptances` — CS issuance/acceptance (+ `pdf_sha256`)
+- `payment_requests`, `payment_request_events`, `payment_attempts` — payment lifecycle
+- `provisioning_readiness`, `draft_order_packs` (Phase F0) — admin readiness state
+- `activity_log` (rich, per-entity) + `audit_logs` (admin actions) — event history
+- `communications_log` — email send/delivery log
+- `email_templates` table + `send-transactional-email` edge function — manual-send infra
+- UI: `src/components/dashboard/tabs/OrdersTimelineTab.tsx` (customer), `src/pages/admin/Readiness.tsx` (admin), `CustomerCommunicationsTimeline.tsx`, `OrderTracking.tsx`
 
-What does NOT exist (and stays that way for F0):
+Gaps: no admin event-stream view per customer/PR; no internal-notes table scoped to a PR/order journey; notification template drafts for the 8 G0 milestones don't exist; existing customer timeline is hard-coded to one order row and doesn't include payment_request / readiness milestones; nothing exposes "next step" copy.
 
-- No `supplier_orders` table, no `order_status_history`, no provisioning tables.
-- No DB functions matching `%supplier%`, `%provision%`, `%activate%`.
-- No edge function that submits to Giacom/DWS/ICUK or activates a service.
+### Part 2 — Customer journey timeline (read-only)
 
-Reusable: `payment_requests`, `contract_summaries`, `contract_acceptances`, `quotes`, `supplier_products`, `installation_slots`.
-Untouched: Worldpay functions, webhook verification, billing automation, DD code, invoice generation, rewards, campaigns.
+New component `src/components/dashboard/CustomerJourneyTimeline.tsx`, mounted in `OverviewTab` and replacing the body of `OrdersTimelineTab`. Derives milestones from existing rows only:
 
-Conclusion: nothing in the codebase can currently submit a supplier order or auto-activate a service. Safe to add a read-only readiness layer.
 
-## Part 2 — Readiness checklist (admin-only)
+| Milestone                  | Source                                                                            |
+| -------------------------- | --------------------------------------------------------------------------------- |
+| Quote request received     | `quote_requests.created_at`                                                       |
+| Quote being reviewed       | `quote_requests.status in ('reviewing','in_progress')`                            |
+| Final quote ready          | `quotes.status in ('sent','approved')`                                            |
+| Contract Summary generated | `contract_summaries.issued_at`                                                    |
+| Contract Summary accepted  | `contract_acceptances.accepted_at`                                                |
+| Payment request created    | `payment_requests.created_at`                                                     |
+| Awaiting payment           | `payment_requests.status='pending'`                                               |
+| Payment being confirmed    | `status='checkout_created'` AND `webhook_verified=false`                          |
+| Payment received           | `status='paid'` AND `webhook_verified=true` AND `paid_at IS NOT NULL`             |
+| Preparing your setup       | `provisioning_readiness.status='admin_review_complete'`                           |
+| Supplier order pending     | `draft_order_packs` row exists (always tagged "Supplier order not yet submitted") |
 
-New admin page `**/admin/readiness**` ("Provisioning Readiness") listing every accepted Contract Summary with its linked payment request, newest first. Each row expands into a checklist:
+
+Customer-safe rule: query only the columns above. Never read supplier cost, margin, supplier IDs, admin notes, webhook payload, error logs, or `payment_attempts.raw_response`. With Phase E blocked, real chains will visibly stop at "Payment being confirmed" — copy includes a calm "Next step: we're waiting on the bank to confirm your payment" message.
+
+### Part 3 — Admin journey timeline
+
+New page `src/pages/admin/CustomerJourney.tsx` (route `/admin/customers/:id/journey`, also embedded as a tab inside `CustomerDetail`). Fuller stream built by merging, in time order:
+
+- `quote_events` (request → reviewed → sent → approved)
+- `quote_margin_checks` (floor/margin guard summary — pass/fail only, no margin %)
+- `contract_summaries` row + `contract_acceptances` (incl. `pdf_sha256` short hash)
+- `payment_requests` row, `payment_request_events`, `payment_attempts` summaries (status only)
+- `provisioning_readiness` checklist state
+- `draft_order_packs` versions
+- `journey_internal_notes` (Part 5)
+- `audit_logs` filtered to entity
+
+No new business state — purely a SELECT-and-merge view component.
+
+### Part 4 — Notification template drafts
+
+Insert 8 rows into existing `email_templates` table with `status='draft'` and `auto_send=false` (add `auto_send boolean default false` column if missing). Templates: `journey_quote_received`, `journey_final_quote_ready`, `journey_cs_ready`, `journey_cs_accepted`, `journey_payment_request_ready`, `journey_payment_pending_confirmation`, `journey_payment_received`, `journey_setup_preparation_started`. Each has subject + body + declared variables + `channel='email'`, customer-safe copy, brutalist aesthetic, escaped via existing `escapeHtml()`. No trigger wiring, no cron, no automatic invocation — admins can preview only in this phase. Admin templates page already exists (`Communications` → Templates) and will list them.
+
+### Part 5 — Admin manual internal notes
+
+New table `public.journey_internal_notes`:
 
 ```text
-[x] Customer profile exists
-[x] Account number assigned
-[x] Quote request linked
-[x] Final quote approved
-[x] Contract Summary accepted
-[x] Accepted CS PDF present (storage_key + sha256)
-[x] Payment request exists
-[ ] Payment status = paid
-[ ] webhook_verified = true
-[ ] paid_at not null
-[x] Supplier product assigned (from quote.supplier_product_id)
-[ ] Installation/setup choice confirmed (admin tick)
-[ ] Router choice confirmed (admin tick)
-[x] Address/postcode confirmed
-[x] Customer contact confirmed
-[ ] Internal admin notes reviewed (admin tick)
-[ ] Admin final review complete (admin tick)
+id uuid pk
+customer_id uuid not null
+payment_request_id uuid null
+quote_id uuid null
+contract_summary_id uuid null
+author_user_id uuid not null            -- admin who wrote it
+body text not null                       -- max 4000 chars
+created_at timestamptz default now()
 ```
 
-Computed checks come from existing rows. The five admin-tick items are stored in a new `provisioning_readiness` table (see Technical section). A row is "ready" only when **all** checks pass — but for F0 we never submit, we just display.
+GRANT: `authenticated` select/insert/update gated by `has_role(auth.uid(),'admin')`; `service_role` all; no `anon`. RLS: admin-only for all operations. Append-only update window of 15 minutes; deletes blocked by trigger. Every insert/update is mirrored into `audit_logs`. Never selected by customer queries. Rendered only in the admin journey view.
 
-Top-of-row status label (Part 6):
+### Part 6 — Source of truth
 
-- payment not verified → **"Awaiting verified payment"**
-- payment verified, ticks incomplete → **"Payment verified — ready for admin review"**
-- ticks complete, no draft pack → **"Admin review complete"**
-- draft pack generated → **"Draft order pack prepared"**
-- always show secondary tag: **"Supplier order not yet submitted"**
+The customer and admin timelines are pure read views over existing rows + the new notes table. No trigger writes to `services`, `invoices`, `dd_mandates`, `orders`, `installation_bookings`, `payment_requests`, or Worldpay tables. No status-flip side effects.
 
-Because the Live webhook secret isn't in place, virtually every real row will sit at "Awaiting verified payment" — that is expected and correct.
+### Part 7 — RLS / security
 
-## Part 3 — Draft Order Pack (read-only)
+- Customer timeline queries filter by `auth.uid()` (or own email for guest-linked `quote_requests`); existing RLS on `quote_requests`, `quotes`, `contract_summaries`, `payment_requests`, `contract_acceptances` already enforces self-only.
+- Admin journey page wrapped in `ProtectedAdminRoute` + server-side `has_role(...,'admin')` checks on `journey_internal_notes`.
+- `anon` cannot read any timeline table; no anon GRANT on the new notes table.
+- Cross-customer probe test: signed-in user requesting another `customer_id` must return 0 rows.
 
-When all checklist items pass, admin can click **"Generate Draft Order Pack"**. This inserts one row into `draft_order_packs` (snapshot JSON) and renders a printable pack containing:
+### Part 8 — Verification
 
-- customer name, account number, service address, postcode, email, phone
-- quote_number, cs_number, payment_request_number
-- selected package (plan_name, plan_type, monthly £ inc/ex VAT, contract length)
-- supplier product assignment (supplier_name, supplier_product_id, internal SKU)
-- router/setup choice, installation notes, customer notes
-- admin checklist snapshot + reviewer name/timestamp
+- Manual QA against `CS-2606-4c6c38a4` / `PR-2606-LIVE1`: customer view stops at "Payment being confirmed"; admin view shows readiness checklist + webhook_verified=false + paid_at=null.
+- Zero-delta queries before/after on `services`, `invoices`, `dd_mandates`, `orders`, `installation_bookings`, `payment_requests` to prove no writes.
+- `communications_log` count unchanged (no auto-sent emails).
+- Cross-tenant + anon denial test.
 
-No supplier API call, no service row, no invoice, no DD mandate, no provisioning row. Pack is regenerable (versioned) and downloadable as HTML/print.
+### Part 9 — Build checks
 
-## Part 4 — Data safety
+TypeScript + Vite production build via the harness.
 
-- `provisioning_readiness` and `draft_order_packs`: RLS allows `authenticated` only via `has_role(auth.uid(),'admin')`; `service_role` full. No `anon` grant. No customer-facing routes, hooks, or RPCs read these tables.
-- Pack rendering uses an admin-only React route under `ProtectedAdminRoute`. Customer dashboard untouched.
-- Supplier cost, margin, supplier internal IDs, admin notes, and pack contents never appear in any customer query or component.
+### Files / migrations
 
-## Part 5 — Future-proof guard
+Migration (one):
 
-Any "Submit to supplier" / "Activate service" / "Provision" button shipped now (in the new readiness page only) is rendered **disabled** with tooltip + label:
+- `CREATE TABLE public.journey_internal_notes` + GRANTs + RLS policies + append-only triggers + audit-mirror trigger.
+- Optional `ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS auto_send boolean DEFAULT false`.
+- 8 `INSERT` rows into `email_templates` (status='draft', auto_send=false). (Run via insert tool after migration.)
 
-> "Supplier order is locked until verified payment is received."
+New files:
 
-There is no handler wired up — the button literally has no onClick that performs supplier/service/invoice/DD writes. A code-level constant `SUPPLIER_SUBMISSION_ENABLED = false` is exported from `src/lib/provisioning/flags.ts` and asserted in the (placeholder) handler so any future regression throws.
+- `src/lib/journey/milestones.ts` — pure derivation logic + customer-safe field whitelist + "next step" copy map.
+- `src/components/dashboard/CustomerJourneyTimeline.tsx`
+- `src/components/admin/AdminJourneyTimeline.tsx`
+- `src/components/admin/JourneyInternalNotes.tsx`
+- `src/pages/admin/CustomerJourney.tsx` + route in `App.tsx` and link from `CustomerDetail`
 
-## Part 6 — Status labels
+Edited files:
 
-Centralised in `src/lib/provisioning/status.ts`:
-`awaiting_verified_payment | payment_verified_ready_for_review | admin_review_complete | draft_order_pack_prepared`.
-Forbidden labels (`order_submitted`, `service_active`, `provisioned`, `live`) are not introduced.
+- `src/components/dashboard/tabs/OrdersTimelineTab.tsx` (replace body with new shared component)
+- `src/components/dashboard/tabs/OverviewTab.tsx` (mount the new timeline card)
+- `src/pages/admin/CustomerDetail.tsx` (add "Journey" tab/link)
+- `src/App.tsx` (admin route)
 
-## Part 7 — Verification
+### Explicitly NOT touched
 
-Manual QA against current data:
-
-- Existing unpaid/unverified PRs (incl. `PR-2606-LIVE1`) appear with **"Awaiting verified payment"**, checklist greys out admin-tick items.
-- `SELECT count(*)` before/after on `services`, `invoices`, `dd_mandates`, `orders`, `installation_bookings` to confirm zero deltas after exercising the new UI.
-- Log into a non-admin session → `/admin/readiness` redirects (existing `ProtectedAdminRoute`); direct table SELECT via anon key returns 0 rows.
-
-## Part 8 — Build checks
-
-TypeScript + Vite production build run automatically by the harness after changes.
-
-## Part 9 — Final report (delivered after build)
-
-Will cover: audit findings, files added/changed, migration summary, checklist behaviour, draft-pack behaviour, payment-gate behaviour, admin-only access proof, customer no-access proof, zero supplier/service/invoice/DD/provisioning writes confirmation, TS/build result, and explicit note that everything past "Draft order pack prepared" remains blocked until the real Worldpay Live webhook secret lands and Phase E closes.
-
----
-
-## Technical section
-
-**Migration** (`supabase/migrations/<ts>_provisioning_readiness.sql`):
-
-1. `CREATE TABLE public.provisioning_readiness` — `id`, `payment_request_id` (FK, unique), `contract_summary_id` (FK), `installation_confirmed bool`, `router_confirmed bool`, `internal_notes_reviewed bool`, `admin_review_complete bool`, `reviewer_user_id uuid`, `reviewer_notes text`, `created_at`, `updated_at`.
-2. `CREATE TABLE public.draft_order_packs` — `id`, `payment_request_id` (FK), `contract_summary_id` (FK), `version int`, `snapshot jsonb`, `generated_by uuid`, `generated_at`, `created_at`.
-3. GRANTs: `SELECT, INSERT, UPDATE, DELETE` to `authenticated`; `ALL` to `service_role`. No `anon`.
-4. `ENABLE ROW LEVEL SECURITY` on both.
-5. Policies: `USING (has_role(auth.uid(),'admin'))` (and `WITH CHECK` same) for all ops; `draft_order_packs` is insert-only for admins (no UPDATE/DELETE policy → effectively append-only).
-6. `update_updated_at_column` trigger on `provisioning_readiness`.
-
-**Frontend**:
-
-- `src/lib/provisioning/flags.ts` — `SUPPLIER_SUBMISSION_ENABLED = false`.
-- `src/lib/provisioning/status.ts` — status enum + label map.
-- `src/lib/provisioning/checklist.ts` — pure computation from PR + CS + quote + profile.
-- `src/pages/admin/Readiness.tsx` — list + detail dialog + checklist toggles + "Generate Draft Order Pack" (gated) + disabled "Submit to supplier" button.
-- `src/components/admin/readiness/DraftOrderPackView.tsx` — printable read-only render.
-- Route registered in `App.tsx` under `ProtectedAdminRoute`; nav entry added to `AdminLayout` sidebar.
-
-**Explicitly NOT touched**: `services`, `invoices`, `dd_mandates`, `orders`, `installation_bookings`, `payment_requests` (no status writes), Worldpay edge functions, billing automation, AI chat, complaints, rewards, campaigns, finance exports.
+Worldpay edge functions, `payment_requests` writes, billing automation, supplier APIs, `services`/`invoices`/`dd_mandates`/`orders`/`installation_bookings`, auto-email triggers, cron schedules, Phase E webhook secret. Phase E remains blocked; nothing in this phase can flip a chain past "Payment being confirmed".

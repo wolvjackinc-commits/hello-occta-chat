@@ -172,18 +172,17 @@ Deno.serve(async (req) => {
 
   if (storageKey) {
     reused = true;
-    // Audit reuse (best-effort; do not fail request on logging error)
+    // Audit reuse via log_event RPC (best-effort)
     try {
-      await supabase.from("activity_log").insert({
-        actor_type: internal ? "system" : (actorId ? "user" : "anon"),
-        actor_id: actorId,
-        contract_summary_id: cs.id,
-        customer_id: cs.customer_id ?? null,
-        event_type: "contract_pdf_existing_reused",
-        title: "Existing Contract Summary PDF reused (no regeneration)",
-        details: { pdf_storage_key: storageKey, pdf_sha256: sha, cs_status: cs.status },
-        source_module: "contract_summaries",
-        severity: "info",
+      await supabase.rpc("log_event", {
+        _actor_type: internal ? "system" : (actorId ? "user" : "anon"),
+        _event_type: "contract_pdf_existing_reused",
+        _title: "Existing Contract Summary PDF reused (no regeneration)",
+        _details: { pdf_storage_key: storageKey, pdf_sha256: sha, cs_status: cs.status },
+        _customer_id: cs.customer_id ?? null,
+        _contract_summary_id: cs.id,
+        _source_module: "contract_summaries",
+        _severity: "info",
       });
     } catch (_) { /* noop */ }
   } else {
@@ -225,16 +224,15 @@ Deno.serve(async (req) => {
     }).eq("id", cs.id);
 
     try {
-      await supabase.from("activity_log").insert({
-        actor_type: internal ? "system" : (actorId ? "user" : "anon"),
-        actor_id: actorId,
-        contract_summary_id: cs.id,
-        customer_id: cs.customer_id ?? null,
-        event_type: "contract_pdf_generated",
-        title: "Contract Summary PDF generated (first time)",
-        details: { pdf_storage_key: storageKey, pdf_sha256: sha, cs_status: cs.status },
-        source_module: "contract_summaries",
-        severity: "info",
+      await supabase.rpc("log_event", {
+        _actor_type: internal ? "system" : (actorId ? "user" : "anon"),
+        _event_type: "contract_pdf_generated",
+        _title: "Contract Summary PDF generated (first time)",
+        _details: { pdf_storage_key: storageKey, pdf_sha256: sha, cs_status: cs.status },
+        _customer_id: cs.customer_id ?? null,
+        _contract_summary_id: cs.id,
+        _source_module: "contract_summaries",
+        _severity: "info",
       });
     } catch (_) { /* noop */ }
   }

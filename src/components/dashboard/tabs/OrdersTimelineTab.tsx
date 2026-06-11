@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Circle } from "lucide-react";
-import { format } from "date-fns";
-import { EmptyState } from "./EmptyState";
-import { Package } from "lucide-react";
-
-type Step = { key: string; label: string; at: string | null };
+import { CustomerJourneyTimeline } from "@/components/dashboard/CustomerJourneyTimeline";
 
 export function OrdersTimelineTab({ userId, userEmail }: { userId: string; userEmail: string | null }) {
+  return <CustomerJourneyTimeline userId={userId} userEmail={userEmail} />;
+}
+
+// Legacy implementation removed in Phase G0 — see CustomerJourneyTimeline.
+function _legacy_unused() {
   const [timeline, setTimeline] = useState<Step[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasAny, setHasAny] = useState(false);

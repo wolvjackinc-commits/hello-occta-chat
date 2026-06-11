@@ -91,6 +91,7 @@ import { AdminSuppliersGiacomImport } from "./pages/admin/SuppliersGiacomImport"
 import { AdminReadiness } from "./pages/admin/Readiness";
 import AdminLaunchSafety from "./pages/admin/LaunchSafety";
 import AdminCustomerJourney from "./pages/admin/CustomerJourney";
+import AdminTasks from "./pages/admin/Tasks";
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -173,6 +174,7 @@ const AnimatedRoutes = () => {
             <Route path="suppliers/giacom-import" element={<AdminSuppliersGiacomImport />} />
             <Route path="readiness" element={<AdminReadiness />} />
             <Route path="launch-safety" element={<AdminLaunchSafety />} />
+            <Route path="tasks" element={<AdminTasks />} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

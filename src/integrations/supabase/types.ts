@@ -3156,6 +3156,42 @@ export type Database = {
           },
         ]
       }
+      retail_price_floors: {
+        Row: {
+          active: boolean
+          created_at: string
+          floor_monthly_gross: number
+          id: string
+          notes: string | null
+          plan_term: string
+          service_type: string
+          speed_bucket: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          floor_monthly_gross: number
+          id?: string
+          notes?: string | null
+          plan_term: string
+          service_type: string
+          speed_bucket: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          floor_monthly_gross?: number
+          id?: string
+          notes?: string | null
+          plan_term?: string
+          service_type?: string
+          speed_bucket?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reward_accounts: {
         Row: {
           bill_credit_balance_cached: number
@@ -4107,6 +4143,10 @@ export type Database = {
         Args: { _new_user_id: string; _qr_id: string; _reason: string }
         Returns: undefined
       }
+      admin_override_quote_floor: {
+        Args: { _quote_id: string; _reason: string }
+        Returns: undefined
+      }
       admin_reject_quote_request: {
         Args: { _qr_id: string; _reason: string }
         Returns: undefined
@@ -4499,6 +4539,10 @@ export type Database = {
           service_type: string
           status: string
         }[]
+      }
+      quote_below_retail_floor: {
+        Args: { _quote_id: string }
+        Returns: boolean
       }
       recompute_reward_balances: {
         Args: { _customer_id: string }

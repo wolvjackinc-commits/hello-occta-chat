@@ -2,476 +2,500 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-wp-signature',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-wp-signature",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Verify webhook signature using HMAC-SHA256
-async function verifySignature(body: string, signature: string | null, secret: string): Promise<boolean> {
-  if (!signature || !secret) {
-    return false;
-  }
+const json = (status: number, data: unknown) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
+async function sha256Hex(input: string): Promise<string> {
+  const bytes = new TextEncoder().encode(input);
+  const buf = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// -------------------- Access Enterprise (HMAC) legacy path --------------------
+async function verifyHmacSignature(
+  body: string,
+  signature: string | null,
+  secret: string,
+): Promise<boolean> {
+  if (!signature || !secret) return false;
   try {
-    const encoder = new TextEncoder();
+    const enc = new TextEncoder();
     const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' },
+      "raw",
+      enc.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
       false,
-      ['sign']
+      ["sign"],
     );
-    
-    const signatureBytes = await crypto.subtle.sign('HMAC', key, encoder.encode(body));
-    const expectedSignature = Array.from(new Uint8Array(signatureBytes))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-    
-    // Constant-time comparison to prevent timing attacks
-    if (signature.length !== expectedSignature.length) {
-      return false;
-    }
-    
+    const sig = await crypto.subtle.sign("HMAC", key, enc.encode(body));
+    const expected = Array.from(new Uint8Array(sig))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    if (signature.length !== expected.length) return false;
     let result = 0;
     for (let i = 0; i < signature.length; i++) {
-      result |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+      result |= signature.charCodeAt(i) ^ expected.charCodeAt(i);
     }
-    
     return result === 0;
-  } catch (error) {
-    console.error('Signature verification error:', error);
+  } catch (err) {
+    console.error("HMAC verify error:", err);
     return false;
   }
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+// -------------------- SMB event validation --------------------
+type SmbAmount = { value: number; currencyCode: string };
+type SmbValidated = {
+  eventId: string;
+  eventTimestamp: string;
+  type: string;
+  transactionReference: string;
+  amount: SmbAmount | null;
+};
+
+// Events allowed on the SMB eCommerce webhook. Only `sentForSettlement`
+// is permitted to mark a payment as paid.
+const SETTLE_EVENT = "sentForSettlement";
+const KNOWN_EVENTS = new Set([
+  "sentForAuthorization",
+  "authorized",
+  SETTLE_EVENT,
+  "refused",
+  "cancelled",
+  "expired",
+  "error",
+]);
+const REQUIRES_AMOUNT = new Set([SETTLE_EVENT]);
+
+function validateSmbShape(
+  payload: unknown,
+):
+  | { ok: false; status: number; missing: string[] }
+  | { ok: true; data: SmbValidated } {
+  const missing: string[] = [];
+  if (!payload || typeof payload !== "object") {
+    return { ok: false, status: 400, missing: ["body"] };
+  }
+  const p = payload as Record<string, any>;
+
+  if (typeof p.eventId !== "string" || !p.eventId) missing.push("eventId");
+  if (typeof p.eventTimestamp !== "string" || !p.eventTimestamp)
+    missing.push("eventTimestamp");
+
+  const details = p.eventDetails;
+  if (!details || typeof details !== "object") {
+    missing.push("eventDetails");
+    return { ok: false, status: 400, missing };
+  }
+  if (details.classification !== "payment")
+    missing.push("eventDetails.classification=payment");
+  if (typeof details.type !== "string" || !details.type)
+    missing.push("eventDetails.type");
+  if (
+    typeof details.transactionReference !== "string" ||
+    !details.transactionReference
+  )
+    missing.push("eventDetails.transactionReference");
+
+  if (missing.length) return { ok: false, status: 400, missing };
+
+  let amount: SmbAmount | null = null;
+  if (
+    details.amount &&
+    typeof details.amount === "object" &&
+    typeof details.amount.value === "number" &&
+    typeof details.amount.currencyCode === "string"
+  ) {
+    amount = {
+      value: details.amount.value,
+      currencyCode: details.amount.currencyCode,
+    };
   }
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const webhookSecret = Deno.env.get('WORLDPAY_WEBHOOK_SECRET');
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  // Settlement event must carry amount/currency.
+  if (REQUIRES_AMOUNT.has(details.type) && !amount) {
+    return {
+      ok: false,
+      status: 400,
+      missing: ["eventDetails.amount.value", "eventDetails.amount.currencyCode"],
+    };
+  }
 
-    // Get the raw body for signature verification
-    const body = await req.text();
-    
-    // SECURITY: Verify webhook signature - REQUIRED
-    const signature = req.headers.get('x-wp-signature') || req.headers.get('X-WP-Signature');
-    
-    // SECURITY: Fail closed - reject webhooks if secret is not configured
+  return {
+    ok: true,
+    data: {
+      eventId: p.eventId,
+      eventTimestamp: p.eventTimestamp,
+      type: details.type,
+      transactionReference: details.transactionReference,
+      amount,
+    },
+  };
+}
+
+// -------------------- Server --------------------
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+  if (req.method !== "POST") {
+    return json(405, { error: "Method not allowed" });
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const gateway = (Deno.env.get("WORLDPAY_GATEWAY_TYPE") || "smb_ecommerce")
+    .toLowerCase();
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const body = await req.text();
+  const payloadSha256 = await sha256Hex(body);
+
+  // Access Enterprise (HMAC) — preserved for forward compatibility.
+  if (gateway === "access_enterprise") {
+    const webhookSecret = Deno.env.get("WORLDPAY_WEBHOOK_SECRET");
+    const signature =
+      req.headers.get("x-wp-signature") || req.headers.get("X-WP-Signature");
     if (!webhookSecret) {
-      console.error('SECURITY ERROR: WORLDPAY_WEBHOOK_SECRET not configured - rejecting webhook');
-      
-      await supabase.from('audit_logs').insert({
-        action: 'worldpay_webhook_missing_secret',
-        entity: 'payment',
-        entity_id: null,
-        metadata: {
-          error: 'Webhook secret not configured',
-          timestamp: new Date().toISOString(),
-        },
+      await supabase.from("audit_logs").insert({
+        action: "worldpay_webhook_missing_secret",
+        entity: "payment",
+        metadata: { gateway, payload_sha256: payloadSha256 },
       });
-      
-      return new Response(JSON.stringify({ error: 'Webhook configuration error' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json(500, { error: "Webhook configuration error" });
     }
-    
-    const isValid = await verifySignature(body, signature, webhookSecret);
-    if (!isValid) {
-      console.error('Invalid webhook signature - rejecting request');
-      
-      // Log the failed attempt
-      await supabase.from('audit_logs').insert({
-        action: 'worldpay_webhook_invalid_signature',
-        entity: 'payment',
-        entity_id: null,
-        metadata: {
-          hasSignature: !!signature,
-          timestamp: new Date().toISOString(),
-        },
+    const valid = await verifyHmacSignature(body, signature, webhookSecret);
+    if (!valid) {
+      await supabase.from("audit_logs").insert({
+        action: "worldpay_webhook_invalid_signature",
+        entity: "payment",
+        metadata: { gateway, hasSignature: !!signature },
       });
-      
-      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json(401, { error: "Invalid signature" });
     }
-    console.log('Webhook signature verified successfully');
+    // Fall through to SMB-style processing for parity; both shapes now use
+    // strict reference/amount validation. Worldpay Access uses a similar
+    // event envelope.
+  }
 
-    const payload = JSON.parse(body);
+  // Parse JSON
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    await supabase.from("audit_logs").insert({
+      action: "worldpay_webhook_malformed",
+      entity: "payment",
+      metadata: { gateway, payload_sha256: payloadSha256 },
+    });
+    return json(400, { error: "Malformed JSON" });
+  }
 
-    console.log('Worldpay webhook received:', JSON.stringify(payload, null, 2));
+  const shape = validateSmbShape(parsed);
+  if (!shape.ok) {
+    await supabase.from("audit_logs").insert({
+      action: "worldpay_webhook_invalid_shape",
+      entity: "payment",
+      metadata: { gateway, missing: shape.missing, payload_sha256: payloadSha256 },
+    });
+    return json(shape.status, { error: "Invalid payload", missing: shape.missing });
+  }
 
-    // Extract event type and data
-    const eventType = payload.eventType || payload.type;
-    const eventId = payload.eventId || payload.id;
-    const eventTimestamp = payload.eventTimestamp || new Date().toISOString();
+  const ev = shape.data;
 
-    // Validate required fields
-    if (!eventType || !eventId) {
-      console.error('Missing required fields in webhook payload');
-      return new Response(JSON.stringify({ error: 'Invalid payload' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Log the webhook event
-    await supabase.from('audit_logs').insert({
-      action: 'worldpay_webhook',
-      entity: 'payment',
-      entity_id: payload.transactionReference || eventId,
+  // Unsupported event type → 200 no-op (safe).
+  if (!KNOWN_EVENTS.has(ev.type)) {
+    await supabase.from("audit_logs").insert({
+      action: "worldpay_webhook_unsupported_event",
+      entity: "payment",
       metadata: {
-        eventType,
-        eventId,
-        eventTimestamp,
-        signatureVerified: !!webhookSecret,
-        payload,
+        gateway,
+        type: ev.type,
+        eventId: ev.eventId,
+        transactionReference: ev.transactionReference,
+        payload_sha256: payloadSha256,
+      },
+    });
+    return json(200, { received: true, ignored: true });
+  }
+
+  // Locate the payment request by exact provider_reference match.
+  const { data: pr, error: prErr } = await supabase
+    .from("payment_requests")
+    .select(
+      "id, status, amount, currency, contract_summary_id, webhook_verified, metadata",
+    )
+    .eq("provider_reference", ev.transactionReference)
+    .maybeSingle();
+
+  if (prErr) {
+    console.error("payment_requests lookup error", prErr);
+    return json(200, { received: true, error: "lookup_error" });
+  }
+  if (!pr) {
+    await supabase.from("audit_logs").insert({
+      action: "worldpay_webhook_unknown_reference",
+      entity: "payment",
+      metadata: {
+        gateway,
+        eventId: ev.eventId,
+        transactionReference: ev.transactionReference,
+        type: ev.type,
+        payload_sha256: payloadSha256,
+      },
+    });
+    return json(200, { received: true, unknown_reference: true });
+  }
+
+  // CS-linked guard — all live PRs in this phase must be CS-linked.
+  if (!pr.contract_summary_id) {
+    await supabase.from("audit_logs").insert({
+      action: "worldpay_webhook_non_cs_linked_rejected",
+      entity: "payment_request",
+      entity_id: pr.id,
+      metadata: {
+        gateway,
+        eventId: ev.eventId,
+        type: ev.type,
+        payload_sha256: payloadSha256,
+      },
+    });
+    return json(200, { received: true, rejected: "non_cs_linked" });
+  }
+
+  // Idempotency: dedupe by eventId across this PR's event log.
+  const { data: existingEvents } = await supabase
+    .from("payment_request_events")
+    .select("id, metadata")
+    .eq("request_id", pr.id);
+  const isDuplicateEventId = (existingEvents ?? []).some(
+    (row: any) => row?.metadata?.eventId === ev.eventId,
+  );
+  if (isDuplicateEventId) {
+    await supabase.from("payment_request_events").insert({
+      request_id: pr.id,
+      event_type: "duplicate_webhook",
+      metadata: {
+        eventId: ev.eventId,
+        type: ev.type,
+        gateway,
+      },
+    });
+    return json(200, { received: true, duplicate: true });
+  }
+
+  // Terminal-paid is immutable; record duplicate and return.
+  const isTerminalPaid = pr.status === "paid" || pr.status === "completed";
+
+  // Optional amount/currency check — strict only on settlement event.
+  const expectedMinor = Math.round(Number(pr.amount || 0) * 100);
+  const expectedCurrency = String(pr.currency || "GBP").toUpperCase();
+  const providerMinor = ev.amount?.value ?? null;
+  const providerCurrency = ev.amount?.currencyCode?.toUpperCase() ?? null;
+
+  if (
+    ev.amount &&
+    (providerMinor !== expectedMinor || providerCurrency !== expectedCurrency)
+  ) {
+    await supabase.from("payment_request_events").insert({
+      request_id: pr.id,
+      event_type: "webhook_amount_mismatch",
+      metadata: {
+        eventId: ev.eventId,
+        type: ev.type,
+        providerMinor,
+        expectedMinor,
+        providerCurrency,
+        expectedCurrency,
+        gateway,
+      },
+    });
+    await supabase.from("audit_logs").insert({
+      action: "worldpay_webhook_amount_mismatch",
+      entity: "payment_request",
+      entity_id: pr.id,
+      metadata: {
+        gateway,
+        eventId: ev.eventId,
+        type: ev.type,
+        providerMinor,
+        expectedMinor,
+        providerCurrency,
+        expectedCurrency,
+        payload_sha256: payloadSha256,
+      },
+    });
+    return json(200, { received: true, mismatch: true });
+  }
+
+  const nowIso = new Date().toISOString();
+  const baseMeta = (pr.metadata && typeof pr.metadata === "object") ? pr.metadata : {};
+
+  // ----- Event routing -----
+  if (ev.type === "sentForAuthorization") {
+    await supabase.from("payment_request_events").insert({
+      request_id: pr.id,
+      event_type: "sent_for_authorization",
+      metadata: {
+        eventId: ev.eventId,
+        gateway,
+        eventTimestamp: ev.eventTimestamp,
+      },
+    });
+    return json(200, { received: true });
+  }
+
+  if (ev.type === "authorized") {
+    await supabase.from("payment_request_events").insert({
+      request_id: pr.id,
+      event_type: "authorized_pending_settlement",
+      metadata: {
+        eventId: ev.eventId,
+        gateway,
+        eventTimestamp: ev.eventTimestamp,
+        amount_minor: providerMinor,
+        currency: providerCurrency,
+      },
+    });
+    // Record provider state in metadata only; do not change status.
+    if (!isTerminalPaid) {
+      await supabase
+        .from("payment_requests")
+        .update({
+          updated_at: nowIso,
+          metadata: {
+            ...baseMeta,
+            last_provider_event: "authorized",
+            last_event_id: ev.eventId,
+          },
+        })
+        .eq("id", pr.id);
+    }
+    return json(200, { received: true, authorized: true });
+  }
+
+  if (ev.type === SETTLE_EVENT) {
+    if (isTerminalPaid) {
+      await supabase.from("payment_request_events").insert({
+        request_id: pr.id,
+        event_type: "duplicate_webhook",
+        metadata: { eventId: ev.eventId, type: ev.type, gateway },
+      });
+      return json(200, { received: true, already_paid: true });
+    }
+
+    const { error: updErr } = await supabase
+      .from("payment_requests")
+      .update({
+        status: "paid",
+        paid_at: nowIso,
+        completed_at: nowIso,
+        webhook_verified: true,
+        provider_payment_id: ev.transactionReference,
+        updated_at: nowIso,
+        metadata: {
+          ...baseMeta,
+          last_provider_event: SETTLE_EVENT,
+          last_event_id: ev.eventId,
+        },
+      })
+      .eq("id", pr.id)
+      .not("status", "in", "(paid,completed)");
+
+    if (updErr) {
+      console.error("Failed to mark PR paid:", updErr);
+      return json(200, { received: true, error: "update_failed" });
+    }
+
+    await supabase.from("payment_request_events").insert({
+      request_id: pr.id,
+      event_type: "paid_via_webhook",
+      metadata: {
+        eventId: ev.eventId,
+        transactionReference: ev.transactionReference,
+        amount_minor: providerMinor,
+        currency: providerCurrency,
+        gateway,
+        payload_sha256: payloadSha256,
+      },
+    });
+    await supabase.from("audit_logs").insert({
+      action: "payment_received_webhook",
+      entity: "payment_request",
+      entity_id: pr.id,
+      metadata: {
+        gateway,
+        eventId: ev.eventId,
+        amount_minor: providerMinor,
+        currency: providerCurrency,
+        cs_linked: true,
       },
     });
 
-    // Handle different event types
-    switch (eventType) {
-      case 'payment.authorized':
-      case 'payment.settled':
-      case 'payment.captured': {
-        // Payment successful - find and update invoice
-        const transactionRef = payload.transactionReference;
-        
-        // Handle INV- references (direct invoice payments)
-        if (transactionRef && transactionRef.startsWith('INV-')) {
-          const invoiceId = transactionRef.split('-')[1];
-          
-          // Validate UUID format before updating
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          if (!uuidRegex.test(invoiceId)) {
-            console.error('Invalid invoice ID format:', invoiceId);
-            break;
-          }
-          
-          // Update invoice status
-          await supabase
-            .from('invoices')
-            .update({ status: 'paid', updated_at: new Date().toISOString() })
-            .eq('id', invoiceId);
+    // NOTE: Phase E payment verification only. DO NOT create invoices,
+    // services, supplier orders, DD mandates, installation bookings or
+    // provisioning rows here. DO NOT send automatic emails.
+    return json(200, { received: true, paid: true });
+  }
 
-          console.log(`Invoice ${invoiceId} marked as paid via webhook`);
-        }
-        
-        // Handle PR- references (payment request flow) - backup mechanism
-        if (transactionRef && transactionRef.startsWith('PR-')) {
-          const prIdPrefix = transactionRef.split('-')[1]; // e.g., "d9ac4843" from "PR-d9ac4843-1738..."
-          console.log(`Processing payment request webhook for PR prefix: ${prIdPrefix}`);
-          
-          // Find payment request by provider_reference
-          const { data: paymentRequest, error: prError } = await supabase
-            .from('payment_requests')
-            .select('id, invoice_id, user_id, amount, currency, status, customer_name, customer_email, contract_summary_id, webhook_verified')
-            .eq('provider_reference', transactionRef)
-            .single();
-          
-          if (prError || !paymentRequest) {
-            console.log('Payment request not found by exact ref, trying prefix match');
-            // Try prefix match as fallback
-            const { data: prByPrefix } = await supabase
-              .from('payment_requests')
-              .select('id, invoice_id, user_id, amount, currency, status, customer_name, customer_email, contract_summary_id, webhook_verified')
-              .like('provider_reference', `PR-${prIdPrefix}%`)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
-            
-            if (!prByPrefix) {
-              console.error('Could not find payment request for transaction:', transactionRef);
-              break;
-            }
-            
-            // Use the found request
-            await processPaymentRequestWebhook(supabase, prByPrefix, eventId, payload);
-          } else {
-            // Already paid/completed and webhook-verified? Skip to avoid duplicates (idempotent)
-            if ((paymentRequest.status === 'paid' || paymentRequest.status === 'completed') && paymentRequest.webhook_verified) {
-              console.log(`Payment request ${paymentRequest.id} already completed, skipping`);
-              break;
-            }
-            
-            await processPaymentRequestWebhook(supabase, paymentRequest, eventId, payload);
-          }
-        }
-        break;
-      }
-
-      case 'payment.failed':
-      case 'payment.refused': {
-        // Payment failed
-        const transactionRef = payload.transactionReference;
-        if (transactionRef && transactionRef.startsWith('INV-')) {
-          const invoiceId = transactionRef.split('-')[1];
-
-          // Validate UUID format
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          if (!uuidRegex.test(invoiceId)) {
-            console.error('Invalid invoice ID format:', invoiceId);
-            break;
-          }
-
-          // Log the failed payment
-          await supabase.from('payment_attempts').insert({
-            invoice_id: invoiceId,
-            amount: (payload.instruction?.value?.amount || 0) / 100,
-            status: 'failed',
-            provider: 'worldpay',
-            provider_ref: eventId,
-            reason: payload.outcome?.reason || 'Payment refused',
-            user_id: payload.metadata?.userId || null,
-          });
-
-          console.log(`Payment failed for invoice ${invoiceId}`);
-        }
-        
-        // Handle PR- references for failed payments
-        if (transactionRef && transactionRef.startsWith('PR-')) {
-          const { data: paymentRequest } = await supabase
-            .from('payment_requests')
-            .select('id, invoice_id, user_id, amount, status')
-            .eq('provider_reference', transactionRef)
-            .single();
-          
-          if (paymentRequest && paymentRequest.status !== 'failed') {
-            await supabase
-              .from('payment_requests')
-              .update({ status: 'failed', updated_at: new Date().toISOString() })
-              .eq('id', paymentRequest.id);
-            
-            // Log failed attempt
-            await supabase.from('payment_attempts').insert({
-              invoice_id: paymentRequest.invoice_id,
-              user_id: paymentRequest.user_id,
-              amount: paymentRequest.amount || 0,
-              status: 'failed',
-              provider: 'worldpay_webhook',
-              provider_ref: eventId,
-              reason: payload.outcome?.reason || 'Payment refused',
-            });
-            
-            console.log(`Payment request ${paymentRequest.id} marked as failed via webhook`);
-          }
-        }
-        break;
-      }
-
-      case 'refund.requested':
-      case 'refund.completed': {
-        // Refund processed
-        const transactionRef = payload.transactionReference;
-        console.log(`Refund ${eventType} for transaction ${transactionRef}`);
-        
-        // Could update invoice status to 'refunded' or create credit note
-        if (transactionRef && transactionRef.startsWith('INV-')) {
-          const invoiceId = transactionRef.split('-')[1];
-          
-          // Validate UUID format
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          if (!uuidRegex.test(invoiceId)) {
-            console.error('Invalid invoice ID format:', invoiceId);
-            break;
-          }
-          
-          const refundAmount = (payload.instruction?.value?.amount || 0) / 100;
-
-          // Create credit note for refund
-          const { data: invoice } = await supabase
-            .from('invoices')
-            .select('user_id')
-            .eq('id', invoiceId)
-            .single();
-
-          if (invoice) {
-            await supabase.from('credit_notes').insert({
-              invoice_id: invoiceId,
-              user_id: invoice.user_id,
-              amount: refundAmount,
-              reason: `Worldpay refund - ${eventId}`,
-            });
-          }
-        }
-        break;
-      }
-
-      case 'chargeback.received':
-      case 'dispute.opened': {
-        // Chargeback/dispute - urgent action needed
-        console.log(`URGENT: Chargeback/dispute received - ${eventId}`);
-        
-        // Log for admin attention
-        await supabase.from('audit_logs').insert({
-          action: 'chargeback_received',
-          entity: 'payment',
-          entity_id: payload.transactionReference || eventId,
-          metadata: {
-            urgent: true,
-            eventType,
-            payload,
-          },
-        });
-        break;
-      }
-
-      default:
-        console.log(`Unhandled webhook event type: ${eventType}`);
+  // refused / cancelled / expired / error
+  if (
+    ev.type === "refused" ||
+    ev.type === "cancelled" ||
+    ev.type === "expired" ||
+    ev.type === "error"
+  ) {
+    if (isTerminalPaid) {
+      // Never override a paid terminal state.
+      await supabase.from("payment_request_events").insert({
+        request_id: pr.id,
+        event_type: "post_paid_failure_ignored",
+        metadata: { eventId: ev.eventId, type: ev.type, gateway },
+      });
+      return json(200, { received: true, already_paid: true });
     }
-
-    // Return 200 to acknowledge receipt
-    return new Response(JSON.stringify({ received: true, eventId }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Webhook processing error:', error);
-    
-    // Still return 200 to prevent Worldpay from retrying
-    // Log the error for investigation
-    return new Response(JSON.stringify({ 
-      received: true, 
-      error: errorMessage,
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-});
-
-// Helper function to process payment request webhooks
-async function processPaymentRequestWebhook(
-  supabase: any,
-  paymentRequest: {
-    id: string;
-    invoice_id: string | null;
-    user_id: string | null;
-    amount: number | null;
-    currency?: string | null;
-    contract_summary_id?: string | null;
-    webhook_verified?: boolean | null;
-    status?: string;
-    customer_name: string;
-    customer_email: string;
-  },
-  eventId: string,
-  payload: any
-) {
-  console.log(`Processing webhook for payment request: ${paymentRequest.id}`);
-
-  const isCsLinked = !!paymentRequest.contract_summary_id;
-  const nowIso = new Date().toISOString();
-
-  // Amount + currency check from provider payload (minor units → major).
-  const providerAmountMinor = Number(payload?.instruction?.value?.amount ?? payload?.value?.amount ?? 0);
-  const providerCurrency = String(payload?.instruction?.value?.currency ?? payload?.value?.currency ?? 'GBP').toUpperCase();
-  const expectedAmountMinor = Math.round(Number(paymentRequest.amount || 0) * 100);
-  const expectedCurrency = String(paymentRequest.currency || 'GBP').toUpperCase();
-
-  const amountMatches = providerAmountMinor === expectedAmountMinor;
-  const currencyMatches = providerCurrency === expectedCurrency;
-
-  if (isCsLinked && (!amountMatches || !currencyMatches)) {
-    console.error('CS-linked PR amount/currency mismatch; refusing to mark paid', {
-      providerAmountMinor, expectedAmountMinor, providerCurrency, expectedCurrency,
-    });
-    await supabase.from('audit_logs').insert({
-      action: 'worldpay_webhook_amount_mismatch',
-      entity: 'payment_request',
-      entity_id: paymentRequest.id,
-      metadata: { providerAmountMinor, expectedAmountMinor, providerCurrency, expectedCurrency, eventId },
-    }).catch(() => {});
-    await supabase.from('payment_request_events').insert({
-      request_id: paymentRequest.id,
-      event_type: 'webhook_amount_mismatch',
-      metadata: { providerAmountMinor, expectedAmountMinor, providerCurrency, expectedCurrency, eventId },
-    }).catch(() => {});
-    return;
-  }
-
-  // CS-linked: write authoritative paid state via service role.
-  // Legacy invoice flow: keep historical 'completed' status untouched for downstream code paths.
-  const updatePayload: Record<string, unknown> = isCsLinked
-    ? {
-        status: 'paid',
-        paid_at: nowIso,
-        webhook_verified: true,
-        provider_payment_id: payload?.paymentInstrument?.paymentId ?? payload?.paymentId ?? eventId,
-        completed_at: nowIso,
-        updated_at: nowIso,
-      }
-    : {
-        status: 'completed',
-        completed_at: nowIso,
-        updated_at: nowIso,
-      };
-
-  const { error: updErr } = await supabase
-    .from('payment_requests')
-    .update(updatePayload)
-    .eq('id', paymentRequest.id);
-  if (updErr) {
-    console.error('Failed to update payment_request from webhook:', updErr);
-    return;
-  }
-  
-  // Update payment attempt to success
-  await supabase
-    .from('payment_attempts')
-    .update({ status: 'success' })
-    .eq('provider_ref', payload.transactionReference)
-    .eq('status', 'pending');
-
-  // Legacy: invoice-linked PRs create a receipt + mark invoice paid (Phase E does NOT create invoices for CS flow).
-  if (!isCsLinked && paymentRequest.invoice_id) {
-    // Mark invoice as paid
+    const newStatus = ev.type === "cancelled" ? "cancelled" : "failed";
     await supabase
-      .from('invoices')
-      .update({ status: 'paid', updated_at: new Date().toISOString() })
-      .eq('id', paymentRequest.invoice_id);
-    
-    // Create receipt
-    const receiptRef = `RCP-WH-${Date.now().toString(36).toUpperCase()}`;
-    await supabase.from('receipts').insert({
-      invoice_id: paymentRequest.invoice_id,
-      user_id: paymentRequest.user_id,
-      amount: paymentRequest.amount || 0,
-      method: 'card',
-      reference: receiptRef,
-      paid_at: new Date().toISOString(),
+      .from("payment_requests")
+      .update({
+        status: newStatus,
+        failed_at: nowIso,
+        updated_at: nowIso,
+        metadata: {
+          ...baseMeta,
+          last_provider_event: ev.type,
+          last_event_id: ev.eventId,
+        },
+      })
+      .eq("id", pr.id)
+      .not("status", "in", "(paid,completed)");
+
+    await supabase.from("payment_request_events").insert({
+      request_id: pr.id,
+      event_type:
+        ev.type === "cancelled" ? "cancelled_via_webhook" : "failed_via_webhook",
+      metadata: {
+        eventId: ev.eventId,
+        type: ev.type,
+        gateway,
+        amount_minor: providerMinor,
+        currency: providerCurrency,
+      },
     });
-    
-    console.log(`Created receipt ${receiptRef} for invoice via webhook`);
+    return json(200, { received: true, status: newStatus });
   }
-  
-  // Log event
-  await supabase.from('payment_request_events').insert({
-    request_id: paymentRequest.id,
-    event_type: isCsLinked ? 'paid_via_webhook' : 'completed_via_webhook',
-    metadata: { worldpay_event_id: eventId, amount_minor: providerAmountMinor, currency: providerCurrency, cs_linked: isCsLinked },
-  });
-  
-  // Audit log
-  await supabase.from('audit_logs').insert({
-    action: 'payment_received_webhook',
-    entity: 'payment_request',
-    entity_id: paymentRequest.id,
-    metadata: {
-      invoice_id: paymentRequest.invoice_id,
-      amount: paymentRequest.amount,
-      worldpay_event_id: eventId,
-      cs_linked: isCsLinked,
-    },
-  });
-  
-  console.log(`Payment request ${paymentRequest.id} completed via webhook`);
-}
+
+  // Should be unreachable (KNOWN_EVENTS check above).
+  return json(200, { received: true });
+});

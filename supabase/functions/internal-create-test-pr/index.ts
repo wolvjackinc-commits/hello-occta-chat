@@ -61,7 +61,7 @@ serve(async (req) => {
         body: JSON.stringify({
           transactionReference: transactionRef,
           merchant: { entity },
-          narrative: { line1: `OCCTA INTERNAL TEST ${pr.payment_request_number}` },
+          narrative: { line1: `OCCTA TEST` },
           value: { currency: pr.currency ?? 'GBP', amount: Math.round(Number(pr.amount) * 100) },
           resultURLs: {
             successURL: `${returnUrl}&status=success`,

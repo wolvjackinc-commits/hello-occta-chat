@@ -224,6 +224,7 @@ const AnimatedRoutes = () => {
         <Route path="/billing-settings" element={<BillingSettings />} />
         <Route path="/no-contract-broadband-uk" element={<NoContractBroadband />} />
         <Route path="/pay" element={<Pay />} />
+        <Route path="/pay/_internal" element={<PayInternalReturn />} />
         <Route path="/dd/setup" element={<DDSetup />} />
         <Route path="/guides" element={<Guides />} />
         <Route path="/guides/:slug" element={<GuidePage />} />

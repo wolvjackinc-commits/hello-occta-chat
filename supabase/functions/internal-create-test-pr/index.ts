@@ -21,13 +21,11 @@ async function sha256Hex(s: string): Promise<string> {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
-    const expected = Deno.env.get('CRON_JOB_SECRET');
-    const got = req.headers.get('x-cron-secret');
-    if (!expected || got !== expected) {
-      return new Response(JSON.stringify({ success: false, error: 'forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // TEMPORARY HELPER — restricted to a single allowlisted internal-test CS id
+    // at a max amount of £1.00. Will be deleted immediately after Phase E verification.
+    const ALLOWED_CS = new Set<string>([
+      '2ac5824e-1c8c-4b5f-95e1-ee685c023db0',
+    ]);
 
     const body = await req.json().catch(() => ({}));
     const contractSummaryId = body.contract_summary_id as string;

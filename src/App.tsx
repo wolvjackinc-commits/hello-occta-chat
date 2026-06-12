@@ -32,6 +32,7 @@ import { AdminCommunications } from "./pages/admin/Communications";
 import { AdminChatTranscripts } from "./pages/admin/ChatTranscripts";
 import Broadband from "./pages/Broadband";
 import Pay from "./pages/Pay";
+import PayInternalReturn from "./pages/PayInternalReturn";
 import DDSetup from "./pages/DDSetup";
 import SimPlans from "./pages/SimPlans";
 import Landline from "./pages/Landline";
@@ -224,6 +225,7 @@ const AnimatedRoutes = () => {
         <Route path="/billing-settings" element={<BillingSettings />} />
         <Route path="/no-contract-broadband-uk" element={<NoContractBroadband />} />
         <Route path="/pay" element={<Pay />} />
+        <Route path="/pay/_internal" element={<PayInternalReturn />} />
         <Route path="/dd/setup" element={<DDSetup />} />
         <Route path="/guides" element={<Guides />} />
         <Route path="/guides/:slug" element={<GuidePage />} />

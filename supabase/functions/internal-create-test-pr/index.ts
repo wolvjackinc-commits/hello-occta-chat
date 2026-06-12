@@ -31,7 +31,7 @@ serve(async (req) => {
     const contractSummaryId = body.contract_summary_id as string;
     const amount = Number(body.amount ?? 0.10);
     const label = String(body.label ?? 'INTERNAL TEST — DO NOT PROCESS');
-    if (!contractSummaryId || !(amount > 0)) {
+    if (!contractSummaryId || !ALLOWED_CS.has(contractSummaryId) || !(amount > 0) || amount > 1.00) {
       return new Response(JSON.stringify({ success: false, error: 'bad_input' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

@@ -58,5 +58,5 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = false
   [functions.log-event]
     verify_jwt = false
-  [functions._internal-create-test-pr]
+  [functions.internal-create-test-pr]
     verify_jwt = false

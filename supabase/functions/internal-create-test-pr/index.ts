@@ -28,16 +28,73 @@ serve(async (req) => {
     ]);
 
     const body = await req.json().catch(() => ({}));
+    const mode = String(body.mode ?? 'create');
     const contractSummaryId = body.contract_summary_id as string;
     const amount = Number(body.amount ?? 0.10);
     const label = String(body.label ?? 'INTERNAL TEST — DO NOT PROCESS');
+
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+    // Mode: open-session — open an HPP session for an existing internal-test PR.
+    if (mode === 'open-session') {
+      const prId = String(body.payment_request_id ?? '');
+      const { data: pr } = await supabase.from('payment_requests')
+        .select('id, contract_summary_id, amount, currency, customer_email, payment_request_number, status, metadata')
+        .eq('id', prId).single();
+      if (!pr || !pr.contract_summary_id || !ALLOWED_CS.has(pr.contract_summary_id) || !(pr.metadata as any)?.internal_test || pr.amount > 1) {
+        return new Response(JSON.stringify({ success: false, error: 'pr_not_eligible' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const u = Deno.env.get('WORLDPAY_API_USERNAME');
+      const p = Deno.env.get('WORLDPAY_API_PASSWORD');
+      const entity = Deno.env.get('WORLDPAY_ENTITY_ID');
+      const baseUrl = isLiveMode ? WORLDPAY_LIVE_URL : WORLDPAY_TRY_URL;
+      const transactionRef = `PR-${pr.id.slice(0, 8)}-${Date.now()}`;
+      const origin = String(body.origin ?? 'https://www.occta.co.uk');
+      const returnUrl = `${origin}/pay/_internal?type=card_payment`;
+      const resp = await fetch(`${baseUrl}/payment_pages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${u}:${p}`),
+          'Accept': 'application/vnd.worldpay.payment_pages-v1.hal+json',
+          'Content-Type': 'application/vnd.worldpay.payment_pages-v1.hal+json',
+        },
+        body: JSON.stringify({
+          transactionReference: transactionRef,
+          merchant: { entity },
+          narrative: { line1: `OCCTA INTERNAL TEST ${pr.payment_request_number}` },
+          value: { currency: pr.currency ?? 'GBP', amount: Math.round(Number(pr.amount) * 100) },
+          resultURLs: {
+            successURL: `${returnUrl}&status=success`,
+            failureURL: `${returnUrl}&status=failed`,
+            cancelURL: `${returnUrl}&status=cancelled`,
+          },
+          riskData: { account: { email: pr.customer_email } },
+        }),
+      });
+      const result = await resp.json();
+      if (!resp.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'wp_failed', status: resp.status, result }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const checkoutUrl = result.url ?? result._links?.checkout?.href;
+      await supabase.from('payment_requests').update({
+        provider: 'worldpay', provider_reference: transactionRef,
+        provider_checkout_url: checkoutUrl,
+        provider_session_id: result?._links?.self?.href ?? null,
+        status: 'checkout_created',
+      }).eq('id', pr.id);
+      return new Response(JSON.stringify({
+        success: true, payment_request_id: pr.id,
+        payment_request_number: pr.payment_request_number,
+        amount: pr.amount, transactionReference: transactionRef, checkoutUrl,
+        mode: isLiveMode ? 'live' : 'test',
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     if (!contractSummaryId || !ALLOWED_CS.has(contractSummaryId) || !(amount > 0) || amount > 1.00) {
       return new Response(JSON.stringify({ success: false, error: 'bad_input' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
     const { data: cs, error: csErr } = await supabase
       .from('contract_summaries')

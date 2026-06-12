@@ -41,7 +41,7 @@ serve(async (req) => {
 
     const { data: cs, error: csErr } = await supabase
       .from('contract_summaries')
-      .select('id, cs_number, status, customer_email_snapshot, customer_name_snapshot, account_number, user_id')
+      .select('id, cs_number, status, customer_email_snapshot, customer_name_snapshot, account_number, customer_id')
       .eq('id', contractSummaryId).single();
     if (csErr || !cs) {
       return new Response(JSON.stringify({ success: false, error: 'cs_not_found' }), {
@@ -73,7 +73,7 @@ serve(async (req) => {
         customer_email: cs.customer_email_snapshot ?? 'internal-test@occta.co.uk',
         customer_name: cs.customer_name_snapshot ?? label,
         account_number: cs.account_number,
-        user_id: cs.user_id,
+        user_id: cs.customer_id,
         contract_summary_id: cs.id,
         token_hash: tokenHash,
         expires_at: expiresAt,

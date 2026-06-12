@@ -12,7 +12,7 @@ import SEO from "@/components/seo/SEO";
 export default function PayInternalReturn() {
   return (
     <main className="min-h-screen bg-background flex items-center justify-center px-4 py-16">
-      <SEO title="Payment received | Occta" description="Payment received — we're confirming your order." noindex />
+      <SEO title="Payment received | Occta" description="Payment received — we're confirming your order." noIndex />
 
       <div className="w-full max-w-xl border-2 border-foreground bg-card p-8 md:p-12 relative overflow-hidden">
         {/* Telecom-themed animated signal waves */}

@@ -32,6 +32,7 @@ import { AdminCommunications } from "./pages/admin/Communications";
 import { AdminChatTranscripts } from "./pages/admin/ChatTranscripts";
 import Broadband from "./pages/Broadband";
 import Pay from "./pages/Pay";
+import PayInternalReturn from "./pages/PayInternalReturn";
 import DDSetup from "./pages/DDSetup";
 import SimPlans from "./pages/SimPlans";
 import Landline from "./pages/Landline";

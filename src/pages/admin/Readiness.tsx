@@ -110,12 +110,11 @@ export const AdminReadiness = () => {
         </Button>
       </div>
 
-      <Card className="border-2 border-warning bg-warning/10 p-4 flex items-start gap-3">
-        <ShieldAlert className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+      <Card className="border-2 border-primary bg-primary/10 p-4 flex items-start gap-3">
+        <ShieldAlert className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <div className="text-sm">
-          <strong>Phase E webhook sign-off pending.</strong> Until the live Worldpay webhook signing secret is in place,
-          no payment can pass <code>webhook_verified</code>. Rows here will read “Awaiting verified payment”.
-          Supplier submission and service activation remain hard-locked.
+          <strong>Payment verification is live via Worldpay SMB webhook.</strong> Webhooks are verified and payments progress to <code>webhook_verified=true</code> automatically.
+          Supplier automation remains locked; use manual fulfilment.
         </div>
       </Card>
 

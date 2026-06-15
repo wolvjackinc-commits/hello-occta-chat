@@ -9,7 +9,7 @@ const Footer = () => {
     services: [
       { name: "Broadband", path: "/broadband" },
       { name: "SIM Plans", path: "/sim-plans" },
-      { name: "Digital Home Phone", path: "/landline" },
+      { name: "Digital Voice (Home Phone)", path: "/landline" },
       { name: "Business", path: "/business" },
     ],
     support: [
@@ -17,6 +17,7 @@ const Footer = () => {
       { name: "AI Assistant", path: "/support#ai-help" },
       { name: "My Dashboard", path: "/dashboard" },
       { name: "Service Status", path: "/status" },
+      { name: "Contact Us", path: "/support#contact" },
     ],
     legal: [
       { name: "Privacy Policy", path: "/privacy" },
@@ -34,6 +35,7 @@ const Footer = () => {
       { name: "Network Management", path: "/legal/network-management" },
       { name: "Accessibility", path: "/legal/accessibility" },
       { name: "Modern Slavery", path: "/legal/modern-slavery" },
+      { name: "Digital Voice & Emergency Calls", path: "/guides/digital-voice-uk" },
     ],
     guides: [
       { name: "No Contract Broadband", path: "/guides/no-contract-broadband-uk" },

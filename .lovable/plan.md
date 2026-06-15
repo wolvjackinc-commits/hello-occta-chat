@@ -1,240 +1,112 @@
-Approved — proceed with Phase E Worldpay SMB HPP Webhook Mode, with the corrections below.
 
-Worldpay has confirmed OCCTA is on SMB Worldpay eCommerce gateway, not Access Enterprise.
+# OCCTA Website Completion Sprint
 
-Set:
+Goal: ship a launch-ready site with verified payment flow and a **manual** fulfilment model. No supplier API calls, no auto-services, no auto-invoices, no auto-DD, no auto-provisioning.
 
-`WORLDPAY_GATEWAY_TYPE=smb_ecommerce`
+---
 
-Do not require `WORLDPAY_WEBHOOK_SECRET` in SMB mode.
+## 1. Public website polish
 
-Keep Access Enterprise/HMAC branch only for future compatibility.
+Audit + tighten each page, fix copy/CTA/responsive issues. No structural rewrites unless broken.
 
-Critical correction 1 — amount/currency validation by event type
+- **Home** (`src/pages/Index.tsx`) — hero CTAs (Check availability / Get quote / Contact), trust signals, services strip.
+- **Broadband** (`src/pages/Broadband.tsx`) + `broadband/Flex.tsx`, `ContractSaver.tsx`, `NoContractBroadband.tsx`, `LocationBroadband.tsx`.
+- **SIM** (`src/pages/SimPlans.tsx`) — keep if live, otherwise hide from nav.
+- **Digital Voice / Home Phone** (`src/pages/Landline.tsx`) — reframe as Digital Voice; emergency-call wording; remove "standalone landline" framing.
+- **Business** (`src/pages/Business.tsx`, `BusinessOffers.tsx`, `BusinessSales.tsx`).
+- **About** (`src/pages/About.tsx`), **Support/Contact** (`src/pages/Support.tsx`), **FAQ** (`src/pages/Faq.tsx`).
+- **Header/Footer** — ensure Digital Voice replaces "Home Phone" where it implies standalone; legal links present in footer.
 
-Do not require `eventDetails.amount.value` and `eventDetails.amount.currencyCode` for every event.
+**Rule:** landline appears **only** as a Digital Voice add-on in checkout/bundle UI, never as a standalone purchase path.
 
-Required for paid-state event:
+## 2. Customer journey polish
 
-- `sentForSettlement` must have amount.value and currencyCode.
-- Amount must exactly match PR amount in minor units.
-- Currency must exactly match PR currency, GBP.
+- **Dashboard** (`src/pages/Dashboard.tsx` + `src/components/dashboard/tabs/*`):
+  - Overview, Quotes, Contract Summaries, Invoices, Services, Timeline, Documents, Support, Account.
+  - Fix empty states with friendly copy + next-step CTAs.
+  - Surface Quote status → CS status → Payment status → "Awaiting fulfilment" badge after paid.
+- **Post-payment confirmation**: `/pay/_internal` already safe; ensure invoice success screen + Dashboard reflect "Payment received — we'll contact you with next steps".
+- **No internal data leak**: hide supplier name, wholesale cost, margin, internal notes from all customer views. Audit `ServicesTab`, `InvoicesTab`, `ContractSummariesTab`, `OrderTracking`.
 
-For these events:
+## 3. Admin dashboard polish
 
-- `sentForAuthorization`
-- `authorized`
-- `cancelled`
-- `expired`
+Confirm sidebar links + each page renders and is usable:
 
-Validate amount/currency if present. If missing, log safely and do not mark paid.
+- Overview, Quotes, Quote Requests, Contract Benefits, Customers, Customer Detail/Journey, Orders, Payment Requests, Payments/DD, Services, Installations, Suppliers, Suppliers Giacom Import, Plans, Pricing Rules, Margin Rules, VAT, Fair Pricing, Compliance, Complaints, Tickets, Communications, Campaigns, Chat Transcripts, KB, Audit Log, Readiness, Launch Safety, Tasks, Settings.
+- Add the new **Manual Fulfilment** entry (section 4).
+- Fix table usability (empty states, loading, mobile horizontal scroll).
 
-For these events:
+## 4. Manual Fulfilment / Supplier Order Tracker (NEW, admin-only)
 
-- `refused`
-- `error`
+A tracking-only record. **Never** touches suppliers, services, invoices, DD, or provisioning.
 
-Do not reject solely because amount is missing. Worldpay examples may not include amount for these failure events. Match by `transactionReference`, then mark failed only if current PR is not already paid/completed.
+### New table `manual_fulfilment_orders`
+Fields: `id`, `customer_id`, `account_number`, `payment_request_id`, `contract_summary_id`, `selected_product_label`, `supplier_product_ref`, `supplier_name`, `supplier_portal_reference`, `notes`, `status` enum (`ready_for_manual_order` | `order_entered_in_supplier_portal` | `supplier_acknowledged` | `installation_pending` | `active` | `cancelled`), `created_by`, `created_at`, `updated_at`, `activated_at`.
 
-Critical correction 2 — transactionReference must be unguessable
+RLS:
+- `service_role` full.
+- `authenticated` `SELECT/INSERT/UPDATE` only when `has_role(auth.uid(), 'admin')`.
+- No anon, no customer access.
 
-Because SMB mode has no HMAC secret, never rely on a public/simple reference.
+### Eligibility guard (DB function + UI guard)
+`can_create_manual_fulfilment(payment_request_id)` returns true only when:
+- linked CS exists, `accepted_at not null`, `accepted_pdf_url not null`
+- `payment_requests.status = 'paid'` AND `webhook_verified = true` AND `paid_at not null`
+- `provisioning_readiness` checklist for CS marked complete
+- admin "final review" flag set (new boolean on CS or readiness row — pick the least invasive)
 
-Only accept webhook if:
+Insert trigger calls the guard and raises if false.
 
-- `eventDetails.transactionReference` exactly equals `payment_requests.provider_reference`
-- provider_reference is the Worldpay-generated/session transaction reference, not customer-facing PR number alone
-- PR is CS-linked
-- PR is not already terminal unless duplicate/idempotent
-- amount/currency match for `sentForSettlement`
+### Admin UI
+New page `src/pages/admin/ManualFulfilment.tsx` + row drawer:
+- List with filter by status + customer search.
+- "Create tracker" dialog: pick paid PR → auto-fills customer/CS/product → admin enters supplier choice + portal ref + notes.
+- Status transitions via dropdown (audit-logged).
+- Read-only "Mark service active" button: only flips tracker status to `active` and writes audit log. **Does not** create a `services` row, invoice, or DD unless an existing safe path already does so — to be confirmed by audit in section 6 before wiring.
 
-Critical correction 3 — paid only on sentForSettlement
+### Hard guarantees
+- No edge function calls Giacom/ICUK supplier APIs from this flow.
+- No `services`, `invoices`, `dd_mandates`, `provisioning_readiness`, `installation_bookings`, `orders`, or `draft_order_packs` rows are written by tracker create/update.
 
-Do not mark paid on:
+## 5. Legal / compliance polish
 
-- `sentForAuthorization`
-- `authorized`
-- browser return
-- admin manual action
-- customer action
+Verify pages exist and are linked from footer + checkout consent: Terms, Privacy, Cookie, Acceptable Use, Complaints Code, Code of Practice, Switching, Vulnerable Customers, Price Transparency, Network Management, Modern Slavery, Accessibility. Ensure Digital Voice emergency-call wording is on Landline page + checkout. VAT display rules: residential incl. VAT, business excl. + explicit VAT line.
 
-Only `sentForSettlement` can mark paid, and only after all checks pass.
+## 6. Service activation audit (read-only first)
 
-Critical correction 4 — webhook acknowledgement
+Before exposing "Mark active" anywhere beyond the tracker, grep + read: any code path that, on a status flip, creates `services` / `invoices` / `dd_mandates` / calls supplier edge functions. Document findings. If unsafe automation exists, leave tracker status as cosmetic only and report.
 
-Return HTTP 200 for safely handled business rejects such as:
+## 7. Security sweep
 
-- unknown reference
-- unsupported event
-- duplicate event
-- amount mismatch
-- currency mismatch
+- Confirm `ProtectedAdminRoute` wraps every `/admin/*`.
+- RLS on new table + GRANTs (`authenticated`, `service_role`; no `anon`).
+- Re-check customer-facing queries don't select supplier cost/margin/internal-note columns.
+- No secrets in client; payment tokens remain hashed (existing standard).
+- Run `supabase--linter` after migration.
 
-But make sure there is no state change except safe audit/event logging.
+## 8. UX fixes pass
 
-Return 400 only for malformed JSON or invalid basic shape where no useful event can be interpreted.
+Broken links, 404s, dashboard empty states, button clarity, mobile responsive (test 360/768/1280), readable success/error toasts, admin table overflow.
 
-Critical correction 5 — no downstream artefacts
+## 9. Build & verification
 
-Even after payment becomes paid:
+- TypeScript compile clean.
+- Vite production build.
+- Smoke route check: `/`, `/broadband`, `/business`, `/landline`, `/sim-plans`, `/about`, `/support`, `/faq`, `/auth`, `/dashboard`, `/admin/overview`, `/admin/manual-fulfilment`, `/pay/_internal`.
+- Read-only DB sweep confirming zero downstream artefacts created by tracker.
 
-Do not create:
+## 10. Final report
 
-- supplier orders
-- services
-- invoices
-- DD mandates
-- provisioning rows
-- installation bookings
-- telecom orders
-- automatic emails
+Pages completed (public/admin/customer), tracker capabilities, what stays manual, what remains blocked, files changed, migrations added, RLS/lint results, build result, **launch readiness verdict**.
 
-Phase E closes payment verification only. Supplier ordering remains a later phase.
+---
 
-Verification after deploy:
+### Technical notes (for reviewer)
 
-1. Confirm webhook URL:  
-`https://oexgjmuvgdndizsufipe.functions.supabase.co/worldpay-webhook`
-2. Confirm Worldpay payment events enabled.
-3. Confirm:  
-`WORLDPAY_GATEWAY_TYPE=smb_ecommerce`
-4. Create fresh CS-linked internal test PR:  
-`INTERNAL TEST — DO NOT PROCESS`
-5. Complete a small Live card payment only after admin confirmation.
-6. Report events received:
+- New files: `src/pages/admin/ManualFulfilment.tsx`, `src/components/admin/manualFulfilment/{TrackerTable,CreateTrackerDialog,TrackerDetailDrawer}.tsx`, migration for `manual_fulfilment_orders` + enum + guard function + trigger + RLS + GRANTs, sidebar link in `AdminLayout`, route in `App.tsx` under `ProtectedAdminRoute`.
+- Edits: minor copy/CTA tweaks on public pages; dashboard tab empty states; footer legal link audit; `Landline.tsx` framing.
+- No edits to: `supabase/functions/worldpay-webhook`, `verify-payment`, billing automation, provisioning, supplier import functions.
 
-- sentForAuthorization
-- authorized
-- sentForSettlement
-- refused/cancelled/expired/error if any
+### Out of scope (intentionally deferred)
 
-7. Confirm PR becomes paid only on `sentForSettlement`.
-8. Run negative tests:
-
-- wrong transactionReference rejected/no state change
-- wrong amount rejected/no state change
-- wrong currency rejected/no state change
-- duplicate event idempotent
-- browser return cannot mark paid
-- customer cannot mark paid
-- admin cannot manually mark paid
-
-9. Confirm no downstream artefacts created.
-
-Do not close Phase E until the Live SMB webhook test passes safely.  
-  
-  
-  
-  
-Phase E — Worldpay SMB HPP Webhook Mode
-
-Worldpay confirmed OCCTA is on the **SMB eCommerce gateway**, not Access Enterprise. SMB HPP does not provide an HMAC signing secret, so the current `WORLDPAY_WEBHOOK_SECRET`-gated path cannot ever succeed. We replace HMAC with strict SMB payload validation while keeping payment safety intact.
-
-No supplier orders, services, invoices, DD mandates, provisioning, or installation bookings are created by this phase. Browser return and manual admin actions still cannot mark a PR paid.
-
-## Scope
-
-Only the webhook function and one new secret. No frontend or DB schema changes required. No payment_request status enum widening — `authorized_pending_settlement` (intermediate) is recorded on `payment_request_events` + `metadata`, not in `status` (which is constrained).
-
-## Secrets
-
-- Add: `WORLDPAY_GATEWAY_TYPE` (value `smb_ecommerce`).
-- Keep: existing Worldpay Live API secrets.
-- No `WORLDPAY_WEBHOOK_SECRET` required in SMB mode (HMAC path skipped when gateway type is `smb_ecommerce`). Access Enterprise path is preserved for future use.
-
-## File: `supabase/functions/worldpay-webhook/index.ts` (rewrite)
-
-Behaviour:
-
-1. **Method gate** — only `POST` accepted (plus `OPTIONS` for CORS). Anything else → `405`, no state change.
-2. **Mode select** — read `WORLDPAY_GATEWAY_TYPE`. Default `smb_ecommerce`. If `access_enterprise`, keep current HMAC verification path unchanged.
-3. **Parse** — `await req.text()` then `JSON.parse`. On parse failure → `400`, audit `worldpay_webhook_malformed`, no state change.
-4. **SMB shape validation** — require all of:
-  - `eventId` (string)
-  - `eventTimestamp` (string)
-  - `eventDetails` (object)
-  - `eventDetails.classification === 'payment'`
-  - `eventDetails.transactionReference` (string)
-  - `eventDetails.type` (string)
-  - `eventDetails.amount.value` (number, minor units)
-  - `eventDetails.amount.currencyCode` (string)
-   Any missing → `400`, audit `worldpay_webhook_invalid_shape` with the missing key list (no payload PII), no state change.
-5. **Allowed event types** (case-sensitive):
-  - `sentForAuthorization` → log only, no status change.
-  - `authorized` → record intermediate via `payment_request_events.event_type = 'authorized_pending_settlement'` + `metadata.last_provider_event = 'authorized'`. PR `status` stays `checkout_created`/`pending`. No supplier/service/invoice/DD/provisioning side effects.
-  - `sentForSettlement` → the only event allowed to mark `paid` (after all matches).
-  - `refused`, `cancelled`, `expired`, `error` → mark `status='failed'` (or `'cancelled'` for `cancelled`) ONLY if current status is not already a terminal `paid`/`completed`. Never override `paid`.
-  - Anything else → log to `audit_logs` as `worldpay_webhook_unsupported_event` and return `200` without state change.
-6. **Reference match** — `eventDetails.transactionReference` must equal an existing `payment_requests.provider_reference` exactly. No prefix fallback in SMB mode. No match → `200` with audit `worldpay_webhook_unknown_reference`, no state change.
-7. **CS-linked guard** — matched PR must have `contract_summary_id IS NOT NULL`. Otherwise audit `worldpay_webhook_non_cs_linked_rejected` and return `200` without state change.
-8. **Amount/currency match** — `eventDetails.amount.value === round(pr.amount * 100)` AND `eventDetails.amount.currencyCode.toUpperCase() === pr.currency.toUpperCase()` (default `GBP`). Mismatch → audit `worldpay_webhook_amount_mismatch` + `payment_request_events('webhook_amount_mismatch')`, no status change, return `200`.
-9. **Idempotency**:
-  - If PR already `paid`/`completed` with `webhook_verified=true`, treat as duplicate: insert a `payment_request_events('duplicate_webhook')` with `eventId`, return `200`.
-  - De-dup by `eventId`: before any state change, check `payment_request_events` for an existing event row whose `metadata->>'eventId'` equals incoming `eventId`. If present, return `200` no-op.
-  - Paid terminal state is immutable.
-10. **Paid path** (only when event type is `sentForSettlement` AND all checks pass):
-  - `UPDATE payment_requests SET status='paid', paid_at=now(), webhook_verified=true, provider_payment_id=eventDetails.transactionReference (or providerTransactionId if present), completed_at=now(), updated_at=now(), metadata = metadata || jsonb_build_object('last_provider_event','sentForSettlement','last_event_id',eventId) WHERE id=pr.id AND status NOT IN ('paid','completed')`.
-    - Insert `payment_request_events('paid_via_webhook', { eventId, transactionReference, amount_minor, currency, payload_sha256 })`.
-    - Insert `audit_logs('payment_received_webhook', 'payment_request', pr.id, { eventId, amount, cs_linked:true, gateway:'smb_ecommerce' })`.
-    - DO NOT create invoices, services, supplier orders, DD mandates, installation bookings, provisioning rows. DO NOT send emails.
-11. **Failure path** (`refused`/`cancelled`/`expired`/`error`):
-  - Skip if PR already `paid`/`completed`.
-    - Update `status` to `failed` (`cancelled` for `cancelled` event), set `failed_at=now()`, append to `metadata.last_provider_event` and `last_event_id`.
-    - Insert `payment_request_events('failed_via_webhook' | 'cancelled_via_webhook', { eventId, type })`.
-12. **Stored event summary** — only safe fields: `eventId`, `transactionReference`, `type`, `amount.value`, `amount.currencyCode`, `eventTimestamp`, and `payload_sha256` (SHA-256 of raw body) for diagnostics. Never store raw card data. Raw payload NOT echoed to customers; admin diagnostics only via `audit_logs`/`payment_request_events`.
-13. **Response codes**:
-  - `200` for accepted, duplicate, unknown-reference, unsupported-event, amount mismatch (still 200 so Worldpay does not retry endlessly, but no state change).
-    - `400` for malformed JSON or missing required SMB fields.
-    - `405` for non-POST.
-14. **Browser return / admin manual** — unchanged. `worldpay-payment` `verify-payment` remains read-only; no admin endpoint may set `status='paid'` (existing constraint).
-
-## Technical details
-
-- New helper: `sha256Hex(body: string)` using `crypto.subtle.digest('SHA-256', …)`.
-- New helper: `validateSmbPayload(payload)` returning `{ ok, missing[] } | { ok:true, data }`.
-- New helper: `findEventByEventId(supabase, prId, eventId)` querying `payment_request_events` (filter `request_id=prId` and `metadata->>'eventId'=eventId`).
-- Mode switch at top of `serve`: `const gateway = Deno.env.get('WORLDPAY_GATEWAY_TYPE') ?? 'smb_ecommerce';`
-  - `smb_ecommerce` → new SMB pipeline (this plan).
-  - `access_enterprise` → existing HMAC pipeline (kept verbatim for forward compat; still requires `WORLDPAY_WEBHOOK_SECRET`).
-- Keep existing `processPaymentRequestWebhook` style helper but specialised for SMB events; remove `INV-` legacy path from the SMB branch (CS-linked PRs only). Legacy `INV-` handling stays only under `access_enterprise` mode to avoid regressing historical invoice flow under that mode.
-
-## Verification (after deploy — Live test)
-
-A. Config:
-
-- Confirm Worldpay Live dashboard webhook URL = `https://oexgjmuvgdndizsufipe.functions.supabase.co/worldpay-webhook`.
-- Confirm payment events enabled in Worldpay dashboard.
-- Confirm `WORLDPAY_GATEWAY_TYPE=smb_ecommerce` set.
-
-B. Live transaction (admin only):
-
-- Admin creates fresh CS-linked PR titled `INTERNAL TEST — DO NOT PROCESS`.
-- Small Live card payment completed.
-- Capture and report inbound events: `sentForAuthorization`, `authorized`, `sentForSettlement`, plus any others.
-- Confirm PR flips to `paid` only on `sentForSettlement` with matching ref/amount/currency.
-
-C. Negative tests (manual curl against deployed webhook):
-
-- Wrong `transactionReference` → 200, no state change, audit `worldpay_webhook_unknown_reference`.
-- Wrong `amount.value` → 200, no state change, audit + event row recorded.
-- Wrong `currencyCode` (`EUR`) → 200, no state change.
-- Repeat valid `sentForSettlement` with same `eventId` → 200, no duplicate state change, `duplicate_webhook` event recorded.
-- Browser return cannot mark paid (existing read-only verify endpoint).
-- Customer cannot mark paid (RLS unchanged).
-- Admin cannot manually mark paid (no admin update path exists for PR `status='paid'`).
-
-D. No downstream artefacts — query before/after counts unchanged for:
-`services`, `invoices`, `dd_mandates`, `provisioning_readiness`, `installation_bookings`, `orders`, supplier order tables, `draft_order_packs`. Only `payment_requests`, `payment_request_events`, `audit_logs` change.
-
-E. Build:
-
-- `tsc --noEmit` and Vite build pass (only edge function changed).
-
-## What this plan does NOT do
-
-- Does not start supplier ordering.
-- Does not activate services, create invoices, DD mandates, provisioning rows, installation bookings.
-- Does not change Worldpay HPP creation logic in `worldpay-payment`.
-- Does not send automatic emails.
-- Does not modify the `payment_requests` status enum.
-- Does not close Phase E — closure only after the Live SMB webhook test above passes safely.
+Supplier API submission, automatic service creation, automatic invoicing on activation, automatic DD setup, automatic provisioning triggers — all remain locked until a future phase.

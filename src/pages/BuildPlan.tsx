@@ -15,6 +15,7 @@ import {
   SPEED_BUCKET_META, PRICE_LOCK_WORDING, FLEX_30_WORDING, FROM_PRICE_DISCLOSURE,
   FIRST_BILL_PROMISE, FAIR_PRICING_DEFAULTS,
 } from "@/lib/pricing/fairPricing";
+import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 
 type Resolved = {
   ok: true;
@@ -365,6 +366,11 @@ function BuildPlanInner() {
                     );
                   })}
                 </div>
+                {addons.includes("digital_voice") && (
+                  <div className="mt-4">
+                    <EmergencyCallNote />
+                  </div>
+                )}
               </Step>
             )}
 
@@ -426,6 +432,11 @@ function BuildPlanInner() {
                   <p className="text-xs text-muted-foreground mt-3">
                     Estimate — final speed, setup and order details confirmed before you proceed. No payment is taken until your Contract Summary is confirmed.
                   </p>
+                  {addons.includes("digital_voice") && (
+                    <div className="mt-4">
+                      <EmergencyCallNote />
+                    </div>
+                  )}
                 </div>
               </Step>
             )}

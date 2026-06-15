@@ -494,19 +494,49 @@ export const AdminQuoteRequests = () => {
             </div>
             <div>
               <Label className="text-xs">Backend supplier product (admin-only)</Label>
+              <Input
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="Search by name / speed / SKU / network…"
+                className="mb-2"
+              />
               <Select value={draft.supplier_product_id} onValueChange={(v) => {
                 const p = products.find((x: any) => x.supplier_product_id === v);
                 setDraft((d) => ({ ...d, supplier_product_id: v, supplier_name: p?.product_name ?? "" }));
               }}>
-                <SelectTrigger><SelectValue placeholder={products.length ? "Pick supplier product…" : "Loading…"} /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder={
+                    productsLoading ? "Loading supplier products…"
+                    : productsError ? "Could not load supplier products"
+                    : products.length ? "Pick supplier product…"
+                    : "No supplier products found. Import Giacom catalogue first."
+                  } />
+                </SelectTrigger>
                 <SelectContent>
-                  {products.map((p: any) => (
-                    <SelectItem key={p.id} value={p.supplier_product_id}>
-                      [{p.bucket_hint ?? "?"}] {p.product_name} · {p.download_speed_mbps}/{p.upload_speed_mbps}Mbps · {p.min_term_months}m · cost £{Number(p.supplier_monthly_net ?? 0).toFixed(2)}{p.quote_only ? " · quote-only" : ""}
-                    </SelectItem>
-                  ))}
+                  {products
+                    .filter((p: any) => {
+                      const q = productSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return [p.product_name, p.supplier_product_id, p.network, p.technology, p.bucket_hint, `${p.download_speed_mbps}`, `${p.upload_speed_mbps}`]
+                        .filter(Boolean).some((s: string) => String(s).toLowerCase().includes(q));
+                    })
+                    .map((p: any) => (
+                      <SelectItem key={p.id} value={p.supplier_product_id}>
+                        Giacom — {p.technology ?? p.bucket_hint ?? "?"} {p.download_speed_mbps ?? "?"}/{p.upload_speed_mbps ?? "?"}Mbps · {p.product_name} · {p.min_term_months ?? "?"}m · £{Number(p.supplier_monthly_net ?? 0).toFixed(2)} ex VAT{p.quote_only ? " · quote-only" : ""}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
+              {productsError && (
+                <div className="mt-2 border-2 border-destructive bg-destructive/10 p-2 text-xs text-destructive">
+                  Could not load supplier products. Check admin RLS or supplier catalogue. ({productsError})
+                </div>
+              )}
+              {!productsLoading && !productsError && products.length === 0 && (
+                <div className="mt-2 border-2 border-warning bg-warning/10 p-2 text-xs">
+                  No active supplier products. Visit <a className="underline" href="/admin/suppliers/giacom-import">/admin/suppliers/giacom-import</a> to activate Giacom products.
+                </div>
+              )}
               {selected && draft.supplier_product_id && (() => {
                 const sel = products.find((x: any) => x.supplier_product_id === draft.supplier_product_id);
                 const customerBucket = String(selected?.message ?? "").match(/Build Plan:\s*([^·]+)·/)?.[1]?.trim().toLowerCase();

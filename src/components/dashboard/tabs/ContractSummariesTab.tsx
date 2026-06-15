@@ -63,7 +63,7 @@ export function ContractSummariesTab({ userId }: { userId: string }) {
 
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
   if (rows.length === 0) {
-    return <EmptyState icon={<FileCheck2 className="w-8 h-8" />} title="No contract summaries" message="When a quote is sent, its Contract Summary will appear here." />;
+    return <EmptyState icon={<FileCheck2 className="w-8 h-8" />} title="Contract Summary pending" message="Your Contract Summary will appear here once we've finalised your quote. Nothing is committed until you review and accept it." />;
   }
 
   return (

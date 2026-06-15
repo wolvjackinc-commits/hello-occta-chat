@@ -36,7 +36,7 @@ export function InvoicesTab({ userId }: { userId: string }) {
       <section>
         <h3 className="font-display uppercase mb-3">Unpaid invoices</h3>
         {unpaid.length === 0 ? (
-          <EmptyState title="No unpaid invoices" message="You're all caught up." />
+          <EmptyState title="No unpaid invoices" message="You're all caught up — nothing to pay right now." />
         ) : (
           <div className="space-y-2">
             {unpaid.map((inv) => {

@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Circle, Clock, Info } from "lucide-react";
 import { format } from "date-fns";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { LifeBuoy, MessageCircle } from "lucide-react";
 import { deriveMilestones, nextStepCopy, type JourneySafeInputs, type Milestone } from "@/lib/journey/milestones";
 
 /**
@@ -98,6 +101,22 @@ export function CustomerJourneyTimeline({ userId, userEmail }: { userId: string;
       <div className="mt-5 p-3 border-2 border-foreground bg-muted/30 text-sm">
         <span className="font-display uppercase text-xs block mb-1">Next step</span>
         <span>{next}</span>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link to="/support">
+          <Button size="sm" variant="outline" className="border-2 border-foreground">
+            <LifeBuoy className="w-4 h-4 mr-1" /> Contact OCCTA support
+          </Button>
+        </Link>
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-2 border-foreground"
+          onClick={() => window.dispatchEvent(new Event("open-ai-chat"))}
+        >
+          <MessageCircle className="w-4 h-4 mr-1" /> Chat with OCCTA
+        </Button>
       </div>
     </div>
   );

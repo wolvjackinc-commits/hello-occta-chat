@@ -29,6 +29,7 @@ import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
 import { DocumentsTab } from "@/components/dashboard/tabs/DocumentsTab";
 import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsTab";
 import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
+import { PaidStateBanner } from "@/components/dashboard/PaidStateBanner";
 import { logClientEvent } from "@/lib/activityLog";
 import { 
   Wifi, 
@@ -465,8 +466,13 @@ const Dashboard = () => {
             ))}
           </motion.div>
 
+          {/* Customer-safe payment / fulfilment state banner */}
+          <motion.div variants={itemVariants}>
+            <PaidStateBanner userId={user.id} />
+          </motion.div>
+
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="w-full overflow-x-auto flex-wrap justify-start gap-1 h-auto bg-transparent border-b-4 border-foreground rounded-none p-0 mb-6">
+            <TabsList className="w-full overflow-x-auto flex-nowrap justify-start gap-1 h-auto bg-transparent border-b-4 border-foreground rounded-none p-0 mb-6 whitespace-nowrap">
               {[
                 ["overview", "Overview"],
                 ["services", "My Services"],

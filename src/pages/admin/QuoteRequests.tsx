@@ -66,6 +66,9 @@ export const AdminQuoteRequests = () => {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkTarget, setLinkTarget] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [productSearch, setProductSearch] = useState("");
   const [latestQuote, setLatestQuote] = useState<any>(null);
   const [marginInfo, setMarginInfo] = useState<{ status: string; reason?: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -74,13 +77,21 @@ export const AdminQuoteRequests = () => {
 
   // Load active broadband supplier products when dialog opens
   const loadProducts = async () => {
-    const { data } = await (supabase as any)
+    setProductsLoading(true);
+    setProductsError(null);
+    const { data, error } = await (supabase as any)
       .from("supplier_products")
-      .select("id, supplier_product_id, product_name, service_type, bucket_hint, download_speed_mbps, upload_speed_mbps, min_term_months, supplier_monthly_net, supplier_setup_net, active, quote_only")
+      .select("id, supplier_product_id, product_name, service_type, network, technology, bucket_hint, download_speed_mbps, upload_speed_mbps, min_term_months, supplier_monthly_net, supplier_setup_net, active, quote_only")
       .eq("active", true)
       .order("supplier_monthly_net", { ascending: true })
-      .limit(200);
-    setProducts(data ?? []);
+      .limit(500);
+    if (error) {
+      setProductsError(error.message || "Could not load supplier products. Check admin RLS or supplier catalogue.");
+      setProducts([]);
+    } else {
+      setProducts(data ?? []);
+    }
+    setProductsLoading(false);
   };
 
   // Load latest quote for selected request

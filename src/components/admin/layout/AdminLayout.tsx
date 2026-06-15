@@ -29,6 +29,7 @@ import {
   Receipt,
   ShieldCheck,
   ShieldAlert,
+  PackageCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ const navItems = [
   { label: "Communications", to: "/admin/communications", icon: Send },
   { label: "Chat Transcripts", to: "/admin/chat-transcripts", icon: MessageSquare },
   { label: "Installations", to: "/admin/installations", icon: CalendarDays },
+  { label: "Manual Fulfilment", to: "/admin/manual-fulfilment", icon: PackageCheck },
   { label: "Readiness", to: "/admin/readiness", icon: ShieldCheck },
   { label: "Launch Safety", to: "/admin/launch-safety", icon: ShieldAlert },
   { label: "Tasks", to: "/admin/tasks", icon: ClipboardList },

@@ -70,10 +70,22 @@ export const AdminQuoteRequests = () => {
   const [productsError, setProductsError] = useState<string | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [latestQuote, setLatestQuote] = useState<any>(null);
-  const [marginInfo, setMarginInfo] = useState<{ status: string; reason?: string } | null>(null);
+  const [latestSupplierProduct, setLatestSupplierProduct] = useState<any>(null);
+  const [marginInfo, setMarginInfo] = useState<{ status: string; reason?: string; supplier_monthly_cost?: number | null; total_monthly_sell?: number | null; estimated_monthly_margin?: number | null } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [needsInfoMsg, setNeedsInfoMsg] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+
+  const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  const fetchSupplierProduct = async (identifier?: string | null) => {
+    if (!identifier) return null;
+    const select = "id, supplier_product_id, product_name, service_type, network, technology, bucket_hint, download_speed_mbps, upload_speed_mbps, min_term_months, supplier_monthly_net, supplier_setup_net, active, quote_only";
+    const query = (supabase as any).from("supplier_products").select(select);
+    const { data } = isUuid(identifier)
+      ? await query.eq("id", identifier).maybeSingle()
+      : await query.eq("supplier_product_id", identifier).maybeSingle();
+    return data ?? null;
+  };
 
   // Load active broadband supplier products when dialog opens
   const loadProducts = async () => {
@@ -104,7 +116,23 @@ export const AdminQuoteRequests = () => {
       .limit(1)
       .maybeSingle();
     setLatestQuote(data ?? null);
+    setLatestSupplierProduct(null);
     setMarginInfo(null);
+    if (data?.supplier_product_id) {
+      const product = await fetchSupplierProduct(data.supplier_product_id);
+      setLatestSupplierProduct(product);
+    }
+    if (data?.id) {
+      const { data: check } = await (supabase as any)
+        .from("quote_margin_checks")
+        .select("status, reason, supplier_monthly_cost, total_monthly_sell, estimated_monthly_margin")
+        .eq("quote_id", data.id)
+        .order("checked_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (check) setMarginInfo(check as any);
+    }
+    return data ?? null;
   };
 
   const { data, isLoading, refetch, isFetching } = useQuery({

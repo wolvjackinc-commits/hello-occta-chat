@@ -117,6 +117,9 @@ function BuildPlanInner() {
   // Resolve price server-side whenever choices change
   useEffect(() => {
     if (!bucket || !term) { setResolved(null); return; }
+    // Don't call resolver until the user has picked a router and setup —
+    // the edge function requires both to be present.
+    if (!router || !setup) { setResolved(null); return; }
     if (isFallback) {
       const headline = FAIR_PRICING_DEFAULTS.headline[bucket][term];
       setResolved({

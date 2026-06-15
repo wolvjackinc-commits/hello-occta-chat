@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -43,8 +44,9 @@ const STATUS_COLORS: Record<string, string> = {
 export const AdminQuoteRequests = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<string>("all");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [draft, setDraft] = useState({

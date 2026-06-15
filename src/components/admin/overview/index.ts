@@ -1,5 +1,6 @@
 export { KPICards } from "./KPICards";
 export { NewOrdersQueue } from "./NewOrdersQueue";
+export { QuoteRequestsQueue } from "./QuoteRequestsQueue";
 export { TicketsSLAQueue } from "./TicketsSLAQueue";
 export { FailedPaymentsQueue } from "./FailedPaymentsQueue";
 export { DDMandatesQueue } from "./DDMandatesQueue";

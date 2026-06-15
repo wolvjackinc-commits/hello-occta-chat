@@ -123,6 +123,16 @@ const HeroSection = () => {
               <PostcodeChecker variant="hero" externalAddressSelect />
             </motion.div>
 
+            <motion.div variants={itemVariants} className="mt-2">
+              <Link
+                to="/build-plan"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Get a quote first — no payment until Contract Summary
+              </Link>
+            </motion.div>
+
             {/* Compact inline confirmation */}
             {hasResult && inlineConfirmation && (
               <motion.p

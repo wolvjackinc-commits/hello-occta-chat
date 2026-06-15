@@ -297,6 +297,8 @@ export const AdminQuoteRequests = () => {
               <TableHead className="font-display uppercase">Received</TableHead>
               <TableHead className="font-display uppercase">Reference</TableHead>
               <TableHead className="font-display uppercase">Name</TableHead>
+              <TableHead className="font-display uppercase">Email</TableHead>
+              <TableHead className="font-display uppercase">Phone</TableHead>
               <TableHead className="font-display uppercase">Account</TableHead>
               <TableHead className="font-display uppercase">Service</TableHead>
               <TableHead className="font-display uppercase">Postcode</TableHead>
@@ -305,9 +307,9 @@ export const AdminQuoteRequests = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : (data ?? []).length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No quote requests.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No quote requests.</TableCell></TableRow>
             ) : (
               (data ?? []).map((r: any) => (
                 <TableRow key={r.id} className="cursor-pointer border-b-2 border-foreground/10 hover:bg-muted/40"
@@ -315,6 +317,16 @@ export const AdminQuoteRequests = () => {
                   <TableCell className="text-sm">{format(new Date(r.created_at), "dd MMM HH:mm")}</TableCell>
                   <TableCell className="text-xs font-mono">{r.reference}</TableCell>
                   <TableCell className="text-sm">{r.full_name}</TableCell>
+                  <TableCell className="text-xs">
+                    {r.email ? (
+                      <a href={`mailto:${r.email}`} onClick={(e) => e.stopPropagation()} className="underline hover:text-primary">{r.email}</a>
+                    ) : "—"}
+                  </TableCell>
+                  <TableCell className="text-xs font-mono">
+                    {r.phone ? (
+                      <a href={`tel:${r.phone}`} onClick={(e) => e.stopPropagation()} className="underline hover:text-primary">{r.phone}</a>
+                    ) : "—"}
+                  </TableCell>
                   <TableCell className="text-xs">
                     {r.customer_id ? (
                       <div className="flex items-center gap-1">

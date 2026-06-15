@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import {
   KPICards,
+  QuoteRequestsQueue,
   NewOrdersQueue,
   TicketsSLAQueue,
   FailedPaymentsQueue,
@@ -69,6 +70,11 @@ export const AdminOverview = () => {
           Orders & Customers
         </h2>
         <div className="grid gap-6 xl:grid-cols-2">
+          {/* Incoming customer quote requests */}
+          <Suspense fallback={<QueueSkeleton rows={5} />}>
+            <QuoteRequestsQueue />
+          </Suspense>
+
           {/* New Orders Queue */}
           <Suspense fallback={<QueueSkeleton rows={5} />}>
             <NewOrdersQueue />

@@ -1,5 +1,8 @@
 import { corsHeaders, jsonResponse, getServiceClient, requireStaff } from "../_shared/quoteHelpers.ts";
 
+const isUuid = (value?: string | null) =>
+  !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
@@ -20,10 +23,13 @@ Deno.serve(async (req) => {
   const supplierProductId = body.supplier_product_id ?? null;
   let supplierCost: number | null = null;
   if (supplierProductId) {
-    const { data: prod } = await supabase
+    let prodQuery = supabase
       .from("supplier_products")
       .select("supplier_monthly_net, active")
-      .eq("id", supplierProductId).maybeSingle();
+    prodQuery = isUuid(supplierProductId)
+      ? prodQuery.eq("id", supplierProductId)
+      : prodQuery.eq("supplier_product_id", supplierProductId);
+    const { data: prod } = await prodQuery.maybeSingle();
     if (prod && (prod as any).supplier_monthly_net != null) {
       supplierCost = Number((prod as any).supplier_monthly_net);
     }

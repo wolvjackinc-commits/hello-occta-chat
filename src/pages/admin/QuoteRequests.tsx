@@ -246,12 +246,21 @@ export const AdminQuoteRequests = () => {
     if (!latestQuote) { toast({ title: "Create draft first", variant: "destructive" }); return; }
     setBusy("margin");
     try {
+      const freshQuote = selected?.id ? await loadLatestQuote(selected.id) : latestQuote;
+      const supplierProduct = await fetchSupplierProduct(freshQuote?.supplier_product_id);
       const { data, error } = await supabase.functions.invoke("run-quote-margin-check", {
-        body: { quote_id: latestQuote.id, supplier_product_id: latestQuote.supplier_product_id ?? undefined },
+        body: { quote_id: freshQuote.id, supplier_product_id: supplierProduct?.id ?? freshQuote.supplier_product_id ?? undefined },
       });
       if (error) throw error;
       const check = (data as any)?.check;
-      setMarginInfo({ status: check?.status ?? "unknown", reason: check?.reason });
+      setMarginInfo(check ? {
+        status: check.status ?? "unknown",
+        reason: check.reason,
+        supplier_monthly_cost: check.supplier_monthly_cost,
+        total_monthly_sell: check.total_monthly_sell,
+        estimated_monthly_margin: check.estimated_monthly_margin,
+      } : { status: "unknown" });
+      if (selected?.id) await loadLatestQuote(selected.id);
       toast({ title: `Margin: ${check?.status ?? "unknown"}`, description: check?.reason });
     } catch (e: any) {
       toast({ title: "Margin check failed", description: e?.message, variant: "destructive" });
@@ -265,11 +274,7 @@ export const AdminQuoteRequests = () => {
       toast({ title: "Cannot approve — supplier product not linked", description: "Pick a Giacom supplier product on the draft so margin can be verified.", variant: "destructive" });
       return;
     }
-    const { data: sp } = await (supabase as any)
-      .from("supplier_products")
-      .select("supplier_monthly_net, active, product_name, network")
-      .eq("id", latestQuote.supplier_product_id)
-      .maybeSingle();
+    const sp = await fetchSupplierProduct(latestQuote.supplier_product_id);
     if (!sp || sp.supplier_monthly_net == null) {
       toast({ title: "Cannot approve — supplier cost missing", description: `Giacom wholesale monthly cost is missing for ${sp?.product_name ?? "this product"}. Add it in /admin/suppliers/giacom-import before approving.`, variant: "destructive" });
       return;

@@ -503,6 +503,14 @@ export const AdminQuoteRequests = () => {
                       Margin: <strong className="uppercase">{marginInfo.status}</strong>{marginInfo.reason ? ` — ${marginInfo.reason}` : ""}
                     </div>
                   )}
+                  <div className="border-2 border-foreground/20 bg-muted/40 p-2 text-[10px] space-y-1 font-mono break-all">
+                    <p className="font-display uppercase tracking-widest font-normal">Supplier margin diagnostics</p>
+                    <p>supplier product id: {latestQuote.supplier_product_id ?? "—"}</p>
+                    <p>supplier product name: {latestSupplierProduct?.product_name ?? latestQuote.supplier_name ?? "—"}</p>
+                    <p>supplier monthly cost ex VAT: {latestSupplierProduct?.supplier_monthly_net != null ? `£${Number(latestSupplierProduct.supplier_monthly_net).toFixed(2)}` : "missing"}</p>
+                    <p>customer monthly ex VAT: £{Number(latestQuote.monthly_net ?? marginInfo?.total_monthly_sell ?? 0).toFixed(2)}</p>
+                    <p>calculated margin ex VAT: {marginInfo?.estimated_monthly_margin != null ? `£${Number(marginInfo.estimated_monthly_margin).toFixed(2)}` : latestSupplierProduct?.supplier_monthly_net != null ? `£${(Number(latestQuote.monthly_net ?? 0) - Number(latestSupplierProduct.supplier_monthly_net)).toFixed(2)}` : "—"}</p>
+                  </div>
                   {latestQuote.status !== "approved" && (
                     <Button size="sm" variant="hero" onClick={approveFinal} disabled={busy === "approve"}>
                       {busy === "approve" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Approve final quote
@@ -552,7 +560,7 @@ export const AdminQuoteRequests = () => {
                 className="mb-2"
               />
               <Select value={draft.supplier_product_id} onValueChange={(v) => {
-                const p = products.find((x: any) => x.supplier_product_id === v);
+                const p = products.find((x: any) => x.id === v);
                 setDraft((d) => ({ ...d, supplier_product_id: v, supplier_name: p?.product_name ?? "" }));
               }}>
                 <SelectTrigger>
@@ -572,7 +580,7 @@ export const AdminQuoteRequests = () => {
                         .filter(Boolean).some((s: string) => String(s).toLowerCase().includes(q));
                     })
                     .map((p: any) => (
-                      <SelectItem key={p.id} value={p.supplier_product_id}>
+                      <SelectItem key={p.id} value={p.id}>
                         Giacom — {p.network ?? "?"} · {p.product_name} · {p.download_speed_mbps ?? "?"}/{p.upload_speed_mbps ?? "?"}Mbps · {p.min_term_months ?? "?"}m · {p.supplier_monthly_net != null ? `£${Number(p.supplier_monthly_net).toFixed(2)} ex VAT` : "cost missing"}{p.quote_only ? " · quote-only" : ""}
                       </SelectItem>
                     ))}
@@ -589,7 +597,7 @@ export const AdminQuoteRequests = () => {
                 </div>
               )}
               {selected && draft.supplier_product_id && (() => {
-                const sel = products.find((x: any) => x.supplier_product_id === draft.supplier_product_id);
+                const sel = products.find((x: any) => x.id === draft.supplier_product_id);
                 const customerBucket = String(selected?.message ?? "").match(/Build Plan:\s*([^·]+)·/)?.[1]?.trim().toLowerCase();
                 const productBucket = String(sel?.bucket_hint ?? "").toLowerCase();
                 if (customerBucket && productBucket && !customerBucket.includes(productBucket) && !productBucket.includes(customerBucket)) {

@@ -485,7 +485,7 @@ export const AdminQuoteRequests = () => {
 
       {/* Create quote dialog */}
       <Dialog open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Create quote</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>

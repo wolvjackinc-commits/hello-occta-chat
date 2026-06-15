@@ -325,10 +325,12 @@ const Landline = () => {
         <div className="container mx-auto px-4">
           <Alert className="border-4 border-foreground/20 bg-background">
             <AlertTriangle className="h-5 w-5" />
-            <AlertTitle className="font-display uppercase tracking-wide">Important: Power Cuts</AlertTitle>
+            <AlertTitle className="font-display uppercase tracking-wide">Important: Power Cuts &amp; Emergency Calls</AlertTitle>
             <AlertDescription className="text-muted-foreground">
-              Digital Voice requires electricity and broadband to work. During a power cut your home phone will not work. 
-              You may wish to keep a mobile phone for emergencies.
+              Digital Voice needs power and broadband to work. Emergency calls (999/112) may not work
+              during a power cut or broadband outage. We recommend keeping a mobile phone for emergencies,
+              and please tell us if anyone in the household relies on the phone in an emergency so we can
+              discuss back-up options.
             </AlertDescription>
           </Alert>
         </div>
@@ -340,7 +342,7 @@ const Landline = () => {
       {/* Related Guides */}
       <section className="py-12 bg-background">
         <div className="container mx-auto px-4">
-          <h2 className="text-xl font-display uppercase mb-4">Home Phone Guides</h2>
+          <h2 className="text-xl font-display uppercase mb-4">Digital Voice Guides</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {[
               { title: "Digital Voice UK", desc: "How Digital Voice works and what you need to know.", path: "/guides/digital-voice-uk" },

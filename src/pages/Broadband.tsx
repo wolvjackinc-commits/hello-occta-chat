@@ -630,7 +630,7 @@ const BroadbandInner = () => {
               <div className="w-12 h-12 bg-warning border-4 border-foreground flex items-center justify-center mb-4">
                 <PhoneCall className="w-6 h-6" />
               </div>
-              <h3 className="font-display text-2xl mb-2">Digital Voice Line</h3>
+              <h3 className="font-display text-2xl mb-2">Digital Voice Add-on</h3>
               <div className="flex items-baseline gap-1 mb-4">
                 <span className="font-display text-4xl text-primary">£4.99</span>
                 <span className="text-foreground/70 text-sm font-medium">/mo</span>

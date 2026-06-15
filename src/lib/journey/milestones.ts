@@ -18,7 +18,8 @@ export type MilestoneKey =
   | "payment_being_confirmed"
   | "payment_received"
   | "preparing_setup"
-  | "supplier_order_pending";
+  | "installation_activation"
+  | "supplier_order_pending"; // reserved for a later phase; not rendered today
 
 export type MilestoneState = "done" | "current" | "upcoming";
 
@@ -88,7 +89,7 @@ export function deriveMilestones(input: JourneySafeInputs): Milestone[] {
   const paid =
     !!pr && pr.status === "paid" && pr.webhook_verified === true && !!pr.paid_at;
   const preparing = input.readinessStatus === "admin_review_complete";
-  const supplierPending = !!input.hasDraftOrderPack;
+  // intentionally unused at customer-facing layer; do not render supplier wording.
 
   const rows: Array<Omit<Milestone, "state"> & { done: boolean }> = [
     {
@@ -158,16 +159,16 @@ export function deriveMilestones(input: JourneySafeInputs): Milestone[] {
     {
       key: "preparing_setup",
       label: "Preparing your setup",
-      description: "Our team is preparing your order.",
+      description: "Our team is preparing your order and will be in touch with the next steps.",
       at: null,
       done: preparing,
     },
     {
-      key: "supplier_order_pending",
-      label: "Supplier order pending",
-      description: "Order pack prepared — supplier order not yet submitted.",
+      key: "installation_activation",
+      label: "Installation & activation",
+      description: "We'll arrange installation and activation and keep you posted.",
       at: null,
-      done: supplierPending,
+      done: false,
     },
   ];
 
@@ -207,8 +208,10 @@ export function nextStepCopy(milestones: Milestone[]): string {
       return "Next: we'll confirm payment and start preparing your setup.";
     case "preparing_setup":
       return "Next: our team will prepare your setup and be in touch.";
+    case "installation_activation":
+      return "Next: our team will contact you about installation and activation.";
     case "supplier_order_pending":
-      return "Next: we'll submit your supplier order once final checks are complete.";
+      return "Next: we're finalising your order behind the scenes.";
     default:
       return "We'll keep you posted at every step.";
   }

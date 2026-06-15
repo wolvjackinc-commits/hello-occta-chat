@@ -57,7 +57,7 @@ export function QuotesTab({ userId }: { userId: string }) {
 
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Loading quotes…</div>;
   if (quotes.length === 0) {
-    return <EmptyState icon={<FileText className="w-8 h-8" />} title="No quotes yet" message="When OCCTA approves a final quote for you, it'll appear here." />;
+    return <EmptyState icon={<FileText className="w-8 h-8" />} title="Quote under review" message="A real person is reviewing your details. We'll email you when your final quote is ready — usually within one working day." />;
   }
 
   return (

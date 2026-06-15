@@ -1,200 +1,73 @@
-Approved — proceed with Customer Dashboard Polish Pass, with the correction below.
 
-This is UI/presentation-only.
+# Final Controlled Launch Smoke Test — Plan
 
-Do not touch:
+Read-only verification only. No new features, no schema changes, no payment/supplier/service/invoice/DD/provisioning writes. All checks below are either static code/SQL reads or HTTP GETs to public routes.
 
-- Worldpay/payment webhook logic
-- payment_requests writes
-- supplier API submission
-- services creation
-- invoices
-- DD mandates
-- provisioning automation
-- admin payment status writes
-- manual_fulfilment_orders RLS/grants
+## 1. Public route load check
+HTTP GET each route against the preview origin and confirm 200 + non-empty HTML (prerendered or SPA shell):
+`/`, `/broadband`, `/landline`, `/business`, `/about`, `/support`, `/faq`, `/build-plan`, `/terms`, `/privacy`, `/complaints`.
+Record status + page `<title>` for each. Note: console shows a recent client-side 404 for `/build-plan` — re-check route registration in `src/App.tsx` and report whether it's a stale log or a real regression.
 
-Critical correction — manual fulfilment tracker data
+## 2. Customer journey trace (code + DB read-only)
+Walk the journey by reading code paths and querying recent rows (no inserts):
+- Quote request creation → `submit-quote-request` / `quote_requests` row shape.
+- Customer link/create → `CreateCustomerDialog`, `link-account` paths.
+- Admin approve quote → `quotes.status` transitions, `AdminQuotes` actions.
+- Contract Summary generation → `contract_summaries` row + `pdf_storage_key`.
+- CS acceptance → `contract_acceptances` row.
+- Payment request creation → `payment_requests` insert path.
+- Worldpay HPP open → `WorldpayCheckout` / `create-worldpay-session`.
+- Dashboard status reflection → `Dashboard.tsx` queries.
 
-Do not loosen RLS on `manual_fulfilment_orders`.
+Sample 1 recent record from each table via `supabase--read_query` to confirm linkage (PR ↔ CS ↔ quote ↔ profile) is intact. No writes.
 
-If `manual_fulfilment_orders` is admin-only, the customer dashboard must not query it directly.
+## 3. Payment safety audit (static review)
+Grep + read to confirm `paid` / `webhook_verified` only set by `worldpay-webhook`:
+- `rg "status:\s*['\"]paid|webhook_verified\s*:\s*true|paid_at" supabase/functions src` — only hits should be inside `worldpay-webhook/index.ts` and read sites.
+- Confirm `verify-payment-return` and `PayInternalReturn` do NOT mutate `payment_requests.status` to `paid`.
+- Confirm no admin UI mutates `payment_requests` to `paid` (no `.update({ status: 'paid' })` in `src/pages/admin/**`).
+- Verify HMAC fail-closed in `worldpay-webhook` (already in memory standard — re-confirm presence).
 
-Allowed:
+## 4. Manual fulfilment safety
+- Read `manual_fulfilment_orders` RLS + row shape via `supabase--read_query`.
+- Confirm `CreateTrackerDialog` only inserts into `manual_fulfilment_orders`; `TrackerRow.updateStatus` only updates `manual_fulfilment_orders.status`.
+- Grep tracker code for any side-effect writes to `services`, `invoices`, `dd_mandates`, `installation_bookings`, `provisioning_readiness`, or supplier tables — expect none.
+- Confirm eligibility filter requires `status='paid' AND webhook_verified=true AND contract_summary_id NOT NULL AND accepted_at NOT NULL AND pdf_url NOT NULL`.
 
-- component silently degrades
-- derive safe customer status from paid payment state and accepted CS
-- show generic “Preparing your setup” after paid + webhook_verified
-- no supplier/internal status shown
+## 5. Admin pages load check
+Use Playwright (headless, restoring `LOVABLE_BROWSER_SUPABASE_SESSION_JSON` for the admin preview session) to load:
+`/admin`, `/admin/quotes`, `/admin/payment-requests`, `/admin/readiness`, `/admin/manual-fulfilment`, `/admin/tasks`, `/admin/launch-safety`, `/admin/customers`, `/admin/suppliers`, `/admin/services`, `/admin/installations`.
+For each: capture screenshot, record console errors, confirm header + table render. No buttons clicked that mutate.
 
-Not allowed:
+## 6. Security checks
+- Anon route check: with no auth, GET `/admin` and confirm redirect/login gate (no admin HTML leaks).
+- Customer-role check: read `ProtectedAdminRoute` to confirm it enforces `has_role(uid, 'admin')`.
+- RLS spot-check via `supabase--read_query` on `supplier_products`, `margin_rules`, `quote_margin_checks`, `journey_internal_notes`, `manual_fulfilment_orders` — confirm policies require admin role.
+- Network payload scan: from Playwright HAR, grep responses on public routes for `service_role`, `SUPABASE_SERVICE_ROLE`, `worldpay`, secret-shaped strings — expect none.
 
-- exposing manual_fulfilment_orders to customers
-- adding customer SELECT policy to manual_fulfilment_orders in this pass
-- showing supplier name
-- showing supplier portal reference
-- showing supplier product IDs
-- showing admin notes
-- showing internal status names like `supplier_acknowledged`
+## 7. No-unintended-writes check
+Snapshot row counts before & after the smoke test (counts only, no PII) for:
+`services`, `invoices`, `dd_mandates`, `installation_bookings`, `provisioning_readiness`, `manual_fulfilment_orders`, `supplier_products`.
+Assert deltas == 0.
 
-Customer-safe status is enough for now:
+## 8. Build verification
+The harness runs `tsc --noEmit` + `vite build` automatically after edits. Since this turn introduces no edits, rely on the most recent green harness result and re-confirm via `sqlite3 /tmp/sandbox-state.db` daemon-log tail for any errors emitted by Vite since last run.
 
-- Payment pending
-- Payment being confirmed
-- Payment received
-- Preparing your setup
-- Installation/activation next
+## 9. Final report
+Deliver one structured report:
+- Routes tested (table: path → status → title)
+- Customer journey: PASS/FAIL per stage with evidence
+- Payment safety: PASS/FAIL + grep evidence
+- Manual fulfilment: PASS/FAIL + write-surface list
+- Admin pages: PASS/FAIL + screenshot refs
+- Security: PASS/FAIL per check
+- No-unintended-writes: row-count deltas
+- Build: tsc/vite status
+- **Final launch verdict**: GO / GO-WITH-CAVEATS / NO-GO + blockers list.
 
-Proceed with:
+## Out of scope (will not run)
+- Any insert/update/delete against `payment_requests`, `services`, `invoices`, `dd_mandates`, supplier APIs, provisioning rows, installation bookings.
+- Real Worldpay payment.
+- Any edge function that mutates state (only read-only or already-idempotent verification reads).
 
-1. PaidStateBanner
-2. Customer-safe generic FulfilmentTracker, with graceful fallback if admin-only table is not readable
-3. Empty states
-4. Timeline wording polish
-5. Support CTA
-6. Mobile responsiveness polish
-
-Verification required:
-
-A — unpaid customer:
-
-- sees payment pending / payment being confirmed as appropriate
-
-B — paid Phase E test customer:
-
-- sees Payment received
-- sees Preparing your setup / next step wording
-
-C — data safety:
-
-- customer network payload contains no supplier names
-- no supplier portal refs
-- no supplier product IDs
-- no admin notes
-- no supplier costs/margins
-- no internal manual fulfilment statuses
-
-D — no side effects:  
-Before/after counts unchanged for:
-
-- services
-- invoices
-- dd_mandates
-- provisioning_readiness
-- orders
-- draft_order_packs
-- payment_requests
-
-E — build:
-
-- TypeScript passes
-- Vite production build passes
-
-Final report:
-
-- files changed
-- dashboard states added
-- paid customer UX result
-- empty states result
-- mobile result
-- data-safety/network payload result
-- zero-delta result
-- build result  
-  
-Customer Dashboard Polish Pass
-
-UI/presentation-only changes. No webhook, supplier, services, invoices, DD, or provisioning writes. No admin payment status changes.
-
-## 1. Paid state badge + next-step banner
-
-New `src/components/dashboard/PaidStateBanner.tsx`:
-
-- Reads only the latest `payment_requests` row already fetched (status, webhook_verified, paid_at).
-- When `status='paid' && webhook_verified===true && paid_at` → green "Payment received" badge with sub-line: "Your setup is being prepared. Our team will contact you with the next steps."
-- When `status='checkout_created' && !webhook_verified` → amber "Payment being confirmed" badge.
-- When `status='draft'|'pending'` → "Payment pending" badge with link to the secure pay page.
-- Renders nothing if no payment_requests row.
-
-Mount above Stats Bar in `Dashboard.tsx`.
-
-## 2. Customer-safe manual fulfilment tracker
-
-New `src/components/dashboard/FulfilmentTracker.tsx` + `src/lib/journey/fulfilmentStatus.ts`:
-
-- Queries `manual_fulfilment_orders` with a tight `.select()` of customer-safe columns ONLY (id, customer_status, updated_at). Filtered by `customer_id = user.id` (RLS will also enforce).
-- Internal→customer-safe mapping in `fulfilmentStatus.ts`:
-  - `ready_for_manual_order` / `order_entered_in_supplier_portal` / `supplier_acknowledged` → "Preparing your setup"
-  - `installation_pending` → "Installation being arranged"
-  - `active` (pre-live admin step) → "Service activation in progress"
-  - service live → "Service active"
-  - `cancelled` → "Order cancelled — contact support"
-- Never renders supplier name, portal ref, product IDs, or admin notes.
-- If RLS denies / table not exposed to authenticated, component silently renders nothing (no error toast).
-
-Note: if `manual_fulfilment_orders` has no `customer_id` column or is admin-only, the component degrades to deriving status from `payment_requests.paid` + readiness only. (No DB or RLS changes in this pass.)
-
-## 3. Empty states
-
-Update `EmptyState.tsx` consumers + add coverage in:
-
-- `OverviewTab` — when all cards are zero, show single friendly empty hero ("Let's get you started — request a quote").
-- `QuoteRequestsTab` — "No quote requests yet" CTA → /build-plan.
-- `QuotesTab` — "Quote under review — we'll email you when ready."
-- `ContractSummariesTab` — "Contract Summary pending — issued after we finalise your quote."
-- `InvoicesTab` — "No invoices yet."
-- `SupportTab` — already has open empty state; add a friendlier hint line.
-- Payment area — handled by PaidStateBanner.
-
-## 4. Timeline polish (`milestones.ts` / `CustomerJourneyTimeline.tsx`)
-
-- Remove `supplier_order_pending` milestone from default render (keep type for future). Don't show "Supplier order submitted" copy anywhere.
-- Re-label `preparing_setup` description: "Our team is preparing your order and will be in touch with the next steps."
-- Add "Installation/activation" upcoming milestone (display-only, marked `current` once payment is `paid` and fulfilment status is `installation_pending` or beyond, otherwise `upcoming`).
-- `nextStepCopy()` updated for paid → "Next: our team will contact you about installation and activation."
-
-## 5. Support CTA
-
-Add a compact "Need help? Contact OCCTA support" card in `OverviewTab` and below the timeline:
-
-- Button → `/support` (existing route).
-- Secondary link → opens AI chat via existing `open-ai-chat` event.
-
-## 6. Mobile responsiveness
-
-In `Dashboard.tsx`:
-
-- Stats bar already `grid-cols-2 md:grid-cols-4` — verify gap-3 on mobile.
-- Tabs list: add `overflow-x-auto whitespace-nowrap` and remove `flex-wrap` so tabs scroll horizontally instead of wrapping awkwardly.
-- Ensure all dashboard tab tables (`InvoicesTab`, etc.) wrap in `<div className="overflow-x-auto">` if they aren't already (read-only check per file; only add wrapper if missing).
-- Badges: ensure consistent `text-xs px-2 py-1` on mobile.
-
-## 7. Files changed (expected)
-
-- `src/pages/Dashboard.tsx` — mount PaidStateBanner + FulfilmentTracker; tab scroll fix.
-- `src/components/dashboard/PaidStateBanner.tsx` — NEW.
-- `src/components/dashboard/FulfilmentTracker.tsx` — NEW.
-- `src/lib/journey/fulfilmentStatus.ts` — NEW (mapping helper).
-- `src/lib/journey/milestones.ts` — drop supplier wording, add installation step, copy tweaks.
-- `src/components/dashboard/CustomerJourneyTimeline.tsx` — render fulfilment-derived current step + support CTA.
-- `src/components/dashboard/tabs/OverviewTab.tsx` — empty hero + support CTA.
-- `src/components/dashboard/tabs/QuoteRequestsTab.tsx`, `QuotesTab.tsx`, `ContractSummariesTab.tsx`, `InvoicesTab.tsx`, `SupportTab.tsx` — empty state copy polish.
-
-## 8. Verification (read-only)
-
-- Build passes (auto).
-- Browser check (Playwright with seeded session) against:
-  - unpaid test customer → sees "Payment pending"/"being confirmed".
-  - paid customer (the verified Phase E test customer) → sees "Payment received" + "Preparing your setup".
-- DB read query: confirm zero deltas vs baseline (services=1, invoices=3, dd_mandates=0, provisioning_readiness=0, orders=0, draft_order_packs=0).
-- Grep customer-side render path for "supplier", supplier IDs, admin notes, portal ref → none.
-
-## 9. Hard constraints
-
-- No edge function calls, no migrations, no admin writes.
-- No changes to `payment_requests`, `webhook` logic, `worldpay-*` functions, `manual_fulfilment_orders` RLS/grants.
-- No new secrets.
-- Component-only additions; pure read-only queries with `.select()` whitelists.
-
-## Final report will include
-
-files changed · dashboard states added · paid customer UX · empty states · mobile · data-safety check · zero-delta confirmation · build result.
+Approve to switch to build mode and execute.

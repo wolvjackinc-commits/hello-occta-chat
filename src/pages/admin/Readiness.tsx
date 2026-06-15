@@ -140,8 +140,7 @@ export const AdminReadiness = () => {
                   <div className="font-display uppercase text-base text-foreground mb-1">No accepted Contract Summaries ready for review</div>
                   <div>
                     Rows appear here once a payment request is linked to an accepted Contract Summary.
-                    Until the Worldpay webhook signing secret is live, every row will show
-                    <em> &ldquo;Waiting for verified payment&rdquo;</em>.
+                    Payments are verified automatically via Worldpay SMB webhook.
                   </div>
                 </TableCell>
               </TableRow>

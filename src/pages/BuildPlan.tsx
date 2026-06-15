@@ -366,6 +366,11 @@ function BuildPlanInner() {
                     );
                   })}
                 </div>
+                {addons.includes("digital_voice") && (
+                  <div className="mt-4">
+                    <EmergencyCallNote />
+                  </div>
+                )}
               </Step>
             )}
 

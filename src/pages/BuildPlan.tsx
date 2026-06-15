@@ -432,6 +432,11 @@ function BuildPlanInner() {
                   <p className="text-xs text-muted-foreground mt-3">
                     Estimate — final speed, setup and order details confirmed before you proceed. No payment is taken until your Contract Summary is confirmed.
                   </p>
+                  {addons.includes("digital_voice") && (
+                    <div className="mt-4">
+                      <EmergencyCallNote />
+                    </div>
+                  )}
                 </div>
               </Step>
             )}

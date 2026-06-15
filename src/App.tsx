@@ -102,6 +102,7 @@ import CodeOfPractice from "./pages/legal/CodeOfPractice";
 import PriceTransparency from "./pages/legal/PriceTransparency";
 import SwitchingPolicy from "./pages/legal/SwitchingPolicy";
 import NetworkManagement from "./pages/legal/NetworkManagement";
+import AdminManualFulfilment from "./pages/admin/ManualFulfilment";
 
 import { locations } from "./data/locations";
 

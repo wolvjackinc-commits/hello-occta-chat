@@ -87,7 +87,7 @@ export function AdminJourneyTimeline({ customerId }: { customerId: string }) {
           <div className="mb-3 p-2 border-2 border-foreground bg-muted/40 text-xs flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 mt-0.5" />
             <span>
-              Phase E webhook sign-off pending — payment cannot progress past <strong>Payment being confirmed</strong> until a valid signed Worldpay webhook is received.
+              Payment not yet confirmed by Worldpay webhook. This will update automatically once Worldpay sends confirmation.
             </span>
           </div>
         )}

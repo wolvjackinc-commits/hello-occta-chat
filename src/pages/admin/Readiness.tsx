@@ -235,7 +235,7 @@ export const AdminReadiness = () => {
           checklist: computeChecklist(row.inputs),
           generated_at: new Date().toISOString(),
           phase: "F0",
-          note: "Read-only draft. Supplier order NOT submitted. Phase E webhook sign-off pending.",
+          note: "Read-only draft. Supplier order NOT submitted. Supplier automation locked; manual fulfilment only.",
         };
         const { data, error } = await (supabase as any)
           .from("draft_order_packs")
@@ -333,5 +333,5 @@ export const AdminReadiness = () => {
 
 export default AdminReadiness;
 
-// Compile-time guard — Phase E not complete.
+// Compile-time guard — Supplier submission remains locked.
 void SUPPLIER_SUBMISSION_ENABLED;

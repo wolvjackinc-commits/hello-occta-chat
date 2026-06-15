@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
 import { getGuideBySlug, getRelatedGuides } from "@/data/guides";
 import NotFound from "@/pages/NotFound";
+import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 
 const GuidePage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -15,6 +16,7 @@ const GuidePage = () => {
   if (!guide) return <NotFound />;
 
   const related = getRelatedGuides(guide);
+  const showEmergencyNote = guide.category === "home-phone";
   const faqSchema = createFAQSchema(guide.faqs);
   const breadcrumbSchema = createBreadcrumbSchema([
     { name: "Home", url: "/" },
@@ -90,6 +92,11 @@ const GuidePage = () => {
             <p className="text-lg text-muted-foreground leading-relaxed">
               {guide.intro}
             </p>
+            {showEmergencyNote && (
+              <div className="mt-6">
+                <EmergencyCallNote />
+              </div>
+            )}
           </motion.div>
         </div>
       </section>

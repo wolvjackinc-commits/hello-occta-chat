@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, PhoneCall, ArrowRight, AlertTriangle, Wifi, Router, Phone, Zap } from "lucide-react";
 import { landlinePlans } from "@/lib/plans";
+import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
 import { getFromPrices } from "@/lib/pricing/engine";
@@ -126,6 +127,14 @@ const Landline = () => {
                 </Link>
               </AlertDescription>
             </Alert>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 max-w-3xl"
+          >
+            <EmergencyCallNote />
           </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-12 items-start">

@@ -70,10 +70,22 @@ export const AdminQuoteRequests = () => {
   const [productsError, setProductsError] = useState<string | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [latestQuote, setLatestQuote] = useState<any>(null);
-  const [marginInfo, setMarginInfo] = useState<{ status: string; reason?: string } | null>(null);
+  const [latestSupplierProduct, setLatestSupplierProduct] = useState<any>(null);
+  const [marginInfo, setMarginInfo] = useState<{ status: string; reason?: string; supplier_monthly_cost?: number | null; total_monthly_sell?: number | null; estimated_monthly_margin?: number | null } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [needsInfoMsg, setNeedsInfoMsg] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+
+  const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  const fetchSupplierProduct = async (identifier?: string | null) => {
+    if (!identifier) return null;
+    const select = "id, supplier_product_id, product_name, service_type, network, technology, bucket_hint, download_speed_mbps, upload_speed_mbps, min_term_months, supplier_monthly_net, supplier_setup_net, active, quote_only";
+    const query = (supabase as any).from("supplier_products").select(select);
+    const { data } = isUuid(identifier)
+      ? await query.eq("id", identifier).maybeSingle()
+      : await query.eq("supplier_product_id", identifier).maybeSingle();
+    return data ?? null;
+  };
 
   // Load active broadband supplier products when dialog opens
   const loadProducts = async () => {
@@ -104,7 +116,23 @@ export const AdminQuoteRequests = () => {
       .limit(1)
       .maybeSingle();
     setLatestQuote(data ?? null);
+    setLatestSupplierProduct(null);
     setMarginInfo(null);
+    if (data?.supplier_product_id) {
+      const product = await fetchSupplierProduct(data.supplier_product_id);
+      setLatestSupplierProduct(product);
+    }
+    if (data?.id) {
+      const { data: check } = await (supabase as any)
+        .from("quote_margin_checks")
+        .select("status, reason, supplier_monthly_cost, total_monthly_sell, estimated_monthly_margin")
+        .eq("quote_id", data.id)
+        .order("checked_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (check) setMarginInfo(check as any);
+    }
+    return data ?? null;
   };
 
   const { data, isLoading, refetch, isFetching } = useQuery({
@@ -218,12 +246,21 @@ export const AdminQuoteRequests = () => {
     if (!latestQuote) { toast({ title: "Create draft first", variant: "destructive" }); return; }
     setBusy("margin");
     try {
+      const freshQuote = selected?.id ? await loadLatestQuote(selected.id) : latestQuote;
+      const supplierProduct = await fetchSupplierProduct(freshQuote?.supplier_product_id);
       const { data, error } = await supabase.functions.invoke("run-quote-margin-check", {
-        body: { quote_id: latestQuote.id, supplier_product_id: latestQuote.supplier_product_id ?? undefined },
+        body: { quote_id: freshQuote.id, supplier_product_id: supplierProduct?.id ?? freshQuote.supplier_product_id ?? undefined },
       });
       if (error) throw error;
       const check = (data as any)?.check;
-      setMarginInfo({ status: check?.status ?? "unknown", reason: check?.reason });
+      setMarginInfo(check ? {
+        status: check.status ?? "unknown",
+        reason: check.reason,
+        supplier_monthly_cost: check.supplier_monthly_cost,
+        total_monthly_sell: check.total_monthly_sell,
+        estimated_monthly_margin: check.estimated_monthly_margin,
+      } : { status: "unknown" });
+      if (selected?.id) await loadLatestQuote(selected.id);
       toast({ title: `Margin: ${check?.status ?? "unknown"}`, description: check?.reason });
     } catch (e: any) {
       toast({ title: "Margin check failed", description: e?.message, variant: "destructive" });
@@ -237,11 +274,7 @@ export const AdminQuoteRequests = () => {
       toast({ title: "Cannot approve — supplier product not linked", description: "Pick a Giacom supplier product on the draft so margin can be verified.", variant: "destructive" });
       return;
     }
-    const { data: sp } = await (supabase as any)
-      .from("supplier_products")
-      .select("supplier_monthly_net, active, product_name, network")
-      .eq("id", latestQuote.supplier_product_id)
-      .maybeSingle();
+    const sp = await fetchSupplierProduct(latestQuote.supplier_product_id);
     if (!sp || sp.supplier_monthly_net == null) {
       toast({ title: "Cannot approve — supplier cost missing", description: `Giacom wholesale monthly cost is missing for ${sp?.product_name ?? "this product"}. Add it in /admin/suppliers/giacom-import before approving.`, variant: "destructive" });
       return;
@@ -470,6 +503,15 @@ export const AdminQuoteRequests = () => {
                       Margin: <strong className="uppercase">{marginInfo.status}</strong>{marginInfo.reason ? ` — ${marginInfo.reason}` : ""}
                     </div>
                   )}
+                  <div className="border-2 border-foreground/20 bg-muted/40 p-2 text-[10px] space-y-1 font-mono break-all">
+                    <p className="font-display uppercase tracking-widest font-normal">Supplier margin diagnostics</p>
+                    <p>supplier product id: {latestQuote.supplier_product_id ?? "—"}</p>
+                    <p>supplier product name: {latestSupplierProduct?.product_name ?? latestQuote.supplier_name ?? "—"}</p>
+                    <p>supplier monthly cost ex VAT: {latestSupplierProduct?.supplier_monthly_net != null ? `£${Number(latestSupplierProduct.supplier_monthly_net).toFixed(2)}` : "missing"}</p>
+                    <p>customer monthly ex VAT: £{Number(latestQuote.monthly_net ?? marginInfo?.total_monthly_sell ?? 0).toFixed(2)}</p>
+                    <p>calculated margin ex VAT: {latestSupplierProduct?.supplier_monthly_net != null ? `£${(Number(latestQuote.monthly_net ?? 0) - Number(latestSupplierProduct.supplier_monthly_net)).toFixed(2)}` : "—"}</p>
+                    <p>margin check after buffers: {marginInfo?.estimated_monthly_margin != null ? `£${Number(marginInfo.estimated_monthly_margin).toFixed(2)}` : "—"}</p>
+                  </div>
                   {latestQuote.status !== "approved" && (
                     <Button size="sm" variant="hero" onClick={approveFinal} disabled={busy === "approve"}>
                       {busy === "approve" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Approve final quote
@@ -519,7 +561,7 @@ export const AdminQuoteRequests = () => {
                 className="mb-2"
               />
               <Select value={draft.supplier_product_id} onValueChange={(v) => {
-                const p = products.find((x: any) => x.supplier_product_id === v);
+                const p = products.find((x: any) => x.id === v);
                 setDraft((d) => ({ ...d, supplier_product_id: v, supplier_name: p?.product_name ?? "" }));
               }}>
                 <SelectTrigger>
@@ -539,7 +581,7 @@ export const AdminQuoteRequests = () => {
                         .filter(Boolean).some((s: string) => String(s).toLowerCase().includes(q));
                     })
                     .map((p: any) => (
-                      <SelectItem key={p.id} value={p.supplier_product_id}>
+                      <SelectItem key={p.id} value={p.id}>
                         Giacom — {p.network ?? "?"} · {p.product_name} · {p.download_speed_mbps ?? "?"}/{p.upload_speed_mbps ?? "?"}Mbps · {p.min_term_months ?? "?"}m · {p.supplier_monthly_net != null ? `£${Number(p.supplier_monthly_net).toFixed(2)} ex VAT` : "cost missing"}{p.quote_only ? " · quote-only" : ""}
                       </SelectItem>
                     ))}
@@ -556,7 +598,7 @@ export const AdminQuoteRequests = () => {
                 </div>
               )}
               {selected && draft.supplier_product_id && (() => {
-                const sel = products.find((x: any) => x.supplier_product_id === draft.supplier_product_id);
+                const sel = products.find((x: any) => x.id === draft.supplier_product_id);
                 const customerBucket = String(selected?.message ?? "").match(/Build Plan:\s*([^·]+)·/)?.[1]?.trim().toLowerCase();
                 const productBucket = String(sel?.bucket_hint ?? "").toLowerCase();
                 if (customerBucket && productBucket && !customerBucket.includes(productBucket) && !productBucket.includes(customerBucket)) {

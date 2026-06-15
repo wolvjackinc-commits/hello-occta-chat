@@ -49,7 +49,7 @@ const Header = () => {
   const navItems = [
     { name: "Broadband", path: "/broadband", icon: Wifi },
     { name: "SIM Plans", path: "/sim-plans", icon: Smartphone },
-    { name: "Home Phone", path: "/landline", icon: PhoneCall },
+    { name: "Digital Voice", path: "/landline", icon: PhoneCall },
     { name: "About", path: "/about" },
     { name: "Support", path: "/support" },
   ];

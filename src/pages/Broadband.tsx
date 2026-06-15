@@ -154,10 +154,10 @@ const BroadbandInner = () => {
           <DialogHeader>
             <DialogTitle className="font-display uppercase flex items-center gap-2">
               <Phone className="w-5 h-5 text-primary" />
-              Add Digital Home Phone?
+              Add Digital Voice (Home Phone over broadband)?
             </DialogTitle>
             <DialogDescription className="text-base">
-              Stay connected with crystal-clear calls — works over compatible broadband, no traditional landline required.
+              Stay connected with crystal-clear calls — Digital Voice works over your OCCTA broadband. It's an add-on to broadband, not a standalone phone line.
             </DialogDescription>
           </DialogHeader>
 
@@ -221,7 +221,7 @@ const BroadbandInner = () => {
               Continue without phone
             </Button>
             <Button variant="hero" onClick={handleAddVoice} className="w-full sm:w-auto">
-              Add home phone
+              Add Digital Voice
               <ArrowRight className="w-4 h-4" />
             </Button>
           </DialogFooter>
@@ -588,7 +588,7 @@ const BroadbandInner = () => {
         </div>
       </section>
 
-      {/* Add a Home Phone */}
+      {/* Add Digital Voice (Home Phone over broadband) */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -597,9 +597,9 @@ const BroadbandInner = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-display-md mb-4">ADD A HOME PHONE (OPTIONAL)</h2>
+              <h2 className="text-display-md mb-4">ADD DIGITAL VOICE (OPTIONAL ADD-ON)</h2>
               <p className="text-lg text-muted-foreground mb-6">
-                Keep your number. Plug into your router. No copper line needed. From <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span>.
+                Home Phone over broadband — keep your number and plug into your router. Add-on to your broadband, from <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span>.
               </p>
               <ul className="space-y-3 mb-6">
                 {[

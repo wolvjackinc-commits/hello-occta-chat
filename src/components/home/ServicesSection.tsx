@@ -30,9 +30,9 @@ const ServicesSection = () => {
     },
     {
       icon: PhoneCall,
-      title: "HOME PHONE",
-      subtitle: "Digital voice, no old copper",
-      description: "Crystal clear calls through your broadband. Keep your number, use your existing phone. Requires OCCTA broadband.",
+      title: "DIGITAL VOICE",
+      subtitle: "Home Phone over broadband",
+      description: "Crystal clear calls through your broadband. Keep your number, use your existing phone. Add-on — requires an active OCCTA broadband connection.",
       price: `Indicative from £${prices.landline}/mo`,
       link: "/landline",
       color: "bg-warning",

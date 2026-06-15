@@ -400,7 +400,7 @@ const HeroSection = () => {
 
                 <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-[9px] sm:text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
                   <span>14-day cooling-off period</span>
-                  <span>Keep your number on home phone</span>
+                  <span>Keep your number with Digital Voice</span>
                   <span>No confusing mid-contract rises on Price Lock</span>
                 </div>
               </motion.div>

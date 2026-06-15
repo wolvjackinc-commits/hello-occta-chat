@@ -136,7 +136,16 @@ export const AdminReadiness = () => {
             {isLoading ? (
               <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : (data ?? []).length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No CS-linked payment requests yet.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-10 text-sm text-muted-foreground">
+                  <div className="font-display uppercase text-base text-foreground mb-1">No accepted Contract Summaries ready for review</div>
+                  <div>
+                    Rows appear here once a payment request is linked to an accepted Contract Summary.
+                    Until the Worldpay webhook signing secret is live, every row will show
+                    <em> &ldquo;Waiting for verified payment&rdquo;</em>.
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : (
               (data ?? []).map((row) => {
                 const status = deriveStatus(row.inputs);

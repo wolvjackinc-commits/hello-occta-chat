@@ -177,9 +177,12 @@ export default function ManualFulfilment() {
             Failed to load trackers.
           </div>
         ) : (trackersQ.data?.length ?? 0) === 0 ? (
-          <div className="p-12 text-center text-sm text-muted-foreground">
-            No trackers yet. Click <strong>New tracker</strong> to create one
-            from a paid, webhook-verified payment request.
+          <div className="p-12 text-center text-sm text-muted-foreground space-y-2">
+            <div className="font-display uppercase text-base text-foreground">No manual fulfilment trackers yet</div>
+            <div>
+              Trackers appear here once a payment request is <strong>paid and webhook-verified</strong> with an accepted Contract Summary.
+              Click <strong>New tracker</strong> to start one — supplier orders are still placed in the supplier&apos;s own portal.
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -192,7 +195,7 @@ export default function ManualFulfilment() {
                   <TableHead>Portal ref</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Updated</TableHead>
-                  <TableHead className="w-[120px]" />
+                  <TableHead className="w-[200px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -281,6 +284,16 @@ function TrackerRow({
             ))}
           </SelectContent>
         </Select>
+        {tracker.account_number && (
+          <a
+            href={`/admin/customers/${tracker.account_number}/journey`}
+            target="_blank"
+            rel="noreferrer"
+            className="block mt-1 text-[11px] underline text-muted-foreground hover:text-foreground"
+          >
+            View customer journey →
+          </a>
+        )}
       </TableCell>
     </TableRow>
   );

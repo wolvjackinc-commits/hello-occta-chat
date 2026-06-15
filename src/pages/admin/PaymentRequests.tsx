@@ -578,6 +578,14 @@ export const AdminPaymentRequests = () => {
                                 Open Customer
                               </DropdownMenuItem>
                             )}
+                            {request.account_number && (
+                              <DropdownMenuItem
+                                onClick={() => window.open(`/admin/customers/${request.account_number}/journey`, "_blank")}
+                              >
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                View Customer Journey
+                              </DropdownMenuItem>
+                            )}
                             {/* DD Mandate details for DD setup requests */}
                             {request.type === "dd_setup" && ["opened", "completed"].includes(request.status) && (
                               <>

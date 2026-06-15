@@ -15,7 +15,7 @@ type PRSnapshot = {
   status: string;
   webhook_verified: boolean | null;
   paid_at: string | null;
-  payment_token: string | null;
+  provider_checkout_url: string | null;
 };
 
 const TONE: Record<CustomerFulfilmentStage, { border: string; bg: string; text: string }> = {
@@ -44,7 +44,7 @@ export function PaidStateBanner({ userId }: { userId: string }) {
     (async () => {
       const { data } = await supabase
         .from("payment_requests")
-        .select("id,status,webhook_verified,paid_at,payment_token")
+        .select("id,status,webhook_verified,paid_at,provider_checkout_url")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1);
@@ -77,8 +77,8 @@ export function PaidStateBanner({ userId }: { userId: string }) {
           <p className="text-sm text-muted-foreground mt-1">{fulfilmentHint(stage)}</p>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            {stage === "payment_pending" && pr.payment_token && (
-              <a href={`/pay?token=${encodeURIComponent(pr.payment_token)}`}>
+            {stage === "payment_pending" && pr.provider_checkout_url && (
+              <a href={pr.provider_checkout_url}>
                 <Button size="sm" variant="hero">
                   <CreditCard className="w-4 h-4 mr-1" /> Complete payment
                 </Button>

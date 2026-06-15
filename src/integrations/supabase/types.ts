@@ -2117,6 +2117,95 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_fulfilment_orders: {
+        Row: {
+          account_number: string | null
+          activated_at: string | null
+          cancelled_at: string | null
+          contract_summary_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          notes: string | null
+          payment_request_id: string
+          readiness_confirmed: boolean
+          selected_product_label: string | null
+          status: Database["public"]["Enums"]["manual_fulfilment_status"]
+          supplier_name: string | null
+          supplier_portal_reference: string | null
+          supplier_product_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          activated_at?: string | null
+          cancelled_at?: string | null
+          contract_summary_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_request_id: string
+          readiness_confirmed?: boolean
+          selected_product_label?: string | null
+          status?: Database["public"]["Enums"]["manual_fulfilment_status"]
+          supplier_name?: string | null
+          supplier_portal_reference?: string | null
+          supplier_product_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          activated_at?: string | null
+          cancelled_at?: string | null
+          contract_summary_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_request_id?: string
+          readiness_confirmed?: boolean
+          selected_product_label?: string | null
+          status?: Database["public"]["Enums"]["manual_fulfilment_status"]
+          supplier_name?: string | null
+          supplier_portal_reference?: string | null
+          supplier_product_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_fulfilment_orders_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: true
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       margin_rules: {
         Row: {
           active: boolean
@@ -4509,6 +4598,10 @@ export type Database = {
         }
         Returns: string
       }
+      can_create_manual_fulfilment: {
+        Args: { _payment_request_id: string }
+        Returns: boolean
+      }
       can_override_red_margin: { Args: { _user_id: string }; Returns: boolean }
       can_send_quote: { Args: { _quote_id: string }; Returns: boolean }
       check_rate_limit: {
@@ -5044,6 +5137,13 @@ export type Database = {
         | "manual_review"
       kb_status: "draft" | "approved" | "archived"
       kb_visibility: "public" | "internal" | "support_only"
+      manual_fulfilment_status:
+        | "ready_for_manual_order"
+        | "order_entered_in_supplier_portal"
+        | "supplier_acknowledged"
+        | "installation_pending"
+        | "active"
+        | "cancelled"
       margin_status_kind: "unknown" | "green" | "amber" | "red"
       order_status: "pending" | "confirmed" | "active" | "cancelled"
       plan_preference_kind: "flex" | "contract_saver" | "not_sure"
@@ -5354,6 +5454,14 @@ export const Constants = {
       ],
       kb_status: ["draft", "approved", "archived"],
       kb_visibility: ["public", "internal", "support_only"],
+      manual_fulfilment_status: [
+        "ready_for_manual_order",
+        "order_entered_in_supplier_portal",
+        "supplier_acknowledged",
+        "installation_pending",
+        "active",
+        "cancelled",
+      ],
       margin_status_kind: ["unknown", "green", "amber", "red"],
       order_status: ["pending", "confirmed", "active", "cancelled"],
       plan_preference_kind: ["flex", "contract_saver", "not_sure"],

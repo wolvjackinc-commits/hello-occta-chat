@@ -240,12 +240,6 @@ function TrackerRow({
         .update({ status: next } as never)
         .eq("id", tracker.id);
       if (error) throw error;
-      await supabase.from("audit_logs").insert({
-        action: "manual_fulfilment_status_change",
-        resource_type: "manual_fulfilment_orders",
-        resource_id: tracker.id,
-        metadata: { from: tracker.status, to: next } as never,
-      } as never);
       toast({ title: `Status updated to ${STATUS_LABEL[next]}` });
       onChanged();
     } catch (e) {
@@ -377,15 +371,6 @@ function CreateTrackerDialog({
           created_by: userResp.user?.id ?? null,
         } as never);
       if (error) throw error;
-      await supabase.from("audit_logs").insert({
-        action: "manual_fulfilment_created",
-        resource_type: "manual_fulfilment_orders",
-        resource_id: selected.id,
-        metadata: {
-          payment_request_id: selected.id,
-          contract_summary_id: selected.contract_summary_id,
-        } as never,
-      } as never);
     },
     onSuccess: () => {
       toast({ title: "Tracker created" });

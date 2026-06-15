@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info } from "lucide-react";
+import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info, FileText } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";

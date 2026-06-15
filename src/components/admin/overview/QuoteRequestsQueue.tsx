@@ -161,7 +161,7 @@ const QuoteRequestsQueueContent = () => {
 };
 
 export const QuoteRequestsQueue = () => (
-  <QueueErrorBoundary>
+  <QueueErrorBoundary queueName="quote requests">
     <QuoteRequestsQueueContent />
   </QueueErrorBoundary>
 );

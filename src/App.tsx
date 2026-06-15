@@ -177,6 +177,7 @@ const AnimatedRoutes = () => {
             <Route path="readiness" element={<AdminReadiness />} />
             <Route path="launch-safety" element={<AdminLaunchSafety />} />
             <Route path="tasks" element={<AdminTasks />} />
+            <Route path="manual-fulfilment" element={<AdminManualFulfilment />} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

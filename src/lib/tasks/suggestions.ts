@@ -19,10 +19,10 @@ export const STATIC_SUGGESTIONS: TaskSuggestion[] = [
     priority: "medium",
   },
   {
-    key: "webhook-pending",
-    title: "Worldpay webhook pending sign-off",
-    description: "Live webhook signing secret is still outstanding — track follow-up actions here.",
-    priority: "urgent",
+    key: "webhook-verified",
+    title: "Worldpay webhook live",
+    description: "Payment verification is live via Worldpay SMB webhook. No further sign-off needed.",
+    priority: "low",
   },
   {
     key: "review-readiness",

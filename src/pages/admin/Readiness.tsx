@@ -110,12 +110,11 @@ export const AdminReadiness = () => {
         </Button>
       </div>
 
-      <Card className="border-2 border-warning bg-warning/10 p-4 flex items-start gap-3">
-        <ShieldAlert className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+      <Card className="border-2 border-primary bg-primary/10 p-4 flex items-start gap-3">
+        <ShieldAlert className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <div className="text-sm">
-          <strong>Phase E webhook sign-off pending.</strong> Until the live Worldpay webhook signing secret is in place,
-          no payment can pass <code>webhook_verified</code>. Rows here will read “Awaiting verified payment”.
-          Supplier submission and service activation remain hard-locked.
+          <strong>Payment verification is live via Worldpay SMB webhook.</strong> Webhooks are verified and payments progress to <code>webhook_verified=true</code> automatically.
+          Supplier automation remains locked; use manual fulfilment.
         </div>
       </Card>
 
@@ -141,8 +140,7 @@ export const AdminReadiness = () => {
                   <div className="font-display uppercase text-base text-foreground mb-1">No accepted Contract Summaries ready for review</div>
                   <div>
                     Rows appear here once a payment request is linked to an accepted Contract Summary.
-                    Until the Worldpay webhook signing secret is live, every row will show
-                    <em> &ldquo;Waiting for verified payment&rdquo;</em>.
+                    Payments are verified automatically via Worldpay SMB webhook.
                   </div>
                 </TableCell>
               </TableRow>
@@ -237,7 +235,7 @@ export const AdminReadiness = () => {
           checklist: computeChecklist(row.inputs),
           generated_at: new Date().toISOString(),
           phase: "F0",
-          note: "Read-only draft. Supplier order NOT submitted. Phase E webhook sign-off pending.",
+          note: "Read-only draft. Supplier order NOT submitted. Supplier automation locked; manual fulfilment only.",
         };
         const { data, error } = await (supabase as any)
           .from("draft_order_packs")
@@ -335,5 +333,5 @@ export const AdminReadiness = () => {
 
 export default AdminReadiness;
 
-// Compile-time guard — Phase E not complete.
+// Compile-time guard — Supplier submission remains locked.
 void SUPPLIER_SUBMISSION_ENABLED;

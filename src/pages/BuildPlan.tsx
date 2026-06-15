@@ -15,6 +15,7 @@ import {
   SPEED_BUCKET_META, PRICE_LOCK_WORDING, FLEX_30_WORDING, FROM_PRICE_DISCLOSURE,
   FIRST_BILL_PROMISE, FAIR_PRICING_DEFAULTS,
 } from "@/lib/pricing/fairPricing";
+import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 
 type Resolved = {
   ok: true;

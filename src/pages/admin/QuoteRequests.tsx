@@ -232,6 +232,24 @@ export const AdminQuoteRequests = () => {
 
   const approveFinal = async () => {
     if (!latestQuote) return;
+    // Guard: require linked supplier product + wholesale cost before approval.
+    if (!latestQuote.supplier_product_id) {
+      toast({ title: "Cannot approve — supplier product not linked", description: "Pick a Giacom supplier product on the draft so margin can be verified.", variant: "destructive" });
+      return;
+    }
+    const { data: sp } = await (supabase as any)
+      .from("supplier_products")
+      .select("supplier_monthly_net, active, product_name, network")
+      .eq("id", latestQuote.supplier_product_id)
+      .maybeSingle();
+    if (!sp || sp.supplier_monthly_net == null) {
+      toast({ title: "Cannot approve — supplier cost missing", description: `Giacom wholesale monthly cost is missing for ${sp?.product_name ?? "this product"}. Add it in /admin/suppliers/giacom-import before approving.`, variant: "destructive" });
+      return;
+    }
+    if (sp.active === false) {
+      toast({ title: "Cannot approve — supplier product inactive", description: "Activate the product in /admin/suppliers/giacom-import first.", variant: "destructive" });
+      return;
+    }
     setBusy("approve");
     try {
       const { error } = await (supabase as any).rpc("admin_approve_final_quote", { _quote_id: latestQuote.id });
@@ -522,7 +540,7 @@ export const AdminQuoteRequests = () => {
                     })
                     .map((p: any) => (
                       <SelectItem key={p.id} value={p.supplier_product_id}>
-                        Giacom — {p.technology ?? p.bucket_hint ?? "?"} {p.download_speed_mbps ?? "?"}/{p.upload_speed_mbps ?? "?"}Mbps · {p.product_name} · {p.min_term_months ?? "?"}m · £{Number(p.supplier_monthly_net ?? 0).toFixed(2)} ex VAT{p.quote_only ? " · quote-only" : ""}
+                        Giacom — {p.network ?? "?"} · {p.product_name} · {p.download_speed_mbps ?? "?"}/{p.upload_speed_mbps ?? "?"}Mbps · {p.min_term_months ?? "?"}m · {p.supplier_monthly_net != null ? `£${Number(p.supplier_monthly_net).toFixed(2)} ex VAT` : "cost missing"}{p.quote_only ? " · quote-only" : ""}
                       </SelectItem>
                     ))}
                 </SelectContent>

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info } from "lucide-react";
+import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info, FileText } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";
@@ -121,6 +121,16 @@ const HeroSection = () => {
             {/* Checker — always visible */}
             <motion.div variants={itemVariants}>
               <PostcodeChecker variant="hero" externalAddressSelect />
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="mt-2">
+              <Link
+                to="/build-plan"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Get a quote first — no payment until Contract Summary
+              </Link>
             </motion.div>
 
             {/* Compact inline confirmation */}

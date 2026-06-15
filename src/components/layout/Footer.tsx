@@ -16,7 +16,7 @@ const Footer = () => {
       { name: "Help & Support Hub", path: "/support" },
       { name: "AI Assistant", path: "/support#ai-help" },
       { name: "My Dashboard", path: "/dashboard" },
-      { name: "Service Status", path: "/status" },
+      { name: "Network Status", path: "/status" },
       { name: "Contact Us", path: "/support#contact" },
     ],
     legal: [

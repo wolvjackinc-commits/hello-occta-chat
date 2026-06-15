@@ -13,6 +13,7 @@ import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star,
 import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
+import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import { getFromPrices } from "@/lib/pricing/engine";
 import { AvailabilityProvider, useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 
@@ -620,6 +621,7 @@ const BroadbandInner = () => {
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </Link>
+              <EmergencyCallNote className="mt-4" />
             </motion.div>
             <motion.div
               className="card-brutal bg-card p-6"

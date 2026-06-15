@@ -509,7 +509,8 @@ export const AdminQuoteRequests = () => {
                     <p>supplier product name: {latestSupplierProduct?.product_name ?? latestQuote.supplier_name ?? "—"}</p>
                     <p>supplier monthly cost ex VAT: {latestSupplierProduct?.supplier_monthly_net != null ? `£${Number(latestSupplierProduct.supplier_monthly_net).toFixed(2)}` : "missing"}</p>
                     <p>customer monthly ex VAT: £{Number(latestQuote.monthly_net ?? marginInfo?.total_monthly_sell ?? 0).toFixed(2)}</p>
-                    <p>calculated margin ex VAT: {marginInfo?.estimated_monthly_margin != null ? `£${Number(marginInfo.estimated_monthly_margin).toFixed(2)}` : latestSupplierProduct?.supplier_monthly_net != null ? `£${(Number(latestQuote.monthly_net ?? 0) - Number(latestSupplierProduct.supplier_monthly_net)).toFixed(2)}` : "—"}</p>
+                    <p>calculated margin ex VAT: {latestSupplierProduct?.supplier_monthly_net != null ? `£${(Number(latestQuote.monthly_net ?? 0) - Number(latestSupplierProduct.supplier_monthly_net)).toFixed(2)}` : "—"}</p>
+                    <p>margin check after buffers: {marginInfo?.estimated_monthly_margin != null ? `£${Number(marginInfo.estimated_monthly_margin).toFixed(2)}` : "—"}</p>
                   </div>
                   {latestQuote.status !== "approved" && (
                     <Button size="sm" variant="hero" onClick={approveFinal} disabled={busy === "approve"}>

@@ -63,6 +63,7 @@ const Index = () => {
           price={getFromPrices().broadband}
         />
         <HeroSection />
+        <HowItWorksStrip />
         <Suspense fallback={null}>
           <FairBroadbandPromise />
           <ServicesSection />

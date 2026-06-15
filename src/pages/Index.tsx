@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
 import HeroSection from "@/components/home/HeroSection";
+import HowItWorksStrip from "@/components/home/HowItWorksStrip";
 import { useAppMode } from "@/hooks/useAppMode";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/seo";

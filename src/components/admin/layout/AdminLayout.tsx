@@ -83,7 +83,7 @@ const navItems = [
 
 type SearchResult = {
   id: string;
-  type: "customer" | "order" | "guest_order";
+  type: "customer" | "order" | "guest_order" | "quote_request";
   label: string;
   description?: string | null;
   href: string;
@@ -131,13 +131,21 @@ export const AdminLayout = () => {
     enabled: searchEnabled,
     queryFn: async () => {
       const term = searchTerm.trim();
-      const [profiles, guestOrders, orders] = await Promise.all([
+      const [profiles, quoteRequests, guestOrders, orders] = await Promise.all([
         supabase
           .from("profiles")
           .select("id, full_name, email, phone, account_number")
           .or(
             `full_name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%,account_number.ilike.%${term}%`
           )
+          .limit(10),
+        (supabase as any)
+          .from("quote_requests")
+          .select("id, reference, full_name, email, phone, postcode, status")
+          .or(
+            `full_name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%,postcode.ilike.%${term}%,reference.ilike.%${term}%`
+          )
+          .order("created_at", { ascending: false })
           .limit(10),
         supabase
           .from("guest_orders")
@@ -160,6 +168,18 @@ export const AdminLayout = () => {
           label: profile.full_name || profile.email || "Customer",
           description: profile.account_number || profile.email || profile.phone,
           href: `/admin/customers/${profile.id}`,
+        });
+      });
+
+      quoteRequests.data?.forEach((request: any) => {
+        results.push({
+          id: request.id,
+          type: "quote_request",
+          label: `Quote Request ${request.reference || request.id.slice(0, 8)}`,
+          description: [request.full_name, request.email, request.phone, request.postcode, request.status]
+            .filter(Boolean)
+            .join(" · "),
+          href: `/admin/quote-requests?search=${encodeURIComponent(request.reference || request.email || request.phone || "")}`,
         });
       });
 

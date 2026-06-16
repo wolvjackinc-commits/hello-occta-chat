@@ -97,8 +97,8 @@ const AppDashboard = () => {
         supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
       ]);
 
-      if (profileResult.data) setProfile(profileResult.data);
-      if (ordersResult.data) setOrders(ordersResult.data);
+      if (profileResult.data) setProfile(profileResult.data as any);
+      if (ordersResult.data) setOrders(ordersResult.data as any);
     } catch (error) {
       logError("AppDashboard.fetchUserData", error);
     }

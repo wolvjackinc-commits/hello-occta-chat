@@ -221,15 +221,15 @@ const Dashboard = () => {
       ]);
 
       if (profileResult.data) {
-        setProfile(profileResult.data);
+        setProfile(profileResult.data as any);
       }
       
       if (ordersResult.data) {
-        setOrders(ordersResult.data);
+        setOrders(ordersResult.data as any);
       }
 
       if (guestOrdersResult.data) {
-        setGuestOrders(guestOrdersResult.data);
+        setGuestOrders(guestOrdersResult.data as any);
       }
       
       if (ticketsResult.data) {

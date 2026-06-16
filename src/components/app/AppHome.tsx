@@ -57,8 +57,8 @@ const AppHome = () => {
         supabase.from("customer_orders" as any).select("*").eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }).limit(1),
       ]);
       
-      if (profileRes.data) setProfile(profileRes.data);
-      if (ordersRes.data && ordersRes.data.length > 0) setActiveService(ordersRes.data[0]);
+      if (profileRes.data) setProfile(profileRes.data as any);
+      if (ordersRes.data && ordersRes.data.length > 0) setActiveService(ordersRes.data[0] as any);
     }
     setIsLoading(false);
   }, []);

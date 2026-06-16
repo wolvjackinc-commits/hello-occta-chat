@@ -10,6 +10,7 @@ import JourneyProgress, { type JourneyStepKey } from "./journey/JourneyProgress"
 import QuoteStep from "./journey/QuoteStep";
 import DeclineDialog from "./journey/DeclineDialog";
 import AgreementStep from "./journey/AgreementStep";
+import StartDateStep from "./journey/StartDateStep";
 
 type JourneyState = {
   id: string;
@@ -17,10 +18,15 @@ type JourneyState = {
   status: string;
   decline_reason: string | null;
   preferred_start_date: string | null;
+  start_date_selected_at: string | null;
   payment_method: string | null;
   billing_anchor_day: number | null;
   contract_accepted_at: string | null;
   cooling_off_ends_at: string | null;
+  cooling_off_acknowledged: boolean | null;
+  cooling_off_acknowledged_at: string | null;
+  early_start_waived: boolean | null;
+  early_start_waived_at: string | null;
   completed_at: string | null;
   contract_summary_id: string | null;
 };
@@ -174,6 +180,8 @@ export default function UnifiedJourney() {
           />
         ) : step === "agreement" ? (
           <AgreementStep token={token!} quote={state.quote} onAccepted={load} />
+        ) : step === "start_date" ? (
+          <StartDateStep token={token!} journey={state.journey} onSaved={load} />
         ) : (
           <div className="border-4 border-foreground p-8 text-center">
             <p className="font-display uppercase text-xl mb-2">Next step coming online</p>

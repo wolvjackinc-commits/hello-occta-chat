@@ -2707,6 +2707,8 @@ export type Database = {
           contract_acceptance_id: string | null
           contract_accepted_at: string | null
           contract_summary_id: string | null
+          cooling_off_acknowledged: boolean
+          cooling_off_acknowledged_at: string | null
           cooling_off_ends_at: string | null
           created_at: string
           current_step: string
@@ -2714,6 +2716,11 @@ export type Database = {
           decline_notes: string | null
           decline_reason: string | null
           declined_at: string | null
+          early_start_waived: boolean
+          early_start_waived_at: string | null
+          early_start_waiver_ip: string | null
+          early_start_waiver_text: string | null
+          early_start_waiver_text_hash: string | null
           id: string
           idempotency_key: string | null
           ip: string | null
@@ -2737,6 +2744,8 @@ export type Database = {
           contract_acceptance_id?: string | null
           contract_accepted_at?: string | null
           contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean
+          cooling_off_acknowledged_at?: string | null
           cooling_off_ends_at?: string | null
           created_at?: string
           current_step?: string
@@ -2744,6 +2753,11 @@ export type Database = {
           decline_notes?: string | null
           decline_reason?: string | null
           declined_at?: string | null
+          early_start_waived?: boolean
+          early_start_waived_at?: string | null
+          early_start_waiver_ip?: string | null
+          early_start_waiver_text?: string | null
+          early_start_waiver_text_hash?: string | null
           id?: string
           idempotency_key?: string | null
           ip?: string | null
@@ -2767,6 +2781,8 @@ export type Database = {
           contract_acceptance_id?: string | null
           contract_accepted_at?: string | null
           contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean
+          cooling_off_acknowledged_at?: string | null
           cooling_off_ends_at?: string | null
           created_at?: string
           current_step?: string
@@ -2774,6 +2790,11 @@ export type Database = {
           decline_notes?: string | null
           decline_reason?: string | null
           declined_at?: string | null
+          early_start_waived?: boolean
+          early_start_waived_at?: string | null
+          early_start_waiver_ip?: string | null
+          early_start_waiver_text?: string | null
+          early_start_waiver_text_hash?: string | null
           id?: string
           idempotency_key?: string | null
           ip?: string | null

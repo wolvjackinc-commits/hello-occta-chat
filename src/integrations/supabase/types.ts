@@ -2716,11 +2716,7 @@ export type Database = {
           decline_notes: string | null
           decline_reason: string | null
           declined_at: string | null
-          early_start_waived: boolean
-          early_start_waived_at: string | null
-          early_start_waiver_ip: string | null
-          early_start_waiver_text: string | null
-          early_start_waiver_text_hash: string | null
+          earliest_selectable_start_date: string | null
           id: string
           idempotency_key: string | null
           ip: string | null
@@ -2753,11 +2749,7 @@ export type Database = {
           decline_notes?: string | null
           decline_reason?: string | null
           declined_at?: string | null
-          early_start_waived?: boolean
-          early_start_waived_at?: string | null
-          early_start_waiver_ip?: string | null
-          early_start_waiver_text?: string | null
-          early_start_waiver_text_hash?: string | null
+          earliest_selectable_start_date?: string | null
           id?: string
           idempotency_key?: string | null
           ip?: string | null
@@ -2790,11 +2782,7 @@ export type Database = {
           decline_notes?: string | null
           decline_reason?: string | null
           declined_at?: string | null
-          early_start_waived?: boolean
-          early_start_waived_at?: string | null
-          early_start_waiver_ip?: string | null
-          early_start_waiver_text?: string | null
-          early_start_waiver_text_hash?: string | null
+          earliest_selectable_start_date?: string | null
           id?: string
           idempotency_key?: string | null
           ip?: string | null
@@ -3328,6 +3316,7 @@ export type Database = {
           rewards_unlock_rule: string
           sim_checkout_mode: string
           singleton: boolean
+          start_date_max_days: number
           unified_journey_enabled: boolean
           updated_at: string
           updated_by: string | null
@@ -3353,6 +3342,7 @@ export type Database = {
           rewards_unlock_rule?: string
           sim_checkout_mode?: string
           singleton?: boolean
+          start_date_max_days?: number
           unified_journey_enabled?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -3378,6 +3368,7 @@ export type Database = {
           rewards_unlock_rule?: string
           sim_checkout_mode?: string
           singleton?: boolean
+          start_date_max_days?: number
           unified_journey_enabled?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -5394,6 +5385,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      compute_cooling_off: {
+        Args: { _accepted_at: string }
+        Returns: {
+          cooling_off_ends_at: string
+          earliest_selectable_start_date: string
+        }[]
+      }
       current_reward_unlock_rule: {
         Args: never
         Returns: Database["public"]["Enums"]["reward_unlock_rule"]
@@ -5749,6 +5747,7 @@ export type Database = {
           rewards_unlock_rule: string
           sim_checkout_mode: string
           singleton: boolean
+          start_date_max_days: number
           unified_journey_enabled: boolean
           updated_at: string
           updated_by: string | null

@@ -1,363 +1,434 @@
-Approved — proceed with Stage 2, subject to the mandatory corrections below.
+Approved — proceed with Stage 3: Finance, Receipts, Invoices & Timeline, with the corrections below.
 
-Stage 2 scope remains:
+&nbsp;
 
-- branded Contract Summary
-- Contract Summary ready email
-- customer view/download/accept flow
-- signed/accepted confirmation email
-- customer Documents hub
-- admin document visibility
-- dashboard/timeline synchronisation
+This stage is finance visibility + payment receipt only.
 
-Do not add invoices, payment receipts, DD setup, supplier ordering, service activation or provisioning in Stage 2.
+&nbsp;
 
-## Mandatory correction 1 — preserve Contract Summary immutability
+Do not start:
 
-The existing Phase D PDF immutability rules remain the source of truth.
+&nbsp;
 
-Required:
+- supplier automation
 
-- Generate and store the Contract Summary PDF before sending it to the customer.
-- Store and preserve:
-  - `pdf_storage_key`
-  - `pdf_sha256`
-- Once the Contract Summary is accepted, never overwrite, replace or silently regenerate that original PDF.
-- If an accepted Contract Summary is missing its PDF/hash, hard-block acceptance and report the data issue.
-- Do not generate a different PDF after acceptance and call it the same document.
+- service activation
 
-For the “signed copy”, use either:
+- recurring billing automation
 
-- the original immutable Contract Summary PDF plus a separate acceptance certificate; or
-- a separately versioned accepted-copy document that references the original PDF hash and acceptance record.
+- automatic invoice generation
 
-The accepted-copy/certificate should show:
+- automatic DD mandate creation
 
-- Contract Summary number
-- original document SHA-256
-- customer name
-- accepted timestamp
-- acceptance method
-- acceptance reference
-- customer account/quote reference
+- provisioning
 
-Do not alter the original issued document.
+- payment status writes outside Worldpay webhook
 
-## Mandatory correction 2 — do not store raw tokens
+&nbsp;
 
-In `send-contract-summary-email`:
+Worldpay webhook "sentForSettlement" remains the only source of truth for paid status.
 
-- generate the raw token inside the edge function
-- store only the SHA-256 token hash
-- never save the raw token in the database
-- never log the raw token
-- never return it to admin diagnostics
+&nbsp;
 
-The raw token may only appear in the customer email URL.
+Correction 1 — never return or log raw receipt tokens
 
-If resending rotates the token, clearly treat the newest email link as the active link. Do not rotate or change any token after the Contract Summary has already been accepted.
+&nbsp;
 
-## Mandatory correction 3 — acceptance must be idempotent
+In "send-payment-received-email":
 
-Repeated clicks or retries must not:
+&nbsp;
 
-- create duplicate `contract_acceptances`
-- send duplicate welcome emails
-- create duplicate accepted-copy documents
-- change the accepted timestamp
-- modify the original PDF/hash
+- generate raw receipt token only inside the function
 
-Only the first successful acceptance should:
+- store only SHA-256 hash
 
-- create the acceptance record
-- lock the Contract Summary
-- create the accepted-copy/certificate
-- trigger the welcome/signed-copy email
-- notify admin
+- raw token may only appear inside the customer email URL
 
-Later requests should safely return:
+- do not return raw token in API response
 
-`Contract Summary already accepted`
+- do not log raw token
 
-and provide access to the existing accepted document.
+- do not include raw token in final verification report
 
-## Mandatory correction 4 — email failure must not undo acceptance
+- do not expose raw token in admin UI
 
-Acceptance and document locking are the legal/business action.
+&nbsp;
 
-Email delivery is secondary.
+For testing, verify by using the email link or by admin resend flow, not by printing the raw token.
 
-Required order:
+&nbsp;
 
-1. Validate CS/token/customer.
-2. Confirm immutable PDF exists.
-3. Atomically create acceptance and lock the CS.
-4. Create/reuse accepted-copy or acceptance certificate.
-5. Attempt welcome email.
-6. Log email result.
+Correction 2 — payment route format
 
-If email sending fails:
+&nbsp;
 
-- acceptance must remain valid
-- accepted document must remain available
-- log the communication as failed
-- show admin a “Resend acceptance email” action
-- do not roll back the signed acceptance
+The active payment route is:
 
-## Mandatory correction 5 — no lazy regeneration of accepted PDFs
+&nbsp;
 
-In `DocumentsTab`:
+"/pay?token=..."
 
-Do not ask the customer browser to generate a missing accepted Contract Summary PDF.
+&nbsp;
 
-Allowed:
+Do not introduce "/pay/:token".
 
-- request a fresh short-lived signed download URL for an existing stored PDF
-- generate an issued PDF before sending, if it has never been issued
-- show an admin-visible data warning if an accepted CS has no immutable stored PDF
+&nbsp;
 
-Not allowed:
+In PaymentsTab, Pay button should use:
 
-- regenerating the accepted legal PDF from current mutable database values
-- overwriting the accepted PDF
-- changing its hash
+&nbsp;
 
-## Mandatory correction 6 — secure signed-copy access
+"/pay?token=<token>"
 
-Do not rely only on a seven-day storage URL as the customer’s permanent copy.
+&nbsp;
 
-Email may contain:
+only if the existing secure token flow exposes a safe usable token/path.
 
-- a secure Contract Summary route that can issue a fresh download URL; and optionally
-- a short-lived direct PDF URL for convenience
+&nbsp;
 
-The customer Documents hub must always allow the customer to retrieve their accepted copy through authenticated or properly token-scoped access.
+If no raw token is available to the dashboard safely, show:
 
-Wrong customer and anon users without a valid token must be denied.
+"Payment link sent by email"
 
-## Mandatory correction 7 — use the proceed timestamp, not an invented status
+and allow admin to resend payment link.
 
-The admin Generate Contract Summary action should become available based on:
+&nbsp;
 
-- final quote approved/sent
-- `customer_intent_proceeded_at IS NOT NULL`
-- no active Contract Summary already exists for that quote
+Correction 3 — receipt route security
 
-Do not depend on a `customer_intent_proceeded` quote status unless that exact status genuinely exists.
+&nbsp;
 
-## Actor-type bug fix
+Receipt routes may be:
 
-Fix the acceptance failure as identified:
+&nbsp;
 
-- token/public acceptance activity should use allowed actor type `anon`
-- authenticated acceptance should use actor type `customer`
-- admin/system actions should use the matching valid actor type
+- "/dashboard/receipt/:id" for authenticated customer/staff
 
-Apply the correction consistently to both `activity_log` and `quote_events`.
+- "/receipt/:token" for email token access
 
-## Contract Summary ready email
+&nbsp;
 
-The email should contain:
+The token route must:
 
-Subject:  
-`Your OCCTA Contract Summary is ready`
+&nbsp;
 
-Main CTA:  
-`View and accept Contract Summary`
+- only work for paid + webhook_verified PR
 
-Content:
+- expire
 
-- customer name
-- CS number
-- package
-- monthly amount
-- no payment taken yet
-- what the customer needs to do
-- what happens after acceptance
-- OCCTA support details
+- be scoped to that payment receipt
 
-Log every send attempt in `communications_log` with:
+- not expose token hash
 
-- contract_summary_id
-- recipient
-- template
-- sent/failed status
-- timestamp
-- provider message/reference where available
+- deny wrong/expired/unpaid token
 
-Do not include supplier, margin, SKU or internal fields.
+&nbsp;
 
-## Acceptance/welcome email
+Correction 4 — no new invoice automation
 
-Subject:
+&nbsp;
 
-`Welcome to OCCTA — your Contract Summary is accepted`
+Invoices section is visibility-only.
 
-Use warm, friendly copy such as:
+&nbsp;
 
-“Welcome aboard — the paperwork is officially behaving itself. Your Contract Summary has been accepted and your copy is safely stored below.”
+Do not create invoices automatically from paid payment requests.
 
-Include:
+&nbsp;
 
-- Contract Summary number
-- accepted timestamp
-- plan and monthly price
-- secure View/download accepted copy button
-- next step: OCCTA will send the secure payment request
-- support contact details
+If invoices exist, display them.
 
-Do not automatically create a payment request.
+If no invoices exist, show:
 
-## Documents hub
+"Invoice automation is not enabled yet. Your card payment receipt is available in Receipts."
 
-Customer Documents should show:
+&nbsp;
 
-- Final quote
-- Issued Contract Summary
-- Accepted/signed Contract Summary or acceptance certificate
-- issued date
-- accepted date
-- status
-- secure view/download action
+Correction 5 — Direct Debit is status-only
 
-Admin customer/document area should show the same documents plus:
+&nbsp;
 
-- email sent timestamp/status
-- accepted timestamp
-- hashes/references where appropriate
-- resend email actions
+DD section is status/placeholder only.
 
-Supplier costs, margins, SKUs and admin notes must remain excluded from customer payloads.
+&nbsp;
 
-## Verification against QT-2606-a294fe6a
+Do not create a mandate.
 
-Confirm:
+Do not send DD setup link unless there is already a safe existing manual flow.
 
-1. Customer proceeded timestamp exists.
-2. Admin can generate one Contract Summary.
-3. Immutable PDF and hash exist before sending.
-4. CS-ready email is sent/logged.
-5. Token link opens the branded CS.
-6. Customer can view and download it.
-7. Customer acceptance succeeds — no actor-type 500.
-8. Original PDF/hash remain unchanged after acceptance.
-9. Acceptance record is created once.
-10. Accepted-copy/certificate is available.
-11. Welcome/signed-copy email is sent/logged.
-12. Repeating acceptance creates no duplicate acceptance/email/document.
-13. Customer dashboard and Documents update.
-14. Admin view and journey timeline update.
-15. No payment request is automatically created.
-16. No invoice, DD mandate, supplier order, service or provisioning row is created.
+&nbsp;
 
-Report:
+Correction 6 — webhook email idempotency
 
-- files and migrations changed
-- original PDF/hash before and after acceptance
-- acceptance idempotency result
-- CS-ready email result
-- welcome email result
-- failed-email behaviour
-- customer Documents result
-- admin Documents result
+&nbsp;
+
+If "worldpay-webhook" calls "send-payment-received-email" after paid:
+
+&nbsp;
+
+- call it only after the PR has been marked "paid"
+
+- make the email function idempotent by "payment_request_id + template_name='payment_received'"
+
+- failure to send email must not undo paid status
+
+- log failure in communications_log
+
+- do not retry infinitely
+
+&nbsp;
+
+Correction 7 — receipt PDF/source of truth
+
+&nbsp;
+
+Receipt must be derived from immutable paid payment data:
+
+&nbsp;
+
+- amount
+
+- currency
+
+- paid_at
+
+- provider_payment_id
+
+- payment_request_number
+
+- related Contract Summary
+
+&nbsp;
+
+Receipt view/download must not change payment status.
+
+&nbsp;
+
+Correction 8 — admin resend receipt email
+
+&nbsp;
+
+Admin can resend payment received/receipt email only when:
+
+&nbsp;
+
+- PR is paid
+
+- webhook_verified = true
+
+- paid_at not null
+
+&nbsp;
+
+Resend must not change PR status.
+
+&nbsp;
+
+Verification target
+
+&nbsp;
+
+Use:
+
+&nbsp;
+
+"PR-260612-TZ6D9R"
+
+&nbsp;
+
+Verify:
+
+&nbsp;
+
+1. Payment receipt available.
+
+2. Payment received email sent/logged or resend works.
+
+3. Customer dashboard Payments & Receipts shows the paid PR.
+
+4. Documents hub shows receipt.
+
+5. Admin CustomerDetail Finance panel shows:
+
+   - paid
+
+   - webhook_verified
+
+   - paid_at
+
+   - provider reference
+
+   - receipt link
+
+   - communication log
+
+6. No raw token is returned/logged.
+
+7. Wrong-user/anon access denied unless valid receipt token.
+
+8. No duplicate payment received email on retry.
+
+9. PR status, paid_at, webhook_verified and provider_payment_id unchanged.
+
+10. No new services, invoices, DD mandates, supplier orders, manual fulfilment orders, provisioning or installation rows.
+
+&nbsp;
+
+Final report must include:
+
+&nbsp;
+
+- files changed
+
+- receipt result
+
+- payment received email result
+
+- customer Payments & Receipts result
+
+- Documents hub result
+
+- admin Finance panel result
+
+- invoice visibility result
+
+- DD status placeholder result
+
+- timeline sync result
+
 - RLS/wrong-user/anon result
+
+- idempotency result
+
+- token safety result
+
 - no-side-effect result
-- TypeScript and production-build result
 
-Stop after Stage 2.  
-  
-  
-  
-  
-  
-Stage 2 — Contract Summary, Acceptance, Documents
+- TypeScript/build result
 
-Most of the backend infrastructure already exists (`generate-contract-summary`, `generate-contract-summary-pdf`, `accept-contract-summary`, `get-contract-summary-by-token`, `contract_summaries`, `contract_acceptances`, secure-token pages, `DocumentsTab`, `ContractSummariesTab`, `ContractSummaryView`, `ContractSummaryAuthedView`). The gaps are: a real "Contract Summary ready" email, a proper signed-copy welcome email with download link, a bug fix in `accept-contract-summary` that blocks acceptance, admin-side visibility from Quote Requests, and a cleaner Documents hub. No Worldpay / invoices / DD / supplier / provisioning code will be touched.
+&nbsp;
 
-### Test target
+Stop after Stage 3. Do not start Stage 4.
 
-QT-2606-a294fe6a → its existing approved quote.
+# Stage 3 — Finance, Receipts, Invoices & Timeline
+
+Goal: clean, branded finance visibility for customer + admin after a Worldpay-verified payment. Read-mostly: no new supplier/service/invoice/DD automation. Worldpay webhook remains sole source of truth for `paid`.
+
+## Test target
+
+`PR-260612-TZ6D9R` — already `paid`, `webhook_verified=true`, `paid_at` set, linked to a Contract Summary. No receipt row, no payment-received email yet.
 
 ---
 
-### 1. Bug fix: customer acceptance currently fails
+## 1. Branded customer-safe receipt
 
-`accept-contract-summary/index.ts` calls `log_event` with `_actor_type: "public"` and inserts a `quote_events` row with `actor_type: "public"`. The `activity_log` CHECK constraint only allows `customer/admin/system/ai/anon` — same root cause we already hit on `customer_proceed_with_quote_by_token`. The accept call returns 500 today.
+New edge function `get-payment-receipt` (verify_jwt=true) — returns a sanitized payload from `payment_requests` joined with `contract_summaries`:
 
-Fix: change both to `actor_type: "anon"` (token flow has no auth).
+Exposed: receipt_ref (derived from PR number, e.g. `RCPT-<PR-number>`), payment_request_number, customer_name, account_number, amount, currency, paid_at, provider=`Worldpay`, provider_payment_id, status, related CS number + plan_name + monthly price.
 
-### 2. Branded Contract Summary page + PDF
+Blocked: raw metadata, token_hash, supplier cost, margin, internal notes, webhook payload.
 
-- `src/pages/quote/ContractSummaryView.tsx` (token route) — add OCCTA logo/header band, clearer plan summary block (speed down/up + plan term + monthly inc-VAT prominently), explicit setup/router/installation/delivery one-off section, Digital Voice emergency-call warning panel (already partially present, polish copy), legal links (terms/privacy/complaints), issued date, and a "Download PDF" button that invokes `generate-contract-summary-pdf` with the token and opens the signed URL. Acceptance section unchanged in logic, restyled.
-- `supabase/functions/generate-contract-summary-pdf/index.ts` — keep current jsPDF structure (immutable), but tighten the header to match brutalist branding (large "OCCTA Ltd · CONTRACT SUMMARY" header, CS number/version block, separators), pricing table with clear monthly + itemised one-offs, Digital Voice warning section, dated acceptance block when accepted. **Confirms** internal/supplier/margin/SKU fields are excluded (they already are).
-- Customer auth view `src/pages/dashboard/ContractSummaryAuthedView.tsx` — same polish; show accepted timestamp + download.
+Auth modes:
 
-### 3. Admin "Generate / Send Contract Summary"
+- Authenticated path: `?id=<pr_id>` — caller must be owner (`user_id = auth.uid()`) or staff.
+- Token path: `?token=<raw>` — SHA-256 hashed lookup, only if PR is `paid` and within `expires_at + 30 days`. Used for the receipt URL embedded in the email.
 
-- `src/pages/admin/QuoteRequests.tsx` — in the drawer for a quote request whose status is `customer_intent_proceeded` (or any approved-with-proceed state), add a primary CTA "Generate Contract Summary" that calls `generate-contract-summary`, then a follow-up "Send to customer" CTA that calls a new `send-contract-summary-email` function. Show the resulting CS number, status, last-sent timestamp, accepted timestamp, and a "Open / Download PDF" link. Existing CS generation in `admin/Quotes.tsx` stays.
-- New `src/pages/admin/CustomerDetail.tsx` panel (small section): list CS rows for the customer with status badges and download/copy-link buttons.
+New page `/receipt/:token` + authenticated `/dashboard/receipt/:id`: brutalist branded receipt screen, print/PDF via existing `generateReceiptPdf` pattern (extend to take PR data, not just invoice).
 
-### 4. New edge function: `send-contract-summary-email`
+## 2. Payment-received email (idempotent)
 
-Admin-only (uses `requireStaff`). Input: `{ contract_summary_id }`. Behaviour:
+New edge function `send-payment-received-email` (service-role internal + admin-callable for resend):
 
-1. Load CS, ensure `status in (issued, viewed)`.
-2. Rotate `public_token_hash` and write a fresh raw token (so links from old drafts can't be reused).
-3. Send branded "Your OCCTA Contract Summary is ready" email to `customer_email_snapshot` with the secure link `/quote/contract-summary/<token>` and a one-line plan/price summary. No supplier/internal details.
-4. Insert a row in `communications_log` (channel `email`, direction `outbound`, template `contract_summary_ready`, related `contract_summary_id`).
-5. `log_event` with `actor_type='admin'`, source_module `contract_summary`.
+1. Load PR; must be `paid` + `webhook_verified` + `paid_at`.
+2. Idempotency: check `communications_log` for `template_name='payment_received'` + same `payment_request_id` + `status='sent'`. If found and `force=false`, return `{already_sent:true}`.
+3. Mint a fresh signed receipt token (hash-stored on PR `metadata.receipt_token_hash`, raw in email only) — does NOT touch `status`/`paid_at`.
+4. Render branded HTML (warm tone — thank you, amount, ref, paid date, receipt link, "we're preparing your setup", support contact).
+5. Send via existing Resend wrapper, insert `communications_log` row with template_name + provider_message_id + metadata.
+6. `log_event` (`system`, `payment_received_email_sent`, severity info).
 
-### 5. Signed-copy / welcome email after acceptance
+Trigger: add idempotent call at the end of the existing `worldpay-webhook` flow ONLY in the branch that already flipped PR to paid (no change to paid logic, no change to settlement rules). Failure swallowed + logged — never reverses paid status.
 
-Update `accept-contract-summary` (token) and `accept-contract-summary-authed` so after a successful acceptance they:
+## 3. Customer dashboard — Payments & Receipts section
 
-- Call `generate-contract-summary-pdf` (internal/service header) to ensure the immutable PDF exists and get a signed URL.
-- Send a warm branded "Welcome to OCCTA — your Contract Summary is accepted" email containing: thanks/welcome line, CS number, plan + monthly price, "Download your signed copy" button (signed URL, 7 days), next-step note that OCCTA will follow up with the secure payment link, support email/phone from `companyConfig`. Subject exactly: `Welcome to OCCTA — your Contract Summary is accepted`.
-- Insert `communications_log` row (`contract_summary_accepted_welcome`).
-- The existing internal admin notification email stays.
-- **Do not** create a payment request, invoice, DD mandate or supplier order.
+New tab/section `PaymentsTab` (`src/components/dashboard/tabs/PaymentsTab.tsx`):
 
-### 6. Documents hub
+- Lists `payment_requests` for `user_id = auth.uid()` (RLS already in place).
+- Per row: PR number, amount, status badge, related CS link, timeline pills (requested → opened → paid/failed), Pay button (if `pending`/`checkout_created` + token unexpired) → `/pay/:token`, Receipt button (if paid) → `/dashboard/receipt/:id`.
+- No raw provider payload exposed.
 
-- Customer `src/components/dashboard/tabs/DocumentsTab.tsx` — for each CS row, if `pdf_url` is null call `generate-contract-summary-pdf` (authed) lazily on first click to get a signed URL; show status badges (`Issued` / `Accepted`); add a "Signed copy" line when `accepted_at` is set. Also surface the final approved quote (read-only) via existing quote view link. Keep `invoices`/`user_files` rows intact — Stage 2 leaves invoices unchanged.
-- Admin `CustomerDetail.tsx` — new "Documents" section mirroring the same list (quote link, CS row with status + download link + sent/accepted timestamps).
+Wire into `Dashboard.tsx` tabs list.
 
-### 7. Dashboard + journey sync
+## 4. Documents hub
 
-- `CustomerJourneyTimeline.tsx` and `AdminJourneyTimeline.tsx` already consume `quote_events`; the new `contract_summary_email_sent` event from step 4 will add itself to both timelines. Add a small icon mapping for it. Acceptance event already flows through.
-- `ContractSummariesTab.tsx` — ensure the status badge updates after acceptance (re-fetch on focus).
+Extend `DocumentsTab` to add a "Payment receipts" group built from paid PRs (lazy signed link via `get-payment-receipt`). Final quote + CS + signed CS already present from Stage 2.
 
-### 8. RLS / security
+## 5. Admin Customer 360 finance panel
 
-- No schema changes are needed; `contract_summaries`, `contract_acceptances`, `communications_log` already have policies. The new edge function uses `requireStaff` + service role for the email send; tokens stay SHA-256 hashed (existing pattern).
-- Token rotation in step 4 means old email links go stale, matching the standard already used by `send-quote-email`.
+Update `src/pages/admin/CustomerDetail.tsx`:
 
-### 9. Verification
+- New "Finance" panel: payment requests table with status, `webhook_verified` badge, paid_at, amount, provider_payment_id, receipt link, communications subrow (payment emails for that PR).
+- Buttons: "Resend payment link" (existing send flow, only if unpaid) and "Resend receipt email" (calls `send-payment-received-email` with `force=true`, only if paid). Neither button mutates PR status.
 
-After build, run through QT-2606-a294fe6a manually in the preview:
+## 6. Invoices visibility
 
-1. Admin → Quote Requests → open drawer → click "Generate Contract Summary" → CS row appears with `Issued`.
-2. Click "Send Contract Summary" → email logged in `communications_log`; customer receives email with secure link.
-3. Open token link → branded CS page renders, "Download PDF" works.
-4. Accept with matching name/email → success toast, status flips to `Accepted`, welcome email arrives with signed-copy link, internal admin email arrives.
-5. Customer dashboard → Documents shows the CS with `Accepted` badge and download.
-6. Admin → CustomerDetail → Documents mirrors the same.
-7. Verify no `payment_requests`, `invoices`, `dd_mandates`, `orders`, `services`, or `manual_fulfilment_orders` rows were created for this customer.
+`InvoicesTab.tsx` already shows unpaid/paid/receipts. Audit + polish only (no new generation):
 
-### Files to change
+- If user has zero invoices AND any paid PR: show notice "Invoice automation not enabled yet — your card payment receipt is in the Receipts section."
+- Admin side: add small invoices-for-customer list inside CustomerDetail Finance panel with status + send/resend if existing `send-email` invoice template exists; otherwise hide buttons.
 
-- `supabase/functions/accept-contract-summary/index.ts` (bug fix + welcome email + PDF link + comm log)
-- `supabase/functions/accept-contract-summary-authed/index.ts` (welcome email + PDF link + comm log)
-- `supabase/functions/generate-contract-summary-pdf/index.ts` (branding polish only — no schema/logic change)
-- `supabase/functions/send-contract-summary-email/index.ts` **(new)**
-- `src/pages/quote/ContractSummaryView.tsx` (branding + PDF download)
-- `src/pages/dashboard/ContractSummaryAuthedView.tsx` (branding + status)
-- `src/pages/admin/QuoteRequests.tsx` (Generate/Send CS controls + CS panel)
-- `src/pages/admin/CustomerDetail.tsx` (Documents panel)
-- `src/components/dashboard/tabs/DocumentsTab.tsx` (lazy signed URL + accepted badge)
-- `src/components/dashboard/tabs/ContractSummariesTab.tsx` (status refresh + signed-copy row)
-- `src/components/dashboard/CustomerJourneyTimeline.tsx` + `src/components/admin/AdminJourneyTimeline.tsx` (icon for new email event)
+## 7. Direct Debit / Payment Method placeholder
 
-### Out of scope (Stage 3+)
+New small `DirectDebitStatus`-style block in dashboard:
 
-Payment requests, invoices, receipts, DD mandate UI, supplier order submission, provisioning, automatic billing — none touched.
+- If `dd_mandates` row exists for user → show its status (existing component already renders this).
+- Else → "Direct Debit setup is not active yet." No "create mandate" button in Stage 3.
+
+Admin CustomerDetail: show DD status row in Finance panel (read-only). No auto-create.
+
+## 8. Finance timeline events
+
+Extend `CustomerJourneyTimeline.tsx` + `AdminJourneyTimeline.tsx` event maps to render icons/labels for these `activity_log` event_types (only render if rows actually exist — no fake placeholders):
+
+- `payment_request_created`, `payment_link_opened`, `payment_checkout_created`, `payment_received`, `payment_received_email_sent`, `receipt_available`, `invoice_issued`, `invoice_paid`, `dd_mandate_setup_requested`, `dd_mandate_active`.
+
+Insert `receipt_available` event from `send-payment-received-email` after successful send (so timeline ties to the email).
+
+## 9. Security & RLS
+
+- `payment_requests` RLS already restricts to owner/staff — verify with a wrong-user query in build phase.
+- `get-payment-receipt` enforces ownership server-side regardless of RLS.
+- Token route returns 404 on expired/invalid/unpaid.
+- Email/receipt payload sanitizer is the single source of customer-facing fields — never returns full row.
+
+## 10. Verification (PR-260612-TZ6D9R)
+
+After build, run:
+
+1. Manually invoke `send-payment-received-email` for the PR → expect first call sends + logs comm row + raw token in response (server-only log), second call returns `already_sent`.
+2. Open `/dashboard/receipt/<id>` as the PR owner → branded receipt renders.
+3. Open same URL as a different signed-in user → 403.
+4. Confirm zero new rows in `services`, `orders`, `invoices` (where issued by us), `dd_mandates`, `manual_fulfilment_orders`.
+5. Confirm PR `status`, `paid_at`, `webhook_verified`, `provider_payment_id` unchanged.
+6. Customer dashboard Payments tab + Documents hub show the receipt; admin CustomerDetail Finance panel shows the PR + comms log.
+
+## Out of scope (deferred)
+
+Recurring billing, monthly invoice generation, DD auto-create, dunning, supplier orders, service activation, provisioning — all untouched. Worldpay webhook "sentForSettlement" remains the only path to `paid`.
+
+## Files to add
+
+- `supabase/functions/get-payment-receipt/index.ts`
+- `supabase/functions/send-payment-received-email/index.ts`
+- `src/components/dashboard/tabs/PaymentsTab.tsx`
+- `src/pages/dashboard/ReceiptView.tsx` (auth) + `src/pages/ReceiptTokenView.tsx` (token)
+- `src/lib/generatePaymentReceiptPdf.ts` (PR-aware variant)
+
+## Files to edit
+
+- `supabase/functions/worldpay-webhook/index.ts` — fire-and-forget payment-received email call (idempotent, post-paid only).
+- `src/pages/Dashboard.tsx` — add Payments tab.
+- `src/components/dashboard/tabs/DocumentsTab.tsx` — add Receipts group.
+- `src/components/dashboard/tabs/InvoicesTab.tsx` — fallback copy.
+- `src/pages/admin/CustomerDetail.tsx` — Finance panel.
+- `src/components/dashboard/CustomerJourneyTimeline.tsx` + `src/components/admin/AdminJourneyTimeline.tsx` — new event types.
+- `src/App.tsx` — new routes.

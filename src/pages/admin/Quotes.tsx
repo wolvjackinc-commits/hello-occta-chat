@@ -296,9 +296,9 @@ export const AdminQuotes = () => {
                       <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => runMarginCheck(r.id)} title="Run margin check">
                         <ShieldCheck className="w-3 h-3" />
                       </Button>
-                      {(r.status === "draft" || r.status === "sent" || r.status === "viewed") && (
+                      {(r.status === "draft" || r.status === "sent" || r.status === "viewed" || r.status === "approved") && (
                         <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => sendQuote(r.id, r.quote_number)}>
-                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send"}
+                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : (r.status === "approved" ? "Send to customer" : "Send")}
                         </Button>
                       )}
                       <Button size="sm" variant="outline" onClick={() => setOverrideDialog({ open: true, quoteId: r.id, quoteNumber: r.quote_number })} title="Override red margin (admin)">

@@ -391,6 +391,34 @@ export const AdminQuoteRequests = () => {
 
   const requestMoreInfo = async () => {
     if (!selected) return;
+    // placeholder no-op to anchor patch context
+    void selected;
+  };
+
+  const sendApprovedQuote = async () => {
+    if (!latestQuote) return;
+    setBusy("send_quote");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: latestQuote.id, rotate_token: true } });
+      if (error || (data as any)?.error) {
+        const err = (data as any)?.error || error?.message;
+        if (err === "blocked_low_margin") {
+          toast({ title: "Blocked by margin guard", description: "Run a margin check / override before sending.", variant: "destructive" });
+        } else {
+          throw new Error((data as any)?.message || err);
+        }
+        return;
+      }
+      toast({ title: "Quote sent to customer", description: "They can now accept or decline via their secure link." });
+      qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
+      if (selected) await loadLatestQuote(selected.id);
+    } catch (e: any) {
+      toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+    } finally { setBusy(null); }
+  };
+
+  const _origRequestMoreInfo = async () => {
+    if (!selected) return;
     if (needsInfoMsg.trim().length < 4) { toast({ title: "Message too short", variant: "destructive" }); return; }
     setBusy("info");
     try {

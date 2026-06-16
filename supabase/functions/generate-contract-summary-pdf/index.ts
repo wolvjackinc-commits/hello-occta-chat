@@ -25,11 +25,17 @@ function renderPdf(cs: any): Uint8Array {
     }
   };
   const heading = (t: string) => {
+    y += 10;
+    if (y > H - M - 30) { doc.addPage(); y = M; }
+    doc.setFillColor(0, 0, 0);
+    doc.rect(M, y - 11, 4, 14, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text(String(t).toUpperCase(), M + 12, y);
     y += 6;
-    line(t, { bold: true, size: 12, gap: 6 });
-    doc.setDrawColor(0); doc.setLineWidth(1);
-    doc.line(M, y - 2, W - M, y - 2);
-    y += 6;
+    doc.setDrawColor(0); doc.setLineWidth(0.5);
+    doc.line(M, y, W - M, y);
+    y += 12;
   };
   const kv = (k: string, v: string) => {
     if (y > H - M) { doc.addPage(); y = M; }
@@ -41,11 +47,29 @@ function renderPdf(cs: any): Uint8Array {
     y += 14 * Math.max(1, wrapped.length);
   };
 
-  // Header
-  doc.setFont("helvetica", "bold"); doc.setFontSize(18);
-  doc.text("OCCTA Ltd — Contract Summary", M, y); y += 22;
+  // Brutalist branded header — solid black banner
+  doc.setFillColor(0, 0, 0);
+  doc.rect(0, 0, W, 80, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(22);
+  doc.text("OCCTA", M, 38);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text(`${cs.cs_number} · Version ${cs.version} · Status: ${cs.status}`, M, y); y += 16;
+  doc.text("No contracts. No pressure.", M, 54);
+  doc.text("www.occta.co.uk", M, 66);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  doc.text("CONTRACT SUMMARY", W - M, 38, { align: "right" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+  doc.text(`${cs.cs_number}`, W - M, 54, { align: "right" });
+  doc.text(`Version ${cs.version} · ${String(cs.status).toUpperCase()}`, W - M, 66, { align: "right" });
+  doc.setTextColor(0, 0, 0);
+  y = 110;
+
+  // Intro tagline
+  doc.setFont("helvetica", "italic"); doc.setFontSize(9);
+  doc.setTextColor(80, 80, 80);
+  doc.text("This Contract Summary is provided under Ofcom General Conditions C1.3. It is a faithful summary; the full terms apply.", M, y);
+  doc.setTextColor(0, 0, 0);
+  y += 12;
 
   heading("Customer & Service");
   kv("Customer", `${cs.customer_name_snapshot} (${cs.customer_email_snapshot})`);
@@ -103,13 +127,16 @@ function renderPdf(cs: any): Uint8Array {
     if (cs.accepted_ip) kv("IP", String(cs.accepted_ip));
   }
 
-  // Footer
+  // Footer on every page
   const pages = doc.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
-    doc.setFontSize(8); doc.setTextColor(120);
-    doc.text(`OCCTA Ltd · www.occta.co.uk · ${cs.cs_number} v${cs.version}`, M, H - 24);
-    doc.text(`Page ${i} of ${pages}`, W - M - 60, H - 24);
+    doc.setDrawColor(0); doc.setLineWidth(0.5);
+    doc.line(M, H - 40, W - M, H - 40);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(100);
+    doc.text(`OCCTA Ltd · www.occta.co.uk · ${cs.cs_number} v${cs.version}`, M, H - 26);
+    doc.text("No contracts. No pressure.", M, H - 14);
+    doc.text(`Page ${i} of ${pages}`, W - M, H - 26, { align: "right" });
   }
 
   return doc.output("arraybuffer") as unknown as Uint8Array;

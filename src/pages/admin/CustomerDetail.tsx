@@ -383,7 +383,7 @@ export const AdminCustomerDetail = () => {
             ) : (
               <div className="space-y-3">
                 {data.contractSummaries.map((cs: any) => (
-                  <AdminCsRow key={cs.id} cs={cs} onResent={refetch} />
+                  <AdminCsRow key={cs.id} cs={cs} />
                 ))}
               </div>
             )}
@@ -675,15 +675,15 @@ function Customer360Header({ profile, cs, pr, quotes }: { profile: any; cs: any;
         ? "Contract Summary pending"
         : !pr
           ? "Awaiting payment request"
-          : pr.status === "paid" || pr.status === "completed"
-            ? (pr.webhook_verified ? "Paid &amp; verified" : "Paid")
-            : "Payment pending";
+            : pr.status === "paid" || pr.status === "completed"
+              ? (pr.webhook_verified ? "Paid & verified" : "Paid")
+              : "Payment pending";
 
   return (
     <Card className="border-2 border-foreground p-4">
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <span className="text-xs uppercase text-muted-foreground font-display">Stage:</span>
-        <Badge variant="outline" className="border-2 border-foreground" dangerouslySetInnerHTML={{ __html: stage }} />
+        <Badge variant="outline" className="border-2 border-foreground">{stage}</Badge>
       </div>
       {warnings.length > 0 && (
         <ul className="text-xs space-y-1">

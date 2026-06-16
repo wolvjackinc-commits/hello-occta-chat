@@ -3224,6 +3224,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_id: string | null
+          customer_intent_ip: string | null
+          customer_intent_proceeded_at: string | null
+          customer_intent_ua: string | null
           customer_notes: string | null
           customer_type: Database["public"]["Enums"]["customer_type_kind"]
           delivery_gross: number
@@ -3282,6 +3285,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
+          customer_intent_ip?: string | null
+          customer_intent_proceeded_at?: string | null
+          customer_intent_ua?: string | null
           customer_notes?: string | null
           customer_type: Database["public"]["Enums"]["customer_type_kind"]
           delivery_gross?: number
@@ -3340,6 +3346,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
+          customer_intent_ip?: string | null
+          customer_intent_proceeded_at?: string | null
+          customer_intent_ua?: string | null
           customer_notes?: string | null
           customer_type?: Database["public"]["Enums"]["customer_type_kind"]
           delivery_gross?: number
@@ -4651,6 +4660,14 @@ export type Database = {
         }
         Returns: string
       }
+      customer_proceed_with_quote_authed: {
+        Args: { _quote_id: string }
+        Returns: Json
+      }
+      customer_proceed_with_quote_by_token: {
+        Args: { _ip?: string; _token_hash: string; _ua?: string }
+        Returns: Json
+      }
       expire_old_quotes: { Args: never; Returns: number }
       generate_account_number: { Args: never; Returns: string }
       generate_complaint_reference: { Args: never; Returns: string }
@@ -4796,6 +4813,7 @@ export type Database = {
         Returns: {
           approved_at: string
           contract_length_months: number
+          customer_intent_proceeded_at: string
           customer_notes: string
           customer_type: string
           delivery_gross: number
@@ -4814,6 +4832,7 @@ export type Database = {
           quote_number: string
           quote_request_reference: string
           router_gross: number
+          selected_addons: Json
           service_type: string
           setup_gross: number
           speed_notes: string
@@ -4844,6 +4863,7 @@ export type Database = {
           approved_at: string
           contract_length_months: number
           created_at: string
+          customer_intent_proceeded_at: string
           customer_notes: string
           customer_type: string
           delivery_gross: number

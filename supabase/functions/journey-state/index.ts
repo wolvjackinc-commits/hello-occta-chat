@@ -136,6 +136,26 @@ Deno.serve(async (req) => {
     .limit(1)
     .maybeSingle();
 
+  // Active payment method snapshot (masked only) and DD provider config.
+  let payment_method_summary: unknown = null;
+  if (journey?.id) {
+    const { data: pm } = await supabase
+      .from("payment_methods")
+      .select("id, method, billing_anchor_day, dd_setup_status, masked_account_last4, masked_sort_last2, bank_name, account_holder_name, consent_version, consent_at, active")
+      .eq("journey_id", journey.id)
+      .eq("active", true)
+      .maybeSingle();
+    payment_method_summary = pm ?? null;
+  }
+  const { data: ddCfg } = await supabase
+    .from("dd_provider_config")
+    .select("provider_name, ddi_template_version, guarantee_version, provider_approval_date, live_collection_enabled")
+    .eq("singleton", true)
+    .maybeSingle();
+  const dd_provider_template_available = !!(
+    ddCfg?.ddi_template_version && ddCfg?.guarantee_version && ddCfg?.provider_approval_date
+  );
+
   return jsonResponse({
     ok: true,
     unified_journey_enabled,
@@ -147,5 +167,7 @@ Deno.serve(async (req) => {
     journey: journey ?? null,
     contract_summary_available: !!cs,
     contract_summary_status: cs?.status ?? null,
+    payment_method: payment_method_summary,
+    dd_provider_template_available,
   });
 });

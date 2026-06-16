@@ -82,6 +82,36 @@ Deno.serve(async (req) => {
     .eq("token_hash", hash)
     .maybeSingle();
 
+  if (unified_for_this_quote && !journey) {
+    // A quote token can be rotated when the approved quote email is re-sent.
+    // If the customer already continued before that rotation, the existing
+    // order_journeys row is keyed to the old token_hash. Re-link that single
+    // in-progress journey to the current quote token instead of trying to
+    // insert a duplicate quote journey, which causes the public continue call
+    // to return a 500.
+    const existing = await supabase
+      .from("order_journeys")
+      .select(JOURNEY_COLS)
+      .eq("quote_id", q.id)
+      .neq("status", "cancelled")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing.data) {
+      journey = existing.data;
+      if ((journey as any).token_hash !== hash) {
+        const upd = await supabase
+          .from("order_journeys")
+          .update({ token_hash: hash })
+          .eq("id", journey.id)
+          .select(JOURNEY_COLS)
+          .single();
+        if (!upd.error) journey = upd.data;
+      }
+    }
+  }
+
   if (unified_for_this_quote && !journey && action === "get" && q.customer_intent_proceeded_at && eligible) {
     // Recovery for controlled test quotes that were viewed before the per-quote
     // unified flag was switched on: the legacy button may already have stamped

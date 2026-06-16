@@ -212,24 +212,24 @@ const Dashboard = () => {
     try {
       // Fetch all data in parallel
       const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult, invoicesResult] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-        supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("guest_orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
+        supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("customer_guest_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
         supabase.from("user_files").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("invoices").select("id, invoice_number, total, status, due_date, issue_date").eq("user_id", userId).in("status", ["draft", "sent", "overdue"]).order("due_date", { ascending: true }),
       ]);
 
       if (profileResult.data) {
-        setProfile(profileResult.data);
+        setProfile(profileResult.data as any);
       }
       
       if (ordersResult.data) {
-        setOrders(ordersResult.data);
+        setOrders(ordersResult.data as any);
       }
 
       if (guestOrdersResult.data) {
-        setGuestOrders(guestOrdersResult.data);
+        setGuestOrders(guestOrdersResult.data as any);
       }
       
       if (ticketsResult.data) {

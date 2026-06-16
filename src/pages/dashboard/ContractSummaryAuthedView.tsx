@@ -175,11 +175,6 @@ export default function ContractSummaryAuthedView() {
         )}
 
         <div className="border-4 border-foreground p-5 mb-5 text-sm text-muted-foreground">
-          <h2 className="font-display uppercase text-sm mb-2 text-foreground">Vulnerable customers</h2>
-          <p>{cs.vulnerable_customer_note}</p>
-        </div>
-
-        <div className="border-4 border-foreground p-5 mb-5 text-sm text-muted-foreground">
           <h2 className="font-display uppercase text-sm mb-2 text-foreground">Complaints & ADR</h2>
           <p>{cs.complaints_adr_info}</p>
         </div>

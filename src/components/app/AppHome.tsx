@@ -53,12 +53,12 @@ const AppHome = () => {
       setUser(user);
       
       const [profileRes, ordersRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        supabase.from("orders").select("*").eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }).limit(1),
+        supabase.from("customer_profile" as any).select("*").eq("id", user.id).maybeSingle(),
+        supabase.from("customer_orders" as any).select("*").eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }).limit(1),
       ]);
       
-      if (profileRes.data) setProfile(profileRes.data);
-      if (ordersRes.data && ordersRes.data.length > 0) setActiveService(ordersRes.data[0]);
+      if (profileRes.data) setProfile(profileRes.data as any);
+      if (ordersRes.data && ordersRes.data.length > 0) setActiveService(ordersRes.data[0] as any);
     }
     setIsLoading(false);
   }, []);

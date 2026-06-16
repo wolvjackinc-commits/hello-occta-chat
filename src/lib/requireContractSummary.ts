@@ -53,7 +53,7 @@ export async function hasAcceptedContractSummary(
     // 3. contractSummaryId → direct select
     if (ctx.contractSummaryId) {
       const { data, error } = await (supabase as any)
-        .from("contract_summaries")
+        .from("customer_contract_summaries")
         .select("id, status")
         .eq("id", ctx.contractSummaryId)
         .maybeSingle();

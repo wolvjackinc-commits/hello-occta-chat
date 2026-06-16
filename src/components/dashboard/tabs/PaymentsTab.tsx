@@ -49,7 +49,7 @@ export function PaymentsTab({ userId }: { userId: string }) {
       const csIds = Array.from(new Set(rows.map((r) => r.contract_summary_id).filter(Boolean) as string[]));
       const csMap: Record<string, string> = {};
       if (csIds.length > 0) {
-        const { data: cs } = await supabase.from("contract_summaries").select("id,cs_number").in("id", csIds);
+        const { data: cs } = await supabase.from("customer_contract_summaries" as any).select("id,cs_number").in("id", csIds);
         (cs ?? []).forEach((c: any) => { csMap[c.id] = c.cs_number; });
       }
       setPrs(rows.map((r) => ({ ...r, cs_number: r.contract_summary_id ? csMap[r.contract_summary_id] : null })));

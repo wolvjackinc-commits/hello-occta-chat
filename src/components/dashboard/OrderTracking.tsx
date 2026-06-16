@@ -203,18 +203,7 @@ export const OrderTracking = ({ order, onContactSupport }: OrderTrackingProps) =
         })}
       </div>
 
-      {/* Admin Notes */}
-      {order.admin_notes && (
-        <div className="mt-6 p-4 bg-accent/10 border-2 border-accent">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-display text-sm uppercase text-accent">Update from OCCTA</h4>
-              <p className="text-sm text-muted-foreground mt-1">{order.admin_notes}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Internal admin notes are intentionally not shown to customers. */}
 
       {/* Actions */}
       <div className="mt-6 pt-4 border-t-2 border-foreground/10 flex items-center justify-between">

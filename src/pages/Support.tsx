@@ -155,11 +155,12 @@ const Support = () => {
     setIsSubmitting(true);
 
     try {
-      const { data: profile } = await supabase
-        .from("profiles")
+      const { data: profileData } = await supabase
+        .from("customer_profile" as any)
         .select("*")
         .eq("id", user.id)
         .single();
+      const profile = profileData as any;
 
       const { data: fnData, error } = await supabase.functions.invoke("submit-support-ticket", {
         body: {

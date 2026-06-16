@@ -156,7 +156,7 @@ const Support = () => {
 
     try {
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("customer_profile" as any)
         .select("*")
         .eq("id", user.id)
         .single();

@@ -93,8 +93,8 @@ const AppDashboard = () => {
   const fetchUserData = async (userId: string) => {
     try {
       const [profileResult, ordersResult] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-        supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
+        supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
       ]);
 
       if (profileResult.data) setProfile(profileResult.data);

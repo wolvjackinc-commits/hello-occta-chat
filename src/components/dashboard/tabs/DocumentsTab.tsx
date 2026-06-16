@@ -29,7 +29,7 @@ export function DocumentsTab({ userId }: { userId: string }) {
     (async () => {
       const [inv, cs, uf, pr] = await Promise.all([
         supabase.from("invoices").select("id,invoice_number,pdf_url,issue_date").eq("user_id", userId).order("issue_date", { ascending: false }),
-        supabase.from("contract_summaries").select("id,cs_number,plan_name,pdf_url,pdf_storage_key,issued_at,accepted_at").eq("customer_id", userId).order("issued_at", { ascending: false }),
+        supabase.from("customer_contract_summaries" as any).select("id,cs_number,plan_name,pdf_url,pdf_storage_key,issued_at,accepted_at").eq("customer_id", userId).order("issued_at", { ascending: false }),
         supabase.from("user_files").select("id,file_name,file_path,created_at").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("payment_requests").select("id,payment_request_number,paid_at,status,webhook_verified").eq("user_id", userId).in("status", ["paid","completed"]).eq("webhook_verified", true).order("paid_at", { ascending: false }),
       ]);

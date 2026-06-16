@@ -33,7 +33,7 @@ export function ContractSummariesTab({ userId }: { userId: string }) {
     logClientEvent({ event_type: "tab_view", title: "dashboard:contract_summaries", source_module: "dashboard" });
     (async () => {
       const { data } = await supabase
-        .from("contract_summaries")
+        .from("customer_contract_summaries" as any)
         .select("id,cs_number,plan_name,service_address,status,version,monthly_price_incl_vat,contract_length,issued_at,accepted_at,pdf_storage_key")
         .eq("customer_id", userId)
         .order("issued_at", { ascending: false });

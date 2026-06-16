@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
 
   const { data: cs } = await supabase
     .from("contract_summaries")
-    .select("id, version, public_token_hash")
+    .select("id, cs_number, version, public_token_hash, pdf_storage_key")
     .eq("quote_id", quote.id)
     .neq("status", "superseded")
     .order("version", { ascending: false })
@@ -203,11 +203,42 @@ Deno.serve(async (req) => {
       const startDateGB = new Date(journey.preferred_start_date as string)
         .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const pmLine = pm.method === "direct_debit"
-        ? `Pay monthly by Direct Debit (setup request received — not yet active)`
-        : `Monthly invoice paid online via Worldpay`;
+        ? `Pay monthly by BACS Direct Debit`
+        : `Monthly invoice paid online via secure payment link`;
       const dayLine = pm.method === "direct_debit"
         ? `Preferred collection day: <strong>${pm.billing_anchor_day}</strong>`
         : `Preferred invoice day: <strong>${pm.billing_anchor_day}</strong>`;
+
+      // Build signed URL to the immutable signed-contract PDF and download
+      // bytes for direct attachment to the email. Both are best-effort — if
+      // either fails we still send the email without breaking the order.
+      let csSignedUrl: string | null = null;
+      let pdfAttachment: { filename: string; content: string; contentType: string } | null = null;
+      if (cs?.pdf_storage_key) {
+        try {
+          const { data: signed } = await supabase
+            .storage.from("contract-pdfs")
+            .createSignedUrl(cs.pdf_storage_key, 60 * 60 * 24 * 30);
+          csSignedUrl = signed?.signedUrl ?? null;
+
+          const { data: dl } = await supabase
+            .storage.from("contract-pdfs")
+            .download(cs.pdf_storage_key);
+          if (dl) {
+            const bytes = new Uint8Array(await dl.arrayBuffer());
+            let bin = "";
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            pdfAttachment = {
+              filename: `Contract-Summary-${cs.cs_number ?? quote.quote_number}.pdf`,
+              content: btoa(bin),
+              contentType: "application/pdf",
+            };
+          }
+        } catch (e) {
+          console.warn("[journey-submit-order] pdf fetch failed", e);
+        }
+      }
+
       const body = `
         <p>Hi ${escapeHtml(qr.full_name)},</p>
         <p>Thanks for confirming your order with OCCTA — here's a summary you can keep.</p>
@@ -220,6 +251,9 @@ Deno.serve(async (req) => {
           <tr><td style="padding:10px 12px;border-bottom:1px solid #000;">Payment method</td><td style="padding:10px 12px;border-bottom:1px solid #000;">${escapeHtml(pmLine)}</td></tr>
           <tr><td style="padding:10px 12px;">Billing day</td><td style="padding:10px 12px;">${dayLine}</td></tr>
         </table>
+        <p style="font-size:14px;">
+          Your signed <strong>Contract Summary</strong> is attached to this email as a PDF for your records${csSignedUrl ? `, and can also be viewed online via the button below` : ""}.
+        </p>
         <p style="font-size:13px;color:#444;">
           <strong>Your 14-day cooling-off period</strong> ends on ${escapeHtml(new Date(journey.cooling_off_ends_at as string).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}. You can cancel within this window for a full refund of anything paid.
         </p>
@@ -227,15 +261,19 @@ Deno.serve(async (req) => {
           We'll be in touch with your provisioning timeline shortly. <strong>No payment has been taken</strong>; billing only begins once your service is confirmed active.
         </p>
       `;
-      const html = brutalistEmailShell("Your OCCTA order is in", body, {
-        label: "View your contract summary",
-        url: cs ? `https://www.occta.co.uk/contract-summary/${idempotency_key.slice(0, 8)}` : "https://www.occta.co.uk/account",
-      });
+      const html = brutalistEmailShell(
+        "Your OCCTA order is in",
+        body,
+        csSignedUrl
+          ? { label: "View your signed contract summary", url: csSignedUrl }
+          : undefined,
+      );
       await sendResendEmail({
         to: qr.email,
         subject: `Order ${order.order_number} confirmed — OCCTA`,
         html,
         replyTo: "hello@occta.co.uk",
+        attachments: pdfAttachment ? [pdfAttachment] : undefined,
       });
       await supabase
         .from("order_journeys")

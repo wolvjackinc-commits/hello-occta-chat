@@ -80,7 +80,13 @@ export async function checkRateLimit(identifier: string, action: string, maxReq 
   return data === true;
 }
 
-export async function sendResendEmail(opts: { to: string | string[]; subject: string; html: string; replyTo?: string }) {
+export async function sendResendEmail(opts: {
+  to: string | string[];
+  subject: string;
+  html: string;
+  replyTo?: string;
+  attachments?: Array<{ filename: string; content: string; contentType?: string }>;
+}) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { ok: false, error: "RESEND_API_KEY missing" };
   const from = Deno.env.get("RESEND_FROM_EMAIL") || "OCCTA <noreply@occta.co.uk>";
@@ -93,6 +99,11 @@ export async function sendResendEmail(opts: { to: string | string[]; subject: st
       subject: opts.subject,
       html: opts.html,
       reply_to: opts.replyTo,
+      attachments: opts.attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        content_type: a.contentType,
+      })),
     }),
   });
   if (!res.ok) {

@@ -233,6 +233,54 @@ Deno.serve(async (req) => {
     _quote_id: journey.quote_id,
   }).then(() => {}).catch(() => {});
 
+  // Best-effort customer confirmation email — DD includes the formal Guarantee.
+  if (i.method === "direct_debit") {
+    try {
+      let customerEmail: string | null = null;
+      let customerName: string | null = null;
+      if (journey.quote_id) {
+        const { data: q } = await supabase
+          .from("quotes")
+          .select("quote_request_id")
+          .eq("id", journey.quote_id)
+          .maybeSingle();
+        if (q?.quote_request_id) {
+          const { data: qr } = await supabase
+            .from("quote_requests")
+            .select("email, full_name")
+            .eq("id", q.quote_request_id)
+            .maybeSingle();
+          customerEmail = qr?.email ?? null;
+          customerName = qr?.full_name ?? null;
+        }
+      }
+      if (customerEmail) {
+        const body = `
+          <p style="margin:0 0 12px 0;">Hi ${escapeHtml(customerName || "there")},</p>
+          <p style="margin:0 0 12px 0;">Thank you — your Direct Debit Instruction has been received for your OCCTA service.</p>
+          <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;">
+            <tr><td style="padding:6px 0;"><strong>Account holder</strong></td><td style="padding:6px 0;">${escapeHtml(i.dd_details.account_holder_name)}</td></tr>
+            <tr><td style="padding:6px 0;"><strong>Bank</strong></td><td style="padding:6px 0;">${escapeHtml(i.dd_details.bank_name)}</td></tr>
+            <tr><td style="padding:6px 0;"><strong>Sort code</strong></td><td style="padding:6px 0;">**-**-${escapeHtml(i.dd_details.sort_code.slice(-2))}</td></tr>
+            <tr><td style="padding:6px 0;"><strong>Account</strong></td><td style="padding:6px 0;">****${escapeHtml(i.dd_details.account_number.slice(-4))}</td></tr>
+            <tr><td style="padding:6px 0;"><strong>Collection day</strong></td><td style="padding:6px 0;">Day ${i.billing_anchor_day} each month</td></tr>
+          </table>
+          <p style="margin:0 0 12px 0;">Your payments are protected by the Direct Debit Guarantee, reproduced in full below for your records.</p>
+          ${ddGuaranteeHtml()}
+          <p style="margin:14px 0 0 0;font-size:12px;color:#555;">If anything looks wrong, reply to this email or contact hello@occta.co.uk.</p>
+        `;
+        await sendResendEmail({
+          to: customerEmail,
+          subject: "Your Direct Debit Instruction — OCCTA",
+          html: brutalistEmailShell("Direct Debit confirmed", body),
+          replyTo: "hello@occta.co.uk",
+        });
+      }
+    } catch (e) {
+      console.warn("[journey-payment-method] dd confirmation email failed", e);
+    }
+  }
+
   return jsonResponse({
     ok: true,
     replayed: false,

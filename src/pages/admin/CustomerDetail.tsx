@@ -19,6 +19,7 @@ import { CustomerCommunicationsTimeline } from "@/components/admin/CustomerCommu
 import { CustomerBillingSettings } from "@/components/admin/CustomerBillingSettings";
 import { logAudit } from "@/lib/audit";
 import { normalizeAccountNumber, isAccountNumberValid } from "@/lib/account";
+import { Download, FileText, Lock, CheckCircle2, Mail } from "lucide-react";
 
 export const AdminCustomerDetail = () => {
   const { accountNumber: rawAccountNumber } = useParams<{ accountNumber: string }>();
@@ -58,6 +59,12 @@ export const AdminCustomerDetail = () => {
         supabase.from("invoices").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
       ]);
 
+      const { data: contractSummaries } = await supabase
+        .from("contract_summaries")
+        .select("id, cs_number, status, version, quote_id, plan_name, monthly_price_incl_vat, emailed_at, accepted_at, pdf_storage_key, pdf_sha256, created_at, updated_at")
+        .eq("customer_id", userId)
+        .order("created_at", { ascending: false });
+
       return {
         profile: profileData,
         orders: orders.data ?? [],
@@ -65,6 +72,7 @@ export const AdminCustomerDetail = () => {
         files: files.data ?? [],
         services: services.data ?? [],
         invoices: invoices.data ?? [],
+        contractSummaries: contractSummaries ?? [],
       };
     },
   });

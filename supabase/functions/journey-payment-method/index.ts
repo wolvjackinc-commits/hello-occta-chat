@@ -113,8 +113,11 @@ async function encryptBankDetails(plain: Record<string, unknown>) {
   }
 
   if (!keyBytes) {
+    const hexOnly = noWs.replace(/^0x/i, "").replace(/[^0-9a-f]/gi, "");
+    const firstCode = rawKey.charCodeAt(0);
+    const lastCode = rawKey.charCodeAt(rawKey.length - 1);
     throw new Error(
-      `DD_FIELD_ENC_KEY_decode_failed:len=${rawKey.length},nowsLen=${noWs.length}`
+      `DD_FIELD_ENC_KEY_decode_failed:len=${rawKey.length},nowsLen=${noWs.length},hexOnlyLen=${hexOnly.length},firstCode=${firstCode},lastCode=${lastCode}`
     );
   }
   if (keyBytes.length !== 32) throw new Error(`DD_FIELD_ENC_KEY_bad_length:${keyBytes.length}`);

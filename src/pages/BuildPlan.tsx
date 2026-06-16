@@ -427,9 +427,61 @@ function BuildPlanInner() {
                       <Input value={contact.phone} onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))} className="mt-1" />
                     </div>
                   </div>
-                  <div>
-                    <Label className="text-sm">Postcode *</Label>
-                    <Input value={contact.postcode || ((selectedAddress as any)?.postcode as string) || ""} onChange={(e) => setContact((c) => ({ ...c, postcode: e.target.value.toUpperCase() }))} className="mt-1 font-mono" maxLength={10} />
+                  <div className="border-t-2 border-foreground/10 pt-4">
+                    <p className="font-display uppercase text-xs tracking-wider text-muted-foreground mb-3">Installation address</p>
+                    <div className="grid gap-3">
+                      <div>
+                        <Label className="text-sm">Address line 1 *</Label>
+                        <Input placeholder="House number and street" value={contact.address_line_1} onChange={(e) => setContact((c) => ({ ...c, address_line_1: e.target.value }))} className="mt-1" maxLength={160} />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Address line 2</Label>
+                        <Input placeholder="Flat, building, etc. (optional)" value={contact.address_line_2} onChange={(e) => setContact((c) => ({ ...c, address_line_2: e.target.value }))} className="mt-1" maxLength={160} />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-sm">Town / city *</Label>
+                          <Input value={contact.town} onChange={(e) => setContact((c) => ({ ...c, town: e.target.value }))} className="mt-1" maxLength={80} />
+                        </div>
+                        <div>
+                          <Label className="text-sm">County</Label>
+                          <Input value={contact.county} onChange={(e) => setContact((c) => ({ ...c, county: e.target.value }))} className="mt-1" maxLength={80} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm">Postcode *</Label>
+                        <Input value={contact.postcode} onChange={(e) => setContact((c) => ({ ...c, postcode: e.target.value.toUpperCase() }))} className="mt-1 font-mono" maxLength={10} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t-2 border-foreground/10 pt-4">
+                    <p className="font-display uppercase text-xs tracking-wider text-muted-foreground mb-3">Your current setup</p>
+                    <Label className="text-sm">Are you currently in a contract with another provider? *</Label>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {(["yes","no","unsure"] as const).map((opt) => (
+                        <button key={opt} type="button"
+                          onClick={() => setContact((c) => ({ ...c, in_contract: opt, current_provider: opt === "yes" ? c.current_provider : "" }))}
+                          className={`p-3 border-4 font-display uppercase text-sm transition-colors ${contact.in_contract === opt ? "border-foreground bg-primary/10" : "border-foreground/20 hover:border-foreground"}`}>
+                          {opt === "yes" ? "Yes" : opt === "no" ? "No" : "Not sure"}
+                        </button>
+                      ))}
+                    </div>
+                    {contact.in_contract === "yes" && (
+                      <div className="mt-3">
+                        <Label className="text-sm">Current provider *</Label>
+                        <Select value={contact.current_provider} onValueChange={(v) => setContact((c) => ({ ...c, current_provider: v }))}>
+                          <SelectTrigger className="mt-1"><SelectValue placeholder="Select your provider" /></SelectTrigger>
+                          <SelectContent>
+                            {UK_TELECOM_PROVIDERS.map((p) => (
+                              <SelectItem key={p} value={p}>{p}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          We'll let you know how to switch smoothly — most UK providers handle the changeover automatically.
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <label className="flex items-start gap-3 text-sm">
                     <Checkbox checked={contact.marketing_consent} onCheckedChange={(v) => setContact((c) => ({ ...c, marketing_consent: !!v }))} />

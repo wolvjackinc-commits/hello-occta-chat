@@ -14,7 +14,7 @@ const corsHeaders = {
 };
 
 interface NotificationPayload {
-  type: "new_guest_order" | "new_order" | "new_ticket" | "failed_payment";
+  type: "new_guest_order" | "new_order" | "new_ticket" | "failed_payment" | "customer_proceeded_quote";
   data: Record<string, unknown>;
 }
 

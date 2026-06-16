@@ -14,6 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      acceptance_certificates: {
+        Row: {
+          certificate_number: string
+          contract_acceptance_id: string
+          contract_summary_id: string
+          created_at: string
+          customer_id: string | null
+          generated_at: string
+          id: string
+          journey_id: string | null
+          quote_id: string
+          sha256: string
+          storage_key: string
+        }
+        Insert: {
+          certificate_number: string
+          contract_acceptance_id: string
+          contract_summary_id: string
+          created_at?: string
+          customer_id?: string | null
+          generated_at?: string
+          id?: string
+          journey_id?: string | null
+          quote_id: string
+          sha256: string
+          storage_key: string
+        }
+        Update: {
+          certificate_number?: string
+          contract_acceptance_id?: string
+          contract_summary_id?: string
+          created_at?: string
+          customer_id?: string | null
+          generated_at?: string
+          id?: string
+          journey_id?: string | null
+          quote_id?: string
+          sha256?: string
+          storage_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acceptance_certificates_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: true
+            referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceptance_certificates_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceptance_certificates_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_deletions: {
         Row: {
           account_number: string | null
@@ -1077,70 +1141,103 @@ export type Database = {
       contract_acceptances: {
         Row: {
           acceptance_text: string
+          acceptance_text_hash: string | null
           acceptance_text_version: string | null
           accepted_at: string
+          accepted_at_europe_london: string | null
           accepted_by_email: string
           accepted_by_name: string
           accepted_by_user: string | null
           account_number: string | null
+          address_confirmed: boolean
           checkbox_confirmed: boolean
+          checkbox_consent: boolean
+          checkbox_details_correct: boolean
+          checkbox_received_read: boolean
+          checkbox_understand_charges: boolean
           contract_summary_id: string
           created_at: string
           cs_version: number | null
           customer_id: string | null
           id: string
           ip: string | null
+          journey_id: string | null
+          mobile_snapshot: string | null
           pdf_sha256: string | null
           pdf_storage_key: string | null
           privacy_version: string | null
           quote_id: string
           quote_request_id: string | null
+          session_id: string | null
+          source_route: string | null
           terms_version: string | null
           user_agent: string | null
         }
         Insert: {
           acceptance_text: string
+          acceptance_text_hash?: string | null
           acceptance_text_version?: string | null
           accepted_at?: string
+          accepted_at_europe_london?: string | null
           accepted_by_email: string
           accepted_by_name: string
           accepted_by_user?: string | null
           account_number?: string | null
+          address_confirmed?: boolean
           checkbox_confirmed: boolean
+          checkbox_consent?: boolean
+          checkbox_details_correct?: boolean
+          checkbox_received_read?: boolean
+          checkbox_understand_charges?: boolean
           contract_summary_id: string
           created_at?: string
           cs_version?: number | null
           customer_id?: string | null
           id?: string
           ip?: string | null
+          journey_id?: string | null
+          mobile_snapshot?: string | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
           privacy_version?: string | null
           quote_id: string
           quote_request_id?: string | null
+          session_id?: string | null
+          source_route?: string | null
           terms_version?: string | null
           user_agent?: string | null
         }
         Update: {
           acceptance_text?: string
+          acceptance_text_hash?: string | null
           acceptance_text_version?: string | null
           accepted_at?: string
+          accepted_at_europe_london?: string | null
           accepted_by_email?: string
           accepted_by_name?: string
           accepted_by_user?: string | null
           account_number?: string | null
+          address_confirmed?: boolean
           checkbox_confirmed?: boolean
+          checkbox_consent?: boolean
+          checkbox_details_correct?: boolean
+          checkbox_received_read?: boolean
+          checkbox_understand_charges?: boolean
           contract_summary_id?: string
           created_at?: string
           cs_version?: number | null
           customer_id?: string | null
           id?: string
           ip?: string | null
+          journey_id?: string | null
+          mobile_snapshot?: string | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
           privacy_version?: string | null
           quote_id?: string
           quote_request_id?: string | null
+          session_id?: string | null
+          source_route?: string | null
           terms_version?: string | null
           user_agent?: string | null
         }
@@ -1164,6 +1261,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
             referencedColumns: ["id"]
           },
           {
@@ -5316,6 +5420,7 @@ export type Database = {
         Returns: Json
       }
       expire_old_quotes: { Args: never; Returns: number }
+      generate_acceptance_certificate_number: { Args: never; Returns: string }
       generate_account_number: { Args: never; Returns: string }
       generate_complaint_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }

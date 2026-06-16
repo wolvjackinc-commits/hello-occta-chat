@@ -9,6 +9,7 @@ import QuoteView from "./QuoteView";
 import JourneyProgress, { type JourneyStepKey } from "./journey/JourneyProgress";
 import QuoteStep from "./journey/QuoteStep";
 import DeclineDialog from "./journey/DeclineDialog";
+import AgreementStep from "./journey/AgreementStep";
 
 type JourneyState = {
   id: string;
@@ -171,6 +172,8 @@ export default function UnifiedJourney() {
             onContinue={handleContinue}
             onDeclineClick={() => setDeclineOpen(true)}
           />
+        ) : step === "agreement" ? (
+          <AgreementStep token={token!} quote={state.quote} onAccepted={load} />
         ) : (
           <div className="border-4 border-foreground p-8 text-center">
             <p className="font-display uppercase text-xl mb-2">Next step coming online</p>

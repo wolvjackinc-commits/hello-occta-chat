@@ -2,11 +2,35 @@ import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, getRequestIp, c
 import { ACCEPTANCE_CHECKBOX_TEXT } from "../_shared/legalText.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
+// Phase C canonical four-checkbox wording. Stored verbatim + hashed into the
+// acceptance evidence row.
+export const JOURNEY_CHECKBOX_TEXTS = {
+  received_read:
+    "I confirm that I have received, read and had the opportunity to download my Contract Summary and Contract Information.",
+  details_correct:
+    "I confirm that my personal details and service address shown above are correct.",
+  understand_charges:
+    "I understand the monthly charges, one-off charges, contract duration, cancellation rights and payment arrangements.",
+  consent:
+    "I expressly consent to enter into the agreement with OCCTA LIMITED on the terms shown in my Contract Summary and Contract Information.",
+} as const;
+
 const Schema = z.object({
   token: z.string().min(16),
   accepted_by_name: z.string().trim().min(2).max(160),
   accepted_by_email: z.string().trim().toLowerCase().email().max(180),
-  checkbox_confirmed: z.literal(true),
+  checkbox_confirmed: z.literal(true).optional(),
+  // Phase C — unified-journey fields
+  journey_mode: z.boolean().optional(),
+  accepted_by_mobile: z.string().trim().min(7).max(32).optional(),
+  address_confirmed: z.boolean().optional(),
+  checkbox_received_read: z.boolean().optional(),
+  checkbox_details_correct: z.boolean().optional(),
+  checkbox_understand_charges: z.boolean().optional(),
+  checkbox_consent: z.boolean().optional(),
+  cs_version: z.number().int().optional(),
+  source_route: z.string().max(200).optional(),
+  session_id: z.string().max(120).optional(),
 });
 
 Deno.serve(async (req) => {
@@ -23,9 +47,71 @@ Deno.serve(async (req) => {
   const supabase = getServiceClient();
   const hash = await sha256Hex(i.token);
 
-  const { data: cs } = await supabase.from("contract_summaries").select("*").eq("public_token_hash", hash).maybeSingle();
+  // Locate CS — journey-mode looks up via order_journeys; legacy via CS token.
+  let cs: any = null;
+  let journey: any = null;
+  if (i.journey_mode) {
+    const { data: j } = await supabase
+      .from("order_journeys")
+      .select("id, quote_id, contract_summary_id, contract_accepted_at, contract_acceptance_id, status, current_step")
+      .eq("token_hash", hash)
+      .neq("status", "cancelled")
+      .maybeSingle();
+    if (!j) return jsonResponse({ error: "no_journey" }, 404);
+    if (!j.contract_summary_id) return jsonResponse({ error: "no_cs_for_journey" }, 409);
+    journey = j;
+    const { data } = await supabase.from("contract_summaries").select("*").eq("id", j.contract_summary_id).maybeSingle();
+    cs = data;
+  } else {
+    const { data } = await supabase.from("contract_summaries").select("*").eq("public_token_hash", hash).maybeSingle();
+    cs = data;
+  }
   if (!cs) return jsonResponse({ error: "not_found" }, 404);
-  if (cs.status === "accepted") return jsonResponse({ ok: true, already_accepted: true, quote_id: cs.quote_id });
+
+  // Phase C journey-mode strict validation
+  if (i.journey_mode) {
+    if (!i.accepted_by_mobile) return jsonResponse({ error: "mobile_required" }, 400);
+    if (i.address_confirmed !== true) return jsonResponse({ error: "address_confirmation_required" }, 400);
+    const allTicked =
+      i.checkbox_received_read === true &&
+      i.checkbox_details_correct === true &&
+      i.checkbox_understand_charges === true &&
+      i.checkbox_consent === true;
+    if (!allTicked) return jsonResponse({ error: "all_checkboxes_required" }, 400);
+    if (typeof i.cs_version === "number" && i.cs_version !== cs.version) {
+      return jsonResponse({ error: "cs_version_stale", current_version: cs.version }, 409);
+    }
+  } else {
+    if (i.checkbox_confirmed !== true) return jsonResponse({ error: "checkbox_required" }, 400);
+  }
+
+  // Idempotency: already accepted — return existing acceptance + cert ref.
+  if (cs.status === "accepted") {
+    const { data: existingAcc } = await supabase
+      .from("contract_acceptances")
+      .select("id")
+      .eq("contract_summary_id", cs.id)
+      .order("accepted_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    let certificate_number: string | null = null;
+    if (existingAcc) {
+      const { data: cert } = await supabase
+        .from("acceptance_certificates")
+        .select("certificate_number")
+        .eq("contract_acceptance_id", existingAcc.id)
+        .maybeSingle();
+      certificate_number = cert?.certificate_number ?? null;
+    }
+    return jsonResponse({
+      ok: true, already_accepted: true,
+      quote_id: cs.quote_id,
+      contract_summary_id: cs.id,
+      contract_acceptance_id: existingAcc?.id ?? null,
+      certificate_number,
+    });
+  }
+
   if (!["issued", "viewed", "draft"].includes(cs.status)) return jsonResponse({ error: "not_acceptable", status: cs.status }, 409);
   if (cs.token_expires_at && new Date(cs.token_expires_at) < new Date()) return jsonResponse({ error: "expired" }, 410);
 
@@ -33,9 +119,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "email_mismatch" }, 400);
   }
 
-  // CORRECTION #1 — refuse to lock acceptance if the immutable PDF is missing.
-  // The signed copy MUST reference a stored, hashed document; never generate
-  // post-acceptance evidence. If the PDF is absent, admin must investigate.
+  // Refuse to lock acceptance if the immutable PDF is missing.
   if (!cs.pdf_storage_key || !cs.pdf_sha256) {
     return jsonResponse({
       error: "missing_immutable_pdf",
@@ -44,10 +128,20 @@ Deno.serve(async (req) => {
   }
 
   const acceptedAt = new Date().toISOString();
+  const acceptedAtLocal = new Date(acceptedAt).toLocaleString("en-GB", { timeZone: "Europe/London", hour12: false });
   const ua = req.headers.get("user-agent")?.slice(0, 400) ?? null;
 
-  // Insert acceptance (append-only) with full Phase D vault snapshot
-  const { error: aErr } = await supabase.from("contract_acceptances").insert({
+  const acceptanceTextCombined = i.journey_mode
+    ? [
+        JOURNEY_CHECKBOX_TEXTS.received_read,
+        JOURNEY_CHECKBOX_TEXTS.details_correct,
+        JOURNEY_CHECKBOX_TEXTS.understand_charges,
+        JOURNEY_CHECKBOX_TEXTS.consent,
+      ].join("\n")
+    : ACCEPTANCE_CHECKBOX_TEXT;
+  const acceptanceTextHash = await sha256Hex(acceptanceTextCombined);
+
+  const { data: accInsert, error: aErr } = await supabase.from("contract_acceptances").insert({
     contract_summary_id: cs.id,
     quote_id: cs.quote_id,
     quote_request_id: cs.quote_request_id,
@@ -57,7 +151,7 @@ Deno.serve(async (req) => {
     accepted_by_user: cs.customer_id,
     accepted_at: acceptedAt,
     ip, user_agent: ua,
-    acceptance_text: ACCEPTANCE_CHECKBOX_TEXT,
+    acceptance_text: acceptanceTextCombined,
     acceptance_text_version: cs.terms_version,
     checkbox_confirmed: true,
     cs_version: cs.version,
@@ -66,10 +160,22 @@ Deno.serve(async (req) => {
     pdf_storage_key: cs.pdf_storage_key,
     pdf_sha256: cs.pdf_sha256,
     account_number: cs.account_number,
-  });
+    // Phase C extras
+    mobile_snapshot: i.accepted_by_mobile ?? null,
+    address_confirmed: i.address_confirmed === true,
+    checkbox_received_read: i.checkbox_received_read === true,
+    checkbox_details_correct: i.checkbox_details_correct === true,
+    checkbox_understand_charges: i.checkbox_understand_charges === true,
+    checkbox_consent: i.checkbox_consent === true,
+    journey_id: journey?.id ?? null,
+    source_route: i.source_route ?? null,
+    session_id: i.session_id ?? null,
+    accepted_at_europe_london: acceptedAtLocal,
+    acceptance_text_hash: acceptanceTextHash,
+  }).select("id").single();
   if (aErr) return jsonResponse({ error: "accept_failed", details: aErr.message }, 500);
+  const acceptanceId = accInsert?.id;
 
-  // Mark CS accepted (immutability trigger allows status -> accepted because OLD.status was issued/viewed/draft)
   const { error: csErr } = await supabase.from("contract_summaries").update({
     status: "accepted",
     accepted_at: acceptedAt,
@@ -81,30 +187,73 @@ Deno.serve(async (req) => {
   await supabase.from("quotes").update({ status: "contract_summary_accepted" }).eq("id", cs.quote_id);
   await supabase.from("quote_requests").update({ status: "contract_summary_accepted", updated_at: acceptedAt }).eq("id", cs.quote_request_id);
 
+  if (journey) {
+    await supabase.from("order_journeys").update({
+      contract_summary_id: cs.id,
+      contract_acceptance_id: acceptanceId,
+      contract_accepted_at: acceptedAt,
+      current_step: "start_date",
+    }).eq("id", journey.id);
+  }
+
   await supabase.rpc("log_event", {
     _actor_type: "anon", _event_type: "contract_summary_accepted",
     _title: `CS accepted ${cs.cs_number}`,
-    _details: { contract_summary_id: cs.id, quote_id: cs.quote_id, email_masked: maskEmail(i.accepted_by_email) },
+    _details: { contract_summary_id: cs.id, quote_id: cs.quote_id, email_masked: maskEmail(i.accepted_by_email), journey_mode: !!i.journey_mode },
     _source_module: "contract_summary", _quote_id: cs.quote_id, _contract_summary_id: cs.id,
   });
   await supabase.from("quote_events").insert({
     quote_id: cs.quote_id, quote_request_id: cs.quote_request_id, contract_summary_id: cs.id,
     event_type: "contract_summary_accepted", title: "Contract Summary accepted",
-    details: { email_masked: maskEmail(i.accepted_by_email) },
+    details: { email_masked: maskEmail(i.accepted_by_email), journey_mode: !!i.journey_mode },
     actor_type: "anon",
   });
 
-  // CORRECTION #4 — acceptance is now locked. Email delivery is a best-effort
-  // side-effect; never roll back the acceptance if email fails.
-  await sendAcceptanceWelcome(supabase, cs, i.accepted_by_email, i.accepted_by_name);
+  // Generate immutable acceptance certificate (best-effort).
+  let certificate_number: string | null = null;
+  if (acceptanceId) {
+    try {
+      const projectUrl = Deno.env.get("SUPABASE_URL")!;
+      const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const r = await fetch(`${projectUrl}/functions/v1/generate-acceptance-certificate`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${svcKey}`,
+          "Content-Type": "application/json",
+          "x-internal-service": "1",
+        },
+        body: JSON.stringify({ contract_acceptance_id: acceptanceId }),
+      });
+      if (r.ok) {
+        const j = await r.json();
+        certificate_number = j?.certificate_number ?? null;
+      }
+    } catch { /* certificate gen is best-effort */ }
+  }
 
-  return jsonResponse({ ok: true, quote_id: cs.quote_id, contract_summary_id: cs.id });
+  // Suppress legacy welcome email in journey-mode OR when the platform flag is on.
+  const { data: ps } = await supabase
+    .from("platform_settings")
+    .select("legacy_onboarding_emails_suppressed")
+    .limit(1)
+    .maybeSingle();
+  const suppressEmail = !!i.journey_mode || !!ps?.legacy_onboarding_emails_suppressed;
+  if (!suppressEmail) {
+    await sendAcceptanceWelcome(supabase, cs, i.accepted_by_email, i.accepted_by_name);
+  }
+
+  return jsonResponse({
+    ok: true,
+    quote_id: cs.quote_id,
+    contract_summary_id: cs.id,
+    contract_acceptance_id: acceptanceId,
+    certificate_number,
+    journey_advanced_to: journey ? "start_date" : null,
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Welcome / signed-copy email — idempotent via communications_log dedupe.
-// Sends a warm branded email plus an internal admin notice. Logs success/failure
-// rows in communications_log so admin can resend later.
+// Legacy welcome email (only used when NOT in unified-journey mode).
 // ─────────────────────────────────────────────────────────────────────────────
 async function sendAcceptanceWelcome(
   supabase: ReturnType<typeof getServiceClient>,
@@ -113,7 +262,6 @@ async function sendAcceptanceWelcome(
   acceptedByName: string,
 ) {
   try {
-    // Idempotency — never send a duplicate welcome email for the same CS.
     const { data: existing } = await supabase
       .from("communications_log")
       .select("id")
@@ -124,7 +272,6 @@ async function sendAcceptanceWelcome(
       .maybeSingle();
     if (existing) return;
 
-    // Fetch a fresh signed download URL for the IMMUTABLE PDF (never regenerated).
     let signedUrl: string | null = null;
     try {
       const projectUrl = Deno.env.get("SUPABASE_URL")!;
@@ -188,7 +335,6 @@ async function sendAcceptanceWelcome(
       },
     });
 
-    // Internal admin notice (best-effort, not deduped — admin can have multiple inboxes)
     const adminEmail = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("RESEND_FROM_EMAIL") || "hello@occta.co.uk";
     void sendResendEmail({
       to: adminEmail,
@@ -201,7 +347,6 @@ async function sendAcceptanceWelcome(
       ),
     });
   } catch (e) {
-    // Never throw — acceptance is the legal action; email is best-effort.
     try {
       await supabase.from("communications_log").insert({
         user_id: cs.customer_id,

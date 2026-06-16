@@ -390,6 +390,14 @@ export const AdminOrders = () => {
                   <div>
                     <div className="font-medium">{order.full_name}</div>
                     <div className="text-xs text-muted-foreground">Order {order.order_number}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      {order.user_id ? (
+                        <Badge variant="outline" className="border-2 border-foreground text-[10px]">Linked customer</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="border-2 border-foreground text-[10px]">No customer account</Badge>
+                      )}
+                      <span className="text-[11px] text-muted-foreground">{order.email}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 md:flex-row md:items-center">
@@ -405,6 +413,28 @@ export const AdminOrders = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {!order.user_id ? (
+                    <Button
+                      variant="hero"
+                      onClick={() => handlePromoteToCustomer(order)}
+                      disabled={promotingId === order.id}
+                      className="gap-2"
+                    >
+                      {promotingId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                      Activate customer
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="border-2 border-foreground gap-2"
+                      onClick={async () => {
+                        const { data: p } = await supabase.from("profiles").select("account_number").eq("id", order.user_id).maybeSingle();
+                        if (p?.account_number) navigate(`/admin/customers/${p.account_number}`);
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4" /> Open Customer 360
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => {

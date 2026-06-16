@@ -389,12 +389,6 @@ export const AdminQuoteRequests = () => {
     } finally { setBusy(null); }
   };
 
-  const requestMoreInfo = async () => {
-    if (!selected) return;
-    // placeholder no-op to anchor patch context
-    void selected;
-  };
-
   const sendApprovedQuote = async () => {
     if (!latestQuote) return;
     setBusy("send_quote");
@@ -417,7 +411,7 @@ export const AdminQuoteRequests = () => {
     } finally { setBusy(null); }
   };
 
-  const _origRequestMoreInfo = async () => {
+  const requestMoreInfo = async () => {
     if (!selected) return;
     if (needsInfoMsg.trim().length < 4) { toast({ title: "Message too short", variant: "destructive" }); return; }
     setBusy("info");

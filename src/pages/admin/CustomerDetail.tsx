@@ -19,6 +19,7 @@ import { CustomerCommunicationsTimeline } from "@/components/admin/CustomerCommu
 import { CustomerBillingSettings } from "@/components/admin/CustomerBillingSettings";
 import { logAudit } from "@/lib/audit";
 import { normalizeAccountNumber, isAccountNumberValid } from "@/lib/account";
+import { Download, FileText, Lock, CheckCircle2, Mail } from "lucide-react";
 
 export const AdminCustomerDetail = () => {
   const { accountNumber: rawAccountNumber } = useParams<{ accountNumber: string }>();
@@ -58,6 +59,12 @@ export const AdminCustomerDetail = () => {
         supabase.from("invoices").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
       ]);
 
+      const { data: contractSummaries } = await supabase
+        .from("contract_summaries")
+        .select("id, cs_number, status, version, quote_id, plan_name, monthly_price_incl_vat, emailed_at, accepted_at, pdf_storage_key, pdf_sha256, created_at, updated_at")
+        .eq("customer_id", userId)
+        .order("created_at", { ascending: false });
+
       return {
         profile: profileData,
         orders: orders.data ?? [],
@@ -65,6 +72,7 @@ export const AdminCustomerDetail = () => {
         files: files.data ?? [],
         services: services.data ?? [],
         invoices: invoices.data ?? [],
+        contractSummaries: contractSummaries ?? [],
       };
     },
   });
@@ -462,17 +470,110 @@ export const AdminCustomerDetail = () => {
         </TabsContent>
 
         <TabsContent value="documents" className="mt-4 space-y-3">
-          {data?.files.map((file) => (
-            <Card key={file.id} className="border-2 border-foreground p-4">
-              <div className="font-medium">{file.file_name}</div>
-              <div className="text-xs text-muted-foreground">{file.file_type}</div>
-            </Card>
-          ))}
-          {(!data?.files || data.files.length === 0) && (
-            <p className="text-muted-foreground">No documents found.</p>
-          )}
+          <Card className="border-2 border-foreground p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="h-5 w-5" />
+              <h3 className="font-display uppercase text-base">Contract Summaries</h3>
+            </div>
+            {(!data?.contractSummaries || data.contractSummaries.length === 0) ? (
+              <p className="text-sm text-muted-foreground">No Contract Summary issued yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {data.contractSummaries.map((cs: any) => (
+                  <AdminCsRow key={cs.id} cs={cs} />
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card className="border-2 border-foreground p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="h-5 w-5" />
+              <h3 className="font-display uppercase text-base">Customer files</h3>
+            </div>
+            {(!data?.files || data.files.length === 0) ? (
+              <p className="text-sm text-muted-foreground">No documents uploaded.</p>
+            ) : (
+              <div className="space-y-2">
+                {data.files.map((file) => (
+                  <div key={file.id} className="flex items-center justify-between border-2 border-foreground/20 p-3">
+                    <div>
+                      <div className="font-medium text-sm">{file.file_name}</div>
+                      <div className="text-xs text-muted-foreground">{file.file_type}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
 };
+
+function AdminCsRow({ cs }: { cs: any }) {
+  const { toast } = useToast();
+  const [downloading, setDownloading] = useState(false);
+  const accepted = cs.status === "accepted";
+
+  const download = async () => {
+    setDownloading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-contract-summary-pdf", {
+        body: { contract_summary_id: cs.id },
+      });
+      const err = (data as any)?.error || error?.message;
+      if (err) throw new Error(err);
+      const url = (data as any)?.signed_url;
+      if (!url) throw new Error("no_signed_url");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      toast({ title: "Couldn't open PDF", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const fmt = (v: any) => v ? format(new Date(v), "dd MMM yyyy HH:mm") : "—";
+  const shortSha = cs.pdf_sha256 ? `${cs.pdf_sha256.slice(0, 8)}…${cs.pdf_sha256.slice(-6)}` : "—";
+
+  return (
+    <div className="border-2 border-foreground p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-display text-sm">{cs.cs_number}</span>
+            <Badge variant="outline" className="border-2 border-foreground capitalize">v{cs.version} · {cs.status}</Badge>
+            {accepted && (
+              <Badge className="border-2 border-primary bg-primary/10 text-primary gap-1">
+                <Lock className="h-3 w-3" /> Locked
+              </Badge>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1">{cs.plan_name} — £{Number(cs.monthly_price_incl_vat ?? 0).toFixed(2)}/mo (incl VAT)</div>
+        </div>
+        <Button variant="outline" size="sm" className="border-2 border-foreground" onClick={download} disabled={downloading}>
+          <Download className="h-4 w-4 mr-2" />
+          {downloading ? "Opening…" : "Download PDF"}
+        </Button>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+        <div className="flex items-center gap-2">
+          <Mail className="h-3 w-3 text-muted-foreground" />
+          <span className="text-muted-foreground">Sent:</span>
+          <span className="font-medium">{fmt(cs.emailed_at)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
+          <span className="text-muted-foreground">Accepted:</span>
+          <span className="font-medium">{fmt(cs.accepted_at)}</span>
+        </div>
+        <div className="sm:col-span-2 flex items-start gap-2 break-all">
+          <span className="text-muted-foreground">SHA-256:</span>
+          <code className="font-mono text-[10px]">{shortSha}</code>
+        </div>
+      </div>
+    </div>
+  );
+}

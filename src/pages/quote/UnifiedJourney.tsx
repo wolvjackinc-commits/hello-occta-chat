@@ -209,7 +209,7 @@ export default function UnifiedJourney() {
           <div className="border-4 border-foreground p-8 text-center">
             <p className="font-display uppercase text-xl mb-2">Next step coming online</p>
             <p className="text-sm text-muted-foreground">
-              You've completed the quote step. The next step ({step.replace("_", " ")}) is being rolled out — we'll email you a secure link as soon as it's ready. No payment has been taken.
+              You've completed the quote step. The next step ({String(step).replace("_", " ")}) is being rolled out — we'll email you a secure link as soon as it's ready. No payment has been taken.
             </p>
           </div>
         )}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -486,12 +486,18 @@ export const AdminQuoteRequests = () => {
                     ) : "—"}
                   </TableCell>
                   <TableCell className="text-xs">
-                    {r.customer_id ? (
-                      <div className="flex items-center gap-1">
-                        <UserCheck className="w-3 h-3 text-primary" />
-                        <span className="font-mono">{r.customer?.account_number ?? "linked"}</span>
-                      </div>
-                    ) : (
+                     {r.customer_id ? (
+                       <div className="flex items-center gap-1">
+                         <UserCheck className="w-3 h-3 text-primary" />
+                         {r.customer?.account_number ? (
+                           <Link to={`/admin/customers/${r.customer.account_number}`} onClick={(e) => e.stopPropagation()} className="font-mono underline hover:text-primary">
+                             {r.customer.account_number}
+                           </Link>
+                         ) : (
+                           <span className="font-mono">linked</span>
+                         )}
+                       </div>
+                     ) : (
                       <span className="flex items-center gap-1 text-muted-foreground">
                         <UserX className="w-3 h-3" /> Guest
                       </span>

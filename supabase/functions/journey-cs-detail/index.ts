@@ -25,12 +25,34 @@ Deno.serve(async (req) => {
   const hash = await sha256Hex(token);
   const supabase = getServiceClient();
 
-  const { data: journey } = await supabase
+  let { data: journey } = await supabase
     .from("order_journeys")
     .select("id, quote_id, contract_summary_id, contract_acceptance_id, contract_accepted_at, status, current_step")
     .eq("token_hash", hash)
     .neq("status", "cancelled")
     .maybeSingle();
+
+  if (!journey) {
+    const { data: q } = await supabase
+      .from("quotes")
+      .select("id")
+      .eq("public_token_hash", hash)
+      .maybeSingle();
+    if (q?.id) {
+      const existing = await supabase
+        .from("order_journeys")
+        .select("id, quote_id, contract_summary_id, contract_acceptance_id, contract_accepted_at, status, current_step")
+        .eq("quote_id", q.id)
+        .neq("status", "cancelled")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existing.data) {
+        journey = existing.data;
+        await supabase.from("order_journeys").update({ token_hash: hash }).eq("id", journey.id);
+      }
+    }
+  }
   if (!journey) return jsonResponse({ error: "no_journey" }, 404);
   if (!journey.contract_summary_id) return jsonResponse({ error: "no_cs_yet" }, 404);
 

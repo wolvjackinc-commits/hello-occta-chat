@@ -34,7 +34,10 @@ Deno.serve(async (req) => {
 
   const { data: qr } = await supabase.from("quote_requests").select("email, full_name").eq("id", quote.quote_request_id).single();
 
-  // Rotate token if missing
+  // Create a public token if missing. Do not rotate by default on resend: old
+  // emailed links may already have an in-progress journey attached, and changing
+  // the hash strands the customer on a stale link. Only rotate when explicitly
+  // requested by admin.
   let publicToken: string | null = null;
   if (!quote.public_token_hash) {
     const { raw, hash } = await generateTokenPair();
@@ -45,11 +48,11 @@ Deno.serve(async (req) => {
     publicToken = raw;
     await supabase.from("quotes").update({ public_token_hash: hash, unified_journey_opt_in: unifiedJourney }).eq("id", quote.id);
   }
-  // If we don't already have the raw token (e.g. resend), we must rotate. Admin can pass rotate_token=true; otherwise default to rotate-on-send.
   if (!publicToken) {
-    const { raw, hash } = await generateTokenPair();
-    publicToken = raw;
-    await supabase.from("quotes").update({ public_token_hash: hash, unified_journey_opt_in: unifiedJourney }).eq("id", quote.id);
+    return jsonResponse({
+      error: "token_rotation_required",
+      message: "This quote already has a secure link. Use the existing customer email link, or explicitly rotate the token before resending.",
+    }, 409);
   }
 
   const url = `https://www.occta.co.uk/quote/${publicToken}`;

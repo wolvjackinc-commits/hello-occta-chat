@@ -28,12 +28,13 @@ Deno.serve(async (req) => {
     actorUserId = auth.userId;
   }
 
-  const body = await req.json().catch(() => ({} as { quote_id?: string; actor_id?: string }));
+  const body = await req.json().catch(() => ({} as { quote_id?: string; actor_id?: string; journey_mode?: boolean }));
   const { quote_id } = body;
   if (isInternalService && body.actor_id) actorUserId = body.actor_id;
   if (!quote_id) return jsonResponse({ error: "missing_quote_id" }, 400);
 
   const supabase = getServiceClient();
+  const journeyMode = isInternalService && body.journey_mode === true;
 
   // Block CS issuance if VAT inactive (OCCTA is VAT registered)
   const { data: vatActiveData } = await supabase.rpc("is_vat_active");
@@ -48,10 +49,10 @@ Deno.serve(async (req) => {
   if (qErr || !q) return jsonResponse({ error: "quote_not_found" }, 404);
 
   // ── Phase D guards ──
-  if (q.status !== "approved" && q.status !== "contract_summary_generated") {
+  if (!journeyMode && q.status !== "approved" && q.status !== "contract_summary_generated") {
     return jsonResponse({ error: "quote_not_approved", message: `Quote status is ${q.status}; must be approved.` }, 409);
   }
-  if (!q.customer_id) {
+  if (!journeyMode && !q.customer_id) {
     return jsonResponse({ error: "no_customer", message: "Quote is not linked to a customer account." }, 409);
   }
   const { data: qrGuard } = await supabase
@@ -60,10 +61,10 @@ Deno.serve(async (req) => {
     .eq("id", q.quote_request_id)
     .maybeSingle();
   if (!qrGuard) return jsonResponse({ error: "quote_request_not_found" }, 404);
-  if (!["final_quote_ready", "contract_summary_generated"].includes(qrGuard.status as string)) {
+  if (!journeyMode && !["final_quote_ready", "contract_summary_generated"].includes(qrGuard.status as string)) {
     return jsonResponse({ error: "quote_request_not_final", message: `Quote request status is ${qrGuard.status}.` }, 409);
   }
-  if (qrGuard.final_quote_id !== q.id) {
+  if (!journeyMode && qrGuard.final_quote_id !== q.id) {
     return jsonResponse({ error: "final_quote_mismatch", message: "This is not the active final quote for the request." }, 409);
   }
 

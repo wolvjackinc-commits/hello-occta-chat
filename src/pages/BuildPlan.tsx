@@ -180,7 +180,19 @@ function BuildPlanInner() {
     if (step === 3) return !!router && (router === "own" || router === "business" || routerPay !== "none");
     if (step === 4) return !!setup;
     if (step === 5) return true; // optional add-ons
-    if (step === 6) return contact.full_name.length >= 2 && /^[^@]+@[^@]+\.[^@]+$/.test(contact.email) && contact.phone.length >= 7 && contact.postcode.length >= 5 && contact.privacy_ack;
+    if (step === 6) {
+      const baseOk = contact.full_name.length >= 2
+        && /^[^@]+@[^@]+\.[^@]+$/.test(contact.email)
+        && contact.phone.length >= 7
+        && contact.address_line_1.trim().length >= 3
+        && contact.town.trim().length >= 2
+        && contact.postcode.length >= 5
+        && !!contact.in_contract
+        && contact.privacy_ack;
+      if (!baseOk) return false;
+      if (contact.in_contract === "yes" && !contact.current_provider) return false;
+      return true;
+    }
     return true; // step 7 review
   };
 

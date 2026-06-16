@@ -156,6 +156,18 @@ Deno.serve(async (req) => {
     ddCfg?.ddi_template_version && ddCfg?.guarantee_version && ddCfg?.provider_approval_date
   );
 
+  // If the journey is completed, surface the linked guest_orders row (best-effort,
+  // matched via the journey:<id> tag in admin_notes — see journey-submit-order).
+  let submitted_order: { order_number: string; status: string; id: string } | null = null;
+  if (journey?.id && (journey as any).status === "completed") {
+    const { data: go } = await supabase
+      .from("guest_orders")
+      .select("id, order_number, status")
+      .ilike("admin_notes", `%journey:${journey.id}%`)
+      .maybeSingle();
+    submitted_order = go ?? null;
+  }
+
   return jsonResponse({
     ok: true,
     unified_journey_enabled,
@@ -169,5 +181,6 @@ Deno.serve(async (req) => {
     contract_summary_status: cs?.status ?? null,
     payment_method: payment_method_summary,
     dd_provider_template_available,
+    submitted_order,
   });
 });

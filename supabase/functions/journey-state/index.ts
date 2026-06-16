@@ -53,12 +53,17 @@ Deno.serve(async (req) => {
       total_due_today_gross, cease_fee_gross,
       estimated_download_speed, estimated_upload_speed, speed_notes,
       price_rise_policy, notice_period, status, expires_at, customer_notes,
-      quote_request_id, customer_intent_proceeded_at, selected_addons
+      quote_request_id, customer_intent_proceeded_at, selected_addons,
+      unified_journey_opt_in
     `)
     .eq("public_token_hash", hash)
     .maybeSingle();
 
   if (!q) return jsonResponse({ error: "not_found" }, 404);
+
+  // Per-quote admin opt-in overrides the global feature flag so a single quote
+  // can be tested on the unified journey before the global rollout.
+  const unified_for_this_quote = unified_journey_enabled || !!(q as any).unified_journey_opt_in;
 
   const { data: qr } = await supabase
     .from("quote_requests")
@@ -109,9 +114,15 @@ Deno.serve(async (req) => {
     }
 
     // Best-effort: mirror legacy intent timestamp so the existing pipeline stays consistent.
-    await supabase.rpc("customer_proceed_with_quote_by_token", {
-      _token_hash: hash, _ip: ip, _ua: ua,
-    }).then(() => {}).catch(() => {});
+    // Skip the legacy proceed RPC in unified mode — the journey flow is the
+    // source of truth and the legacy path triggers a separate admin-notify and
+    // stamps `customer_intent_proceeded_at`, which competes with the in-page
+    // Contract Summary transition. Keep it only when the quote is NOT unified.
+    if (!unified_for_this_quote) {
+      await supabase.rpc("customer_proceed_with_quote_by_token", {
+        _token_hash: hash, _ip: ip, _ua: ua,
+      }).then(() => {}).catch(() => {});
+    }
 
     await supabase.rpc("log_event", {
       _actor_type: "public",
@@ -190,7 +201,7 @@ Deno.serve(async (req) => {
 
   return jsonResponse({
     ok: true,
-    unified_journey_enabled,
+    unified_journey_enabled: unified_for_this_quote,
     quote: {
       ...q,
       customer_name: qr?.full_name ?? null,

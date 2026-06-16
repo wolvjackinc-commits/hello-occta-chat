@@ -48,7 +48,7 @@ export const AdminQuotes = () => {
         .select(`
           id, quote_number, plan_name, service_type, plan_type, customer_type,
           monthly_net, monthly_gross, total_due_today_gross, status, expires_at, created_at,
-          quote_request_id
+          quote_request_id, unified_journey_opt_in
         `)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -303,6 +303,30 @@ export const AdminQuotes = () => {
                       )}
                       <Button size="sm" variant="outline" onClick={() => setOverrideDialog({ open: true, quoteId: r.id, quoteNumber: r.quote_number })} title="Override red margin (admin)">
                         Override
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={r.unified_journey_opt_in ? "default" : "outline"}
+                        disabled={busyId === r.id}
+                        onClick={async () => {
+                          setBusyId(r.id);
+                          try {
+                            const next = !r.unified_journey_opt_in;
+                            const { error } = await (supabase as any).rpc("admin_set_quote_unified_opt_in", {
+                              _quote_id: r.id, _enabled: next,
+                            });
+                            if (error) throw error;
+                            toast({ title: next ? "Unified journey enabled for this quote" : "Unified journey disabled for this quote" });
+                            await qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+                          } catch (e: any) {
+                            toast({ title: "Toggle failed", description: e?.message, variant: "destructive" });
+                          } finally {
+                            setBusyId(null);
+                          }
+                        }}
+                        title="Per-quote opt-in to the unified /quote/:token journey"
+                      >
+                        {r.unified_journey_opt_in ? "Unified: ON" : "Unified: off"}
                       </Button>
                       {!r.cs && (
                         <Button size="sm" variant="hero" disabled={!vatActive || busyId === r.id} onClick={() => generateCS(r.id, r.quote_number)}

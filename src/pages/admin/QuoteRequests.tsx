@@ -649,7 +649,6 @@ export const AdminQuoteRequests = () => {
                       <p className="text-[10px] text-muted-foreground">Emails the customer a secure link to accept or decline this quote.</p>
                     </div>
                   )}
-                  )}
                   <div className="border-2 border-foreground/20 bg-background p-2 space-y-2">
                     <p className="font-display uppercase text-[10px] tracking-widest">Estimated speeds (shown to customer)</p>
                     <div className="grid grid-cols-2 gap-2">

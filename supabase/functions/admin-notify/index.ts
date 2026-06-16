@@ -619,6 +619,8 @@ function generateFailedPaymentEmail(data: Record<string, unknown>): { subject: s
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  // (function definitions live below in module scope)
+  void 0;
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -701,6 +703,9 @@ const handler = async (req: Request): Promise<Response> => {
         break;
       case "failed_payment":
         emailContent = generateFailedPaymentEmail(enrichedData);
+        break;
+      case "customer_proceeded_quote":
+        emailContent = generateProceededQuoteEmail(enrichedData);
         break;
       default:
         return new Response(

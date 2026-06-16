@@ -1,0 +1,2 @@
+delete from public.payment_methods where bank_name = 'Test Bank' and masked_account_last4 = '5678' and created_at > now() - interval '15 minutes';
+delete from public.dd_intake_requests where created_at > now() - interval '15 minutes';

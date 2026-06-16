@@ -2984,6 +2984,7 @@ export type Database = {
         Row: {
           account_holder_name: string | null
           active: boolean
+          bank_name: string | null
           billing_anchor_day: number
           consent_at: string | null
           consent_text: string | null
@@ -2992,6 +2993,7 @@ export type Database = {
           customer_id: string | null
           dd_setup_status: string | null
           id: string
+          idempotency_key: string | null
           ip: string | null
           journey_id: string | null
           masked_account_last4: string | null
@@ -3004,6 +3006,7 @@ export type Database = {
         Insert: {
           account_holder_name?: string | null
           active?: boolean
+          bank_name?: string | null
           billing_anchor_day: number
           consent_at?: string | null
           consent_text?: string | null
@@ -3012,6 +3015,7 @@ export type Database = {
           customer_id?: string | null
           dd_setup_status?: string | null
           id?: string
+          idempotency_key?: string | null
           ip?: string | null
           journey_id?: string | null
           masked_account_last4?: string | null
@@ -3024,6 +3028,7 @@ export type Database = {
         Update: {
           account_holder_name?: string | null
           active?: boolean
+          bank_name?: string | null
           billing_anchor_day?: number
           consent_at?: string | null
           consent_text?: string | null
@@ -3032,6 +3037,7 @@ export type Database = {
           customer_id?: string | null
           dd_setup_status?: string | null
           id?: string
+          idempotency_key?: string | null
           ip?: string | null
           journey_id?: string | null
           masked_account_last4?: string | null

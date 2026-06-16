@@ -47,6 +47,9 @@ const Schema = z.object({
   county: z.string().trim().max(80).optional().nullable(),
   preferred_contact_method: z.enum(["email","phone","whatsapp"]).default("email"),
   marketing_consent: z.boolean().default(false),
+  // Switcher context (optional)
+  in_contract: z.enum(["yes","no","unsure"]).optional().nullable(),
+  current_provider: z.string().trim().max(80).optional().nullable(),
 });
 
 function planNameFor(b: string, t: string) {
@@ -105,7 +108,7 @@ Deno.serve(async (req) => {
     plan_preference: i.plan_term === "flex_30" ? "flex" : "contract_saver",
     customer_type: i.customer_type,
     preferred_contact_method: i.preferred_contact_method,
-    message: `${inTestMode ? "[TEST] " : ""}${isFallback ? "[FALLBACK — availability unconfirmed] " : ""}Build Plan: ${speedBucketLabel(i.speed_bucket)} · ${planTermLabel(i.plan_term)} · router=${i.router_option}/${i.router_payment_type} · setup=${i.setup_option} · addons=${(i.addons ?? []).join(",") || "none"}`,
+    message: `${inTestMode ? "[TEST] " : ""}${isFallback ? "[FALLBACK — availability unconfirmed] " : ""}Build Plan: ${speedBucketLabel(i.speed_bucket)} · ${planTermLabel(i.plan_term)} · router=${i.router_option}/${i.router_payment_type} · setup=${i.setup_option} · addons=${(i.addons ?? []).join(",") || "none"}${i.in_contract ? ` · in_contract=${i.in_contract}` : ""}${i.current_provider ? ` · current_provider=${i.current_provider}` : ""}`,
     marketing_consent: i.marketing_consent,
     source: inTestMode ? "build_plan_test" : (isFallback ? "build_plan_fallback" : "build_plan"),
     ip,

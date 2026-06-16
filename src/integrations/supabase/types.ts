@@ -4172,6 +4172,7 @@ export type Database = {
           supplier_reference: string | null
           token_expires_at: string | null
           total_due_today_gross: number
+          unified_journey_opt_in: boolean
           updated_at: string
         }
         Insert: {
@@ -4233,6 +4234,7 @@ export type Database = {
           supplier_reference?: string | null
           token_expires_at?: string | null
           total_due_today_gross?: number
+          unified_journey_opt_in?: boolean
           updated_at?: string
         }
         Update: {
@@ -4294,6 +4296,7 @@ export type Database = {
           supplier_reference?: string | null
           token_expires_at?: string | null
           total_due_today_gross?: number
+          unified_journey_opt_in?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -6015,6 +6018,10 @@ export type Database = {
       admin_request_more_info: {
         Args: { _message: string; _qr_id: string }
         Returns: undefined
+      }
+      admin_set_quote_unified_opt_in: {
+        Args: { _enabled: boolean; _quote_id: string }
+        Returns: boolean
       }
       anonymize_old_account_deletions: { Args: never; Returns: number }
       calculate_next_invoice_date: {

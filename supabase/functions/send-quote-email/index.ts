@@ -15,6 +15,7 @@ Deno.serve(async (req) => {
   const { data: quote } = await supabase.from("quotes").select("*").eq("id", quote_id).maybeSingle();
   if (!quote) return jsonResponse({ error: "not_found" }, 404);
   if (!quote.monthly_gross || !quote.expires_at) return jsonResponse({ error: "missing_required_fields" }, 400);
+  const unifiedJourney = body?.unified_journey !== false;
   if (quote.plan_type === "contract_saver" && !quote.contract_length_months) {
     return jsonResponse({ error: "contract_length_required" }, 400);
   }
@@ -38,17 +39,17 @@ Deno.serve(async (req) => {
   if (!quote.public_token_hash) {
     const { raw, hash } = await generateTokenPair();
     publicToken = raw;
-    await supabase.from("quotes").update({ public_token_hash: hash, token_expires_at: quote.expires_at }).eq("id", quote.id);
+    await supabase.from("quotes").update({ public_token_hash: hash, token_expires_at: quote.expires_at, unified_journey_opt_in: unifiedJourney }).eq("id", quote.id);
   } else if (body.rotate_token === true) {
     const { raw, hash } = await generateTokenPair();
     publicToken = raw;
-    await supabase.from("quotes").update({ public_token_hash: hash }).eq("id", quote.id);
+    await supabase.from("quotes").update({ public_token_hash: hash, unified_journey_opt_in: unifiedJourney }).eq("id", quote.id);
   }
   // If we don't already have the raw token (e.g. resend), we must rotate. Admin can pass rotate_token=true; otherwise default to rotate-on-send.
   if (!publicToken) {
     const { raw, hash } = await generateTokenPair();
     publicToken = raw;
-    await supabase.from("quotes").update({ public_token_hash: hash }).eq("id", quote.id);
+    await supabase.from("quotes").update({ public_token_hash: hash, unified_journey_opt_in: unifiedJourney }).eq("id", quote.id);
   }
 
   const url = `https://www.occta.co.uk/quote/${publicToken}`;

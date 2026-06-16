@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { Loader2, Check, ShieldCheck, ScrollText } from "lucide-react";
+import { Loader2, Check, ShieldCheck, ScrollText, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import CancelDialog from "./CancelDialog";
 
 function genUuid(): string {
   const c: Crypto | undefined = typeof crypto !== "undefined" ? crypto : undefined;
@@ -161,7 +162,36 @@ function Row({ label, value, strong }: { label: string; value?: string | null; s
   );
 }
 
-export function CompletedStep({ orderNumber }: { orderNumber?: string | null }) {
+function formatLondon(d?: string | null) {
+  if (!d) return "—";
+  try {
+    return new Date(d).toLocaleString("en-GB", {
+      timeZone: "Europe/London",
+      dateStyle: "long",
+      timeStyle: "short",
+    });
+  } catch { return d; }
+}
+
+export function CompletedStep({
+  orderNumber,
+  token,
+  cancellationWindow,
+  onChanged,
+}: {
+  orderNumber?: string | null;
+  token?: string;
+  cancellationWindow?: {
+    ends_at: string | null;
+    cancellable: boolean;
+    cancelled_at: string | null;
+    cancellation_reason: string | null;
+  } | null;
+  onChanged?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const endsAt = cancellationWindow?.ends_at ?? null;
+  const cancellable = !!cancellationWindow?.cancellable && !!token;
   return (
     <div className="space-y-6">
       <div className="border-4 border-primary bg-primary/5 p-6 text-center space-y-3">
@@ -176,9 +206,41 @@ export function CompletedStep({ orderNumber }: { orderNumber?: string | null }) 
           We've emailed you a summary. No payment was taken — billing begins only once your service is confirmed active. Your 14-day cooling-off period is in force.
         </p>
       </div>
+
+      {endsAt ? (
+        <div className="border-4 border-foreground p-5 space-y-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 mt-0.5" />
+            <div>
+              <p className="font-display uppercase text-sm">Cooling-off period</p>
+              <p className="text-sm text-muted-foreground">
+                You can cancel this agreement during your 14-day cooling-off period, which ends on <strong>{formatLondon(endsAt)}</strong> (UK time).
+              </p>
+            </div>
+          </div>
+          {cancellable ? (
+            <Button variant="outline" className="border-2 border-foreground w-full" onClick={() => setOpen(true)}>
+              Cancel order
+            </Button>
+          ) : (
+            <p className="text-xs text-muted-foreground">The cancellation window has closed. Please contact support if you need help.</p>
+          )}
+        </div>
+      ) : null}
+
       <div className="text-center text-xs text-muted-foreground">
         Questions? <a href="mailto:hello@occta.co.uk" className="underline">hello@occta.co.uk</a>
       </div>
+
+      {cancellable && token ? (
+        <CancelDialog
+          open={open}
+          onOpenChange={setOpen}
+          token={token}
+          endsAt={endsAt}
+          onCancelled={() => onChanged?.()}
+        />
+      ) : null}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import AgreementStep from "./journey/AgreementStep";
 import StartDateStep from "./journey/StartDateStep";
 import PaymentStep from "./journey/PaymentStep";
 import ReviewStep, { CompletedStep } from "./journey/ReviewStep";
+import CancelledStep from "./journey/CancelledStep";
 
 type JourneyState = {
   id: string;
@@ -30,6 +31,9 @@ type JourneyState = {
   cooling_off_acknowledged_at: string | null;
   completed_at: string | null;
   contract_summary_id: string | null;
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
+  linked_customer_id?: string | null;
 };
 
 type StateResponse = {
@@ -42,6 +46,12 @@ type StateResponse = {
   payment_method: any | null;
   dd_provider_template_available: boolean;
   submitted_order: { id: string; order_number: string; status: string } | null;
+  cancellation_window: {
+    ends_at: string | null;
+    cancellable: boolean;
+    cancelled_at: string | null;
+    cancellation_reason: string | null;
+  } | null;
   error?: string;
 };
 
@@ -203,8 +213,19 @@ export default function UnifiedJourney() {
             paymentMethod={state.payment_method}
             onSubmitted={load}
           />
+        ) : state.journey?.status === "cancelled" ? (
+          <CancelledStep
+            cancelledAt={state.journey.cancelled_at ?? state.cancellation_window?.cancelled_at ?? null}
+            reasonCode={state.journey.cancellation_reason ?? state.cancellation_window?.cancellation_reason ?? null}
+            orderNumber={state.submitted_order?.order_number ?? null}
+          />
         ) : step === "complete" || state.journey?.status === "completed" ? (
-          <CompletedStep orderNumber={state.submitted_order?.order_number ?? null} />
+          <CompletedStep
+            orderNumber={state.submitted_order?.order_number ?? null}
+            token={token}
+            cancellationWindow={state.cancellation_window}
+            onChanged={load}
+          />
         ) : (
           <div className="border-4 border-foreground p-8 text-center">
             <p className="font-display uppercase text-xl mb-2">Next step coming online</p>

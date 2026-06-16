@@ -275,6 +275,11 @@ export const AdminQuotes = () => {
                   <TableCell className="text-sm">
                     <div>{r.request?.full_name ?? "—"}</div>
                     <div className="text-xs text-muted-foreground">{r.request?.email ?? ""}</div>
+                    {r.profile?.account_number && (
+                      <a href={`/admin/customers/${r.profile.account_number}`} className="text-xs underline font-mono">
+                        {r.profile.account_number}
+                      </a>
+                    )}
                   </TableCell>
                   <TableCell className="text-xs">{r.plan_name} · {r.plan_type}</TableCell>
                   <TableCell className="text-xs">

@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
 import { logAudit } from "@/lib/audit";
 import { CheckSquare, Square, Loader2 } from "lucide-react";
+import { UserPlus, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const orderStatuses = ["pending", "confirmed", "active", "cancelled"] as const;
 type OrderStatus = (typeof orderStatuses)[number];
@@ -39,9 +41,11 @@ type Order = {
 
 export const AdminOrders = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [selectedGuestOrder, setSelectedGuestOrder] = useState<GuestOrder | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [promotingId, setPromotingId] = useState<string | null>(null);
   
   // Bulk selection state
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());

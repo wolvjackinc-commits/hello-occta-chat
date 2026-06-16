@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
   const eligible = ["approved", "sent", "viewed"].includes(q.status) && !expired;
 
   // Existing journey (if any).
-  const JOURNEY_COLS = "id, current_step, status, decline_reason, preferred_start_date, start_date_selected_at, payment_method, billing_anchor_day, contract_accepted_at, cooling_off_ends_at, earliest_selectable_start_date, cooling_off_acknowledged, cooling_off_acknowledged_at, completed_at, contract_summary_id";
+  const JOURNEY_COLS = "id, current_step, status, decline_reason, preferred_start_date, start_date_selected_at, payment_method, billing_anchor_day, contract_accepted_at, cooling_off_ends_at, earliest_selectable_start_date, cooling_off_acknowledged, cooling_off_acknowledged_at, completed_at, contract_summary_id, cancelled_at, cancellation_reason, linked_customer_id, linked_at, manual_review_required";
   let { data: journey } = await supabase
     .from("order_journeys")
     .select(JOURNEY_COLS)
@@ -168,6 +168,26 @@ Deno.serve(async (req) => {
     submitted_order = go ?? null;
   }
 
+  // Cooling-off / cancellation window snapshot for the UI.
+  let cancellation_window: {
+    ends_at: string | null;
+    cancellable: boolean;
+    cancelled_at: string | null;
+    cancellation_reason: string | null;
+  } | null = null;
+  if (journey?.id) {
+    const endsAt = (journey as any).cooling_off_ends_at ?? null;
+    const cancelledAt = (journey as any).cancelled_at ?? null;
+    const reviewLock = !!(journey as any).manual_review_required;
+    const within = endsAt ? new Date(endsAt).getTime() > Date.now() : false;
+    cancellation_window = {
+      ends_at: endsAt,
+      cancellable: (journey as any).status === "completed" && within && !cancelledAt && !reviewLock,
+      cancelled_at: cancelledAt,
+      cancellation_reason: (journey as any).cancellation_reason ?? null,
+    };
+  }
+
   return jsonResponse({
     ok: true,
     unified_journey_enabled,
@@ -182,5 +202,6 @@ Deno.serve(async (req) => {
     payment_method: payment_method_summary,
     dd_provider_template_available,
     submitted_order,
+    cancellation_window,
   });
 });

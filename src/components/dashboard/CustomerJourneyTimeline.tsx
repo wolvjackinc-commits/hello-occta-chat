@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Circle, Clock, Info } from "lucide-react";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LifeBuoy, MessageCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { deriveMilestones, nextStepCopy, type JourneySafeInputs, type Milestone } from "@/lib/journey/milestones";
 
 /**
@@ -14,9 +15,58 @@ import { deriveMilestones, nextStepCopy, type JourneySafeInputs, type Milestone 
  * margin, admin, webhook payload, or token-hash fields.
  */
 export function CustomerJourneyTimeline({ userId, userEmail }: { userId: string; userEmail: string | null }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [hasAny, setHasAny] = useState(false);
+
+  // Phase G — opportunistic account linking via ?link=<journey-token>&n=<nonce>.
+  // The token never touches localStorage/sessionStorage and is removed from the
+  // URL immediately after exchange.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const linkToken = params.get("link");
+    const nonce = params.get("n");
+    if (!linkToken) return;
+
+    // Strip from URL before doing anything else so it can't be re-read.
+    params.delete("link");
+    params.delete("n");
+    const cleanSearch = params.toString();
+    window.history.replaceState({}, "", `${location.pathname}${cleanSearch ? "?" + cleanSearch : ""}${location.hash}`);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("journey-link-to-account", {
+          body: { token: linkToken, nonce: nonce || null },
+        });
+        if (cancelled) return;
+        if (error || (data as any)?.error) {
+          toast({
+            title: "Couldn't link your order",
+            description: (data as any)?.error || error?.message || "Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Order linked to your account",
+            description: (data as any)?.already_linked
+              ? "This order was already linked."
+              : "You'll see it in your dashboard.",
+          });
+        }
+      } catch (e) {
+        if (!cancelled) {
+          toast({ title: "Network error", description: String((e as Error).message), variant: "destructive" });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

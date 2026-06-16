@@ -63,8 +63,18 @@ export const AdminQuotes = () => {
       let reqMap = new Map<string, any>();
       if (reqIds.length) {
         const { data: reqs } = await (supabase as any)
-          .from("quote_requests").select("id, full_name, email, reference").in("id", reqIds);
+          .from("quote_requests").select("id, full_name, email, reference, customer_id").in("id", reqIds);
         reqMap = new Map((reqs ?? []).map((r: any) => [r.id, r]));
+      }
+      const customerIds = [...new Set([
+        ...(rows ?? []).map((r: any) => r.customer_id).filter(Boolean),
+        ...Array.from(reqMap.values()).map((r: any) => r.customer_id).filter(Boolean),
+      ])];
+      let profileMap = new Map<string, any>();
+      if (customerIds.length) {
+        const { data: profs } = await (supabase as any)
+          .from("profiles").select("id, account_number").in("id", customerIds);
+        profileMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
       }
       const quoteIds = (rows ?? []).map((r: any) => r.id);
       let csMap = new Map<string, any>();
@@ -90,7 +100,9 @@ export const AdminQuotes = () => {
       }
       return (rows ?? []).map((r: any) => {
         const cs = csMap.get(r.id);
-        return { ...r, request: reqMap.get(r.quote_request_id), cs, activePr: cs ? prMap.get(cs.id) : null };
+        const req = reqMap.get(r.quote_request_id);
+        const profile = profileMap.get(r.customer_id) ?? (req?.customer_id ? profileMap.get(req.customer_id) : null);
+        return { ...r, request: req, profile, cs, activePr: cs ? prMap.get(cs.id) : null };
       });
     },
   });

@@ -640,7 +640,15 @@ export const AdminQuoteRequests = () => {
                     </Button>
                   )}
                   {latestQuote.status === "approved" && (
-                    <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
+                    <div className="space-y-2">
+                      <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
+                      <Button size="sm" variant="hero" disabled={busy === "send_quote"} onClick={sendApprovedQuote}>
+                        {busy === "send_quote" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                        {latestQuote.customer_intent_proceeded_at ? "Resend approved quote to customer" : "Send approved quote to customer"}
+                      </Button>
+                      <p className="text-[10px] text-muted-foreground">Emails the customer a secure link to accept or decline this quote.</p>
+                    </div>
+                  )}
                   )}
                   <div className="border-2 border-foreground/20 bg-background p-2 space-y-2">
                     <p className="font-display uppercase text-[10px] tracking-widest">Estimated speeds (shown to customer)</p>

@@ -117,9 +117,9 @@ Deno.serve(async (req) => {
     .from("order_journeys")
     .select("id, quote_id, customer_id, status, current_step, contract_accepted_at, preferred_start_date, payment_method, billing_anchor_day")
     .eq("token_hash", hash)
-    .neq("status", "cancelled")
     .maybeSingle();
   if (!journey) return jsonResponse({ error: "no_journey" }, 404);
+  if (journey.status === "cancelled") return jsonResponse({ error: "journey_cancelled" }, 409);
   if (journey.status === "declined") return jsonResponse({ error: "journey_declined" }, 409);
   if (!journey.contract_accepted_at) return jsonResponse({ error: "contract_not_accepted" }, 409);
   if (!journey.preferred_start_date) return jsonResponse({ error: "start_date_not_selected" }, 409);

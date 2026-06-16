@@ -75,12 +75,12 @@ Deno.serve(async (req) => {
     .from("order_journeys")
     .select(JOURNEY_COLS)
     .eq("token_hash", hash)
-    .neq("status", "cancelled")
     .maybeSingle();
 
   if (action === "continue") {
     if (!eligible) return jsonResponse({ error: "quote_not_eligible", reason: expired ? "expired" : q.status }, 409);
     if (journey?.status === "declined") return jsonResponse({ error: "journey_declined" }, 409);
+    if (journey?.status === "cancelled") return jsonResponse({ error: "journey_cancelled" }, 409);
 
     if (!journey) {
       const insert = await supabase

@@ -52,10 +52,10 @@ Deno.serve(async (req) => {
     .from("order_journeys")
     .select("id, quote_id, current_step, status, contract_accepted_at, cooling_off_ends_at, earliest_selectable_start_date, preferred_start_date, start_date_selected_at")
     .eq("token_hash", hash)
-    .neq("status", "cancelled")
     .maybeSingle();
 
   if (!journey) return jsonResponse({ error: "no_journey" }, 404);
+  if (journey.status === "cancelled") return jsonResponse({ error: "journey_cancelled" }, 409);
   if (journey.status === "declined") return jsonResponse({ error: "journey_declined" }, 409);
   if (!journey.contract_accepted_at) return jsonResponse({ error: "contract_not_accepted" }, 409);
   if (!journey.cooling_off_ends_at || !journey.earliest_selectable_start_date) {

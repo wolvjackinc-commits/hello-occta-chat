@@ -17,8 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
 import { logAudit } from "@/lib/audit";
-import { CheckSquare, Square, Loader2 } from "lucide-react";
-import { UserPlus, ExternalLink } from "lucide-react";
+import { CheckSquare, Square, Loader2, UserPlus, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const orderStatuses = ["pending", "confirmed", "active", "cancelled"] as const;

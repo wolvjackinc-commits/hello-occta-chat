@@ -85,6 +85,13 @@ async function encryptBankDetails(plain: Record<string, unknown>) {
   }
 
   if (!keyBytes) {
+    // Tolerant hex: strip any non-hex chars (e.g. stray backticks, quotes,
+    // 0x prefix, dashes) and accept if exactly 64 hex chars remain.
+    const hexOnly = noWs.replace(/^0x/i, "").replace(/[^0-9a-f]/gi, "");
+    if (hexOnly.length === 64) keyBytes = hexToBytes(hexOnly);
+  }
+
+  if (!keyBytes) {
     // base64 / base64url — keep only valid chars, add padding.
     let b64 = noWs.replace(/-/g, "+").replace(/_/g, "/").replace(/[^A-Za-z0-9+/=]/g, "");
     b64 = b64.replace(/=+$/, "");

@@ -60,3 +60,17 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = false
   [functions.internal-create-test-pr]
     verify_jwt = false
+  [functions.journey-state]
+    verify_jwt = false
+  [functions.journey-decline]
+    verify_jwt = false
+  [functions.journey-cs-detail]
+    verify_jwt = false
+  [functions.journey-generate-cs]
+    verify_jwt = false
+  [functions.journey-start-date]
+    verify_jwt = false
+  [functions.journey-payment-method]
+    verify_jwt = false
+  [functions.journey-submit-order]
+    verify_jwt = false

@@ -105,7 +105,11 @@ async function encryptBankDetails(plain: Record<string, unknown>) {
     keyBytes = new TextEncoder().encode(noWs);
   }
 
-  if (!keyBytes) throw new Error("DD_FIELD_ENC_KEY_decode_failed");
+  if (!keyBytes) {
+    throw new Error(
+      `DD_FIELD_ENC_KEY_decode_failed:len=${rawKey.length},nowsLen=${noWs.length}`
+    );
+  }
   if (keyBytes.length !== 32) throw new Error(`DD_FIELD_ENC_KEY_bad_length:${keyBytes.length}`);
   const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, ["encrypt"]);
   const nonce = crypto.getRandomValues(new Uint8Array(12));

@@ -48,7 +48,7 @@ export const AdminQuotes = () => {
         .select(`
           id, quote_number, plan_name, service_type, plan_type, customer_type,
           monthly_net, monthly_gross, total_due_today_gross, status, expires_at, created_at,
-          quote_request_id
+          quote_request_id, unified_journey_opt_in
         `)
         .order("created_at", { ascending: false })
         .limit(200);

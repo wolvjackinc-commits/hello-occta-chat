@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     event_type: "quote_declined",
     title: `Customer declined quote (${reason_code})`,
     actor_type: "public",
-    metadata: { reason_code, reason_text },
+    details: { reason_code, reason_text },
   }).then(() => {}).catch(() => {});
 
   await supabase.rpc("log_event", {

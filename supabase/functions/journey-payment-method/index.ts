@@ -68,16 +68,45 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 async function encryptBankDetails(plain: Record<string, unknown>) {
-  const rawKey = Deno.env.get("DD_FIELD_ENC_KEY");
+  // Accept the key in any of: hex (64 chars), base64, base64url, or raw 32
+  // ASCII bytes. Strip surrounding quotes/whitespace and ignore stray chars
+  // so a copy-paste glitch in the secret doesn't break Direct Debit setup.
+  let rawKey = (Deno.env.get("DD_FIELD_ENC_KEY") ?? "").trim();
   if (!rawKey) throw new Error("DD_FIELD_ENC_KEY_missing");
-  let keyBytes: Uint8Array;
-  if (/^[0-9a-f]{64}$/i.test(rawKey)) {
-    keyBytes = hexToBytes(rawKey);
-  } else {
-    const bin = atob(rawKey.replace(/-/g, "+").replace(/_/g, "/"));
-    keyBytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  if ((rawKey.startsWith('"') && rawKey.endsWith('"')) ||
+      (rawKey.startsWith("'") && rawKey.endsWith("'"))) {
+    rawKey = rawKey.slice(1, -1);
   }
-  if (keyBytes.length !== 32) throw new Error("DD_FIELD_ENC_KEY_bad_length");
+  const noWs = rawKey.replace(/\s+/g, "");
+  let keyBytes: Uint8Array | null = null;
+
+  if (/^[0-9a-f]{64}$/i.test(noWs)) {
+    keyBytes = hexToBytes(noWs);
+  }
+
+  if (!keyBytes) {
+    // base64 / base64url — keep only valid chars, add padding.
+    let b64 = noWs.replace(/-/g, "+").replace(/_/g, "/").replace(/[^A-Za-z0-9+/=]/g, "");
+    b64 = b64.replace(/=+$/, "");
+    const pad = b64.length % 4;
+    if (pad === 2) b64 += "==";
+    else if (pad === 3) b64 += "=";
+    if (b64.length % 4 === 0) {
+      try {
+        const bin = atob(b64);
+        const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+        if (bytes.length === 32) keyBytes = bytes;
+      } catch { /* fall through */ }
+    }
+  }
+
+  if (!keyBytes && noWs.length === 32) {
+    // Raw 32-byte ASCII key.
+    keyBytes = new TextEncoder().encode(noWs);
+  }
+
+  if (!keyBytes) throw new Error("DD_FIELD_ENC_KEY_decode_failed");
+  if (keyBytes.length !== 32) throw new Error(`DD_FIELD_ENC_KEY_bad_length:${keyBytes.length}`);
   const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, ["encrypt"]);
   const nonce = crypto.getRandomValues(new Uint8Array(12));
   const enc = new TextEncoder().encode(JSON.stringify(plain));

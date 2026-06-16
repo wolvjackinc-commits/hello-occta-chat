@@ -82,6 +82,27 @@ Deno.serve(async (req) => {
     .eq("token_hash", hash)
     .maybeSingle();
 
+  if (unified_for_this_quote && !journey && action === "get" && q.customer_intent_proceeded_at && eligible) {
+    // Recovery for controlled test quotes that were viewed before the per-quote
+    // unified flag was switched on: the legacy button may already have stamped
+    // customer_intent_proceeded_at without creating an order_journeys row. Do not
+    // leave those customers on the quote/legacy stop screen after refresh — resume
+    // them directly at the in-page Agreement / Contract Summary step.
+    const insert = await supabase
+      .from("order_journeys")
+      .insert({
+        quote_id: q.id,
+        token_hash: hash,
+        current_step: "agreement",
+        status: "in_progress",
+        quote_continued_at: q.customer_intent_proceeded_at,
+        ip, ua,
+      })
+      .select(JOURNEY_COLS)
+      .single();
+    if (!insert.error) journey = insert.data;
+  }
+
   if (action === "continue") {
     if (!eligible) return jsonResponse({ error: "quote_not_eligible", reason: expired ? "expired" : q.status }, 409);
     if (journey?.status === "declined") return jsonResponse({ error: "journey_declined" }, 409);

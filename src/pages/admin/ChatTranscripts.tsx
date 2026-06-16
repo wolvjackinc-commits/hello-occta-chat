@@ -250,7 +250,7 @@ export function AdminChatTranscripts() {
               )}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1 p-6">
+          <ScrollArea className="flex-1 min-h-0 p-6">
             <div className="space-y-4">
               {activeMessages.map((m) => (
                 <div key={m.id} className="flex gap-3">

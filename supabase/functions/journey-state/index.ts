@@ -70,9 +70,10 @@ Deno.serve(async (req) => {
   const eligible = ["approved", "sent", "viewed"].includes(q.status) && !expired;
 
   // Existing journey (if any).
+  const JOURNEY_COLS = "id, current_step, status, decline_reason, preferred_start_date, start_date_selected_at, payment_method, billing_anchor_day, contract_accepted_at, cooling_off_ends_at, cooling_off_acknowledged, cooling_off_acknowledged_at, early_start_waived, early_start_waived_at, completed_at, contract_summary_id";
   let { data: journey } = await supabase
     .from("order_journeys")
-    .select("id, current_step, status, decline_reason, preferred_start_date, payment_method, billing_anchor_day, contract_accepted_at, cooling_off_ends_at, completed_at, contract_summary_id")
+    .select(JOURNEY_COLS)
     .eq("token_hash", hash)
     .neq("status", "cancelled")
     .maybeSingle();
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
           quote_continued_at: new Date().toISOString(),
           ip, ua,
         })
-        .select("id, current_step, status, decline_reason, preferred_start_date, payment_method, billing_anchor_day, contract_accepted_at, cooling_off_ends_at, completed_at, contract_summary_id")
+        .select(JOURNEY_COLS)
         .single();
       if (insert.error) return jsonResponse({ error: "journey_create_failed", details: insert.error.message }, 500);
       journey = insert.data;
@@ -101,7 +102,7 @@ Deno.serve(async (req) => {
         .from("order_journeys")
         .update({ current_step: "agreement", quote_continued_at: new Date().toISOString() })
         .eq("id", journey.id)
-        .select("id, current_step, status, decline_reason, preferred_start_date, payment_method, billing_anchor_day, contract_accepted_at, cooling_off_ends_at, completed_at, contract_summary_id")
+        .select(JOURNEY_COLS)
         .single();
       if (upd.error) return jsonResponse({ error: "journey_update_failed", details: upd.error.message }, 500);
       journey = upd.data;

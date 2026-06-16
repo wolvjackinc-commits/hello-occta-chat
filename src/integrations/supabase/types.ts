@@ -70,6 +70,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "acceptance_certificates_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "acceptance_certificates_journey_id_fkey"
             columns: ["journey_id"]
             isOneToOne: false
@@ -351,6 +358,13 @@ export type Database = {
             foreignKeyName: "audit_logs_actor_user_id_fkey"
             columns: ["actor_user_id"]
             isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -619,6 +633,13 @@ export type Database = {
             foreignKeyName: "campaign_recipients_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -688,6 +709,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -915,6 +943,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communications_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -1250,10 +1285,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "contract_acceptances_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -1511,6 +1560,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -1796,6 +1852,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "draft_order_packs_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "draft_order_packs_payment_request_id_fkey"
             columns: ["payment_request_id"]
             isOneToOne: false
@@ -1853,6 +1916,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -2606,10 +2676,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "manual_fulfilment_orders_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "manual_fulfilment_orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -2895,6 +2979,13 @@ export type Database = {
             columns: ["contract_summary_id"]
             isOneToOne: false
             referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
             referencedColumns: ["id"]
           },
           {
@@ -3301,10 +3392,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payment_requests_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "payment_requests_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -3340,6 +3445,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -3718,6 +3830,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "provisioning_readiness_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "provisioning_readiness_payment_request_id_fkey"
             columns: ["payment_request_id"]
             isOneToOne: true
@@ -3769,6 +3888,13 @@ export type Database = {
             columns: ["contract_summary_id"]
             isOneToOne: false
             referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
             referencedColumns: ["id"]
           },
           {
@@ -3946,6 +4072,13 @@ export type Database = {
             foreignKeyName: "quote_requests_assigned_admin_id_fkey"
             columns: ["assigned_admin_id"]
             isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_requests_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3954,6 +4087,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -4168,6 +4308,13 @@ export type Database = {
             foreignKeyName: "quotes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4176,6 +4323,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
             referencedColumns: ["id"]
           },
           {
@@ -5113,6 +5267,377 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_contract_summaries: {
+        Row: {
+          accepted_at: string | null
+          account_number: string | null
+          business_monthly_ex_vat: number | null
+          business_monthly_incl_vat: number | null
+          cease_cancellation_charges: string | null
+          complaints_adr_info: string | null
+          contract_length: string | null
+          created_at: string | null
+          cs_number: string | null
+          customer_email_snapshot: string | null
+          customer_id: string | null
+          customer_name_snapshot: string | null
+          customer_type:
+            | Database["public"]["Enums"]["customer_type_kind"]
+            | null
+          delivery_charge: number | null
+          digital_voice_warning: string | null
+          emailed_at: string | null
+          estimated_download_speed: number | null
+          estimated_upload_speed: number | null
+          id: string | null
+          installation_charge: number | null
+          issued_at: string | null
+          monthly_price_incl_vat: number | null
+          notice_period: string | null
+          one_off_charges_json: Json | null
+          payment_schedule: string | null
+          pdf_generated_at: string | null
+          pdf_storage_key: string | null
+          pdf_url: string | null
+          plan_name: string | null
+          plan_term: string | null
+          plan_type: Database["public"]["Enums"]["plan_type_kind"] | null
+          price_rise_policy: string | null
+          privacy_version: string | null
+          quote_id: string | null
+          quote_request_id: string | null
+          router_charge: number | null
+          router_option: Json | null
+          selected_addons: Json | null
+          service_address: string | null
+          service_type:
+            | Database["public"]["Enums"]["service_interest_kind"]
+            | null
+          setup_charge: number | null
+          setup_option: Json | null
+          speed_bucket: string | null
+          speed_notes: string | null
+          status:
+            | Database["public"]["Enums"]["contract_summary_status_kind"]
+            | null
+          terms_version: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          account_number?: string | null
+          business_monthly_ex_vat?: number | null
+          business_monthly_incl_vat?: number | null
+          cease_cancellation_charges?: string | null
+          complaints_adr_info?: string | null
+          contract_length?: string | null
+          created_at?: string | null
+          cs_number?: string | null
+          customer_email_snapshot?: string | null
+          customer_id?: string | null
+          customer_name_snapshot?: string | null
+          customer_type?:
+            | Database["public"]["Enums"]["customer_type_kind"]
+            | null
+          delivery_charge?: number | null
+          digital_voice_warning?: string | null
+          emailed_at?: string | null
+          estimated_download_speed?: number | null
+          estimated_upload_speed?: number | null
+          id?: string | null
+          installation_charge?: number | null
+          issued_at?: string | null
+          monthly_price_incl_vat?: number | null
+          notice_period?: string | null
+          one_off_charges_json?: Json | null
+          payment_schedule?: string | null
+          pdf_generated_at?: string | null
+          pdf_storage_key?: string | null
+          pdf_url?: string | null
+          plan_name?: string | null
+          plan_term?: string | null
+          plan_type?: Database["public"]["Enums"]["plan_type_kind"] | null
+          price_rise_policy?: string | null
+          privacy_version?: string | null
+          quote_id?: string | null
+          quote_request_id?: string | null
+          router_charge?: number | null
+          router_option?: Json | null
+          selected_addons?: Json | null
+          service_address?: string | null
+          service_type?:
+            | Database["public"]["Enums"]["service_interest_kind"]
+            | null
+          setup_charge?: number | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          speed_notes?: string | null
+          status?:
+            | Database["public"]["Enums"]["contract_summary_status_kind"]
+            | null
+          terms_version?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          accepted_at?: string | null
+          account_number?: string | null
+          business_monthly_ex_vat?: number | null
+          business_monthly_incl_vat?: number | null
+          cease_cancellation_charges?: string | null
+          complaints_adr_info?: string | null
+          contract_length?: string | null
+          created_at?: string | null
+          cs_number?: string | null
+          customer_email_snapshot?: string | null
+          customer_id?: string | null
+          customer_name_snapshot?: string | null
+          customer_type?:
+            | Database["public"]["Enums"]["customer_type_kind"]
+            | null
+          delivery_charge?: number | null
+          digital_voice_warning?: string | null
+          emailed_at?: string | null
+          estimated_download_speed?: number | null
+          estimated_upload_speed?: number | null
+          id?: string | null
+          installation_charge?: number | null
+          issued_at?: string | null
+          monthly_price_incl_vat?: number | null
+          notice_period?: string | null
+          one_off_charges_json?: Json | null
+          payment_schedule?: string | null
+          pdf_generated_at?: string | null
+          pdf_storage_key?: string | null
+          pdf_url?: string | null
+          plan_name?: string | null
+          plan_term?: string | null
+          plan_type?: Database["public"]["Enums"]["plan_type_kind"] | null
+          price_rise_policy?: string | null
+          privacy_version?: string | null
+          quote_id?: string | null
+          quote_request_id?: string | null
+          router_charge?: number | null
+          router_option?: Json | null
+          selected_addons?: Json | null
+          service_address?: string | null
+          service_type?:
+            | Database["public"]["Enums"]["service_interest_kind"]
+            | null
+          setup_charge?: number | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          speed_notes?: string | null
+          status?:
+            | Database["public"]["Enums"]["contract_summary_status_kind"]
+            | null
+          terms_version?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_guest_orders: {
+        Row: {
+          account_number: string | null
+          additional_notes: string | null
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          contract_end_date: string | null
+          created_at: string | null
+          current_provider: string | null
+          email: string | null
+          full_name: string | null
+          gdpr_consent: boolean | null
+          id: string | null
+          in_contract: boolean | null
+          linked_at: string | null
+          marketing_consent: boolean | null
+          order_number: string | null
+          phone: string | null
+          plan_name: string | null
+          plan_price: number | null
+          postcode: string | null
+          preferred_switch_date: string | null
+          selected_addons: Json | null
+          service_type: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          additional_notes?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          contract_end_date?: string | null
+          created_at?: string | null
+          current_provider?: string | null
+          email?: string | null
+          full_name?: string | null
+          gdpr_consent?: boolean | null
+          id?: string | null
+          in_contract?: boolean | null
+          linked_at?: string | null
+          marketing_consent?: boolean | null
+          order_number?: string | null
+          phone?: string | null
+          plan_name?: string | null
+          plan_price?: number | null
+          postcode?: string | null
+          preferred_switch_date?: string | null
+          selected_addons?: Json | null
+          service_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          additional_notes?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          contract_end_date?: string | null
+          created_at?: string | null
+          current_provider?: string | null
+          email?: string | null
+          full_name?: string | null
+          gdpr_consent?: boolean | null
+          id?: string | null
+          in_contract?: boolean | null
+          linked_at?: string | null
+          marketing_consent?: boolean | null
+          order_number?: string | null
+          phone?: string | null
+          plan_name?: string | null
+          plan_price?: number | null
+          postcode?: string | null
+          preferred_switch_date?: string | null
+          selected_addons?: Json | null
+          service_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      customer_orders: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          billing_anchor_day: number | null
+          city: string | null
+          cooling_off_ends_at: string | null
+          created_at: string | null
+          id: string | null
+          installation_date: string | null
+          journey_id: string | null
+          notes: string | null
+          payment_method: string | null
+          plan_name: string | null
+          plan_price: number | null
+          postcode: string | null
+          preferred_start_date: string | null
+          service_type: Database["public"]["Enums"]["service_type"] | null
+          status: Database["public"]["Enums"]["order_status"] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          billing_anchor_day?: number | null
+          city?: string | null
+          cooling_off_ends_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          installation_date?: string | null
+          journey_id?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          plan_name?: string | null
+          plan_price?: number | null
+          postcode?: string | null
+          preferred_start_date?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          billing_anchor_day?: number | null
+          city?: string | null
+          cooling_off_ends_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          installation_date?: string | null
+          journey_id?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          plan_name?: string | null
+          plan_price?: number | null
+          postcode?: string | null
+          preferred_start_date?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_points_ledger_view: {
         Row: {
           available_at: string | null
@@ -5155,6 +5680,51 @@ export type Database = {
             | Database["public"]["Enums"]["points_ledger_source"]
             | null
           status?: Database["public"]["Enums"]["points_ledger_status"] | null
+        }
+        Relationships: []
+      }
+      customer_profile: {
+        Row: {
+          account_number: string | null
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          phone: string | null
+          postcode: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          phone?: string | null
+          postcode?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          phone?: string | null
+          postcode?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -5635,7 +6205,6 @@ export type Database = {
           notice_period: string
           one_off_charges_json: Json
           payment_schedule: string
-          pdf_sha256: string
           pdf_storage_key: string
           plan_name: string
           plan_type: string
@@ -5651,7 +6220,6 @@ export type Database = {
           status: string
           terms_version: string
           version: number
-          vulnerable_customer_note: string
         }[]
       }
       get_customer_points_ledger: {

@@ -462,6 +462,25 @@ export const AdminCustomerDetail = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="finance" className="mt-4 space-y-3">
+          <Card className="border-2 border-foreground p-4">
+            <h3 className="font-display text-lg mb-3">Payment requests</h3>
+            {(!data?.paymentRequests || data.paymentRequests.length === 0) ? (
+              <p className="text-sm text-muted-foreground">No payment requests yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {data.paymentRequests.map((pr: any) => (
+                  <AdminPrRow key={pr.id} pr={pr} comms={(data.prComms || []).filter((c: any) => c.payment_request_id === pr.id)} />
+                ))}
+              </div>
+            )}
+          </Card>
+          <Card className="border-2 border-foreground p-4">
+            <h3 className="font-display text-lg mb-3">Direct Debit</h3>
+            <CustomerDDSection userId={overview.id} accountNumber={overview.account_number} onUpdate={refetch} />
+          </Card>
+        </TabsContent>
+
         <TabsContent value="orders" className="mt-4 space-y-3">
           {data?.orders.map((order) => (
             <Card key={order.id} className="border-2 border-foreground p-4">

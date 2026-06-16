@@ -110,7 +110,7 @@ export const AdminQuoteRequests = () => {
   const loadLatestQuote = async (qrId: string) => {
     const { data } = await (supabase as any)
       .from("quotes")
-      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name")
+      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name, customer_intent_proceeded_at")
       .eq("quote_request_id", qrId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -519,6 +519,11 @@ export const AdminQuoteRequests = () => {
                   )}
                   {latestQuote.status === "approved" && (
                     <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
+                  )}
+                  {latestQuote.customer_intent_proceeded_at && (
+                    <div className="border-2 border-primary bg-primary/5 p-2 text-xs">
+                      ✓ Customer proceeded {format(new Date(latestQuote.customer_intent_proceeded_at), "dd MMM HH:mm")} — ready to generate Contract Summary.
+                    </div>
                   )}
                 </div>
               )}

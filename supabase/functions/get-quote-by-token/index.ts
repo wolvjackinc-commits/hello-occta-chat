@@ -23,12 +23,19 @@ Deno.serve(async (req) => {
       total_due_today_gross, cease_fee_gross,
       estimated_download_speed, estimated_upload_speed, speed_notes,
       price_rise_policy, notice_period, status, expires_at, customer_notes,
-      quote_request_id
+      quote_request_id, customer_intent_proceeded_at, selected_addons
     `)
     .eq("public_token_hash", hash)
     .maybeSingle();
 
   if (error || !q) return jsonResponse({ error: "not_found" }, 404);
+
+  // Fetch customer-safe details from the linked quote_request
+  const { data: qr } = await supabase
+    .from("quote_requests")
+    .select("full_name, postcode, service_interest")
+    .eq("id", q.quote_request_id)
+    .maybeSingle();
 
   // Mark viewed (idempotent: only if status sent)
   if (q.status === "sent") {
@@ -57,7 +64,12 @@ Deno.serve(async (req) => {
 
   return jsonResponse({
     ok: true,
-    quote: q,
+    quote: {
+      ...q,
+      customer_name: qr?.full_name ?? null,
+      service_postcode: qr?.postcode ?? null,
+    },
+    token_hash: hash,
     contract_summary_available: !!cs,
     contract_summary_status: cs?.status ?? null,
   });

@@ -33,12 +33,27 @@ Deno.serve(async (req) => {
   if (!q) return jsonResponse({ error: "quote_not_found" }, 404);
 
   // Locate the active journey for this token (must exist — journey-state creates it).
-  const { data: journey } = await supabase
+  let { data: journey } = await supabase
     .from("order_journeys")
     .select("id, current_step, status, contract_summary_id")
     .eq("token_hash", hash)
     .neq("status", "cancelled")
     .maybeSingle();
+
+  if (!journey) {
+    const existing = await supabase
+      .from("order_journeys")
+      .select("id, current_step, status, contract_summary_id")
+      .eq("quote_id", q.id)
+      .neq("status", "cancelled")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing.data) {
+      journey = existing.data;
+      await supabase.from("order_journeys").update({ token_hash: hash }).eq("id", journey.id);
+    }
+  }
   if (!journey) return jsonResponse({ error: "no_journey", message: "Continue with the quote first." }, 409);
   if (journey.status === "declined") return jsonResponse({ error: "journey_declined" }, 409);
 

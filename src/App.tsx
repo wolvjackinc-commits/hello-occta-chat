@@ -72,6 +72,7 @@ import BuildPlan from "./pages/BuildPlan";
 import QuoteStart from "./pages/quote/QuoteStart";
 import QuoteThankYou from "./pages/quote/QuoteThankYou";
 import QuoteView from "./pages/quote/QuoteView";
+import UnifiedJourney from "./pages/quote/UnifiedJourney";
 import ContractSummaryView from "./pages/quote/ContractSummaryView";
 import QuotePayment from "./pages/quote/QuotePayment";
 import ContractSummaryAuthedView from "./pages/dashboard/ContractSummaryAuthedView";
@@ -194,7 +195,7 @@ const AnimatedRoutes = () => {
         <Route path="/dashboard/receipt/:id" element={<ReceiptView mode="auth" />} />
         <Route path="/receipt/:token" element={<ReceiptView mode="token" />} />
         <Route path="/quote/payment/:token" element={<QuotePayment />} />
-        <Route path="/quote/:token" element={<QuoteView />} />
+        <Route path="/quote/:token" element={<UnifiedJourney />} />
         <Route path="/legal/acceptable-use" element={<AcceptableUse />} />
         <Route path="/legal/complaints-code" element={<ComplaintsCode />} />
         <Route path="/legal/vulnerable-customers" element={<VulnerableCustomers />} />

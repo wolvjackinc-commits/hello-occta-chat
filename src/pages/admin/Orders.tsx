@@ -103,6 +103,34 @@ export const AdminOrders = () => {
     refetch();
   };
 
+  const handlePromoteToCustomer = async (order: GuestOrder) => {
+    setPromotingId(order.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("promote-guest-to-customer", {
+        body: { guest_order_id: order.id },
+      });
+      if (error || (data as any)?.error) {
+        toast({
+          title: "Couldn't activate customer",
+          description: (data as any)?.error || error?.message || "Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Customer activated",
+        description: `Account ${(data as any)?.account_number ?? ""} ready. Welcome email sent.`,
+      });
+      await refetch();
+      const acct = (data as any)?.account_number;
+      if (acct) navigate(`/admin/customers/${acct}`);
+    } catch (e) {
+      toast({ title: "Network error", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setPromotingId(null);
+    }
+  };
+
   // Bulk actions for orders
   const handleBulkStatusChange = async (status: OrderStatus) => {
     if (selectedOrders.size === 0) return;

@@ -275,6 +275,32 @@ export const AdminQuoteRequests = () => {
   };
 
   const approveFinal = async () => {
+    return _approveFinal();
+  };
+  const saveSpeeds = async () => {
+    if (!latestQuote) return;
+    const dl = speedDraft.download.trim() === "" ? null : Number(speedDraft.download);
+    const ul = speedDraft.upload.trim() === "" ? null : Number(speedDraft.upload);
+    if ((dl !== null && Number.isNaN(dl)) || (ul !== null && Number.isNaN(ul))) {
+      toast({ title: "Speeds must be numeric (Mbps)", variant: "destructive" });
+      return;
+    }
+    setSavingSpeeds(true);
+    try {
+      const { error } = await (supabase as any).from("quotes").update({
+        estimated_download_speed: dl,
+        estimated_upload_speed: ul,
+        speed_notes: speedDraft.notes.trim() || null,
+      }).eq("id", latestQuote.id);
+      if (error) throw error;
+      toast({ title: "Speeds saved — visible to customer on quote page" });
+      if (selected?.id) await loadLatestQuote(selected.id);
+    } catch (e: any) {
+      toast({ title: "Could not save speeds", description: e?.message, variant: "destructive" });
+    } finally { setSavingSpeeds(false); }
+  };
+
+  const _approveFinal = async () => {
     if (!latestQuote) return;
     // Guard: require linked supplier product + wholesale cost before approval.
     if (!latestQuote.supplier_product_id) {

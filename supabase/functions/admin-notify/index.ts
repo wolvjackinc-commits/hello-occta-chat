@@ -618,9 +618,37 @@ function generateFailedPaymentEmail(data: Record<string, unknown>): { subject: s
   return { subject, html };
 }
 
+function generateProceededQuoteEmail(data: Record<string, unknown>): { subject: string; html: string } {
+  const quoteNumber = escapeHtml(data.quote_number as string);
+  const planName = escapeHtml(data.plan_name as string);
+  const monthly = formatCurrency(data.monthly_gross as number);
+  const customerName = escapeHtml(data.customer_name as string);
+  const customerEmail = escapeHtml(data.customer_email as string);
+  const postcode = escapeHtml(data.postcode as string);
+  const reference = escapeHtml(data.request_reference as string);
+  const subject = `Customer proceeded — ${quoteNumber} ready for Contract Summary`;
+  const html = `<!DOCTYPE html><html><body style="margin:0;font-family:Arial,sans-serif;background:#f4f4f5;padding:24px;color:#111">
+    <div style="max-width:600px;margin:0 auto;background:#fff;border:4px solid #111;padding:24px">
+      <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;color:#666">OCCTA Admin</p>
+      <h1 style="font-size:20px;margin:0 0 16px">Customer accepted final quote</h1>
+      <p style="margin:0 0 12px">A customer has chosen to proceed with their quote. Time to generate the Contract Summary.</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0">
+        <tr><td style="padding:6px 0;color:#666;width:140px">Quote</td><td><strong>${quoteNumber}</strong></td></tr>
+        <tr><td style="padding:6px 0;color:#666">Plan</td><td>${planName} — ${monthly}/mo</td></tr>
+        <tr><td style="padding:6px 0;color:#666">Customer</td><td>${customerName} &lt;${customerEmail}&gt;</td></tr>
+        <tr><td style="padding:6px 0;color:#666">Postcode</td><td>${postcode}</td></tr>
+        <tr><td style="padding:6px 0;color:#666">Request</td><td>${reference}</td></tr>
+      </table>
+      <a href="${ADMIN_DASHBOARD_URL}/quote-requests?search=${encodeURIComponent(String(data.request_reference ?? ""))}"
+         style="display:inline-block;background:#111;color:#fff;padding:14px 28px;text-decoration:none;font-weight:600;border:2px solid #111">
+        Open in admin →
+      </a>
+      <p style="margin:24px 0 0;font-size:12px;color:#666">No payment, supplier order, or service has been created. Generate the Contract Summary when ready.</p>
+    </div></body></html>`;
+  return { subject, html };
+}
+
 const handler = async (req: Request): Promise<Response> => {
-  // (function definitions live below in module scope)
-  void 0;
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });

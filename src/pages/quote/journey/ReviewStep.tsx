@@ -115,7 +115,7 @@ export default function ReviewStep({
           </>
         ) : paymentMethod?.method === "invoice_link" ? (
           <>
-            <Row label="Method" value="Monthly invoice paid online via Worldpay" strong />
+            <Row label="Method" value="Monthly invoice paid online" strong />
             <Row label="Preferred invoice day" value={`Day ${paymentMethod.billing_anchor_day}`} />
           </>
         ) : (

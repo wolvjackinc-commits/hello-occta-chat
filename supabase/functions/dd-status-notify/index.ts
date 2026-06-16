@@ -19,14 +19,14 @@ const STATUS_EMAIL_CONFIG: Record<string, { subject: string; headline: string; m
   verified: {
     subject: "Your Direct Debit mandate has been verified",
     headline: "Mandate Verified",
-    message: "Great news! Your Direct Debit mandate has been verified and is being prepared for activation. We'll submit it to our payment provider shortly.",
+    message: "Great news! Your Direct Debit mandate has been verified and is being prepared for activation. We'll let you know as soon as it's live.",
     color: "#3b82f6",
     icon: "✓",
   },
   submitted_to_provider: {
-    subject: "Your Direct Debit has been submitted to our provider",
-    headline: "Submitted to Provider",
-    message: "Your Direct Debit mandate has been submitted to our payment provider for processing. This typically takes 2-3 working days. We'll notify you once it's active.",
+    subject: "Your Direct Debit is being processed",
+    headline: "Processing",
+    message: "Your Direct Debit mandate is being processed. This typically takes 2-3 working days. We'll notify you once it's active.",
     color: "#8b5cf6",
     icon: "📤",
   },

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Loader2, Building2, FileText, Check, ShieldCheck, Info } from "lucide-react";
+import { Loader2, Building2, FileText, Check, ShieldCheck, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
 
 const DD_CONSENT =
-  "I confirm that I am authorised to provide these account details and request that OCCTA LIMITED arranges payment of amounts due under my service agreement by Direct Debit. I understand that my Direct Debit is not active until OCCTA confirms setup with its payment provider.";
+  "I confirm that I am authorised to provide these account details and instruct OCCTA LIMITED to collect amounts due under my service agreement by Direct Debit, subject to the Direct Debit Guarantee shown below.";
 const INVOICE_CONSENT =
-  "I confirm I want to be billed monthly by invoice and that I am responsible for paying each invoice via the secure Worldpay link by the due date.";
+  "I confirm I want to be billed monthly by invoice and that I am responsible for paying each invoice via the secure online payment link by the due date.";
 
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 
@@ -43,7 +44,7 @@ export default function PaymentStep({
   quote: any;
   journey: any;
   paymentMethod: any | null;
-  ddProviderTemplateAvailable: boolean;
+  ddProviderTemplateAvailable?: boolean;
   onSaved: () => void;
 }) {
   const { toast } = useToast();
@@ -137,7 +138,7 @@ export default function PaymentStep({
                   <p>Sort code: <strong>**-**-{paymentMethod.masked_sort_last2}</strong> &middot; Account: <strong>****{paymentMethod.masked_account_last4}</strong></p>
                   <p>Preferred monthly collection day: <strong>{paymentMethod.billing_anchor_day}</strong></p>
                   <p className="text-xs text-muted-foreground border-l-4 border-foreground pl-3 mt-3">
-                    We have securely received your Direct Debit setup request. Your Direct Debit is <strong>not active yet</strong>. OCCTA LIMITED will confirm when it has been established with our payment provider.
+                    Your Direct Debit Instruction has been received. A confirmation, including the Direct Debit Guarantee, has been emailed to you for your records.
                   </p>
                 </>
               ) : (
@@ -145,7 +146,7 @@ export default function PaymentStep({
                   <p>Method: <strong>Receive a monthly invoice and pay online</strong></p>
                   <p>Preferred monthly invoice date: <strong>{paymentMethod.billing_anchor_day}</strong></p>
                   <p className="text-xs text-muted-foreground border-l-4 border-foreground pl-3 mt-3">
-                    OCCTA will email your monthly invoice with a secure Worldpay payment link once your service is confirmed active.
+                    OCCTA will email your monthly invoice with a secure online payment link once your service is confirmed active.
                   </p>
                 </>
               )}
@@ -177,7 +178,7 @@ export default function PaymentStep({
           <Building2 className="w-6 h-6 mb-2" />
           <p className="font-display uppercase text-sm">Pay monthly by Direct Debit</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Provide your details so OCCTA LIMITED can arrange your monthly Direct Debit. We will confirm when your Direct Debit has been successfully established with our payment provider.
+            Provide your bank details and OCCTA LIMITED will collect your agreed monthly amount automatically. Your payments are protected by the Direct Debit Guarantee.
           </p>
         </button>
         <button
@@ -190,7 +191,7 @@ export default function PaymentStep({
           <FileText className="w-6 h-6 mb-2" />
           <p className="font-display uppercase text-sm">Receive a monthly invoice and pay online</p>
           <p className="text-xs text-muted-foreground mt-1">
-            OCCTA will email your monthly invoice with a secure Worldpay payment link. You will need to complete the payment manually by the due date.
+            OCCTA will email your monthly invoice with a secure online payment link. You will need to complete the payment manually by the due date.
           </p>
         </button>
       </div>
@@ -261,14 +262,15 @@ export default function PaymentStep({
             <span>{DD_CONSENT}</span>
           </label>
 
-          {ddProviderTemplateAvailable ? null : (
-            <div className="flex items-start gap-2 text-xs bg-muted p-3 border-l-4 border-foreground">
-              <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>
-                The formal Direct Debit Guarantee is not yet available on this account because OCCTA has not finished onboarding with its Direct Debit provider. This screen records your <strong>setup request</strong> only — it is <strong>not</strong> a completed Bacs Direct Debit Instruction. OCCTA will confirm by email once your Direct Debit is established with our provider.
-              </span>
+          <div className="bg-muted p-4 border-l-4 border-foreground">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="w-4 h-4" />
+              <p className="font-display uppercase text-xs">The Direct Debit Guarantee</p>
             </div>
-          )}
+            <div className="text-xs leading-relaxed whitespace-pre-line">
+              {DD_GUARANTEE_TEXT}
+            </div>
+          </div>
         </div>
       )}
 
@@ -281,7 +283,7 @@ export default function PaymentStep({
             <li>Preferred monthly invoice date: <strong>Day {day}</strong></li>
           </ul>
           <p className="text-xs text-muted-foreground border-l-4 border-foreground pl-3">
-            Your first amount may be calculated pro-rata from your actual activation date. Billing starts only after OCCTA confirms your service is active. You'll enter card details securely on Worldpay's hosted page — OCCTA never stores your full card details.
+            Your first amount may be calculated pro-rata from your actual activation date. Billing starts only after OCCTA confirms your service is active. Card details are entered securely on our payment page — OCCTA never stores your full card details.
           </p>
           <label className="flex items-start gap-2 text-sm">
             <Checkbox checked={invConsent} onCheckedChange={(v) => setInvConsent(v === true)} />
@@ -297,7 +299,7 @@ export default function PaymentStep({
         onClick={submit}
       >
         {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</> :
-          method === "direct_debit" ? "Submit Direct Debit setup request" :
+          method === "direct_debit" ? "Confirm Direct Debit Instruction" :
           method === "invoice_link" ? "Confirm invoice billing" : "Choose a payment method"}
       </Button>
     </div>

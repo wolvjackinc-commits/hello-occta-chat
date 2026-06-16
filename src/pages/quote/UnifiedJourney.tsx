@@ -105,7 +105,11 @@ export default function UnifiedJourney() {
           variant: "destructive",
         });
       } else {
-        setState(data as StateResponse);
+        const nextState = data as StateResponse;
+        setState(nextState);
+        if (nextState.journey?.current_step !== "agreement") {
+          await load();
+        }
         toast({
           title: "Got it — moving you on",
           description: "We're preparing your Contract Summary for the next step.",

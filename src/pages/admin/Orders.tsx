@@ -17,7 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
 import { logAudit } from "@/lib/audit";
-import { CheckSquare, Square, Loader2 } from "lucide-react";
+import { CheckSquare, Square, Loader2, UserPlus, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const orderStatuses = ["pending", "confirmed", "active", "cancelled"] as const;
 type OrderStatus = (typeof orderStatuses)[number];
@@ -39,9 +40,11 @@ type Order = {
 
 export const AdminOrders = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [selectedGuestOrder, setSelectedGuestOrder] = useState<GuestOrder | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [promotingId, setPromotingId] = useState<string | null>(null);
   
   // Bulk selection state
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
@@ -97,6 +100,34 @@ export const AdminOrders = () => {
     }
     toast({ title: "Note saved" });
     refetch();
+  };
+
+  const handlePromoteToCustomer = async (order: GuestOrder) => {
+    setPromotingId(order.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("promote-guest-to-customer", {
+        body: { guest_order_id: order.id },
+      });
+      if (error || (data as any)?.error) {
+        toast({
+          title: "Couldn't activate customer",
+          description: (data as any)?.error || error?.message || "Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Customer activated",
+        description: `Account ${(data as any)?.account_number ?? ""} ready. Welcome email sent.`,
+      });
+      await refetch();
+      const acct = (data as any)?.account_number;
+      if (acct) navigate(`/admin/customers/${acct}`);
+    } catch (e) {
+      toast({ title: "Network error", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setPromotingId(null);
+    }
   };
 
   // Bulk actions for orders
@@ -358,6 +389,14 @@ export const AdminOrders = () => {
                   <div>
                     <div className="font-medium">{order.full_name}</div>
                     <div className="text-xs text-muted-foreground">Order {order.order_number}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      {order.user_id ? (
+                        <Badge variant="outline" className="border-2 border-foreground text-[10px]">Linked customer</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="border-2 border-foreground text-[10px]">No customer account</Badge>
+                      )}
+                      <span className="text-[11px] text-muted-foreground">{order.email}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 md:flex-row md:items-center">
@@ -373,6 +412,28 @@ export const AdminOrders = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {!order.user_id ? (
+                    <Button
+                      variant="hero"
+                      onClick={() => handlePromoteToCustomer(order)}
+                      disabled={promotingId === order.id}
+                      className="gap-2"
+                    >
+                      {promotingId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                      Activate customer
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="border-2 border-foreground gap-2"
+                      onClick={async () => {
+                        const { data: p } = await supabase.from("profiles").select("account_number").eq("id", order.user_id).maybeSingle();
+                        if (p?.account_number) navigate(`/admin/customers/${p.account_number}`);
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4" /> Open Customer 360
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => {

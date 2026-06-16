@@ -74,3 +74,9 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = false
   [functions.journey-submit-order]
     verify_jwt = false
+  [functions.journey-cancel-request]
+    verify_jwt = false
+  [functions.journey-cancel-confirm]
+    verify_jwt = false
+  [functions.journey-link-to-account]
+    verify_jwt = true

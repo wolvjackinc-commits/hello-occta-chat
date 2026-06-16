@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
   const eligible = ["approved", "sent", "viewed"].includes(q.status) && !expired;
 
   // Existing journey (if any).
-  const JOURNEY_COLS = "id, current_step, status, decline_reason, preferred_start_date, start_date_selected_at, payment_method, billing_anchor_day, contract_accepted_at, cooling_off_ends_at, cooling_off_acknowledged, cooling_off_acknowledged_at, early_start_waived, early_start_waived_at, completed_at, contract_summary_id";
+  const JOURNEY_COLS = "id, current_step, status, decline_reason, preferred_start_date, start_date_selected_at, payment_method, billing_anchor_day, contract_accepted_at, cooling_off_ends_at, earliest_selectable_start_date, cooling_off_acknowledged, cooling_off_acknowledged_at, completed_at, contract_summary_id";
   let { data: journey } = await supabase
     .from("order_journeys")
     .select(JOURNEY_COLS)

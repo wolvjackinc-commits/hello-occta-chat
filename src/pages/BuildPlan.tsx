@@ -215,9 +215,14 @@ function BuildPlanInner() {
           email: contact.email,
           phone: contact.phone,
           postcode: contact.postcode || (addr.postcode as string) || "",
-          address_line_1: [addr.sub_premises, addr.premises_name, addr.thoroughfare_number, addr.thoroughfare_name].filter(Boolean).join(" ") || null,
-          town: (addr.post_town as string) || null,
-          county: (addr.county as string) || null,
+          address_line_1: contact.address_line_1.trim()
+            || [addr.sub_premises, addr.premises_name, addr.thoroughfare_number, addr.thoroughfare_name].filter(Boolean).join(" ")
+            || null,
+          address_line_2: contact.address_line_2.trim() || null,
+          town: contact.town.trim() || (addr.post_town as string) || null,
+          county: contact.county.trim() || (addr.county as string) || null,
+          in_contract: contact.in_contract || null,
+          current_provider: contact.in_contract === "yes" ? (contact.current_provider || null) : null,
           preferred_contact_method: "email",
           marketing_consent: contact.marketing_consent,
         },

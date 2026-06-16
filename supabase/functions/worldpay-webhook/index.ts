@@ -446,6 +446,25 @@ serve(async (req) => {
     // NOTE: Phase E payment verification only. DO NOT create invoices,
     // services, supplier orders, DD mandates, installation bookings or
     // provisioning rows here. DO NOT send automatic emails.
+    // Stage 3: fire-and-forget payment-received email. Idempotent inside
+    // the called function (checks communications_log). Failure swallowed —
+    // never reverses paid status.
+    try {
+      const projectUrl = Deno.env.get("SUPABASE_URL")!;
+      const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      // Fire-and-forget; don't await on a long email round trip if not needed.
+      fetch(`${projectUrl}/functions/v1/send-payment-received-email`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${svcKey}`,
+          "Content-Type": "application/json",
+          "x-internal-service": "1",
+        },
+        body: JSON.stringify({ payment_request_id: pr.id }),
+      }).catch((e) => console.error("payment_received_email_dispatch_failed", e));
+    } catch (e) {
+      console.error("payment_received_email_dispatch_threw", e);
+    }
     return json(200, { received: true, paid: true });
   }
 

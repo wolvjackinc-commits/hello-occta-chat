@@ -65,6 +65,21 @@ export const AdminCustomerDetail = () => {
         .eq("customer_id", userId)
         .order("created_at", { ascending: false });
 
+      const { data: paymentRequests } = await supabase
+        .from("payment_requests")
+        .select("id, payment_request_number, status, amount, currency, paid_at, failed_at, last_opened_at, created_at, webhook_verified, contract_summary_id, provider_payment_id, customer_email")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      const prIds = (paymentRequests ?? []).map((r: any) => r.id);
+      const { data: prComms } = prIds.length
+        ? await supabase
+            .from("communications_log")
+            .select("id, payment_request_id, template_name, status, sent_at, error_message, created_at")
+            .in("payment_request_id", prIds)
+            .order("created_at", { ascending: false })
+        : { data: [] as any[] };
+
       return {
         profile: profileData,
         orders: orders.data ?? [],
@@ -73,6 +88,8 @@ export const AdminCustomerDetail = () => {
         services: services.data ?? [],
         invoices: invoices.data ?? [],
         contractSummaries: contractSummaries ?? [],
+        paymentRequests: paymentRequests ?? [],
+        prComms: prComms ?? [],
       };
     },
   });
@@ -229,6 +246,7 @@ export const AdminCustomerDetail = () => {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="finance">Finance</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="tickets">Tickets</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -444,6 +462,25 @@ export const AdminCustomerDetail = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="finance" className="mt-4 space-y-3">
+          <Card className="border-2 border-foreground p-4">
+            <h3 className="font-display text-lg mb-3">Payment requests</h3>
+            {(!data?.paymentRequests || data.paymentRequests.length === 0) ? (
+              <p className="text-sm text-muted-foreground">No payment requests yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {data.paymentRequests.map((pr: any) => (
+                  <AdminPrRow key={pr.id} pr={pr} comms={(data.prComms || []).filter((c: any) => c.payment_request_id === pr.id)} />
+                ))}
+              </div>
+            )}
+          </Card>
+          <Card className="border-2 border-foreground p-4">
+            <h3 className="font-display text-lg mb-3">Direct Debit</h3>
+            <CustomerDDSection userId={overview.id} accountNumber={overview.account_number} />
+          </Card>
+        </TabsContent>
+
         <TabsContent value="orders" className="mt-4 space-y-3">
           {data?.orders.map((order) => (
             <Card key={order.id} className="border-2 border-foreground p-4">
@@ -574,6 +611,80 @@ function AdminCsRow({ cs }: { cs: any }) {
           <code className="font-mono text-[10px]">{shortSha}</code>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AdminPrRow({ pr, comms }: { pr: any; comms: any[] }) {
+  const { toast } = useToast();
+  const [busy, setBusy] = useState<string | null>(null);
+  const isPaid = pr.status === "paid" || pr.status === "completed";
+  const fmt = (v: any) => v ? format(new Date(v), "dd MMM yyyy HH:mm") : "—";
+
+  const resendReceipt = async () => {
+    setBusy("receipt");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-payment-received-email", {
+        body: { payment_request_id: pr.id, force: true },
+      });
+      const err = (data as any)?.error || error?.message;
+      if (err) throw new Error(err);
+      toast({ title: "Receipt email sent" });
+    } catch (e) {
+      toast({ title: "Couldn't send receipt", description: String((e as Error).message), variant: "destructive" });
+    } finally { setBusy(null); }
+  };
+
+  const openReceipt = () => window.open(`/dashboard/receipt/${pr.id}`, "_blank", "noopener,noreferrer");
+
+  return (
+    <div className="border-2 border-foreground p-4 space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-display text-sm">{pr.payment_request_number}</span>
+            <Badge variant="outline" className="border-2 border-foreground capitalize">{pr.status}</Badge>
+            {isPaid && pr.webhook_verified && (
+              <Badge className="border-2 border-primary bg-primary/10 text-primary gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Webhook verified
+              </Badge>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1">£{Number(pr.amount ?? 0).toFixed(2)} {pr.currency} · {pr.customer_email}</div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {isPaid && (
+            <>
+              <Button size="sm" variant="outline" className="border-2 border-foreground" onClick={openReceipt}>
+                <Download className="h-4 w-4 mr-2" /> Receipt
+              </Button>
+              <Button size="sm" variant="outline" className="border-2 border-foreground" onClick={resendReceipt} disabled={busy === "receipt"}>
+                <Mail className="h-4 w-4 mr-2" />{busy === "receipt" ? "Sending…" : "Resend receipt email"}
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+        <div><span className="text-muted-foreground">Paid:</span> <span className="font-medium">{fmt(pr.paid_at)}</span></div>
+        <div><span className="text-muted-foreground">Opened:</span> <span className="font-medium">{fmt(pr.last_opened_at)}</span></div>
+        {pr.provider_payment_id && <div className="sm:col-span-2 break-all"><span className="text-muted-foreground">Provider txn:</span> <code className="font-mono">{pr.provider_payment_id}</code></div>}
+      </div>
+      {comms.length > 0 && (
+        <div className="pt-2 border-t border-foreground/20">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Email log</div>
+          <ul className="text-xs space-y-1">
+            {comms.map((c) => (
+              <li key={c.id} className="flex items-center gap-2">
+                <Mail className="h-3 w-3" />
+                <span>{c.template_name}</span>
+                <Badge variant="outline" className="border border-foreground/40 capitalize text-[10px]">{c.status}</Badge>
+                <span className="text-muted-foreground">{fmt(c.sent_at || c.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

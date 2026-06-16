@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, FileText, Loader2, Lock } from "lucide-react";
+import { Download, FileText, Loader2, Lock, Receipt as ReceiptIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { EmptyState } from "./EmptyState";
@@ -15,6 +16,7 @@ type Doc = {
   csId?: string;
   csHasPdf?: boolean;
   csAccepted?: boolean;
+  receiptPrId?: string;
 };
 
 export function DocumentsTab({ userId }: { userId: string }) {
@@ -25,10 +27,11 @@ export function DocumentsTab({ userId }: { userId: string }) {
 
   useEffect(() => {
     (async () => {
-      const [inv, cs, uf] = await Promise.all([
+      const [inv, cs, uf, pr] = await Promise.all([
         supabase.from("invoices").select("id,invoice_number,pdf_url,issue_date").eq("user_id", userId).order("issue_date", { ascending: false }),
         supabase.from("contract_summaries").select("id,cs_number,plan_name,pdf_url,pdf_storage_key,issued_at,accepted_at").eq("customer_id", userId).order("issued_at", { ascending: false }),
         supabase.from("user_files").select("id,file_name,file_path,created_at").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("payment_requests").select("id,payment_request_number,paid_at,status,webhook_verified").eq("user_id", userId).in("status", ["paid","completed"]).eq("webhook_verified", true).order("paid_at", { ascending: false }),
       ]);
       const combined: Doc[] = [];
       (inv.data || []).forEach((r: any) => combined.push({ id: `inv-${r.id}`, label: `Invoice ${r.invoice_number}`, href: r.pdf_url, at: r.issue_date, kind: "Invoice" }));
@@ -41,6 +44,14 @@ export function DocumentsTab({ userId }: { userId: string }) {
         csId: r.id,
         csHasPdf: !!r.pdf_storage_key,
         csAccepted: !!r.accepted_at,
+      }));
+      (pr.data || []).forEach((r: any) => combined.push({
+        id: `pr-${r.id}`,
+        label: `Payment receipt ${r.payment_request_number}`,
+        href: null,
+        at: r.paid_at,
+        kind: "Receipt · Verified",
+        receiptPrId: r.id,
       }));
       (uf.data || []).forEach((r: any) => combined.push({ id: `uf-${r.id}`, label: r.file_name, href: null, at: r.created_at, kind: "Document" }));
       combined.sort((a, b) => (a.at < b.at ? 1 : -1));
@@ -73,13 +84,19 @@ export function DocumentsTab({ userId }: { userId: string }) {
       {docs.map((d) => (
         <div key={d.id} className="flex items-center justify-between p-3 border-2 border-foreground bg-background">
           <div className="flex items-center gap-3">
-            {d.csAccepted ? <Lock className="w-5 h-5 text-primary" /> : <FileText className="w-5 h-5 text-primary" />}
+            {d.receiptPrId ? <ReceiptIcon className="w-5 h-5 text-primary" /> : d.csAccepted ? <Lock className="w-5 h-5 text-primary" /> : <FileText className="w-5 h-5 text-primary" />}
             <div>
               <p className="font-display text-sm">{d.label}</p>
               <p className="text-xs text-muted-foreground">{d.kind} · {d.at ? format(new Date(d.at), "dd MMM yyyy") : ""}</p>
             </div>
           </div>
-          {d.csId ? (
+          {d.receiptPrId ? (
+            <Link to={`/dashboard/receipt/${d.receiptPrId}`}>
+              <Button size="sm" variant="outline" className="border-2 border-foreground">
+                <ReceiptIcon className="w-4 h-4 mr-1" /> View
+              </Button>
+            </Link>
+          ) : d.csId ? (
             <Button
               size="sm"
               variant="outline"

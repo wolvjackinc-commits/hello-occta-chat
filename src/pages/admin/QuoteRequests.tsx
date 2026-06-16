@@ -639,6 +639,59 @@ export const AdminQuoteRequests = () => {
                       ✓ Customer proceeded {format(new Date(latestQuote.customer_intent_proceeded_at), "dd MMM HH:mm")} — ready to generate Contract Summary.
                     </div>
                   )}
+                  {/* Contract Summary panel */}
+                  {latestQuote.status !== "draft" && latestQuote.status !== "rejected" && (
+                    <div className="border-2 border-foreground/40 bg-background p-2 space-y-2 mt-2">
+                      <p className="font-display uppercase text-[10px] tracking-widest">Contract Summary</p>
+                      {!latestCs && (
+                        <>
+                          <p className="text-xs text-muted-foreground">No Contract Summary yet for this quote.</p>
+                          <Button
+                            size="sm"
+                            variant="hero"
+                            disabled={csBusy === "generate" || !latestQuote.customer_intent_proceeded_at || latestQuote.status !== "approved"}
+                            onClick={generateCs}
+                          >
+                            {csBusy === "generate" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Generate Contract Summary
+                          </Button>
+                          {!latestQuote.customer_intent_proceeded_at && (
+                            <p className="text-[10px] text-muted-foreground">Customer must click "Proceed with this quote" first.</p>
+                          )}
+                          {latestQuote.status !== "approved" && (
+                            <p className="text-[10px] text-muted-foreground">Quote must be approved before generating.</p>
+                          )}
+                        </>
+                      )}
+                      {latestCs && (
+                        <>
+                          <div className="text-xs space-y-1">
+                            <p className="font-mono">{latestCs.cs_number} · v{latestCs.version} · <span className="uppercase">{latestCs.status}</span></p>
+                            <p className="text-muted-foreground">
+                              {latestCs.emailed_at ? `Last sent: ${format(new Date(latestCs.emailed_at), "dd MMM HH:mm")}` : "Not sent yet"}
+                              {latestCs.accepted_at && ` · ✓ Accepted ${format(new Date(latestCs.accepted_at), "dd MMM HH:mm")}`}
+                            </p>
+                            {latestCs.pdf_sha256 && (
+                              <p className="text-[10px] font-mono text-muted-foreground break-all">PDF SHA-256: {latestCs.pdf_sha256.slice(0, 16)}…</p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {latestCs.status !== "accepted" && (
+                              <Button size="sm" variant="hero" disabled={csBusy === "send"} onClick={sendCsEmail}>
+                                {csBusy === "send" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                                {latestCs.emailed_at ? "Resend to customer" : "Send to customer"}
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" disabled={csBusy === "pdf" || !latestCs.pdf_storage_key} onClick={downloadCsPdf}>
+                              {csBusy === "pdf" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Open PDF
+                            </Button>
+                          </div>
+                          {latestCs.status === "accepted" && (
+                            <p className="text-[10px] text-primary">Locked — accepted Contract Summary is immutable. To change terms, create a new quote.</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

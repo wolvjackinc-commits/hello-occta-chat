@@ -15,7 +15,6 @@ import { format } from "date-fns";
 import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
 import { CustomerEditDialog } from "@/components/admin/CustomerEditDialog";
 import { CustomerDDSection } from "@/components/admin/CustomerDDSection";
-import { CustomerCommunicationsTimeline } from "@/components/admin/CustomerCommunicationsTimeline";
 import { CustomerBillingSettings } from "@/components/admin/CustomerBillingSettings";
 import { JourneyInternalNotes } from "@/components/admin/JourneyInternalNotes";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

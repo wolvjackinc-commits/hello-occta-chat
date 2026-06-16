@@ -65,6 +65,21 @@ export const AdminCustomerDetail = () => {
         .eq("customer_id", userId)
         .order("created_at", { ascending: false });
 
+      const { data: paymentRequests } = await supabase
+        .from("payment_requests")
+        .select("id, payment_request_number, status, amount, currency, paid_at, failed_at, last_opened_at, created_at, webhook_verified, contract_summary_id, provider_payment_id, customer_email")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      const prIds = (paymentRequests ?? []).map((r: any) => r.id);
+      const { data: prComms } = prIds.length
+        ? await supabase
+            .from("communications_log")
+            .select("id, payment_request_id, template_name, status, sent_at, error_message, created_at")
+            .in("payment_request_id", prIds)
+            .order("created_at", { ascending: false })
+        : { data: [] as any[] };
+
       return {
         profile: profileData,
         orders: orders.data ?? [],
@@ -73,6 +88,8 @@ export const AdminCustomerDetail = () => {
         services: services.data ?? [],
         invoices: invoices.data ?? [],
         contractSummaries: contractSummaries ?? [],
+        paymentRequests: paymentRequests ?? [],
+        prComms: prComms ?? [],
       };
     },
   });
@@ -229,6 +246,7 @@ export const AdminCustomerDetail = () => {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="finance">Finance</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="tickets">Tickets</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>

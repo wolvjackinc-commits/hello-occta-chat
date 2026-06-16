@@ -23,10 +23,9 @@ type JourneyState = {
   billing_anchor_day: number | null;
   contract_accepted_at: string | null;
   cooling_off_ends_at: string | null;
+  earliest_selectable_start_date: string | null;
   cooling_off_acknowledged: boolean | null;
   cooling_off_acknowledged_at: string | null;
-  early_start_waived: boolean | null;
-  early_start_waived_at: string | null;
   completed_at: string | null;
   contract_summary_id: string | null;
 };

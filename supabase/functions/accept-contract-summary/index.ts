@@ -188,10 +188,16 @@ Deno.serve(async (req) => {
   await supabase.from("quote_requests").update({ status: "contract_summary_accepted", updated_at: acceptedAt }).eq("id", cs.quote_request_id);
 
   if (journey) {
+    // Compute cooling-off in Europe/London via the DB helper. Unified-journey-only —
+    // legacy acceptances are never touched.
+    const { data: coo } = await supabase.rpc("compute_cooling_off", { _accepted_at: acceptedAt });
+    const coolingRow = Array.isArray(coo) ? coo[0] : coo;
     await supabase.from("order_journeys").update({
       contract_summary_id: cs.id,
       contract_acceptance_id: acceptanceId,
       contract_accepted_at: acceptedAt,
+      cooling_off_ends_at: coolingRow?.cooling_off_ends_at ?? null,
+      earliest_selectable_start_date: coolingRow?.earliest_selectable_start_date ?? null,
       current_step: "start_date",
     }).eq("id", journey.id);
   }

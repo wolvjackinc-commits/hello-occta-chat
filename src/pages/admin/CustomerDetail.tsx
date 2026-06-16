@@ -477,7 +477,7 @@ export const AdminCustomerDetail = () => {
           </Card>
           <Card className="border-2 border-foreground p-4">
             <h3 className="font-display text-lg mb-3">Direct Debit</h3>
-            <CustomerDDSection userId={overview.id} accountNumber={overview.account_number} onUpdate={refetch} />
+            <CustomerDDSection userId={overview.id} />
           </Card>
         </TabsContent>
 

@@ -553,6 +553,26 @@ export const AdminQuoteRequests = () => {
                   {latestQuote.status === "approved" && (
                     <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
                   )}
+                  <div className="border-2 border-foreground/20 bg-background p-2 space-y-2">
+                    <p className="font-display uppercase text-[10px] tracking-widest">Estimated speeds (shown to customer)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-[10px]">Download (Mbps)</Label>
+                        <Input value={speedDraft.download} onChange={(e) => setSpeedDraft((p) => ({ ...p, download: e.target.value }))} inputMode="numeric" placeholder="e.g. 76" />
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Upload (Mbps)</Label>
+                        <Input value={speedDraft.upload} onChange={(e) => setSpeedDraft((p) => ({ ...p, upload: e.target.value }))} inputMode="numeric" placeholder="e.g. 20" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Speed notes (optional, customer-safe)</Label>
+                      <Textarea rows={2} value={speedDraft.notes} onChange={(e) => setSpeedDraft((p) => ({ ...p, notes: e.target.value }))} placeholder="e.g. Estimated range based on line check." />
+                    </div>
+                    <Button size="sm" variant="outline" onClick={saveSpeeds} disabled={savingSpeeds}>
+                      {savingSpeeds ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Save speeds
+                    </Button>
+                  </div>
                   {latestQuote.customer_intent_proceeded_at && (
                     <div className="border-2 border-primary bg-primary/5 p-2 text-xs">
                       ✓ Customer proceeded {format(new Date(latestQuote.customer_intent_proceeded_at), "dd MMM HH:mm")} — ready to generate Contract Summary.

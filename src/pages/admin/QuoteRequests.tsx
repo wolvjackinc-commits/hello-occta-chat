@@ -77,6 +77,8 @@ export const AdminQuoteRequests = () => {
   const [rejectReason, setRejectReason] = useState("");
   const [speedDraft, setSpeedDraft] = useState({ download: "", upload: "", notes: "" });
   const [savingSpeeds, setSavingSpeeds] = useState(false);
+  const [latestCs, setLatestCs] = useState<any>(null);
+  const [csBusy, setCsBusy] = useState<string | null>(null);
 
   const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   const fetchSupplierProduct = async (identifier?: string | null) => {
@@ -139,7 +141,66 @@ export const AdminQuoteRequests = () => {
         .maybeSingle();
       if (check) setMarginInfo(check as any);
     }
+    if (data?.id) {
+      await loadLatestCs(data.id);
+    } else {
+      setLatestCs(null);
+    }
     return data ?? null;
+  };
+
+  const loadLatestCs = async (quoteId: string) => {
+    const { data } = await (supabase as any)
+      .from("contract_summaries")
+      .select("id, cs_number, version, status, pdf_storage_key, pdf_sha256, emailed_at, accepted_at, customer_email_snapshot")
+      .eq("quote_id", quoteId)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLatestCs(data ?? null);
+  };
+
+  const generateCs = async () => {
+    if (!latestQuote) return;
+    setCsBusy("generate");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-contract-summary", { body: { quote_id: latestQuote.id } });
+      const err = (data as any)?.error || error?.message;
+      if (err) throw new Error((data as any)?.message || err);
+      toast({ title: `Contract Summary ${(data as any).cs_number} generated` });
+      await loadLatestCs(latestQuote.id);
+    } catch (e: any) {
+      toast({ title: "Generate Contract Summary failed", description: e?.message, variant: "destructive" });
+    } finally { setCsBusy(null); }
+  };
+
+  const sendCsEmail = async () => {
+    if (!latestCs) return;
+    setCsBusy("send");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-contract-summary-email", { body: { contract_summary_id: latestCs.id } });
+      const err = (data as any)?.error || error?.message;
+      if (err) throw new Error((data as any)?.details || err);
+      toast({ title: `Contract Summary email sent`, description: `To ${(data as any).recipient_masked}` });
+      await loadLatestCs(latestCs.quote_id ?? latestQuote?.id);
+    } catch (e: any) {
+      toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+    } finally { setCsBusy(null); }
+  };
+
+  const downloadCsPdf = async () => {
+    if (!latestCs) return;
+    setCsBusy("pdf");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-contract-summary-pdf", { body: { contract_summary_id: latestCs.id } });
+      const err = (data as any)?.error || error?.message;
+      if (err) throw new Error(err);
+      const url = (data as any)?.signed_url;
+      if (!url) throw new Error("no_signed_url");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      toast({ title: "Could not open PDF", description: e?.message, variant: "destructive" });
+    } finally { setCsBusy(null); }
   };
 
   const { data, isLoading, refetch, isFetching } = useQuery({
@@ -576,6 +637,59 @@ export const AdminQuoteRequests = () => {
                   {latestQuote.customer_intent_proceeded_at && (
                     <div className="border-2 border-primary bg-primary/5 p-2 text-xs">
                       ✓ Customer proceeded {format(new Date(latestQuote.customer_intent_proceeded_at), "dd MMM HH:mm")} — ready to generate Contract Summary.
+                    </div>
+                  )}
+                  {/* Contract Summary panel */}
+                  {latestQuote.status !== "draft" && latestQuote.status !== "rejected" && (
+                    <div className="border-2 border-foreground/40 bg-background p-2 space-y-2 mt-2">
+                      <p className="font-display uppercase text-[10px] tracking-widest">Contract Summary</p>
+                      {!latestCs && (
+                        <>
+                          <p className="text-xs text-muted-foreground">No Contract Summary yet for this quote.</p>
+                          <Button
+                            size="sm"
+                            variant="hero"
+                            disabled={csBusy === "generate" || !latestQuote.customer_intent_proceeded_at || latestQuote.status !== "approved"}
+                            onClick={generateCs}
+                          >
+                            {csBusy === "generate" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Generate Contract Summary
+                          </Button>
+                          {!latestQuote.customer_intent_proceeded_at && (
+                            <p className="text-[10px] text-muted-foreground">Customer must click "Proceed with this quote" first.</p>
+                          )}
+                          {latestQuote.status !== "approved" && (
+                            <p className="text-[10px] text-muted-foreground">Quote must be approved before generating.</p>
+                          )}
+                        </>
+                      )}
+                      {latestCs && (
+                        <>
+                          <div className="text-xs space-y-1">
+                            <p className="font-mono">{latestCs.cs_number} · v{latestCs.version} · <span className="uppercase">{latestCs.status}</span></p>
+                            <p className="text-muted-foreground">
+                              {latestCs.emailed_at ? `Last sent: ${format(new Date(latestCs.emailed_at), "dd MMM HH:mm")}` : "Not sent yet"}
+                              {latestCs.accepted_at && ` · ✓ Accepted ${format(new Date(latestCs.accepted_at), "dd MMM HH:mm")}`}
+                            </p>
+                            {latestCs.pdf_sha256 && (
+                              <p className="text-[10px] font-mono text-muted-foreground break-all">PDF SHA-256: {latestCs.pdf_sha256.slice(0, 16)}…</p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {latestCs.status !== "accepted" && (
+                              <Button size="sm" variant="hero" disabled={csBusy === "send"} onClick={sendCsEmail}>
+                                {csBusy === "send" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                                {latestCs.emailed_at ? "Resend to customer" : "Send to customer"}
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" disabled={csBusy === "pdf" || !latestCs.pdf_storage_key} onClick={downloadCsPdf}>
+                              {csBusy === "pdf" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Open PDF
+                            </Button>
+                          </div>
+                          {latestCs.status === "accepted" && (
+                            <p className="text-[10px] text-primary">Locked — accepted Contract Summary is immutable. To change terms, create a new quote.</p>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

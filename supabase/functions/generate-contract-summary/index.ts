@@ -14,10 +14,23 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const auth = await requireStaff(req);
-  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+  // Allow internal service callers (e.g. journey-generate-cs) to bypass the
+  // staff auth check. The caller MUST be the service-role JWT AND include the
+  // x-internal-service header — anything else is rejected.
+  const isInternalService =
+    req.headers.get("x-internal-service") === "1" &&
+    (req.headers.get("Authorization") ?? "").includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "___no_key___");
 
-  const { quote_id } = await req.json().catch(() => ({} as { quote_id?: string }));
+  let actorUserId: string | null = null;
+  if (!isInternalService) {
+    const auth = await requireStaff(req);
+    if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+    actorUserId = auth.userId;
+  }
+
+  const body = await req.json().catch(() => ({} as { quote_id?: string; actor_id?: string }));
+  const { quote_id } = body;
+  if (isInternalService && body.actor_id) actorUserId = body.actor_id;
   if (!quote_id) return jsonResponse({ error: "missing_quote_id" }, 400);
 
   const supabase = getServiceClient();
@@ -254,7 +267,8 @@ Deno.serve(async (req) => {
     quote_id: q.id, quote_request_id: q.quote_request_id, contract_summary_id: cs.id,
     event_type: "contract_summary_generated",
     title: `Contract Summary ${cs.cs_number} v${nextVersion} generated`,
-    actor_type: "admin", actor_id: auth.userId,
+    actor_type: isInternalService ? "system" : "admin",
+    actor_id: actorUserId,
   });
 
   return jsonResponse({ ok: true, contract_summary_id: cs.id, cs_number: cs.cs_number, public_token: raw, version: nextVersion, pdf_pending: pdfPending });

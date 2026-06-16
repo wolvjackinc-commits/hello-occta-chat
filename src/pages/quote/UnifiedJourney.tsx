@@ -183,7 +183,13 @@ export default function UnifiedJourney() {
       <section className="container mx-auto px-4 py-10 max-w-2xl">
         <JourneyProgress current={step} />
 
-        {step === "quote" || state.journey?.status === "declined" ? (
+        {state.journey?.status === "cancelled" ? (
+          <CancelledStep
+            cancelledAt={state.journey.cancelled_at ?? state.cancellation_window?.cancelled_at ?? null}
+            reasonCode={state.journey.cancellation_reason ?? state.cancellation_window?.cancellation_reason ?? null}
+            orderNumber={state.submitted_order?.order_number ?? null}
+          />
+        ) : step === "quote" || state.journey?.status === "declined" ? (
           <QuoteStep
             quote={state.quote}
             journey={state.journey}
@@ -212,12 +218,6 @@ export default function UnifiedJourney() {
             journey={state.journey}
             paymentMethod={state.payment_method}
             onSubmitted={load}
-          />
-        ) : state.journey?.status === "cancelled" ? (
-          <CancelledStep
-            cancelledAt={state.journey.cancelled_at ?? state.cancellation_window?.cancelled_at ?? null}
-            reasonCode={state.journey.cancellation_reason ?? state.cancellation_window?.cancellation_reason ?? null}
-            orderNumber={state.submitted_order?.order_number ?? null}
           />
         ) : step === "complete" || state.journey?.status === "completed" ? (
           <CompletedStep

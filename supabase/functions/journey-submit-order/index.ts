@@ -63,10 +63,10 @@ Deno.serve(async (req) => {
       idempotency_key, submitted_at, completed_at, consolidated_email_sent_at
     `)
     .eq("token_hash", hash)
-    .neq("status", "cancelled")
     .maybeSingle();
 
   if (jErr || !journey) return jsonResponse({ error: "no_journey" }, 404);
+  if (journey.status === "cancelled") return jsonResponse({ error: "journey_cancelled" }, 409);
 
   // Replay protection — if key was already used on a different journey, reject.
   if (existingByKey && existingByKey.id !== journey.id) {

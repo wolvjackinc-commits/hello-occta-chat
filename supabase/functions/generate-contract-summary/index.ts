@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         "x-internal-service": "1",
       },
-      body: JSON.stringify({ contract_summary_id: cs.id, internal: true, actor_id: auth.userId }),
+      body: JSON.stringify({ contract_summary_id: cs.id, internal: true, actor_id: actorUserId }),
     });
     if (!r.ok) pdfPending = true;
   } catch { pdfPending = true; }

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -10,13 +10,16 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Json } from "@/integrations/supabase/types";
-import { Copy, ArrowLeft, Pencil, StickyNote, Route as RouteIcon } from "lucide-react";
+import { Copy, ArrowLeft, Pencil, StickyNote, Route as RouteIcon, AlertTriangle, ExternalLink, Send, Lock as LockIcon } from "lucide-react";
 import { format } from "date-fns";
 import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
 import { CustomerEditDialog } from "@/components/admin/CustomerEditDialog";
 import { CustomerDDSection } from "@/components/admin/CustomerDDSection";
 import { CustomerCommunicationsTimeline } from "@/components/admin/CustomerCommunicationsTimeline";
 import { CustomerBillingSettings } from "@/components/admin/CustomerBillingSettings";
+import { JourneyInternalNotes } from "@/components/admin/JourneyInternalNotes";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { logAudit } from "@/lib/audit";
 import { normalizeAccountNumber, isAccountNumberValid } from "@/lib/account";
 import { Download, FileText, Lock, CheckCircle2, Mail } from "lucide-react";
@@ -72,13 +75,40 @@ export const AdminCustomerDetail = () => {
         .order("created_at", { ascending: false });
 
       const prIds = (paymentRequests ?? []).map((r: any) => r.id);
-      const { data: prComms } = prIds.length
-        ? await supabase
-            .from("communications_log")
-            .select("id, payment_request_id, template_name, status, sent_at, error_message, created_at")
-            .in("payment_request_id", prIds)
-            .order("created_at", { ascending: false })
-        : { data: [] as any[] };
+      const csIds = (contractSummaries ?? []).map((c: any) => c.id);
+      const { data: allComms } = await (supabase as any)
+        .from("communications_log")
+        .select("id, payment_request_id, invoice_id, user_id, template_name, recipient_email, status, sent_at, error_message, created_at")
+        .or(`user_id.eq.${userId}${prIds.length ? `,payment_request_id.in.(${prIds.join(",")})` : ""}`)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const prComms = (allComms ?? []).filter((c: any) => c.payment_request_id);
+
+      // Quote requests + final quotes + customer_proceeded events
+      const [{ data: quoteRequests }, { data: quotes }] = await Promise.all([
+        (supabase as any).from("quote_requests")
+          .select("id, reference, status, service_interest, customer_type, postcode, created_at, final_quote_id")
+          .eq("customer_id", userId).order("created_at", { ascending: false }),
+        (supabase as any).from("quotes")
+          .select("id, quote_number, status, plan_name, monthly_gross, customer_intent_proceeded_at, quote_request_id, created_at, public_token_hash")
+          .eq("customer_id", userId).order("created_at", { ascending: false }),
+      ]);
+
+      const [{ data: mfos }, { data: readiness }, { data: tasks }] = await Promise.all([
+        prIds.length
+          ? (supabase as any).from("manual_fulfilment_orders")
+              .select("id, status, payment_request_id, contract_summary_id, supplier_name, supplier_product_ref, supplier_portal_reference, notes, created_at, updated_at, activated_at, cancelled_at")
+              .in("payment_request_id", prIds).order("created_at", { ascending: false })
+          : Promise.resolve({ data: [] as any[] }),
+        prIds.length
+          ? (supabase as any).from("provisioning_readiness")
+              .select("id, payment_request_id, contract_summary_id, installation_confirmed, router_confirmed, internal_notes_reviewed, admin_review_complete, updated_at")
+              .in("payment_request_id", prIds)
+          : Promise.resolve({ data: [] as any[] }),
+        (supabase as any).from("admin_tasks")
+          .select("id, task_number, title, status, priority, due_date, created_at, updated_at, related_payment_request_id, related_contract_summary_id, related_quote_id")
+          .eq("related_customer_id", userId).order("created_at", { ascending: false }).limit(100),
+      ]);
 
       return {
         profile: profileData,
@@ -90,6 +120,12 @@ export const AdminCustomerDetail = () => {
         contractSummaries: contractSummaries ?? [],
         paymentRequests: paymentRequests ?? [],
         prComms: prComms ?? [],
+        allComms: allComms ?? [],
+        quoteRequests: quoteRequests ?? [],
+        quotes: quotes ?? [],
+        mfos: mfos ?? [],
+        readiness: readiness ?? [],
+        tasks: tasks ?? [],
       };
     },
   });

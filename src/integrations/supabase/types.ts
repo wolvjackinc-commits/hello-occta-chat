@@ -2291,6 +2291,56 @@ export type Database = {
           },
         ]
       }
+      journey_cancellation_events: {
+        Row: {
+          actor_type: string
+          confirmation_text_version: string | null
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip: string | null
+          journey_id: string
+          reason_code: string | null
+          reason_text: string | null
+          ua: string | null
+        }
+        Insert: {
+          actor_type?: string
+          confirmation_text_version?: string | null
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip?: string | null
+          journey_id: string
+          reason_code?: string | null
+          reason_text?: string | null
+          ua?: string | null
+        }
+        Update: {
+          actor_type?: string
+          confirmation_text_version?: string | null
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip?: string | null
+          journey_id?: string
+          reason_code?: string | null
+          reason_text?: string | null
+          ua?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_cancellation_events_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_decline_events: {
         Row: {
           created_at: string
@@ -2702,6 +2752,12 @@ export type Database = {
       order_journeys: {
         Row: {
           billing_anchor_day: number | null
+          cancellation_notes: string | null
+          cancellation_reason: string | null
+          cancellation_token_expires_at: string | null
+          cancellation_token_hash: string | null
+          cancellation_token_used_at: string | null
+          cancelled_at: string | null
           completed_at: string | null
           consolidated_email_sent_at: string | null
           contract_acceptance_id: string | null
@@ -2720,6 +2776,11 @@ export type Database = {
           id: string
           idempotency_key: string | null
           ip: string | null
+          link_nonce_expires_at: string | null
+          link_nonce_hash: string | null
+          linked_at: string | null
+          linked_customer_id: string | null
+          manual_review_required: boolean
           order_pack_sha256: string | null
           order_pack_storage_key: string | null
           payment_method: string | null
@@ -2735,6 +2796,12 @@ export type Database = {
         }
         Insert: {
           billing_anchor_day?: number | null
+          cancellation_notes?: string | null
+          cancellation_reason?: string | null
+          cancellation_token_expires_at?: string | null
+          cancellation_token_hash?: string | null
+          cancellation_token_used_at?: string | null
+          cancelled_at?: string | null
           completed_at?: string | null
           consolidated_email_sent_at?: string | null
           contract_acceptance_id?: string | null
@@ -2753,6 +2820,11 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           ip?: string | null
+          link_nonce_expires_at?: string | null
+          link_nonce_hash?: string | null
+          linked_at?: string | null
+          linked_customer_id?: string | null
+          manual_review_required?: boolean
           order_pack_sha256?: string | null
           order_pack_storage_key?: string | null
           payment_method?: string | null
@@ -2768,6 +2840,12 @@ export type Database = {
         }
         Update: {
           billing_anchor_day?: number | null
+          cancellation_notes?: string | null
+          cancellation_reason?: string | null
+          cancellation_token_expires_at?: string | null
+          cancellation_token_hash?: string | null
+          cancellation_token_used_at?: string | null
+          cancelled_at?: string | null
           completed_at?: string | null
           consolidated_email_sent_at?: string | null
           contract_acceptance_id?: string | null
@@ -2786,6 +2864,11 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           ip?: string | null
+          link_nonce_expires_at?: string | null
+          link_nonce_hash?: string | null
+          linked_at?: string | null
+          linked_customer_id?: string | null
+          manual_review_required?: boolean
           order_pack_sha256?: string | null
           order_pack_storage_key?: string | null
           payment_method?: string | null

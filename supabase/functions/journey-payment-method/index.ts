@@ -1,4 +1,6 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { sendResendEmail, brutalistEmailShell, escapeHtml } from "../_shared/quoteHelpers.ts";
+import { ddGuaranteeHtml } from "../_shared/directDebitGuarantee.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 /**
@@ -43,10 +45,10 @@ const Schema = z.discriminatedUnion("method", [
 ]);
 
 const DD_CONSENT_TEXT_V1 =
-  "I confirm that I am authorised to provide these account details and request that OCCTA LIMITED arranges payment of amounts due under my service agreement by Direct Debit. I understand that my Direct Debit is not active until OCCTA confirms setup with its payment provider.";
+  "I confirm that I am authorised to provide these account details and instruct OCCTA LIMITED to collect amounts due under my service agreement by Direct Debit, subject to the Direct Debit Guarantee.";
 const INVOICE_CONSENT_TEXT_V1 =
-  "I confirm I want to be billed monthly by invoice and that I am responsible for paying each invoice via the secure Worldpay link by the due date.";
-const CONSENT_VERSION = "phase-e-v1";
+  "I confirm I want to be billed monthly by invoice and that I am responsible for paying each invoice via the secure online payment link by the due date.";
+const CONSENT_VERSION = "phase-e-v2";
 
 function b64ToHex(b64: string): string {
   const bin = atob(b64);

@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
       "x-internal-service": "1",
     },
-    body: JSON.stringify({ quote_id: q.id, actor_id: q.customer_id ?? null }),
+    body: JSON.stringify({ quote_id: q.id, actor_id: q.customer_id ?? null, journey_mode: true }),
   });
 
   if (!r.ok) {

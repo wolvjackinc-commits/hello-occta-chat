@@ -1,256 +1,244 @@
-Apply these corrections only. Do not rewrite or expand the full Stage 5 plan.
+Continue with Stage 5 Phase G only.
 
-1. WORLDPAY WEBHOOK
+Build post-submission cooling-off cancellation and secure customer-account linking.
 
-Remove every reference to:
+Keep `unified_journey_enabled` OFF by default.
 
-“INV-/PR- fail-closed HMAC”
+CANCELLATION
 
-OCCTA uses the verified Worldpay SMB eCommerce gateway flow. Do not introduce an HMAC requirement that the current merchant configuration does not use.
+Add:
 
-Preserve the currently verified webhook settlement logic exactly.
+- `cancelled_at`
+- `cancellation_reason`
+- `cancellation_notes`
+- `cancellation_token_hash`
+- `cancellation_token_expires_at`
+- `cancellation_token_used_at`
+- `linked_customer_id`
+- `linked_at`
 
-2. NO PAYMENT DURING ONBOARDING
-
-The customer does not make an initial monthly service payment during the quote-to-order journey.
-
-The payment step only records one of these choices:
-
-- Monthly Direct Debit setup request
-- Monthly invoice with secure Worldpay payment link
-
-For invoice-link customers, create the first Worldpay payment request only after admin confirms the service is active and the first invoice becomes due.
-
-3. CUSTOMER CHOOSES MONTHLY PAYMENT DATE
-
-Do not automatically use the service-activation anniversary as the billing date.
-
-During the payment-method step, the customer must choose:
-
-- preferred monthly invoice due date, for invoice-link customers; or
-- preferred monthly collection date, for Direct Debit customers.
-
-Store this as the customer-selected billing anchor day.
-
-Support days 1–31. For months without that date, use the last calendar day of the month.
-
-4. FIRST INVOICE AND PRO-RATA
-
-Billing starts only when admin manually confirms the service is genuinely active.
-
-If activation occurs before or after the customer’s chosen billing day:
-
-- calculate the first invoice pro-rata from the actual activation date to the next chosen billing date;
-- thereafter use the customer’s selected monthly billing day.
-
-Do not silently replace the customer’s chosen billing day with the activation date.
-
-5. MANUAL FULFILMENT ELIGIBILITY
-
-Do not require an upfront paid Worldpay payment request before the manual fulfilment tracker can be used.
-
-The existing paid/payment-webhook eligibility rule conflicts with the new business model.
-
-For this journey, readiness for manual supplier processing should require:
-
-- final quote continued/approved;
-- Contract Summary accepted;
-- immutable Contract Summary PDF stored;
-- order journey completed;
-- preferred start date selected;
-- payment method selected;
-- no cancellation request;
-- cooling-off period completed.
-
-Keep creation of the manual fulfilment tracker as an explicit admin action. Do not automatically create supplier orders or trackers on customer submission.
-
-6. LEGACY EMAIL SUPPRESSION
-
-Do not use:
-
-`if (!journey.consolidated_email_sent)`
-
-as the only legacy-email gate because legacy emails could be sent before the consolidated email exists.
-
-When a quote is using the unified journey:
-
-- suppress Contract Summary ready email;
-- suppress Contract Summary accepted email;
-- suppress separate welcome email;
-- suppress payment-method email;
-- suppress quote-approved email;
-- suppress order-submitted email.
-
-After successful final submission, send exactly one consolidated onboarding email.
-
-Later operational emails are still allowed:
-
-- service activation confirmation;
-- monthly invoice and payment link;
-- payment receipt;
-- overdue reminder;
-- Direct Debit provider confirmation where required.
-
-7. DIRECT DEBIT STATUS AND GUARANTEE
-
-Until OCCTA’s Direct Debit provider has approved the online instruction process, wording and screens, this journey must be described as:
-
-“Direct Debit setup request”
-
-It must not be represented as a live Bacs Direct Debit Instruction or active mandate.
-
-Show the formal Direct Debit Guarantee only from the configured provider-approved template. Do not invent, shorten or paraphrase it.
-
-Initial status:
-
-`setup_requested`
+Create append-only `journey_cancellation_events`.
 
 Customer wording:
 
-“We have securely received your Direct Debit setup request. Your Direct Debit is not active yet. OCCTA LIMITED will confirm when it has been established with our payment provider.”
+“You can cancel this agreement during your 14-day cooling-off period, which ends on [date and time].”
 
-When admin later completes provider setup, send any provider/Bacs-required confirmation or advance notice separately. This is a required payment communication and is not considered a duplicate onboarding email.
+Display dates in Europe/London.
 
-8. READINESS AND ACTIVATION
+The customer may cancel only while:
 
-Update readiness logic so it no longer requires a paid payment request before the order can be manually placed with the supplier.
+- journey is completed;
+- journey is not already cancelled;
+- current time is within `cooling_off_ends_at`;
+- no status exists that requires manual compliance review.
 
-Admin remains responsible for:
+CANCELLATION FLOW
 
-- manually placing the order in the Giacom portal;
-- recording the supplier reference;
-- updating fulfilment status;
-- confirming actual service activation.
+1. Customer selects `Cancel order`.
+2. Show reason choices and optional notes.
+3. Require one unticked confirmation checkbox.
+4. Generate a cryptographically random, single-use confirmation token.
+5. Store only its SHA-256 hash.
+6. Token expires after no more than 30 minutes.
+7. Confirm cancellation server-side.
+8. Mark journey cancelled immediately.
+9. Record immutable evidence.
+10. Send one cancellation confirmation email.
+11. Create an urgent admin task to check any manual Giacom/off-platform action.
 
-Only the explicit `Confirm service is active` action may enable automated billing.
+Do not automatically:
 
-9. ORDER SUBMISSION
+- cancel anything in Giacom;
+- cancel or alter services;
+- cancel invoices;
+- cancel payment requests;
+- alter Worldpay;
+- alter DD provider records.
 
-Customer submission should create or complete the internal customer order record, but must not:
+If the linked internal order cannot be updated atomically:
 
-- create a Worldpay payment request;
-- create an invoice;
-- activate a service;
-- submit a supplier order;
-- mark Direct Debit active;
-- begin billing.
+- preserve the cancellation evidence;
+- create a high-priority reconciliation task;
+- never silently discard the customer’s cancellation.
 
-10. APPROVAL GATES
+CANCELLATION EVIDENCE
 
-Proceed with the build using:
+Record:
 
-- 14-day cooling-off calculation as already defined;
-- Direct Debit live collection disabled;
-- unified-journey legacy emails suppressed from the beginning of the journey;
-- existing standalone routes redirected only after parity testing;
-- existing Worldpay SMB webhook logic unchanged.  
+- journey reference;
+- order reference;
+- exact confirmation wording/version;
+- reason code;
+- optional notes;
+- UTC timestamp;
+- Europe/London timestamp;
+- IP address;
+- user agent;
+- actor type;
+- journey-token hash/reference;
+- cancellation-token hash;
+- confirmation-email status.
+
+Use constrained reason and actor values.
+
+CANCELLED STATE
+
+After cancellation:
+
+- display `CancelledStep`;
+- block all further journey transitions server-side;
+- block payment-method changes;
+- block review/submission;
+- block fulfilment eligibility;
+- block billing eligibility;
+- block activation eligibility.
+
+CANCELLATION EMAIL
+
+Send exactly one idempotent confirmation email containing:
+
+- customer name;
+- order reference;
+- cancellation date/time;
+- confirmation that the request has been recorded;
+- statement that OCCTA will contact them only if further action is required;
+- support/dashboard link.
+
+Do not include:
+
+- IP address;
+- tokens;
+- bank details;
+- supplier details;
+- internal notes.
+
+ACCOUNT LINKING
+
+Do not store journey or linking tokens in:
+
+- localStorage;
+- sessionStorage;
+- analytics;
+- logs.
+
+Use a short-lived, single-use account-linking nonce.
+
+Requirements:
+
+- user must be authenticated;
+- JWT must be validated server-side;
+- completed journey required;
+- verified email must match;
+- journey must not be linked to another account;
+- update must be atomic;
+- nonce must expire and be single-use.
+
+If token/nonce appears in the URL:
+
+- exchange it immediately;
+- remove it using `history.replaceState`;
+- never persist it in browser storage.
+
+If already linked to the same user, return success.
+
+If linked to another user:
+
+- fail closed;
+- create a security audit event.
+
+RLS
+
+For cancellation events:
+
+- customer may read only events belonging to their linked journey;
+- authorised staff may read according to role;
+- clients may not insert/update/delete directly;
+- insertion occurs only through server-side functions;
+- evidence is append-only.
+
+JOURNEY STATE
+
+Extend `journey-state` to return:
+
+- cooling-off end;
+- cancellable boolean;
+- cancelled timestamp;
+- cancellation reason;
+- linked-account status.
+
+EDGE FUNCTIONS
+
+Build:
+
+- `journey-cancel-request`
+- `journey-cancel-confirm`
+- `journey-link-to-account`
+
+JWT rules:
+
+- cancel-request: secure journey token validation;
+- cancel-confirm: journey token plus single-use confirmation token;
+- account-link: JWT verification required.
+
+VERIFY
+
+Confirm:
+
+- cancellation works within the cooling-off period;
+- expired window returns safe failure;
+- wrong confirmation token fails;
+- confirmation token expires;
+- confirmation token is single-use;
+- double-click creates one event and one email;
+- cancelled journey cannot continue;
+- account linking rejects missing/invalid JWT;
+- tokens never enter localStorage/sessionStorage;
+- URL token is removed after exchange;
+- journey/order states remain consistent;
+- one urgent admin task is created;
+- no invoice, PR, receipt, DD mandate, service, Worldpay or supplier action occurs;
+- legacy flow remains untouched while the feature flag is OFF;
+- TypeScript/build passes.
+
+Stop after the Phase G verification report. Do not start Phase H.  
   
   
-  
-Stage 5 — Unified Quote-to-Order, Manual Activation & Automated Billing
+Phase G — Cooling-off cancellation + dashboard linkage
 
-A single, resumable, professional customer journey at `/quote/:token` covering Quote → Decision → Contract Summary → Acceptance → Start Date → Payment Method → Review → Complete, plus admin manual activation and post-activation automated invoicing. No Giacom API, no auto-activation, no recurring card charging.
+Scope: post-submission only. Feature flag `unified_journey_enabled` stays OFF by default. No edits to legacy checkout/Worldpay/invoice/PR/DD/fulfilment flows.
 
-### What stays untouched
+### 1. Database (new migration)
 
-Existing Worldpay HPP flow, webhook (`INV-`/`PR-` fail-closed HMAC), payment_requests, receipts, immutable Contract Summary PDF + SHA, Customer 360, customer dashboard, communications_log, manual fulfilment tracker, readiness checks. All extended in place — no parallel duplicates.
+- `order_journeys`: add `cancelled_at timestamptz`, `cancellation_reason text`, `cancellation_notes text`, `cancellation_token_hash text unique`, `linked_customer_id uuid references auth.users(id)`, `linked_at timestamptz`.
+- New table `journey_cancellation_events` (id, journey_id fk, reason_code, reason_text, ip, ua, created_at, actor_type). GRANT to authenticated + service_role; RLS: select via `has_role` admin OR journey owner; insert service_role only.
+- Index `order_journeys_cancellation_token_hash_idx` (unique, partial where not null).
+- Index `order_journeys_linked_customer_id_idx`.
+- Trigger: when `order_journeys.status` flips to `cancelled`, mark linked `guest_orders` row `status='cancelled'` (best-effort, only if status currently `pending`/`submitted`). No invoice/PR/DD/service touched.
 
-### Phased delivery (each phase ships behind flags, no regression to live flow)
+### 2. Edge functions (3 new, all `verify_jwt = false` in `config.toml`)
 
-**Phase A — Unified journey shell & state machine**
+- `journey-cancel-request` (POST { token }): rate-limited per IP, looks up active completed journey by `token_hash`, verifies `now() <= cooling_off_ends_at`, generates one-time `cancellation_token` (returns plain, stores SHA-256 hash + 30-min TTL via separate column or reuses existing). Returns masked confirmation summary + token.
+- `journey-cancel-confirm` (POST { token, cancellation_token, reason_code, reason_text? }): validates both hashes, enforces cooling-off window server-side, flips `order_journeys.status='cancelled'`, sets `cancelled_at`, inserts `journey_cancellation_events`, sends confirmation email via `sendResendEmail` (brutalist shell, escapeHtml), fires `admin-notify`. Idempotent: second call returns `{ ok: true, already: true }`.
+- `journey-link-to-account` (POST, JWT-authed): authed user with completed journey token can link their `auth.uid()` to `order_journeys.linked_customer_id` + matching `guest_orders.customer_id` (email match required as secondary check). Idempotent. No data merge into existing customer profile beyond the FK.
 
-- New route component `UnifiedJourney` at `/quote/:token` with 6-step progress UI (Quote · Agreement · Start date · Payment · Review · Complete).
-- New table `order_journeys` (journey id, quote_id, contract_summary_id, customer_id nullable, token_hash, current_step, status, decline_reason, decline_notes, preferred_start_date, cooling_off_ends_at, payment_method, idempotency_key, accepted_at, completed_at, ip, ua, timestamps). Strict RLS — token-based read via SECURITY DEFINER RPC only.
-- Step state persisted server-side every transition; resume picks up at `current_step`. Expired/invalid token → safe error screen.
-- Existing standalone `/quote/:token`, `/quote/contract-summary/:token`, `/quote/payment/:token` remain accessible behind the scenes until Phase G verifies parity, then redirect into the unified journey.
+### 3. UI
 
-**Phase B — Quote step + decline flow**
+- `src/pages/quote/journey/CompletedStep.tsx` (extend existing): show cooling-off countdown ("You can cancel without penalty until DD MMM YYYY HH:mm"), "Cancel order" button → opens `CancelDialog`. Hide button once window expires.
+- New `src/pages/quote/journey/CancelDialog.tsx`: 2-step (request → confirm with reason dropdown + optional notes + final consent checkbox). Reasons enum mirrors `journey-decline` set.
+- New `src/pages/quote/journey/CancelledStep.tsx`: shown when `journey.status === 'cancelled'`. Confirmation copy + support contact.
+- `UnifiedJourney.tsx`: route `cancelled` status to `CancelledStep`; keep `completed` → `CompletedStep` (now interactive).
+- Dashboard linkage UI: extend `src/components/dashboard/CustomerJourneyTimeline.tsx` — if signed-in user has a quote token in localStorage (`pending_journey_token`) OR query param `?link=<token>`, call `journey-link-to-account` once and show "Order linked to your account" toast. Linked orders surface via existing `guest_orders.customer_id` query path (no new dashboard tab).
 
-- Render approved quote (re-uses `get-quote-by-token`). Buttons: *Continue with this quote* / *Decline quote*.
-- Decline modal: reason enum + free text → `journey_decline_events` table; updates Customer 360, creates admin task, single decline acknowledgement (re-uses existing template if present, else suppressed).
+### 4. `journey-state` update
 
-**Phase C — Auto Contract Summary + Electronic Acceptance (in-journey)**
+- Surface `cancellation_window`: `{ ends_at, cancellable: boolean, cancelled_at, cancellation_reason }` in response so the UI can render the countdown without a separate fetch.
 
-- *Continue* calls existing `generate-contract-summary` server-side from locked quote, then renders CS + downloadable PDF inside the journey (no redirect).
-- Acceptance panel: 4 separate unticked checkboxes (CS received/read, details correct, charges understood, express consent), typed legal name, confirmed email & mobile.
-- Calls existing `accept-contract-summary` (immutable, hashed). Adds new `contract_acceptance_certificates` row (or extends `contract_acceptances`) with: checkbox values JSON, acceptance wording version, UTC + Europe/London timestamps, IP, UA, journey_id, session id, source route, certificate PDF storage key + hash.
-- Renders downloadable Acceptance Certificate PDF.
+### 5. Out of scope (explicitly untouched)
 
-**Phase D — Cooling-off + Start date step**
+`invoices`, `payment_requests`, `receipts`, `dd_mandates`, `services`, `manual_fulfilment_orders`, `payment_attempts`, `worldpay-*`, `installation_*`, `Checkout.tsx`, `PreCheckout.tsx`, `ThankYou.tsx`, `Pay.tsx`, `accept-contract-summary`, `customer-proceed-with-quote`.
 
-- Server computes `contract_accepted_at`, `cooling_off_ends_at = end of day 14 days after acceptance (Europe/London)`, `earliest_selectable_start_date = next day`.
-- Date picker enforces server-validated minimum. Stored on `order_journeys` with timestamp/IP/UA. Clear copy: "preferred, subject to network availability".
+### 6. Verification (after build)
 
-**Phase E — Payment method step**
+E2E (cancel inside window → status flips + email + admin notify + guest_orders cancelled), idempotency (double-cancel returns `already:true`), negative (expired window → 409, wrong cancellation_token → 401, missing reason → 400, rate-limit → 429), legacy regression (flag OFF unchanged), security (cancellation token hashed, IP/UA captured, no PII leak in email), TypeScript/build pass.
 
-*Option A — Direct Debit (setup-request only, feature-gated for live collection)*
-
-- New table `payment_methods` (customer_id, journey_id, method, billing_anchor_day, dd_setup_status, masked_account_last4, masked_sort_last2, consent_version, consent_at, ip, ua).
-- New table `dd_intake_requests` with `bank_details_ciphertext bytea`, `enc_key_id`, `enc_alg='AES-256-GCM'`, `nonce`, `auth_tag`, encrypted exclusively in a new `dd-encrypt`/`dd-decrypt` edge function using `DD_FIELD_ENC_KEY` secret. **Direct `SELECT` on ciphertext columns revoked from `authenticated**`; admin retrieval only via `admin-reveal-dd-details` edge function which requires re-auth, logs reason, and writes to `audit_logs`.
-- New config table `dd_provider_config` (provider name, SUN nullable, DDI template version, Guarantee version, advance-notice days, support contact, approval date, `live_collection_enabled boolean default false`).
-- Customer-facing status wording: "Direct Debit setup requested" until admin marks active. Hard rule: no "active/submitted/will be charged" language unless `live_collection_enabled` and admin confirmation.
-- Required consent checkbox stored with versioned wording.
-
-*Option B — Monthly invoice + Worldpay link* (re-uses existing HPP flow per invoice; no tokenisation).
-
-**Phase F — Review + idempotent Submit**
-
-- Full review screen; *Submit my order* posts with `idempotency_key` (UUID minted on first render of review). Server uses `UNIQUE(idempotency_key)` on `order_journeys` to make resubmits no-ops.
-- Submission creates/updates: `orders` (extended), `payment_methods`, links manual_fulfilment_orders row (existing eligibility trigger satisfied because CS is accepted + PDF stored), suppresses legacy automated emails, enqueues consolidated email.
-
-**Phase G — Consolidated onboarding email + combined PDF pack**
-
-- New edge function `send-order-onboarding` (idempotent on `order_journeys.id`) replaces 6 legacy mails (welcome, CS-ready, CS-accepted, payment-method, order-submitted, quote-approved) — legacy senders gated by `if (!journey.consolidated_email_sent)`.
-- New edge function `generate-order-pack` builds a single PDF: Cover, Approved Quote, Official CS (re-uses stored CS PDF bytes), Contract Information reference, Acceptance Certificate, Cooling-off + start date, Payment confirmation, DD Guarantee/setup (masked), What happens next, Contacts. Stored under `order-packs` bucket with SHA + storage key on `order_journeys`.
-- Email body lists order ref, approved quote ref, package, charges, term, preferred start, cooling-off end, payment method, billing anniversary, DD setup status, timeline, dashboard link, single download CTA. Attachment + tokenised fallback link.
-- Once toggled live, redirect old standalone routes into the unified journey.
-
-**Phase H — Customer account linking + Referrals (audit-first)**
-
-- "Create your OCCTA account" CTA on the completion page. New SECURITY DEFINER RPC `link_journey_to_user(journey_id, token)` validates token + email match, atomically writes `customer_id` onto journey, orders, payment_methods, manual_fulfilment_orders, future invoices.
-- Referrals: extend existing `referral_codes`/`reward_accounts`. If absent, scaffold tracking only — no auto-applied credits.
-
-**Phase I — Admin Customer 360 extensions**
-
-- New `AdminJourneyTimeline` panel (re-use existing component, extend with new milestones).
-- "Confirm service is active" admin action: dialog (actual activation date, reference, optional supplier ref, notes, confirmation checkbox + warning). Atomic transaction: updates service → `active`, sets `actual_activation_date`, calculates `billing_anchor_day` (preserves 1–31, shorter months use last day), enqueues `service_activation_outbox` row, sends single service-activation email. Idempotent on `service_id`.
-- "Reveal bank details for provider setup" gated action (re-auth, reason, audit).
-
-**Phase J — Pro-rata engine + monthly billing scheduler**
-
-- New deterministic `lib/billing/proRata.ts` (server + shared) using integer minor units; formula `round((monthly_minor * billable_days) / cycle_days)`. Stores inputs + result on `invoice_lines.metadata`; renders explanatory line on invoice PDF.
-- New edge function `run-monthly-billing`, scheduled daily via `pg_cron` + `pg_net` with `x-cron-secret`. For each `services.status='active'`:
-  - Compute next billing date from `billing_anchor_day` (Europe/London, last-day fallback for 29–31).
-  - Idempotency: `UNIQUE(service_id, billing_period_start, billing_period_end, invoice_type)`.
-  - Generate invoice from `order_billing_snapshots` (new immutable JSON taken at order submission, not from live catalogue).
-  - For invoice-link customers: create linked Worldpay payment_request (existing flow), send 1 invoice email with PDF + Pay Now link, due = anniversary, issue = anniversary − configurable days (default 7).
-  - For DD customers: mark `awaiting_direct_debit` or `dd_setup_pending`; admin records collection outcome (`pending|submitted|collected|failed|indemnity_claim|cancelled`). No auto submission to provider.
-- Payment statuses still flip only via verified Worldpay webhook (no change).
-
-**Phase K — Cooling-off cancellation, dashboard, security hardening, E2E**
-
-- Dashboard "Request cancellation" during cooling-off → admin task; no auto-cancel.
-- Dashboard tabs extended: Order, Documents (incl. combined pack), Billing (DD status, anniversary, next invoice, history), Referrals.
-- Security: RLS policies on all new tables, token hashes only at rest, DB-level rate limits on token endpoints, audit_logs entries for every DD reveal / admin activation / decline.
-- E2E (Playwright) for Test A (invoice path), Test B (DD path), Test C (decline), Test D (duplicate/refresh/double-click/expired token/webhook retry).
-
-### Technical details
-
-- **Tables added (all with `GRANT` + RLS):** `order_journeys`, `journey_decline_events`, `payment_methods`, `dd_intake_requests`, `dd_provider_config`, `order_billing_snapshots`, `service_activation_outbox`, `billing_runs`, `billing_events`, `invoice_email_events`, optional `contract_acceptance_certificates`.
-- **Tables extended:** `orders` (+ journey_id, payment_method, billing_anchor_day), `services` (+ actual_activation_date, billing_anchor_day, billing_enabled, next_billing_date), `invoices`/`invoice_lines` (+ pro-rata metadata), `contract_acceptances` (+ certificate hash if not separate table).
-- **Edge functions added:** `journey-state`, `journey-decline`, `journey-submit`, `dd-encrypt`, `admin-reveal-dd-details`, `generate-order-pack`, `send-order-onboarding`, `confirm-service-active`, `run-monthly-billing`, `record-dd-collection-outcome`.
-- **Edge functions reused unchanged:** `worldpay-payment`, `worldpay-webhook`, `generate-contract-summary`, `accept-contract-summary`, `get-quote-by-token`, `get-contract-summary-by-token`.
-- **Cron:** daily `run-monthly-billing` with `x-cron-secret`; daily anonymisation/quote-expiry unchanged.
-- **Secrets needed (will request via secrets tool when build starts):** `DD_FIELD_ENC_KEY` (32-byte base64), `CRON_SECRET` (if not already set).
-- **Feature flags (platform_settings):** `unified_journey_enabled`, `dd_live_collection_enabled` (default false), `legacy_onboarding_emails_suppressed`.
-
-### Out of scope (explicitly not built)
-
-Giacom API, auto supplier submission, auto activation, recurring card tokenisation, stored cards, auto monthly card charging, multiple onboarding emails, DD provider live submission.
-
-### Approval gates before build
-
-1. Confirm `DD_FIELD_ENC_KEY` will be added when prompted.
-2. Confirm cooling-off interpretation (14 calendar days, end-of-day Europe/London, earliest start = day 15) is correct.
-3. Confirm legacy `/quote/contract-summary/:token` and `/quote/payment/:token` may be redirected into the unified journey after Phase G parity test.
-4. Confirm DD live collection stays gated off until provider approval is supplied separately.
+Stop after Phase G verification report. Do not start Phase H.

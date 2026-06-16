@@ -75,6 +75,8 @@ export const AdminQuoteRequests = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const [needsInfoMsg, setNeedsInfoMsg] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  const [speedDraft, setSpeedDraft] = useState({ download: "", upload: "", notes: "" });
+  const [savingSpeeds, setSavingSpeeds] = useState(false);
 
   const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   const fetchSupplierProduct = async (identifier?: string | null) => {
@@ -110,12 +112,17 @@ export const AdminQuoteRequests = () => {
   const loadLatestQuote = async (qrId: string) => {
     const { data } = await (supabase as any)
       .from("quotes")
-      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name, customer_intent_proceeded_at")
+      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name, customer_intent_proceeded_at, estimated_download_speed, estimated_upload_speed, speed_notes")
       .eq("quote_request_id", qrId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     setLatestQuote(data ?? null);
+    setSpeedDraft({
+      download: data?.estimated_download_speed != null ? String(data.estimated_download_speed) : "",
+      upload: data?.estimated_upload_speed != null ? String(data.estimated_upload_speed) : "",
+      notes: data?.speed_notes ?? "",
+    });
     setLatestSupplierProduct(null);
     setMarginInfo(null);
     if (data?.supplier_product_id) {

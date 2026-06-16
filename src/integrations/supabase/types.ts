@@ -292,6 +292,81 @@ export type Database = {
           },
         ]
       }
+      billing_events: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          invoice_id: string | null
+          service_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          invoice_id?: string | null
+          service_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          invoice_id?: string | null
+          service_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_events_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_runs: {
+        Row: {
+          details: Json
+          errors_count: number
+          finished_at: string | null
+          id: string
+          invoices_created: number
+          run_date: string
+          services_processed: number
+          started_at: string
+        }
+        Insert: {
+          details?: Json
+          errors_count?: number
+          finished_at?: string | null
+          id?: string
+          invoices_created?: number
+          run_date: string
+          services_processed?: number
+          started_at?: string
+        }
+        Update: {
+          details?: Json
+          errors_count?: number
+          finished_at?: string | null
+          id?: string
+          invoices_created?: number
+          run_date?: string
+          services_processed?: number
+          started_at?: string
+        }
+        Relationships: []
+      }
       billing_settings: {
         Row: {
           auto_pay_enabled: boolean
@@ -1392,6 +1467,72 @@ export type Database = {
           },
         ]
       }
+      dd_intake_requests: {
+        Row: {
+          auth_tag: string | null
+          bank_details_ciphertext: string
+          bank_name: string | null
+          created_at: string
+          enc_alg: string
+          enc_key_id: string
+          id: string
+          journey_id: string | null
+          masked_account_last4: string
+          masked_sort_last2: string
+          nonce: string
+          payer_authorised_confirmed: boolean
+          payment_method_id: string
+          uk_account_confirmed: boolean
+        }
+        Insert: {
+          auth_tag?: string | null
+          bank_details_ciphertext: string
+          bank_name?: string | null
+          created_at?: string
+          enc_alg?: string
+          enc_key_id: string
+          id?: string
+          journey_id?: string | null
+          masked_account_last4: string
+          masked_sort_last2: string
+          nonce: string
+          payer_authorised_confirmed?: boolean
+          payment_method_id: string
+          uk_account_confirmed?: boolean
+        }
+        Update: {
+          auth_tag?: string | null
+          bank_details_ciphertext?: string
+          bank_name?: string | null
+          created_at?: string
+          enc_alg?: string
+          enc_key_id?: string
+          id?: string
+          journey_id?: string | null
+          masked_account_last4?: string
+          masked_sort_last2?: string
+          nonce?: string
+          payer_authorised_confirmed?: boolean
+          payment_method_id?: string
+          uk_account_confirmed?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_intake_requests_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_intake_requests_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_mandates: {
         Row: {
           account_holder: string | null
@@ -1465,6 +1606,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dd_provider_config: {
+        Row: {
+          advance_notice_days: number
+          created_at: string
+          ddi_template_version: string | null
+          guarantee_version: string | null
+          id: string
+          live_collection_enabled: boolean
+          provider_approval_date: string | null
+          provider_name: string | null
+          provider_support_contact: string | null
+          service_user_number: string | null
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          advance_notice_days?: number
+          created_at?: string
+          ddi_template_version?: string | null
+          guarantee_version?: string | null
+          id?: string
+          live_collection_enabled?: boolean
+          provider_approval_date?: string | null
+          provider_name?: string | null
+          provider_support_contact?: string | null
+          service_user_number?: string | null
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          advance_notice_days?: number
+          created_at?: string
+          ddi_template_version?: string | null
+          guarantee_version?: string | null
+          id?: string
+          live_collection_enabled?: boolean
+          provider_approval_date?: string | null
+          provider_name?: string | null
+          provider_support_contact?: string | null
+          service_user_number?: string | null
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       draft_order_packs: {
         Row: {
@@ -1830,6 +2016,38 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_email_events: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          invoice_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          invoice_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          invoice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_email_events_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_lines: {
         Row: {
           created_at: string
@@ -1837,6 +2055,7 @@ export type Database = {
           id: string
           invoice_id: string
           line_total: number
+          metadata: Json
           qty: number
           unit_price: number
           vat_rate: number
@@ -1847,6 +2066,7 @@ export type Database = {
           id?: string
           invoice_id: string
           line_total?: number
+          metadata?: Json
           qty?: number
           unit_price?: number
           vat_rate?: number
@@ -1857,6 +2077,7 @@ export type Database = {
           id?: string
           invoice_id?: string
           line_total?: number
+          metadata?: Json
           qty?: number
           unit_price?: number
           vat_rate?: number
@@ -1880,6 +2101,7 @@ export type Database = {
           due_date: string | null
           id: string
           invoice_number: string
+          invoice_type: string
           issue_date: string
           late_fee_amount: number | null
           late_fee_applied_at: string | null
@@ -1887,6 +2109,7 @@ export type Database = {
           order_id: string | null
           overdue_notified_at: string | null
           pdf_url: string | null
+          pro_rata: Json | null
           service_id: string | null
           status: string
           subtotal: number
@@ -1906,6 +2129,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           invoice_number: string
+          invoice_type?: string
           issue_date?: string
           late_fee_amount?: number | null
           late_fee_applied_at?: string | null
@@ -1913,6 +2137,7 @@ export type Database = {
           order_id?: string | null
           overdue_notified_at?: string | null
           pdf_url?: string | null
+          pro_rata?: Json | null
           service_id?: string | null
           status?: string
           subtotal?: number
@@ -1932,6 +2157,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           invoice_number?: string
+          invoice_type?: string
           issue_date?: string
           late_fee_amount?: number | null
           late_fee_applied_at?: string | null
@@ -1939,6 +2165,7 @@ export type Database = {
           order_id?: string | null
           overdue_notified_at?: string | null
           pdf_url?: string | null
+          pro_rata?: Json | null
           service_id?: string | null
           status?: string
           subtotal?: number
@@ -1956,6 +2183,44 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_decline_events: {
+        Row: {
+          created_at: string
+          id: string
+          ip: string | null
+          journey_id: string
+          reason_code: string
+          reason_text: string | null
+          ua: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          journey_id: string
+          reason_code: string
+          reason_text?: string | null
+          ua?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          journey_id?: string
+          reason_code?: string
+          reason_text?: string | null
+          ua?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_decline_events_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
             referencedColumns: ["id"]
           },
         ]
@@ -2127,8 +2392,9 @@ export type Database = {
           created_by: string | null
           customer_id: string | null
           id: string
+          journey_id: string | null
           notes: string | null
-          payment_request_id: string
+          payment_request_id: string | null
           readiness_confirmed: boolean
           selected_product_label: string | null
           status: Database["public"]["Enums"]["manual_fulfilment_status"]
@@ -2146,8 +2412,9 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           id?: string
+          journey_id?: string | null
           notes?: string | null
-          payment_request_id: string
+          payment_request_id?: string | null
           readiness_confirmed?: boolean
           selected_product_label?: string | null
           status?: Database["public"]["Enums"]["manual_fulfilment_status"]
@@ -2165,8 +2432,9 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           id?: string
+          journey_id?: string | null
           notes?: string | null
-          payment_request_id?: string
+          payment_request_id?: string | null
           readiness_confirmed?: boolean
           selected_product_label?: string | null
           status?: Database["public"]["Enums"]["manual_fulfilment_status"]
@@ -2195,6 +2463,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
             referencedColumns: ["id"]
           },
           {
@@ -2266,6 +2541,175 @@ export type Database = {
         }
         Relationships: []
       }
+      order_billing_snapshots: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          journey_id: string
+          monthly_minor: number
+          one_off_lines: Json
+          service_id: string | null
+          snapshot: Json
+          vat_included: boolean
+          vat_rate: number | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          journey_id: string
+          monthly_minor: number
+          one_off_lines?: Json
+          service_id?: string | null
+          snapshot: Json
+          vat_included?: boolean
+          vat_rate?: number | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          journey_id?: string
+          monthly_minor?: number
+          one_off_lines?: Json
+          service_id?: string | null
+          snapshot?: Json
+          vat_included?: boolean
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_billing_snapshots_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_billing_snapshots_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_journeys: {
+        Row: {
+          billing_anchor_day: number | null
+          completed_at: string | null
+          consolidated_email_sent_at: string | null
+          contract_acceptance_id: string | null
+          contract_accepted_at: string | null
+          contract_summary_id: string | null
+          cooling_off_ends_at: string | null
+          created_at: string
+          current_step: string
+          customer_id: string | null
+          decline_notes: string | null
+          decline_reason: string | null
+          declined_at: string | null
+          id: string
+          idempotency_key: string | null
+          ip: string | null
+          order_pack_sha256: string | null
+          order_pack_storage_key: string | null
+          payment_method: string | null
+          preferred_start_date: string | null
+          quote_continued_at: string | null
+          quote_id: string
+          start_date_selected_at: string | null
+          status: string
+          submitted_at: string | null
+          token_hash: string
+          ua: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_anchor_day?: number | null
+          completed_at?: string | null
+          consolidated_email_sent_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_accepted_at?: string | null
+          contract_summary_id?: string | null
+          cooling_off_ends_at?: string | null
+          created_at?: string
+          current_step?: string
+          customer_id?: string | null
+          decline_notes?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          ip?: string | null
+          order_pack_sha256?: string | null
+          order_pack_storage_key?: string | null
+          payment_method?: string | null
+          preferred_start_date?: string | null
+          quote_continued_at?: string | null
+          quote_id: string
+          start_date_selected_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          token_hash: string
+          ua?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_anchor_day?: number | null
+          completed_at?: string | null
+          consolidated_email_sent_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_accepted_at?: string | null
+          contract_summary_id?: string | null
+          cooling_off_ends_at?: string | null
+          created_at?: string
+          current_step?: string
+          customer_id?: string | null
+          decline_notes?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          ip?: string | null
+          order_pack_sha256?: string | null
+          order_pack_storage_key?: string | null
+          payment_method?: string | null
+          preferred_start_date?: string | null
+          quote_continued_at?: string | null
+          quote_id?: string
+          start_date_selected_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          token_hash?: string
+          ua?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_journeys_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_messages: {
         Row: {
           created_at: string
@@ -2304,14 +2748,19 @@ export type Database = {
           address_line1: string | null
           address_line2: string | null
           admin_notes: string | null
+          billing_anchor_day: number | null
           city: string | null
+          cooling_off_ends_at: string | null
           created_at: string
           id: string
           installation_date: string | null
+          journey_id: string | null
           notes: string | null
+          payment_method: string | null
           plan_name: string
           plan_price: number
           postcode: string
+          preferred_start_date: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["order_status"]
           updated_at: string
@@ -2321,14 +2770,19 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
+          billing_anchor_day?: number | null
           city?: string | null
+          cooling_off_ends_at?: string | null
           created_at?: string
           id?: string
           installation_date?: string | null
+          journey_id?: string | null
           notes?: string | null
+          payment_method?: string | null
           plan_name: string
           plan_price: number
           postcode: string
+          preferred_start_date?: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
@@ -2338,20 +2792,33 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
+          billing_anchor_day?: number | null
           city?: string | null
+          cooling_off_ends_at?: string | null
           created_at?: string
           id?: string
           installation_date?: string | null
+          journey_id?: string | null
           notes?: string | null
+          payment_method?: string | null
           plan_name?: string
           plan_price?: number
           postcode?: string
+          preferred_start_date?: string | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_attempts: {
         Row: {
@@ -2396,6 +2863,84 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          account_holder_name: string | null
+          active: boolean
+          billing_anchor_day: number
+          consent_at: string | null
+          consent_text: string | null
+          consent_version: string | null
+          created_at: string
+          customer_id: string | null
+          dd_setup_status: string | null
+          id: string
+          ip: string | null
+          journey_id: string | null
+          masked_account_last4: string | null
+          masked_sort_last2: string | null
+          method: string
+          service_id: string | null
+          ua: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          active?: boolean
+          billing_anchor_day: number
+          consent_at?: string | null
+          consent_text?: string | null
+          consent_version?: string | null
+          created_at?: string
+          customer_id?: string | null
+          dd_setup_status?: string | null
+          id?: string
+          ip?: string | null
+          journey_id?: string | null
+          masked_account_last4?: string | null
+          masked_sort_last2?: string | null
+          method: string
+          service_id?: string | null
+          ua?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          active?: boolean
+          billing_anchor_day?: number
+          consent_at?: string | null
+          consent_text?: string | null
+          consent_version?: string | null
+          created_at?: string
+          customer_id?: string | null
+          dd_setup_status?: string | null
+          id?: string
+          ip?: string | null
+          journey_id?: string | null
+          masked_account_last4?: string | null
+          masked_sort_last2?: string | null
+          method?: string
+          service_id?: string | null
+          ua?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_methods_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_methods_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
@@ -2648,7 +3193,9 @@ export type Database = {
           credit_note_prefix: string
           fair_pricing: Json
           id: string
+          invoice_issue_notice_days: number
           invoice_prefix: string
+          legacy_onboarding_emails_suppressed: boolean
           manual_mode_message: string
           residential_vat_display: string
           rewards_custom_rule: Json
@@ -2656,6 +3203,7 @@ export type Database = {
           rewards_unlock_rule: string
           sim_checkout_mode: string
           singleton: boolean
+          unified_journey_enabled: boolean
           updated_at: string
           updated_by: string | null
           vat_default_rate: number
@@ -2670,7 +3218,9 @@ export type Database = {
           credit_note_prefix?: string
           fair_pricing?: Json
           id?: string
+          invoice_issue_notice_days?: number
           invoice_prefix?: string
+          legacy_onboarding_emails_suppressed?: boolean
           manual_mode_message?: string
           residential_vat_display?: string
           rewards_custom_rule?: Json
@@ -2678,6 +3228,7 @@ export type Database = {
           rewards_unlock_rule?: string
           sim_checkout_mode?: string
           singleton?: boolean
+          unified_journey_enabled?: boolean
           updated_at?: string
           updated_by?: string | null
           vat_default_rate?: number
@@ -2692,7 +3243,9 @@ export type Database = {
           credit_note_prefix?: string
           fair_pricing?: Json
           id?: string
+          invoice_issue_notice_days?: number
           invoice_prefix?: string
+          legacy_onboarding_emails_suppressed?: boolean
           manual_mode_message?: string
           residential_vat_display?: string
           rewards_custom_rule?: Json
@@ -2700,6 +3253,7 @@ export type Database = {
           rewards_unlock_rule?: string
           sim_checkout_mode?: string
           singleton?: boolean
+          unified_journey_enabled?: boolean
           updated_at?: string
           updated_by?: string | null
           vat_default_rate?: number
@@ -3739,12 +4293,75 @@ export type Database = {
           },
         ]
       }
+      service_activation_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          job_type: string
+          journey_id: string | null
+          last_error: string | null
+          payload: Json
+          processed_at: string | null
+          service_id: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          job_type: string
+          journey_id?: string | null
+          last_error?: string | null
+          payload?: Json
+          processed_at?: string | null
+          service_id: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          job_type?: string
+          journey_id?: string | null
+          last_error?: string | null
+          payload?: Json
+          processed_at?: string | null
+          service_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_activation_outbox_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_activation_outbox_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
+          activation_confirmed_at: string | null
+          activation_confirmed_by: string | null
           activation_date: string | null
+          activation_notes: string | null
+          activation_reference: string | null
+          actual_activation_date: string | null
+          billing_anchor_day: number | null
+          billing_enabled: boolean
           created_at: string
           id: string
           identifiers: Json
+          journey_id: string | null
+          next_billing_date: string | null
           plan_name: string | null
           price_monthly: number
           provisioned_at: string | null
@@ -3757,10 +4374,19 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activation_confirmed_at?: string | null
+          activation_confirmed_by?: string | null
           activation_date?: string | null
+          activation_notes?: string | null
+          activation_reference?: string | null
+          actual_activation_date?: string | null
+          billing_anchor_day?: number | null
+          billing_enabled?: boolean
           created_at?: string
           id?: string
           identifiers?: Json
+          journey_id?: string | null
+          next_billing_date?: string | null
           plan_name?: string | null
           price_monthly?: number
           provisioned_at?: string | null
@@ -3773,10 +4399,19 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activation_confirmed_at?: string | null
+          activation_confirmed_by?: string | null
           activation_date?: string | null
+          activation_notes?: string | null
+          activation_reference?: string | null
+          actual_activation_date?: string | null
+          billing_anchor_day?: number | null
+          billing_enabled?: boolean
           created_at?: string
           id?: string
           identifiers?: Json
+          journey_id?: string | null
+          next_billing_date?: string | null
           plan_name?: string | null
           price_monthly?: number
           provisioned_at?: string | null
@@ -3788,7 +4423,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "services_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_copy: {
         Row: {
@@ -4611,6 +5254,10 @@ export type Database = {
         Args: { _payment_request_id: string }
         Returns: boolean
       }
+      can_create_manual_fulfilment_for_journey: {
+        Args: { _journey_id: string }
+        Returns: boolean
+      }
       can_override_red_margin: { Args: { _user_id: string }; Returns: boolean }
       can_send_quote: { Args: { _quote_id: string }; Returns: boolean }
       check_rate_limit: {
@@ -4941,6 +5588,22 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_order_journey_by_token: {
+        Args: { _token_hash: string }
+        Returns: {
+          billing_anchor_day: number
+          completed_at: string
+          contract_accepted_at: string
+          contract_summary_id: string
+          cooling_off_ends_at: string
+          current_step: string
+          id: string
+          payment_method: string
+          preferred_start_date: string
+          quote_id: string
+          status: string
+        }[]
+      }
       get_platform_settings: {
         Args: never
         Returns: {
@@ -4950,7 +5613,9 @@ export type Database = {
           credit_note_prefix: string
           fair_pricing: Json
           id: string
+          invoice_issue_notice_days: number
           invoice_prefix: string
+          legacy_onboarding_emails_suppressed: boolean
           manual_mode_message: string
           residential_vat_display: string
           rewards_custom_rule: Json
@@ -4958,6 +5623,7 @@ export type Database = {
           rewards_unlock_rule: string
           sim_checkout_mode: string
           singleton: boolean
+          unified_journey_enabled: boolean
           updated_at: string
           updated_by: string | null
           vat_default_rate: number

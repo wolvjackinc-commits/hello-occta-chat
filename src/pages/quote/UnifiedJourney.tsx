@@ -12,6 +12,7 @@ import DeclineDialog from "./journey/DeclineDialog";
 import AgreementStep from "./journey/AgreementStep";
 import StartDateStep from "./journey/StartDateStep";
 import PaymentStep from "./journey/PaymentStep";
+import ReviewStep, { CompletedStep } from "./journey/ReviewStep";
 
 type JourneyState = {
   id: string;
@@ -40,6 +41,7 @@ type StateResponse = {
   contract_summary_status: string | null;
   payment_method: any | null;
   dd_provider_template_available: boolean;
+  submitted_order: { id: string; order_number: string; status: string } | null;
   error?: string;
 };
 
@@ -193,6 +195,16 @@ export default function UnifiedJourney() {
             ddProviderTemplateAvailable={state.dd_provider_template_available}
             onSaved={load}
           />
+        ) : step === "review" ? (
+          <ReviewStep
+            token={token!}
+            quote={state.quote}
+            journey={state.journey}
+            paymentMethod={state.payment_method}
+            onSubmitted={load}
+          />
+        ) : step === "complete" || state.journey?.status === "completed" ? (
+          <CompletedStep orderNumber={state.submitted_order?.order_number ?? null} />
         ) : (
           <div className="border-4 border-foreground p-8 text-center">
             <p className="font-display uppercase text-xl mb-2">Next step coming online</p>

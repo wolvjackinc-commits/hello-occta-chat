@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -155,6 +156,11 @@ export const AdminReadiness = () => {
                     <TableCell className="text-sm">
                       <div>{row.inputs.pr?.customer_name ?? "—"}</div>
                       <div className="text-xs text-muted-foreground">{row.inputs.pr?.customer_email ?? ""}</div>
+                      {row.inputs.profile?.account_number && (
+                        <Link to={`/admin/customers/${row.inputs.profile.account_number}`} className="text-xs underline font-mono">
+                          {row.inputs.profile.account_number}
+                        </Link>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">

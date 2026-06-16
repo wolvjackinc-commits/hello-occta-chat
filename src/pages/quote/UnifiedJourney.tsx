@@ -11,6 +11,7 @@ import QuoteStep from "./journey/QuoteStep";
 import DeclineDialog from "./journey/DeclineDialog";
 import AgreementStep from "./journey/AgreementStep";
 import StartDateStep from "./journey/StartDateStep";
+import PaymentStep from "./journey/PaymentStep";
 
 type JourneyState = {
   id: string;
@@ -37,6 +38,8 @@ type StateResponse = {
   journey: JourneyState | null;
   contract_summary_available: boolean;
   contract_summary_status: string | null;
+  payment_method: any | null;
+  dd_provider_template_available: boolean;
   error?: string;
 };
 
@@ -181,6 +184,15 @@ export default function UnifiedJourney() {
           <AgreementStep token={token!} quote={state.quote} onAccepted={load} />
         ) : step === "start_date" ? (
           <StartDateStep token={token!} journey={state.journey} onSaved={load} />
+        ) : step === "payment" ? (
+          <PaymentStep
+            token={token!}
+            quote={state.quote}
+            journey={state.journey}
+            paymentMethod={state.payment_method}
+            ddProviderTemplateAvailable={state.dd_provider_template_available}
+            onSaved={load}
+          />
         ) : (
           <div className="border-4 border-foreground p-8 text-center">
             <p className="font-display uppercase text-xl mb-2">Next step coming online</p>

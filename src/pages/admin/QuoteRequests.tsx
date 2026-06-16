@@ -75,6 +75,8 @@ export const AdminQuoteRequests = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const [needsInfoMsg, setNeedsInfoMsg] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  const [speedDraft, setSpeedDraft] = useState({ download: "", upload: "", notes: "" });
+  const [savingSpeeds, setSavingSpeeds] = useState(false);
 
   const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   const fetchSupplierProduct = async (identifier?: string | null) => {
@@ -110,12 +112,17 @@ export const AdminQuoteRequests = () => {
   const loadLatestQuote = async (qrId: string) => {
     const { data } = await (supabase as any)
       .from("quotes")
-      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name, customer_intent_proceeded_at")
+      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name, customer_intent_proceeded_at, estimated_download_speed, estimated_upload_speed, speed_notes")
       .eq("quote_request_id", qrId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     setLatestQuote(data ?? null);
+    setSpeedDraft({
+      download: data?.estimated_download_speed != null ? String(data.estimated_download_speed) : "",
+      upload: data?.estimated_upload_speed != null ? String(data.estimated_upload_speed) : "",
+      notes: data?.speed_notes ?? "",
+    });
     setLatestSupplierProduct(null);
     setMarginInfo(null);
     if (data?.supplier_product_id) {
@@ -268,6 +275,32 @@ export const AdminQuoteRequests = () => {
   };
 
   const approveFinal = async () => {
+    return _approveFinal();
+  };
+  const saveSpeeds = async () => {
+    if (!latestQuote) return;
+    const dl = speedDraft.download.trim() === "" ? null : Number(speedDraft.download);
+    const ul = speedDraft.upload.trim() === "" ? null : Number(speedDraft.upload);
+    if ((dl !== null && Number.isNaN(dl)) || (ul !== null && Number.isNaN(ul))) {
+      toast({ title: "Speeds must be numeric (Mbps)", variant: "destructive" });
+      return;
+    }
+    setSavingSpeeds(true);
+    try {
+      const { error } = await (supabase as any).from("quotes").update({
+        estimated_download_speed: dl,
+        estimated_upload_speed: ul,
+        speed_notes: speedDraft.notes.trim() || null,
+      }).eq("id", latestQuote.id);
+      if (error) throw error;
+      toast({ title: "Speeds saved — visible to customer on quote page" });
+      if (selected?.id) await loadLatestQuote(selected.id);
+    } catch (e: any) {
+      toast({ title: "Could not save speeds", description: e?.message, variant: "destructive" });
+    } finally { setSavingSpeeds(false); }
+  };
+
+  const _approveFinal = async () => {
     if (!latestQuote) return;
     // Guard: require linked supplier product + wholesale cost before approval.
     if (!latestQuote.supplier_product_id) {
@@ -520,6 +553,26 @@ export const AdminQuoteRequests = () => {
                   {latestQuote.status === "approved" && (
                     <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
                   )}
+                  <div className="border-2 border-foreground/20 bg-background p-2 space-y-2">
+                    <p className="font-display uppercase text-[10px] tracking-widest">Estimated speeds (shown to customer)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-[10px]">Download (Mbps)</Label>
+                        <Input value={speedDraft.download} onChange={(e) => setSpeedDraft((p) => ({ ...p, download: e.target.value }))} inputMode="numeric" placeholder="e.g. 76" />
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Upload (Mbps)</Label>
+                        <Input value={speedDraft.upload} onChange={(e) => setSpeedDraft((p) => ({ ...p, upload: e.target.value }))} inputMode="numeric" placeholder="e.g. 20" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Speed notes (optional, customer-safe)</Label>
+                      <Textarea rows={2} value={speedDraft.notes} onChange={(e) => setSpeedDraft((p) => ({ ...p, notes: e.target.value }))} placeholder="e.g. Estimated range based on line check." />
+                    </div>
+                    <Button size="sm" variant="outline" onClick={saveSpeeds} disabled={savingSpeeds}>
+                      {savingSpeeds ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Save speeds
+                    </Button>
+                  </div>
                   {latestQuote.customer_intent_proceeded_at && (
                     <div className="border-2 border-primary bg-primary/5 p-2 text-xs">
                       ✓ Customer proceeded {format(new Date(latestQuote.customer_intent_proceeded_at), "dd MMM HH:mm")} — ready to generate Contract Summary.

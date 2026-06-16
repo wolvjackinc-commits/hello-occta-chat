@@ -16,6 +16,17 @@ import {
   FIRST_BILL_PROMISE, FAIR_PRICING_DEFAULTS,
 } from "@/lib/pricing/fairPricing";
 import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+const UK_TELECOM_PROVIDERS = [
+  "BT", "Sky", "TalkTalk", "Virgin Media", "Vodafone", "Plusnet",
+  "EE", "Now Broadband", "Shell Energy Broadband", "Hyperoptic",
+  "Community Fibre", "Zen Internet", "John Lewis Broadband",
+  "Origin Broadband", "KCOM", "Direct Save Telecom", "Utility Warehouse",
+  "Pop Telecom", "Onestream", "Cuckoo", "Other / Don't know",
+];
 
 type Resolved = {
   ok: true;
@@ -90,7 +101,14 @@ function BuildPlanInner() {
   const [resolved, setResolved] = useState<Resolved | null>(null);
   const [resolving, setResolving] = useState(false);
   const initialPostcode = searchParams.get("postcode") || "";
-  const [contact, setContact] = useState({ full_name: "", email: "", phone: "", postcode: initialPostcode, marketing_consent: false, privacy_ack: false });
+  const [contact, setContact] = useState({
+    full_name: "", email: "", phone: "",
+    address_line_1: "", address_line_2: "", town: "", county: "",
+    postcode: initialPostcode,
+    in_contract: "" as "" | "yes" | "no" | "unsure",
+    current_provider: "",
+    marketing_consent: false, privacy_ack: false,
+  });
   const [submitting, setSubmitting] = useState(false);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
@@ -118,10 +136,9 @@ function BuildPlanInner() {
   // Resolve price server-side whenever choices change
   useEffect(() => {
     if (!bucket || !term) { setResolved(null); return; }
-    // Don't call resolver until the user has picked a router and setup —
-    // the edge function requires both to be present.
-    if (!router || !setup) { setResolved(null); return; }
     if (isFallback) {
+      // Fallback estimate only needs bucket + term — show headline immediately
+      // so customers always see a price while they pick router/setup.
       const headline = FAIR_PRICING_DEFAULTS.headline[bucket][term];
       setResolved({
         ok: true,
@@ -132,6 +149,8 @@ function BuildPlanInner() {
       setResolving(false);
       return;
     }
+    // Live mode needs router + setup before calling the resolver.
+    if (!router || !setup) { setResolved(null); return; }
     let cancelled = false;
     setResolving(true);
     supabase.functions.invoke("resolve-build-plan-price", {

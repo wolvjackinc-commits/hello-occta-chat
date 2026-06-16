@@ -389,6 +389,28 @@ export const AdminQuoteRequests = () => {
     } finally { setBusy(null); }
   };
 
+  const sendApprovedQuote = async () => {
+    if (!latestQuote) return;
+    setBusy("send_quote");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: latestQuote.id, rotate_token: true } });
+      if (error || (data as any)?.error) {
+        const err = (data as any)?.error || error?.message;
+        if (err === "blocked_low_margin") {
+          toast({ title: "Blocked by margin guard", description: "Run a margin check / override before sending.", variant: "destructive" });
+        } else {
+          throw new Error((data as any)?.message || err);
+        }
+        return;
+      }
+      toast({ title: "Quote sent to customer", description: "They can now accept or decline via their secure link." });
+      qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
+      if (selected) await loadLatestQuote(selected.id);
+    } catch (e: any) {
+      toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+    } finally { setBusy(null); }
+  };
+
   const requestMoreInfo = async () => {
     if (!selected) return;
     if (needsInfoMsg.trim().length < 4) { toast({ title: "Message too short", variant: "destructive" }); return; }
@@ -618,7 +640,14 @@ export const AdminQuoteRequests = () => {
                     </Button>
                   )}
                   {latestQuote.status === "approved" && (
-                    <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
+                    <div className="space-y-2">
+                      <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
+                      <Button size="sm" variant="hero" disabled={busy === "send_quote"} onClick={sendApprovedQuote}>
+                        {busy === "send_quote" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                        {latestQuote.customer_intent_proceeded_at ? "Resend approved quote to customer" : "Send approved quote to customer"}
+                      </Button>
+                      <p className="text-[10px] text-muted-foreground">Emails the customer a secure link to accept or decline this quote.</p>
+                    </div>
                   )}
                   <div className="border-2 border-foreground/20 bg-background p-2 space-y-2">
                     <p className="font-display uppercase text-[10px] tracking-widest">Estimated speeds (shown to customer)</p>

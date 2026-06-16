@@ -22,6 +22,7 @@ import { QuotesTab } from "@/components/dashboard/tabs/QuotesTab";
 import { QuoteRequestsTab } from "@/components/dashboard/tabs/QuoteRequestsTab";
 import { ContractSummariesTab } from "@/components/dashboard/tabs/ContractSummariesTab";
 import { InvoicesTab } from "@/components/dashboard/tabs/InvoicesTab";
+import { PaymentsTab } from "@/components/dashboard/tabs/PaymentsTab";
 import { SupportTab } from "@/components/dashboard/tabs/SupportTab";
 import { ChatHistoryTab } from "@/components/dashboard/tabs/ChatHistoryTab";
 import { ComplaintsTab } from "@/components/dashboard/tabs/ComplaintsTab";
@@ -480,6 +481,7 @@ const Dashboard = () => {
                 ["quotes", "Quotes"],
                 ["quoteRequests", "Quote Requests"],
                 ["cs", "Contract Summaries"],
+                ["payments", "Payments & Receipts"],
                 ["invoices", "Invoices & Payments"],
                 ["support", "Support"],
                 ["chat", "Chat History"],
@@ -515,6 +517,7 @@ const Dashboard = () => {
             <TabsContent value="quotes"><QuotesTab userId={user.id} /></TabsContent>
             <TabsContent value="quoteRequests"><QuoteRequestsTab userId={user.id} /></TabsContent>
             <TabsContent value="cs"><ContractSummariesTab userId={user.id} /></TabsContent>
+            <TabsContent value="payments"><PaymentsTab userId={user.id} /></TabsContent>
             <TabsContent value="invoices"><InvoicesTab userId={user.id} /></TabsContent>
             <TabsContent value="support"><SupportTab tickets={tickets} /></TabsContent>
             <TabsContent value="chat"><ChatHistoryTab userId={user.id} /></TabsContent>

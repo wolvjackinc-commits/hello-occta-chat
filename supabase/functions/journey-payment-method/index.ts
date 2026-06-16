@@ -68,16 +68,24 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 async function encryptBankDetails(plain: Record<string, unknown>) {
-  const rawKey = Deno.env.get("DD_FIELD_ENC_KEY");
+  const rawKey = (Deno.env.get("DD_FIELD_ENC_KEY") ?? "").trim();
   if (!rawKey) throw new Error("DD_FIELD_ENC_KEY_missing");
   let keyBytes: Uint8Array;
-  if (/^[0-9a-f]{64}$/i.test(rawKey)) {
-    keyBytes = hexToBytes(rawKey);
+  const cleaned = rawKey.replace(/\s+/g, "");
+  if (/^[0-9a-f]{64}$/i.test(cleaned)) {
+    keyBytes = hexToBytes(cleaned);
   } else {
-    const bin = atob(rawKey.replace(/-/g, "+").replace(/_/g, "/"));
+    // Accept base64 / base64url, with or without padding.
+    let b64 = cleaned.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = b64.length % 4;
+    if (pad === 2) b64 += "==";
+    else if (pad === 3) b64 += "=";
+    else if (pad === 1) throw new Error("DD_FIELD_ENC_KEY_bad_base64");
+    let bin: string;
+    try { bin = atob(b64); } catch { throw new Error("DD_FIELD_ENC_KEY_decode_failed"); }
     keyBytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
   }
-  if (keyBytes.length !== 32) throw new Error("DD_FIELD_ENC_KEY_bad_length");
+  if (keyBytes.length !== 32) throw new Error(`DD_FIELD_ENC_KEY_bad_length:${keyBytes.length}`);
   const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, ["encrypt"]);
   const nonce = crypto.getRandomValues(new Uint8Array(12));
   const enc = new TextEncoder().encode(JSON.stringify(plain));

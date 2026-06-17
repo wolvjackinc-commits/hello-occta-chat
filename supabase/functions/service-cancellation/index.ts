@@ -152,6 +152,11 @@ Deno.serve(async (req) => {
         await appendHistory(admin, caseId, "requested", nextStatus, user.id, isStaff ? "admin" : "customer", "preview_computed");
       }
 
+      // Durable manual-review reconciliation task when blocking reasons exist
+      if (reasons.length > 0) {
+        await admin.rpc("flag_cancellation_manual_review", { p_case_id: caseId, p_reasons: reasons });
+      }
+
       // Strip internal-only fields for customer responses
       const out = isStaff
         ? preview

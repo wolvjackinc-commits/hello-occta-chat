@@ -17,6 +17,7 @@ import { CustomerEditDialog } from "@/components/admin/CustomerEditDialog";
 import { CustomerDDSection } from "@/components/admin/CustomerDDSection";
 import { CustomerBillingSettings } from "@/components/admin/CustomerBillingSettings";
 import { JourneyInternalNotes } from "@/components/admin/JourneyInternalNotes";
+import { OrderOperationsCard } from "@/components/admin/OrderOperationsCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { logAudit } from "@/lib/audit";
@@ -279,6 +280,7 @@ export const AdminCustomerDetail = () => {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="operations">Operations</TabsTrigger>
           <TabsTrigger value="quote-contract">Quote &amp; Contract</TabsTrigger>
           <TabsTrigger value="payments">Payments &amp; Receipts</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -296,6 +298,7 @@ export const AdminCustomerDetail = () => {
               pr={(data?.paymentRequests ?? [])[0] ?? null}
               quotes={data?.quotes ?? []}
             />
+            <ReconciliationWarnings userId={overview.id} />
             <Card className="border-2 border-foreground p-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>

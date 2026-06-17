@@ -132,6 +132,10 @@ export const AdminQuotes = () => {
         return;
       }
       toast({ title: `Quote ${quoteNumber} sent` });
+      const token = (data as any)?.public_token;
+      if (token) {
+        setTokenDialog({ open: true, kind: "quote", token, quoteNumber });
+      }
       qc.invalidateQueries({ queryKey: ["admin-quotes"] });
     } catch (e: any) {
       toast({ title: "Send failed", description: e?.message, variant: "destructive" });

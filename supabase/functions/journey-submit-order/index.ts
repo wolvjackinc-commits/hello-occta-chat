@@ -343,6 +343,47 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Phase 2 — append a single account-access block to the consolidated
+      // onboarding email. Newly-created customers get a short-lived
+      // set-password recovery link; existing customers get a sign-in link
+      // to their dashboard. The link itself is never logged.
+      let accountAccessBlock = "";
+      try {
+        if (canonicalCustomerId) {
+          const PUBLIC_APP_ORIGIN = "https://www.occta.co.uk";
+          if (customerNewlyCreated) {
+            const link = await supabase.auth.admin.generateLink({
+              type: "recovery",
+              email: qr.email,
+              options: { redirectTo: `${PUBLIC_APP_ORIGIN}/auth?welcome=1` },
+            });
+            const actionLink = link.data?.properties?.action_link ?? null;
+            if (actionLink) {
+              accountAccessBlock = `
+                <p style="font-size:14px;margin-top:18px;">
+                  <strong>Set up your OCCTA account.</strong> Use the secure
+                  link below to choose a password and access your customer
+                  dashboard. This link expires for your security.
+                </p>
+                <p style="margin:14px 0;">
+                  <a href="${escapeHtml(actionLink)}" style="display:inline-block;padding:12px 18px;background:#000;color:#facc15;font-weight:700;text-decoration:none;border:3px solid #000;text-transform:uppercase;letter-spacing:0.05em;">Set my password</a>
+                </p>`;
+            }
+          } else {
+            accountAccessBlock = `
+              <p style="font-size:14px;margin-top:18px;">
+                You already have an OCCTA account — sign in any time to track
+                your order, manage Direct Debit and download documents.
+              </p>
+              <p style="margin:14px 0;">
+                <a href="https://www.occta.co.uk/dashboard" style="display:inline-block;padding:12px 18px;background:#000;color:#facc15;font-weight:700;text-decoration:none;border:3px solid #000;text-transform:uppercase;letter-spacing:0.05em;">Open my dashboard</a>
+              </p>`;
+          }
+        }
+      } catch (e) {
+        console.warn("[journey-submit-order] account access link gen failed", (e as Error).message);
+      }
+
       const body = `
         <p>Hi ${escapeHtml(qr.full_name)},</p>
         <p>Thanks for confirming your order with OCCTA — here's a summary you can keep.</p>
@@ -358,6 +399,7 @@ Deno.serve(async (req) => {
         <p style="font-size:14px;">
           Your signed <strong>Contract Summary</strong> is attached to this email as a PDF for your records${csSignedUrl ? `, and can also be viewed online via the button below` : ""}.
         </p>
+        ${accountAccessBlock}
         <p style="font-size:13px;color:#444;">
           <strong>Your 14-day cooling-off period</strong> ends on ${escapeHtml(new Date(journey.cooling_off_ends_at as string).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}. You can cancel within this window for a full refund of anything paid.
         </p>

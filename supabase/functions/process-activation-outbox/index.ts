@@ -1,0 +1,169 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
+};
+
+const escapeHtml = (s: string) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as any)[c],
+  );
+
+const fmtMoney = (minor: number) =>
+  `£${(Math.round(minor) / 100).toFixed(2)}`;
+
+const fmtDate = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleDateString("en-GB", {
+      day: "2-digit", month: "long", year: "numeric",
+    });
+  } catch { return iso; }
+};
+
+function buildEmailHtml(p: any, dashboardUrl: string) {
+  const speed = (p.estimated_download_speed
+    ? `${p.estimated_download_speed} Mbps` : "");
+  return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#111;background:#fff">
+  <div style="max-width:600px;margin:0 auto;padding:24px;border:4px solid #111">
+    <h1 style="font-size:22px;margin:0 0 12px">Your OCCTA service is live</h1>
+    <p>Hi ${escapeHtml(p.recipient_name || "there")},</p>
+    <p>Good news — your service has been activated.</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
+      <tr><td style="padding:6px 0;color:#555">Account number</td><td style="text-align:right"><b>${escapeHtml(p.account_number || "")}</b></td></tr>
+      <tr><td style="padding:6px 0;color:#555">Order number</td><td style="text-align:right"><b>${escapeHtml(p.occta_order_number || "")}</b></td></tr>
+      <tr><td style="padding:6px 0;color:#555">Plan</td><td style="text-align:right">${escapeHtml(p.plan_name || "")}${speed ? " · " + escapeHtml(speed) : ""}</td></tr>
+      <tr><td style="padding:6px 0;color:#555">Activation date</td><td style="text-align:right">${escapeHtml(fmtDate(p.activation_date))}</td></tr>
+      <tr><td style="padding:6px 0;color:#555">Monthly price</td><td style="text-align:right">${fmtMoney(p.monthly_price_minor || 0)}</td></tr>
+      <tr><td style="padding:6px 0;color:#555">Payment method</td><td style="text-align:right">${escapeHtml(p.payment_method_label || "")}</td></tr>
+      <tr><td style="padding:6px 0;color:#555">Next billing date</td><td style="text-align:right">${escapeHtml(fmtDate(p.next_billing_date))}</td></tr>
+    </table>
+    <p><b>What happens next:</b> Your first invoice will be issued on your billing date. You can manage everything from your dashboard.</p>
+    <p><a href="${dashboardUrl}" style="display:inline-block;background:#111;color:#fff;padding:12px 18px;text-decoration:none;border:2px solid #111;font-weight:bold">Open dashboard</a></p>
+    <p style="font-size:12px;color:#666;margin-top:24px">Need help? Reply to this email or visit our Support page. No contracts. No pressure.</p>
+  </div></body></html>`;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const cronSecret = req.headers.get("x-cron-secret");
+  const expectedSecret = Deno.env.get("CRON_JOB_SECRET");
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader && cronSecret !== expectedSecret) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // Claim a batch of due rows. NOTE: we never INSERT another outbox row —
+  // we only update the single row created by confirm_service_live_tx.
+  const nowIso = new Date().toISOString();
+  const { data: due, error } = await supabase
+    .from("service_activation_outbox")
+    .select("id, service_id, payload, attempts, status")
+    .in("status", ["pending", "retry_scheduled"])
+    .lte("next_attempt_at", nowIso)
+    .limit(25);
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const results: any[] = [];
+  for (const row of due ?? []) {
+    // Mark processing first (single-flight). If another worker already moved
+    // it, skip silently.
+    const { data: claimed } = await supabase
+      .from("service_activation_outbox")
+      .update({ status: "processing", last_attempted_at: nowIso })
+      .eq("id", row.id)
+      .in("status", ["pending", "retry_scheduled"])
+      .select("id")
+      .maybeSingle();
+    if (!claimed) { results.push({ id: row.id, skipped: true }); continue; }
+
+    try {
+      // Enrich payload with the canonical payment method type (no bank details).
+      const { data: svc } = await supabase
+        .from("services").select("order_id")
+        .eq("id", row.service_id).maybeSingle();
+      let paymentLabel = "Direct Debit / Invoice link";
+      let speedDown: number | null = null;
+      if (svc?.order_id) {
+        const { data: ord } = await supabase
+          .from("orders")
+          .select("payment_method_id, contract_summary_id")
+          .eq("id", svc.order_id).maybeSingle();
+        if (ord?.payment_method_id) {
+          const { data: pm } = await supabase
+            .from("payment_methods").select("method_type")
+            .eq("id", ord.payment_method_id).maybeSingle();
+          if (pm?.method_type === "direct_debit") paymentLabel = "Direct Debit";
+          else if (pm?.method_type === "invoice_link") paymentLabel = "Invoice with secure payment link";
+        }
+        if (ord?.contract_summary_id) {
+          const { data: cs } = await supabase
+            .from("contract_summaries").select("estimated_download_speed")
+            .eq("id", ord.contract_summary_id).maybeSingle();
+          speedDown = cs?.estimated_download_speed ?? null;
+        }
+      }
+      const payload = {
+        ...row.payload,
+        payment_method_label: paymentLabel,
+        estimated_download_speed: speedDown,
+      };
+
+      const dashboardUrl = (Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk") + "/dashboard";
+      const html = buildEmailHtml(payload, dashboardUrl);
+
+      // Send via existing send-email function. Failure -> retry (no new row).
+      const sendResp = await supabase.functions.invoke("send-email", {
+        body: {
+          to: payload.recipient_email,
+          subject: `Your OCCTA service is live — ${payload.occta_order_number ?? ""}`.trim(),
+          html,
+          idempotencyKey: `activation:${row.service_id}`,
+        },
+      });
+
+      if (sendResp.error) throw new Error(sendResp.error.message || "send_failed");
+
+      await supabase.from("service_activation_outbox")
+        .update({
+          status: "sent",
+          processed_at: new Date().toISOString(),
+          attempts: (row.attempts ?? 0) + 1,
+          provider_message_id: (sendResp.data as any)?.message_id ?? null,
+          last_error: null,
+        })
+        .eq("id", row.id);
+      results.push({ id: row.id, sent: true });
+    } catch (e) {
+      const attempts = (row.attempts ?? 0) + 1;
+      const giveUp = attempts >= 8;
+      const backoffMin = Math.min(60, Math.pow(2, attempts));
+      const next = new Date(Date.now() + backoffMin * 60_000).toISOString();
+      await supabase.from("service_activation_outbox")
+        .update({
+          status: giveUp ? "failed" : "retry_scheduled",
+          attempts,
+          last_error: String((e as Error)?.message ?? e).slice(0, 1000),
+          next_attempt_at: next,
+        })
+        .eq("id", row.id);
+      results.push({ id: row.id, error: String((e as Error)?.message ?? e), retry_in_minutes: giveUp ? null : backoffMin });
+    }
+  }
+
+  return new Response(JSON.stringify({ processed: results.length, results }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+});

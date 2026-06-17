@@ -1970,6 +1970,91 @@ export type Database = {
           },
         ]
       }
+      first_billing_jobs: {
+        Row: {
+          activation_date: string
+          amount_minor: number | null
+          attempts: number
+          billing_anchor_day: number
+          blocker: string | null
+          created_at: string
+          currency: string
+          customer_id: string | null
+          id: string
+          is_pro_rata: boolean
+          last_error: string | null
+          next_billing_date: string
+          order_id: string
+          payload: Json
+          processed_at: string | null
+          service_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activation_date: string
+          amount_minor?: number | null
+          attempts?: number
+          billing_anchor_day: number
+          blocker?: string | null
+          created_at?: string
+          currency?: string
+          customer_id?: string | null
+          id?: string
+          is_pro_rata?: boolean
+          last_error?: string | null
+          next_billing_date: string
+          order_id: string
+          payload?: Json
+          processed_at?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activation_date?: string
+          amount_minor?: number | null
+          attempts?: number
+          billing_anchor_day?: number
+          blocker?: string | null
+          created_at?: string
+          currency?: string
+          customer_id?: string | null
+          id?: string
+          is_pro_rata?: boolean
+          last_error?: string | null
+          next_billing_date?: string
+          order_id?: string
+          payload?: Json
+          processed_at?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "first_billing_jobs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "first_billing_jobs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "first_billing_jobs_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fraud_flags: {
         Row: {
           created_at: string
@@ -6250,6 +6335,19 @@ export type Database = {
           earliest_selectable_start_date: string
         }[]
       }
+      confirm_service_live_tx: {
+        Args: {
+          _activation_notes: string
+          _activation_reference: string
+          _actor: string
+          _actual_activation_date: string
+          _customer_note: string
+          _giacom_reference: string
+          _internal_note: string
+          _order_id: string
+        }
+        Returns: Json
+      }
       current_reward_unlock_rule: {
         Args: never
         Returns: Database["public"]["Enums"]["reward_unlock_rule"]
@@ -6716,6 +6814,10 @@ export type Database = {
           service_type: string
           status: string
         }[]
+      }
+      next_anchor_billing_date: {
+        Args: { _anchor_day: number; _from: string }
+        Returns: string
       }
       quote_below_retail_floor: {
         Args: { _quote_id: string }

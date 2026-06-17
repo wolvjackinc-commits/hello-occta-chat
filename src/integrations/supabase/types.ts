@@ -63,6 +63,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "acceptance_certificates_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: true
+            referencedRelation: "customer_contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "acceptance_certificates_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
             isOneToOne: false
@@ -74,6 +81,13 @@ export type Database = {
             columns: ["contract_summary_id"]
             isOneToOne: false
             referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceptance_certificates_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
             referencedColumns: ["id"]
           },
           {
@@ -1455,6 +1469,13 @@ export type Database = {
             foreignKeyName: "contract_acceptances_journey_id_fkey"
             columns: ["journey_id"]
             isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
             referencedRelation: "order_journeys"
             referencedColumns: ["id"]
           },
@@ -1819,6 +1840,13 @@ export type Database = {
           uk_account_confirmed?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "dd_intake_requests_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "dd_intake_requests_journey_id_fkey"
             columns: ["journey_id"]
@@ -2694,6 +2722,13 @@ export type Database = {
             foreignKeyName: "journey_cancellation_events_journey_id_fkey"
             columns: ["journey_id"]
             isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_cancellation_events_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
             referencedRelation: "order_journeys"
             referencedColumns: ["id"]
           },
@@ -2728,6 +2763,13 @@ export type Database = {
           ua?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "journey_decline_events_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "journey_decline_events_journey_id_fkey"
             columns: ["journey_id"]
@@ -2998,6 +3040,13 @@ export type Database = {
             foreignKeyName: "manual_fulfilment_orders_journey_id_fkey"
             columns: ["journey_id"]
             isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
             referencedRelation: "order_journeys"
             referencedColumns: ["id"]
           },
@@ -3129,6 +3178,13 @@ export type Database = {
           vat_rate?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "order_billing_snapshots_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_billing_snapshots_journey_id_fkey"
             columns: ["journey_id"]
@@ -3287,6 +3343,13 @@ export type Database = {
             columns: ["contract_acceptance_id"]
             isOneToOne: false
             referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_acceptances"
             referencedColumns: ["id"]
           },
           {
@@ -3547,6 +3610,13 @@ export type Database = {
             foreignKeyName: "orders_journey_id_fkey"
             columns: ["journey_id"]
             isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
             referencedRelation: "order_journeys"
             referencedColumns: ["id"]
           },
@@ -3667,6 +3737,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_methods_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_methods_journey_id_fkey"
             columns: ["journey_id"]
@@ -3827,6 +3904,13 @@ export type Database = {
             columns: ["contract_acceptance_id"]
             isOneToOne: false
             referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_acceptances"
             referencedColumns: ["id"]
           },
           {
@@ -5151,6 +5235,13 @@ export type Database = {
             foreignKeyName: "service_activation_outbox_journey_id_fkey"
             columns: ["journey_id"]
             isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_activation_outbox_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
             referencedRelation: "order_journeys"
             referencedColumns: ["id"]
           },
@@ -5293,6 +5384,13 @@ export type Database = {
             columns: ["contract_acceptance_id"]
             isOneToOne: false
             referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_acceptances"
             referencedColumns: ["id"]
           },
           {
@@ -5443,6 +5541,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "services_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "services_journey_id_fkey"
             columns: ["journey_id"]
@@ -5927,6 +6032,144 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_contract_acceptances: {
+        Row: {
+          acceptance_text: string | null
+          acceptance_text_version: string | null
+          accepted_at: string | null
+          accepted_at_europe_london: string | null
+          accepted_by_email: string | null
+          accepted_by_name: string | null
+          account_number: string | null
+          address_confirmed: boolean | null
+          checkbox_confirmed: boolean | null
+          checkbox_consent: boolean | null
+          checkbox_details_correct: boolean | null
+          checkbox_received_read: boolean | null
+          checkbox_understand_charges: boolean | null
+          contract_summary_id: string | null
+          created_at: string | null
+          cs_version: number | null
+          customer_id: string | null
+          id: string | null
+          journey_id: string | null
+          privacy_version: string | null
+          quote_id: string | null
+          quote_request_id: string | null
+          source_route: string | null
+          terms_version: string | null
+        }
+        Insert: {
+          acceptance_text?: string | null
+          acceptance_text_version?: string | null
+          accepted_at?: string | null
+          accepted_at_europe_london?: string | null
+          accepted_by_email?: string | null
+          accepted_by_name?: string | null
+          account_number?: string | null
+          address_confirmed?: boolean | null
+          checkbox_confirmed?: boolean | null
+          checkbox_consent?: boolean | null
+          checkbox_details_correct?: boolean | null
+          checkbox_received_read?: boolean | null
+          checkbox_understand_charges?: boolean | null
+          contract_summary_id?: string | null
+          created_at?: string | null
+          cs_version?: number | null
+          customer_id?: string | null
+          id?: string | null
+          journey_id?: string | null
+          privacy_version?: string | null
+          quote_id?: string | null
+          quote_request_id?: string | null
+          source_route?: string | null
+          terms_version?: string | null
+        }
+        Update: {
+          acceptance_text?: string | null
+          acceptance_text_version?: string | null
+          accepted_at?: string | null
+          accepted_at_europe_london?: string | null
+          accepted_by_email?: string | null
+          accepted_by_name?: string | null
+          account_number?: string | null
+          address_confirmed?: boolean | null
+          checkbox_confirmed?: boolean | null
+          checkbox_consent?: boolean | null
+          checkbox_details_correct?: boolean | null
+          checkbox_received_read?: boolean | null
+          checkbox_understand_charges?: boolean | null
+          contract_summary_id?: string | null
+          created_at?: string | null
+          cs_version?: number | null
+          customer_id?: string | null
+          id?: string | null
+          journey_id?: string | null
+          privacy_version?: string | null
+          quote_id?: string | null
+          quote_request_id?: string | null
+          source_route?: string | null
+          terms_version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_contract_summaries: {
         Row: {
           accepted_at: string | null
@@ -6224,6 +6467,132 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_order_journeys: {
+        Row: {
+          billing_anchor_day: number | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          consolidated_email_sent_at: string | null
+          contract_acceptance_id: string | null
+          contract_accepted_at: string | null
+          contract_summary_id: string | null
+          cooling_off_acknowledged: boolean | null
+          cooling_off_acknowledged_at: string | null
+          cooling_off_ends_at: string | null
+          created_at: string | null
+          current_step: string | null
+          customer_id: string | null
+          decline_reason: string | null
+          declined_at: string | null
+          earliest_selectable_start_date: string | null
+          id: string | null
+          order_id: string | null
+          payment_method: string | null
+          preferred_start_date: string | null
+          quote_continued_at: string | null
+          quote_id: string | null
+          start_date_selected_at: string | null
+          status: string | null
+          submitted_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_anchor_day?: number | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          consolidated_email_sent_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_accepted_at?: string | null
+          contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean | null
+          cooling_off_acknowledged_at?: string | null
+          cooling_off_ends_at?: string | null
+          created_at?: string | null
+          current_step?: string | null
+          customer_id?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          earliest_selectable_start_date?: string | null
+          id?: string | null
+          order_id?: string | null
+          payment_method?: string | null
+          preferred_start_date?: string | null
+          quote_continued_at?: string | null
+          quote_id?: string | null
+          start_date_selected_at?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_anchor_day?: number | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          consolidated_email_sent_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_accepted_at?: string | null
+          contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean | null
+          cooling_off_acknowledged_at?: string | null
+          cooling_off_ends_at?: string | null
+          created_at?: string | null
+          current_step?: string | null
+          customer_id?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          earliest_selectable_start_date?: string | null
+          id?: string | null
+          order_id?: string | null
+          payment_method?: string | null
+          preferred_start_date?: string | null
+          quote_continued_at?: string | null
+          quote_id?: string | null
+          start_date_selected_at?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_journeys_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_orders: {
         Row: {
           address_line1: string | null
@@ -6289,6 +6658,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_journey_id_fkey"
             columns: ["journey_id"]
@@ -6584,6 +6960,13 @@ export type Database = {
           updated_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_journey_id_fkey"
             columns: ["journey_id"]

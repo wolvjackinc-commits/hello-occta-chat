@@ -80,7 +80,7 @@ export function CustomerJourneyTimeline({ userId, userEmail }: { userId: string;
         supabase.from("quote_requests").select("status,created_at").or(qrFilter).order("created_at", { ascending: false }).limit(1),
         supabase.from("quotes").select("status,created_at").eq("customer_id", userId).order("created_at", { ascending: false }).limit(1),
         supabase.from("customer_contract_summaries" as any).select("issued_at").eq("customer_id", userId).order("issued_at", { ascending: false }).limit(1),
-        supabase.from("contract_acceptances").select("accepted_at").eq("customer_id", userId).order("accepted_at", { ascending: false }).limit(1),
+        supabase.from("customer_contract_acceptances" as any).select("accepted_at").order("accepted_at", { ascending: false }).limit(1),
         supabase.from("payment_requests").select("status,webhook_verified,paid_at,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(1),
       ]);
 

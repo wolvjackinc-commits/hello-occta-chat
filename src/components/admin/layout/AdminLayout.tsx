@@ -208,7 +208,11 @@ export const AdminLayout = () => {
           type: "customer",
           label: profile.full_name || profile.email || "Customer",
           description: profile.account_number || profile.email || profile.phone,
-          href: `/admin/customers/${profile.id}`,
+          // Never route by UUID. Profiles without an account_number go
+          // through the reconciliation queue instead of a broken link.
+          href: profile.account_number
+            ? `/admin/customers/${profile.account_number}`
+            : "/admin/tasks?filter=reconciliation",
         });
       });
 
@@ -254,11 +258,15 @@ export const AdminLayout = () => {
     const lookupCustomer = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, account_number")
         .eq("account_number", normalizedSearchTerm)
         .maybeSingle();
       if (!isActive || !data) return;
-      navigate(`/admin/customers/${data.id}`);
+      navigate(
+        data.account_number
+          ? `/admin/customers/${data.account_number}`
+          : "/admin/tasks?filter=reconciliation",
+      );
       setSearchTerm("");
     };
     lookupCustomer();
@@ -445,23 +453,48 @@ export const AdminLayout = () => {
             <span className="font-display text-lg">Operations Console</span>
           </div>
           <nav className="space-y-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
+            {navSections.map((section) => {
+              const Icon = section.icon;
+              if (section.to) {
+                return (
+                  <NavLink
+                    key={section.label}
+                    to={section.to}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm transition ${
+                        isActive
+                          ? "border-foreground bg-secondary text-foreground"
+                          : "text-muted-foreground hover:border-foreground/40 hover:bg-secondary/60"
+                      }`
+                    }
+                  >
+                    <Icon className="h-4 w-4" />
+                    {section.label}
+                  </NavLink>
+                );
+              }
               return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm transition ${
-                      isActive
-                        ? "border-foreground bg-secondary text-foreground"
-                        : "text-muted-foreground hover:border-foreground/40 hover:bg-secondary/60"
-                    }`
-                  }
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </NavLink>
+                <div key={section.label} className="space-y-1">
+                  <div className="flex items-center gap-3 px-3 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                    <Icon className="h-4 w-4" />
+                    {section.label}
+                  </div>
+                  {(section.children ?? []).map((child) => (
+                    <NavLink
+                      key={child.to}
+                      to={child.to}
+                      className={({ isActive }) =>
+                        `block rounded-lg border border-transparent pl-10 pr-3 py-1.5 text-sm transition ${
+                          isActive
+                            ? "border-foreground bg-secondary text-foreground"
+                            : "text-muted-foreground hover:border-foreground/40 hover:bg-secondary/60"
+                        }`
+                      }
+                    >
+                      {child.label}
+                    </NavLink>
+                  ))}
+                </div>
               );
             })}
           </nav>

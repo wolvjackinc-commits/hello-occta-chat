@@ -321,7 +321,17 @@ const Dashboard = () => {
   const userFullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer";
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
   const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
-  const allOrders = [...orders, ...guestOrders.map(g => ({ ...g, status: 'pending' as const, service_type: g.service_type as 'broadband' | 'sim' | 'landline' }))];
+  // Phase 7: do NOT override a guest order's status to "pending". When a
+  // canonical order exists the canonical lifecycle status is authoritative.
+  // Otherwise preserve whatever status the guest order already carries.
+  const allOrders = [
+    ...orders,
+    ...guestOrders.map(g => ({
+      ...g,
+      status: (g.status as any) ?? 'order_received',
+      service_type: g.service_type as 'broadband' | 'sim' | 'landline',
+    })),
+  ];
   
   // Filter invoice files from user files (for document download section)
   const invoiceFiles = userFiles.filter(f => 

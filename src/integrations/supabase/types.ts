@@ -1982,13 +1982,17 @@ export type Database = {
           created_at: string
           currency: string
           customer_id: string | null
+          dd_setup_task_id: string | null
           full_cycle_days: number | null
           id: string
+          invoice_id: string | null
           is_pro_rata: boolean
           last_error: string | null
+          next_attempt_at: string
           next_billing_date: string
           order_id: string
           payload: Json
+          payment_request_id: string | null
           period_end: string | null
           period_start: string | null
           processed_at: string | null
@@ -2007,13 +2011,17 @@ export type Database = {
           created_at?: string
           currency?: string
           customer_id?: string | null
+          dd_setup_task_id?: string | null
           full_cycle_days?: number | null
           id?: string
+          invoice_id?: string | null
           is_pro_rata?: boolean
           last_error?: string | null
+          next_attempt_at?: string
           next_billing_date: string
           order_id: string
           payload?: Json
+          payment_request_id?: string | null
           period_end?: string | null
           period_start?: string | null
           processed_at?: string | null
@@ -2032,13 +2040,17 @@ export type Database = {
           created_at?: string
           currency?: string
           customer_id?: string | null
+          dd_setup_task_id?: string | null
           full_cycle_days?: number | null
           id?: string
+          invoice_id?: string | null
           is_pro_rata?: boolean
           last_error?: string | null
+          next_attempt_at?: string
           next_billing_date?: string
           order_id?: string
           payload?: Json
+          payment_request_id?: string | null
           period_end?: string | null
           period_start?: string | null
           processed_at?: string | null
@@ -4965,9 +4977,12 @@ export type Database = {
           id: string
           job_type: string
           journey_id: string | null
+          last_attempted_at: string | null
           last_error: string | null
+          next_attempt_at: string
           payload: Json
           processed_at: string | null
+          provider_message_id: string | null
           service_id: string
           status: string
         }
@@ -4977,9 +4992,12 @@ export type Database = {
           id?: string
           job_type: string
           journey_id?: string | null
+          last_attempted_at?: string | null
           last_error?: string | null
+          next_attempt_at?: string
           payload?: Json
           processed_at?: string | null
+          provider_message_id?: string | null
           service_id: string
           status?: string
         }
@@ -4989,9 +5007,12 @@ export type Database = {
           id?: string
           job_type?: string
           journey_id?: string | null
+          last_attempted_at?: string | null
           last_error?: string | null
+          next_attempt_at?: string
           payload?: Json
           processed_at?: string | null
+          provider_message_id?: string | null
           service_id?: string
           status?: string
         }
@@ -6442,6 +6463,15 @@ export type Database = {
           earliest_selectable_start_date: string
         }[]
       }
+      compute_first_billing_amount_minor: {
+        Args: {
+          _billable_days: number
+          _full_cycle_days: number
+          _is_pro_rata: boolean
+          _monthly_minor: number
+        }
+        Returns: number
+      }
       confirm_service_live_tx: {
         Args: {
           _activation_notes: string
@@ -6779,6 +6809,7 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_my_customer_overview: { Args: never; Returns: Json }
       get_order_journey_by_token: {
         Args: { _token_hash: string }
         Returns: {

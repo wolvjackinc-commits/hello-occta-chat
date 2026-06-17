@@ -52,6 +52,64 @@ export async function ensureCustomerFromAcceptedContract(
   supabase: Supabase,
   input: EnsureCustomerInput,
 ): Promise<EnsureCustomerResult> {
+  try {
+    return await ensureCustomerImpl(supabase, input);
+  } catch (e) {
+    const message = (e as Error)?.message ?? "unknown_error";
+    const code = safeErrorCode(message);
+    // Durable, high-priority reconciliation task. Never include tokens,
+    // passwords or full bank details — only the safe identifiers needed
+    // for an operator to triage.
+    const task = await supabase
+      .from("admin_reconciliation_tasks")
+      .insert({
+        kind: "ensure_customer_failed",
+        severity: "high",
+        payload: {
+          journey_id: input.journey_id,
+          contract_summary_id: input.contract_summary_id,
+          contract_acceptance_id: input.contract_acceptance_id,
+          email_normalised: await safeEmailForTask(supabase, input.contract_summary_id),
+          error_code: code,
+          occurred_at: new Date().toISOString(),
+        },
+      })
+      .select("id")
+      .single();
+    return {
+      ok: false,
+      reason: `exception:${code}`,
+      reconciliation_task_id: task.data?.id,
+    };
+  }
+}
+
+function safeErrorCode(message: string): string {
+  // Strip URLs, emails, tokens, bank refs; keep a short tag.
+  const compact = String(message).slice(0, 120).replace(/[^a-zA-Z0-9 _:-]/g, "_");
+  return compact.replace(/\s+/g, "_").slice(0, 80) || "unknown";
+}
+
+async function safeEmailForTask(
+  supabase: Supabase,
+  contract_summary_id: string,
+): Promise<string | null> {
+  try {
+    const { data } = await supabase
+      .from("contract_summaries")
+      .select("customer_email_snapshot")
+      .eq("id", contract_summary_id)
+      .maybeSingle();
+    return normaliseEmail(data?.customer_email_snapshot) || null;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureCustomerImpl(
+  supabase: Supabase,
+  input: EnsureCustomerInput,
+): Promise<EnsureCustomerResult> {
   const { journey_id, contract_summary_id, contract_acceptance_id } = input;
 
   // 1. Load the CS + journey + quote_request to find the canonical email.

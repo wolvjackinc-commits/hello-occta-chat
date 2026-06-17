@@ -172,6 +172,7 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
         giacom_reference: "", giacom_product_ref: "", router_reference: "",
         entered_in_giacom_at: "", expected_activation_date: "",
         customer_note: "", internal_note: "", override: false,
+        actual_activation_date: "", activation_reference: "", activation_notes: "", confirm: false,
       });
       qc.invalidateQueries({ queryKey: ["order-operations", orderId] });
       qc.invalidateQueries({ queryKey: ["order-history", orderId] });

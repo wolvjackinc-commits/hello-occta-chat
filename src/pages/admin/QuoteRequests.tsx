@@ -22,7 +22,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX } from "lucide-react";
+import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy } from "lucide-react";
 import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
 
 const STATUS_OPTIONS = ["all", "new", "in_review", "needs_info", "assigned", "checking", "draft_quote_created", "quoted", "final_quote_ready", "expired", "rejected", "closed", "converted"] as const;
@@ -78,6 +78,7 @@ export const AdminQuoteRequests = () => {
   const [speedDraft, setSpeedDraft] = useState({ download: "", upload: "", notes: "" });
   const [savingSpeeds, setSavingSpeeds] = useState(false);
   const [latestCs, setLatestCs] = useState<any>(null);
+  const [shareDialog, setShareDialog] = useState<{ open: boolean; url?: string; quoteNumber?: string }>({ open: false });
   const [csBusy, setCsBusy] = useState<string | null>(null);
 
   const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -298,7 +299,15 @@ export const AdminQuoteRequests = () => {
       };
       const { data, error } = await supabase.functions.invoke("create-quote", { body });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
-      toast({ title: `Quote ${(data as any).quote_number} created` });
+      const created = data as any;
+      toast({ title: `Quote ${created.quote_number} created` });
+      if (created.public_token) {
+        setShareDialog({
+          open: true,
+          url: `https://www.occta.co.uk/quote/${created.public_token}`,
+          quoteNumber: created.quote_number,
+        });
+      }
       await (supabase as any).from("quote_requests").update({ status: "draft_quote_created" }).eq("id", selected.id);
       setQuoteDialogOpen(false);
       await loadLatestQuote(selected.id);

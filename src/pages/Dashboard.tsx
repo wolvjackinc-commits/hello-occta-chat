@@ -158,6 +158,11 @@ const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | GuestOrder | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
+  // Phase 7 (corrected): the canonical RPC is the principal source of truth
+  // for account number, lifecycle status, service, invoices, payment
+  // requests, receipts, documents and timeline. Local tab queries remain
+  // only as supplementary detail (tickets, files, etc).
+  const [overview, setOverview] = useState<any>(null);
 
   useEffect(() => {
     logClientEvent({ event_type: "dashboard_view", title: "dashboard.opened", source_module: "dashboard" });
@@ -210,14 +215,19 @@ const Dashboard = () => {
     setIsDataLoading(true);
     
     try {
-      // Fetch all data in parallel
-      const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult, invoicesResult] = await Promise.all([
+      // Phase 7 (corrected): call canonical overview RPC first — it owns
+      // account number, order/service/invoice/PR/receipt/timeline data.
+      const overviewPromise = (supabase as any).rpc("get_my_customer_overview");
+      // Fetch supplementary data in parallel (tickets, files, guest order
+      // fallbacks, raw profile for legacy fields not in the RPC).
+      const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult, invoicesResult, overviewRes] = await Promise.all([
         supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
         supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("customer_guest_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
         supabase.from("user_files").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("invoices").select("id, invoice_number, total, status, due_date, issue_date").eq("user_id", userId).in("status", ["draft", "sent", "overdue"]).order("due_date", { ascending: true }),
+        overviewPromise,
       ]);
 
       if (profileResult.data) {
@@ -242,6 +252,10 @@ const Dashboard = () => {
 
       if (invoicesResult.data) {
         setInvoices(invoicesResult.data);
+      }
+
+      if (overviewRes && (overviewRes as any).data) {
+        setOverview((overviewRes as any).data);
       }
     } catch (error) {
       logError("Dashboard.fetchUserData", error);

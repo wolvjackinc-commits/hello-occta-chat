@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp, sendResendEmail, brutalistEmailShell, escapeHtml } from "../_shared/quoteHelpers.ts";
+import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 /**
@@ -23,7 +24,7 @@ const Schema = z.object({
   final_consent: z.literal(true),
 });
 
-function genOrderNumber() {
+function fallbackOrderNumber() {
   const ts = new Date();
   const ymd = `${ts.getUTCFullYear()}${String(ts.getUTCMonth() + 1).padStart(2, "0")}${String(ts.getUTCDate()).padStart(2, "0")}`;
   const rand = Math.floor(Math.random() * 9000 + 1000);

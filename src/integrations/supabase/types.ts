@@ -2058,6 +2058,13 @@ export type Database = {
             foreignKeyName: "first_billing_jobs_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "first_billing_jobs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -2757,6 +2764,7 @@ export type Database = {
           id: string
           journey_id: string | null
           notes: string | null
+          order_id: string | null
           payment_request_id: string | null
           readiness_confirmed: boolean
           selected_product_label: string | null
@@ -2777,6 +2785,7 @@ export type Database = {
           id?: string
           journey_id?: string | null
           notes?: string | null
+          order_id?: string | null
           payment_request_id?: string | null
           readiness_confirmed?: boolean
           selected_product_label?: string | null
@@ -2797,6 +2806,7 @@ export type Database = {
           id?: string
           journey_id?: string | null
           notes?: string | null
+          order_id?: string | null
           payment_request_id?: string | null
           readiness_confirmed?: boolean
           selected_product_label?: string | null
@@ -2847,6 +2857,27 @@ export type Database = {
             columns: ["journey_id"]
             isOneToOne: false
             referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
@@ -3225,6 +3256,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "order_status_history_order_id_fkey"
@@ -6178,6 +6216,56 @@ export type Database = {
           },
         ]
       }
+      manual_fulfilment_eligible_orders: {
+        Row: {
+          account_number: string | null
+          actual_activation_date: string | null
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          contract_summary_id: string | null
+          cooling_off_ends_at: string | null
+          created_at: string | null
+          cs_number: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          entered_in_giacom_at: string | null
+          estimated_download_speed: number | null
+          estimated_upload_speed: number | null
+          expected_activation_date: string | null
+          giacom_product_ref: string | null
+          giacom_reference: string | null
+          journey_id: string | null
+          lifecycle_status: string | null
+          occta_order_number: string | null
+          order_id: string | null
+          payment_method: string | null
+          payment_method_id: string | null
+          pdf_storage_key: string | null
+          plan_name: string | null
+          plan_price: number | null
+          postcode: string | null
+          preferred_start_date: string | null
+          service_type: Database["public"]["Enums"]["service_type"] | null
+          tracker_id: string | null
+          tracker_notes: string | null
+          tracker_status:
+            | Database["public"]["Enums"]["manual_fulfilment_status"]
+            | null
+          tracker_updated_at: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings_public: {
         Row: {
           api_mode: string | null
@@ -6332,6 +6420,10 @@ export type Database = {
         Args: { _journey_id: string }
         Returns: boolean
       }
+      can_create_manual_fulfilment_for_order: {
+        Args: { _order_id: string }
+        Returns: boolean
+      }
       can_override_red_margin: { Args: { _user_id: string }; Returns: boolean }
       can_send_quote: { Args: { _quote_id: string }; Returns: boolean }
       check_rate_limit: {
@@ -6361,6 +6453,10 @@ export type Database = {
           _internal_note: string
           _order_id: string
         }
+        Returns: Json
+      }
+      create_manual_fulfilment_tracker_for_order: {
+        Args: { _actor: string; _notes?: string; _order_id: string }
         Returns: Json
       }
       current_reward_unlock_rule: {

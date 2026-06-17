@@ -6303,6 +6303,7 @@ export type Database = {
       generate_invoice_number: { Args: never; Returns: string }
       generate_occta_order_number: { Args: never; Returns: string }
       generate_payment_request_number: { Args: never; Returns: string }
+      generate_safe_account_number: { Args: never; Returns: string }
       generate_user_account_number: { Args: never; Returns: string }
       get_customer_communication_messages: {
         Args: { _thread_id: string }

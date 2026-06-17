@@ -216,10 +216,16 @@ const ComplianceIssuesQueueContent = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => navigate(`/admin/customers/${issue.id}`)}
+                        onClick={() =>
+                          navigate(
+                            issue.account_number
+                              ? `/admin/customers/${issue.account_number}`
+                              : "/admin/tasks?filter=reconciliation",
+                          )
+                        }
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        Open Customer
+                        {issue.account_number ? "Open Customer" : "Reconcile customer"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

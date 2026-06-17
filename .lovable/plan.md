@@ -228,3 +228,23 @@ Migrations list, edge-function list, route/component diff, customer-creation + a
 ---
 
 Confirm and I'll switch to build mode and execute in this order: (1) migrations, (2) `ensure-customer-from-accepted-contract` + journey-submit-order wiring, (3) `order-lifecycle-transition` + `confirm-service-live`, (4) Customer 360 Operations tab + link fixes, (5) Manual Fulfilment rewrite, (6) dashboard collapse + status fix, (7) admin nav restructure, (8) cancellation/ETF flows, (9) backfill + report.
+## Phase 4 corrections + Phase 5 — complete
+
+### Phase 4 corrections
+- `confirm_service_live_tx` now writes the `service_activation_outbox` AND `first_billing_jobs` rows inside the same SECURITY DEFINER transaction; any failure rolls activation back.
+- Pro-rata logic rewritten in Postgres NUMERIC (no JS floats). New columns on `first_billing_jobs`: `period_start`, `period_end`, `billable_days`, `full_cycle_days`, `calc_method`. Activation exactly on anchor day → full cycle, not pro-rata.
+- Monetary amounts stored as integer minor units (`amount_minor`).
+- Function EXECUTE revoked from PUBLIC/anon/authenticated; service_role only.
+- Edge function no longer dual-writes outboxes.
+
+### Phase 5 — admin navigation + account-number routing
+- Created `src/lib/adminLinks.ts` (`customerDetailHref`, `customerDetailHrefOrReconciliation`).
+- `CustomerDetail.tsx` now: (a) silently redirects legacy UUID bookmarks to the account-number route, (b) shows "Account reconciliation required" card when no account number exists.
+- Replaced UUID-based customer routes in:
+  - `AdminLayout` global search + account-number lookup effect
+  - `GlobalSearch` (already used account_number)
+  - `PaymentRequests` "Open Customer" dropdown
+  - `CustomersNeedingAttentionQueue`, `ComplianceIssuesQueue`
+  - `CustomerQuickActions` (no UUID fallback)
+- AdminLayout sidebar reorganised into exactly 8 sections: Overview / Sales / Customers / Orders / Billing / Support / Products & Pricing / Settings & Compliance. Rewards, Referrals and Campaigns hidden behind `VITE_FEATURE_REWARDS|REFERRALS|CAMPAIGNS` flags (default off).
+- No routes deleted in `App.tsx` — every legacy bookmark still resolves.

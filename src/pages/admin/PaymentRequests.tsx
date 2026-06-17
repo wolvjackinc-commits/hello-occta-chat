@@ -572,10 +572,17 @@ export const AdminPaymentRequests = () => {
                             )}
                             {request.user_id && (
                               <DropdownMenuItem
-                                onClick={() => window.open(`/admin/customers/${request.user_id}`, "_blank")}
+                                onClick={() =>
+                                  window.open(
+                                    request.account_number
+                                      ? `/admin/customers/${request.account_number}`
+                                      : "/admin/tasks?filter=reconciliation",
+                                    "_blank",
+                                  )
+                                }
                               >
                                 <ExternalLink className="mr-2 h-4 w-4" />
-                                Open Customer
+                                {request.account_number ? "Open Customer" : "Reconcile customer"}
                               </DropdownMenuItem>
                             )}
                             {request.account_number && (

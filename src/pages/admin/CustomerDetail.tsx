@@ -75,6 +75,63 @@ export const AdminCustomerDetail = () => {
   const { toast } = useToast();
   const [updatingServiceId, setUpdatingServiceId] = useState<string | null>(null);
 
+  // Legacy bookmarks may still be UUID-based. Detect that and either
+  // redirect to the canonical account-number route, or surface the
+  // "Account reconciliation required" screen — never render the page
+  // using a UUID.
+  const looksLikeUuid =
+    !!rawAccountNumber &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      rawAccountNumber,
+    );
+  const { data: legacyLookup, isLoading: legacyLoading } = useQuery({
+    queryKey: ["admin-customer-uuid-fallback", rawAccountNumber],
+    enabled: looksLikeUuid,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, account_number")
+        .eq("id", rawAccountNumber!)
+        .maybeSingle();
+      return data ?? null;
+    },
+  });
+  if (looksLikeUuid) {
+    if (legacyLoading) {
+      return (
+        <div className="p-6 text-sm text-muted-foreground">
+          Resolving customer…
+        </div>
+      );
+    }
+    const acct = legacyLookup?.account_number
+      ? normalizeAccountNumber(legacyLookup.account_number)
+      : null;
+    if (acct && isAccountNumberValid(acct)) {
+      // Redirect bookmarks silently to the canonical route.
+      navigate(`/admin/customers/${acct}`, { replace: true });
+      return null;
+    }
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={() => navigate("/admin/customers")} className="gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to customers
+        </Button>
+        <Card className="border-2 border-destructive p-8 text-center bg-destructive/5">
+          <AlertTriangle className="h-6 w-6 text-destructive mx-auto mb-3" />
+          <p className="font-display text-lg mb-2">Account reconciliation required</p>
+          <p className="text-sm text-muted-foreground">
+            This customer has no account number yet. Open the reconciliation queue to assign one before continuing.
+          </p>
+          <Button className="mt-4" onClick={() => navigate("/admin/tasks?filter=reconciliation")}>
+            Open reconciliation queue
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   const { data, refetch, isLoading, isError } = useQuery({
     queryKey: ["admin-customer", accountNumber],
     enabled: !!accountNumber && isAccountNumberValid(accountNumber),

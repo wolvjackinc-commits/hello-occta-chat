@@ -193,10 +193,16 @@ const CustomersNeedingAttentionQueueContent = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => navigate(`/admin/customers/${customer.id}`)}
+                        onClick={() =>
+                          navigate(
+                            customer.account_number
+                              ? `/admin/customers/${customer.account_number}`
+                              : "/admin/tasks?filter=reconciliation",
+                          )
+                        }
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        Open Customer
+                        {customer.account_number ? "Open Customer" : "Reconcile customer"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

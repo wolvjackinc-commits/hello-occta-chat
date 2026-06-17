@@ -8,11 +8,12 @@ import { corsHeaders, jsonResponse, getServiceClient } from "../_shared/quoteHel
  * into an active customer service and starts the billing lifecycle.
  *
  * - Staff-only (admin / super_admin / finance_admin).
- * - All required-condition checks are enforced inside
- *   `confirm_service_live_tx` (SECURITY DEFINER, single transaction).
- * - Outboxes (service-activation email + first billing job) are
- *   inserted AFTER the core transaction commits; both have unique
- *   indexes so retries cannot create duplicates.
+ * - All state changes — service upsert, order promotion, history,
+ *   activation-email outbox row and first-billing job — are written
+ *   in a single transaction inside `confirm_service_live_tx`
+ *   (SECURITY DEFINER). If any of the outbox writes fail the whole
+ *   activation is rolled back, so we never leave a "live" service
+ *   without its durable email/billing jobs.
  * - Never calls Giacom / supplier / Worldpay / DD providers.
  */
 
@@ -109,63 +110,14 @@ Deno.serve(async (req) => {
   const serviceId: string | null = tx?.service_id ?? null;
   const alreadyLive: boolean = !!tx?.already_live;
 
-  // Load order + customer for outbox payloads.
+  // NOTE: service-activation-email outbox and first-billing-job rows are
+  // written atomically inside `confirm_service_live_tx`. Do not insert
+  // them here — that would double-write or hide rollback failures.
+
+  // Load order for audit metadata only (no PII duplicated downstream).
   const { data: order } = await svc.from("orders")
-    .select("id, occta_order_number, customer_id, plan_name, address_line1, address_line2, city, postcode, actual_activation_date, expected_activation_date, payment_method")
+    .select("id, occta_order_number, customer_id")
     .eq("id", body.order_id).maybeSingle();
-  const { data: profile } = order?.customer_id
-    ? await svc.from("profiles").select("email, full_name, account_number").eq("id", order.customer_id).maybeSingle()
-    : { data: null } as any;
-
-  // --- Outbox 1: activation email (idempotent via UNIQUE(service_id, job_type)).
-  if (serviceId && !alreadyLive) {
-    await svc.from("service_activation_outbox").insert({
-      service_id: serviceId,
-      journey_id: null,
-      job_type: "activation_email",
-      status: "pending",
-      payload: {
-        recipient_email: profile?.email ?? null,
-        recipient_name: profile?.full_name ?? null,
-        account_number: profile?.account_number ?? null,
-        occta_order_number: order?.occta_order_number ?? null,
-        plan_name: order?.plan_name ?? null,
-        activation_date: body.actual_activation_date,
-        next_billing_date: tx?.next_billing_date ?? null,
-        monthly_price: tx?.monthly_price ?? null,
-      },
-    }).then(() => {}, () => { /* duplicate ignored */ });
-
-    // --- Outbox 2: first billing job. Money is stored in minor units.
-    const monthlyMinor =
-      typeof tx?.monthly_price === "number" || typeof tx?.monthly_price === "string"
-        ? Math.round(Number(tx.monthly_price) * 100)
-        : null;
-    const activation = new Date(body.actual_activation_date + "T00:00:00Z");
-    const nextBilling = tx?.next_billing_date ? new Date(tx.next_billing_date + "T00:00:00Z") : null;
-    const diffDays = nextBilling
-      ? Math.round((nextBilling.getTime() - activation.getTime()) / 86_400_000)
-      : 0;
-    const isProRata = diffDays > 0 && diffDays < 28;
-
-    await svc.from("first_billing_jobs").insert({
-      order_id: body.order_id,
-      service_id: serviceId,
-      customer_id: order?.customer_id ?? null,
-      status: "pending",
-      activation_date: body.actual_activation_date,
-      billing_anchor_day: tx?.billing_anchor_day,
-      next_billing_date: tx?.next_billing_date,
-      is_pro_rata: isProRata,
-      amount_minor: monthlyMinor,
-      currency: "GBP",
-      blocker: "awaiting_billing_engine_handover",
-      payload: {
-        plan_name: order?.plan_name ?? null,
-        pro_rata_days: isProRata ? diffDays : null,
-      },
-    }).then(() => {}, () => { /* duplicate ignored */ });
-  }
 
   // Customer-visible timeline event (one only).
   if (!alreadyLive) {
@@ -177,6 +129,10 @@ Deno.serve(async (req) => {
         order_id: body.order_id,
         service_id: serviceId,
         activation_date: body.actual_activation_date,
+        is_pro_rata: tx?.is_pro_rata ?? null,
+        billable_days: tx?.billable_days ?? null,
+        full_cycle_days: tx?.full_cycle_days ?? null,
+        calc_method: tx?.calc_method ?? null,
       },
       _order_id: body.order_id,
       _customer_id: order?.customer_id ?? null,
@@ -194,6 +150,11 @@ Deno.serve(async (req) => {
         activation_reference_present: true,
         giacom_reference_present: !!body.giacom_reference,
         next_billing_date: tx?.next_billing_date ?? null,
+        is_pro_rata: tx?.is_pro_rata ?? null,
+        billable_days: tx?.billable_days ?? null,
+        full_cycle_days: tx?.full_cycle_days ?? null,
+        monthly_price_minor: tx?.monthly_price_minor ?? null,
+        calc_method: tx?.calc_method ?? null,
       },
     });
   }
@@ -206,5 +167,10 @@ Deno.serve(async (req) => {
     next_billing_date: tx?.next_billing_date ?? null,
     minimum_term_end_date: tx?.minimum_term_end_date ?? null,
     billing_anchor_day: tx?.billing_anchor_day ?? null,
+    is_pro_rata: tx?.is_pro_rata ?? null,
+    billable_days: tx?.billable_days ?? null,
+    full_cycle_days: tx?.full_cycle_days ?? null,
+    monthly_price_minor: tx?.monthly_price_minor ?? null,
+    calc_method: tx?.calc_method ?? null,
   });
 });

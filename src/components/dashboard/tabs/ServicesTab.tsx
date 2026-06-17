@@ -12,7 +12,6 @@ type Service = {
   status: string;
   activation_date: string | null;
   price_monthly: number | null;
-  supplier_reference: string | null;
 };
 
 export function ServicesTab({ userId }: { userId: string }) {
@@ -21,9 +20,10 @@ export function ServicesTab({ userId }: { userId: string }) {
 
   useEffect(() => {
     (async () => {
+      // Phase 7: customer-safe — never expose supplier_reference / supplier_*
       const { data } = await supabase
         .from("services")
-        .select("id,service_type,plan_name,status,activation_date,price_monthly,supplier_reference")
+        .select("id,service_type,plan_name,status,activation_date,price_monthly")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       setServices((data as Service[]) || []);
@@ -49,7 +49,6 @@ export function ServicesTab({ userId }: { userId: string }) {
                 <p className="text-xs text-muted-foreground capitalize">
                   {s.service_type} · {contractType}
                   {s.activation_date && ` · Active ${format(new Date(s.activation_date), "dd MMM yyyy")}`}
-                  {s.supplier_reference && ` · Ref ${s.supplier_reference}`}
                 </p>
               </div>
               <Badge className="border-2 border-foreground capitalize">{s.status}</Badge>

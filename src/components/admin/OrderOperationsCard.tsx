@@ -56,6 +56,7 @@ type ActionKey =
   | "resume"
   | "cancellation_requested"
   | "failed"
+  | "confirm_live"
   | "note";
 
 const ACTIONS: { key: ActionKey; label: string; to: string; override?: boolean }[] = [
@@ -66,6 +67,7 @@ const ACTIONS: { key: ActionKey; label: string; to: string; override?: boolean }
   { key: "resume", label: "Resume processing", to: "processing" },
   { key: "cancellation_requested", label: "Start cancellation", to: "cancellation_requested" },
   { key: "failed", label: "Mark failed", to: "failed" },
+  { key: "confirm_live", label: "Confirm service live", to: "__live__" },
   { key: "note", label: "Add note", to: "__note__" },
 ];
 
@@ -82,6 +84,10 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
     customer_note: "",
     internal_note: "",
     override: false,
+    actual_activation_date: "",
+    activation_reference: "",
+    activation_notes: "",
+    confirm: false,
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -118,6 +124,32 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
     if (!openAction || !order) return;
     setSubmitting(true);
     try {
+      // Special path: confirm-service-live uses its own edge function.
+      if (openAction.key === "confirm_live") {
+        const payload: Record<string, unknown> = {
+          order_id: order.id,
+          actual_activation_date: form.actual_activation_date,
+          activation_reference: form.activation_reference,
+          activation_notes: form.activation_notes,
+          giacom_reference: form.giacom_reference || undefined,
+          customer_note: form.customer_note || undefined,
+          internal_note: form.internal_note || undefined,
+          confirm: form.confirm,
+        };
+        const { data, error } = await supabase.functions.invoke("confirm-service-live", { body: payload });
+        if (error) throw error;
+        if (data?.error) throw new Error(String(data.message ?? data.error));
+        toast({
+          title: data?.already_live ? "Already live" : "Service activated",
+          description: `Next billing: ${data?.next_billing_date ?? "—"}`,
+        });
+        setOpenAction(null);
+        qc.invalidateQueries({ queryKey: ["order-operations", orderId] });
+        qc.invalidateQueries({ queryKey: ["order-history", orderId] });
+        qc.invalidateQueries({ queryKey: ["admin-customer"] });
+        return;
+      }
+
       const payload: Record<string, unknown> = {
         order_id: order.id,
         to_status: openAction.to === "__note__" ? (order.lifecycle_status ?? "order_received") : openAction.to,
@@ -140,6 +172,7 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
         giacom_reference: "", giacom_product_ref: "", router_reference: "",
         entered_in_giacom_at: "", expected_activation_date: "",
         customer_note: "", internal_note: "", override: false,
+        actual_activation_date: "", activation_reference: "", activation_notes: "", confirm: false,
       });
       qc.invalidateQueries({ queryKey: ["order-operations", orderId] });
       qc.invalidateQueries({ queryKey: ["order-history", orderId] });
@@ -162,6 +195,7 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
 
   const isActive = (a: typeof ACTIONS[number]) => {
     if (a.key === "note") return true;
+    if (a.key === "confirm_live") return lifecycle === "committed";
     if (a.key === "record_giacom") return lifecycle === "order_received";
     if (a.key === "resume") return lifecycle === "on_hold";
     if (a.key === "failed") return ["ordered","processing","committed"].includes(lifecycle);
@@ -282,23 +316,62 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
                 </div>
               </>
             )}
-            {openAction?.to !== "ordered" && openAction?.to !== "committed" && (
+            {openAction?.key === "confirm_live" && (
+              <>
+                <div className="text-xs border-2 border-foreground p-2 bg-muted/40">
+                  This activates the service, starts billing on the customer's
+                  preferred anchor day, and queues the activation email. No
+                  supplier/DD/Worldpay action is taken.
+                </div>
+                <div>
+                  <Label>Actual activation date *</Label>
+                  <Input type="date" value={form.actual_activation_date}
+                    onChange={(e) => setForm({ ...form, actual_activation_date: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Activation reference *</Label>
+                  <Input value={form.activation_reference}
+                    onChange={(e) => setForm({ ...form, activation_reference: e.target.value })}
+                    placeholder="Supplier / Giacom activation reference" />
+                </div>
+                <div>
+                  <Label>Giacom reference (only if not yet recorded)</Label>
+                  <Input value={form.giacom_reference}
+                    onChange={(e) => setForm({ ...form, giacom_reference: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Activation notes (optional)</Label>
+                  <Textarea value={form.activation_notes}
+                    onChange={(e) => setForm({ ...form, activation_notes: e.target.value })} />
+                </div>
+                <label className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" checked={form.confirm}
+                    onChange={(e) => setForm({ ...form, confirm: e.target.checked })} />
+                  <span>I confirm this service is live and billing should begin.</span>
+                </label>
+              </>
+            )}
+            {openAction?.to !== "ordered" && openAction?.to !== "committed" && openAction?.key !== "confirm_live" && (
               <div>
                 <Label>Giacom reference (optional)</Label>
                 <Input value={form.giacom_reference}
                   onChange={(e) => setForm({ ...form, giacom_reference: e.target.value })} />
               </div>
             )}
-            <div>
-              <Label>Internal note</Label>
-              <Textarea value={form.internal_note}
-                onChange={(e) => setForm({ ...form, internal_note: e.target.value })} />
-            </div>
-            <div>
-              <Label>Customer-visible note (optional)</Label>
-              <Textarea value={form.customer_note}
-                onChange={(e) => setForm({ ...form, customer_note: e.target.value })} />
-            </div>
+            {openAction?.key !== "confirm_live" && (
+              <>
+                <div>
+                  <Label>Internal note</Label>
+                  <Textarea value={form.internal_note}
+                    onChange={(e) => setForm({ ...form, internal_note: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Customer-visible note (optional)</Label>
+                  <Textarea value={form.customer_note}
+                    onChange={(e) => setForm({ ...form, customer_note: e.target.value })} />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAction(null)} disabled={submitting}>Cancel</Button>

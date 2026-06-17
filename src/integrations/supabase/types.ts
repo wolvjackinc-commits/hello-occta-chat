@@ -2431,6 +2431,10 @@ export type Database = {
           created_at: string
           currency: string
           due_date: string | null
+          email_attempts: number
+          email_error: string | null
+          email_provider_message_id: string | null
+          email_sent_at: string | null
           id: string
           invoice_number: string
           invoice_type: string
@@ -2440,6 +2444,9 @@ export type Database = {
           notes: string | null
           order_id: string | null
           overdue_notified_at: string | null
+          pdf_generated_at: string | null
+          pdf_hash: string | null
+          pdf_storage_key: string | null
           pdf_url: string | null
           pro_rata: Json | null
           service_id: string | null
@@ -2459,6 +2466,10 @@ export type Database = {
           created_at?: string
           currency?: string
           due_date?: string | null
+          email_attempts?: number
+          email_error?: string | null
+          email_provider_message_id?: string | null
+          email_sent_at?: string | null
           id?: string
           invoice_number: string
           invoice_type?: string
@@ -2468,6 +2479,9 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           overdue_notified_at?: string | null
+          pdf_generated_at?: string | null
+          pdf_hash?: string | null
+          pdf_storage_key?: string | null
           pdf_url?: string | null
           pro_rata?: Json | null
           service_id?: string | null
@@ -2487,6 +2501,10 @@ export type Database = {
           created_at?: string
           currency?: string
           due_date?: string | null
+          email_attempts?: number
+          email_error?: string | null
+          email_provider_message_id?: string | null
+          email_sent_at?: string | null
           id?: string
           invoice_number?: string
           invoice_type?: string
@@ -2496,6 +2514,9 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           overdue_notified_at?: string | null
+          pdf_generated_at?: string | null
+          pdf_hash?: string | null
+          pdf_storage_key?: string | null
           pdf_url?: string | null
           pro_rata?: Json | null
           service_id?: string | null
@@ -6536,6 +6557,10 @@ export type Database = {
         Returns: Json
       }
       expire_old_quotes: { Args: never; Returns: number }
+      first_billing_job_is_eligible: {
+        Args: { _job_id: string }
+        Returns: boolean
+      }
       generate_acceptance_certificate_number: { Args: never; Returns: string }
       generate_account_number: { Args: never; Returns: string }
       generate_complaint_reference: { Args: never; Returns: string }

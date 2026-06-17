@@ -82,5 +82,5 @@ Deno.serve(async (req) => {
     actor_type: "admin", actor_id: auth.userId,
   });
 
-  return jsonResponse({ ok: true });
+  return jsonResponse({ ok: true, public_token: publicToken, public_url: url });
 });

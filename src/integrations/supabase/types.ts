@@ -190,6 +190,42 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_reconciliation_tasks: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+        }
+        Relationships: []
+      }
       admin_task_notes: {
         Row: {
           author_id: string
@@ -2016,6 +2052,7 @@ export type Database = {
           id: string
           in_contract: boolean | null
           linked_at: string | null
+          linked_order_id: string | null
           marketing_consent: boolean | null
           order_number: string
           phone: string
@@ -2046,6 +2083,7 @@ export type Database = {
           id?: string
           in_contract?: boolean | null
           linked_at?: string | null
+          linked_order_id?: string | null
           marketing_consent?: boolean | null
           order_number: string
           phone: string
@@ -2076,6 +2114,7 @@ export type Database = {
           id?: string
           in_contract?: boolean | null
           linked_at?: string | null
+          linked_order_id?: string | null
           marketing_consent?: boolean | null
           order_number?: string
           phone?: string
@@ -2865,6 +2904,7 @@ export type Database = {
           linked_at: string | null
           linked_customer_id: string | null
           manual_review_required: boolean
+          order_id: string | null
           order_pack_sha256: string | null
           order_pack_storage_key: string | null
           payment_method: string | null
@@ -2909,6 +2949,7 @@ export type Database = {
           linked_at?: string | null
           linked_customer_id?: string | null
           manual_review_required?: boolean
+          order_id?: string | null
           order_pack_sha256?: string | null
           order_pack_storage_key?: string | null
           payment_method?: string | null
@@ -2953,6 +2994,7 @@ export type Database = {
           linked_at?: string | null
           linked_customer_id?: string | null
           manual_review_required?: boolean
+          order_id?: string | null
           order_pack_sha256?: string | null
           order_pack_storage_key?: string | null
           payment_method?: string | null
@@ -3030,68 +3072,191 @@ export type Database = {
         }
         Relationships: []
       }
+      order_status_history: {
+        Row: {
+          actual_activation_date: string | null
+          changed_at: string
+          changed_by: string | null
+          customer_note: string | null
+          expected_activation_date: string | null
+          giacom_reference: string | null
+          id: string
+          internal_note: string | null
+          metadata: Json
+          new_status: string
+          order_id: string
+          previous_status: string | null
+          source: string
+        }
+        Insert: {
+          actual_activation_date?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          customer_note?: string | null
+          expected_activation_date?: string | null
+          giacom_reference?: string | null
+          id?: string
+          internal_note?: string | null
+          metadata?: Json
+          new_status: string
+          order_id: string
+          previous_status?: string | null
+          source?: string
+        }
+        Update: {
+          actual_activation_date?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          customer_note?: string | null
+          expected_activation_date?: string | null
+          giacom_reference?: string | null
+          id?: string
+          internal_note?: string | null
+          metadata?: Json
+          new_status?: string
+          order_id?: string
+          previous_status?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
+          actual_activation_date: string | null
           address_line1: string | null
           address_line2: string | null
           admin_notes: string | null
           billing_anchor_day: number | null
+          cancellation_preview: Json | null
+          cancellation_requested_at: string | null
+          cease_date: string | null
           city: string | null
+          contract_acceptance_id: string | null
+          contract_summary_id: string | null
           cooling_off_ends_at: string | null
           created_at: string
+          customer_id: string | null
+          entered_in_giacom_at: string | null
+          etf_policy_snapshot: Json | null
+          expected_activation_date: string | null
+          giacom_product_ref: string | null
+          giacom_reference: string | null
+          guest_order_id: string | null
           id: string
           installation_date: string | null
+          internal_notes: string | null
           journey_id: string | null
+          lifecycle_status: string | null
+          minimum_term_end_date: string | null
           notes: string | null
+          occta_order_number: string | null
           payment_method: string | null
+          payment_method_id: string | null
           plan_name: string
           plan_price: number
           postcode: string
           preferred_start_date: string | null
+          quote_id: string | null
+          router_reference: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["order_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          actual_activation_date?: string | null
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
           billing_anchor_day?: number | null
+          cancellation_preview?: Json | null
+          cancellation_requested_at?: string | null
+          cease_date?: string | null
           city?: string | null
+          contract_acceptance_id?: string | null
+          contract_summary_id?: string | null
           cooling_off_ends_at?: string | null
           created_at?: string
+          customer_id?: string | null
+          entered_in_giacom_at?: string | null
+          etf_policy_snapshot?: Json | null
+          expected_activation_date?: string | null
+          giacom_product_ref?: string | null
+          giacom_reference?: string | null
+          guest_order_id?: string | null
           id?: string
           installation_date?: string | null
+          internal_notes?: string | null
           journey_id?: string | null
+          lifecycle_status?: string | null
+          minimum_term_end_date?: string | null
           notes?: string | null
+          occta_order_number?: string | null
           payment_method?: string | null
+          payment_method_id?: string | null
           plan_name: string
           plan_price: number
           postcode: string
           preferred_start_date?: string | null
+          quote_id?: string | null
+          router_reference?: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          actual_activation_date?: string | null
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
           billing_anchor_day?: number | null
+          cancellation_preview?: Json | null
+          cancellation_requested_at?: string | null
+          cease_date?: string | null
           city?: string | null
+          contract_acceptance_id?: string | null
+          contract_summary_id?: string | null
           cooling_off_ends_at?: string | null
           created_at?: string
+          customer_id?: string | null
+          entered_in_giacom_at?: string | null
+          etf_policy_snapshot?: Json | null
+          expected_activation_date?: string | null
+          giacom_product_ref?: string | null
+          giacom_reference?: string | null
+          guest_order_id?: string | null
           id?: string
           installation_date?: string | null
+          internal_notes?: string | null
           journey_id?: string | null
+          lifecycle_status?: string | null
+          minimum_term_end_date?: string | null
           notes?: string | null
+          occta_order_number?: string | null
           payment_method?: string | null
+          payment_method_id?: string | null
           plan_name?: string
           plan_price?: number
           postcode?: string
           preferred_start_date?: string | null
+          quote_id?: string | null
+          router_reference?: string | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
@@ -4719,14 +4884,23 @@ export type Database = {
           actual_activation_date: string | null
           billing_anchor_day: number | null
           billing_enabled: boolean
+          contract_summary_id: string | null
+          contract_type: string | null
           created_at: string
+          etf_policy_snapshot: Json | null
           id: string
           identifiers: Json
           journey_id: string | null
+          minimum_term_end_date: string | null
+          minimum_term_months: number | null
           next_billing_date: string | null
+          notice_period_days: number | null
+          order_id: string | null
           plan_name: string | null
           price_monthly: number
           provisioned_at: string | null
+          selected_addons: Json | null
+          service_address: string | null
           service_type: string
           status: string
           supplier_ref: string | null
@@ -4744,14 +4918,23 @@ export type Database = {
           actual_activation_date?: string | null
           billing_anchor_day?: number | null
           billing_enabled?: boolean
+          contract_summary_id?: string | null
+          contract_type?: string | null
           created_at?: string
+          etf_policy_snapshot?: Json | null
           id?: string
           identifiers?: Json
           journey_id?: string | null
+          minimum_term_end_date?: string | null
+          minimum_term_months?: number | null
           next_billing_date?: string | null
+          notice_period_days?: number | null
+          order_id?: string | null
           plan_name?: string | null
           price_monthly?: number
           provisioned_at?: string | null
+          selected_addons?: Json | null
+          service_address?: string | null
           service_type: string
           status?: string
           supplier_ref?: string | null
@@ -4769,14 +4952,23 @@ export type Database = {
           actual_activation_date?: string | null
           billing_anchor_day?: number | null
           billing_enabled?: boolean
+          contract_summary_id?: string | null
+          contract_type?: string | null
           created_at?: string
+          etf_policy_snapshot?: Json | null
           id?: string
           identifiers?: Json
           journey_id?: string | null
+          minimum_term_end_date?: string | null
+          minimum_term_months?: number | null
           next_billing_date?: string | null
+          notice_period_days?: number | null
+          order_id?: string | null
           plan_name?: string | null
           price_monthly?: number
           provisioned_at?: string | null
+          selected_addons?: Json | null
+          service_address?: string | null
           service_type?: string
           status?: string
           supplier_ref?: string | null
@@ -6109,6 +6301,7 @@ export type Database = {
       generate_account_number: { Args: never; Returns: string }
       generate_complaint_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
+      generate_occta_order_number: { Args: never; Returns: string }
       generate_payment_request_number: { Args: never; Returns: string }
       generate_user_account_number: { Args: never; Returns: string }
       get_customer_communication_messages: {

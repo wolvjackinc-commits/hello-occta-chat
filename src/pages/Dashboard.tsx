@@ -158,6 +158,11 @@ const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | GuestOrder | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
+  // Phase 7 (corrected): the canonical RPC is the principal source of truth
+  // for account number, lifecycle status, service, invoices, payment
+  // requests, receipts, documents and timeline. Local tab queries remain
+  // only as supplementary detail (tickets, files, etc).
+  const [overview, setOverview] = useState<any>(null);
 
   useEffect(() => {
     logClientEvent({ event_type: "dashboard_view", title: "dashboard.opened", source_module: "dashboard" });
@@ -210,14 +215,19 @@ const Dashboard = () => {
     setIsDataLoading(true);
     
     try {
-      // Fetch all data in parallel
-      const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult, invoicesResult] = await Promise.all([
+      // Phase 7 (corrected): call canonical overview RPC first — it owns
+      // account number, order/service/invoice/PR/receipt/timeline data.
+      const overviewPromise = (supabase as any).rpc("get_my_customer_overview");
+      // Fetch supplementary data in parallel (tickets, files, guest order
+      // fallbacks, raw profile for legacy fields not in the RPC).
+      const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult, invoicesResult, overviewRes] = await Promise.all([
         supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
         supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("customer_guest_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
         supabase.from("user_files").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("invoices").select("id, invoice_number, total, status, due_date, issue_date").eq("user_id", userId).in("status", ["draft", "sent", "overdue"]).order("due_date", { ascending: true }),
+        overviewPromise,
       ]);
 
       if (profileResult.data) {
@@ -242,6 +252,10 @@ const Dashboard = () => {
 
       if (invoicesResult.data) {
         setInvoices(invoicesResult.data);
+      }
+
+      if (overviewRes && (overviewRes as any).data) {
+        setOverview((overviewRes as any).data);
       }
     } catch (error) {
       logError("Dashboard.fetchUserData", error);
@@ -417,7 +431,9 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground font-display uppercase tracking-wider">Account Number</p>
-                  <p className="text-display-sm font-mono">{profile?.account_number || 'Loading...'}</p>
+                  <p className="text-display-sm font-mono">
+                    {(overview as any)?.account_number || profile?.account_number || 'Loading...'}
+                  </p>
                 </div>
               </div>
               {profile?.date_of_birth && (
@@ -482,25 +498,22 @@ const Dashboard = () => {
             <PaidStateBanner userId={user.id} />
           </motion.div>
 
+          {/* Phase 7 (corrected): consolidate to 7 approved top-level sections.
+              Quotes / Quote Requests / Orders / Services / Journey → Order & Service.
+              Invoices / Payments / Direct Debit → Billing & Payments.
+              Complaints / Vulnerable / Chat → Support.
+              Historical routes are preserved (no data deleted). */}
           <Tabs defaultValue="overview" className="w-full">
             <TabsList className="w-full overflow-x-auto flex-nowrap justify-start gap-1 h-auto bg-transparent border-b-4 border-foreground rounded-none p-0 mb-6 whitespace-nowrap">
-              {[
-                ["overview", "Overview"],
-                ["services", "My Services"],
-                ["orders", "My Orders"],
-                ["quotes", "Quotes"],
-                ["quoteRequests", "Quote Requests"],
-                ["cs", "Contract Summaries"],
-                ["payments", "Payments & Receipts"],
-                ["invoices", "Invoices & Payments"],
-                ["support", "Support"],
-                ["chat", "Chat History"],
-                ["complaints", "Complaints"],
-                ["rewards", "Rewards & Referrals"],
-                ["documents", "Documents"],
-                ["account", "Account Settings"],
-                ["vuln", "Vulnerable Support"],
-              ].map(([v, l]) => (
+              {([
+                ["overview", "Overview", true],
+                ["order-service", "Order & Service", true],
+                ["billing", "Billing & Payments", true],
+                ["documents", "Documents", true],
+                ["support", "Support", true],
+                ["rewards", "Rewards", (import.meta as any).env?.VITE_FEATURE_REWARDS === "true"],
+                ["account", "Account", true],
+              ] as [string, string, boolean][]).filter(([,,on]) => on).map(([v, l]) => (
                 <TabsTrigger
                   key={v}
                   value={v}
@@ -515,27 +528,66 @@ const Dashboard = () => {
               <OverviewTab
                 activeServices={activeOrders.length}
                 pendingQuotes={0}
-                latestOrderStatus={orders[0]?.status ?? guestOrders[0]?.status ?? null}
+                latestOrderStatus={
+                  (overview as any)?.order?.lifecycle_status
+                    ?? orders[0]?.status
+                    ?? guestOrders[0]?.status
+                    ?? null
+                }
                 unpaidInvoices={outstandingInvoices.length}
                 unpaidTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
                 openTickets={openTickets.length}
               />
             </TabsContent>
 
-            <TabsContent value="services"><ServicesTab userId={user.id} /></TabsContent>
-            <TabsContent value="orders"><OrdersTimelineTab userId={user.id} userEmail={user.email ?? null} /></TabsContent>
-            <TabsContent value="quotes"><QuotesTab userId={user.id} /></TabsContent>
-            <TabsContent value="quoteRequests"><QuoteRequestsTab userId={user.id} /></TabsContent>
-            <TabsContent value="cs"><ContractSummariesTab userId={user.id} /></TabsContent>
-            <TabsContent value="payments"><PaymentsTab userId={user.id} /></TabsContent>
-            <TabsContent value="invoices"><InvoicesTab userId={user.id} /></TabsContent>
-            <TabsContent value="support"><SupportTab tickets={tickets} /></TabsContent>
-            <TabsContent value="chat"><ChatHistoryTab userId={user.id} /></TabsContent>
-            <TabsContent value="complaints"><ComplaintsTab /></TabsContent>
-            <TabsContent value="rewards"><RewardsTab /></TabsContent>
+            <TabsContent value="order-service">
+              <Tabs defaultValue="orders" className="w-full">
+                <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
+                  {[["orders","Orders"],["services","Services"],["quotes","Quotes"],["quoteRequests","Quote Requests"],["cs","Contract Summaries"]].map(([v,l]) => (
+                    <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
+                  ))}
+                </TabsList>
+                <TabsContent value="orders"><OrdersTimelineTab userId={user.id} userEmail={user.email ?? null} /></TabsContent>
+                <TabsContent value="services"><ServicesTab userId={user.id} /></TabsContent>
+                <TabsContent value="quotes"><QuotesTab userId={user.id} /></TabsContent>
+                <TabsContent value="quoteRequests"><QuoteRequestsTab userId={user.id} /></TabsContent>
+                <TabsContent value="cs"><ContractSummariesTab userId={user.id} /></TabsContent>
+              </Tabs>
+            </TabsContent>
+
+            <TabsContent value="billing">
+              <Tabs defaultValue="invoices" className="w-full">
+                <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
+                  {[["invoices","Invoices"],["payments","Payments & Receipts"]].map(([v,l]) => (
+                    <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
+                  ))}
+                </TabsList>
+                <TabsContent value="invoices"><InvoicesTab userId={user.id} /></TabsContent>
+                <TabsContent value="payments"><PaymentsTab userId={user.id} /></TabsContent>
+              </Tabs>
+            </TabsContent>
+
             <TabsContent value="documents"><DocumentsTab userId={user.id} /></TabsContent>
+
+            <TabsContent value="support">
+              <Tabs defaultValue="tickets" className="w-full">
+                <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
+                  {[["tickets","Tickets"],["chat","Chat History"],["complaints","Complaints"],["vuln","Vulnerable Support"]].map(([v,l]) => (
+                    <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
+                  ))}
+                </TabsList>
+                <TabsContent value="tickets"><SupportTab tickets={tickets} /></TabsContent>
+                <TabsContent value="chat"><ChatHistoryTab userId={user.id} /></TabsContent>
+                <TabsContent value="complaints"><ComplaintsTab /></TabsContent>
+                <TabsContent value="vuln"><VulnerableSupportTab userId={user.id} /></TabsContent>
+              </Tabs>
+            </TabsContent>
+
+            {(import.meta as any).env?.VITE_FEATURE_REWARDS === "true" && (
+              <TabsContent value="rewards"><RewardsTab /></TabsContent>
+            )}
+
             <TabsContent value="account"><AccountSettingsTab profile={profile as any} /></TabsContent>
-            <TabsContent value="vuln"><VulnerableSupportTab userId={user.id} /></TabsContent>
           </Tabs>
         </motion.div>
       </div>

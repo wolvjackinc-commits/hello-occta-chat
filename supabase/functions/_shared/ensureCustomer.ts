@@ -242,13 +242,12 @@ async function linkAll(
   if (pm?.id) {
     await supabase
       .from("payment_methods")
-      .update({ user_id: customer_id })
-      .eq("id", pm.id);
-    // Any DD mandate already linked to that payment method
-    await supabase
-      .from("dd_mandates")
-      .update({ user_id: customer_id })
-      .eq("payment_method_id", pm.id)
-      .is("user_id", null);
+      .update({ customer_id })
+      .eq("id", pm.id)
+      .is("customer_id", null);
   }
+
+  // DD mandates: a DD intake created during the journey will only have a
+  // user_id once payment is verified; nothing to backfill here without an
+  // explicit FK. The DD intake/verification flow handles that linkage.
 }

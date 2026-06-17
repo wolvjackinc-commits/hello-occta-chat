@@ -1975,17 +1975,22 @@ export type Database = {
           activation_date: string
           amount_minor: number | null
           attempts: number
+          billable_days: number | null
           billing_anchor_day: number
           blocker: string | null
+          calc_method: string
           created_at: string
           currency: string
           customer_id: string | null
+          full_cycle_days: number | null
           id: string
           is_pro_rata: boolean
           last_error: string | null
           next_billing_date: string
           order_id: string
           payload: Json
+          period_end: string | null
+          period_start: string | null
           processed_at: string | null
           service_id: string | null
           status: string
@@ -1995,17 +2000,22 @@ export type Database = {
           activation_date: string
           amount_minor?: number | null
           attempts?: number
+          billable_days?: number | null
           billing_anchor_day: number
           blocker?: string | null
+          calc_method?: string
           created_at?: string
           currency?: string
           customer_id?: string | null
+          full_cycle_days?: number | null
           id?: string
           is_pro_rata?: boolean
           last_error?: string | null
           next_billing_date: string
           order_id: string
           payload?: Json
+          period_end?: string | null
+          period_start?: string | null
           processed_at?: string | null
           service_id?: string | null
           status?: string
@@ -2015,17 +2025,22 @@ export type Database = {
           activation_date?: string
           amount_minor?: number | null
           attempts?: number
+          billable_days?: number | null
           billing_anchor_day?: number
           blocker?: string | null
+          calc_method?: string
           created_at?: string
           currency?: string
           customer_id?: string | null
+          full_cycle_days?: number | null
           id?: string
           is_pro_rata?: boolean
           last_error?: string | null
           next_billing_date?: string
           order_id?: string
           payload?: Json
+          period_end?: string | null
+          period_start?: string | null
           processed_at?: string | null
           service_id?: string | null
           status?: string

@@ -41,7 +41,11 @@ export const CustomerQuickActions = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const detailPath = `/admin/customers/${accountNumber || customerId}`;
+  // Never route by UUID — Customer 360 only resolves by account number.
+  // If the customer has no account number, surface reconciliation.
+  const detailPath = accountNumber
+    ? `/admin/customers/${accountNumber}`
+    : "/admin/tasks?filter=reconciliation";
 
   return (
     <div className="flex items-center gap-2">

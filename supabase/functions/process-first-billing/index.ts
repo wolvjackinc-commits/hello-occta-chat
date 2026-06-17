@@ -184,12 +184,11 @@ Deno.serve(async (req) => {
         if (pm.dd_setup_status !== "active" && !ddTaskId) {
           const { data: task } = await supabase.from("admin_tasks").insert({
             title: `Direct Debit setup pending for invoice ${invoiceNumber}`,
-            description: `Customer's Direct Debit is not yet active. Issue Worldpay fallback link if needed.`,
-            category: "billing",
+            description: `Customer's Direct Debit is not yet active for order ${ord.occta_order_number ?? job.order_id}. Issue a Worldpay fallback link if appropriate.`,
             priority: "high",
             status: "open",
-            related_invoice_id: invoiceId,
-            related_order_id: job.order_id,
+            created_by: ord.customer_id ?? svc.user_id,
+            related_customer_id: ord.customer_id ?? svc.user_id,
           }).select("id").maybeSingle();
           ddTaskId = task?.id ?? null;
         }

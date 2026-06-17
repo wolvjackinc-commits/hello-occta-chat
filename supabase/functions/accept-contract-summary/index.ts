@@ -1,5 +1,6 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, getRequestIp, checkRateLimit, sendResendEmail, brutalistEmailShell, escapeHtml, maskEmail } from "../_shared/quoteHelpers.ts";
 import { ACCEPTANCE_CHECKBOX_TEXT } from "../_shared/legalText.ts";
+import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 // Phase C canonical four-checkbox wording. Stored verbatim + hashed into the
@@ -200,6 +201,24 @@ Deno.serve(async (req) => {
       earliest_selectable_start_date: coolingRow?.earliest_selectable_start_date ?? null,
       current_step: "start_date",
     }).eq("id", journey.id);
+
+    // Phase 2 — automatically create/reuse the customer account so that the
+    // accepted Contract Summary, journey, payment method and quote become
+    // visible in Customer 360 immediately. No email is sent here; the
+    // consolidated onboarding email at final submission carries the secure
+    // set-password link. Failures are logged but do not block acceptance.
+    try {
+      const ec = await ensureCustomerFromAcceptedContract(supabase, {
+        journey_id: journey.id,
+        contract_summary_id: cs.id,
+        contract_acceptance_id: acceptanceId,
+      });
+      if (!ec.ok && !ec.conflict) {
+        console.warn("[accept-contract-summary] ensureCustomer failed", ec.reason);
+      }
+    } catch (e) {
+      console.warn("[accept-contract-summary] ensureCustomer exception", (e as Error).message);
+    }
   }
 
   await supabase.rpc("log_event", {

@@ -248,3 +248,22 @@ Confirm and I'll switch to build mode and execute in this order: (1) migrations,
   - `CustomerQuickActions` (no UUID fallback)
 - AdminLayout sidebar reorganised into exactly 8 sections: Overview / Sales / Customers / Orders / Billing / Support / Products & Pricing / Settings & Compliance. Rewards, Referrals and Campaigns hidden behind `VITE_FEATURE_REWARDS|REFERRALS|CAMPAIGNS` flags (default off).
 - No routes deleted in `App.tsx` — every legacy bookmark still resolves.
+
+## Phase 6 — Manual Giacom Tracking rewired around canonical orders
+
+### Migrations
+- `manual_fulfilment_orders.order_id` (FK orders) + unique partial index → 1 tracker per order.
+- `can_create_manual_fulfilment_for_order(_order_id)` eligibility checker.
+- BEFORE-INSERT trigger now accepts the order_id path (legacy PR/journey paths preserved).
+- `create_manual_fulfilment_tracker_for_order(_order_id,_actor,_notes)` SECURITY DEFINER, idempotent. EXECUTE service_role only.
+- View `manual_fulfilment_eligible_orders` (security_invoker) — canonical orders meeting all eligibility rules, joined with any existing tracker.
+- Legacy backfill: linked trackers via journey_id (or unique CS match); unlinkable trackers raised high-priority `admin_reconciliation_tasks` (legacy rows untouched).
+
+### Edge function
+- `manual-fulfilment-create-tracker` — staff-only, idempotent wrapper around the RPC. Writes audit_logs entry.
+
+### UI
+- `src/pages/admin/ManualFulfilment.tsx` fully rewritten. Lists rows from `manual_fulfilment_eligible_orders`. No paid-PR selector, no webhook_verified requirement, no direct DB status writes.
+- Action dialog: Create tracker · Record order entered into Giacom (→ ordered) · Add/update Giacom reference · Mark processing · Mark committed (requires expected activation date + note) · Put on hold · Resume · Start cancellation · Add note · Confirm service live (only when lifecycle == committed).
+- Every status change calls `order-lifecycle-transition`. Activation calls `confirm-service-live`. No status dropdown that mutates the table.
+- Customer 360 link uses account number; reconciliation marker when missing.

@@ -316,23 +316,62 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
                 </div>
               </>
             )}
-            {openAction?.to !== "ordered" && openAction?.to !== "committed" && (
+            {openAction?.key === "confirm_live" && (
+              <>
+                <div className="text-xs border-2 border-foreground p-2 bg-muted/40">
+                  This activates the service, starts billing on the customer's
+                  preferred anchor day, and queues the activation email. No
+                  supplier/DD/Worldpay action is taken.
+                </div>
+                <div>
+                  <Label>Actual activation date *</Label>
+                  <Input type="date" value={form.actual_activation_date}
+                    onChange={(e) => setForm({ ...form, actual_activation_date: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Activation reference *</Label>
+                  <Input value={form.activation_reference}
+                    onChange={(e) => setForm({ ...form, activation_reference: e.target.value })}
+                    placeholder="Supplier / Giacom activation reference" />
+                </div>
+                <div>
+                  <Label>Giacom reference (only if not yet recorded)</Label>
+                  <Input value={form.giacom_reference}
+                    onChange={(e) => setForm({ ...form, giacom_reference: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Activation notes (optional)</Label>
+                  <Textarea value={form.activation_notes}
+                    onChange={(e) => setForm({ ...form, activation_notes: e.target.value })} />
+                </div>
+                <label className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" checked={form.confirm}
+                    onChange={(e) => setForm({ ...form, confirm: e.target.checked })} />
+                  <span>I confirm this service is live and billing should begin.</span>
+                </label>
+              </>
+            )}
+            {openAction?.to !== "ordered" && openAction?.to !== "committed" && openAction?.key !== "confirm_live" && (
               <div>
                 <Label>Giacom reference (optional)</Label>
                 <Input value={form.giacom_reference}
                   onChange={(e) => setForm({ ...form, giacom_reference: e.target.value })} />
               </div>
             )}
-            <div>
-              <Label>Internal note</Label>
-              <Textarea value={form.internal_note}
-                onChange={(e) => setForm({ ...form, internal_note: e.target.value })} />
-            </div>
-            <div>
-              <Label>Customer-visible note (optional)</Label>
-              <Textarea value={form.customer_note}
-                onChange={(e) => setForm({ ...form, customer_note: e.target.value })} />
-            </div>
+            {openAction?.key !== "confirm_live" && (
+              <>
+                <div>
+                  <Label>Internal note</Label>
+                  <Textarea value={form.internal_note}
+                    onChange={(e) => setForm({ ...form, internal_note: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Customer-visible note (optional)</Label>
+                  <Textarea value={form.customer_note}
+                    onChange={(e) => setForm({ ...form, customer_note: e.target.value })} />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAction(null)} disabled={submitting}>Cancel</Button>

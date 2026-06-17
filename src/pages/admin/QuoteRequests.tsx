@@ -877,6 +877,37 @@ export const AdminQuoteRequests = () => {
         currentCustomerId={linkTarget?.customer_id ?? null}
         onLinked={() => qc.invalidateQueries({ queryKey: ["admin-quote-requests"] })}
       />
+
+      <Dialog open={shareDialog.open} onOpenChange={(o) => setShareDialog((s) => ({ ...s, open: o }))}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Shareable quote link {shareDialog.quoteNumber ? `· ${shareDialog.quoteNumber}` : ""}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Send this secure link to the customer. They can review the quote and continue through the Contract Summary without signing in.
+            </p>
+            <div className="flex gap-2">
+              <Input readOnly value={shareDialog.url ?? ""} className="font-mono text-xs border-2 border-foreground" />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (!shareDialog.url) return;
+                  navigator.clipboard.writeText(shareDialog.url).then(() => toast({ title: "Link copied" }));
+                }}
+              >
+                <Copy className="w-4 h-4 mr-1" /> Copy
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This link is shown once. You can also send it by email from the Quotes screen.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="hero" onClick={() => setShareDialog({ open: false })}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

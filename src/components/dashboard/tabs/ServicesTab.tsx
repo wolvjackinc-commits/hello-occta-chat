@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Wifi, AlertTriangle } from "lucide-react";
 import { EmptyState } from "./EmptyState";
+import { CancellationRequestCard } from "@/components/dashboard/CancellationRequestCard";
 
 type Service = {
   id: string;
@@ -57,6 +58,11 @@ export function ServicesTab({ userId }: { userId: string }) {
               <div className="mt-3 p-3 bg-warning/15 border-2 border-warning text-xs flex gap-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                 <span>Digital Voice does not work during a power cut unless backup power is available. If you rely on your phone for emergency calls, medical equipment or telecare, please tell us.</span>
+              </div>
+            )}
+            {(s.status === "active" || s.status === "live") && (
+              <div className="mt-3">
+                <CancellationRequestCard userId={userId} serviceId={s.id} />
               </div>
             )}
           </div>

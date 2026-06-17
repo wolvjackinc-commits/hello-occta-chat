@@ -770,6 +770,106 @@ export type Database = {
           },
         ]
       }
+      cancellation_case_history: {
+        Row: {
+          actor_role: string | null
+          actor_user_id: string | null
+          case_id: string
+          created_at: string
+          from_status: string | null
+          id: string
+          metadata: Json | null
+          reason: string | null
+          to_status: string
+        }
+        Insert: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          case_id: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          to_status: string
+        }
+        Update: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          case_id?: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancellation_case_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "service_cancellation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cancellation_email_outbox: {
+        Row: {
+          attempts: number
+          case_id: string
+          created_at: string
+          email_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          next_attempt_at: string
+          provider_message_id: string | null
+          recipient_email: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          case_id: string
+          created_at?: string
+          email_type: string
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          next_attempt_at?: string
+          provider_message_id?: string | null
+          recipient_email: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          case_id?: string
+          created_at?: string
+          email_type?: string
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          provider_message_id?: string | null
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancellation_email_outbox_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "service_cancellation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_analytics: {
         Row: {
           created_at: string
@@ -5054,6 +5154,182 @@ export type Database = {
           },
         ]
       }
+      service_cancellation_cases: {
+        Row: {
+          account_number: string | null
+          actual_cease_date: string | null
+          approved_at: string | null
+          approved_by_staff: string | null
+          cease_committed_at: string | null
+          cease_committed_by: string | null
+          completed_at: string | null
+          contract_acceptance_id: string | null
+          contract_snapshot: Json | null
+          contract_summary_id: string | null
+          created_at: string
+          customer_id: string
+          giacom_cease_reference: string | null
+          giacom_submitted_at: string | null
+          id: string
+          idempotency_key: string | null
+          manual_review_reasons: string[] | null
+          minimum_term_end_date: string | null
+          notes: string | null
+          notice_period_days: number | null
+          order_id: string
+          preview_formula_version: string | null
+          preview_generated_at: string | null
+          preview_snapshot: Json | null
+          proposed_cease_date: string | null
+          reason_code: string | null
+          request_ip: string | null
+          request_user_agent: string | null
+          requested_by_staff: string | null
+          requested_by_user: string | null
+          requested_date: string | null
+          service_id: string
+          source: string
+          status: string
+          supplier_confirmed_cease_date: string | null
+          updated_at: string
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+          withdrawn_reason: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          actual_cease_date?: string | null
+          approved_at?: string | null
+          approved_by_staff?: string | null
+          cease_committed_at?: string | null
+          cease_committed_by?: string | null
+          completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_snapshot?: Json | null
+          contract_summary_id?: string | null
+          created_at?: string
+          customer_id: string
+          giacom_cease_reference?: string | null
+          giacom_submitted_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          manual_review_reasons?: string[] | null
+          minimum_term_end_date?: string | null
+          notes?: string | null
+          notice_period_days?: number | null
+          order_id: string
+          preview_formula_version?: string | null
+          preview_generated_at?: string | null
+          preview_snapshot?: Json | null
+          proposed_cease_date?: string | null
+          reason_code?: string | null
+          request_ip?: string | null
+          request_user_agent?: string | null
+          requested_by_staff?: string | null
+          requested_by_user?: string | null
+          requested_date?: string | null
+          service_id: string
+          source: string
+          status?: string
+          supplier_confirmed_cease_date?: string | null
+          updated_at?: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+          withdrawn_reason?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          actual_cease_date?: string | null
+          approved_at?: string | null
+          approved_by_staff?: string | null
+          cease_committed_at?: string | null
+          cease_committed_by?: string | null
+          completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_snapshot?: Json | null
+          contract_summary_id?: string | null
+          created_at?: string
+          customer_id?: string
+          giacom_cease_reference?: string | null
+          giacom_submitted_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          manual_review_reasons?: string[] | null
+          minimum_term_end_date?: string | null
+          notes?: string | null
+          notice_period_days?: number | null
+          order_id?: string
+          preview_formula_version?: string | null
+          preview_generated_at?: string | null
+          preview_snapshot?: Json | null
+          proposed_cease_date?: string | null
+          reason_code?: string | null
+          request_ip?: string | null
+          request_user_agent?: string | null
+          requested_by_staff?: string | null
+          requested_by_user?: string | null
+          requested_date?: string | null
+          service_id?: string
+          source?: string
+          status?: string
+          supplier_confirmed_cease_date?: string | null
+          updated_at?: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+          withdrawn_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_cancellation_cases_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           activation_confirmed_at: string | null
@@ -6477,6 +6753,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      compute_cancellation_preview: {
+        Args: { p_requested_date: string; p_service_id: string }
+        Returns: Json
+      }
       compute_cooling_off: {
         Args: { _accepted_at: string }
         Returns: {
@@ -6557,6 +6837,14 @@ export type Database = {
         Returns: Json
       }
       expire_old_quotes: { Args: never; Returns: number }
+      finalize_service_cancellation: {
+        Args: {
+          p_actual_cease_date: string
+          p_admin_user: string
+          p_case_id: string
+        }
+        Returns: Json
+      }
       first_billing_job_is_eligible: {
         Args: { _job_id: string }
         Returns: boolean

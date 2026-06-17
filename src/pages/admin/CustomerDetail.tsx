@@ -18,6 +18,7 @@ import { CustomerDDSection } from "@/components/admin/CustomerDDSection";
 import { CustomerBillingSettings } from "@/components/admin/CustomerBillingSettings";
 import { JourneyInternalNotes } from "@/components/admin/JourneyInternalNotes";
 import { OrderOperationsCard } from "@/components/admin/OrderOperationsCard";
+import { CancellationCasesCard } from "@/components/admin/CancellationCasesCard";
 
 function ReconciliationWarnings({ userId }: { userId: string }) {
   const { data } = useQuery({
@@ -504,6 +505,10 @@ export const AdminCustomerDetail = () => {
               .filter((o: any) => o.occta_order_number)
               .map((o: any) => <OrderOperationsCard key={o.id} orderId={o.id} />)
           )}
+          <div className="pt-2">
+            <h3 className="font-display uppercase text-sm mb-2">In-life cancellation cases</h3>
+            <CancellationCasesCard customerId={overview.id} />
+          </div>
         </TabsContent>
 
         <TabsContent value="payments" className="mt-4 space-y-3">

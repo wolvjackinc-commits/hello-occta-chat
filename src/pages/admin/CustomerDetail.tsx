@@ -17,6 +17,51 @@ import { CustomerEditDialog } from "@/components/admin/CustomerEditDialog";
 import { CustomerDDSection } from "@/components/admin/CustomerDDSection";
 import { CustomerBillingSettings } from "@/components/admin/CustomerBillingSettings";
 import { JourneyInternalNotes } from "@/components/admin/JourneyInternalNotes";
+import { OrderOperationsCard } from "@/components/admin/OrderOperationsCard";
+
+function ReconciliationWarnings({ userId }: { userId: string }) {
+  const { data } = useQuery({
+    queryKey: ["recon-tasks", userId],
+    queryFn: async () => {
+      // Tasks reference customers via payload.journey_id / contract_summary_id.
+      // We surface anything that mentions this user's CS or journeys.
+      const { data: cs } = await supabase
+        .from("contract_summaries").select("id").eq("customer_id", userId);
+      const csIds = (cs ?? []).map((c: any) => c.id);
+      const { data: tasks } = await (supabase as any)
+        .from("admin_reconciliation_tasks")
+        .select("id, kind, severity, status, payload, created_at")
+        .eq("status", "open")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return (tasks ?? []).filter((t: any) =>
+        csIds.includes(t.payload?.contract_summary_id) ||
+        (t.payload?.email_normalised && false) // email match falls back to CS scope
+      );
+    },
+  });
+  if (!data || data.length === 0) return null;
+  return (
+    <Card className="border-2 border-destructive p-4 bg-destructive/5">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <div className="font-display text-base">Reconciliation warning</div>
+          <div className="text-sm text-muted-foreground mb-2">
+            One or more automated steps failed and need operator review.
+          </div>
+          <ul className="text-xs space-y-1">
+            {data.map((t: any) => (
+              <li key={t.id} className="font-mono">
+                [{t.severity}] {t.kind} — {format(new Date(t.created_at), "dd MMM HH:mm")}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Card>
+  );
+}
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { logAudit } from "@/lib/audit";
@@ -279,6 +324,7 @@ export const AdminCustomerDetail = () => {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="operations">Operations</TabsTrigger>
           <TabsTrigger value="quote-contract">Quote &amp; Contract</TabsTrigger>
           <TabsTrigger value="payments">Payments &amp; Receipts</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -296,6 +342,7 @@ export const AdminCustomerDetail = () => {
               pr={(data?.paymentRequests ?? [])[0] ?? null}
               quotes={data?.quotes ?? []}
             />
+            <ReconciliationWarnings userId={overview.id} />
             <Card className="border-2 border-foreground p-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
@@ -387,6 +434,19 @@ export const AdminCustomerDetail = () => {
               </div>
             )}
           </Card>
+        </TabsContent>
+
+        <TabsContent value="operations" className="mt-4 space-y-4">
+          <ReconciliationWarnings userId={overview.id} />
+          {(data?.orders ?? []).filter((o: any) => o.occta_order_number).length === 0 ? (
+            <Card className="border-2 border-foreground p-4 text-sm text-muted-foreground">
+              No canonical orders yet. Once the customer completes the journey, an OCCTA order appears here.
+            </Card>
+          ) : (
+            (data?.orders ?? [])
+              .filter((o: any) => o.occta_order_number)
+              .map((o: any) => <OrderOperationsCard key={o.id} orderId={o.id} />)
+          )}
         </TabsContent>
 
         <TabsContent value="payments" className="mt-4 space-y-3">

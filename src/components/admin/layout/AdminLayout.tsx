@@ -45,40 +45,81 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { GlobalSearch, useGlobalSearch } from "@/components/admin/GlobalSearch";
 
-const navItems = [
-  { label: "Overview", to: "/admin/overview", icon: LayoutGrid },
-  { label: "Customers", to: "/admin/customers", icon: Users },
-  { label: "Orders", to: "/admin/orders", icon: ClipboardList },
-  { label: "Quote Requests", to: "/admin/quote-requests", icon: Inbox },
-  { label: "Quotes", to: "/admin/quotes", icon: FileSignature },
-  { label: "VAT Settings", to: "/admin/vat-settings", icon: Receipt },
-  { label: "Suppliers", to: "/admin/suppliers", icon: Truck },
-  { label: "Giacom Import", to: "/admin/suppliers/giacom-import", icon: Truck },
-  { label: "Pricing Rules", to: "/admin/pricing-rules", icon: Percent },
-  { label: "Fair Pricing", to: "/admin/fair-pricing", icon: BadgeDollarSign },
-  { label: "Margin Rules", to: "/admin/margin-rules", icon: TrendingUp },
-  { label: "Rewards", to: "/admin/rewards", icon: BadgeDollarSign },
-  { label: "Referrals", to: "/admin/referrals", icon: Users },
-  { label: "Contract Benefits", to: "/admin/contract-benefits", icon: FileText },
-  { label: "Campaigns", to: "/admin/campaigns", icon: Send },
-  { label: "Tickets", to: "/admin/tickets", icon: Ticket },
-  { label: "Complaints", to: "/admin/complaints", icon: Shield },
-  { label: "Knowledge Base", to: "/admin/knowledge-base", icon: FileText },
-  { label: "Billing", to: "/admin/billing", icon: BadgeDollarSign },
-  { label: "Services", to: "/admin/services", icon: Wrench },
-  { label: "Payments & DD", to: "/admin/payments-dd", icon: Activity },
-  { label: "Payment Requests", to: "/admin/payment-requests", icon: Mail },
-  { label: "Communications", to: "/admin/communications", icon: Send },
-  { label: "Chat Transcripts", to: "/admin/chat-transcripts", icon: MessageSquare },
-  { label: "Installations", to: "/admin/installations", icon: CalendarDays },
-  { label: "Manual Fulfilment", to: "/admin/manual-fulfilment", icon: PackageCheck },
-  { label: "Readiness", to: "/admin/readiness", icon: ShieldCheck },
-  { label: "Launch Safety", to: "/admin/launch-safety", icon: ShieldAlert },
-  { label: "Tasks", to: "/admin/tasks", icon: ClipboardList },
-  { label: "Plans", to: "/admin/plans", icon: FileText },
-  { label: "Compliance", to: "/admin/compliance", icon: Shield },
-  { label: "Audit Log", to: "/admin/audit-log", icon: ScrollText },
-  { label: "Settings", to: "/admin/settings", icon: Settings },
+/**
+ * Phase 5 — Admin navigation consolidated into exactly eight top-level
+ * sections. No routes were deleted; pages that used to live at the top
+ * level are now reachable through these groups. Bookmarked legacy URLs
+ * continue to work because every route is still defined in App.tsx.
+ */
+type NavChild = { label: string; to: string };
+type NavSection = { label: string; icon: typeof LayoutGrid; to?: string; children?: NavChild[] };
+
+// Feature flags for sections that are not part of production today.
+// Toggle by setting VITE_FEATURE_REWARDS / VITE_FEATURE_REFERRALS /
+// VITE_FEATURE_CAMPAIGNS to "true". Default = hidden.
+const env = (import.meta as any).env ?? {};
+const FEATURE_REWARDS    = String(env.VITE_FEATURE_REWARDS ?? "")    === "true";
+const FEATURE_REFERRALS  = String(env.VITE_FEATURE_REFERRALS ?? "")  === "true";
+const FEATURE_CAMPAIGNS  = String(env.VITE_FEATURE_CAMPAIGNS ?? "")  === "true";
+
+const navSections: NavSection[] = [
+  { label: "Overview", icon: LayoutGrid, to: "/admin/overview" },
+  {
+    label: "Sales", icon: Inbox, children: [
+      { label: "Quote Requests", to: "/admin/quote-requests" },
+      { label: "Quotes",         to: "/admin/quotes" },
+      ...(FEATURE_CAMPAIGNS ? [{ label: "Campaigns", to: "/admin/campaigns" }] : []),
+    ],
+  },
+  { label: "Customers", icon: Users, to: "/admin/customers" },
+  {
+    label: "Orders", icon: ClipboardList, children: [
+      { label: "All Orders",             to: "/admin/orders" },
+      { label: "Manual Giacom Tracking", to: "/admin/manual-fulfilment" },
+      { label: "Installations",          to: "/admin/installations" },
+      { label: "Readiness",              to: "/admin/readiness" },
+      { label: "Services",               to: "/admin/services" },
+      { label: "Tasks",                  to: "/admin/tasks" },
+    ],
+  },
+  {
+    label: "Billing", icon: BadgeDollarSign, children: [
+      { label: "Invoices",      to: "/admin/billing" },
+      { label: "Payment Links", to: "/admin/payment-requests" },
+      { label: "Direct Debit",  to: "/admin/payments-dd" },
+    ],
+  },
+  {
+    label: "Support", icon: Ticket, children: [
+      { label: "Tickets",          to: "/admin/tickets" },
+      { label: "Complaints",       to: "/admin/complaints" },
+      { label: "Communications",   to: "/admin/communications" },
+      { label: "Chat Transcripts", to: "/admin/chat-transcripts" },
+      { label: "Knowledge Base",   to: "/admin/knowledge-base" },
+    ],
+  },
+  {
+    label: "Products & Pricing", icon: Percent, children: [
+      { label: "Plans",             to: "/admin/plans" },
+      { label: "Suppliers",         to: "/admin/suppliers" },
+      { label: "Giacom Import",     to: "/admin/suppliers/giacom-import" },
+      { label: "Pricing Rules",     to: "/admin/pricing-rules" },
+      { label: "Margin Rules",      to: "/admin/margin-rules" },
+      { label: "Fair Pricing",      to: "/admin/fair-pricing" },
+      { label: "VAT",               to: "/admin/vat-settings" },
+      { label: "Contract Benefits", to: "/admin/contract-benefits" },
+      ...(FEATURE_REWARDS   ? [{ label: "Rewards",   to: "/admin/rewards" }]   : []),
+      ...(FEATURE_REFERRALS ? [{ label: "Referrals", to: "/admin/referrals" }] : []),
+    ],
+  },
+  {
+    label: "Settings & Compliance", icon: Settings, children: [
+      { label: "Settings",      to: "/admin/settings" },
+      { label: "Compliance",    to: "/admin/compliance" },
+      { label: "Audit Log",     to: "/admin/audit-log" },
+      { label: "Launch Safety", to: "/admin/launch-safety" },
+    ],
+  },
 ];
 
 type SearchResult = {

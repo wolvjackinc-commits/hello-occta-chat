@@ -822,6 +822,7 @@ export type Database = {
           email_type: string
           id: string
           idempotency_key: string
+          last_attempted_at: string | null
           last_error: string | null
           next_attempt_at: string
           provider_message_id: string | null
@@ -837,6 +838,7 @@ export type Database = {
           email_type: string
           id?: string
           idempotency_key: string
+          last_attempted_at?: string | null
           last_error?: string | null
           next_attempt_at?: string
           provider_message_id?: string | null
@@ -852,6 +854,7 @@ export type Database = {
           email_type?: string
           id?: string
           idempotency_key?: string
+          last_attempted_at?: string | null
           last_error?: string | null
           next_attempt_at?: string
           provider_message_id?: string | null
@@ -1731,6 +1734,7 @@ export type Database = {
       credit_notes: {
         Row: {
           amount: number
+          cancellation_case_id: string | null
           created_at: string
           id: string
           invoice_id: string
@@ -1739,6 +1743,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          cancellation_case_id?: string | null
           created_at?: string
           id?: string
           invoice_id: string
@@ -1747,6 +1752,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          cancellation_case_id?: string | null
           created_at?: string
           id?: string
           invoice_id?: string
@@ -2528,6 +2534,7 @@ export type Database = {
         Row: {
           billing_period_end: string | null
           billing_period_start: string | null
+          cancellation_case_id: string | null
           created_at: string
           currency: string
           due_date: string | null
@@ -2563,6 +2570,7 @@ export type Database = {
         Insert: {
           billing_period_end?: string | null
           billing_period_start?: string | null
+          cancellation_case_id?: string | null
           created_at?: string
           currency?: string
           due_date?: string | null
@@ -2598,6 +2606,7 @@ export type Database = {
         Update: {
           billing_period_end?: string | null
           billing_period_start?: string | null
+          cancellation_case_id?: string | null
           created_at?: string
           currency?: string
           due_date?: string | null
@@ -6744,6 +6753,13 @@ export type Database = {
       }
       can_override_red_margin: { Args: { _user_id: string }; Returns: boolean }
       can_send_quote: { Args: { _quote_id: string }; Returns: boolean }
+      cancellation_cycle_window: {
+        Args: { p_anchor_day: number; p_in_date: string }
+        Returns: {
+          cycle_end: string
+          cycle_start: string
+        }[]
+      }
       check_rate_limit: {
         Args: {
           _action: string
@@ -6848,6 +6864,10 @@ export type Database = {
       first_billing_job_is_eligible: {
         Args: { _job_id: string }
         Returns: boolean
+      }
+      flag_cancellation_manual_review: {
+        Args: { p_case_id: string; p_reasons: string[] }
+        Returns: undefined
       }
       generate_acceptance_certificate_number: { Args: never; Returns: string }
       generate_account_number: { Args: never; Returns: string }

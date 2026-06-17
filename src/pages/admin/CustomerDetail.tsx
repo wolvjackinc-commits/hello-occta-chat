@@ -392,6 +392,19 @@ export const AdminCustomerDetail = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="operations" className="mt-4 space-y-4">
+          <ReconciliationWarnings userId={overview.id} />
+          {(data?.orders ?? []).filter((o: any) => o.occta_order_number).length === 0 ? (
+            <Card className="border-2 border-foreground p-4 text-sm text-muted-foreground">
+              No canonical orders yet. Once the customer completes the journey, an OCCTA order appears here.
+            </Card>
+          ) : (
+            (data?.orders ?? [])
+              .filter((o: any) => o.occta_order_number)
+              .map((o: any) => <OrderOperationsCard key={o.id} orderId={o.id} />)
+          )}
+        </TabsContent>
+
         <TabsContent value="payments" className="mt-4 space-y-3">
           <Card className="border-2 border-foreground p-4">
             <h3 className="font-display text-lg mb-3">Payment requests</h3>

@@ -103,10 +103,10 @@ Deno.serve(async (req) => {
           .eq("id", svc.order_id).maybeSingle();
         if (ord?.payment_method_id) {
           const { data: pm } = await supabase
-            .from("payment_methods").select("method_type")
+            .from("payment_methods").select("method")
             .eq("id", ord.payment_method_id).maybeSingle();
-          if (pm?.method_type === "direct_debit") paymentLabel = "Direct Debit";
-          else if (pm?.method_type === "invoice_link") paymentLabel = "Invoice with secure payment link";
+          if (pm?.method === "direct_debit") paymentLabel = "Direct Debit";
+          else if (pm?.method === "invoice_link") paymentLabel = "Invoice with secure payment link";
         }
         if (ord?.contract_summary_id) {
           const { data: cs } = await supabase

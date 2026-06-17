@@ -431,7 +431,9 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground font-display uppercase tracking-wider">Account Number</p>
-                  <p className="text-display-sm font-mono">{profile?.account_number || 'Loading...'}</p>
+                  <p className="text-display-sm font-mono">
+                    {(overview as any)?.account_number || profile?.account_number || 'Loading...'}
+                  </p>
                 </div>
               </div>
               {profile?.date_of_birth && (
@@ -496,25 +498,22 @@ const Dashboard = () => {
             <PaidStateBanner userId={user.id} />
           </motion.div>
 
+          {/* Phase 7 (corrected): consolidate to 7 approved top-level sections.
+              Quotes / Quote Requests / Orders / Services / Journey → Order & Service.
+              Invoices / Payments / Direct Debit → Billing & Payments.
+              Complaints / Vulnerable / Chat → Support.
+              Historical routes are preserved (no data deleted). */}
           <Tabs defaultValue="overview" className="w-full">
             <TabsList className="w-full overflow-x-auto flex-nowrap justify-start gap-1 h-auto bg-transparent border-b-4 border-foreground rounded-none p-0 mb-6 whitespace-nowrap">
-              {[
-                ["overview", "Overview"],
-                ["services", "My Services"],
-                ["orders", "My Orders"],
-                ["quotes", "Quotes"],
-                ["quoteRequests", "Quote Requests"],
-                ["cs", "Contract Summaries"],
-                ["payments", "Payments & Receipts"],
-                ["invoices", "Invoices & Payments"],
-                ["support", "Support"],
-                ["chat", "Chat History"],
-                ["complaints", "Complaints"],
-                ["rewards", "Rewards & Referrals"],
-                ["documents", "Documents"],
-                ["account", "Account Settings"],
-                ["vuln", "Vulnerable Support"],
-              ].map(([v, l]) => (
+              {([
+                ["overview", "Overview", true],
+                ["order-service", "Order & Service", true],
+                ["billing", "Billing & Payments", true],
+                ["documents", "Documents", true],
+                ["support", "Support", true],
+                ["rewards", "Rewards", (import.meta as any).env?.VITE_FEATURE_REWARDS === "true"],
+                ["account", "Account", true],
+              ] as [string, string, boolean][]).filter(([,,on]) => on).map(([v, l]) => (
                 <TabsTrigger
                   key={v}
                   value={v}
@@ -529,27 +528,66 @@ const Dashboard = () => {
               <OverviewTab
                 activeServices={activeOrders.length}
                 pendingQuotes={0}
-                latestOrderStatus={orders[0]?.status ?? guestOrders[0]?.status ?? null}
+                latestOrderStatus={
+                  (overview as any)?.order?.lifecycle_status
+                    ?? orders[0]?.status
+                    ?? guestOrders[0]?.status
+                    ?? null
+                }
                 unpaidInvoices={outstandingInvoices.length}
                 unpaidTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
                 openTickets={openTickets.length}
               />
             </TabsContent>
 
-            <TabsContent value="services"><ServicesTab userId={user.id} /></TabsContent>
-            <TabsContent value="orders"><OrdersTimelineTab userId={user.id} userEmail={user.email ?? null} /></TabsContent>
-            <TabsContent value="quotes"><QuotesTab userId={user.id} /></TabsContent>
-            <TabsContent value="quoteRequests"><QuoteRequestsTab userId={user.id} /></TabsContent>
-            <TabsContent value="cs"><ContractSummariesTab userId={user.id} /></TabsContent>
-            <TabsContent value="payments"><PaymentsTab userId={user.id} /></TabsContent>
-            <TabsContent value="invoices"><InvoicesTab userId={user.id} /></TabsContent>
-            <TabsContent value="support"><SupportTab tickets={tickets} /></TabsContent>
-            <TabsContent value="chat"><ChatHistoryTab userId={user.id} /></TabsContent>
-            <TabsContent value="complaints"><ComplaintsTab /></TabsContent>
-            <TabsContent value="rewards"><RewardsTab /></TabsContent>
+            <TabsContent value="order-service">
+              <Tabs defaultValue="orders" className="w-full">
+                <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
+                  {[["orders","Orders"],["services","Services"],["quotes","Quotes"],["quoteRequests","Quote Requests"],["cs","Contract Summaries"]].map(([v,l]) => (
+                    <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
+                  ))}
+                </TabsList>
+                <TabsContent value="orders"><OrdersTimelineTab userId={user.id} userEmail={user.email ?? null} /></TabsContent>
+                <TabsContent value="services"><ServicesTab userId={user.id} /></TabsContent>
+                <TabsContent value="quotes"><QuotesTab userId={user.id} /></TabsContent>
+                <TabsContent value="quoteRequests"><QuoteRequestsTab userId={user.id} /></TabsContent>
+                <TabsContent value="cs"><ContractSummariesTab userId={user.id} /></TabsContent>
+              </Tabs>
+            </TabsContent>
+
+            <TabsContent value="billing">
+              <Tabs defaultValue="invoices" className="w-full">
+                <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
+                  {[["invoices","Invoices"],["payments","Payments & Receipts"]].map(([v,l]) => (
+                    <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
+                  ))}
+                </TabsList>
+                <TabsContent value="invoices"><InvoicesTab userId={user.id} /></TabsContent>
+                <TabsContent value="payments"><PaymentsTab userId={user.id} /></TabsContent>
+              </Tabs>
+            </TabsContent>
+
             <TabsContent value="documents"><DocumentsTab userId={user.id} /></TabsContent>
+
+            <TabsContent value="support">
+              <Tabs defaultValue="tickets" className="w-full">
+                <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
+                  {[["tickets","Tickets"],["chat","Chat History"],["complaints","Complaints"],["vuln","Vulnerable Support"]].map(([v,l]) => (
+                    <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
+                  ))}
+                </TabsList>
+                <TabsContent value="tickets"><SupportTab tickets={tickets} /></TabsContent>
+                <TabsContent value="chat"><ChatHistoryTab userId={user.id} /></TabsContent>
+                <TabsContent value="complaints"><ComplaintsTab /></TabsContent>
+                <TabsContent value="vuln"><VulnerableSupportTab userId={user.id} /></TabsContent>
+              </Tabs>
+            </TabsContent>
+
+            {(import.meta as any).env?.VITE_FEATURE_REWARDS === "true" && (
+              <TabsContent value="rewards"><RewardsTab /></TabsContent>
+            )}
+
             <TabsContent value="account"><AccountSettingsTab profile={profile as any} /></TabsContent>
-            <TabsContent value="vuln"><VulnerableSupportTab userId={user.id} /></TabsContent>
           </Tabs>
         </motion.div>
       </div>

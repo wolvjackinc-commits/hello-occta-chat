@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp, sendResendEmail, brutalistEmailShell, escapeHtml } from "../_shared/quoteHelpers.ts";
+import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 /**
@@ -23,7 +24,7 @@ const Schema = z.object({
   final_consent: z.literal(true),
 });
 
-function genOrderNumber() {
+function fallbackOrderNumber() {
   const ts = new Date();
   const ymd = `${ts.getUTCFullYear()}${String(ts.getUTCMonth() + 1).padStart(2, "0")}${String(ts.getUTCDate()).padStart(2, "0")}`;
   const rand = Math.floor(Math.random() * 9000 + 1000);
@@ -116,12 +117,32 @@ Deno.serve(async (req) => {
 
   const { data: cs } = await supabase
     .from("contract_summaries")
-    .select("id, cs_number, version, public_token_hash, pdf_storage_key")
+    .select("id, cs_number, version, public_token_hash, pdf_storage_key, customer_id, contract_length, notice_period")
     .eq("quote_id", quote.id)
     .neq("status", "superseded")
     .order("version", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  // Phase 2 — make absolutely sure the customer exists before we create the
+  // canonical order. ensureCustomerFromAcceptedContract is idempotent.
+  let canonicalCustomerId: string | null = journey.customer_id ?? cs?.customer_id ?? null;
+  let customerNewlyCreated = false;
+  if (cs?.id) {
+    const { data: acc } = await supabase
+      .from("contract_acceptances").select("id").eq("contract_summary_id", cs.id)
+      .order("accepted_at", { ascending: true }).limit(1).maybeSingle();
+    const before = canonicalCustomerId;
+    const ec = await ensureCustomerFromAcceptedContract(supabase, {
+      journey_id: journey.id,
+      contract_summary_id: cs.id,
+      contract_acceptance_id: acc?.id ?? null,
+    });
+    if (ec.ok && ec.customer_id) {
+      canonicalCustomerId = ec.customer_id;
+      customerNewlyCreated = !ec.reused && !before;
+    }
+  }
 
   // Idempotent guest_orders creation — keyed off journey id via admin_notes JSON tag.
   // (We can't add a column safely without coordination; we look up by tag instead.)
@@ -134,7 +155,8 @@ Deno.serve(async (req) => {
 
   let order = existingOrder;
   if (!order) {
-    const order_number = genOrderNumber();
+    const { data: gen } = await supabase.rpc("generate_occta_order_number");
+    const order_number = (gen as unknown as string) ?? fallbackOrderNumber();
     const insert = await supabase
       .from("guest_orders")
       .insert({
@@ -163,6 +185,84 @@ Deno.serve(async (req) => {
     order = insert.data;
   }
 
+  // Phase 2 — create the canonical orders row (one per journey). Idempotent.
+  let canonicalOrder: { id: string; occta_order_number: string | null } | null = null;
+  if (canonicalCustomerId) {
+    const { data: alreadyCanonical } = await supabase
+      .from("orders")
+      .select("id, occta_order_number")
+      .eq("journey_id", journey.id)
+      .maybeSingle();
+    if (alreadyCanonical) {
+      canonicalOrder = { id: alreadyCanonical.id, occta_order_number: alreadyCanonical.occta_order_number };
+    } else {
+      const canonicalNumber = order.order_number ?? null;
+      const orderInsert = await supabase
+        .from("orders")
+        .insert({
+          user_id: canonicalCustomerId,
+          customer_id: canonicalCustomerId,
+          journey_id: journey.id,
+          quote_id: quote.id,
+          contract_summary_id: cs?.id ?? null,
+          contract_acceptance_id: cs?.id
+            ? (await supabase
+                .from("contract_acceptances").select("id").eq("contract_summary_id", cs.id)
+                .order("accepted_at", { ascending: true }).limit(1).maybeSingle()).data?.id ?? null
+            : null,
+          payment_method_id: pm.id,
+          guest_order_id: order.id,
+          occta_order_number: canonicalNumber,
+          lifecycle_status: "order_received",
+          service_type: quote.service_type,
+          plan_name: quote.plan_name,
+          plan_price: quote.monthly_gross,
+          postcode: qr.postcode ?? "",
+          address_line1: qr.address_line_1 ?? "",
+          address_line2: qr.address_line_2 ?? null,
+          city: qr.town ?? "",
+          preferred_start_date: journey.preferred_start_date,
+          cooling_off_ends_at: journey.cooling_off_ends_at,
+          billing_anchor_day: pm.billing_anchor_day,
+          payment_method: pm.method,
+          status: "pending",
+        })
+        .select("id, occta_order_number")
+        .single();
+      if (orderInsert.error) {
+        // Unique-index race: another concurrent submit won. Re-read.
+        const { data: existing } = await supabase
+          .from("orders").select("id, occta_order_number")
+          .eq("journey_id", journey.id).maybeSingle();
+        canonicalOrder = existing ? { id: existing.id, occta_order_number: existing.occta_order_number } : null;
+      } else {
+        canonicalOrder = { id: orderInsert.data.id, occta_order_number: orderInsert.data.occta_order_number };
+
+        // First lifecycle history entry.
+        await supabase.from("order_status_history").insert({
+          order_id: orderInsert.data.id,
+          previous_status: null,
+          new_status: "order_received",
+          source: "journey_submit_order",
+          customer_note: "Order received",
+          metadata: { journey_id: journey.id, quote_id: quote.id, guest_order_id: order.id },
+        });
+      }
+    }
+
+    if (canonicalOrder) {
+      // Cross-link the audit/intake rows.
+      await supabase.from("guest_orders")
+        .update({ linked_order_id: canonicalOrder.id, user_id: canonicalCustomerId })
+        .eq("id", order.id)
+        .is("linked_order_id", null);
+      await supabase.from("order_journeys")
+        .update({ order_id: canonicalOrder.id })
+        .eq("id", journey.id)
+        .is("order_id", null);
+    }
+  }
+
   // Mark journey submitted/completed atomically with the idempotency key.
   const submitUpd = await supabase
     .from("order_journeys")
@@ -187,7 +287,11 @@ Deno.serve(async (req) => {
     _event_type: "journey_order_submitted",
     _title: `Order submitted from journey ${quote.quote_number}`,
     _details: {
-      journey_id: journey.id, quote_id: quote.id, order_id: order.id,
+      journey_id: journey.id, quote_id: quote.id,
+      guest_order_id: order.id,
+      canonical_order_id: canonicalOrder?.id ?? null,
+      occta_order_number: canonicalOrder?.occta_order_number ?? order.order_number,
+      customer_id: canonicalCustomerId,
       order_number: order.order_number, payment_method: pm.method,
       billing_anchor_day: pm.billing_anchor_day,
       preferred_start_date: journey.preferred_start_date,
@@ -239,6 +343,47 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Phase 2 — append a single account-access block to the consolidated
+      // onboarding email. Newly-created customers get a short-lived
+      // set-password recovery link; existing customers get a sign-in link
+      // to their dashboard. The link itself is never logged.
+      let accountAccessBlock = "";
+      try {
+        if (canonicalCustomerId) {
+          const PUBLIC_APP_ORIGIN = "https://www.occta.co.uk";
+          if (customerNewlyCreated) {
+            const link = await supabase.auth.admin.generateLink({
+              type: "recovery",
+              email: qr.email,
+              options: { redirectTo: `${PUBLIC_APP_ORIGIN}/auth?welcome=1` },
+            });
+            const actionLink = link.data?.properties?.action_link ?? null;
+            if (actionLink) {
+              accountAccessBlock = `
+                <p style="font-size:14px;margin-top:18px;">
+                  <strong>Set up your OCCTA account.</strong> Use the secure
+                  link below to choose a password and access your customer
+                  dashboard. This link expires for your security.
+                </p>
+                <p style="margin:14px 0;">
+                  <a href="${escapeHtml(actionLink)}" style="display:inline-block;padding:12px 18px;background:#000;color:#facc15;font-weight:700;text-decoration:none;border:3px solid #000;text-transform:uppercase;letter-spacing:0.05em;">Set my password</a>
+                </p>`;
+            }
+          } else {
+            accountAccessBlock = `
+              <p style="font-size:14px;margin-top:18px;">
+                You already have an OCCTA account — sign in any time to track
+                your order, manage Direct Debit and download documents.
+              </p>
+              <p style="margin:14px 0;">
+                <a href="https://www.occta.co.uk/dashboard" style="display:inline-block;padding:12px 18px;background:#000;color:#facc15;font-weight:700;text-decoration:none;border:3px solid #000;text-transform:uppercase;letter-spacing:0.05em;">Open my dashboard</a>
+              </p>`;
+          }
+        }
+      } catch (e) {
+        console.warn("[journey-submit-order] account access link gen failed", (e as Error).message);
+      }
+
       const body = `
         <p>Hi ${escapeHtml(qr.full_name)},</p>
         <p>Thanks for confirming your order with OCCTA — here's a summary you can keep.</p>
@@ -254,6 +399,7 @@ Deno.serve(async (req) => {
         <p style="font-size:14px;">
           Your signed <strong>Contract Summary</strong> is attached to this email as a PDF for your records${csSignedUrl ? `, and can also be viewed online via the button below` : ""}.
         </p>
+        ${accountAccessBlock}
         <p style="font-size:13px;color:#444;">
           <strong>Your 14-day cooling-off period</strong> ends on ${escapeHtml(new Date(journey.cooling_off_ends_at as string).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}. You can cancel within this window for a full refund of anything paid.
         </p>

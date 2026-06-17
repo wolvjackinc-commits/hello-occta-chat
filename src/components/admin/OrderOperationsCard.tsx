@@ -24,13 +24,16 @@ type Order = {
   expected_activation_date: string | null;
   router_reference: string | null;
   internal_notes: string | null;
-  service_address: string | null;
   service_type: string | null;
   plan_name: string | null;
-  total_price: number | null;
-  start_date: string | null;
-  cooling_off_ends_at?: string | null;
-  payment_method?: string | null;
+  plan_price: number | null;
+  preferred_start_date: string | null;
+  cooling_off_ends_at: string | null;
+  payment_method: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  postcode: string | null;
 };
 
 const LIFECYCLE_LABEL: Record<string, string> = {
@@ -87,11 +90,11 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, occta_order_number, lifecycle_status, status, giacom_reference, giacom_product_ref, entered_in_giacom_at, expected_activation_date, router_reference, internal_notes, service_address, service_type, plan_name, total_price, start_date")
+        .select("id, occta_order_number, lifecycle_status, status, giacom_reference, giacom_product_ref, entered_in_giacom_at, expected_activation_date, router_reference, internal_notes, service_type, plan_name, plan_price, preferred_start_date, cooling_off_ends_at, payment_method, address_line1, address_line2, city, postcode")
         .eq("id", orderId)
         .maybeSingle();
       if (error) throw error;
-      return data as Order;
+      return data as unknown as Order;
     },
   });
 
@@ -183,9 +186,11 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
 
       <div className="grid gap-3 md:grid-cols-2 text-sm">
         <Field label="Accepted plan" value={order.plan_name} />
-        <Field label="Monthly price" value={order.total_price != null ? `£${Number(order.total_price).toFixed(2)}` : null} />
-        <Field label="Service address" value={order.service_address} />
-        <Field label="Preferred start date" value={fmtDay(order.start_date)} />
+        <Field label="Monthly price" value={order.plan_price != null ? `£${Number(order.plan_price).toFixed(2)}` : null} />
+        <Field label="Service address" value={[order.address_line1, order.address_line2, order.city, order.postcode].filter(Boolean).join(", ") || null} />
+        <Field label="Preferred start date" value={fmtDay(order.preferred_start_date)} />
+        <Field label="Cooling-off ends" value={fmtDate(order.cooling_off_ends_at)} />
+        <Field label="Payment method" value={order.payment_method} />
         <Field label="Entered into Giacom" value={fmtDate(order.entered_in_giacom_at)} />
         <Field label="Giacom reference" value={order.giacom_reference} />
         <Field label="Giacom product ref" value={order.giacom_product_ref} />

@@ -69,7 +69,11 @@ Deno.serve(perfServe("journey-state", async (req) => {
     .maybeSingle();
 
   const expired = q.expires_at ? new Date(q.expires_at).getTime() < Date.now() : false;
-  const eligible = ["approved", "sent", "viewed"].includes(q.status) && !expired;
+  const eligible = [
+    "approved", "sent", "viewed",
+    "contract_summary_generated", "contract_summary_sent", "contract_summary_accepted",
+    "pending", "draft",
+  ].includes(q.status) && !expired;
 
   // Existing journey (if any).
   const JOURNEY_COLS = "id, current_step, status, decline_reason, preferred_start_date, start_date_selected_at, payment_method, billing_anchor_day, contract_accepted_at, cooling_off_ends_at, earliest_selectable_start_date, cooling_off_acknowledged, cooling_off_acknowledged_at, completed_at, contract_summary_id, cancelled_at, cancellation_reason, linked_customer_id, linked_at, manual_review_required";

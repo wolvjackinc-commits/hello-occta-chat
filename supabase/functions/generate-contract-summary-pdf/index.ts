@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, requireStaff, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { FULL_CONTRACT_SECTIONS, FULL_CONTRACT_INTRO, FULL_CONTRACT_TERMS_VERSION } from "../_shared/fullContractTerms.ts";
 // @ts-ignore - npm specifier resolved at runtime
 import { jsPDF } from "npm:jspdf@2.5.1";
 
@@ -125,6 +126,37 @@ function renderPdf(cs: any): Uint8Array {
     heading("Acceptance");
     kv("Accepted at", String(cs.accepted_at));
     if (cs.accepted_ip) kv("IP", String(cs.accepted_ip));
+  }
+
+  // ============================================================
+  // FULL CONTRACT SUMMARY — mirrors the on-screen long-form terms
+  // (Ofcom GC C1.3 / EECC — same depth as BT/Sky/Virgin/TalkTalk)
+  // ============================================================
+  doc.addPage();
+  y = M;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+  doc.text("FULL CONTRACT SUMMARY", M, y);
+  y += 18;
+  doc.setFont("helvetica", "italic"); doc.setFontSize(9);
+  doc.setTextColor(80, 80, 80);
+  const introWrapped = doc.splitTextToSize(FULL_CONTRACT_INTRO, W - M * 2) as string[];
+  for (const ln of introWrapped) {
+    if (y > H - M) { doc.addPage(); y = M; }
+    doc.text(ln, M, y);
+    y += 12;
+  }
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+  if (y > H - M) { doc.addPage(); y = M; }
+  doc.text(`Terms version ${FULL_CONTRACT_TERMS_VERSION}`, M, y);
+  y += 14;
+
+  for (const section of FULL_CONTRACT_SECTIONS) {
+    heading(section.heading);
+    for (const p of section.paragraphs) {
+      line(p, { size: 10, gap: 4 });
+      y += 4;
+    }
   }
 
   // Footer on every page

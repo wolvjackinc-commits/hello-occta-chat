@@ -36,13 +36,9 @@ Deno.serve(perfServe("journey-state", async (req) => {
   const hash = await sha256Hex(token);
   const supabase = getServiceClient();
 
-  // Feature flag — clients use this to decide whether to render the unified UI.
-  const { data: settings } = await supabase
-    .from("platform_settings")
-    .select("unified_journey_enabled")
-    .limit(1)
-    .maybeSingle();
-  const unified_journey_enabled = !!settings?.unified_journey_enabled;
+  // Unified journey is the only journey — flag retained in response for
+  // backwards compatibility with any older clients still in flight.
+  const unified_journey_enabled = true;
 
   // Quote lookup (customer-safe fields only).
   const { data: q } = await supabase

@@ -1103,6 +1103,240 @@ async function executeTool(
       });
     }
 
+    // === Authenticated customer tools ===
+    case "get_my_overview": {
+      if (!userId) return safeJson({ success: false, message: "Please sign in so I can pull your account details." });
+      const { data: profile } = await supabaseServiceClient
+        .from("profiles")
+        .select("id, full_name, email, account_number, created_at")
+        .eq("id", userId)
+        .maybeSingle();
+      const { data: latestService } = await supabaseServiceClient
+        .from("services")
+        .select("id, status, plan_name, activated_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return safeJson({ success: true, profile, latest_service: latestService ?? null });
+    }
+
+    case "get_my_invoices_authed": {
+      if (!userId) return safeJson({ success: false, message: "Please sign in to view your invoices." });
+      const { limit = 5 } = args as { limit?: number };
+      const { data, error } = await supabaseServiceClient
+        .from("invoices")
+        .select("id, invoice_number, total_amount, status, due_date, issued_at, billing_period_start, billing_period_end")
+        .eq("user_id", userId)
+        .order("issued_at", { ascending: false })
+        .limit(Math.min(limit, 20));
+      if (error) return safeJson({ success: false, message: "Could not load invoices right now." });
+      return safeJson({ success: true, invoices: data ?? [] });
+    }
+
+    case "get_my_services_authed": {
+      if (!userId) return safeJson({ success: false, message: "Please sign in to view your services." });
+      const { data, error } = await supabaseServiceClient
+        .from("services")
+        .select("id, plan_name, service_type, status, activated_at, monthly_price, speed_down_mbps")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) return safeJson({ success: false, message: "Could not load services right now." });
+      return safeJson({ success: true, services: data ?? [] });
+    }
+
+    case "get_my_orders_authed": {
+      if (!userId) return safeJson({ success: false, message: "Please sign in to view your orders." });
+      const { limit = 5 } = args as { limit?: number };
+      const { data, error } = await supabaseServiceClient
+        .from("orders")
+        .select("id, order_number, status, lifecycle_status, plan_name, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(Math.min(limit, 20));
+      if (error) return safeJson({ success: false, message: "Could not load orders right now." });
+      return safeJson({ success: true, orders: data ?? [] });
+    }
+
+    case "get_my_documents": {
+      if (!userId) return safeJson({ success: false, message: "Please sign in to view your documents." });
+      const { data: cs } = await supabaseServiceClient
+        .from("contract_summaries")
+        .select("id, status, accepted_at, service_address, customer_email_snapshot, created_at")
+        .eq("user_id", userId)
+        .eq("status", "accepted")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      const { data: receipts } = await supabaseServiceClient
+        .from("receipts")
+        .select("id, receipt_number, amount, issued_at")
+        .eq("user_id", userId)
+        .order("issued_at", { ascending: false })
+        .limit(10);
+      // Note: never return storage keys; UI generates signed URLs separately on user action.
+      return safeJson({ success: true, contract_summaries: cs ?? [], receipts: receipts ?? [] });
+    }
+
+    case "get_my_tickets": {
+      if (!userId) return safeJson({ success: false, message: "Please sign in to view your tickets." });
+      const { data } = await supabaseServiceClient
+        .from("support_tickets")
+        .select("id, subject, status, priority, category, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return safeJson({ success: true, tickets: data ?? [] });
+    }
+
+    case "explain_my_invoice": {
+      if (!userId) return safeJson({ success: false, message: "Please sign in to view that invoice." });
+      const { invoice_number } = args as { invoice_number: string };
+      const { data: inv } = await supabaseServiceClient
+        .from("invoices")
+        .select("id, invoice_number, total_amount, subtotal, vat_amount, status, due_date, issued_at, billing_period_start, billing_period_end")
+        .eq("user_id", userId)
+        .eq("invoice_number", invoice_number)
+        .maybeSingle();
+      if (!inv) return safeJson({ success: false, message: "I couldn't find that invoice on your account." });
+      const { data: lines } = await supabaseServiceClient
+        .from("invoice_lines")
+        .select("description, quantity, unit_price, line_total")
+        .eq("invoice_id", inv.id);
+      return safeJson({ success: true, invoice: inv, lines: lines ?? [] });
+    }
+
+    case "escalate_to_team": {
+      const { subject, summary, priority = "medium", category = "account" } = args as {
+        subject: string; summary: string; priority?: string; category?: string;
+      };
+      if (!subject || !summary) return safeJson({ success: false, message: "Need subject and summary to create a case." });
+      let ticketId: string | null = null;
+      if (userId) {
+        const { data } = await supabaseAnonClient
+          .from("support_tickets")
+          .insert({
+            user_id: userId,
+            subject: subject.slice(0, 200),
+            description: `[AI escalation]\n\n${summary}`,
+            category,
+            priority,
+            status: "open",
+          })
+          .select("id")
+          .single();
+        ticketId = data?.id ?? null;
+      }
+      // Always log to admin_tasks for staff visibility (service-role insert is safe; audit logged)
+      await supabaseServiceClient.from("admin_tasks").insert({
+        title: `AI escalation: ${subject.slice(0, 120)}`,
+        description: summary,
+        priority,
+        status: "open",
+        source: "ai_assistant",
+        related_user_id: userId ?? null,
+      });
+      await supabaseServiceClient.from("audit_logs").insert({
+        action: "create",
+        entity: "support_ticket",
+        entity_id: ticketId,
+        metadata: { source: "ai_escalation", subject, priority, category, user_id: userId },
+      });
+      const ref = ticketId ? ticketId.slice(0, 8).toUpperCase() : `CASE-${Date.now().toString(36).toUpperCase()}`;
+      return safeJson({
+        success: true,
+        card: {
+          type: "escalation_card",
+          reference: ref,
+          subject,
+          priority,
+          message: ticketId
+            ? "I've prepared a case for the OCCTA team. They'll follow up shortly."
+            : "I've flagged this for the OCCTA team. They'll be in touch — please also call us if it's urgent.",
+        },
+      });
+    }
+
+    // === Admin copilot tools ===
+    case "admin_customer_360": {
+      if (!isAdmin) return safeJson({ success: false, message: "Admin only." });
+      const { identifier } = args as { identifier: string };
+      // Resolve to user_id
+      let targetUserId: string | null = null;
+      let profile: Record<string, unknown> | null = null;
+      if (identifier.includes("@")) {
+        const { data } = await supabaseServiceClient.from("profiles")
+          .select("id, full_name, email, account_number, phone, created_at")
+          .eq("email", identifier.toLowerCase()).maybeSingle();
+        profile = data; targetUserId = data?.id ?? null;
+      } else if (identifier.toUpperCase().startsWith("OCC")) {
+        const { data } = await supabaseServiceClient.from("profiles")
+          .select("id, full_name, email, account_number, phone, created_at")
+          .eq("account_number", identifier.toUpperCase()).maybeSingle();
+        profile = data; targetUserId = data?.id ?? null;
+      } else {
+        targetUserId = identifier;
+        const { data } = await supabaseServiceClient.from("profiles")
+          .select("id, full_name, email, account_number, phone, created_at")
+          .eq("id", identifier).maybeSingle();
+        profile = data;
+      }
+      if (!targetUserId) return safeJson({ success: false, message: "Customer not found." });
+      const [{ data: services }, { data: invoices }, { data: tickets }, { data: orders }] = await Promise.all([
+        supabaseServiceClient.from("services").select("id, plan_name, status, activated_at, service_type").eq("user_id", targetUserId).limit(10),
+        supabaseServiceClient.from("invoices").select("invoice_number, total_amount, status, due_date").eq("user_id", targetUserId).order("issued_at", { ascending: false }).limit(5),
+        supabaseServiceClient.from("support_tickets").select("id, subject, status, priority, created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(5),
+        supabaseServiceClient.from("orders").select("id, order_number, status, lifecycle_status, created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(5),
+      ]);
+      return safeJson({ success: true, profile, services: services ?? [], invoices: invoices ?? [], tickets: tickets ?? [], orders: orders ?? [] });
+    }
+
+    case "admin_order_blockers": {
+      if (!isAdmin) return safeJson({ success: false, message: "Admin only." });
+      const { order_id } = args as { order_id: string };
+      const { data: order } = await supabaseServiceClient.from("orders")
+        .select("id, order_number, status, lifecycle_status, user_id, plan_name").eq("id", order_id).maybeSingle();
+      if (!order) return safeJson({ success: false, message: "Order not found." });
+      const { data: readiness } = await supabaseServiceClient.from("provisioning_readiness")
+        .select("installation_confirmed, router_confirmed, internal_notes_reviewed, admin_review_complete")
+        .eq("order_id", order_id).maybeSingle();
+      const blockers: string[] = [];
+      if (!readiness?.installation_confirmed) blockers.push("Installation/setup choice not confirmed");
+      if (!readiness?.router_confirmed) blockers.push("Router choice not confirmed");
+      if (!readiness?.internal_notes_reviewed) blockers.push("Internal notes not reviewed");
+      if (!readiness?.admin_review_complete) blockers.push("Admin final review not complete");
+      return safeJson({ success: true, order, blockers, readiness: readiness ?? null });
+    }
+
+    case "admin_draft_reply": {
+      if (!isAdmin) return safeJson({ success: false, message: "Admin only." });
+      // Return the inputs back; the model itself will produce the draft text in the next turn.
+      // We supply structure + branding rules.
+      return safeJson({
+        success: true,
+        instruction: "Write a draft reply for staff to review (do not send). Use OCCTA tone: professional, warm, plain English. Sign off as 'The OCCTA Team'. Never invent prices, dates, or account facts.",
+        params: args,
+      });
+    }
+
+    case "admin_prepare_action": {
+      if (!isAdmin) return safeJson({ success: false, message: "Admin only." });
+      const { action_type, target_id, summary, details } = args as {
+        action_type: string; target_id: string; summary: string; details?: Record<string, unknown>;
+      };
+      // Build a confirmation card. Nothing is mutated here.
+      return safeJson({
+        success: true,
+        card: {
+          type: "confirmation_card",
+          action_type,
+          target_id,
+          summary,
+          details: redact(details ?? {}),
+          warning: "This action affects the customer account. Click Confirm to run it through the existing safe endpoints. Click Cancel to discard.",
+        },
+      });
+    }
+
     default:
       return JSON.stringify({ error: "Unknown tool" });
   }

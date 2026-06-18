@@ -178,6 +178,20 @@ export default function UnifiedJourney() {
       />
       <section className="container mx-auto px-4 py-10 max-w-2xl">
         <JourneyProgress current={step} />
+        <div className="flex justify-end -mt-2 mb-4">
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("open-ai-chat"));
+              setTimeout(() => window.dispatchEvent(new CustomEvent("ai-chat-seed", {
+                detail: { message: `I'm on my OCCTA quote ${state.quote.quote_number}. Can you explain this step?` },
+              })), 250);
+            }}
+            className="text-xs underline text-muted-foreground hover:text-foreground"
+          >
+            Stuck? Ask Ollie
+          </button>
+        </div>
 
         {state.journey?.status === "cancelled" ? (
           <CancelledStep

@@ -149,14 +149,6 @@ const CTASection = () => {
             </a>
           </motion.div>
 
-          {/* Helper text */}
-          <motion.p
-            variants={itemVariants}
-            className="mt-4 text-sm text-background/60"
-          >
-            Final price, contract length, fees, speed and key terms will be confirmed in your Contract Summary before you pay.
-          </motion.p>
-
           {/* Trust Note */}
           <motion.p
             variants={itemVariants}

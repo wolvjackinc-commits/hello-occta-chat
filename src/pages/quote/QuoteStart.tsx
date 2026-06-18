@@ -338,9 +338,6 @@ export default function QuoteStart() {
           <Button type="submit" variant="hero" className="w-full font-display uppercase" disabled={submitting}>
             {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</> : "Request my quote"}
           </Button>
-          <p className="text-xs text-muted-foreground">
-            No payment is taken now. You'll review and accept a Contract Summary before paying anything.
-          </p>
         </form>
       </section>
     </Layout>

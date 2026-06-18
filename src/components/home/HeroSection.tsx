@@ -171,9 +171,6 @@ const HeroSection = () => {
                 >
                   View plans <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
-                <p className="text-[11px] text-muted-foreground mt-2">
-                  No payment is taken until your final quote and Contract Summary are confirmed.
-                </p>
                 <p className="text-xs text-muted-foreground mt-2">
                   Prefer to speak to us? <a href="tel:08002606626" className="underline font-medium">Call 0800 260 6626</a>.
                 </p>

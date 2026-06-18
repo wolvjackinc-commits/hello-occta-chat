@@ -792,8 +792,6 @@ const Checkout = () => {
                         )}
                       </Button>
                     </div>
-                    
-                    <p className="text-center text-muted-foreground text-xs mt-4">You won't be charged today unless applicable</p>
                   </>
                 )}
               </motion.div>

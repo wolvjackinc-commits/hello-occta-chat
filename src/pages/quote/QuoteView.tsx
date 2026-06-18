@@ -151,7 +151,7 @@ export default function QuoteView() {
           </div>
         ) : eligible ? (
           <div className="border-4 border-foreground bg-background p-6">
-            <p className="text-sm mb-4">Happy with this quote? Tap below and we'll prepare your Contract Summary. <strong>No payment is taken at this step.</strong></p>
+            <p className="text-sm mb-4">Happy with this quote? Tap below and we'll prepare your Contract Summary.</p>
             <Button onClick={proceed} disabled={proceeding} variant="hero" size="lg" className="font-display uppercase w-full md:w-auto">
               {proceeding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Proceed with this quote

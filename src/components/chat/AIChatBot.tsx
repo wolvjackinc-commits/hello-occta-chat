@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { extractCards, CardRenderer } from "./StructuredCards";
 import { 
   MessageCircle, 
   X, 
@@ -491,14 +492,14 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                                 <Bot className="w-4 h-4 text-primary-foreground" />
                               </div>
                             )}
-                            <div
+                             <div
                               className={`max-w-[85%] px-3 py-2 text-sm ${
                                 message.role === "user"
                                   ? "bg-accent text-accent-foreground border-2 border-foreground"
                                   : "bg-secondary border-2 border-foreground/50"
                               }`}
                             >
-                              <p className="whitespace-pre-wrap">{message.content}</p>
+                              <AssistantMessageBody message={message} />
                               {message.attachments?.length && (
                                 <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                                   <p className="font-semibold uppercase tracking-wide">Attachments</p>

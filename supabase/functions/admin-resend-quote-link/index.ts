@@ -4,8 +4,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const secret = req.headers.get("x-cron-secret");
-  if (!secret || secret !== Deno.env.get("CRON_JOB_SECRET")) {
+  // Authenticated via Supabase service-role JWT from the platform tool.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!token || token !== serviceKey) {
     return jsonResponse({ error: "unauthorized" }, 401);
   }
 

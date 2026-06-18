@@ -19,7 +19,7 @@ export default function QuoteStep({
   const expired = quote.expires_at && new Date(quote.expires_at) < new Date();
   const declined = journey?.status === "declined";
   const advanced = journey && journey.current_step !== "quote" && !declined;
-  const eligible = ["approved", "sent", "viewed", "pending", "draft"].includes(quote.status) && !expired && !declined && !advanced;
+  const eligible = !expired && !declined && !advanced && quote.status !== "cancelled" && quote.status !== "rejected";
 
   const addons: any[] = Array.isArray(quote.selected_addons) ? quote.selected_addons : [];
   const hasDigitalVoice = addons.some((a: any) => {

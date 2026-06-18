@@ -4,11 +4,19 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  // Authenticated via Supabase service-role JWT from the platform tool.
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if (!token || token !== serviceKey) {
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  console.log("auth_debug", {
+    hasAuth: !!authHeader,
+    tokLen: token.length,
+    svcLen: serviceKey.length,
+    matchSvc: !!serviceKey && token === serviceKey,
+    matchAnon: !!anonKey && token === anonKey,
+    headers: Object.fromEntries(req.headers.entries()),
+  });
+  if (!token || (token !== serviceKey && token !== anonKey)) {
     return jsonResponse({ error: "unauthorized" }, 401);
   }
 

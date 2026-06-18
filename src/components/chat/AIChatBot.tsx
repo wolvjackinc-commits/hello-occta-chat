@@ -710,7 +710,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                       : "bg-secondary border-2 border-foreground/50"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <AssistantMessageBody message={message} />
                   {message.attachments?.length && (
                     <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                       <p className="font-semibold uppercase tracking-wide">Attachments</p>

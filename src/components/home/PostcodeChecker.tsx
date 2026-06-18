@@ -42,6 +42,32 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
 
   return (
     <div className={`w-full ${isHero ? "max-w-[700px]" : "max-w-xl"}`}>
+      {/* Fallback when availability API can't confirm — shown ABOVE the checker
+          so customers see the next step before they re-enter their postcode. */}
+      {showFallback && (
+        <div className="mb-4 border-4 border-foreground bg-card p-4">
+          <div className="flex items-start gap-2">
+            <Info className="w-5 h-5 text-foreground flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-display uppercase text-sm tracking-wider">Broadband options available to view</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. We'll confirm the final availability, speed, setup and price before you order.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={goToFallbackPlans}
+            size="lg"
+            className="mt-4 w-full h-12 font-display uppercase tracking-wider"
+          >
+            View plans <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Prefer to speak to us? <a href="tel:08002606626" className="underline font-medium">Call 0800 260 6626</a>.
+          </p>
+        </div>
+      )}
+
       {/* Label */}
       <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">
         {showInlineResult ? "Checked for" : "Enter your postcode"}
@@ -138,27 +164,6 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
       )}
 
       {/* Fallback when availability API can't confirm */}
-      {showFallback && (
-        <div className="mt-3 border-4 border-foreground bg-card p-4">
-          <div className="flex items-start gap-2">
-            <Info className="w-5 h-5 text-foreground flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-display uppercase text-sm tracking-wider">Broadband options available to view</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. We'll confirm the final availability, speed, setup and price before you order.
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={goToFallbackPlans}
-            size="lg"
-            className="mt-4 w-full h-12 font-display uppercase tracking-wider"
-          >
-            View plans <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-      )}
-
       {/* Helper line */}
       {!showInlineAddresses && !showInlineResult && !showFallback && (
         <p className="text-xs text-muted-foreground mt-3 flex flex-wrap gap-x-3 gap-y-1">

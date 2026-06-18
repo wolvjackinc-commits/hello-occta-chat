@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Download, AlertTriangle, Check, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import FullContractTermsBlock from "@/components/legal/FullContractTermsBlock";
 
 const CHECKBOXES = [
   { key: "received_read", text: "I confirm that I have received, read and had the opportunity to download my Contract Summary and Contract Information." },
@@ -226,6 +227,9 @@ export default function AgreementStep({
           </section>
         </div>
       </div>
+
+      {/* Full multi-page terms — mirrors the downloadable PDF */}
+      <FullContractTermsBlock />
 
       {acceptedAt ? (
         <div className="border-4 border-primary bg-primary/5 p-5">

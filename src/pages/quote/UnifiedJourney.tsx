@@ -5,7 +5,6 @@ import { SEO } from "@/components/seo";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import QuoteView from "./QuoteView";
 import JourneyProgress, { type JourneyStepKey } from "./journey/JourneyProgress";
 import QuoteStep from "./journey/QuoteStep";
 import DeclineDialog from "./journey/DeclineDialog";
@@ -56,9 +55,7 @@ type StateResponse = {
 };
 
 /**
- * Phase A/B shell for the unified quote-to-order journey. Falls back to the
- * legacy single-page `QuoteView` while `unified_journey_enabled` is off,
- * so live traffic is unaffected until ops flips the flag.
+ * Unified quote-to-order journey. This is the only customer journey UI.
  */
 export default function UnifiedJourney() {
   const { token } = useParams();
@@ -168,11 +165,6 @@ export default function UnifiedJourney() {
         </section>
       </Layout>
     );
-  }
-
-  // Feature flag off → render the verified legacy single-page experience untouched.
-  if (!state.unified_journey_enabled) {
-    return <QuoteView />;
   }
 
   const step: JourneyStepKey = state.journey?.current_step ?? "quote";

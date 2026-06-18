@@ -147,41 +147,41 @@ const AnimatedRoutes = () => {
         <Route path="/admin/*" element={<ProtectedAdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<Navigate to="overview" replace />} />
-            <Route path="overview" element={<AdminOverview />} />
-            <Route path="customers" element={<AdminCustomers />} />
-            <Route path="customers/:accountNumber" element={<AdminCustomerDetail />} />
-            <Route path="customers/:accountNumber/journey" element={<AdminCustomerJourney />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="tickets" element={<AdminTickets />} />
-            <Route path="billing" element={<AdminBilling />} />
-            <Route path="services" element={<AdminServices />} />
-            <Route path="payments-dd" element={<AdminPaymentsDD />} />
-            <Route path="installations" element={<AdminInstallations />} />
-            <Route path="plans" element={<AdminPlans />} />
-            <Route path="compliance" element={<AdminCompliance />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="audit-log" element={<AdminAuditLog />} />
-            <Route path="payment-requests" element={<AdminPaymentRequests />} />
-            <Route path="communications" element={<AdminCommunications />} />
-            <Route path="chat-transcripts" element={<AdminChatTranscripts />} />
-            <Route path="quote-requests" element={<AdminQuoteRequests />} />
-            <Route path="quotes" element={<AdminQuotes />} />
-            <Route path="vat-settings" element={<AdminVatSettings />} />
-            <Route path="suppliers" element={<AdminSuppliers />} />
-            <Route path="pricing-rules" element={<AdminPricingRules />} />
-            <Route path="margin-rules" element={<AdminMarginRules />} />
-            <Route path="rewards" element={<AdminRewards />} />
-            <Route path="referrals" element={<AdminReferrals />} />
-            <Route path="contract-benefits" element={<AdminContractBenefits />} />
-            <Route path="campaigns" element={<AdminCampaigns />} />
-            <Route path="complaints" element={<AdminComplaints />} />
-            <Route path="knowledge-base" element={<AdminKnowledgeBase />} />
-            <Route path="fair-pricing" element={<AdminFairPricing />} />
-            <Route path="suppliers/giacom-import" element={<AdminSuppliersGiacomImport />} />
-            <Route path="readiness" element={<AdminReadiness />} />
-            <Route path="launch-safety" element={<AdminLaunchSafety />} />
-            <Route path="tasks" element={<AdminTasks />} />
-            <Route path="manual-fulfilment" element={<AdminManualFulfilment />} />
+            <Route path="overview" element={<Suspense fallback={<AdminRouteFallback />}><AdminOverview /></Suspense>} />
+            <Route path="customers" element={<Suspense fallback={<AdminRouteFallback />}><AdminCustomers /></Suspense>} />
+            <Route path="customers/:accountNumber" element={<Suspense fallback={<AdminRouteFallback />}><AdminCustomerDetail /></Suspense>} />
+            <Route path="customers/:accountNumber/journey" element={<Suspense fallback={<AdminRouteFallback />}><AdminCustomerJourney /></Suspense>} />
+            <Route path="orders" element={<Suspense fallback={<AdminRouteFallback />}><AdminOrders /></Suspense>} />
+            <Route path="tickets" element={<Suspense fallback={<AdminRouteFallback />}><AdminTickets /></Suspense>} />
+            <Route path="billing" element={<Suspense fallback={<AdminRouteFallback />}><AdminBilling /></Suspense>} />
+            <Route path="services" element={<Suspense fallback={<AdminRouteFallback />}><AdminServices /></Suspense>} />
+            <Route path="payments-dd" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentsDD /></Suspense>} />
+            <Route path="installations" element={<Suspense fallback={<AdminRouteFallback />}><AdminInstallations /></Suspense>} />
+            <Route path="plans" element={<Suspense fallback={<AdminRouteFallback />}><AdminPlans /></Suspense>} />
+            <Route path="compliance" element={<Suspense fallback={<AdminRouteFallback />}><AdminCompliance /></Suspense>} />
+            <Route path="settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminSettings /></Suspense>} />
+            <Route path="audit-log" element={<Suspense fallback={<AdminRouteFallback />}><AdminAuditLog /></Suspense>} />
+            <Route path="payment-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentRequests /></Suspense>} />
+            <Route path="communications" element={<Suspense fallback={<AdminRouteFallback />}><AdminCommunications /></Suspense>} />
+            <Route path="chat-transcripts" element={<Suspense fallback={<AdminRouteFallback />}><AdminChatTranscripts /></Suspense>} />
+            <Route path="quote-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuoteRequests /></Suspense>} />
+            <Route path="quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuotes /></Suspense>} />
+            <Route path="vat-settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminVatSettings /></Suspense>} />
+            <Route path="suppliers" element={<Suspense fallback={<AdminRouteFallback />}><AdminSuppliers /></Suspense>} />
+            <Route path="pricing-rules" element={<Suspense fallback={<AdminRouteFallback />}><AdminPricingRules /></Suspense>} />
+            <Route path="margin-rules" element={<Suspense fallback={<AdminRouteFallback />}><AdminMarginRules /></Suspense>} />
+            <Route path="rewards" element={<Suspense fallback={<AdminRouteFallback />}><AdminRewards /></Suspense>} />
+            <Route path="referrals" element={<Suspense fallback={<AdminRouteFallback />}><AdminReferrals /></Suspense>} />
+            <Route path="contract-benefits" element={<Suspense fallback={<AdminRouteFallback />}><AdminContractBenefits /></Suspense>} />
+            <Route path="campaigns" element={<Suspense fallback={<AdminRouteFallback />}><AdminCampaigns /></Suspense>} />
+            <Route path="complaints" element={<Suspense fallback={<AdminRouteFallback />}><AdminComplaints /></Suspense>} />
+            <Route path="knowledge-base" element={<Suspense fallback={<AdminRouteFallback />}><AdminKnowledgeBase /></Suspense>} />
+            <Route path="fair-pricing" element={<Suspense fallback={<AdminRouteFallback />}><AdminFairPricing /></Suspense>} />
+            <Route path="suppliers/giacom-import" element={<Suspense fallback={<AdminRouteFallback />}><AdminSuppliersGiacomImport /></Suspense>} />
+            <Route path="readiness" element={<Suspense fallback={<AdminRouteFallback />}><AdminReadiness /></Suspense>} />
+            <Route path="launch-safety" element={<Suspense fallback={<AdminRouteFallback />}><AdminLaunchSafety /></Suspense>} />
+            <Route path="tasks" element={<Suspense fallback={<AdminRouteFallback />}><AdminTasks /></Suspense>} />
+            <Route path="manual-fulfilment" element={<Suspense fallback={<AdminRouteFallback />}><AdminManualFulfilment /></Suspense>} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

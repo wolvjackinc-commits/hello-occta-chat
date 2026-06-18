@@ -80,3 +80,5 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = false
   [functions.journey-link-to-account]
     verify_jwt = true
+  [functions.process-email-queue]
+    verify_jwt = true

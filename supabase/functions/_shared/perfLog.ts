@@ -30,7 +30,15 @@ export function perfServe(
   fn: string,
   handler: (req: Request, ctx: PerfCtx) => Promise<Response> | Response,
 ): (req: Request) => Promise<Response> {
+  // Perf logging is opt-in. Set PERF_LOG_ENABLED=1 in function env to re-enable.
+  const PERF_ENABLED = Deno.env.get("PERF_LOG_ENABLED") === "1";
   return async (req: Request): Promise<Response> => {
+    if (!PERF_ENABLED) {
+      // Zero-overhead passthrough — preserve a no-op ctx so handlers calling
+      // ctx.mark() don't throw.
+      const ctx: PerfCtx = { mark: () => {} };
+      return await handler(req, ctx);
+    }
     const t0 = performance.now();
     const extra: Record<string, number | boolean> = {};
     const ctx: PerfCtx = {

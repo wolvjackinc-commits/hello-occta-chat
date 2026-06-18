@@ -487,7 +487,8 @@ async function executeTool(
   args: Record<string, unknown>, 
   supabaseServiceClient: any,
   supabaseAnonClient: any,
-  userId?: string
+  userId?: string,
+  isAdmin?: boolean
 ): Promise<string> {
   switch (toolName) {
     case "lookup_account": {

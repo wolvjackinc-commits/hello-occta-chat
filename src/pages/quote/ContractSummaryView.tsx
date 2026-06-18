@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ACCEPTANCE_CHECKBOX_TEXT } from "@/lib/legal/contractSummaryCopy";
 import { AlertTriangle, Loader2, Check } from "lucide-react";
+import FullContractTermsBlock from "@/components/legal/FullContractTermsBlock";
 
 export default function ContractSummaryView() {
   const { token } = useParams();
@@ -134,6 +135,10 @@ export default function ContractSummaryView() {
         <div className="border-4 border-foreground p-5 mb-5 text-sm text-muted-foreground">
           <h2 className="font-display uppercase text-sm mb-2 text-foreground">Payment schedule</h2>
           <p>{cs.payment_schedule}</p>
+        </div>
+
+        <div className="mb-5">
+          <FullContractTermsBlock collapsibleHeading={false} />
         </div>
 
         {accepted ? (

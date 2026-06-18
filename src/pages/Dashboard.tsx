@@ -175,7 +175,7 @@ const Dashboard = () => {
       setIsLoading(false);
       
       if (!session) {
-        navigate("/auth");
+        navigate("/auth?claim=1&next=/dashboard");
       } else {
         // Defer data fetching to avoid deadlock
         setTimeout(() => {
@@ -190,7 +190,7 @@ const Dashboard = () => {
       setIsLoading(false);
       
       if (!session) {
-        navigate("/auth");
+        navigate("/auth?claim=1&next=/dashboard");
       } else {
         fetchUserData(session.user.id);
         // Best-effort: backfill any guest quote_requests submitted with the

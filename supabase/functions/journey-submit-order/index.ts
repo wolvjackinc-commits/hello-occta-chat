@@ -393,7 +393,24 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
       try {
         if (canonicalCustomerId) {
           const PUBLIC_APP_ORIGIN = "https://www.occta.co.uk";
-          if (customerNewlyCreated) {
+          // Decide which CTA to send based on whether the auth user has
+          // EVER signed in — not just whether the customer row was created
+          // in this request. A customer row can pre-exist (created by an
+          // earlier journey step or admin) while the underlying auth user
+          // has never set a password or logged in. In that case we must
+          // still send a "set password" recovery link, otherwise the
+          // "Open my dashboard" button drops them onto a sign-in screen
+          // they can't pass.
+          let hasEverSignedIn = false;
+          try {
+            // listUsers + filter by email is the supported admin lookup.
+            const { data: list } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+            const u = list?.users?.find((x: any) => (x.email ?? "").toLowerCase() === qr.email.toLowerCase());
+            hasEverSignedIn = !!(u?.last_sign_in_at);
+          } catch (_) { /* treat as never signed in */ }
+
+          const needsClaim = customerNewlyCreated || !hasEverSignedIn;
+          if (needsClaim) {
             const link = await supabase.auth.admin.generateLink({
               type: "recovery",
               email: qr.email,
@@ -403,12 +420,14 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
             if (actionLink) {
               accountAccessBlock = `
                 <p style="font-size:14px;margin-top:18px;">
-                  <strong>Set up your OCCTA account.</strong> Use the secure
-                  link below to choose a password and access your customer
-                  dashboard. This link expires for your security.
+                  <strong>Activate your OCCTA dashboard.</strong> Use the
+                  secure one-click link below to choose a password — you'll
+                  be signed straight in and your order, Contract Summary
+                  and billing details will already be there, synced to
+                  ${escapeHtml(qr.email)}. The link expires for your security.
                 </p>
                 <p style="margin:14px 0;">
-                  <a href="${escapeHtml(actionLink)}" style="display:inline-block;padding:12px 18px;background:#000;color:#facc15;font-weight:700;text-decoration:none;border:3px solid #000;text-transform:uppercase;letter-spacing:0.05em;">Set my password</a>
+                  <a href="${escapeHtml(actionLink)}" style="display:inline-block;padding:12px 18px;background:#000;color:#facc15;font-weight:700;text-decoration:none;border:3px solid #000;text-transform:uppercase;letter-spacing:0.05em;">Set password &amp; open dashboard</a>
                 </p>`;
             }
           } else {

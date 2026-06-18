@@ -24,6 +24,8 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState(initialMode);
   const linkQr = searchParams.get("link") === "qr";
   const prefillEmail = searchParams.get("email") || "";
+  const isWelcome = searchParams.get("welcome") === "1";
+  const isClaim = searchParams.get("claim") === "1";
 
   const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
@@ -31,6 +33,11 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [claimEmail, setClaimEmail] = useState(prefillEmail);
+  const [claimSending, setClaimSending] = useState(false);
+  const [claimSent, setClaimSent] = useState(false);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -65,15 +72,26 @@ const Auth = () => {
     // Check if user is already logged in
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session && !isWelcome && !recoveryMode) {
         navigate(redirectTarget);
+      }
+      if (session && isWelcome) {
+        // Landed here via the email "Set password & open dashboard" link.
+        setRecoveryMode(true);
       }
     };
     checkSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setRecoveryMode(true);
+        return;
+      }
       if (session) {
+        // If we're in the middle of a recovery / welcome set-password flow,
+        // do NOT auto-navigate — let the user choose a password first.
+        if (recoveryMode || isWelcome) return;
         // After successful sign-in/sign-up, attempt to link any guest quote
         // requests submitted with this user's email. Function is RLS-safe.
         (supabase as any)
@@ -90,7 +108,46 @@ const Auth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, searchParams]);
+  }, [navigate, searchParams, isWelcome, recoveryMode]);
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      setMessage({ type: "error", text: "Password must be at least 8 characters." });
+      return;
+    }
+    setIsLoading(true);
+    setMessage(null);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsLoading(false);
+    if (error) {
+      setMessage({ type: "error", text: error.message || "Couldn't set your password. Try the link again." });
+      return;
+    }
+    toast({ title: "Welcome to OCCTA", description: "Password set — taking you to your dashboard." });
+    navigate(getRedirectTarget());
+  };
+
+  const handleSendClaimLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = emailSchema.safeParse(claimEmail);
+    if (!parsed.success) {
+      setMessage({ type: "error", text: parsed.error.errors[0].message });
+      return;
+    }
+    setClaimSending(true);
+    setMessage(null);
+    const nextParam = encodeURIComponent(getRedirectTarget());
+    const { error } = await supabase.auth.resetPasswordForEmail(claimEmail, {
+      redirectTo: `${window.location.origin}/auth?welcome=1&next=${nextParam}`,
+    });
+    setClaimSending(false);
+    if (error) {
+      setMessage({ type: "error", text: "Couldn't send the link. Please try again or call us." });
+      return;
+    }
+    setClaimSent(true);
+  };
 
   const validateForm = (isSignUp: boolean) => {
     const newErrors: Record<string, string> = {};
@@ -215,10 +272,13 @@ const Auth = () => {
               {activeTab === "signin" ? "Welcome back!" : "Join the club"}
             </CardTitle>
             <CardDescription>
-              {activeTab === "signin" 
-                ? "Good to see you again. Let's get you logged in." 
-                : "Create an account to manage your services, view bills, and more."
-              }
+              {recoveryMode
+                ? "Choose a password to finish activating your OCCTA dashboard."
+                : isClaim
+                  ? "First time here? Pop your email in below and we'll send a secure link to set your password and open your dashboard."
+                  : activeTab === "signin"
+                    ? "Good to see you again. Let's get you logged in."
+                    : "Create an account to manage your services, view bills, and more."}
             </CardDescription>
             {linkQr && (
               <div className="text-xs border-2 border-foreground/30 bg-muted/40 p-2 mt-2">
@@ -227,8 +287,49 @@ const Auth = () => {
             )}
           </CardHeader>
           
+          {recoveryMode ? (
+            <CardContent className="space-y-4">
+              {message && (
+                <div className={`flex items-start gap-3 p-4 rounded-lg ${message.type === "success" ? "bg-success/10 text-success border border-success/20" : "bg-destructive/10 text-destructive border border-destructive/20"}`}>
+                  {message.type === "success" ? <CheckCircle className="w-5 h-5 mt-0.5" /> : <AlertCircle className="w-5 h-5 mt-0.5" />}
+                  <p className="text-sm">{message.text}</p>
+                </div>
+              )}
+              <form onSubmit={handleSetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Choose your password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input id="new-password" type="password" placeholder="Min. 8 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="pl-10" autoFocus />
+                  </div>
+                  <p className="text-xs text-muted-foreground">We'll sign you straight in. Your order, Contract Summary and billing details are already synced to your email.</p>
+                </div>
+                <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Set password & open dashboard"}
+                </Button>
+              </form>
+            </CardContent>
+          ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <CardContent className="space-y-4">
+              {isClaim && (
+                <div className="border-2 border-foreground bg-primary/10 p-4 space-y-3">
+                  <div>
+                    <p className="font-display uppercase text-sm">First time signing in?</p>
+                    <p className="text-xs text-muted-foreground">Used the "Open my dashboard" button from your order email? Enter the same email and we'll send a one-tap link to set your password.</p>
+                  </div>
+                  {claimSent ? (
+                    <p className="text-sm bg-success/10 border border-success/30 p-3">Done — check <strong>{claimEmail}</strong> for your secure link. (Look in spam too, just in case.)</p>
+                  ) : (
+                    <form onSubmit={handleSendClaimLink} className="flex gap-2">
+                      <Input type="email" placeholder="you@example.com" value={claimEmail} onChange={(e) => setClaimEmail(e.target.value)} className="flex-1" />
+                      <Button type="submit" variant="hero" disabled={claimSending}>
+                        {claimSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Email me a link"}
+                      </Button>
+                    </form>
+                  )}
+                </div>
+              )}
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -367,6 +468,7 @@ const Auth = () => {
               </TabsContent>
             </CardContent>
           </Tabs>
+          )}
           
           <CardFooter className="flex flex-col space-y-4">
             <p className="text-xs text-center text-muted-foreground">

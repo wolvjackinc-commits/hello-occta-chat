@@ -468,6 +468,7 @@ const Auth = () => {
               </TabsContent>
             </CardContent>
           </Tabs>
+          )}
           
           <CardFooter className="flex flex-col space-y-4">
             <p className="text-xs text-center text-muted-foreground">

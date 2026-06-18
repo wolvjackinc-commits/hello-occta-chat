@@ -18,8 +18,8 @@ interface Props {
 const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
 const TRACKING_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined;
 
-let mapsLoader: Promise<typeof google> | null = null;
-function loadMaps(): Promise<typeof google> {
+let mapsLoader: Promise<any> | null = null;
+function loadMaps(): Promise<any> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
   if ((window as any).google?.maps?.importLibrary) return Promise.resolve((window as any).google);
   if (mapsLoader) return mapsLoader;

@@ -148,9 +148,44 @@ export function brutalistEmailShell(title: string, body: string, cta?: { label: 
         ${body}
         <div style="margin-top:24px;">${ctaHtml}</div>
       </td></tr>
-      <tr><td style="padding:16px 28px;border-top:2px solid #000;font-size:11px;color:#555;">
-        OCCTA Ltd · UK Telecom · <a href="https://www.occta.co.uk" style="color:#555;">www.occta.co.uk</a><br/>
-        This is a service email about your quote with OCCTA.
+      <tr><td style="padding:0 28px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;border-top:2px solid #000;">
+          <tr>
+            <td style="padding:18px 0 10px 0;font-family:Arial,sans-serif;">
+              <p style="margin:0 0 4px 0;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#111;">OCCTA Limited</p>
+              <p style="margin:0 0 12px 0;font-size:11px;color:#555;font-style:italic;">No contracts. No price-rise nonsense. Just proper British telecom.</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:11px;color:#444;line-height:1.55;">
+                <tr>
+                  <td style="padding-right:18px;vertical-align:top;">
+                    <strong style="color:#111;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;">Talk to us</strong><br/>
+                    <a href="mailto:hello@occta.co.uk" style="color:#444;text-decoration:none;">hello@occta.co.uk</a><br/>
+                    <a href="tel:08002606626" style="color:#444;text-decoration:none;">0800 260 6626</a><br/>
+                    Mon–Fri · 9am–6pm UK
+                  </td>
+                  <td style="padding-right:18px;vertical-align:top;">
+                    <strong style="color:#111;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;">Self-serve</strong><br/>
+                    <a href="https://www.occta.co.uk/dashboard" style="color:#444;text-decoration:none;">Your dashboard</a><br/>
+                    <a href="https://www.occta.co.uk/support" style="color:#444;text-decoration:none;">Help &amp; support</a><br/>
+                    <a href="https://www.occta.co.uk/order-lookup" style="color:#444;text-decoration:none;">Track an order</a>
+                  </td>
+                  <td style="vertical-align:top;">
+                    <strong style="color:#111;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;">Registered office</strong><br/>
+                    22 Pavilion View<br/>
+                    Huddersfield, HD3 3WU<br/>
+                    Company No. 13828933
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:12px 0;border-top:1px solid #e5e5e5;font-size:10px;color:#888;font-family:Arial,sans-serif;line-height:1.55;">
+              You're getting this email because it relates to your account, quote or order with OCCTA Limited — it's a service message, not marketing.
+              Manage preferences in <a href="https://www.occta.co.uk/dashboard" style="color:#666;">your dashboard</a>.
+              © ${new Date().getFullYear()} OCCTA Limited. Regulated under UK Ofcom General Conditions. Calls may be recorded for training.
+            </td>
+          </tr>
+        </table>
       </td></tr>
     </table>
   </body></html>`;

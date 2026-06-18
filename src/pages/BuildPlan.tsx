@@ -120,6 +120,17 @@ function BuildPlanInner() {
     return () => clearTimeout(t);
   }, [step]);
 
+  // Auto-advance from router step once a payment type has been chosen for
+  // standard / premium router options. Own/business routers advance via their
+  // own onClick handlers.
+  useEffect(() => {
+    if (step !== 3) return;
+    if ((router === "standard" || router === "premium") && routerPay !== "none") {
+      const t = setTimeout(() => setStep((s) => s === 3 ? 4 : s), 220);
+      return () => clearTimeout(t);
+    }
+  }, [step, router, routerPay]);
+
   const eligibleBuckets = useMemo<SpeedBucket[]>(() => {
     const all: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
     // National policy: every valid UK postcode sees all main buckets.
@@ -299,7 +310,7 @@ function BuildPlanInner() {
                     const selected = bucket === b;
                     const headline = FAIR_PRICING_DEFAULTS.headline[b];
                     return (
-                      <button key={b} onClick={() => isEligible && setBucket(b)} disabled={!isEligible}
+                      <button key={b} onClick={() => { if (!isEligible) return; setBucket(b); setTimeout(() => setStep((s) => s === 1 ? 2 : s), 180); }} disabled={!isEligible}
                         className={`text-left p-5 border-4 transition-colors ${selected ? "border-foreground bg-primary/10" : "border-foreground/20 hover:border-foreground"} ${!isEligible ? "opacity-50 cursor-not-allowed" : ""}`}>
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -328,9 +339,9 @@ function BuildPlanInner() {
             {step === 2 && (
               <Step title="Choose plan type" headingRef={headingRef}>
                 <div className="grid gap-3">
-                  <OptionCard selected={term === "price_lock_24"} onClick={() => setTerm("price_lock_24")}
+                  <OptionCard selected={term === "price_lock_24"} onClick={() => { setTerm("price_lock_24"); setTimeout(() => setStep((s) => s === 2 ? 3 : s), 180); }}
                     title="Price Lock 24" subtitle="Fixed monthly broadband price for 24 months." body={PRICE_LOCK_WORDING} />
-                  <OptionCard selected={term === "flex_30"} onClick={() => setTerm("flex_30")}
+                  <OptionCard selected={term === "flex_30"} onClick={() => { setTerm("flex_30"); setTimeout(() => setStep((s) => s === 2 ? 3 : s), 180); }}
                     title="Flex 30" subtitle="30-day rolling where available." body={FLEX_30_WORDING} />
                 </div>
               </Step>
@@ -339,7 +350,7 @@ function BuildPlanInner() {
             {step === 3 && (
               <Step title="Choose your router" headingRef={headingRef}>
                 <div className="grid gap-3">
-                  <OptionCard selected={router === "own"} onClick={() => { setRouter("own"); setRouterPay("none"); }}
+                  <OptionCard selected={router === "own"} onClick={() => { setRouter("own"); setRouterPay("none"); setTimeout(() => setStep((s) => s === 3 ? 4 : s), 200); }}
                     title="Use my own compatible router" subtitle="£0" body="Save by bringing your own. We'll send a compatibility checklist." />
                   <RouterOptionGroup
                     label="Standard WiFi 6 router" selected={router === "standard"} onSelect={() => setRouter("standard")}
@@ -351,7 +362,7 @@ function BuildPlanInner() {
                     oneOffLabel="From £129.99 one-off" monthlyLabel="£7.99/month"
                     paymentType={routerPay} onPaymentChange={setRouterPay}
                   />
-                  <OptionCard selected={router === "business"} onClick={() => { setRouter("business"); setRouterPay("none"); }}
+                  <OptionCard selected={router === "business"} onClick={() => { setRouter("business"); setRouterPay("none"); setTimeout(() => setStep((s) => s === 3 ? 4 : s), 200); }}
                     title="Business router" subtitle="Available by quote." body="We'll quote a business-grade router for your needs." />
                 </div>
               </Step>
@@ -360,13 +371,13 @@ function BuildPlanInner() {
             {step === 4 && (
               <Step title="Choose setup" headingRef={headingRef}>
                 <div className="grid gap-3">
-                  <OptionCard selected={setup === "remote"} onClick={() => setSetup("remote")}
+                  <OptionCard selected={setup === "remote"} onClick={() => { setSetup("remote"); setTimeout(() => setStep((s) => s === 4 ? 5 : s), 180); }}
                     title="Remote / no-site activation" subtitle="£0 where available" body="No engineer needed for most existing fibre lines." />
-                  <OptionCard selected={setup === "standard"} onClick={() => setSetup("standard")}
+                  <OptionCard selected={setup === "standard"} onClick={() => { setSetup("standard"); setTimeout(() => setStep((s) => s === 4 ? 5 : s), 180); }}
                     title="Standard setup" subtitle="From £49.99" body="For lines needing a non-engineer activation step." />
-                  <OptionCard selected={setup === "engineer"} onClick={() => setSetup("engineer")}
+                  <OptionCard selected={setup === "engineer"} onClick={() => { setSetup("engineer"); setTimeout(() => setStep((s) => s === 4 ? 5 : s), 180); }}
                     title="Engineer / new install" subtitle="From £99.99" body="For new lines that need an engineer visit." />
-                  <OptionCard selected={setup === "complex"} onClick={() => setSetup("complex")}
+                  <OptionCard selected={setup === "complex"} onClick={() => { setSetup("complex"); setTimeout(() => setStep((s) => s === 4 ? 5 : s), 180); }}
                     title="Complex install / survey / ECC" subtitle="Available by quote." body="If the site needs a survey or excess construction charge." />
                 </div>
               </Step>

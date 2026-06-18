@@ -39,9 +39,6 @@ export default function QuoteThankYou() {
           </div>
           <h1 className="font-display uppercase text-3xl md:text-4xl mb-3">Thanks — we've got it.</h1>
           {ref && <p className="text-sm text-muted-foreground mb-2">Your reference: <strong className="font-mono">{ref}</strong></p>}
-          <p className="inline-block mt-2 text-xs font-display uppercase tracking-wider border-2 border-foreground/40 px-2 py-0.5">
-            No payment has been taken
-          </p>
         </div>
 
         {hasDetails && (

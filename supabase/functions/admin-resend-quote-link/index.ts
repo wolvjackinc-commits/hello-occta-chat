@@ -6,19 +6,13 @@ Deno.serve(async (req) => {
 
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-  console.log("auth_debug", {
-    hasAuth: !!authHeader,
-    tokLen: token.length,
-    svcLen: serviceKey.length,
-    matchSvc: !!serviceKey && token === serviceKey,
-    matchAnon: !!anonKey && token === anonKey,
-    headers: Object.fromEntries(req.headers.entries()),
-  });
-  if (!token || (token !== serviceKey && token !== anonKey)) {
-    return jsonResponse({ error: "unauthorized" }, 401);
-  }
+  if (!token) return jsonResponse({ error: "missing_jwt" }, 401);
+  const supabaseAuth = getServiceClient();
+  const { data: userData, error: userErr } = await supabaseAuth.auth.getUser(token);
+  if (userErr || !userData?.user) return jsonResponse({ error: "invalid_jwt" }, 401);
+  const { data: isAdmin } = await supabaseAuth.rpc("has_role", { _user_id: userData.user.id, _role: "admin" });
+  const { data: isSuper } = await supabaseAuth.rpc("has_role", { _user_id: userData.user.id, _role: "super_admin" });
+  if (!isAdmin && !isSuper) return jsonResponse({ error: "forbidden" }, 403);
 
   const body = await req.json().catch(() => ({}));
   const quote_id: string | undefined = body?.quote_id;

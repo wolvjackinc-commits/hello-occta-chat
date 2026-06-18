@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,22 +14,25 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import { ProtectedAdminRoute } from "./components/admin/layout/ProtectedAdminRoute";
 import { AdminLayout } from "./components/admin/layout/AdminLayout";
-import { AdminOverview } from "./pages/admin/Overview";
-import { AdminCustomers } from "./pages/admin/Customers";
-import { AdminCustomerDetail } from "./pages/admin/CustomerDetail";
-import { AdminOrders } from "./pages/admin/Orders";
-import { AdminTickets } from "./pages/admin/Tickets";
-import { AdminBilling } from "./pages/admin/Billing";
-import { AdminServices } from "./pages/admin/Services";
-import { AdminPaymentsDD } from "./pages/admin/PaymentsDD";
-import { AdminInstallations } from "./pages/admin/Installations";
-import { AdminPlans } from "./pages/admin/Plans";
-import { AdminCompliance } from "./pages/admin/Compliance";
-import { AdminSettings } from "./pages/admin/Settings";
-import { AdminAuditLog } from "./pages/admin/AuditLog";
-import { AdminPaymentRequests } from "./pages/admin/PaymentRequests";
-import { AdminCommunications } from "./pages/admin/Communications";
-import { AdminChatTranscripts } from "./pages/admin/ChatTranscripts";
+// Admin pages are lazy-loaded — they ship as separate chunks and are only
+// fetched when staff actually navigate into /admin/*. This keeps them out
+// of the initial customer bundle.
+const AdminOverview = lazy(() => import("./pages/admin/Overview").then(m => ({ default: m.AdminOverview })));
+const AdminCustomers = lazy(() => import("./pages/admin/Customers").then(m => ({ default: m.AdminCustomers })));
+const AdminCustomerDetail = lazy(() => import("./pages/admin/CustomerDetail").then(m => ({ default: m.AdminCustomerDetail })));
+const AdminOrders = lazy(() => import("./pages/admin/Orders").then(m => ({ default: m.AdminOrders })));
+const AdminTickets = lazy(() => import("./pages/admin/Tickets").then(m => ({ default: m.AdminTickets })));
+const AdminBilling = lazy(() => import("./pages/admin/Billing").then(m => ({ default: m.AdminBilling })));
+const AdminServices = lazy(() => import("./pages/admin/Services").then(m => ({ default: m.AdminServices })));
+const AdminPaymentsDD = lazy(() => import("./pages/admin/PaymentsDD").then(m => ({ default: m.AdminPaymentsDD })));
+const AdminInstallations = lazy(() => import("./pages/admin/Installations").then(m => ({ default: m.AdminInstallations })));
+const AdminPlans = lazy(() => import("./pages/admin/Plans").then(m => ({ default: m.AdminPlans })));
+const AdminCompliance = lazy(() => import("./pages/admin/Compliance").then(m => ({ default: m.AdminCompliance })));
+const AdminSettings = lazy(() => import("./pages/admin/Settings").then(m => ({ default: m.AdminSettings })));
+const AdminAuditLog = lazy(() => import("./pages/admin/AuditLog").then(m => ({ default: m.AdminAuditLog })));
+const AdminPaymentRequests = lazy(() => import("./pages/admin/PaymentRequests").then(m => ({ default: m.AdminPaymentRequests })));
+const AdminCommunications = lazy(() => import("./pages/admin/Communications").then(m => ({ default: m.AdminCommunications })));
+const AdminChatTranscripts = lazy(() => import("./pages/admin/ChatTranscripts").then(m => ({ default: m.AdminChatTranscripts })));
 import Broadband from "./pages/Broadband";
 import Pay from "./pages/Pay";
 import PayInternalReturn from "./pages/PayInternalReturn";
@@ -77,24 +80,25 @@ import ContractSummaryView from "./pages/quote/ContractSummaryView";
 import QuotePayment from "./pages/quote/QuotePayment";
 import ContractSummaryAuthedView from "./pages/dashboard/ContractSummaryAuthedView";
 import ReceiptView from "./pages/ReceiptView";
-import { AdminQuoteRequests } from "./pages/admin/QuoteRequests";
-import { AdminQuotes } from "./pages/admin/Quotes";
-import { AdminVatSettings } from "./pages/admin/VatSettings";
-import { AdminSuppliers } from "./pages/admin/Suppliers";
-import { AdminPricingRules } from "./pages/admin/PricingRules";
-import { AdminMarginRules } from "./pages/admin/MarginRules";
-import { AdminRewards } from "./pages/admin/Rewards";
-import { AdminReferrals } from "./pages/admin/Referrals";
-import { AdminContractBenefits } from "./pages/admin/ContractBenefits";
-import { AdminCampaigns } from "./pages/admin/Campaigns";
-import { AdminComplaints } from "./pages/admin/Complaints";
-import { AdminKnowledgeBase } from "./pages/admin/KnowledgeBase";
-import { AdminFairPricing } from "./pages/admin/FairPricing";
-import { AdminSuppliersGiacomImport } from "./pages/admin/SuppliersGiacomImport";
-import { AdminReadiness } from "./pages/admin/Readiness";
-import AdminLaunchSafety from "./pages/admin/LaunchSafety";
-import AdminCustomerJourney from "./pages/admin/CustomerJourney";
-import AdminTasks from "./pages/admin/Tasks";
+const AdminQuoteRequests = lazy(() => import("./pages/admin/QuoteRequests").then(m => ({ default: m.AdminQuoteRequests })));
+const AdminQuotes = lazy(() => import("./pages/admin/Quotes").then(m => ({ default: m.AdminQuotes })));
+const AdminVatSettings = lazy(() => import("./pages/admin/VatSettings").then(m => ({ default: m.AdminVatSettings })));
+const AdminSuppliers = lazy(() => import("./pages/admin/Suppliers").then(m => ({ default: m.AdminSuppliers })));
+const AdminPricingRules = lazy(() => import("./pages/admin/PricingRules").then(m => ({ default: m.AdminPricingRules })));
+const AdminMarginRules = lazy(() => import("./pages/admin/MarginRules").then(m => ({ default: m.AdminMarginRules })));
+const AdminRewards = lazy(() => import("./pages/admin/Rewards").then(m => ({ default: m.AdminRewards })));
+const AdminReferrals = lazy(() => import("./pages/admin/Referrals").then(m => ({ default: m.AdminReferrals })));
+const AdminContractBenefits = lazy(() => import("./pages/admin/ContractBenefits").then(m => ({ default: m.AdminContractBenefits })));
+const AdminCampaigns = lazy(() => import("./pages/admin/Campaigns").then(m => ({ default: m.AdminCampaigns })));
+const AdminComplaints = lazy(() => import("./pages/admin/Complaints").then(m => ({ default: m.AdminComplaints })));
+const AdminKnowledgeBase = lazy(() => import("./pages/admin/KnowledgeBase").then(m => ({ default: m.AdminKnowledgeBase })));
+const AdminFairPricing = lazy(() => import("./pages/admin/FairPricing").then(m => ({ default: m.AdminFairPricing })));
+const AdminSuppliersGiacomImport = lazy(() => import("./pages/admin/SuppliersGiacomImport").then(m => ({ default: m.AdminSuppliersGiacomImport })));
+const AdminReadiness = lazy(() => import("./pages/admin/Readiness").then(m => ({ default: m.AdminReadiness })));
+const AdminLaunchSafety = lazy(() => import("./pages/admin/LaunchSafety"));
+const AdminCustomerJourney = lazy(() => import("./pages/admin/CustomerJourney"));
+const AdminTasks = lazy(() => import("./pages/admin/Tasks"));
+const AdminManualFulfilment = lazy(() => import("./pages/admin/ManualFulfilment"));
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -104,12 +108,15 @@ import CodeOfPractice from "./pages/legal/CodeOfPractice";
 import PriceTransparency from "./pages/legal/PriceTransparency";
 import SwitchingPolicy from "./pages/legal/SwitchingPolicy";
 import NetworkManagement from "./pages/legal/NetworkManagement";
-import AdminManualFulfilment from "./pages/admin/ManualFulfilment";
-
 import { locations } from "./data/locations";
 
 const queryClient = new QueryClient();
 
+const AdminRouteFallback = () => (
+  <div className="p-8 flex items-center justify-center">
+    <div className="p-4 border-4 border-foreground bg-background animate-pulse text-sm font-display uppercase">Loading…</div>
+  </div>
+);
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -145,41 +152,41 @@ const AnimatedRoutes = () => {
         <Route path="/admin/*" element={<ProtectedAdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<Navigate to="overview" replace />} />
-            <Route path="overview" element={<AdminOverview />} />
-            <Route path="customers" element={<AdminCustomers />} />
-            <Route path="customers/:accountNumber" element={<AdminCustomerDetail />} />
-            <Route path="customers/:accountNumber/journey" element={<AdminCustomerJourney />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="tickets" element={<AdminTickets />} />
-            <Route path="billing" element={<AdminBilling />} />
-            <Route path="services" element={<AdminServices />} />
-            <Route path="payments-dd" element={<AdminPaymentsDD />} />
-            <Route path="installations" element={<AdminInstallations />} />
-            <Route path="plans" element={<AdminPlans />} />
-            <Route path="compliance" element={<AdminCompliance />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="audit-log" element={<AdminAuditLog />} />
-            <Route path="payment-requests" element={<AdminPaymentRequests />} />
-            <Route path="communications" element={<AdminCommunications />} />
-            <Route path="chat-transcripts" element={<AdminChatTranscripts />} />
-            <Route path="quote-requests" element={<AdminQuoteRequests />} />
-            <Route path="quotes" element={<AdminQuotes />} />
-            <Route path="vat-settings" element={<AdminVatSettings />} />
-            <Route path="suppliers" element={<AdminSuppliers />} />
-            <Route path="pricing-rules" element={<AdminPricingRules />} />
-            <Route path="margin-rules" element={<AdminMarginRules />} />
-            <Route path="rewards" element={<AdminRewards />} />
-            <Route path="referrals" element={<AdminReferrals />} />
-            <Route path="contract-benefits" element={<AdminContractBenefits />} />
-            <Route path="campaigns" element={<AdminCampaigns />} />
-            <Route path="complaints" element={<AdminComplaints />} />
-            <Route path="knowledge-base" element={<AdminKnowledgeBase />} />
-            <Route path="fair-pricing" element={<AdminFairPricing />} />
-            <Route path="suppliers/giacom-import" element={<AdminSuppliersGiacomImport />} />
-            <Route path="readiness" element={<AdminReadiness />} />
-            <Route path="launch-safety" element={<AdminLaunchSafety />} />
-            <Route path="tasks" element={<AdminTasks />} />
-            <Route path="manual-fulfilment" element={<AdminManualFulfilment />} />
+            <Route path="overview" element={<Suspense fallback={<AdminRouteFallback />}><AdminOverview /></Suspense>} />
+            <Route path="customers" element={<Suspense fallback={<AdminRouteFallback />}><AdminCustomers /></Suspense>} />
+            <Route path="customers/:accountNumber" element={<Suspense fallback={<AdminRouteFallback />}><AdminCustomerDetail /></Suspense>} />
+            <Route path="customers/:accountNumber/journey" element={<Suspense fallback={<AdminRouteFallback />}><AdminCustomerJourney /></Suspense>} />
+            <Route path="orders" element={<Suspense fallback={<AdminRouteFallback />}><AdminOrders /></Suspense>} />
+            <Route path="tickets" element={<Suspense fallback={<AdminRouteFallback />}><AdminTickets /></Suspense>} />
+            <Route path="billing" element={<Suspense fallback={<AdminRouteFallback />}><AdminBilling /></Suspense>} />
+            <Route path="services" element={<Suspense fallback={<AdminRouteFallback />}><AdminServices /></Suspense>} />
+            <Route path="payments-dd" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentsDD /></Suspense>} />
+            <Route path="installations" element={<Suspense fallback={<AdminRouteFallback />}><AdminInstallations /></Suspense>} />
+            <Route path="plans" element={<Suspense fallback={<AdminRouteFallback />}><AdminPlans /></Suspense>} />
+            <Route path="compliance" element={<Suspense fallback={<AdminRouteFallback />}><AdminCompliance /></Suspense>} />
+            <Route path="settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminSettings /></Suspense>} />
+            <Route path="audit-log" element={<Suspense fallback={<AdminRouteFallback />}><AdminAuditLog /></Suspense>} />
+            <Route path="payment-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentRequests /></Suspense>} />
+            <Route path="communications" element={<Suspense fallback={<AdminRouteFallback />}><AdminCommunications /></Suspense>} />
+            <Route path="chat-transcripts" element={<Suspense fallback={<AdminRouteFallback />}><AdminChatTranscripts /></Suspense>} />
+            <Route path="quote-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuoteRequests /></Suspense>} />
+            <Route path="quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuotes /></Suspense>} />
+            <Route path="vat-settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminVatSettings /></Suspense>} />
+            <Route path="suppliers" element={<Suspense fallback={<AdminRouteFallback />}><AdminSuppliers /></Suspense>} />
+            <Route path="pricing-rules" element={<Suspense fallback={<AdminRouteFallback />}><AdminPricingRules /></Suspense>} />
+            <Route path="margin-rules" element={<Suspense fallback={<AdminRouteFallback />}><AdminMarginRules /></Suspense>} />
+            <Route path="rewards" element={<Suspense fallback={<AdminRouteFallback />}><AdminRewards /></Suspense>} />
+            <Route path="referrals" element={<Suspense fallback={<AdminRouteFallback />}><AdminReferrals /></Suspense>} />
+            <Route path="contract-benefits" element={<Suspense fallback={<AdminRouteFallback />}><AdminContractBenefits /></Suspense>} />
+            <Route path="campaigns" element={<Suspense fallback={<AdminRouteFallback />}><AdminCampaigns /></Suspense>} />
+            <Route path="complaints" element={<Suspense fallback={<AdminRouteFallback />}><AdminComplaints /></Suspense>} />
+            <Route path="knowledge-base" element={<Suspense fallback={<AdminRouteFallback />}><AdminKnowledgeBase /></Suspense>} />
+            <Route path="fair-pricing" element={<Suspense fallback={<AdminRouteFallback />}><AdminFairPricing /></Suspense>} />
+            <Route path="suppliers/giacom-import" element={<Suspense fallback={<AdminRouteFallback />}><AdminSuppliersGiacomImport /></Suspense>} />
+            <Route path="readiness" element={<Suspense fallback={<AdminRouteFallback />}><AdminReadiness /></Suspense>} />
+            <Route path="launch-safety" element={<Suspense fallback={<AdminRouteFallback />}><AdminLaunchSafety /></Suspense>} />
+            <Route path="tasks" element={<Suspense fallback={<AdminRouteFallback />}><AdminTasks /></Suspense>} />
+            <Route path="manual-fulfilment" element={<Suspense fallback={<AdminRouteFallback />}><AdminManualFulfilment /></Suspense>} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

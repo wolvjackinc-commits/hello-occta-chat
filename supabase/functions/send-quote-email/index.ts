@@ -82,5 +82,54 @@ Deno.serve(async (req) => {
     actor_type: "admin", actor_id: auth.userId,
   });
 
+  // Fire-and-forget: pre-generate Contract Summary + stored PDF so the
+  // customer's Continue click can reuse them instantly. Idempotent.
+  // Uses EdgeRuntime.waitUntil when available so the background task is
+  // not killed when the HTTP response is returned.
+  const preGenTask = preGenerateContractSummary(supabase, quote.id, auth.userId);
+  try {
+    // @ts-ignore — EdgeRuntime is provided by the Supabase Deno runtime
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(preGenTask);
+    }
+  } catch { /* ignore */ }
+
   return jsonResponse({ ok: true, public_token: publicToken, public_url: url });
 });
+
+/**
+ * Fire-and-forget Contract Summary pre-generation.
+ * Runs after the quote email is sent so the customer's Continue click can
+ * reuse a ready-made CS + stored PDF instead of waiting for synchronous
+ * generation. Idempotent: if a non-superseded CS already exists for this
+ * (quote_id, version) the generator is skipped. Never creates orders,
+ * acceptance evidence, customer emails, or starts cooling-off.
+ */
+async function preGenerateContractSummary(supabase: ReturnType<typeof getServiceClient>, quote_id: string, actor_id: string | null) {
+  try {
+    const { data: existing } = await supabase
+      .from("contract_summaries")
+      .select("id, status, pdf_storage_key")
+      .eq("quote_id", quote_id)
+      .neq("status", "superseded")
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing && existing.pdf_storage_key) return; // already ready
+
+    const projectUrl = Deno.env.get("SUPABASE_URL")!;
+    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    await fetch(`${projectUrl}/functions/v1/generate-contract-summary`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${svcKey}`,
+        "Content-Type": "application/json",
+        "x-internal-service": "1",
+      },
+      body: JSON.stringify({ quote_id, actor_id, journey_mode: true }),
+    }).catch(() => {});
+  } catch {
+    // best-effort; customer Continue path will fall back to synchronous gen
+  }
+}

@@ -9,6 +9,7 @@ import Layout from "@/components/layout/Layout";
 import CheckoutSkeleton from "@/components/loading/CheckoutSkeleton";
 import { useFormAutosave } from "@/hooks/useFormAutosave";
 import { InstallationSlotPicker } from "@/components/scheduling/InstallationSlotPicker";
+import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -842,6 +843,18 @@ const PreCheckout = () => {
                 </div>
 
                 <div className="mt-6 space-y-4">
+                  <AddressAutocomplete
+                    onSelect={(addr) => {
+                      setCustomerData((prev) => ({
+                        ...prev,
+                        addressLine1: addr.line1 || prev.addressLine1,
+                        addressLine2: addr.line2 || prev.addressLine2,
+                        city: addr.city || prev.city,
+                        postcode: (addr.postcode || prev.postcode || "").toUpperCase(),
+                      }));
+                      setErrors((e) => ({ ...e, addressLine1: "", city: "", postcode: "" }));
+                    }}
+                  />
                   <div>
                     <Label className="text-sm font-medium">Address line 1 <span className="text-destructive">*</span></Label>
                     <Input

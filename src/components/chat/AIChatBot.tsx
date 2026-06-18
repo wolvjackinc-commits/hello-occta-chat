@@ -224,6 +224,16 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     return () => window.removeEventListener('open-ai-chat', handleOpenChat);
   }, [embedded]);
 
+  // Allow other parts of the app to pre-seed the next user message.
+  useEffect(() => {
+    const handleSeed = (e: Event) => {
+      const detail = (e as CustomEvent<{ message?: string }>).detail;
+      if (detail?.message) setInputValue(detail.message);
+    };
+    window.addEventListener("ai-chat-seed", handleSeed as EventListener);
+    return () => window.removeEventListener("ai-chat-seed", handleSeed as EventListener);
+  }, []);
+
   const formatAttachmentSize = (size: number) => {
     if (size < 1024) return `${size} B`;
     if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;

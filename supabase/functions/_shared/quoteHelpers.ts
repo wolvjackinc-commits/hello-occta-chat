@@ -89,7 +89,15 @@ export async function sendResendEmail(opts: {
 }) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { ok: false, error: "RESEND_API_KEY missing" };
-  const from = Deno.env.get("RESEND_FROM_EMAIL") || "OCCTA <noreply@occta.co.uk>";
+  // Always present as "OCCTA Limited" in the recipient's inbox, regardless of
+  // what the RESEND_FROM_EMAIL env var contains. If the env var already has a
+  // display name ("Name <addr@x>"), we still force the display name to
+  // "OCCTA Limited" so the sender column never shows the bare mailbox
+  // local-part (e.g. "hello").
+  const rawFrom = (Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk").trim();
+  const addrMatch = rawFrom.match(/<([^>]+)>/);
+  const address = (addrMatch ? addrMatch[1] : rawFrom).trim();
+  const from = `OCCTA Limited <${address}>`;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -127,8 +135,13 @@ export function brutalistEmailShell(title: string, body: string, cta?: { label: 
   return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head>
   <body style="margin:0;padding:24px;background:#fafafa;font-family:Arial,sans-serif;color:#111;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;margin:0 auto;background:#fff;border:4px solid #000;">
-      <tr><td style="padding:24px 28px 8px 28px;border-bottom:2px solid #000;">
-        <div style="font-weight:900;letter-spacing:0.15em;text-transform:uppercase;font-size:13px;">OCCTA</div>
+      <tr><td style="padding:20px 28px;border-bottom:2px solid #000;background:#000;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="vertical-align:middle;padding-right:12px;">
+            <img src="https://oexgjmuvgdndizsufipe.supabase.co/storage/v1/object/public/email-assets/logo.png" width="36" height="36" alt="OCCTA Limited" style="display:block;border:0;outline:none;text-decoration:none;" />
+          </td>
+          <td style="vertical-align:middle;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;font-size:18px;color:#facc15;font-family:Arial,sans-serif;">OCCTA LIMITED</td>
+        </tr></table>
       </td></tr>
       <tr><td style="padding:24px 28px;">
         <h1 style="margin:0 0 16px 0;font-size:22px;text-transform:uppercase;letter-spacing:0.02em;">${escapeHtml(title)}</h1>

@@ -115,6 +115,27 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!qr?.email || !qr?.full_name) return jsonResponse({ error: "customer_details_missing" }, 409);
 
+  // Address hygiene: the `validate_guest_order` DB trigger enforces
+  // address_line1 (3-100 chars) and city (2-50 chars). Older quote_requests
+  // sometimes only captured a postcode (full address wasn't asked for),
+  // which made the customer hit a 500 on Submit with no way forward.
+  // Fall back to safe placeholders that satisfy the validator and flag a
+  // reconciliation task so an operator can complete the address before
+  // provisioning. Phone is also clamped to the trigger's 10-char minimum.
+  const ADDRESS_PLACEHOLDER = "Address to be confirmed";
+  const CITY_PLACEHOLDER = "To be confirmed";
+  const safeAddressLine1 = (qr.address_line_1 ?? "").trim().length >= 3
+    ? qr.address_line_1!.trim()
+    : ADDRESS_PLACEHOLDER;
+  const safeCity = (qr.town ?? "").trim().length >= 2
+    ? qr.town!.trim()
+    : CITY_PLACEHOLDER;
+  const safePhone = (qr.phone ?? "").trim().length >= 10
+    ? qr.phone!.trim()
+    : "0000000000";
+  const addressIncomplete =
+    safeAddressLine1 === ADDRESS_PLACEHOLDER || safeCity === CITY_PLACEHOLDER;
+
   const { data: cs } = await supabase
     .from("contract_summaries")
     .select("id, cs_number, version, public_token_hash, pdf_storage_key, customer_id, contract_length, notice_period")
@@ -163,10 +184,10 @@ Deno.serve(async (req) => {
         order_number,
         email: qr.email,
         full_name: qr.full_name,
-        phone: qr.phone ?? "",
-        address_line1: qr.address_line_1 ?? "",
+        phone: safePhone,
+        address_line1: safeAddressLine1,
         address_line2: qr.address_line_2 ?? null,
-        city: qr.town ?? "",
+        city: safeCity,
         postcode: qr.postcode ?? "",
         current_provider: qr.current_provider ?? null,
         preferred_switch_date: journey.preferred_start_date,
@@ -177,12 +198,32 @@ Deno.serve(async (req) => {
         service_type: quote.service_type,
         selected_addons: quote.selected_addons ?? null,
         status: "pending_provisioning",
-        admin_notes: `Unified journey submission. ${journeyTag} quote:${quote.quote_number} pm:${pm.method} day:${pm.billing_anchor_day}`,
+        admin_notes: `Unified journey submission. ${journeyTag} quote:${quote.quote_number} pm:${pm.method} day:${pm.billing_anchor_day}${addressIncomplete ? " ADDRESS_INCOMPLETE" : ""}`,
       })
       .select("id, order_number, status, created_at")
       .single();
     if (insert.error) return jsonResponse({ error: "order_insert_failed", details: insert.error.message }, 500);
     order = insert.data;
+
+    // Operator follow-up: full service address was never captured for this
+    // quote. Order proceeds but provisioning must collect it before Giacom.
+    if (addressIncomplete) {
+      try {
+        await supabase.from("admin_reconciliation_tasks").insert({
+          kind: "incomplete_service_address",
+          severity: "high",
+          payload: {
+            journey_id: journey.id,
+            quote_id: quote.id,
+            guest_order_id: order.id,
+            order_number: order.order_number,
+            postcode: qr.postcode ?? null,
+            address_line_1_missing: safeAddressLine1 === ADDRESS_PLACEHOLDER,
+            city_missing: safeCity === CITY_PLACEHOLDER,
+          },
+        });
+      } catch (_) { /* non-fatal */ }
+    }
   }
 
   // Phase 2 — create the canonical orders row (one per journey). Idempotent.
@@ -218,9 +259,9 @@ Deno.serve(async (req) => {
           plan_name: quote.plan_name,
           plan_price: quote.monthly_gross,
           postcode: qr.postcode ?? "",
-          address_line1: qr.address_line_1 ?? "",
+          address_line1: safeAddressLine1,
           address_line2: qr.address_line_2 ?? null,
-          city: qr.town ?? "",
+          city: safeCity,
           preferred_start_date: journey.preferred_start_date,
           cooling_off_ends_at: journey.cooling_off_ends_at,
           billing_anchor_day: pm.billing_anchor_day,

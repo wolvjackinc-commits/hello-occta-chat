@@ -1652,13 +1652,18 @@ IRA's success is clarity + trust, not conversion at all costs.`;
           toolArgs, 
           supabaseServiceClient, 
           supabaseAnonClient, 
-          userId
+          userId ?? undefined,
+          isAdmin,
         );
-        
+        // Last-line defence: if anything resembling a credential slipped through, scrub it.
+        const safeResult = containsForbiddenContent(result)
+          ? JSON.stringify({ success: false, message: "Result blocked by safety filter." })
+          : result;
+
         toolResults.push({
           role: "tool",
           tool_call_id: toolCall.id,
-          content: result,
+          content: safeResult,
         });
       }
 

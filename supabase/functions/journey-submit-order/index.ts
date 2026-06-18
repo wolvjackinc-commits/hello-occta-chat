@@ -1,6 +1,7 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp, sendResendEmail, brutalistEmailShell, escapeHtml } from "../_shared/quoteHelpers.ts";
 import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { perfServe } from "../_shared/perfLog.ts";
 
 /**
  * Phase F — Final order submission.
@@ -31,7 +32,7 @@ function fallbackOrderNumber() {
   return `OCC-${ymd}-${rand}`;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("journey-submit-order", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
@@ -501,7 +502,7 @@ Deno.serve(async (req) => {
     order: { id: order.id, order_number: order.order_number, status: order.status },
     journey: { id: journey.id, status: "completed", current_step: "complete" },
   });
-});
+}));
 
 async function guestOrderIdForJourney(supabase: ReturnType<typeof getServiceClient>, journeyId: string): Promise<string | null> {
   const { data } = await supabase

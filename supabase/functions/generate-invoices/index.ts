@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.2";
+import { perfServe } from "../_shared/perfLog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,7 +46,7 @@ interface Profile {
   postcode: string | null;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("generate-invoices", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -320,7 +321,7 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}));
 
 function calculateBillingPeriodEnd(settings: BillingSettings, startDate: string): string {
   const start = new Date(startDate);

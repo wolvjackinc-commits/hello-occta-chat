@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex } from "../_shared/quoteHelpers.ts";
+import { perfServe } from "../_shared/perfLog.ts";
 
 // Customer-safe payment receipt endpoint.
 // - ?id=<pr_id>      → requires JWT; caller must be owner or staff
@@ -31,7 +32,7 @@ function sanitize(pr: any, cs: any | null, profile: any | null) {
   };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("get-payment-receipt", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "GET" && req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
@@ -113,4 +114,4 @@ Deno.serve(async (req) => {
   ]);
 
   return jsonResponse({ ok: true, receipt: sanitize(pr, cs, profile) });
-});
+}));

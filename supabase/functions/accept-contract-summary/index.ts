@@ -2,6 +2,7 @@ import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, getRequestIp, c
 import { ACCEPTANCE_CHECKBOX_TEXT } from "../_shared/legalText.ts";
 import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { perfServe } from "../_shared/perfLog.ts";
 
 // Phase C canonical four-checkbox wording. Stored verbatim + hashed into the
 // acceptance evidence row.
@@ -34,7 +35,7 @@ const Schema = z.object({
   session_id: z.string().max(120).optional(),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("accept-contract-summary", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
@@ -275,7 +276,7 @@ Deno.serve(async (req) => {
     certificate_number,
     journey_advanced_to: journey ? "start_date" : null,
   });
-});
+}));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Legacy welcome email (only used when NOT in unified-journey mode).

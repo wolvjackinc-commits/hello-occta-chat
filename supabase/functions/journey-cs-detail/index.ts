@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { perfServe } from "../_shared/perfLog.ts";
 
 /**
  * Returns the Contract Summary that is linked to a unified-journey token,
@@ -11,7 +12,7 @@ import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit,
  * Returns: { ok, contract_summary, signed_pdf_url, pdf_ready, certificate? }
  */
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("journey-cs-detail", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
@@ -114,4 +115,4 @@ Deno.serve(async (req) => {
     pdf_ready,
     certificate,
   });
-});
+}));

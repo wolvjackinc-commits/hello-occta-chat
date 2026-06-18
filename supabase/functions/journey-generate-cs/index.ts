@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { perfServe } from "../_shared/perfLog.ts";
 
 /**
  * Token-based wrapper around `generate-contract-summary` for the unified
@@ -11,7 +12,7 @@ import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit,
  * Never sends email, never creates orders, payment requests, invoices or services.
  */
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("journey-generate-cs", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
@@ -126,4 +127,4 @@ Deno.serve(async (req) => {
     status: "issued",
     pdf_ready: !json.pdf_pending,
   });
-});
+}));

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { perfServe } from "../_shared/perfLog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +45,7 @@ function buildEmailHtml(p: any, dashboardUrl: string) {
   </div></body></html>`;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("process-activation-outbox", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const cronSecret = req.headers.get("x-cron-secret");
@@ -166,4 +167,4 @@ Deno.serve(async (req) => {
   return new Response(JSON.stringify({ processed: results.length, results }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-});
+}));

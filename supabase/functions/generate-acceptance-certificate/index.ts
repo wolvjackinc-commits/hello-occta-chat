@@ -1,6 +1,7 @@
 import { corsHeaders, jsonResponse, getServiceClient } from "../_shared/quoteHelpers.ts";
 // @ts-ignore - npm specifier resolved at runtime
 import { jsPDF } from "npm:jspdf@2.5.1";
+import { perfServe } from "../_shared/perfLog.ts";
 
 /**
  * INTERNAL function — service-role only. Given a contract_acceptance row,
@@ -146,7 +147,7 @@ function renderCertificatePdf(opts: {
   return new Uint8Array(doc.output("arraybuffer"));
 }
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("generate-acceptance-certificate", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
@@ -267,4 +268,4 @@ Deno.serve(async (req) => {
     sha256: insert.data.sha256,
     signed_url: sig?.signedUrl ?? null,
   });
-});
+}));

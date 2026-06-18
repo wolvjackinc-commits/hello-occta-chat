@@ -120,6 +120,17 @@ function BuildPlanInner() {
     return () => clearTimeout(t);
   }, [step]);
 
+  // Auto-advance from router step once a payment type has been chosen for
+  // standard / premium router options. Own/business routers advance via their
+  // own onClick handlers.
+  useEffect(() => {
+    if (step !== 3) return;
+    if ((router === "standard" || router === "premium") && routerPay !== "none") {
+      const t = setTimeout(() => setStep((s) => s === 3 ? 4 : s), 220);
+      return () => clearTimeout(t);
+    }
+  }, [step, router, routerPay]);
+
   const eligibleBuckets = useMemo<SpeedBucket[]>(() => {
     const all: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
     // National policy: every valid UK postcode sees all main buckets.

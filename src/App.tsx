@@ -112,6 +112,11 @@ import { locations } from "./data/locations";
 
 const queryClient = new QueryClient();
 
+const AdminRouteFallback = () => (
+  <div className="p-8 flex items-center justify-center">
+    <div className="p-4 border-4 border-foreground bg-background animate-pulse text-sm font-display uppercase">Loading…</div>
+  </div>
+);
 
 // Scroll to top on route change
 const ScrollToTop = () => {

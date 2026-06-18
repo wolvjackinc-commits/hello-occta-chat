@@ -9,6 +9,7 @@ import Layout from "@/components/layout/Layout";
 import CheckoutSkeleton from "@/components/loading/CheckoutSkeleton";
 import { useFormAutosave } from "@/hooks/useFormAutosave";
 import { InstallationSlotPicker } from "@/components/scheduling/InstallationSlotPicker";
+import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

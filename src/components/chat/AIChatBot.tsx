@@ -8,6 +8,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { extractCards, CardRenderer } from "./StructuredCards";
+
+function AssistantMessageBody({ message }: { message: { role: string; content: string } }) {
+  if (message.role !== "assistant") {
+    return <p className="whitespace-pre-wrap">{message.content}</p>;
+  }
+  const { text, cards } = extractCards(message.content);
+  return (
+    <div>
+      {text && <p className="whitespace-pre-wrap">{text}</p>}
+      {cards.map((card, i) => (
+        <CardRenderer key={i} card={card} />
+      ))}
+    </div>
+  );
+}
 import { 
   MessageCircle, 
   X, 

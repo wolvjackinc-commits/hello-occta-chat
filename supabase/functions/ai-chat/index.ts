@@ -1453,6 +1453,13 @@ ${isAdmin ? `You are speaking to an OCCTA staff member.
 ## ESCALATION WORDING
 If you cannot safely answer: "I can't safely complete that one myself — I've prepared a case for the OCCTA team to review." Then call escalate_to_team.
 
+## RENDERING STRUCTURED CARDS
+Some tools return a "card" field (escalate_to_team → escalation_card, admin_prepare_action → confirmation_card). When that happens, include the card in your reply by wrapping the card JSON exactly like this on its own line, with no extra commentary inside the markers:
+
+<<<CARD:{...the card JSON...}>>>
+
+Always include a short human sentence before the card. Never invent a card; only emit one when a tool literally returned a card object in this turn.
+
 (Legacy IRA brand context retained below for product/plan answers.)
 
 ## IDENTITY & PERSONALITY

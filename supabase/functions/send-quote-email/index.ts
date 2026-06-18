@@ -82,6 +82,19 @@ Deno.serve(async (req) => {
     actor_type: "admin", actor_id: auth.userId,
   });
 
+  // Fire-and-forget: pre-generate Contract Summary + stored PDF so the
+  // customer's Continue click can reuse them instantly. Idempotent.
+  // Uses EdgeRuntime.waitUntil when available so the background task is
+  // not killed when the HTTP response is returned.
+  const preGenTask = preGenerateContractSummary(supabase, quote.id, auth.userId);
+  try {
+    // @ts-ignore — EdgeRuntime is provided by the Supabase Deno runtime
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(preGenTask);
+    }
+  } catch { /* ignore */ }
+
   return jsonResponse({ ok: true, public_token: publicToken, public_url: url });
 });
 

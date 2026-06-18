@@ -19,7 +19,7 @@ export default function QuoteStep({
   const expired = quote.expires_at && new Date(quote.expires_at) < new Date();
   const declined = journey?.status === "declined";
   const advanced = journey && journey.current_step !== "quote" && !declined;
-  const eligible = ["approved", "sent", "viewed"].includes(quote.status) && !expired && !declined && !advanced;
+  const eligible = ["approved", "sent", "viewed", "pending", "draft"].includes(quote.status) && !expired && !declined && !advanced;
 
   const addons: any[] = Array.isArray(quote.selected_addons) ? quote.selected_addons : [];
   const hasDigitalVoice = addons.some((a: any) => {
@@ -33,26 +33,28 @@ export default function QuoteStep({
         OCCTA · Quote {quote.quote_number}
       </p>
       <h1 className="font-display uppercase text-3xl md:text-4xl mb-1">{quote.plan_name}</h1>
-      {(quote.customer_name || quote.service_postcode) && (
+      {(quote.customer_name || quote.service_address || quote.service_postcode) && (
         <p className="text-sm text-muted-foreground mb-4">
           {quote.customer_name && <>Prepared for <strong className="text-foreground">{quote.customer_name}</strong></>}
-          {quote.service_postcode && <> · Service postcode <span className="font-mono">{quote.service_postcode}</span></>}
+          {(quote.service_address || quote.service_postcode) && (
+            <> · Service address <span className="text-foreground font-medium">{quote.service_address || quote.service_postcode}</span></>
+          )}
         </p>
       )}
 
-      <div className="border-2 border-foreground/20 bg-muted/40 p-3 mb-4 text-xs">
-        <strong>No payment is taken at this stage.</strong> You'll review and accept your Contract Summary in the next step before anything is set up.
-      </div>
-
-      <div className="border-4 border-foreground p-6 mb-6">
+      <div className="border-4 border-foreground p-6 mb-6 bg-background">
         <p className="font-display uppercase text-xs text-muted-foreground mb-2">Monthly price</p>
         {isBusiness ? (
-          <>
-            <p className="font-display text-4xl text-primary">£{monthlyNet}<span className="text-sm text-muted-foreground"> ex VAT</span></p>
-            <p className="text-sm text-muted-foreground mt-1">£{monthly} incl VAT</p>
-          </>
+          <div className="flex items-baseline flex-wrap gap-2">
+            <span className="font-display text-5xl md:text-6xl text-foreground leading-none">£{monthlyNet}</span>
+            <span className="text-base text-foreground/80 font-semibold">/month ex VAT</span>
+            <span className="block w-full text-sm text-muted-foreground mt-1">£{monthly} incl VAT</span>
+          </div>
         ) : (
-          <p className="font-display text-4xl text-primary">£{monthly}<span className="text-sm text-muted-foreground"> /month (incl VAT)</span></p>
+          <div className="flex items-baseline flex-wrap gap-2">
+            <span className="font-display text-5xl md:text-6xl text-foreground leading-none">£{monthly}</span>
+            <span className="text-base text-foreground/80 font-semibold">/month (incl. VAT)</span>
+          </div>
         )}
         <p className="text-xs text-muted-foreground mt-3">
           {quote.plan_type === "flex" ? "30-day rolling" : `${quote.contract_length_months}-month term`} · {quote.notice_period} notice

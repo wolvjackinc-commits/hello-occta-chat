@@ -374,7 +374,7 @@ const HeroSection = () => {
                 <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
                   Price Lock 24 or Flex 30 • Final price confirmed before order
                 </p>
-                <p className="text-[11px] sm:text-xs text-primary font-medium mb-3 sm:mb-4">
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mb-3 sm:mb-4">
                   Join customers switching away from price rises
                 </p>
 
@@ -384,10 +384,10 @@ const HeroSection = () => {
                     { name: "Superfast", tagline: "Streaming & busy homes" },
                     { name: "Gigabit", tagline: "Serious speed" },
                   ].map(cat => (
-                    <div key={cat.name} className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-1.5 sm:py-2 border-2 border-foreground/10 bg-background">
-                      <span className="font-display text-[11px] sm:text-xs uppercase font-bold">{cat.name}</span>
-                      <span className="text-[10px] sm:text-[11px] text-foreground/70 font-medium">— {cat.tagline}</span>
-                    </div>
+                     <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/15 bg-background">
+                       <span className="font-sans text-sm uppercase font-extrabold tracking-wide text-foreground min-w-[78px]">{cat.name}</span>
+                       <span className="text-xs sm:text-sm text-foreground/75 font-medium">— {cat.tagline}</span>
+                     </div>
                   ))}
                 </div>
 

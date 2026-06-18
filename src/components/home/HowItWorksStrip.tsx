@@ -24,10 +24,7 @@ const HowItWorksStrip = () => {
             </div>
           ))}
         </div>
-        <div className="mt-6 pt-5 border-t-2 border-foreground/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-sm font-medium text-foreground">
-            No payment is taken before you review your Contract Summary.
-          </p>
+        <div className="mt-6 pt-5 border-t-2 border-foreground/10 flex justify-end">
           <Link
             to="/build-plan"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"

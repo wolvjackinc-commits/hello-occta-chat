@@ -1279,7 +1279,6 @@ const PreCheckout = () => {
                     </>
                   )}
                 </Button>
-                <p className="text-center text-muted-foreground text-xs">You won't be charged today unless applicable</p>
               </div>
 
 

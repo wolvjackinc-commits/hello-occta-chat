@@ -72,7 +72,7 @@ export default function QuoteThankYou() {
             <strong className="text-foreground">What happens next:</strong> OCCTA will check the best available option for your address and confirm speed, setup, switching details and the final price. You'll receive a Contract Summary to review before anything goes ahead.
           </p>
           <p>
-            We'll be in touch by your preferred contact method. <strong className="text-foreground">No payment is taken</strong> until you've reviewed and accepted your Contract Summary.
+            We'll be in touch by your preferred contact method.
           </p>
         </div>
 

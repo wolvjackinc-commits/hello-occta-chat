@@ -110,7 +110,7 @@ export default function QuoteStep({
         </div>
       ) : eligible ? (
         <div className="border-4 border-foreground bg-background p-6 space-y-3">
-          <p className="text-sm">Happy with this quote? Continue to your Contract Summary. <strong>No payment is taken at this step.</strong></p>
+          <p className="text-sm">Happy with this quote? Continue to your Contract Summary.</p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button onClick={onContinue} disabled={continuing || declining} variant="hero" size="lg" className="font-display uppercase">
               {continuing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}

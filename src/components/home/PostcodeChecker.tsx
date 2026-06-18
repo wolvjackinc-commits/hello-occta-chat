@@ -156,9 +156,6 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
           >
             View plans <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
-          <p className="text-[11px] text-muted-foreground mt-2">
-            No payment is taken until your final quote and Contract Summary are confirmed.
-          </p>
         </div>
       )}
 

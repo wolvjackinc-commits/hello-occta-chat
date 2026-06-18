@@ -282,7 +282,7 @@ function BuildPlanInner() {
             <div className="text-sm">
               <p className="font-display uppercase tracking-wider">Broadband plans available to view</p>
               <p className="text-muted-foreground mt-1">
-                Choose the plan you're interested in. We'll confirm the final speed, setup and order details before you proceed. No payment is taken until your Contract Summary is confirmed.
+                Choose the plan you're interested in. We'll confirm the final speed, setup and order details before you proceed.
               </p>
             </div>
           </div>
@@ -518,7 +518,7 @@ function BuildPlanInner() {
                     <ReviewLine label="Estimated first bill" value={resolved?.first_bill_incl_vat != null ? `£${resolved.first_bill_incl_vat.toFixed(2)}` : "—"} bold />
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    Estimate — final speed, setup and order details confirmed before you proceed. No payment is taken until your Contract Summary is confirmed.
+                    Estimate — final speed, setup and order details confirmed before you proceed.
                   </p>
                   {addons.includes("digital_voice") && (
                     <div className="mt-4">

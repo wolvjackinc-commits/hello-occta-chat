@@ -7,6 +7,22 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { extractCards, CardRenderer } from "./StructuredCards";
+
+function AssistantMessageBody({ message }: { message: { role: string; content: string } }) {
+  if (message.role !== "assistant") {
+    return <p className="whitespace-pre-wrap">{message.content}</p>;
+  }
+  const { text, cards } = extractCards(message.content);
+  return (
+    <div>
+      {text && <p className="whitespace-pre-wrap">{text}</p>}
+      {cards.map((card, i) => (
+        <CardRenderer key={i} card={card} />
+      ))}
+    </div>
+  );
+}
 import { 
   MessageCircle, 
   X, 
@@ -207,6 +223,16 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     window.addEventListener('open-ai-chat', handleOpenChat);
     return () => window.removeEventListener('open-ai-chat', handleOpenChat);
   }, [embedded]);
+
+  // Allow other parts of the app to pre-seed the next user message.
+  useEffect(() => {
+    const handleSeed = (e: Event) => {
+      const detail = (e as CustomEvent<{ message?: string }>).detail;
+      if (detail?.message) setInputValue(detail.message);
+    };
+    window.addEventListener("ai-chat-seed", handleSeed as EventListener);
+    return () => window.removeEventListener("ai-chat-seed", handleSeed as EventListener);
+  }, []);
 
   const formatAttachmentSize = (size: number) => {
     if (size < 1024) return `${size} B`;
@@ -491,14 +517,14 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                                 <Bot className="w-4 h-4 text-primary-foreground" />
                               </div>
                             )}
-                            <div
+                             <div
                               className={`max-w-[85%] px-3 py-2 text-sm ${
                                 message.role === "user"
                                   ? "bg-accent text-accent-foreground border-2 border-foreground"
                                   : "bg-secondary border-2 border-foreground/50"
                               }`}
                             >
-                              <p className="whitespace-pre-wrap">{message.content}</p>
+                              <AssistantMessageBody message={message} />
                               {message.attachments?.length && (
                                 <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                                   <p className="font-semibold uppercase tracking-wide">Attachments</p>
@@ -709,7 +735,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                       : "bg-secondary border-2 border-foreground/50"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <AssistantMessageBody message={message} />
                   {message.attachments?.length && (
                     <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                       <p className="font-semibold uppercase tracking-wide">Attachments</p>

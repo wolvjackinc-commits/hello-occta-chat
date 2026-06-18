@@ -361,6 +361,21 @@ export const AdminCustomerDetail = () => {
           <Button
             variant="outline"
             className="border-2 border-foreground"
+            onClick={() => {
+              const ident = overview.account_number || overview.email;
+              window.dispatchEvent(new CustomEvent("open-ai-chat"));
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent("ai-chat-seed", {
+                  detail: { message: `Open Customer 360 for ${ident}` },
+                }));
+              }, 250);
+            }}
+          >
+            Ask Copilot
+          </Button>
+          <Button
+            variant="outline"
+            className="border-2 border-foreground"
             onClick={() => navigate(`/admin/tasks?account=${overview.account_number}`)}
             disabled={!overview.account_number}
           >

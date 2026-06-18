@@ -89,7 +89,15 @@ export async function sendResendEmail(opts: {
 }) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { ok: false, error: "RESEND_API_KEY missing" };
-  const from = Deno.env.get("RESEND_FROM_EMAIL") || "OCCTA <noreply@occta.co.uk>";
+  // Always present as "OCCTA Limited" in the recipient's inbox, regardless of
+  // what the RESEND_FROM_EMAIL env var contains. If the env var already has a
+  // display name ("Name <addr@x>"), we still force the display name to
+  // "OCCTA Limited" so the sender column never shows the bare mailbox
+  // local-part (e.g. "hello").
+  const rawFrom = (Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk").trim();
+  const addrMatch = rawFrom.match(/<([^>]+)>/);
+  const address = (addrMatch ? addrMatch[1] : rawFrom).trim();
+  const from = `OCCTA Limited <${address}>`;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },

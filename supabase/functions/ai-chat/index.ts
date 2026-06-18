@@ -296,6 +296,166 @@ const adminTools = [
   },
 ];
 
+// === New customer-side tools (require verified userId via JWT) ===
+const customerAuthedTools = [
+  {
+    type: "function",
+    function: {
+      name: "get_my_overview",
+      description: "Get the signed-in customer's account overview (profile, account number, latest service status). Requires authenticated user.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_my_invoices_authed",
+      description: "List the signed-in customer's recent invoices and payment status. Requires authenticated user.",
+      parameters: {
+        type: "object",
+        properties: { limit: { type: "number", description: "Max invoices to return (default 5)" } },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_my_services_authed",
+      description: "List the signed-in customer's active services (plan, speed, status, install date). Requires authenticated user.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_my_orders_authed",
+      description: "List the signed-in customer's orders and lifecycle status. Requires authenticated user.",
+      parameters: {
+        type: "object",
+        properties: { limit: { type: "number", description: "Max orders to return (default 5)" } },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_my_documents",
+      description: "List the signed-in customer's documents (accepted Contract Summaries, receipts) as metadata only. Does NOT expose storage keys.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_my_tickets",
+      description: "List the signed-in customer's recent support tickets.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "explain_my_invoice",
+      description: "Fetch one invoice belonging to the signed-in customer for plain-English explanation. Pass invoice_number (e.g. INV-1234).",
+      parameters: {
+        type: "object",
+        properties: { invoice_number: { type: "string" } },
+        required: ["invoice_number"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "escalate_to_team",
+      description: "Create a support case for the OCCTA team when you cannot safely complete the customer's request, when identity/billing data conflicts, or when policy requires human review. Returns an escalation card with the ticket reference.",
+      parameters: {
+        type: "object",
+        properties: {
+          subject: { type: "string", description: "Short summary, max 200 chars" },
+          summary: { type: "string", description: "What the customer wants, what you already checked, what info is missing, recommended next step." },
+          priority: { type: "string", enum: ["low", "medium", "high", "urgent"] },
+          category: { type: "string", enum: ["broadband", "mobile", "landline", "billing", "payments", "account"] },
+        },
+        required: ["subject", "summary"],
+      },
+    },
+  },
+];
+
+// === New admin copilot tools (read-only summaries + draft + prepare confirmation cards) ===
+const adminCopilotTools = [
+  {
+    type: "function",
+    function: {
+      name: "admin_customer_360",
+      description: "ADMIN ONLY: Return a redacted Customer 360 summary (profile, account, services, latest invoices, open tickets, latest order status).",
+      parameters: {
+        type: "object",
+        properties: { identifier: { type: "string", description: "user_id, account number (OCC...) or email" } },
+        required: ["identifier"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "admin_order_blockers",
+      description: "ADMIN ONLY: List the current blockers / missing items for an order's provisioning readiness.",
+      parameters: {
+        type: "object",
+        properties: { order_id: { type: "string" } },
+        required: ["order_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "admin_draft_reply",
+      description: "ADMIN ONLY: Draft a customer-facing reply text for staff to review. Returns the draft only — does NOT send anything.",
+      parameters: {
+        type: "object",
+        properties: {
+          topic: { type: "string", description: "What the reply should cover (billing question, cancellation, etc.)" },
+          tone: { type: "string", enum: ["professional", "warm", "firm"], description: "Tone of reply" },
+          customer_first_name: { type: "string" },
+        },
+        required: ["topic"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "admin_prepare_action",
+      description: "ADMIN ONLY: Prepare a high-risk admin action as a confirmation card. Does NOT execute. Staff must click Confirm in the UI for the action to run through the existing safe endpoints.",
+      parameters: {
+        type: "object",
+        properties: {
+          action_type: {
+            type: "string",
+            enum: [
+              "confirm_service_live",
+              "mark_payment_received",
+              "cancel_service",
+              "lifecycle_transition",
+              "create_admin_task",
+              "create_internal_note",
+            ],
+          },
+          target_id: { type: "string", description: "Order / service / customer / invoice ID the action applies to" },
+          summary: { type: "string", description: "One-sentence human-readable summary for the confirmation card" },
+          details: { type: "object", description: "Optional structured payload (e.g. { go_live_date, reason })", additionalProperties: true },
+        },
+        required: ["action_type", "target_id", "summary"],
+      },
+    },
+  },
+];
+
 interface Profile {
   id: string;
   email: string;

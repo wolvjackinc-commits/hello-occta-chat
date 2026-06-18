@@ -1,5 +1,6 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { perfServe } from "../_shared/perfLog.ts";
 
 /**
  * Phase D (corrected) — Capture the customer's preferred service start date
@@ -31,7 +32,7 @@ function addDays(ymd: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("journey-start-date", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
@@ -152,4 +153,4 @@ Deno.serve(async (req) => {
     earliest_selectable_start_date: updated.earliest_selectable_start_date,
     current_step: updated.current_step,
   });
-});
+}));

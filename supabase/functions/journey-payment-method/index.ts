@@ -2,6 +2,7 @@ import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit,
 import { sendResendEmail, brutalistEmailShell, escapeHtml } from "../_shared/quoteHelpers.ts";
 import { ddGuaranteeHtml } from "../_shared/directDebitGuarantee.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { perfServe } from "../_shared/perfLog.ts";
 
 /**
  * Phase E — Capture the customer's payment-method preference inside the
@@ -134,7 +135,7 @@ async function encryptBankDetails(plain: Record<string, unknown>) {
   };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("journey-payment-method", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
@@ -332,4 +333,4 @@ Deno.serve(async (req) => {
     payment_method: insertPm.data,
     journey: upd.data,
   });
-});
+}));

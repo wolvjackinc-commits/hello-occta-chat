@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { perfServe } from "../_shared/perfLog.ts";
 
 /**
  * Public, tokenised endpoint that powers the unified `/quote/:token` journey shell.
@@ -15,7 +16,7 @@ import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit,
 
 type Action = "get" | "continue";
 
-Deno.serve(async (req) => {
+Deno.serve(perfServe("journey-state", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
@@ -266,4 +267,4 @@ Deno.serve(async (req) => {
     submitted_order,
     cancellation_window,
   });
-});
+}));

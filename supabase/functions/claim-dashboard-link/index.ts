@@ -43,9 +43,6 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true })
   }
 
-  const apiKey = Deno.env.get('LOVABLE_API_KEY')
-  if (!apiKey) return jsonResponse({ error: 'server_not_configured' }, 500)
-
   const supabase = getServiceClient()
   const known = await findKnownCustomer(supabase, email)
 
@@ -84,30 +81,13 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true })
   }
 
-  const html = brutalistEmailShell(
-    'Activate your OCCTA dashboard',
-    `<p>Hi ${escapeHtml(known.fullName || 'there')},</p>
-     <p>Use this secure link to choose a password and open your OCCTA dashboard. Your order, Contract Summary and billing details will be synced to this email address.</p>
-     <p style="font-size:13px;color:#444;">If you did not ask for this, you can safely ignore it.</p>`,
-    { label: 'Set password & open dashboard', url: actionLink },
-  )
-
-  try {
-    await sendLovableEmail({
-      run_id: crypto.randomUUID(),
-      to: email,
-      from: FROM_EMAIL,
-      sender_domain: SENDER_DOMAIN,
-      subject: 'Set your OCCTA dashboard password',
-      html,
-      text: `Set your OCCTA dashboard password: ${actionLink}`,
-      purpose: 'transactional',
-      label: 'dashboard-claim-link',
-      idempotency_key: `dashboard-claim-${email}-${Date.now()}`,
-    }, { apiKey })
-  } catch (error) {
-    console.error('[claim-dashboard-link] email send failed', { email, error: error instanceof Error ? error.message : String(error) })
-    return jsonResponse({ ok: true })
+  // Let the managed auth email pipeline send the actual message. It now uses
+  // the corrected notify.www.occta.co.uk sender in auth-email-hook.
+  const sent = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${PUBLIC_APP_ORIGIN}/auth?welcome=1&next=%2Fdashboard`,
+  })
+  if (sent.error) {
+    console.error('[claim-dashboard-link] recovery email failed', { email, error: sent.error.message })
   }
 
   return jsonResponse({ ok: true })

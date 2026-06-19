@@ -1653,6 +1653,44 @@ serve(async (req) => {
     const lastUserMessage = messages.filter((m: { role: string }) => m.role === "user").pop();
     const { intent, category } = lastUserMessage ? detectIntent(lastUserMessage.content) : { intent: "unknown", category: "unknown" };
 
+    if (userId && lastUserMessage?.content) {
+      const directAccountReply = await buildSignedInAccountReply(
+        supabaseServiceClient,
+        userId,
+        lastUserMessage.content,
+      );
+      if (directAccountReply) {
+        const responseTime = Date.now() - startTime;
+        if (sessionId) {
+          await supabaseServiceClient.from("chat_analytics").insert([
+            {
+              session_id: sessionId,
+              user_id: userId,
+              message_type: "user",
+              message_content: lastUserMessage.content,
+              detected_intent: intent,
+              detected_category: category,
+              created_at: new Date().toISOString(),
+            },
+            {
+              session_id: sessionId,
+              user_id: userId,
+              message_type: "assistant",
+              message_content: directAccountReply,
+              detected_intent: intent,
+              detected_category: category,
+              response_time_ms: responseTime,
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        }
+        return new Response(
+          JSON.stringify({ content: directAccountReply, role: "assistant" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // Build available tools based on user role
     const baseCustomerTools = [...tools, ...customerAuthedTools];
     const availableTools = isAdmin

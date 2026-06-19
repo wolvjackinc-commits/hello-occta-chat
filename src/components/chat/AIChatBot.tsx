@@ -118,6 +118,7 @@ interface AIChatBotProps {
   embedded?: boolean;
   className?: string;
   autoFocusInput?: boolean;
+  initialOpen?: boolean;
   onClose?: () => void;
 }
 
@@ -163,9 +164,9 @@ const getSessionId = () => {
 };
 
 const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
-  ({ embedded = false, className = "", autoFocusInput = false, onClose }, ref) => {
+  ({ embedded = false, className = "", autoFocusInput = false, initialOpen = false, onClose }, ref) => {
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(embedded);
+  const [isOpen, setIsOpen] = useState(embedded || initialOpen);
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasUserOpened, setHasUserOpened] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -547,7 +548,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     )}
                   </button>
                   <button
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      setIsOpen(false);
+                      onClose?.();
+                    }}
                     className="p-1.5 hover:bg-primary-foreground/10 transition-colors"
                     aria-label="Close chat"
                   >

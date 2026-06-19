@@ -1308,7 +1308,7 @@ async function executeTool(
         .maybeSingle();
       const { data: latestService } = await supabaseServiceClient
         .from("services")
-        .select("id, status, plan_name, activated_at")
+        .select("id, status, plan_name, activation_date, actual_activation_date")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -1321,9 +1321,9 @@ async function executeTool(
       const { limit = 5 } = args as { limit?: number };
       const { data, error } = await supabaseServiceClient
         .from("invoices")
-        .select("id, invoice_number, total_amount, status, due_date, issued_at, billing_period_start, billing_period_end")
+        .select("id, invoice_number, total, subtotal, vat_total, status, due_date, issue_date, billing_period_start, billing_period_end")
         .eq("user_id", userId)
-        .order("issued_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(Math.min(limit, 20));
       if (error) return safeJson({ success: false, message: "Could not load invoices right now." });
       return safeJson({ success: true, invoices: data ?? [] });
@@ -1333,7 +1333,7 @@ async function executeTool(
       if (!userId) return safeJson({ success: false, message: "Please sign in to view your services." });
       const { data, error } = await supabaseServiceClient
         .from("services")
-        .select("id, plan_name, service_type, status, activated_at, monthly_price, speed_down_mbps")
+        .select("id, plan_name, service_type, status, activation_date, actual_activation_date, price_monthly, service_address")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       if (error) return safeJson({ success: false, message: "Could not load services right now." });
@@ -1345,8 +1345,8 @@ async function executeTool(
       const { limit = 5 } = args as { limit?: number };
       const { data, error } = await supabaseServiceClient
         .from("orders")
-        .select("id, order_number, status, lifecycle_status, plan_name, created_at")
-        .eq("user_id", userId)
+        .select("id, occta_order_number, status, lifecycle_status, plan_name, service_type, expected_activation_date, actual_activation_date, created_at")
+        .or(`user_id.eq.${userId},customer_id.eq.${userId}`)
         .order("created_at", { ascending: false })
         .limit(Math.min(limit, 20));
       if (error) return safeJson({ success: false, message: "Could not load orders right now." });
@@ -1358,15 +1358,15 @@ async function executeTool(
       const { data: cs } = await supabaseServiceClient
         .from("contract_summaries")
         .select("id, status, accepted_at, service_address, customer_email_snapshot, created_at")
-        .eq("user_id", userId)
+        .eq("customer_id", userId)
         .eq("status", "accepted")
         .order("created_at", { ascending: false })
         .limit(10);
       const { data: receipts } = await supabaseServiceClient
         .from("receipts")
-        .select("id, receipt_number, amount, issued_at")
+        .select("id, invoice_id, amount, paid_at, method, reference")
         .eq("user_id", userId)
-        .order("issued_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(10);
       // Note: never return storage keys; UI generates signed URLs separately on user action.
       return safeJson({ success: true, contract_summaries: cs ?? [], receipts: receipts ?? [] });
@@ -1388,14 +1388,14 @@ async function executeTool(
       const { invoice_number } = args as { invoice_number: string };
       const { data: inv } = await supabaseServiceClient
         .from("invoices")
-        .select("id, invoice_number, total_amount, subtotal, vat_amount, status, due_date, issued_at, billing_period_start, billing_period_end")
+        .select("id, invoice_number, total, subtotal, vat_total, status, due_date, issue_date, billing_period_start, billing_period_end")
         .eq("user_id", userId)
         .eq("invoice_number", invoice_number)
         .maybeSingle();
       if (!inv) return safeJson({ success: false, message: "I couldn't find that invoice on your account." });
       const { data: lines } = await supabaseServiceClient
         .from("invoice_lines")
-        .select("description, quantity, unit_price, line_total")
+        .select("description, qty, unit_price, line_total")
         .eq("invoice_id", inv.id);
       return safeJson({ success: true, invoice: inv, lines: lines ?? [] });
     }

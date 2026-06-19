@@ -507,18 +507,25 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 opacity: 1, 
                 scale: 1, 
                 y: 0,
-                height: isMinimized ? "auto" : "min(500px, calc(100dvh - 10rem))"
+                height: isMinimized ? "auto" : "min(660px, calc(100dvh - 7rem))"
               }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`fixed bottom-20 sm:bottom-16 right-4 z-40 w-[360px] max-w-[calc(100vw-32px)] max-h-[calc(100dvh-6rem)] bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
+              className={`fixed bottom-20 sm:bottom-6 right-4 z-40 w-[440px] max-w-[calc(100vw-24px)] max-h-[calc(100dvh-4rem)] bg-card border-4 border-foreground shadow-[10px_10px_0_hsl(var(--foreground))] flex flex-col overflow-hidden ${className}`}
             >
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">
-                <div className="flex items-center gap-2">
-                  <Bot className="w-5 h-5 text-primary-foreground" />
-                  <span className="font-display text-primary-foreground uppercase text-sm">
-                    {isAdmin ? "IRA Admin" : "IRA"}
-                  </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 border-2 border-primary-foreground bg-background flex items-center justify-center shrink-0">
+                    <Bot className="w-5 h-5 text-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block font-display text-primary-foreground uppercase text-sm leading-none">
+                      {isAdmin ? "IRA Admin" : "IRA"}
+                    </span>
+                    <span className="block text-[10px] uppercase text-primary-foreground/80 mt-1 truncate">
+                      {user ? "Secure account assistant" : "OCCTA telecom support"}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button

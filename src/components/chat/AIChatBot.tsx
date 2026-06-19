@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { extractCards, CardRenderer } from "./StructuredCards";
 import { Streamdown } from "streamdown";
+import "streamdown/styles.css";
 
 // Extract a trailing <<<OPTIONS:[...]>>> block OR fallback to parsing numbered
 // inline options like "1) Foo, 2) Bar, 3) Baz?" so we can render clickable chips.

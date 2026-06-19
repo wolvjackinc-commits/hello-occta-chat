@@ -28,6 +28,7 @@ interface CustomerProfile {
   city: string | null;
   postcode: string | null;
   admin_notes: string | null;
+  date_of_birth?: string | null;
 }
 
 interface FormData {
@@ -38,6 +39,7 @@ interface FormData {
   city: string;
   postcode: string;
   admin_notes: string;
+  date_of_birth: string;
 }
 
 interface CustomerEditDialogProps {
@@ -60,6 +62,7 @@ export const CustomerEditDialog = ({ customer, onSaved, trigger }: CustomerEditD
       city: customer.city || "",
       postcode: customer.postcode || "",
       admin_notes: customer.admin_notes || "",
+      date_of_birth: customer.date_of_birth || "",
     },
   });
 
@@ -76,6 +79,7 @@ export const CustomerEditDialog = ({ customer, onSaved, trigger }: CustomerEditD
           city: data.city || null,
           postcode: data.postcode.toUpperCase() || null,
           admin_notes: data.admin_notes || null,
+          date_of_birth: data.date_of_birth || null,
         })
         .eq("id", customer.id);
 
@@ -118,6 +122,7 @@ export const CustomerEditDialog = ({ customer, onSaved, trigger }: CustomerEditD
           city: customer.city || "",
           postcode: customer.postcode || "",
           admin_notes: customer.admin_notes || "",
+          date_of_birth: customer.date_of_birth || "",
         });
       }
     }}>
@@ -193,6 +198,16 @@ export const CustomerEditDialog = ({ customer, onSaved, trigger }: CustomerEditD
                   className="border-2 border-foreground mt-1 uppercase"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="date_of_birth" className="font-display text-sm">Date of birth</Label>
+              <Input
+                id="date_of_birth"
+                type="date"
+                {...register("date_of_birth")}
+                className="border-2 border-foreground mt-1"
+              />
             </div>
 
             <div>

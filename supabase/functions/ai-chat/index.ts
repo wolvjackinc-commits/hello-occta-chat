@@ -1477,10 +1477,10 @@ async function executeTool(
       }
       if (!targetUserId) return safeJson({ success: false, message: "Customer not found." });
       const [{ data: services }, { data: invoices }, { data: tickets }, { data: orders }] = await Promise.all([
-        supabaseServiceClient.from("services").select("id, plan_name, status, activated_at, service_type").eq("user_id", targetUserId).limit(10),
-        supabaseServiceClient.from("invoices").select("invoice_number, total_amount, status, due_date").eq("user_id", targetUserId).order("issued_at", { ascending: false }).limit(5),
+        supabaseServiceClient.from("services").select("id, plan_name, status, activation_date, actual_activation_date, service_type").eq("user_id", targetUserId).limit(10),
+        supabaseServiceClient.from("invoices").select("invoice_number, total, status, due_date").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(5),
         supabaseServiceClient.from("support_tickets").select("id, subject, status, priority, created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(5),
-        supabaseServiceClient.from("orders").select("id, order_number, status, lifecycle_status, created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(5),
+        supabaseServiceClient.from("orders").select("id, occta_order_number, status, lifecycle_status, created_at").or(`user_id.eq.${targetUserId},customer_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(5),
       ]);
       return safeJson({ success: true, profile, services: services ?? [], invoices: invoices ?? [], tickets: tickets ?? [], orders: orders ?? [] });
     }
@@ -1489,7 +1489,7 @@ async function executeTool(
       if (!isAdmin) return safeJson({ success: false, message: "Admin only." });
       const { order_id } = args as { order_id: string };
       const { data: order } = await supabaseServiceClient.from("orders")
-        .select("id, order_number, status, lifecycle_status, user_id, plan_name").eq("id", order_id).maybeSingle();
+        .select("id, occta_order_number, status, lifecycle_status, user_id, customer_id, plan_name").eq("id", order_id).maybeSingle();
       if (!order) return safeJson({ success: false, message: "Order not found." });
       const { data: readiness } = await supabaseServiceClient.from("provisioning_readiness")
         .select("installation_confirmed, router_confirmed, internal_notes_reviewed, admin_review_complete")

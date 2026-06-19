@@ -144,10 +144,10 @@ const signedInQuickActions = [
 
 // Admin quick actions
 const adminQuickActions = [
-  { label: "🧾 Find Customer", message: "I need to look up a customer account" },
-  { label: "📦 Add Service", message: "Help me add a new service for a customer" },
-  { label: "🎟 Open Ticket", message: "I need to create a support ticket" },
-  { label: "⚙ System Status", message: "What's the current system status?" },
+  { label: "Find customer", message: "I need to look up a customer account" },
+  { label: "Add service", message: "Help me add a new service for a customer" },
+  { label: "Open ticket", message: "I need to create a support ticket" },
+  { label: "System status", message: "What's the current system status?" },
 ];
 
 const STORAGE_KEY = "occta-ai-chat";
@@ -276,7 +276,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
 
   // Get the appropriate quick actions based on user role
   const quickActions = isAdmin 
-    ? [...adminQuickActions, ...defaultQuickActions.slice(0, 2)] 
+    ? [...signedInQuickActions, ...adminQuickActions] 
     : user ? signedInQuickActions : defaultQuickActions;
 
   // Focus input when chat opens

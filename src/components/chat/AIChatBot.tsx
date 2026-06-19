@@ -124,12 +124,20 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 // Default quick actions for customers
 const defaultQuickActions = [
-  { label: "🔍 Compare Plans", message: "Help me compare your broadband and SIM plans" },
-  { label: "📱 SIM Only", message: "What SIM-only plans do you offer?" },
-  { label: "🌐 Broadband", message: "Tell me about your broadband plans" },
-  { label: "👤 My OCCTA Account", message: "I'd like help with my OCCTA account" },
-  { label: "🔄 Switching Help", message: "How do I switch to OCCTA from my current provider?" },
-  { label: "💬 Speak to Support", message: "I need to speak to human support" },
+  { label: "Compare plans", message: "Help me compare your broadband and SIM plans" },
+  { label: "Broadband deals", message: "Tell me about your broadband plans" },
+  { label: "SIM only", message: "What SIM-only plans do you offer?" },
+  { label: "Switch to OCCTA", message: "How do I switch to OCCTA from my current provider?" },
+  { label: "Speak to support", message: "I need to speak to human support" },
+];
+
+const signedInQuickActions = [
+  { label: "View invoices", message: "View my invoices" },
+  { label: "Track order", message: "Track my order" },
+  { label: "Check services", message: "Check my services" },
+  { label: "Support tickets", message: "Show my support tickets" },
+  { label: "Account details", message: "Show my account details" },
+  { label: "Raise a ticket", message: "Raise a support ticket" },
 ];
 
 // Admin quick actions
@@ -267,7 +275,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   // Get the appropriate quick actions based on user role
   const quickActions = isAdmin 
     ? [...adminQuickActions, ...defaultQuickActions.slice(0, 2)] 
-    : defaultQuickActions;
+    : user ? signedInQuickActions : defaultQuickActions;
 
   // Focus input when chat opens
   useEffect(() => {

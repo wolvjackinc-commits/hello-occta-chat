@@ -658,8 +658,8 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                   </ScrollArea>
 
                   {/* Input */}
-                  <form onSubmit={handleSubmit} className="p-3 border-t-4 border-foreground bg-background">
-                    <div className="flex gap-2">
+                  <form onSubmit={handleSubmit} className="p-4 border-t-4 border-foreground bg-card">
+                    <div className="flex gap-2 items-stretch">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -671,7 +671,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                         type="button"
                         variant="outline"
                         size="icon"
-                        className="shrink-0 border-2 border-foreground"
+                        className="shrink-0 border-2 border-foreground shadow-[4px_4px_0_hsl(var(--foreground))]"
                         onClick={() => fileInputRef.current?.click()}
                         aria-label="Add attachment"
                       >
@@ -682,7 +682,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder="Type your message..."
-                        className="flex-1 border-2 border-foreground text-sm"
+                        className="flex-1 h-11 border-2 border-foreground bg-background text-sm"
                         disabled={isLoading}
                       />
                       <Button 
@@ -690,7 +690,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                         size="icon" 
                         variant="hero"
                         disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading}
-                        className="shrink-0"
+                        className="shrink-0 h-11 w-11 border-2 border-foreground shadow-[4px_4px_0_hsl(var(--foreground))]"
                       >
                         <Send className="w-4 h-4" />
                       </Button>
@@ -731,7 +731,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     )}
                     {user && (
                       <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Signed in as {user.email?.split("@")[0]}
+                        Securely signed in as {user.email?.split("@")[0]}
                       </p>
                     )}
                   </form>

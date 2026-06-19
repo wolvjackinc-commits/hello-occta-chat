@@ -5,9 +5,11 @@ import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 import { useToast } from "@/hooks/use-toast";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { extractCards, CardRenderer } from "./StructuredCards";
+import { Streamdown } from "streamdown";
 
 // Extract a trailing <<<OPTIONS:[...]>>> block OR fallback to parsing numbered
 // inline options like "1) Foo, 2) Bar, 3) Baz?" so we can render clickable chips.
@@ -58,19 +60,23 @@ function AssistantMessageBody({
   const { text: afterCards, cards } = extractCards(message.content);
   const { text, options } = extractQuickReplies(afterCards);
   return (
-    <div>
-      {text && <p className="whitespace-pre-wrap">{text}</p>}
+    <div className="space-y-3">
+      {text && (
+        <Streamdown className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground prose-p:my-2 prose-strong:text-foreground prose-li:my-0 prose-ul:my-2 prose-ol:my-2 prose-a:text-primary">
+          {text}
+        </Streamdown>
+      )}
       {cards.map((card, i) => (
         <CardRenderer key={i} card={card} />
       ))}
       {options.length > 0 && onQuickReply && (
-        <div className="mt-3 flex flex-wrap gap-2">
+         <div className="mt-3 flex flex-wrap gap-2 border-t-2 border-foreground/20 pt-3">
           {options.map((opt, i) => (
             <button
               key={i}
               type="button"
               onClick={() => onQuickReply(opt)}
-              className="px-3 py-1.5 text-xs font-display uppercase tracking-wide border-2 border-foreground bg-background hover:bg-primary hover:text-primary-foreground transition-colors text-left"
+              className="px-3 py-2 text-xs font-display uppercase border-2 border-foreground bg-background hover:bg-primary hover:text-primary-foreground transition-colors text-left shadow-[3px_3px_0_hsl(var(--foreground))] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
             >
               {opt}
             </button>

@@ -1416,6 +1416,42 @@ serve(async (req) => {
       }
     }
 
+    // === Pre-fetch signed-in user's context so the model never asks for verification ===
+    let signedInContextBlock = "";
+    if (userId) {
+      try {
+        const [{ data: profile }, { data: latestOrder }, { data: latestInvoice }, { data: openTickets }, { data: activeServices }] = await Promise.all([
+          supabaseServiceClient.from("profiles").select("full_name, email, account_number, phone").eq("id", userId).maybeSingle(),
+          supabaseServiceClient.from("orders").select("order_number, status, lifecycle_status, plan_name, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+          supabaseServiceClient.from("invoices").select("invoice_number, total_amount, status, due_date").eq("user_id", userId).order("issued_at", { ascending: false }).limit(1).maybeSingle(),
+          supabaseServiceClient.from("support_tickets").select("id, subject, status").eq("user_id", userId).eq("status", "open").limit(3),
+          supabaseServiceClient.from("services").select("plan_name, service_type, status").eq("user_id", userId).limit(5),
+        ]);
+        const firstName = profile?.full_name?.split(" ")[0] ?? "there";
+        signedInContextBlock = `
+
+## SIGNED-IN CUSTOMER CONTEXT (already verified via JWT — DO NOT ASK FOR VERIFICATION)
+- Name: ${profile?.full_name ?? "Unknown"} (use "${firstName}" when greeting)
+- Email: ${profile?.email ?? "n/a"}
+- Account number: ${profile?.account_number ?? "n/a"}
+- Phone: ${profile?.phone ?? "n/a"}
+- Latest order: ${latestOrder ? `${latestOrder.order_number} — ${latestOrder.plan_name ?? ""} — status ${latestOrder.status}${latestOrder.lifecycle_status ? ` / ${latestOrder.lifecycle_status}` : ""}` : "none"}
+- Latest invoice: ${latestInvoice ? `${latestInvoice.invoice_number} — £${latestInvoice.total_amount} — ${latestInvoice.status} (due ${latestInvoice.due_date ?? "n/a"})` : "none"}
+- Active services: ${(activeServices ?? []).map(s => `${s.plan_name} (${s.service_type}, ${s.status})`).join("; ") || "none on file"}
+- Open tickets: ${(openTickets ?? []).length}
+
+### CRITICAL RULES FOR SIGNED-IN USERS
+- The customer is ALREADY authenticated. NEVER ask for email, date of birth, account number, or any verification.
+- NEVER call lookup_account or lookup_account_by_number for this user.
+- When they ask about "my bill / order / services / account", IMMEDIATELY call the matching _authed tool (get_my_overview, get_my_invoices_authed, get_my_orders_authed, get_my_services_authed, get_my_tickets, explain_my_invoice) and answer with the real data.
+- Greet them by first name on the first reply of a session.
+- After answering, ALWAYS end with a short "What next?" line offering 2–3 relevant follow-ups (e.g. "Want me to: 1) explain this invoice, 2) raise a ticket, 3) check installation status?").
+`;
+      } catch (e) {
+        console.error("Failed to load signed-in context:", e);
+      }
+    }
+
     // Get the last user message for analytics
     const lastUserMessage = messages.filter((m: { role: string }) => m.role === "user").pop();
     const { intent, category } = lastUserMessage ? detectIntent(lastUserMessage.content) : { intent: "unknown", category: "unknown" };
@@ -1429,6 +1465,7 @@ serve(async (req) => {
     // Ollie — OCCTA Assist (professional, human, safe)
     const personaName = isAdmin ? "OCCTA Copilot" : "Ollie — OCCTA Assist";
     const systemPrompt = `You are ${personaName}, OCCTA Telecom's premium AI assistant. Tone: professional, warm, plain English, lightly human. Never robotic, never pushy, never "as an AI". Light wit is fine for general questions, but stay calm and serious on billing, cancellations, complaints, vulnerable-customer support, and identity questions.
+${signedInContextBlock}
 
 ## ABSOLUTE SAFETY RULES
 - Never invent prices, speeds, offers, fees, notice periods, billing dates, ETF figures, or contract terms. If it's not in approved data, say you'll check or create a case via escalate_to_team.

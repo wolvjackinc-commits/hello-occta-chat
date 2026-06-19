@@ -419,7 +419,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       setIsLoading(false);
       pendingMessageRef.current = null;
     }
-  }, [messages, user?.id, isLoading, toast]);
+  }, [messages, user?.id, isLoading, toast, formatAttachmentSummary]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

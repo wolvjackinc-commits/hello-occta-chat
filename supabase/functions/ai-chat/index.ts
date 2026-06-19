@@ -83,6 +83,201 @@ const businessInfo = {
   ],
 };
 
+const formatMoney = (value: unknown) => {
+  const amount = typeof value === "number" ? value : Number(value ?? 0);
+  return `£${amount.toFixed(2)}`;
+};
+
+const formatDate = (value: unknown) => {
+  if (!value || typeof value !== "string") return "not set yet";
+  return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+};
+
+const withOptions = (body: string, options: string[]) =>
+  `${body.trim()}\n\nWhat next?\n<<<OPTIONS:${JSON.stringify(options.slice(0, 4))}>>>`;
+
+function wantsAccountData(message: string) {
+  const lower = message.toLowerCase();
+  if (/\b(invoice|invoices|bill|billing|payment|receipt|paid|unpaid)\b/.test(lower)) return "invoices";
+  if (/\b(order tracking|track order|installation|activation|appointment|engineer)\b/.test(lower)) return "tracking";
+  if (/\b(order|orders)\b/.test(lower)) return "orders";
+  if (/\b(service|services|broadband line|sim|landline)\b/.test(lower)) return "services";
+  if (/\b(ticket|tickets|case|support request|complaint)\b/.test(lower)) return "tickets";
+  if (/\b(my account|account details|profile|details)\b/.test(lower)) return "overview";
+  return null;
+}
+
+async function buildSignedInAccountReply(
+  // deno-lint-ignore no-explicit-any
+  supabaseServiceClient: any,
+  userId: string,
+  message: string,
+): Promise<string | null> {
+  const intent = wantsAccountData(message);
+  if (!intent) return null;
+
+  const { data: profile } = await supabaseServiceClient
+    .from("profiles")
+    .select("id, full_name, email, account_number, phone, created_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const firstName = profile?.full_name?.split(" ")[0] || "there";
+
+  const { data: ordersRaw } = await supabaseServiceClient
+    .from("orders")
+    .select("id, occta_order_number, status, lifecycle_status, plan_name, service_type, plan_price, created_at, expected_activation_date, actual_activation_date")
+    .or(`user_id.eq.${userId},customer_id.eq.${userId}`)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const orderIds = (ordersRaw ?? []).map((order: { id?: string }) => order.id).filter(Boolean);
+
+  const [{ data: guestOrdersRaw }, { data: invoicesByUser }, { data: servicesByUser }, { data: ticketsRaw }] = await Promise.all([
+    supabaseServiceClient
+      .from("guest_orders")
+      .select("id, order_number, account_number, status, plan_name, service_type, plan_price, created_at")
+      .or(`user_id.eq.${userId}${profile?.email ? `,email.eq.${profile.email}` : ""}`)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    supabaseServiceClient
+      .from("invoices")
+      .select("id, invoice_number, status, issue_date, due_date, subtotal, vat_total, total, billing_period_start, billing_period_end, order_id")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    supabaseServiceClient
+      .from("services")
+      .select("id, service_type, plan_name, status, activation_date, actual_activation_date, price_monthly, order_id")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    supabaseServiceClient
+      .from("support_tickets")
+      .select("id, subject, status, priority, category, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10),
+  ]);
+
+  const [{ data: invoicesByOrder }, { data: servicesByOrder }, { data: contractSummaries }] = await Promise.all([
+    orderIds.length
+      ? supabaseServiceClient
+          .from("invoices")
+          .select("id, invoice_number, status, issue_date, due_date, subtotal, vat_total, total, billing_period_start, billing_period_end, order_id")
+          .in("order_id", orderIds)
+          .order("created_at", { ascending: false })
+          .limit(10)
+      : Promise.resolve({ data: [] }),
+    orderIds.length
+      ? supabaseServiceClient
+          .from("services")
+          .select("id, service_type, plan_name, status, activation_date, actual_activation_date, price_monthly, order_id")
+          .in("order_id", orderIds)
+          .order("created_at", { ascending: false })
+          .limit(10)
+      : Promise.resolve({ data: [] }),
+    supabaseServiceClient
+      .from("contract_summaries")
+      .select("cs_number, status, plan_name, service_type, monthly_price_incl_vat, accepted_at, created_at, account_number")
+      .eq("customer_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
+
+  const invoices = [...(invoicesByUser ?? []), ...(invoicesByOrder ?? [])].filter(
+    (invoice, index, all) => all.findIndex((item) => item.id === invoice.id) === index,
+  );
+  const services = [...(servicesByUser ?? []), ...(servicesByOrder ?? [])].filter(
+    (service, index, all) => all.findIndex((item) => item.id === service.id) === index,
+  );
+  const orders = ordersRaw ?? [];
+  const guestOrders = guestOrdersRaw ?? [];
+
+  if (intent === "invoices") {
+    if (invoices.length === 0) {
+      const latestOrder = orders[0] ?? guestOrders[0];
+      const orderLine = latestOrder
+        ? ` Your latest order is ${latestOrder.occta_order_number ?? latestOrder.order_number ?? "on file"} for ${latestOrder.plan_name ?? "your service"}, currently ${latestOrder.lifecycle_status ?? latestOrder.status ?? "in progress"}.`
+        : "";
+      return withOptions(
+        `Hi ${firstName} — I checked your account and there are no invoices available yet.${orderLine} As soon as an invoice is generated, it will appear in your dashboard and I can explain it here.`,
+        ["Check my orders", "Check my services", "Raise a ticket"],
+      );
+    }
+    const lines = invoices.slice(0, 5).map((invoice) =>
+      `• ${invoice.invoice_number}: ${formatMoney(invoice.total)} — ${invoice.status} — due ${formatDate(invoice.due_date)}`,
+    );
+    return withOptions(
+      `Hi ${firstName} — here are your latest invoices:\n${lines.join("\n")}`,
+      ["Explain latest invoice", "Check my orders", "Raise a billing ticket"],
+    );
+  }
+
+  if (intent === "orders" || intent === "tracking") {
+    const combined = [
+      ...orders.map((order) => ({ ref: order.occta_order_number ?? order.id, ...order })),
+      ...guestOrders.map((order) => ({ ref: order.order_number, ...order })),
+    ];
+    if (combined.length === 0) {
+      return withOptions(
+        `Hi ${firstName} — I checked your account and I can't see any orders linked to it yet. If you placed an order as a guest, the OCCTA team may need to link it for you.`,
+        ["Raise a ticket", "Check my services", "View account details"],
+      );
+    }
+    const lines = combined.slice(0, 5).map((order) => {
+      const status = order.lifecycle_status ?? order.status ?? "in progress";
+      const activation = order.actual_activation_date || order.expected_activation_date;
+      return `• ${order.ref}: ${order.plan_name ?? "Service order"} — ${status}${activation ? ` — activation ${formatDate(activation)}` : ""}`;
+    });
+    return withOptions(
+      `Hi ${firstName} — here is the order status I found:\n${lines.join("\n")}`,
+      ["Check my services", "View my invoices", "Raise a ticket"],
+    );
+  }
+
+  if (intent === "services") {
+    if (services.length === 0) {
+      const latestOrder = orders[0] ?? guestOrders[0];
+      return withOptions(
+        latestOrder
+          ? `Hi ${firstName} — I don't see a live service record yet. Your latest order (${latestOrder.occta_order_number ?? latestOrder.order_number ?? "on file"}) is ${latestOrder.lifecycle_status ?? latestOrder.status ?? "in progress"}.`
+          : `Hi ${firstName} — I don't see any active services linked to your account yet.`,
+        ["Check my orders", "Raise a ticket", "View account details"],
+      );
+    }
+    const lines = services.slice(0, 5).map((service) =>
+      `• ${service.plan_name ?? service.service_type}: ${service.status}${service.price_monthly ? ` — ${formatMoney(service.price_monthly)}/mo` : ""}${service.actual_activation_date || service.activation_date ? ` — active from ${formatDate(service.actual_activation_date ?? service.activation_date)}` : ""}`,
+    );
+    return withOptions(
+      `Hi ${firstName} — here are the services linked to your account:\n${lines.join("\n")}`,
+      ["Check my orders", "View my invoices", "Raise a ticket"],
+    );
+  }
+
+  if (intent === "tickets") {
+    if ((ticketsRaw ?? []).length === 0) {
+      return withOptions(
+        `Hi ${firstName} — I checked your account and there are no support tickets open right now.`,
+        ["Raise a ticket", "Check my orders", "Check my services"],
+      );
+    }
+    const lines = (ticketsRaw ?? []).slice(0, 5).map((ticket) =>
+      `• ${ticket.subject}: ${ticket.status} — ${ticket.priority ?? "normal"} priority — opened ${formatDate(ticket.created_at)}`,
+    );
+    return withOptions(
+      `Hi ${firstName} — here are your recent support tickets:\n${lines.join("\n")}`,
+      ["Raise another ticket", "Check my orders", "Check my services"],
+    );
+  }
+
+  const acceptedSummary = (contractSummaries ?? []).find((summary) => summary.status === "accepted");
+  return withOptions(
+    `Hi ${firstName} — your account is ${profile?.account_number ?? acceptedSummary?.account_number ?? "linked"}. Email: ${profile?.email ?? "not set"}. Phone: ${profile?.phone ?? "not set"}. ${acceptedSummary ? `Latest accepted contract summary: ${acceptedSummary.cs_number} for ${acceptedSummary.plan_name}.` : "No accepted contract summary is showing yet."}`,
+    ["Check my orders", "View my invoices", "Check my services"],
+  );
+}
+
 // Tools definitions for the AI - includes customer tools and admin tools
 const tools = [
   {
@@ -1113,7 +1308,7 @@ async function executeTool(
         .maybeSingle();
       const { data: latestService } = await supabaseServiceClient
         .from("services")
-        .select("id, status, plan_name, activated_at")
+        .select("id, status, plan_name, activation_date, actual_activation_date")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -1126,9 +1321,9 @@ async function executeTool(
       const { limit = 5 } = args as { limit?: number };
       const { data, error } = await supabaseServiceClient
         .from("invoices")
-        .select("id, invoice_number, total_amount, status, due_date, issued_at, billing_period_start, billing_period_end")
+        .select("id, invoice_number, total, subtotal, vat_total, status, due_date, issue_date, billing_period_start, billing_period_end")
         .eq("user_id", userId)
-        .order("issued_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(Math.min(limit, 20));
       if (error) return safeJson({ success: false, message: "Could not load invoices right now." });
       return safeJson({ success: true, invoices: data ?? [] });
@@ -1138,7 +1333,7 @@ async function executeTool(
       if (!userId) return safeJson({ success: false, message: "Please sign in to view your services." });
       const { data, error } = await supabaseServiceClient
         .from("services")
-        .select("id, plan_name, service_type, status, activated_at, monthly_price, speed_down_mbps")
+        .select("id, plan_name, service_type, status, activation_date, actual_activation_date, price_monthly, service_address")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       if (error) return safeJson({ success: false, message: "Could not load services right now." });
@@ -1150,8 +1345,8 @@ async function executeTool(
       const { limit = 5 } = args as { limit?: number };
       const { data, error } = await supabaseServiceClient
         .from("orders")
-        .select("id, order_number, status, lifecycle_status, plan_name, created_at")
-        .eq("user_id", userId)
+        .select("id, occta_order_number, status, lifecycle_status, plan_name, service_type, expected_activation_date, actual_activation_date, created_at")
+        .or(`user_id.eq.${userId},customer_id.eq.${userId}`)
         .order("created_at", { ascending: false })
         .limit(Math.min(limit, 20));
       if (error) return safeJson({ success: false, message: "Could not load orders right now." });
@@ -1163,15 +1358,15 @@ async function executeTool(
       const { data: cs } = await supabaseServiceClient
         .from("contract_summaries")
         .select("id, status, accepted_at, service_address, customer_email_snapshot, created_at")
-        .eq("user_id", userId)
+        .eq("customer_id", userId)
         .eq("status", "accepted")
         .order("created_at", { ascending: false })
         .limit(10);
       const { data: receipts } = await supabaseServiceClient
         .from("receipts")
-        .select("id, receipt_number, amount, issued_at")
+        .select("id, invoice_id, amount, paid_at, method, reference")
         .eq("user_id", userId)
-        .order("issued_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(10);
       // Note: never return storage keys; UI generates signed URLs separately on user action.
       return safeJson({ success: true, contract_summaries: cs ?? [], receipts: receipts ?? [] });
@@ -1193,14 +1388,14 @@ async function executeTool(
       const { invoice_number } = args as { invoice_number: string };
       const { data: inv } = await supabaseServiceClient
         .from("invoices")
-        .select("id, invoice_number, total_amount, subtotal, vat_amount, status, due_date, issued_at, billing_period_start, billing_period_end")
+        .select("id, invoice_number, total, subtotal, vat_total, status, due_date, issue_date, billing_period_start, billing_period_end")
         .eq("user_id", userId)
         .eq("invoice_number", invoice_number)
         .maybeSingle();
       if (!inv) return safeJson({ success: false, message: "I couldn't find that invoice on your account." });
       const { data: lines } = await supabaseServiceClient
         .from("invoice_lines")
-        .select("description, quantity, unit_price, line_total")
+        .select("description, qty, unit_price, line_total")
         .eq("invoice_id", inv.id);
       return safeJson({ success: true, invoice: inv, lines: lines ?? [] });
     }
@@ -1282,10 +1477,10 @@ async function executeTool(
       }
       if (!targetUserId) return safeJson({ success: false, message: "Customer not found." });
       const [{ data: services }, { data: invoices }, { data: tickets }, { data: orders }] = await Promise.all([
-        supabaseServiceClient.from("services").select("id, plan_name, status, activated_at, service_type").eq("user_id", targetUserId).limit(10),
-        supabaseServiceClient.from("invoices").select("invoice_number, total_amount, status, due_date").eq("user_id", targetUserId).order("issued_at", { ascending: false }).limit(5),
+        supabaseServiceClient.from("services").select("id, plan_name, status, activation_date, actual_activation_date, service_type").eq("user_id", targetUserId).limit(10),
+        supabaseServiceClient.from("invoices").select("invoice_number, total, status, due_date").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(5),
         supabaseServiceClient.from("support_tickets").select("id, subject, status, priority, created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(5),
-        supabaseServiceClient.from("orders").select("id, order_number, status, lifecycle_status, created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(5),
+        supabaseServiceClient.from("orders").select("id, occta_order_number, status, lifecycle_status, created_at").or(`user_id.eq.${targetUserId},customer_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(5),
       ]);
       return safeJson({ success: true, profile, services: services ?? [], invoices: invoices ?? [], tickets: tickets ?? [], orders: orders ?? [] });
     }
@@ -1294,7 +1489,7 @@ async function executeTool(
       if (!isAdmin) return safeJson({ success: false, message: "Admin only." });
       const { order_id } = args as { order_id: string };
       const { data: order } = await supabaseServiceClient.from("orders")
-        .select("id, order_number, status, lifecycle_status, user_id, plan_name").eq("id", order_id).maybeSingle();
+        .select("id, occta_order_number, status, lifecycle_status, user_id, customer_id, plan_name").eq("id", order_id).maybeSingle();
       if (!order) return safeJson({ success: false, message: "Order not found." });
       const { data: readiness } = await supabaseServiceClient.from("provisioning_readiness")
         .select("installation_confirmed, router_confirmed, internal_notes_reviewed, admin_review_complete")
@@ -1422,8 +1617,8 @@ serve(async (req) => {
       try {
         const [{ data: profile }, { data: latestOrder }, { data: latestInvoice }, { data: openTickets }, { data: activeServices }] = await Promise.all([
           supabaseServiceClient.from("profiles").select("full_name, email, account_number, phone").eq("id", userId).maybeSingle(),
-          supabaseServiceClient.from("orders").select("order_number, status, lifecycle_status, plan_name, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-          supabaseServiceClient.from("invoices").select("invoice_number, total_amount, status, due_date").eq("user_id", userId).order("issued_at", { ascending: false }).limit(1).maybeSingle(),
+          supabaseServiceClient.from("orders").select("occta_order_number, status, lifecycle_status, plan_name, created_at").or(`user_id.eq.${userId},customer_id.eq.${userId}`).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+          supabaseServiceClient.from("invoices").select("invoice_number, total, status, due_date").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
           supabaseServiceClient.from("support_tickets").select("id, subject, status").eq("user_id", userId).eq("status", "open").limit(3),
           supabaseServiceClient.from("services").select("plan_name, service_type, status").eq("user_id", userId).limit(5),
         ]);
@@ -1435,8 +1630,8 @@ serve(async (req) => {
 - Email: ${profile?.email ?? "n/a"}
 - Account number: ${profile?.account_number ?? "n/a"}
 - Phone: ${profile?.phone ?? "n/a"}
-- Latest order: ${latestOrder ? `${latestOrder.order_number} — ${latestOrder.plan_name ?? ""} — status ${latestOrder.status}${latestOrder.lifecycle_status ? ` / ${latestOrder.lifecycle_status}` : ""}` : "none"}
-- Latest invoice: ${latestInvoice ? `${latestInvoice.invoice_number} — £${latestInvoice.total_amount} — ${latestInvoice.status} (due ${latestInvoice.due_date ?? "n/a"})` : "none"}
+- Latest order: ${latestOrder ? `${latestOrder.occta_order_number ?? "Order on file"} — ${latestOrder.plan_name ?? ""} — status ${latestOrder.status}${latestOrder.lifecycle_status ? ` / ${latestOrder.lifecycle_status}` : ""}` : "none"}
+- Latest invoice: ${latestInvoice ? `${latestInvoice.invoice_number} — £${latestInvoice.total} — ${latestInvoice.status} (due ${latestInvoice.due_date ?? "n/a"})` : "none"}
 - Active services: ${(activeServices ?? []).map(s => `${s.plan_name} (${s.service_type}, ${s.status})`).join("; ") || "none on file"}
 - Open tickets: ${(openTickets ?? []).length}
 
@@ -1457,6 +1652,44 @@ serve(async (req) => {
     // Get the last user message for analytics
     const lastUserMessage = messages.filter((m: { role: string }) => m.role === "user").pop();
     const { intent, category } = lastUserMessage ? detectIntent(lastUserMessage.content) : { intent: "unknown", category: "unknown" };
+
+    if (userId && lastUserMessage?.content) {
+      const directAccountReply = await buildSignedInAccountReply(
+        supabaseServiceClient,
+        userId,
+        lastUserMessage.content,
+      );
+      if (directAccountReply) {
+        const responseTime = Date.now() - startTime;
+        if (sessionId) {
+          await supabaseServiceClient.from("chat_analytics").insert([
+            {
+              session_id: sessionId,
+              user_id: userId,
+              message_type: "user",
+              message_content: lastUserMessage.content,
+              detected_intent: intent,
+              detected_category: category,
+              created_at: new Date().toISOString(),
+            },
+            {
+              session_id: sessionId,
+              user_id: userId,
+              message_type: "assistant",
+              message_content: directAccountReply,
+              detected_intent: intent,
+              detected_category: category,
+              response_time_ms: responseTime,
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        }
+        return new Response(
+          JSON.stringify({ content: directAccountReply, role: "assistant" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     // Build available tools based on user role
     const baseCustomerTools = [...tools, ...customerAuthedTools];

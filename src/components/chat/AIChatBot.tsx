@@ -5,9 +5,12 @@ import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 import { useToast } from "@/hooks/use-toast";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { extractCards, CardRenderer } from "./StructuredCards";
+import { Streamdown } from "streamdown";
+import "streamdown/styles.css";
 
 // Extract a trailing <<<OPTIONS:[...]>>> block OR fallback to parsing numbered
 // inline options like "1) Foo, 2) Bar, 3) Baz?" so we can render clickable chips.
@@ -58,19 +61,23 @@ function AssistantMessageBody({
   const { text: afterCards, cards } = extractCards(message.content);
   const { text, options } = extractQuickReplies(afterCards);
   return (
-    <div>
-      {text && <p className="whitespace-pre-wrap">{text}</p>}
+    <div className="space-y-3">
+      {text && (
+        <Streamdown className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground prose-p:my-2 prose-strong:text-foreground prose-li:my-0 prose-ul:my-2 prose-ol:my-2 prose-a:text-primary">
+          {text}
+        </Streamdown>
+      )}
       {cards.map((card, i) => (
         <CardRenderer key={i} card={card} />
       ))}
       {options.length > 0 && onQuickReply && (
-        <div className="mt-3 flex flex-wrap gap-2">
+         <div className="mt-3 flex flex-wrap gap-2 border-t-2 border-foreground/20 pt-3">
           {options.map((opt, i) => (
             <button
               key={i}
               type="button"
               onClick={() => onQuickReply(opt)}
-              className="px-3 py-1.5 text-xs font-display uppercase tracking-wide border-2 border-foreground bg-background hover:bg-primary hover:text-primary-foreground transition-colors text-left"
+              className="px-3 py-2 text-xs font-display uppercase border-2 border-foreground bg-background hover:bg-primary hover:text-primary-foreground transition-colors text-left shadow-[3px_3px_0_hsl(var(--foreground))] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
             >
               {opt}
             </button>
@@ -111,6 +118,7 @@ interface AIChatBotProps {
   embedded?: boolean;
   className?: string;
   autoFocusInput?: boolean;
+  initialOpen?: boolean;
   onClose?: () => void;
 }
 
@@ -118,20 +126,28 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 // Default quick actions for customers
 const defaultQuickActions = [
-  { label: "🔍 Compare Plans", message: "Help me compare your broadband and SIM plans" },
-  { label: "📱 SIM Only", message: "What SIM-only plans do you offer?" },
-  { label: "🌐 Broadband", message: "Tell me about your broadband plans" },
-  { label: "👤 My OCCTA Account", message: "I'd like help with my OCCTA account" },
-  { label: "🔄 Switching Help", message: "How do I switch to OCCTA from my current provider?" },
-  { label: "💬 Speak to Support", message: "I need to speak to human support" },
+  { label: "Compare plans", message: "Help me compare your broadband and SIM plans" },
+  { label: "Broadband deals", message: "Tell me about your broadband plans" },
+  { label: "SIM only", message: "What SIM-only plans do you offer?" },
+  { label: "Switch to OCCTA", message: "How do I switch to OCCTA from my current provider?" },
+  { label: "Speak to support", message: "I need to speak to human support" },
+];
+
+const signedInQuickActions = [
+  { label: "View invoices", message: "View my invoices" },
+  { label: "Track order", message: "Track my order" },
+  { label: "Check services", message: "Check my services" },
+  { label: "Support tickets", message: "Show my support tickets" },
+  { label: "Account details", message: "Show my account details" },
+  { label: "Raise a ticket", message: "Raise a support ticket" },
 ];
 
 // Admin quick actions
 const adminQuickActions = [
-  { label: "🧾 Find Customer", message: "I need to look up a customer account" },
-  { label: "📦 Add Service", message: "Help me add a new service for a customer" },
-  { label: "🎟 Open Ticket", message: "I need to create a support ticket" },
-  { label: "⚙ System Status", message: "What's the current system status?" },
+  { label: "Find customer", message: "I need to look up a customer account" },
+  { label: "Add service", message: "Help me add a new service for a customer" },
+  { label: "Open ticket", message: "I need to create a support ticket" },
+  { label: "System status", message: "What's the current system status?" },
 ];
 
 const STORAGE_KEY = "occta-ai-chat";
@@ -148,9 +164,9 @@ const getSessionId = () => {
 };
 
 const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
-  ({ embedded = false, className = "", autoFocusInput = false, onClose }, ref) => {
+  ({ embedded = false, className = "", autoFocusInput = false, initialOpen = false, onClose }, ref) => {
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(embedded);
+  const [isOpen, setIsOpen] = useState(embedded || initialOpen);
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasUserOpened, setHasUserOpened] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -260,8 +276,8 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
 
   // Get the appropriate quick actions based on user role
   const quickActions = isAdmin 
-    ? [...adminQuickActions, ...defaultQuickActions.slice(0, 2)] 
-    : defaultQuickActions;
+    ? [...signedInQuickActions, ...adminQuickActions] 
+    : user ? signedInQuickActions : defaultQuickActions;
 
   // Focus input when chat opens
   useEffect(() => {
@@ -291,18 +307,18 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     return () => window.removeEventListener("ai-chat-seed", handleSeed as EventListener);
   }, []);
 
-  const formatAttachmentSize = (size: number) => {
+  const formatAttachmentSize = useCallback((size: number) => {
     if (size < 1024) return `${size} B`;
     if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
     return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  }, []);
 
-  const formatAttachmentSummary = (attachments: AttachmentMeta[]) => {
+  const formatAttachmentSummary = useCallback((attachments: AttachmentMeta[]) => {
     if (!attachments.length) return "";
     return attachments
       .map((file) => `- ${file.name} (${file.type || "unknown"}, ${formatAttachmentSize(file.size)})`)
       .join("\n");
-  };
+  }, [formatAttachmentSize]);
 
   const sendMessage = useCallback(async (messageText: string, attachments: AttachmentMeta[] = []) => {
     const trimmedMessage = messageText.trim();
@@ -404,7 +420,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       setIsLoading(false);
       pendingMessageRef.current = null;
     }
-  }, [messages, user?.id, isLoading, toast]);
+  }, [messages, user?.id, isLoading, toast, formatAttachmentSummary]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -493,18 +509,25 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 opacity: 1, 
                 scale: 1, 
                 y: 0,
-                height: isMinimized ? "auto" : "min(500px, calc(100dvh - 10rem))"
+                height: isMinimized ? "auto" : "min(660px, calc(100dvh - 7rem))"
               }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`fixed bottom-20 sm:bottom-16 right-4 z-40 w-[360px] max-w-[calc(100vw-32px)] max-h-[calc(100dvh-6rem)] bg-card border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
+              className={`fixed bottom-20 sm:bottom-6 right-4 z-40 w-[440px] max-w-[calc(100vw-24px)] max-h-[calc(100dvh-4rem)] bg-card border-4 border-foreground shadow-[10px_10px_0_hsl(var(--foreground))] flex flex-col overflow-hidden ${className}`}
             >
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">
-                <div className="flex items-center gap-2">
-                  <Bot className="w-5 h-5 text-primary-foreground" />
-                  <span className="font-display text-primary-foreground uppercase text-sm">
-                    {isAdmin ? "IRA Admin" : "IRA"}
-                  </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 border-2 border-primary-foreground bg-background flex items-center justify-center shrink-0">
+                    <Bot className="w-5 h-5 text-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block font-display text-primary-foreground uppercase text-sm leading-none">
+                      {isAdmin ? "IRA Admin" : "IRA"}
+                    </span>
+                    <span className="block text-[10px] uppercase text-primary-foreground/80 mt-1 truncate">
+                      {user ? "Secure account assistant" : "OCCTA telecom support"}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
@@ -525,7 +548,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     )}
                   </button>
                   <button
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      setIsOpen(false);
+                      onClose?.();
+                    }}
                     className="p-1.5 hover:bg-primary-foreground/10 transition-colors"
                     aria-label="Close chat"
                   >
@@ -538,26 +564,29 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
               {!isMinimized && (
                 <>
                   {/* Messages */}
-                  <ScrollArea className="flex-1 p-4">
+                  <ScrollArea className="flex-1 p-5 bg-background">
                     {isFreshChat ? (
                       <div className="space-y-4">
-                        <div className="text-center">
-                          <Bot className="w-12 h-12 mx-auto mb-3 text-primary" />
-                          <h3 className="font-display text-lg mb-1">
-                            {isAdmin ? "🔐 Admin Mode" : "Hey there! 👋"}
+                        <div className="border-4 border-foreground bg-card p-4 shadow-[6px_6px_0_hsl(var(--foreground))]">
+                          <div className="w-12 h-12 mb-3 border-2 border-foreground bg-primary flex items-center justify-center">
+                            <Bot className="w-7 h-7 text-primary-foreground" />
+                          </div>
+                          <h3 className="font-display text-xl uppercase mb-1">
+                            {isAdmin ? "Admin support desk" : user ? "Account desk ready" : "OCCTA support desk"}
                           </h3>
                           <p className="text-sm text-muted-foreground">
                             {isAdmin 
                               ? "I'm IRA, ready to help with customers, services, or tickets."
-                              : "I'm IRA — no pressure, no contracts, just honest help 🙂"}
+                              : user ? "You're signed in, so I can check your linked orders, invoices, services and tickets without asking you to verify again."
+                              : "Ask about plans, switching, setup or support. No pressure, no contracts — just straight answers."}
                           </p>
                         </div>
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
                           {quickActions.map((action, i) => (
                             <button
                               key={i}
                               onClick={() => handleQuickAction(action.message)}
-                              className="w-full text-left px-3 py-2 text-sm border-2 border-foreground/30 hover:border-primary hover:bg-primary/5 transition-colors"
+                              className="min-h-[48px] text-left px-3 py-2 text-xs font-display uppercase border-2 border-foreground bg-card hover:bg-primary hover:text-primary-foreground transition-colors shadow-[3px_3px_0_hsl(var(--foreground))] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                             >
                               {action.label}
                             </button>
@@ -576,11 +605,11 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                                 <Bot className="w-4 h-4 text-primary-foreground" />
                               </div>
                             )}
-                             <div
-                              className={`max-w-[85%] px-3 py-2 text-sm ${
+                              <div
+                              className={`max-w-[86%] px-4 py-3 text-sm leading-relaxed ${
                                 message.role === "user"
                                   ? "bg-accent text-accent-foreground border-2 border-foreground"
-                                  : "bg-secondary border-2 border-foreground/50"
+                                  : "bg-card border-2 border-foreground/60"
                               }`}
                             >
                               <AssistantMessageBody message={message} onQuickReply={sendMessage} />
@@ -613,10 +642,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                             <div className="w-7 h-7 bg-primary flex items-center justify-center shrink-0 border-2 border-foreground">
                               <Bot className="w-4 h-4 text-primary-foreground" />
                             </div>
-                            <div className="bg-secondary border-2 border-foreground/50 px-4 py-3">
+                            <div className="bg-card border-2 border-foreground/60 px-4 py-3">
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Thinking…
+                                <Shimmer>Checking your account…</Shimmer>
                               </div>
                             </div>
                           </div>
@@ -634,8 +663,8 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                   </ScrollArea>
 
                   {/* Input */}
-                  <form onSubmit={handleSubmit} className="p-3 border-t-4 border-foreground bg-background">
-                    <div className="flex gap-2">
+                  <form onSubmit={handleSubmit} className="p-4 border-t-4 border-foreground bg-card">
+                    <div className="flex gap-2 items-stretch">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -647,7 +676,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                         type="button"
                         variant="outline"
                         size="icon"
-                        className="shrink-0 border-2 border-foreground"
+                        className="shrink-0 border-2 border-foreground shadow-[4px_4px_0_hsl(var(--foreground))]"
                         onClick={() => fileInputRef.current?.click()}
                         aria-label="Add attachment"
                       >
@@ -658,7 +687,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder="Type your message..."
-                        className="flex-1 border-2 border-foreground text-sm"
+                        className="flex-1 h-11 border-2 border-foreground bg-background text-sm"
                         disabled={isLoading}
                       />
                       <Button 
@@ -666,7 +695,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                         size="icon" 
                         variant="hero"
                         disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading}
-                        className="shrink-0"
+                        className="shrink-0 h-11 w-11 border-2 border-foreground shadow-[4px_4px_0_hsl(var(--foreground))]"
                       >
                         <Send className="w-4 h-4" />
                       </Button>
@@ -707,7 +736,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     )}
                     {user && (
                       <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Signed in as {user.email?.split("@")[0]}
+                        Securely signed in as {user.email?.split("@")[0]}
                       </p>
                     )}
                   </form>

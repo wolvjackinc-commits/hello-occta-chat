@@ -137,9 +137,8 @@ const Auth = () => {
     }
     setClaimSending(true);
     setMessage(null);
-    const nextParam = encodeURIComponent(getRedirectTarget());
-    const { error } = await supabase.auth.resetPasswordForEmail(claimEmail, {
-      redirectTo: `${window.location.origin}/auth?welcome=1&next=${nextParam}`,
+    const { error } = await supabase.functions.invoke("claim-dashboard-link", {
+      body: { email: parsed.data },
     });
     setClaimSending(false);
     if (error) {
@@ -319,7 +318,7 @@ const Auth = () => {
                     <p className="text-xs text-muted-foreground">Used the "Open my dashboard" button from your order email? Enter the same email and we'll send a one-tap link to set your password.</p>
                   </div>
                   {claimSent ? (
-                    <p className="text-sm bg-success/10 border border-success/30 p-3">Done — check <strong>{claimEmail}</strong> for your secure link. (Look in spam too, just in case.)</p>
+                    <p className="text-sm bg-success/10 border border-success/30 p-3">If <strong>{claimEmail}</strong> matches your OCCTA order email, a secure link is on its way. Check spam too, just in case.</p>
                   ) : (
                     <form onSubmit={handleSendClaimLink} className="flex gap-2">
                       <Input type="email" placeholder="you@example.com" value={claimEmail} onChange={(e) => setClaimEmail(e.target.value)} className="flex-1" />

@@ -1617,8 +1617,8 @@ serve(async (req) => {
       try {
         const [{ data: profile }, { data: latestOrder }, { data: latestInvoice }, { data: openTickets }, { data: activeServices }] = await Promise.all([
           supabaseServiceClient.from("profiles").select("full_name, email, account_number, phone").eq("id", userId).maybeSingle(),
-          supabaseServiceClient.from("orders").select("order_number, status, lifecycle_status, plan_name, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-          supabaseServiceClient.from("invoices").select("invoice_number, total_amount, status, due_date").eq("user_id", userId).order("issued_at", { ascending: false }).limit(1).maybeSingle(),
+          supabaseServiceClient.from("orders").select("occta_order_number, status, lifecycle_status, plan_name, created_at").or(`user_id.eq.${userId},customer_id.eq.${userId}`).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+          supabaseServiceClient.from("invoices").select("invoice_number, total, status, due_date").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
           supabaseServiceClient.from("support_tickets").select("id, subject, status").eq("user_id", userId).eq("status", "open").limit(3),
           supabaseServiceClient.from("services").select("plan_name, service_type, status").eq("user_id", userId).limit(5),
         ]);
@@ -1630,8 +1630,8 @@ serve(async (req) => {
 - Email: ${profile?.email ?? "n/a"}
 - Account number: ${profile?.account_number ?? "n/a"}
 - Phone: ${profile?.phone ?? "n/a"}
-- Latest order: ${latestOrder ? `${latestOrder.order_number} — ${latestOrder.plan_name ?? ""} — status ${latestOrder.status}${latestOrder.lifecycle_status ? ` / ${latestOrder.lifecycle_status}` : ""}` : "none"}
-- Latest invoice: ${latestInvoice ? `${latestInvoice.invoice_number} — £${latestInvoice.total_amount} — ${latestInvoice.status} (due ${latestInvoice.due_date ?? "n/a"})` : "none"}
+- Latest order: ${latestOrder ? `${latestOrder.occta_order_number ?? "Order on file"} — ${latestOrder.plan_name ?? ""} — status ${latestOrder.status}${latestOrder.lifecycle_status ? ` / ${latestOrder.lifecycle_status}` : ""}` : "none"}
+- Latest invoice: ${latestInvoice ? `${latestInvoice.invoice_number} — £${latestInvoice.total} — ${latestInvoice.status} (due ${latestInvoice.due_date ?? "n/a"})` : "none"}
 - Active services: ${(activeServices ?? []).map(s => `${s.plan_name} (${s.service_type}, ${s.status})`).join("; ") || "none on file"}
 - Open tickets: ${(openTickets ?? []).length}
 

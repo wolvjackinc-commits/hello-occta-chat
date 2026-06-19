@@ -583,7 +583,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                                   : "bg-secondary border-2 border-foreground/50"
                               }`}
                             >
-                              <AssistantMessageBody message={message} />
+                              <AssistantMessageBody message={message} onQuickReply={sendMessage} />
                               {message.attachments?.length && (
                                 <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                                   <p className="font-semibold uppercase tracking-wide">Attachments</p>
@@ -794,7 +794,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                       : "bg-secondary border-2 border-foreground/50"
                   }`}
                 >
-                  <AssistantMessageBody message={message} />
+                  <AssistantMessageBody message={message} onQuickReply={sendMessage} />
                   {message.attachments?.length && (
                     <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                       <p className="font-semibold uppercase tracking-wide">Attachments</p>

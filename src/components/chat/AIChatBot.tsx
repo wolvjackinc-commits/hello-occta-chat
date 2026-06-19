@@ -9,17 +9,74 @@ import { useToast } from "@/hooks/use-toast";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { extractCards, CardRenderer } from "./StructuredCards";
 
-function AssistantMessageBody({ message }: { message: { role: string; content: string } }) {
+// Extract a trailing <<<OPTIONS:[...]>>> block OR fallback to parsing numbered
+// inline options like "1) Foo, 2) Bar, 3) Baz?" so we can render clickable chips.
+function extractQuickReplies(content: string): { text: string; options: string[] } {
+  let text = content;
+  let options: string[] = [];
+
+  const tokenMatch = text.match(/<<<OPTIONS:(\[[\s\S]*?\])>>>/);
+  if (tokenMatch) {
+    try {
+      const parsed = JSON.parse(tokenMatch[1]);
+      if (Array.isArray(parsed)) {
+        options = parsed.map((o) => String(o)).filter(Boolean).slice(0, 5);
+      }
+    } catch {
+      /* ignore */
+    }
+    text = text.replace(tokenMatch[0], "").trim();
+  }
+
+  if (options.length === 0) {
+    // Look at the last non-empty line for a pattern like "1) X, 2) Y, 3) Z?"
+    const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    const last = lines[lines.length - 1] ?? "";
+    const matches = [...last.matchAll(/\d+\)\s*([^,?\n][^,?\n]*?)(?=(?:\s*,\s*\d+\))|\s*\?|\s*$)/g)];
+    if (matches.length >= 2) {
+      options = matches.map((m) => m[1].trim()).filter(Boolean).slice(0, 5);
+      // Remove the numbered list portion from the last line
+      const stripped = last.replace(/(\d+\)\s*[^,?\n]+(?:,\s*)?)+\??/g, "").trim();
+      lines[lines.length - 1] = stripped;
+      text = lines.filter(Boolean).join("\n");
+    }
+  }
+
+  return { text: text.trim(), options };
+}
+
+function AssistantMessageBody({
+  message,
+  onQuickReply,
+}: {
+  message: { role: string; content: string };
+  onQuickReply?: (msg: string) => void;
+}) {
   if (message.role !== "assistant") {
     return <p className="whitespace-pre-wrap">{message.content}</p>;
   }
-  const { text, cards } = extractCards(message.content);
+  const { text: afterCards, cards } = extractCards(message.content);
+  const { text, options } = extractQuickReplies(afterCards);
   return (
     <div>
       {text && <p className="whitespace-pre-wrap">{text}</p>}
       {cards.map((card, i) => (
         <CardRenderer key={i} card={card} />
       ))}
+      {options.length > 0 && onQuickReply && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {options.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onQuickReply(opt)}
+              className="px-3 py-1.5 text-xs font-display uppercase tracking-wide border-2 border-foreground bg-background hover:bg-primary hover:text-primary-foreground transition-colors text-left"
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -526,7 +583,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                                   : "bg-secondary border-2 border-foreground/50"
                               }`}
                             >
-                              <AssistantMessageBody message={message} />
+                              <AssistantMessageBody message={message} onQuickReply={sendMessage} />
                               {message.attachments?.length && (
                                 <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                                   <p className="font-semibold uppercase tracking-wide">Attachments</p>
@@ -737,7 +794,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                       : "bg-secondary border-2 border-foreground/50"
                   }`}
                 >
-                  <AssistantMessageBody message={message} />
+                  <AssistantMessageBody message={message} onQuickReply={sendMessage} />
                   {message.attachments?.length && (
                     <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                       <p className="font-semibold uppercase tracking-wide">Attachments</p>

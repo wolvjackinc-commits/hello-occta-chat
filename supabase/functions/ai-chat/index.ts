@@ -1445,7 +1445,9 @@ serve(async (req) => {
 - NEVER call lookup_account or lookup_account_by_number for this user.
 - When they ask about "my bill / order / services / account", IMMEDIATELY call the matching _authed tool (get_my_overview, get_my_invoices_authed, get_my_orders_authed, get_my_services_authed, get_my_tickets, explain_my_invoice) and answer with the real data.
 - Greet them by first name on the first reply of a session.
-- After answering, ALWAYS end with a short "What next?" line offering 2–3 relevant follow-ups (e.g. "Want me to: 1) explain this invoice, 2) raise a ticket, 3) check installation status?").
+- After answering, ALWAYS end with a short "What next?" line AND a machine-readable options block so the UI can render clickable chips. Format EXACTLY like this on the final line:
+  <<<OPTIONS:["Explain this invoice","Raise a ticket","Check installation status"]>>>
+  Use 2–4 short action labels (max ~6 words each). Each label must be a complete request the user could send back as-is. Do not number them. The token must be the very last thing in your reply.
 `;
       } catch (e) {
         console.error("Failed to load signed-in context:", e);
@@ -1496,6 +1498,17 @@ Some tools return a "card" field (escalate_to_team → escalation_card, admin_pr
 <<<CARD:{...the card JSON...}>>>
 
 Always include a short human sentence before the card. Never invent a card; only emit one when a tool literally returned a card object in this turn.
+
+## QUICK REPLY CHIPS (REQUIRED ON EVERY REPLY)
+End EVERY reply with a machine-readable options block so the UI can render clickable chips. Format EXACTLY:
+
+<<<OPTIONS:["Short label one","Short label two","Short label three"]>>>
+
+Rules:
+- 2–4 options, each ≤6 words, written as something the user could click and send back as-is (e.g. "Compare broadband plans", "Check my latest invoice", "Talk to a human").
+- Tailor options to the conversation context (signed-in vs guest, topic just discussed).
+- The OPTIONS token must be the very last thing in your reply, on its own line.
+- Do NOT also write a numbered list of the same options in prose — just the token.
 
 (Legacy IRA brand context retained below for product/plan answers.)
 

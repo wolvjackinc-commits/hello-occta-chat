@@ -1,4 +1,4 @@
-import { corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp, brutalistEmailShell, escapeHtml } from '../_shared/quoteHelpers.ts'
+import { corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp } from '../_shared/quoteHelpers.ts'
 
 const PUBLIC_APP_ORIGIN = 'https://www.occta.co.uk'
 
@@ -68,17 +68,6 @@ Deno.serve(async (req) => {
     const updates: Record<string, unknown> = { email }
     if (known.fullName) updates.full_name = known.fullName
     await supabase.from('profiles').update(updates).eq('id', userId)
-  }
-
-  const link = await supabase.auth.admin.generateLink({
-    type: 'recovery',
-    email,
-    options: { redirectTo: `${PUBLIC_APP_ORIGIN}/auth?welcome=1&next=%2Fdashboard` },
-  })
-  const actionLink = link.data?.properties?.action_link
-  if (!actionLink) {
-    console.error('[claim-dashboard-link] generateLink failed', { email, error: link.error?.message })
-    return jsonResponse({ ok: true })
   }
 
   // Let the managed auth email pipeline send the actual message. It now uses

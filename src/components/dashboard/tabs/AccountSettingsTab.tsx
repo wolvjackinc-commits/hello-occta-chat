@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { logAudit } from "@/lib/audit";
 
 type Profile = {
   id: string;
@@ -14,24 +15,44 @@ type Profile = {
   address_line2: string | null;
   city: string | null;
   postcode: string | null;
+  date_of_birth?: string | null;
+  updated_at?: string | null;
 };
 
 export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
   const { toast } = useToast();
-  const [form, setForm] = useState<Profile>(profile || ({ id: "", full_name: "", email: "", phone: "", address_line1: "", address_line2: "", city: "", postcode: "" } as Profile));
+  const [form, setForm] = useState<Profile>(profile || ({ id: "", full_name: "", email: "", phone: "", address_line1: "", address_line2: "", city: "", postcode: "", date_of_birth: "" } as Profile));
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
     if (!form.id) return;
+    // Light client-side validation — server still enforces RLS scoped to auth.uid().
+    if (form.phone && !/^[+\d\s()-]{7,20}$/.test(form.phone)) {
+      toast({ title: "Check your phone number", description: "Use digits, spaces, +, -, () only.", variant: "destructive" });
+      return;
+    }
+    if (form.postcode && form.postcode.length > 10) {
+      toast({ title: "Postcode looks wrong", variant: "destructive" });
+      return;
+    }
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({
-      full_name: form.full_name, phone: form.phone,
-      address_line1: form.address_line1, address_line2: form.address_line2,
-      city: form.city, postcode: form.postcode,
-    }).eq("id", form.id);
+    const payload = {
+      full_name: form.full_name?.trim() || null,
+      phone: form.phone?.trim() || null,
+      address_line1: form.address_line1?.trim() || null,
+      address_line2: form.address_line2?.trim() || null,
+      city: form.city?.trim() || null,
+      postcode: form.postcode?.trim().toUpperCase() || null,
+      date_of_birth: form.date_of_birth || null,
+    };
+    const { error } = await supabase.from("profiles").update(payload).eq("id", form.id);
     setSaving(false);
-    if (error) toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
-    else toast({ title: "Saved", description: "Your details were updated." });
+    if (error) {
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+      return;
+    }
+    await logAudit({ action: "update", entity: "profile", entityId: form.id, metadata: { source: "customer_self_serve", updatedFields: Object.keys(payload) } }).catch(() => {});
+    toast({ title: "Saved", description: "Your details are updated — our team sees the same info." });
   };
 
   const field = (label: string, key: keyof Profile, type = "text") => (
@@ -43,6 +64,10 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
 
   return (
     <div className="space-y-6">
+      <div className="p-3 border-2 border-foreground/30 bg-muted/40 text-xs">
+        Any change you make here is the single source of truth — our support team sees the same details instantly. To change your email, please contact us.
+      </div>
+
       <div className="p-4 border-4 border-foreground bg-background space-y-3">
         <h3 className="font-display uppercase">Your details</h3>
         <div className="grid md:grid-cols-2 gap-3">
@@ -52,6 +77,7 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
             <Input value={form.email || ""} disabled className="border-2 border-foreground" />
           </div>
           {field("Phone", "phone", "tel")}
+          {field("Date of birth", "date_of_birth", "date")}
         </div>
       </div>
 

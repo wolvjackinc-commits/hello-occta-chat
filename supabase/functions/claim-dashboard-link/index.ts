@@ -1,8 +1,5 @@
-import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp, brutalistEmailShell, escapeHtml } from '../_shared/quoteHelpers.ts'
 
-const SENDER_DOMAIN = 'notify.www.occta.co.uk'
-const FROM_EMAIL = `OCCTA <noreply@${SENDER_DOMAIN}>`
 const PUBLIC_APP_ORIGIN = 'https://www.occta.co.uk'
 
 function normaliseEmail(email: unknown): string {

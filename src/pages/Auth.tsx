@@ -27,13 +27,20 @@ const Auth = () => {
   const isWelcome = searchParams.get("welcome") === "1";
   const isClaim = searchParams.get("claim") === "1";
 
+  // Supabase appends "#type=recovery&access_token=..." when a user clicks
+  // the password reset link. Detect that synchronously so we render the
+  // "Set password" form instead of flashing the Sign In tab.
+  const hashIsRecovery =
+    typeof window !== "undefined" &&
+    /[#&]type=recovery(\b|&|$)/.test(window.location.hash || "");
+
   const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState(hashIsRecovery);
   const [newPassword, setNewPassword] = useState("");
   const [claimEmail, setClaimEmail] = useState(prefillEmail);
   const [claimSending, setClaimSending] = useState(false);
@@ -72,10 +79,10 @@ const Auth = () => {
     // Check if user is already logged in
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session && !isWelcome && !recoveryMode) {
+      if (session && !isWelcome && !recoveryMode && !hashIsRecovery) {
         navigate(redirectTarget);
       }
-      if (session && isWelcome) {
+      if (session && (isWelcome || hashIsRecovery)) {
         // Landed here via the email "Set password & open dashboard" link.
         setRecoveryMode(true);
       }

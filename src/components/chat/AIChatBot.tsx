@@ -559,26 +559,29 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
               {!isMinimized && (
                 <>
                   {/* Messages */}
-                  <ScrollArea className="flex-1 p-4">
+                  <ScrollArea className="flex-1 p-5 bg-background">
                     {isFreshChat ? (
                       <div className="space-y-4">
-                        <div className="text-center">
-                          <Bot className="w-12 h-12 mx-auto mb-3 text-primary" />
-                          <h3 className="font-display text-lg mb-1">
-                            {isAdmin ? "🔐 Admin Mode" : "Hey there! 👋"}
+                        <div className="border-4 border-foreground bg-card p-4 shadow-[6px_6px_0_hsl(var(--foreground))]">
+                          <div className="w-12 h-12 mb-3 border-2 border-foreground bg-primary flex items-center justify-center">
+                            <Bot className="w-7 h-7 text-primary-foreground" />
+                          </div>
+                          <h3 className="font-display text-xl uppercase mb-1">
+                            {isAdmin ? "Admin support desk" : user ? "Account desk ready" : "OCCTA support desk"}
                           </h3>
                           <p className="text-sm text-muted-foreground">
                             {isAdmin 
                               ? "I'm IRA, ready to help with customers, services, or tickets."
-                              : "I'm IRA — no pressure, no contracts, just honest help 🙂"}
+                              : user ? "You're signed in, so I can check your linked orders, invoices, services and tickets without asking you to verify again."
+                              : "Ask about plans, switching, setup or support. No pressure, no contracts — just straight answers."}
                           </p>
                         </div>
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
                           {quickActions.map((action, i) => (
                             <button
                               key={i}
                               onClick={() => handleQuickAction(action.message)}
-                              className="w-full text-left px-3 py-2 text-sm border-2 border-foreground/30 hover:border-primary hover:bg-primary/5 transition-colors"
+                              className="min-h-[48px] text-left px-3 py-2 text-xs font-display uppercase border-2 border-foreground bg-card hover:bg-primary hover:text-primary-foreground transition-colors shadow-[3px_3px_0_hsl(var(--foreground))] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                             >
                               {action.label}
                             </button>
@@ -597,11 +600,11 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                                 <Bot className="w-4 h-4 text-primary-foreground" />
                               </div>
                             )}
-                             <div
-                              className={`max-w-[85%] px-3 py-2 text-sm ${
+                              <div
+                              className={`max-w-[86%] px-4 py-3 text-sm leading-relaxed ${
                                 message.role === "user"
                                   ? "bg-accent text-accent-foreground border-2 border-foreground"
-                                  : "bg-secondary border-2 border-foreground/50"
+                                  : "bg-card border-2 border-foreground/60"
                               }`}
                             >
                               <AssistantMessageBody message={message} onQuickReply={sendMessage} />
@@ -634,10 +637,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                             <div className="w-7 h-7 bg-primary flex items-center justify-center shrink-0 border-2 border-foreground">
                               <Bot className="w-4 h-4 text-primary-foreground" />
                             </div>
-                            <div className="bg-secondary border-2 border-foreground/50 px-4 py-3">
+                            <div className="bg-card border-2 border-foreground/60 px-4 py-3">
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Thinking…
+                                <Shimmer>Checking your account…</Shimmer>
                               </div>
                             </div>
                           </div>

@@ -137,9 +137,8 @@ const Auth = () => {
     }
     setClaimSending(true);
     setMessage(null);
-    const nextParam = encodeURIComponent(getRedirectTarget());
-    const { error } = await supabase.auth.resetPasswordForEmail(claimEmail, {
-      redirectTo: `${window.location.origin}/auth?welcome=1&next=${nextParam}`,
+    const { error } = await supabase.functions.invoke("claim-dashboard-link", {
+      body: { email: parsed.data },
     });
     setClaimSending(false);
     if (error) {

@@ -29,7 +29,7 @@ const Layout = ({ children }: LayoutProps) => {
 
       {chatOpen ? (
         <Suspense fallback={null}>
-          <AIChatBot />
+          <AIChatBot initialOpen onClose={() => setChatOpen(false)} />
         </Suspense>
       ) : (
         <button

@@ -32,7 +32,7 @@ const AppLayout = ({ children, hideNav = false }: AppLayoutProps) => {
 
       {chatOpen ? (
         <Suspense fallback={null}>
-          <AIChatBot />
+          <AIChatBot initialOpen onClose={() => setChatOpen(false)} />
         </Suspense>
       ) : (
         <button

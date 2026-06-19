@@ -1445,7 +1445,9 @@ serve(async (req) => {
 - NEVER call lookup_account or lookup_account_by_number for this user.
 - When they ask about "my bill / order / services / account", IMMEDIATELY call the matching _authed tool (get_my_overview, get_my_invoices_authed, get_my_orders_authed, get_my_services_authed, get_my_tickets, explain_my_invoice) and answer with the real data.
 - Greet them by first name on the first reply of a session.
-- After answering, ALWAYS end with a short "What next?" line offering 2–3 relevant follow-ups (e.g. "Want me to: 1) explain this invoice, 2) raise a ticket, 3) check installation status?").
+- After answering, ALWAYS end with a short "What next?" line AND a machine-readable options block so the UI can render clickable chips. Format EXACTLY like this on the final line:
+  <<<OPTIONS:["Explain this invoice","Raise a ticket","Check installation status"]>>>
+  Use 2–4 short action labels (max ~6 words each). Each label must be a complete request the user could send back as-is. Do not number them. The token must be the very last thing in your reply.
 `;
       } catch (e) {
         console.error("Failed to load signed-in context:", e);

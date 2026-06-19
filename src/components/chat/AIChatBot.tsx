@@ -306,18 +306,18 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     return () => window.removeEventListener("ai-chat-seed", handleSeed as EventListener);
   }, []);
 
-  const formatAttachmentSize = (size: number) => {
+  const formatAttachmentSize = useCallback((size: number) => {
     if (size < 1024) return `${size} B`;
     if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
     return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  }, []);
 
-  const formatAttachmentSummary = (attachments: AttachmentMeta[]) => {
+  const formatAttachmentSummary = useCallback((attachments: AttachmentMeta[]) => {
     if (!attachments.length) return "";
     return attachments
       .map((file) => `- ${file.name} (${file.type || "unknown"}, ${formatAttachmentSize(file.size)})`)
       .join("\n");
-  };
+  }, [formatAttachmentSize]);
 
   const sendMessage = useCallback(async (messageText: string, attachments: AttachmentMeta[] = []) => {
     const trimmedMessage = messageText.trim();

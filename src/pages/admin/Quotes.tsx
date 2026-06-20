@@ -48,7 +48,8 @@ export const AdminQuotes = () => {
         .select(`
           id, quote_number, plan_name, service_type, plan_type, customer_type,
           monthly_net, monthly_gross, total_due_today_gross, status, expires_at, created_at,
-          quote_request_id, unified_journey_opt_in
+          quote_request_id, unified_journey_opt_in,
+          sent_at, opened_at, completed_at, locked_at, revision_of_quote_id
         `)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -262,15 +263,16 @@ export const AdminQuotes = () => {
               <TableHead className="font-display uppercase">Plan</TableHead>
               <TableHead className="font-display uppercase">Monthly</TableHead>
               <TableHead className="font-display uppercase">Status</TableHead>
+              <TableHead className="font-display uppercase">Sent / Opened / Done</TableHead>
               <TableHead className="font-display uppercase">CS</TableHead>
               <TableHead className="font-display uppercase text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No quotes.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No quotes.</TableCell></TableRow>
             ) : (
               filtered.map((r: any) => (
                 <TableRow key={r.id} className="border-b-2 border-foreground/10">
@@ -292,6 +294,11 @@ export const AdminQuotes = () => {
                       : <>£{Number(r.monthly_gross).toFixed(2)} <span className="text-muted-foreground">inc</span></>}
                   </TableCell>
                   <TableCell><Badge className="border-2 border-foreground capitalize">{r.status}</Badge></TableCell>
+                  <TableCell className="text-[10px] font-mono leading-tight">
+                    <div>S: {r.sent_at ? format(new Date(r.sent_at), "dd MMM HH:mm") : "—"}</div>
+                    <div>O: {r.opened_at ? format(new Date(r.opened_at), "dd MMM HH:mm") : "—"}</div>
+                    <div>D: {r.completed_at ? format(new Date(r.completed_at), "dd MMM HH:mm") : "—"}</div>
+                  </TableCell>
                   <TableCell className="text-xs">
                     {r.cs ? <span className="capitalize">{r.cs.cs_number} · {r.cs.status}</span> : <span className="text-muted-foreground">—</span>}
                   </TableCell>
@@ -300,9 +307,25 @@ export const AdminQuotes = () => {
                       <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => runMarginCheck(r.id)} title="Run margin check">
                         <ShieldCheck className="w-3 h-3" />
                       </Button>
-                      {(r.status === "draft" || r.status === "sent" || r.status === "viewed" || r.status === "approved") && (
+                      {!r.locked_at && (r.status === "draft" || r.status === "approved") && (
                         <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => sendQuote(r.id, r.quote_number)}>
-                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : (r.status === "approved" ? "Send to customer" : "Send")}
+                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send & lock"}
+                        </Button>
+                      )}
+                      {r.locked_at && (
+                        <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={async () => {
+                          setBusyId(r.id);
+                          try {
+                            const { data, error } = await supabase.functions.invoke("edit-and-resend-quote", { body: { source_quote_id: r.id } });
+                            const err = (data as any)?.error || error?.message;
+                            if (err) throw new Error(err);
+                            toast({ title: `Revision ${(data as any).quote_number} created` });
+                            qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+                          } catch (e: any) {
+                            toast({ title: "Revision failed", description: e?.message, variant: "destructive" });
+                          } finally { setBusyId(null); }
+                        }}>
+                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Edit & Resend"}
                         </Button>
                       )}
                       <Button size="sm" variant="outline" onClick={() => setOverrideDialog({ open: true, quoteId: r.id, quoteNumber: r.quote_number })} title="Override red margin (admin)">

@@ -25,12 +25,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy } from "lucide-react";
 import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
 
-const STATUS_OPTIONS = ["all", "new", "in_review", "needs_info", "assigned", "checking", "draft_quote_created", "quoted", "final_quote_ready", "expired", "rejected", "closed", "converted"] as const;
+const STATUS_OPTIONS = ["all", "new", "in_review", "needs_info", "assigned", "draft_quote_created", "quoted", "final_quote_ready", "expired", "rejected", "closed", "converted"] as const;
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-muted",
   in_review: "bg-accent text-accent-foreground",
   assigned: "bg-accent text-accent-foreground",
-  checking: "bg-secondary",
   needs_info: "bg-warning text-warning-foreground",
   draft_quote_created: "bg-secondary",
   quoted: "bg-primary/70 text-primary-foreground",
@@ -61,6 +60,11 @@ export const AdminQuoteRequests = () => {
     supplier_product_id: "",
     supplier_name: "",
     bucket_override_reason: "",
+    vat_inclusive_entry: false,
+    download_estimate: "",
+    upload_estimate: "",
+    speed_disclaimer: "Estimated line speeds, subject to final supplier confirmation. Actual speeds depend on line conditions, wiring and equipment.",
+    extras: [] as Array<{ description: string; amount: string; kind: "one_off" | "monthly" }>,
   });
   const [creating, setCreating] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -115,7 +119,7 @@ export const AdminQuoteRequests = () => {
   const loadLatestQuote = async (qrId: string) => {
     const { data } = await (supabase as any)
       .from("quotes")
-      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name, customer_intent_proceeded_at, estimated_download_speed, estimated_upload_speed, speed_notes")
+      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name, customer_intent_proceeded_at, estimated_download_speed, estimated_upload_speed, speed_notes, locked_at, sent_at, opened_at, completed_at, revision_of_quote_id")
       .eq("quote_request_id", qrId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -265,6 +269,11 @@ export const AdminQuoteRequests = () => {
       supplier_product_id: "",
       supplier_name: "",
       bucket_override_reason: "",
+      vat_inclusive_entry: false,
+      download_estimate: "",
+      upload_estimate: "",
+      speed_disclaimer: "Estimated line speeds, subject to final supplier confirmation. Actual speeds depend on line conditions, wiring and equipment.",
+      extras: [],
     });
     loadProducts();
     setQuoteDialogOpen(true);
@@ -278,15 +287,27 @@ export const AdminQuoteRequests = () => {
     }
     setCreating(true);
     try {
+      const VAT = 0.2;
+      const toNet = (v: string) => {
+        const n = Number(v || 0);
+        return draft.vat_inclusive_entry ? Math.round((n / (1 + VAT)) * 100) / 100 : n;
+      };
+      const extras = draft.extras
+        .filter((x) => x.description.trim() && Number(x.amount) > 0)
+        .map((x) => ({
+          description: x.description.trim(),
+          net_amount: toNet(x.amount),
+          kind: x.kind,
+        }));
       const body = {
         quote_request_id: selected.id,
         plan_name: draft.plan_name,
         service_type: selected.service_interest,
         plan_type: draft.plan_type,
         customer_type: selected.customer_type,
-        monthly_net: Number(draft.monthly_net),
-        setup_net: Number(draft.setup_net || 0),
-        router_net: Number(draft.router_net || 0),
+        monthly_net: toNet(draft.monthly_net),
+        setup_net: toNet(draft.setup_net || "0"),
+        router_net: toNet(draft.router_net || "0"),
         delivery_net: 0,
         installation_net: 0,
         contract_length_months: draft.plan_type === "contract_saver"
@@ -296,6 +317,10 @@ export const AdminQuoteRequests = () => {
         supplier_product_id: draft.supplier_product_id || null,
         supplier_name: draft.supplier_name || null,
         admin_notes: draft.bucket_override_reason ? `[BUCKET OVERRIDE] ${draft.bucket_override_reason}` : null,
+        estimated_download_speed: draft.download_estimate ? Number(draft.download_estimate) : null,
+        estimated_upload_speed: draft.upload_estimate ? Number(draft.upload_estimate) : null,
+        speed_disclaimer: draft.speed_disclaimer || null,
+        extra_line_items: extras,
       };
       const { data, error } = await supabase.functions.invoke("create-quote", { body });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
@@ -417,6 +442,48 @@ export const AdminQuoteRequests = () => {
       if (selected) await loadLatestQuote(selected.id);
     } catch (e: any) {
       toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+    } finally { setBusy(null); }
+  };
+
+  // One-click: approve (if needed) + send. Locks the quote on send.
+  const sendQuoteToCustomer = async () => {
+    if (!latestQuote) return;
+    setBusy("send_quote");
+    try {
+      if (latestQuote.status !== "approved") {
+        await _approveFinal();
+        // refetch to reflect approved
+        if (selected?.id) await loadLatestQuote(selected.id);
+      }
+      const { data, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: latestQuote.id, rotate_token: true } });
+      const err = (data as any)?.error || error?.message;
+      if (err) {
+        if (err === "blocked_low_margin") {
+          toast({ title: "Blocked by margin guard", description: "Run a margin check / override before sending.", variant: "destructive" });
+        } else {
+          throw new Error((data as any)?.message || err);
+        }
+        return;
+      }
+      toast({ title: "Quote sent — locked", description: "Customer received their secure link. Quote is now locked." });
+      qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
+      if (selected) await loadLatestQuote(selected.id);
+    } catch (e: any) {
+      toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+    } finally { setBusy(null); }
+  };
+
+  const editAndResend = async () => {
+    if (!latestQuote) return;
+    setBusy("revise");
+    try {
+      const { data, error } = await supabase.functions.invoke("edit-and-resend-quote", { body: { source_quote_id: latestQuote.id } });
+      const err = (data as any)?.error || error?.message;
+      if (err) throw new Error(err);
+      toast({ title: `Revision ${(data as any).quote_number} created`, description: "Edit pricing, then send the new revision." });
+      if (selected) await loadLatestQuote(selected.id);
+    } catch (e: any) {
+      toast({ title: "Could not create revision", description: e?.message, variant: "destructive" });
     } finally { setBusy(null); }
   };
 
@@ -599,9 +666,6 @@ export const AdminQuoteRequests = () => {
                 {selected.status === "new" && (
                   <Button size="sm" variant="outline" onClick={() => assignToMe(selected.id)}>Assign to me</Button>
                 )}
-                {selected.status !== "checking" && selected.status !== "quoted" && selected.status !== "converted" && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(selected.id, "checking")}>Mark checking</Button>
-                )}
                 {selected.status !== "rejected" && (
                   <Button size="sm" variant="outline" onClick={() => updateStatus(selected.id, "rejected")}>Reject</Button>
                 )}
@@ -643,19 +707,23 @@ export const AdminQuoteRequests = () => {
                     <p>calculated margin ex VAT: {latestSupplierProduct?.supplier_monthly_net != null ? `£${(Number(latestQuote.monthly_net ?? 0) - Number(latestSupplierProduct.supplier_monthly_net)).toFixed(2)}` : "—"}</p>
                     <p>margin check after buffers: {marginInfo?.estimated_monthly_margin != null ? `£${Number(marginInfo.estimated_monthly_margin).toFixed(2)}` : "—"}</p>
                   </div>
-                  {latestQuote.status !== "approved" && (
-                    <Button size="sm" variant="hero" onClick={approveFinal} disabled={busy === "approve"}>
-                      {busy === "approve" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Approve final quote
-                    </Button>
-                  )}
-                  {latestQuote.status === "approved" && (
+                  {!latestQuote.locked_at && (
                     <div className="space-y-2">
-                      <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
-                      <Button size="sm" variant="hero" disabled={busy === "send_quote"} onClick={sendApprovedQuote}>
-                        {busy === "send_quote" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                        {latestQuote.customer_intent_proceeded_at ? "Resend approved quote to customer" : "Send approved quote to customer"}
+                      <Button size="sm" variant="hero" disabled={busy === "send_quote" || busy === "approve"} onClick={sendQuoteToCustomer}>
+                        {(busy === "send_quote" || busy === "approve") ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                        Send Quote to Customer
                       </Button>
-                      <p className="text-[10px] text-muted-foreground">Emails the customer a secure link to accept or decline this quote.</p>
+                      <p className="text-[10px] text-muted-foreground">Approves, emails the secure link and locks the quote. Use Edit &amp; Resend to revise after sending.</p>
+                    </div>
+                  )}
+                  {latestQuote.locked_at && (
+                    <div className="space-y-1 border-2 border-primary/30 bg-primary/5 p-2">
+                      <p className="text-xs font-medium">🔒 Locked — sent {latestQuote.sent_at ? format(new Date(latestQuote.sent_at), "dd MMM HH:mm") : ""}</p>
+                      {latestQuote.opened_at && <p className="text-[10px] text-muted-foreground">Opened by customer · {format(new Date(latestQuote.opened_at), "dd MMM HH:mm")}</p>}
+                      {latestQuote.completed_at && <p className="text-[10px] text-primary">✓ Customer proceeded · {format(new Date(latestQuote.completed_at), "dd MMM HH:mm")}</p>}
+                      <Button size="sm" variant="outline" onClick={editAndResend} disabled={busy === "revise"} className="mt-1">
+                        {busy === "revise" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Edit &amp; Resend (new revision)
+                      </Button>
                     </div>
                   )}
                   <div className="border-2 border-foreground/20 bg-background p-2 space-y-2">
@@ -761,9 +829,9 @@ export const AdminQuoteRequests = () => {
 
       {/* Create quote dialog */}
       <Dialog open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl flex flex-col max-h-[90vh] overflow-hidden">
           <DialogHeader><DialogTitle>Create quote</DialogTitle></DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto pr-1">
             <div>
               <Label className="text-xs">Plan name</Label>
               <Input value={draft.plan_name} onChange={(e) => setDraft((p) => ({ ...p, plan_name: e.target.value }))} />
@@ -846,11 +914,123 @@ export const AdminQuoteRequests = () => {
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div><Label className="text-xs">Monthly £ (ex VAT)</Label><Input value={draft.monthly_net} onChange={(e) => setDraft((p) => ({ ...p, monthly_net: e.target.value }))} inputMode="decimal" /></div>
-              <div><Label className="text-xs">Setup £ (ex VAT)</Label><Input value={draft.setup_net} onChange={(e) => setDraft((p) => ({ ...p, setup_net: e.target.value }))} inputMode="decimal" /></div>
-              <div><Label className="text-xs">Router £ (ex VAT)</Label><Input value={draft.router_net} onChange={(e) => setDraft((p) => ({ ...p, router_net: e.target.value }))} inputMode="decimal" /></div>
+            {/* VAT toggle + live calc */}
+            <div className="border-2 border-foreground/30 p-3 space-y-3 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-display uppercase tracking-wider">Pricing</Label>
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setDraft((p) => ({ ...p, vat_inclusive_entry: false }))}
+                    className={`px-2 py-1 border-2 border-foreground ${!draft.vat_inclusive_entry ? "bg-foreground text-background" : "bg-background"}`}
+                  >Enter ex-VAT</button>
+                  <button
+                    type="button"
+                    onClick={() => setDraft((p) => ({ ...p, vat_inclusive_entry: true }))}
+                    className={`px-2 py-1 border-2 border-foreground ${draft.vat_inclusive_entry ? "bg-foreground text-background" : "bg-background"}`}
+                  >Enter inc-VAT</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label className="text-xs">Monthly £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.monthly_net} onChange={(e) => setDraft((p) => ({ ...p, monthly_net: e.target.value }))} inputMode="decimal" /></div>
+                <div><Label className="text-xs">Setup £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.setup_net} onChange={(e) => setDraft((p) => ({ ...p, setup_net: e.target.value }))} inputMode="decimal" /></div>
+                <div><Label className="text-xs">Router £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.router_net} onChange={(e) => setDraft((p) => ({ ...p, router_net: e.target.value }))} inputMode="decimal" /></div>
+              </div>
+              {(() => {
+                const VAT = 0.2;
+                const toNet = (v: string) => {
+                  const n = Number(v || 0);
+                  return draft.vat_inclusive_entry ? n / (1 + VAT) : n;
+                };
+                const m = toNet(draft.monthly_net);
+                const s = toNet(draft.setup_net || "0");
+                const r = toNet(draft.router_net || "0");
+                const extrasOneOff = draft.extras.filter((x) => x.kind === "one_off").reduce((a, x) => a + toNet(x.amount), 0);
+                const extrasMonthly = draft.extras.filter((x) => x.kind === "monthly").reduce((a, x) => a + toNet(x.amount), 0);
+                const monthlyInc = (m + extrasMonthly) * (1 + VAT);
+                const oneOffInc = (s + r + extrasOneOff) * (1 + VAT);
+                const sp = products.find((x: any) => x.id === draft.supplier_product_id);
+                const supplierMonthlyNet = sp?.supplier_monthly_net != null ? Number(sp.supplier_monthly_net) : null;
+                const supplierSetupNet = sp?.supplier_setup_net != null ? Number(sp.supplier_setup_net) : null;
+                return (
+                  <div className="text-xs grid grid-cols-2 gap-2 font-mono border-t-2 border-foreground/20 pt-2">
+                    <div>
+                      <p className="text-[10px] uppercase">Customer monthly (inc VAT)</p>
+                      <p className="text-lg">£{monthlyInc.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase">Customer due today (inc VAT)</p>
+                      <p className="text-lg">£{oneOffInc.toFixed(2)}</p>
+                    </div>
+                    {supplierMonthlyNet !== null && (
+                      <>
+                        <div>
+                          <p className="text-[10px] uppercase">Supplier monthly (inc VAT)</p>
+                          <p>£{(supplierMonthlyNet * (1 + VAT)).toFixed(2)} <span className="text-[10px] text-muted-foreground">(£{supplierMonthlyNet.toFixed(2)} ex)</span></p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase">Margin (ex VAT)</p>
+                          <p className={(m - supplierMonthlyNet) < 5 ? "text-destructive" : "text-primary"}>£{(m - supplierMonthlyNet).toFixed(2)}/mo</p>
+                        </div>
+                      </>
+                    )}
+                    {supplierSetupNet !== null && supplierSetupNet > 0 && (
+                      <div className="col-span-2">
+                        <p className="text-[10px] uppercase">Supplier setup (inc VAT)</p>
+                        <p>£{(supplierSetupNet * (1 + VAT)).toFixed(2)}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
+
+            {/* Extras repeater */}
+            <div className="border-2 border-foreground/30 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-display uppercase tracking-wider">Extra line items</Label>
+                <Button type="button" size="sm" variant="outline" onClick={() => setDraft((p) => ({ ...p, extras: [...p.extras, { description: "", amount: "", kind: "one_off" }] }))}>
+                  + Add line
+                </Button>
+              </div>
+              {draft.extras.length === 0 && <p className="text-[10px] text-muted-foreground">No extras. Add charges like engineer visit, install, custom hardware…</p>}
+              {draft.extras.map((x, idx) => (
+                <div key={idx} className="grid grid-cols-12 gap-2">
+                  <Input className="col-span-6" placeholder="Description (e.g. Engineer install)" value={x.description}
+                    onChange={(e) => setDraft((p) => ({ ...p, extras: p.extras.map((y, i) => i === idx ? { ...y, description: e.target.value } : y) }))} />
+                  <Input className="col-span-3" placeholder="£" inputMode="decimal" value={x.amount}
+                    onChange={(e) => setDraft((p) => ({ ...p, extras: p.extras.map((y, i) => i === idx ? { ...y, amount: e.target.value } : y) }))} />
+                  <Select value={x.kind} onValueChange={(v) => setDraft((p) => ({ ...p, extras: p.extras.map((y, i) => i === idx ? { ...y, kind: v as any } : y) }))}>
+                    <SelectTrigger className="col-span-2"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="one_off">One-off</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" size="sm" variant="outline" className="col-span-1" onClick={() => setDraft((p) => ({ ...p, extras: p.extras.filter((_, i) => i !== idx) }))}>×</Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Speed estimate + disclaimer */}
+            <div className="border-2 border-foreground/30 p-3 space-y-2">
+              <Label className="text-xs font-display uppercase tracking-wider">Estimated speeds (customer-visible)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px]">Download (Mbps)</Label>
+                  <Input value={draft.download_estimate} onChange={(e) => setDraft((p) => ({ ...p, download_estimate: e.target.value }))} inputMode="numeric" placeholder="e.g. 80" />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Upload (Mbps)</Label>
+                  <Input value={draft.upload_estimate} onChange={(e) => setDraft((p) => ({ ...p, upload_estimate: e.target.value }))} inputMode="numeric" placeholder="e.g. 20" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-[10px]">Speed disclaimer (shown to customer)</Label>
+                <Textarea rows={2} value={draft.speed_disclaimer} onChange={(e) => setDraft((p) => ({ ...p, speed_disclaimer: e.target.value }))} />
+              </div>
+            </div>
+
             <div>
               <Label className="text-xs">Expires in (days)</Label>
               <Input value={draft.expires_in_days} onChange={(e) => setDraft((p) => ({ ...p, expires_in_days: e.target.value }))} inputMode="numeric" />

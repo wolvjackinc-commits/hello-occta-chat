@@ -57,6 +57,8 @@ Deno.serve(async (req) => {
 
   // Fire internal admin email on the first-time proceed event (best-effort, non-blocking).
   if (result.ok && !result.already && quoteId) {
+    // Mark quote as completed (customer proceeded to Contract Summary stage).
+    await supabase.from("quotes").update({ completed_at: new Date().toISOString() }).eq("id", quoteId);
     try {
       const { data: q } = await supabase
         .from("quotes")

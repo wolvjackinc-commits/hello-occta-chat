@@ -21,7 +21,8 @@ Deno.serve(async (req) => {
       monthly_net, monthly_vat_amount, monthly_gross,
       setup_gross, router_gross, delivery_gross, installation_gross,
       total_due_today_gross, cease_fee_gross,
-      estimated_download_speed, estimated_upload_speed, speed_notes,
+      estimated_download_speed, estimated_upload_speed, speed_notes, speed_disclaimer,
+      extra_line_items, sent_at, opened_at, completed_at, locked_at,
       price_rise_policy, notice_period, status, expires_at, customer_notes,
       quote_request_id, customer_intent_proceeded_at, selected_addons
     `)
@@ -39,7 +40,10 @@ Deno.serve(async (req) => {
 
   // Mark viewed (idempotent: only if status sent)
   if (q.status === "sent") {
-    await supabase.from("quotes").update({ status: "viewed" }).eq("id", q.id);
+    await supabase.from("quotes").update({
+      status: "viewed",
+      opened_at: new Date().toISOString(),
+    }).eq("id", q.id);
     await supabase.rpc("log_event", {
       _actor_type: "public", _event_type: "quote_viewed",
       _title: `Quote viewed ${q.quote_number}`,

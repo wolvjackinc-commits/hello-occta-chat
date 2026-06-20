@@ -124,12 +124,16 @@ function BuildPlanInner() {
   const [searchParams] = useSearchParams();
   const isTestMode = searchParams.get("test") === "1";
   const isFallback = searchParams.get("availability") === "fallback";
+  const prefillPlan = searchParams.get("plan") as SpeedBucket | null;
   const testMaxDownload = Number(searchParams.get("max_download") ?? "0") || undefined;
   const testTech = searchParams.get("primary_technology") || undefined;
   const { toast } = useToast();
   const { status, result, selectedAddress } = useAvailability();
-  const [step, setStep] = useState(1);
-  const [bucket, setBucket] = useState<SpeedBucket | null>(null);
+  const validBuckets: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
+  const initialBucket: SpeedBucket | null =
+    prefillPlan && validBuckets.includes(prefillPlan) ? prefillPlan : null;
+  const [step, setStep] = useState(initialBucket ? 2 : 1);
+  const [bucket, setBucket] = useState<SpeedBucket | null>(initialBucket);
   const [term, setTerm] = useState<PlanTerm | null>(null);
   const [router, setRouter] = useState<RouterChoice | null>(null);
   const [routerPay, setRouterPay] = useState<RouterPaymentType>("none");

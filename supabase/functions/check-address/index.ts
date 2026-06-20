@@ -52,75 +52,6 @@ function toGooglePlaceAddress(place: any, postcode: string) {
   }
 }
 
-async function getIdealPostcodesAddresses(postcode: string) {
-  const key = Deno.env.get('IDEAL_POSTCODES_API_KEY')
-  if (!key) return []
-
-  const params = new URLSearchParams({ api_key: key, query: postcode })
-  const res = await fetch(`https://api.ideal-postcodes.co.uk/v1/addresses?${params}`)
-  if (!res.ok) {
-    console.error(`Ideal Postcodes lookup failed (${res.status}):`, await res.text())
-    return []
-  }
-
-  const data = await res.json()
-  const addresses = Array.isArray(data?.result?.hits) ? data.result.hits : []
-  return addresses.map((hit: any) => {
-    const addr = hit?.suggestion || hit
-    const line1 = compact(addr.line_1)
-    const line2 = compact(addr.line_2)
-    const line3 = compact(addr.line_3)
-    const town = compact(addr.post_town || addr.postal_town)
-    const pc = compact(addr.postcode).toUpperCase() || postcode
-    return {
-      source: 'ideal_postcodes',
-      udprn: addr.udprn,
-      premises_name: line1,
-      thoroughfare_name: line2 || line3,
-      post_town: town,
-      postcode: pc,
-      formatted_address: [line1, line2, line3, town, pc].filter(Boolean).join(', '),
-    }
-  })
-}
-
-async function getGetAddressAddresses(postcode: string) {
-  const key = Deno.env.get('GETADDRESS_API_KEY')
-  if (!key) return []
-
-  const res = await fetch(`https://api.getAddress.io/find/${encodeURIComponent(postcode)}?api-key=${encodeURIComponent(key)}&expand=true`)
-  if (!res.ok) {
-    console.error(`getAddress lookup failed (${res.status}):`, await res.text())
-    return []
-  }
-
-  const data = await res.json()
-  const addresses = Array.isArray(data?.addresses) ? data.addresses : []
-  return addresses.map((addr: any) => {
-    if (typeof addr === 'string') {
-      const parts = addr.split(',').map((p) => p.trim()).filter(Boolean)
-      return {
-        source: 'getaddress',
-        premises_name: parts[0] || addr,
-        post_town: compact(data.town),
-        postcode,
-        formatted_address: [...parts, data.town, postcode].filter(Boolean).join(', '),
-      }
-    }
-    const line1 = compact(addr.line_1 || addr.formatted_address?.[0])
-    const line2 = compact(addr.line_2 || addr.formatted_address?.[1])
-    const town = compact(addr.town_or_city || data.town)
-    return {
-      source: 'getaddress',
-      premises_name: line1,
-      thoroughfare_name: line2,
-      post_town: town,
-      postcode: compact(addr.postcode).toUpperCase() || postcode,
-      formatted_address: [line1, line2, town, postcode].filter(Boolean).join(', '),
-    }
-  })
-}
-
 async function getGoogleTextSearchAddresses(postcode: string) {
   const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
   const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
@@ -215,8 +146,6 @@ Deno.serve(async (req) => {
     }
 
     const addresses = uniqueAddresses([
-      ...await getIdealPostcodesAddresses(displayPostcode),
-      ...await getGetAddressAddresses(displayPostcode),
       ...await getGoogleTextSearchAddresses(displayPostcode),
       ...await getGoogleAddressFallback(displayPostcode),
     ])

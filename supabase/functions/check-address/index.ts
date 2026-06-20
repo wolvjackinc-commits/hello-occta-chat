@@ -67,9 +67,7 @@ async function getGoogleTextSearchAddresses(postcode: string) {
       'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.shortFormattedAddress',
     },
     body: JSON.stringify({
-      textQuery: postcode,
-      includedType: 'street_address',
-      strictTypeFiltering: true,
+      textQuery: `addresses near ${postcode}, UK`,
       regionCode: 'gb',
       languageCode: 'en-GB',
     }),
@@ -83,7 +81,10 @@ async function getGoogleTextSearchAddresses(postcode: string) {
   const data = await res.json()
   return (Array.isArray(data?.places) ? data.places : [])
     .map((place: any) => toGooglePlaceAddress(place, postcode))
-    .filter((addr: any) => addr.formatted_address && addr.formatted_address.toUpperCase().includes(postcode.replace(/\s+/g, '')))
+    .filter((addr: any) => {
+      const norm = (addr.formatted_address || '').toUpperCase().replace(/\s+/g, '')
+      return norm.includes(postcode.replace(/\s+/g, ''))
+    })
 }
 
 async function getGoogleAddressFallback(postcode: string) {
@@ -151,10 +152,19 @@ Deno.serve(async (req) => {
     ])
 
     if (addresses.length === 0) {
+      const fallback = [{
+        source: 'postcode_only',
+        google_place_id: '',
+        premises_name: displayPostcode,
+        post_town: '',
+        postcode: displayPostcode,
+        formatted_address: `Use this postcode (${displayPostcode})`,
+      }]
       return new Response(
         JSON.stringify({
-          addresses: [],
-          message: "We couldn't automatically find addresses for that postcode. Please try again or contact us and we'll check manually.",
+          addresses: fallback,
+          source: 'postcode_only',
+          message: "We couldn't list individual addresses for this postcode. Continue with the postcode and we'll confirm your address before activation.",
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )

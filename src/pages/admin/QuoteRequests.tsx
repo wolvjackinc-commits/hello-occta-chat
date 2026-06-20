@@ -269,6 +269,11 @@ export const AdminQuoteRequests = () => {
       supplier_product_id: "",
       supplier_name: "",
       bucket_override_reason: "",
+      vat_inclusive_entry: false,
+      download_estimate: "",
+      upload_estimate: "",
+      speed_disclaimer: "Estimated line speeds, subject to final supplier confirmation. Actual speeds depend on line conditions, wiring and equipment.",
+      extras: [],
     });
     loadProducts();
     setQuoteDialogOpen(true);

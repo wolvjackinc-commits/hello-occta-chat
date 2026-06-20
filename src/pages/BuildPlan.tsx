@@ -157,17 +157,11 @@ function BuildPlanInner() {
   // First screen opens at the page top; later steps start at the selector box.
   useEffect(() => {
     const t = setTimeout(() => {
-      if (step === 1) {
-        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-        return;
-      }
-      const el = headingRef.current;
-      if (el) {
-        const headerOffset = 120; // sticky header + announcement bar
-        const rect = el.getBoundingClientRect();
-        const target = window.scrollY + rect.top - headerOffset;
-        window.scrollTo({ top: Math.max(0, target), left: 0, behavior: "smooth" });
-        el.focus({ preventScroll: true });
+      // Always scroll back to the very top so the "Step X of 7" counter and
+      // page heading stay visible when advancing between steps.
+      window.scrollTo({ top: 0, left: 0, behavior: step === 1 ? "auto" : "smooth" });
+      if (step !== 1) {
+        headingRef.current?.focus({ preventScroll: true });
       }
     }, 80);
     return () => clearTimeout(t);

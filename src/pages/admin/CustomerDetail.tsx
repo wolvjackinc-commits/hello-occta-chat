@@ -19,6 +19,7 @@ import { CustomerBillingSettings } from "@/components/admin/CustomerBillingSetti
 import { JourneyInternalNotes } from "@/components/admin/JourneyInternalNotes";
 import { OrderOperationsCard } from "@/components/admin/OrderOperationsCard";
 import { CancellationCasesCard } from "@/components/admin/CancellationCasesCard";
+import { CustomerActionsCard } from "@/components/admin/CustomerActionsCard";
 
 function ReconciliationWarnings(_: { userId: string }) { return null; }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -344,6 +345,16 @@ export const AdminCustomerDetail = () => {
               cs={(data?.contractSummaries ?? [])[0] ?? null}
               pr={(data?.paymentRequests ?? [])[0] ?? null}
               quotes={data?.quotes ?? []}
+            />
+            <CustomerActionsCard
+              customer={{
+                id: overview.id,
+                full_name: overview.full_name,
+                email: overview.email,
+                account_number: overview.account_number,
+              }}
+              invoices={invoices as any}
+              onChanged={refetch}
             />
             <ReconciliationWarnings userId={overview.id} />
             <Card className="border-2 border-foreground p-4">

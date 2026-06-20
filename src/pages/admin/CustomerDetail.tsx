@@ -1055,6 +1055,7 @@ function AdminPrRow({ pr, comms }: { pr: any; comms: any[] }) {
   const { toast } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
   const isPaid = pr.status === "paid" || pr.status === "completed";
+  const isUnpaidLive = !isPaid && !["cancelled", "failed"].includes(pr.status);
   const fmt = (v: any) => v ? format(new Date(v), "dd MMM yyyy HH:mm") : "—";
 
   const resendReceipt = async () => {
@@ -1072,6 +1073,34 @@ function AdminPrRow({ pr, comms }: { pr: any; comms: any[] }) {
   };
 
   const openReceipt = () => window.open(`/dashboard/receipt/${pr.id}`, "_blank", "noopener,noreferrer");
+
+  const resendLink = async () => {
+    setBusy("resend");
+    try {
+      const { data, error } = await supabase.functions.invoke("payment-request", {
+        body: { action: "admin-resend-link", request_id: pr.id },
+      });
+      if (error || !(data as any)?.success) throw new Error((data as any)?.error || error?.message || "Failed");
+      toast({ title: "Link resent with fresh token" });
+    } catch (e: any) {
+      toast({ title: "Couldn't resend", description: e.message, variant: "destructive" });
+    } finally { setBusy(null); }
+  };
+
+  const voidRequest = async () => {
+    const reason = window.prompt("Reason for voiding this request? (optional)") ?? undefined;
+    if (reason === null) return; // Esc
+    setBusy("void");
+    try {
+      const { data, error } = await supabase.functions.invoke("payment-request", {
+        body: { action: "admin-void-request", request_id: pr.id, reason },
+      });
+      if (error || !(data as any)?.success) throw new Error((data as any)?.error || error?.message || "Failed");
+      toast({ title: "Payment request voided" });
+    } catch (e: any) {
+      toast({ title: "Couldn't void", description: e.message, variant: "destructive" });
+    } finally { setBusy(null); }
+  };
 
   return (
     <div className="border-2 border-foreground p-4 space-y-3">
@@ -1096,6 +1125,16 @@ function AdminPrRow({ pr, comms }: { pr: any; comms: any[] }) {
               </Button>
               <Button size="sm" variant="outline" className="border-2 border-foreground" onClick={resendReceipt} disabled={busy === "receipt"}>
                 <Mail className="h-4 w-4 mr-2" />{busy === "receipt" ? "Sending…" : "Resend receipt email"}
+              </Button>
+            </>
+          )}
+          {isUnpaidLive && (
+            <>
+              <Button size="sm" variant="outline" className="border-2 border-foreground" onClick={resendLink} disabled={busy === "resend"}>
+                <Send className="h-4 w-4 mr-2" />{busy === "resend" ? "Resending…" : "Resend link"}
+              </Button>
+              <Button size="sm" variant="outline" className="border-2 border-destructive text-destructive" onClick={voidRequest} disabled={busy === "void"}>
+                {busy === "void" ? "Voiding…" : "Void"}
               </Button>
             </>
           )}

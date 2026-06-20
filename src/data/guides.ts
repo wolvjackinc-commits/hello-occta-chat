@@ -542,6 +542,73 @@ export const guides: Guide[] = [
     ctaLink: '/broadband',
     relatedSlugs: ['cheap-broadband-uk', 'no-contract-broadband-uk'],
   },
+  {
+    slug: 'how-to-get-broadband-with-bad-credit',
+    title: 'How to Get Broadband with Bad Credit (UK Guide)',
+    metaTitle: 'Broadband with Bad Credit — No Credit Check UK',
+    description: 'Bad credit history? Learn how to get UK broadband without a hard credit check, what providers actually look for, and how OCCTA\u2019s flexible plans help.',
+    keywords: 'broadband no credit check, broadband with bad credit UK, bad credit broadband, no credit check broadband, broadband no credit history',
+    category: 'broadband',
+    categoryLabel: 'Broadband',
+    intro: 'Most big UK broadband providers run a hard credit check before they will sign you up \u2014 and a thin file, missed payment or CCJ can mean a refusal. The good news: getting connected with bad credit is still very possible. Here is how it works, and what to look for.',
+    sections: [
+      {
+        heading: 'Why Broadband Providers Credit Check You',
+        paragraphs: [
+          'A traditional 18 or 24-month contract is essentially a loan: the provider commits to giving you a service today in exchange for monthly payments over a long term. To protect themselves, they run a hard credit search through agencies like Experian or Equifax.',
+          'If your file shows missed payments, defaults, CCJs, or simply not much history, the application can be declined \u2014 or you may be pushed onto a more expensive plan with a deposit.',
+        ],
+      },
+      {
+        heading: 'Is There Truly \u201CNo Credit Check\u201D Broadband?',
+        paragraphs: [
+          'A fully no-checks-at-all broadband product is rare in the UK because the provider still needs to verify your identity and address for regulatory reasons.',
+          'What is realistic is broadband without a hard credit check \u2014 short, rolling plans that do not require committing to a long fixed term, so the provider takes far less credit risk and either skips the hard search or only runs a soft check.',
+        ],
+      },
+      {
+        heading: 'How OCCTA\u2019s Flexible Plans Help',
+        paragraphs: [
+          'OCCTA does not lock you into 18 or 24-month contracts. Our flexible, no long-contract plans mean we are not extending credit over years \u2014 so we do not need to make sign-up dependent on a perfect credit score.',
+          'There are no mid-contract price-rise nonsense clauses either. The price you sign up at is the price you pay, and you can leave with 30 days notice.',
+        ],
+        bullets: [
+          'No long lock-in contracts \u2014 reduces the need for hard credit checks',
+          'No mid-contract price hikes \u2014 your bill stays predictable',
+          'Pay monthly by Direct Debit or card \u2014 your choice',
+          '30 days notice to cancel \u2014 no surprise exit fees',
+        ],
+      },
+      {
+        heading: 'Practical Tips Before You Apply',
+        paragraphs: ['A few simple steps can improve your chances and protect your credit file:'],
+        bullets: [
+          'Check your credit report for free (Experian, Equifax, TransUnion) and dispute any errors',
+          'Avoid making multiple broadband applications in a short space of time',
+          'Make sure you are on the electoral roll at your current address',
+          'Set up a Direct Debit so payments are never missed by accident',
+          'Prefer a rolling/flexible plan over a 24-month contract while you rebuild credit',
+        ],
+      },
+      {
+        heading: 'What to Avoid',
+        paragraphs: [
+          'Be cautious with anyone advertising \u201Cguaranteed broadband, no checks, any credit history\u201D at a high upfront price \u2014 these can be resold mobile broadband at poor value.',
+          'Always check the provider is a real UK ISP, the price is clear, and there are no hidden setup fees.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Can I get broadband in the UK with bad credit?', answer: 'Yes. Flexible no long-contract providers like OCCTA do not rely on long lock-ins, so a poor credit history is much less likely to block your application than with a traditional 24-month contract.' },
+      { question: 'Does OCCTA run a hard credit check?', answer: 'OCCTA\u2019s flexible plans are designed without long lock-ins, so sign-up is not gated on a perfect credit score the way traditional contract broadband often is. We may carry out basic identity and address verification.' },
+      { question: 'Will applying for broadband hurt my credit score?', answer: 'A hard credit search can leave a small temporary mark on your file. Choosing a provider that uses soft checks or rolling plans helps avoid that.' },
+      { question: 'Do I need to pay a deposit?', answer: 'OCCTA does not require a security deposit on standard residential broadband plans.' },
+      { question: 'How quickly can I get connected?', answer: 'Once your postcode is checked and your order is placed, installation typically takes around 7 working days, depending on the line type.' },
+    ],
+    ctaText: 'Check Your Address',
+    ctaLink: '/broadband',
+    relatedSlugs: ['no-contract-broadband-uk', 'cheap-broadband-uk'],
+  },
 ];
 
 export const getGuideBySlug = (slug: string): Guide | undefined =>

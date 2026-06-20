@@ -25,12 +25,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy } from "lucide-react";
 import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
 
-const STATUS_OPTIONS = ["all", "new", "in_review", "needs_info", "assigned", "checking", "draft_quote_created", "quoted", "final_quote_ready", "expired", "rejected", "closed", "converted"] as const;
+const STATUS_OPTIONS = ["all", "new", "in_review", "needs_info", "assigned", "draft_quote_created", "quoted", "final_quote_ready", "expired", "rejected", "closed", "converted"] as const;
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-muted",
   in_review: "bg-accent text-accent-foreground",
   assigned: "bg-accent text-accent-foreground",
-  checking: "bg-secondary",
   needs_info: "bg-warning text-warning-foreground",
   draft_quote_created: "bg-secondary",
   quoted: "bg-primary/70 text-primary-foreground",

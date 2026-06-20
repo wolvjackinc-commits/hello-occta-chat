@@ -112,11 +112,16 @@ function BuildPlanInner() {
   const [submitting, setSubmitting] = useState(false);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
-  // Whenever the step changes, scroll to top and focus the new heading (a11y).
+  // Whenever the step changes, scroll the new section heading into view
+  // (not the page top — that's disorienting after auto-advance).
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    // Defer focus to after render
-    const t = setTimeout(() => headingRef.current?.focus(), 60);
+    const t = setTimeout(() => {
+      const el = headingRef.current;
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.focus({ preventScroll: true });
+      }
+    }, 80);
     return () => clearTimeout(t);
   }, [step]);
 

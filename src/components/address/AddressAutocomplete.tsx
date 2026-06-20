@@ -139,7 +139,7 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
 
   return (
     <div className="relative">
-      <Label className="text-sm font-medium flex items-center gap-1">
+      <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
         <MapPin className="w-3.5 h-3.5" /> Search your address
       </Label>
       <div className="relative mt-1">
@@ -149,15 +149,15 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
           onFocus={() => suggestions.length && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder="Start typing your postcode or street…"
-          className="border border-foreground/20 focus:border-foreground pr-9"
+          className="h-12 border-4 border-foreground focus:ring-0 focus:border-foreground bg-background pr-9 rounded-none"
           autoComplete="off"
         />
         {loading && (
-          <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-primary" />
         )}
       </div>
       {open && suggestions.length > 0 && (
-        <ul className="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-auto border border-foreground bg-background shadow-lg">
+        <ul className="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-auto border-4 border-foreground bg-background shadow-[6px_6px_0_0_hsl(var(--foreground))] rounded-none">
           {suggestions.map((s, i) => {
             const pp = s.placePrediction;
             const main = pp?.mainText?.text ?? "";
@@ -168,7 +168,7 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => choose(s)}
-                  className="w-full text-left px-3 py-2 hover:bg-foreground/5 border-b border-foreground/10 last:border-b-0"
+                  className="w-full text-left px-3 py-2.5 hover:bg-primary/10 border-b-2 border-foreground/10 last:border-b-0 transition-colors"
                 >
                   <div className="text-sm font-medium">{main}</div>
                   {secondary && (
@@ -180,7 +180,7 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
           })}
         </ul>
       )}
-      <p className="text-xs text-muted-foreground mt-1">
+      <p className="text-xs text-muted-foreground mt-2">
         Can't find it? Just type your address in the fields below.
       </p>
     </div>

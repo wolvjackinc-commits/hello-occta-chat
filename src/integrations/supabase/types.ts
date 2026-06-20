@@ -1347,6 +1347,7 @@ export type Database = {
           created_at: string
           cs_version: number | null
           customer_id: string | null
+          date_of_birth: string | null
           id: string
           ip: string | null
           journey_id: string | null
@@ -1381,6 +1382,7 @@ export type Database = {
           created_at?: string
           cs_version?: number | null
           customer_id?: string | null
+          date_of_birth?: string | null
           id?: string
           ip?: string | null
           journey_id?: string | null
@@ -1415,6 +1417,7 @@ export type Database = {
           created_at?: string
           cs_version?: number | null
           customer_id?: string | null
+          date_of_birth?: string | null
           id?: string
           ip?: string | null
           journey_id?: string | null

@@ -119,7 +119,7 @@ export const AdminQuoteRequests = () => {
   const loadLatestQuote = async (qrId: string) => {
     const { data } = await (supabase as any)
       .from("quotes")
-      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name, customer_intent_proceeded_at, estimated_download_speed, estimated_upload_speed, speed_notes")
+      .select("id, quote_number, status, monthly_net, monthly_gross, plan_name, approved_at, supplier_product_id, supplier_name, customer_intent_proceeded_at, estimated_download_speed, estimated_upload_speed, speed_notes, locked_at, sent_at, opened_at, completed_at, revision_of_quote_id")
       .eq("quote_request_id", qrId)
       .order("created_at", { ascending: false })
       .limit(1)

@@ -78,7 +78,9 @@ export function AddressAutocomplete({
   const debounceRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (initialQuery && initialQuery !== query) setQuery(initialQuery);
+    if (initialQuery) {
+      setQuery((current) => (current === initialQuery ? current : initialQuery));
+    }
   }, [initialQuery]);
 
   useEffect(() => {

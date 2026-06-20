@@ -4735,6 +4735,7 @@ export type Database = {
           approved_by: string | null
           bucket_override_reason: string | null
           cease_fee_gross: number | null
+          completed_at: string | null
           contract_length_months: number | null
           created_at: string
           created_by: string | null
@@ -4750,11 +4751,13 @@ export type Database = {
           estimated_download_speed: number | null
           estimated_upload_speed: number | null
           expires_at: string
+          extra_line_items: Json
           final_snapshot: Json | null
           id: string
           installation_gross: number
           installation_net: number
           installation_vat_amount: number
+          locked_at: string | null
           margin_amount: number | null
           margin_status: Database["public"]["Enums"]["margin_status_kind"]
           monthly_gross: number
@@ -4762,6 +4765,8 @@ export type Database = {
           monthly_vat_amount: number
           monthly_vat_rate: number
           notice_period: string
+          opened_at: string | null
+          parent_quote_id: string | null
           plan_name: string
           plan_term: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
@@ -4769,18 +4774,21 @@ export type Database = {
           public_token_hash: string | null
           quote_number: string
           quote_request_id: string
+          revision_of_quote_id: string | null
           reward_eligibility: string | null
           router_gross: number
           router_net: number
           router_option: Json | null
           router_vat_amount: number
           selected_addons: Json | null
+          sent_at: string | null
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_gross: number
           setup_net: number
           setup_option: Json | null
           setup_vat_amount: number
           speed_bucket: string | null
+          speed_disclaimer: string | null
           speed_notes: string | null
           status: Database["public"]["Enums"]["quote_status_kind"]
           supplier_name: string | null
@@ -4797,6 +4805,7 @@ export type Database = {
           approved_by?: string | null
           bucket_override_reason?: string | null
           cease_fee_gross?: number | null
+          completed_at?: string | null
           contract_length_months?: number | null
           created_at?: string
           created_by?: string | null
@@ -4812,11 +4821,13 @@ export type Database = {
           estimated_download_speed?: number | null
           estimated_upload_speed?: number | null
           expires_at?: string
+          extra_line_items?: Json
           final_snapshot?: Json | null
           id?: string
           installation_gross?: number
           installation_net?: number
           installation_vat_amount?: number
+          locked_at?: string | null
           margin_amount?: number | null
           margin_status?: Database["public"]["Enums"]["margin_status_kind"]
           monthly_gross?: number
@@ -4824,6 +4835,8 @@ export type Database = {
           monthly_vat_amount?: number
           monthly_vat_rate?: number
           notice_period?: string
+          opened_at?: string | null
+          parent_quote_id?: string | null
           plan_name: string
           plan_term?: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
@@ -4831,18 +4844,21 @@ export type Database = {
           public_token_hash?: string | null
           quote_number?: string
           quote_request_id: string
+          revision_of_quote_id?: string | null
           reward_eligibility?: string | null
           router_gross?: number
           router_net?: number
           router_option?: Json | null
           router_vat_amount?: number
           selected_addons?: Json | null
+          sent_at?: string | null
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_gross?: number
           setup_net?: number
           setup_option?: Json | null
           setup_vat_amount?: number
           speed_bucket?: string | null
+          speed_disclaimer?: string | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["quote_status_kind"]
           supplier_name?: string | null
@@ -4859,6 +4875,7 @@ export type Database = {
           approved_by?: string | null
           bucket_override_reason?: string | null
           cease_fee_gross?: number | null
+          completed_at?: string | null
           contract_length_months?: number | null
           created_at?: string
           created_by?: string | null
@@ -4874,11 +4891,13 @@ export type Database = {
           estimated_download_speed?: number | null
           estimated_upload_speed?: number | null
           expires_at?: string
+          extra_line_items?: Json
           final_snapshot?: Json | null
           id?: string
           installation_gross?: number
           installation_net?: number
           installation_vat_amount?: number
+          locked_at?: string | null
           margin_amount?: number | null
           margin_status?: Database["public"]["Enums"]["margin_status_kind"]
           monthly_gross?: number
@@ -4886,6 +4905,8 @@ export type Database = {
           monthly_vat_amount?: number
           monthly_vat_rate?: number
           notice_period?: string
+          opened_at?: string | null
+          parent_quote_id?: string | null
           plan_name?: string
           plan_term?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type_kind"]
@@ -4893,18 +4914,21 @@ export type Database = {
           public_token_hash?: string | null
           quote_number?: string
           quote_request_id?: string
+          revision_of_quote_id?: string | null
           reward_eligibility?: string | null
           router_gross?: number
           router_net?: number
           router_option?: Json | null
           router_vat_amount?: number
           selected_addons?: Json | null
+          sent_at?: string | null
           service_type?: Database["public"]["Enums"]["service_interest_kind"]
           setup_gross?: number
           setup_net?: number
           setup_option?: Json | null
           setup_vat_amount?: number
           speed_bucket?: string | null
+          speed_disclaimer?: string | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["quote_status_kind"]
           supplier_name?: string | null
@@ -4959,10 +4983,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "quotes_parent_quote_id_fkey"
+            columns: ["parent_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "quotes_quote_request_id_fkey"
             columns: ["quote_request_id"]
             isOneToOne: false
             referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_revision_of_quote_id_fkey"
+            columns: ["revision_of_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
         ]

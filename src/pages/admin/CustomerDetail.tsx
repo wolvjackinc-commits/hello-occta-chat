@@ -125,8 +125,8 @@ export const AdminCustomerDetail = () => {
           <p className="text-sm text-muted-foreground">
             This customer has no account number yet. Open the reconciliation queue to assign one before continuing.
           </p>
-          <Button className="mt-4" onClick={() => navigate("/admin/tasks?filter=reconciliation")}>
-            Open reconciliation queue
+          <Button className="mt-4" onClick={() => navigate("/admin/customers")}>
+            Back to customers
           </Button>
         </Card>
       </div>
@@ -372,14 +372,6 @@ export const AdminCustomerDetail = () => {
             }}
           >
             Ask Copilot
-          </Button>
-          <Button
-            variant="outline"
-            className="border-2 border-foreground"
-            onClick={() => navigate(`/admin/tasks?account=${overview.account_number}`)}
-            disabled={!overview.account_number}
-          >
-            Tasks
           </Button>
           <CustomerEditDialog
             customer={overview}

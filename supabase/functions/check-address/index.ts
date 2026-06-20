@@ -5,6 +5,52 @@ const corsHeaders = {
 
 const ICUK_BASE_URL = (Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk').replace(/\/$/, '')
 const ICUK_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
+const GOOGLE_MAPS_GATEWAY = 'https://connector-gateway.lovable.dev/google_maps'
+
+function toGoogleAddress(candidate: any, postcode: string) {
+  const text = candidate?.placePrediction?.text?.text || candidate?.placePrediction?.structuredFormat?.mainText?.text || ''
+  const secondary = candidate?.placePrediction?.structuredFormat?.secondaryText?.text || ''
+  const full = [text, secondary].filter(Boolean).join(', ')
+  return {
+    source: 'google_places',
+    google_place_id: candidate?.placePrediction?.placeId || '',
+    premises_name: text,
+    post_town: secondary,
+    postcode,
+    formatted_address: full || postcode,
+  }
+}
+
+async function getGoogleAddressFallback(postcode: string) {
+  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
+  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
+  if (!lovableApiKey || !googleMapsKey) return []
+
+  const res = await fetch(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:autocomplete`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${lovableApiKey}`,
+      'X-Connection-Api-Key': googleMapsKey,
+      'Content-Type': 'application/json',
+      'X-Goog-FieldMask': 'suggestions.placePrediction.placeId,suggestions.placePrediction.text,suggestions.placePrediction.structuredFormat',
+    },
+    body: JSON.stringify({
+      input: postcode,
+      includedRegionCodes: ['gb'],
+      languageCode: 'en-GB',
+    }),
+  })
+
+  if (!res.ok) {
+    console.error(`Google address fallback failed (${res.status}):`, await res.text())
+    return []
+  }
+
+  const data = await res.json()
+  return (Array.isArray(data?.suggestions) ? data.suggestions : [])
+    .map((suggestion: any) => toGoogleAddress(suggestion, postcode))
+    .filter((addr: any) => addr.premises_name || addr.formatted_address)
+}
 
 async function getIcukAuthCandidates() {
   const user = Deno.env.get('ICUK_API_USER')
@@ -93,6 +139,13 @@ Deno.serve(async (req) => {
 
     if (!data) {
       console.error(`ICUK check-address failed with all configured auth candidates. Last status: ${lastStatus}`)
+      const fallbackAddresses = await getGoogleAddressFallback(normalized)
+      if (fallbackAddresses.length > 0) {
+        return new Response(
+          JSON.stringify({ addresses: fallbackAddresses, source: 'google_places' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
       return new Response(
         JSON.stringify({
           addresses: [],

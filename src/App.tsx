@@ -93,11 +93,7 @@ const AdminComplaints = lazy(() => import("./pages/admin/Complaints").then(m => 
 const AdminKnowledgeBase = lazy(() => import("./pages/admin/KnowledgeBase").then(m => ({ default: m.AdminKnowledgeBase })));
 const AdminFairPricing = lazy(() => import("./pages/admin/FairPricing").then(m => ({ default: m.AdminFairPricing })));
 const AdminSuppliersGiacomImport = lazy(() => import("./pages/admin/SuppliersGiacomImport").then(m => ({ default: m.AdminSuppliersGiacomImport })));
-const AdminReadiness = lazy(() => import("./pages/admin/Readiness").then(m => ({ default: m.AdminReadiness })));
-const AdminLaunchSafety = lazy(() => import("./pages/admin/LaunchSafety"));
 const AdminCustomerJourney = lazy(() => import("./pages/admin/CustomerJourney"));
-const AdminTasks = lazy(() => import("./pages/admin/Tasks"));
-const AdminManualFulfilment = lazy(() => import("./pages/admin/ManualFulfilment"));
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -182,10 +178,6 @@ const AnimatedRoutes = () => {
             <Route path="knowledge-base" element={<Suspense fallback={<AdminRouteFallback />}><AdminKnowledgeBase /></Suspense>} />
             <Route path="fair-pricing" element={<Suspense fallback={<AdminRouteFallback />}><AdminFairPricing /></Suspense>} />
             <Route path="suppliers/giacom-import" element={<Suspense fallback={<AdminRouteFallback />}><AdminSuppliersGiacomImport /></Suspense>} />
-            <Route path="readiness" element={<Suspense fallback={<AdminRouteFallback />}><AdminReadiness /></Suspense>} />
-            <Route path="launch-safety" element={<Suspense fallback={<AdminRouteFallback />}><AdminLaunchSafety /></Suspense>} />
-            <Route path="tasks" element={<Suspense fallback={<AdminRouteFallback />}><AdminTasks /></Suspense>} />
-            <Route path="manual-fulfilment" element={<Suspense fallback={<AdminRouteFallback />}><AdminManualFulfilment /></Suspense>} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

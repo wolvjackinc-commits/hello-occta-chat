@@ -87,7 +87,7 @@ const HeroSection = () => {
           {/* ─── LEFT COLUMN ─── */}
           <motion.div className="space-y-3" variants={containerVariants} initial="hidden" animate="visible">
             <motion.p variants={itemVariants} className="font-display text-[10px] sm:text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
-              Price Lock 24 • Flex 30 • Clear First Bill • UK-based Support
+              Price Lock 24 • Flex 30 • Clear Estimated Price • UK-based Support
             </motion.p>
 
             <motion.h1 variants={itemVariants} className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-foreground">

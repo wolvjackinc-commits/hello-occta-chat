@@ -584,7 +584,9 @@ function BuildPlanInner() {
                   <ReviewLine label="Postcode" value={(contact.postcode || "").toUpperCase() || "—"} />
                   <div className="border-t-4 border-foreground pt-3 mt-3 space-y-1">
                     <ReviewLine label="Estimated monthly total" value={resolved?.monthly_total_incl_vat != null ? `£${resolved.monthly_total_incl_vat.toFixed(2)}` : (resolved?.monthly_broadband_incl_vat != null ? `From £${resolved.monthly_broadband_incl_vat.toFixed(2)}` : "—")} bold />
-                    <ReviewLine label="Estimated first bill" value={resolved?.first_bill_incl_vat != null ? `£${resolved.first_bill_incl_vat.toFixed(2)}` : "—"} bold />
+                    {(resolved?.one_off_incl_vat ?? 0) > 0 && (
+                      <ReviewLine label="Estimated one-off total" value={`£${(resolved?.one_off_incl_vat ?? 0).toFixed(2)}`} bold />
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
                     Estimate — final speed, setup and order details confirmed before you proceed.

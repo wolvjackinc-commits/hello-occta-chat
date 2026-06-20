@@ -220,7 +220,7 @@ const ComplianceIssuesQueueContent = () => {
                           navigate(
                             issue.account_number
                               ? `/admin/customers/${issue.account_number}`
-                              : "/admin/tasks?filter=reconciliation",
+                              : "/admin/customers",
                           )
                         }
                       >

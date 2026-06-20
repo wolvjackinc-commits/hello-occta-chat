@@ -576,7 +576,7 @@ export const AdminPaymentRequests = () => {
                                   window.open(
                                     request.account_number
                                       ? `/admin/customers/${request.account_number}`
-                                      : "/admin/tasks?filter=reconciliation",
+                                      : "/admin/customers",
                                     "_blank",
                                   )
                                 }

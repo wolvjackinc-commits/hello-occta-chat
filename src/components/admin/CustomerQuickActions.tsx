@@ -45,7 +45,7 @@ export const CustomerQuickActions = ({
   // If the customer has no account number, surface reconciliation.
   const detailPath = accountNumber
     ? `/admin/customers/${accountNumber}`
-    : "/admin/tasks?filter=reconciliation";
+    : "/admin/customers";
 
   return (
     <div className="flex items-center gap-2">

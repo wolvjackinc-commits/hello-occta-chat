@@ -20,49 +20,7 @@ import { JourneyInternalNotes } from "@/components/admin/JourneyInternalNotes";
 import { OrderOperationsCard } from "@/components/admin/OrderOperationsCard";
 import { CancellationCasesCard } from "@/components/admin/CancellationCasesCard";
 
-function ReconciliationWarnings({ userId }: { userId: string }) {
-  const { data } = useQuery({
-    queryKey: ["recon-tasks", userId],
-    queryFn: async () => {
-      // Tasks reference customers via payload.journey_id / contract_summary_id.
-      // We surface anything that mentions this user's CS or journeys.
-      const { data: cs } = await supabase
-        .from("contract_summaries").select("id").eq("customer_id", userId);
-      const csIds = (cs ?? []).map((c: any) => c.id);
-      const { data: tasks } = await (supabase as any)
-        .from("admin_reconciliation_tasks")
-        .select("id, kind, severity, status, payload, created_at")
-        .eq("status", "open")
-        .order("created_at", { ascending: false })
-        .limit(50);
-      return (tasks ?? []).filter((t: any) =>
-        csIds.includes(t.payload?.contract_summary_id) ||
-        (t.payload?.email_normalised && false) // email match falls back to CS scope
-      );
-    },
-  });
-  if (!data || data.length === 0) return null;
-  return (
-    <Card className="border-2 border-destructive p-4 bg-destructive/5">
-      <div className="flex items-start gap-2">
-        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-        <div className="flex-1">
-          <div className="font-display text-base">Reconciliation warning</div>
-          <div className="text-sm text-muted-foreground mb-2">
-            One or more automated steps failed and need operator review.
-          </div>
-          <ul className="text-xs space-y-1">
-            {data.map((t: any) => (
-              <li key={t.id} className="font-mono">
-                [{t.severity}] {t.kind} — {format(new Date(t.created_at), "dd MMM HH:mm")}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </Card>
-  );
-}
+function ReconciliationWarnings(_: { userId: string }) { return null; }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { logAudit } from "@/lib/audit";
@@ -125,8 +83,8 @@ export const AdminCustomerDetail = () => {
           <p className="text-sm text-muted-foreground">
             This customer has no account number yet. Open the reconciliation queue to assign one before continuing.
           </p>
-          <Button className="mt-4" onClick={() => navigate("/admin/tasks?filter=reconciliation")}>
-            Open reconciliation queue
+          <Button className="mt-4" onClick={() => navigate("/admin/customers")}>
+            Back to customers
           </Button>
         </Card>
       </div>
@@ -196,22 +154,6 @@ export const AdminCustomerDetail = () => {
           .eq("customer_id", userId).order("created_at", { ascending: false }),
       ]);
 
-      const [{ data: mfos }, { data: readiness }, { data: tasks }] = await Promise.all([
-        prIds.length
-          ? (supabase as any).from("manual_fulfilment_orders")
-              .select("id, status, payment_request_id, contract_summary_id, supplier_name, supplier_product_ref, supplier_portal_reference, notes, created_at, updated_at, activated_at, cancelled_at")
-              .in("payment_request_id", prIds).order("created_at", { ascending: false })
-          : Promise.resolve({ data: [] as any[] }),
-        prIds.length
-          ? (supabase as any).from("provisioning_readiness")
-              .select("id, payment_request_id, contract_summary_id, installation_confirmed, router_confirmed, internal_notes_reviewed, admin_review_complete, updated_at")
-              .in("payment_request_id", prIds)
-          : Promise.resolve({ data: [] as any[] }),
-        (supabase as any).from("admin_tasks")
-          .select("id, task_number, title, status, priority, due_date, created_at, updated_at, related_payment_request_id, related_contract_summary_id, related_quote_id")
-          .eq("related_customer_id", userId).order("created_at", { ascending: false }).limit(100),
-      ]);
-
       return {
         profile: profileData,
         orders: orders.data ?? [],
@@ -225,9 +167,6 @@ export const AdminCustomerDetail = () => {
         allComms: allComms ?? [],
         quoteRequests: quoteRequests ?? [],
         quotes: quotes ?? [],
-        mfos: mfos ?? [],
-        readiness: readiness ?? [],
-        tasks: tasks ?? [],
       };
     },
   });
@@ -373,14 +312,6 @@ export const AdminCustomerDetail = () => {
           >
             Ask Copilot
           </Button>
-          <Button
-            variant="outline"
-            className="border-2 border-foreground"
-            onClick={() => navigate(`/admin/tasks?account=${overview.account_number}`)}
-            disabled={!overview.account_number}
-          >
-            Tasks
-          </Button>
           <CustomerEditDialog
             customer={overview}
             onSaved={refetch}
@@ -402,8 +333,7 @@ export const AdminCustomerDetail = () => {
           <TabsTrigger value="payments">Payments &amp; Receipts</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="communications">Communications</TabsTrigger>
-          <TabsTrigger value="fulfilment">Fulfilment</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks &amp; Notes</TabsTrigger>
+          <TabsTrigger value="services">Services &amp; Orders</TabsTrigger>
           <TabsTrigger value="billing">Billing / DD</TabsTrigger>
         </TabsList>
 
@@ -610,43 +540,12 @@ export const AdminCustomerDetail = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="fulfilment" className="mt-4 space-y-3">
+        <TabsContent value="services" className="mt-4 space-y-3">
           <Card className="border-2 border-foreground p-4">
-            <h3 className="font-display text-lg mb-3">Provisioning readiness</h3>
-            {(data?.readiness ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">No readiness rows yet. Run checks from the Provisioning Readiness page.</p>
-            ) : (
-              <div className="space-y-2 text-xs">
-                {(data?.readiness ?? []).map((r: any) => {
-                  const pr = (data?.paymentRequests ?? []).find((p: any) => p.id === r.payment_request_id);
-                  return (
-                    <div key={r.id} className="border-2 border-foreground/20 p-3">
-                      <div className="font-mono">{pr?.payment_request_number ?? r.payment_request_id.slice(0, 8)}</div>
-                      <div className="text-muted-foreground">
-                        Install: {r.installation_confirmed ? "✓" : "—"} · Router: {r.router_confirmed ? "✓" : "—"} · Notes: {r.internal_notes_reviewed ? "✓" : "—"} · Review: {r.admin_review_complete ? "✓" : "—"}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-          <Card className="border-2 border-foreground p-4">
-            <h3 className="font-display text-lg mb-3">Manual fulfilment trackers</h3>
-            <FulfilmentSection
-              mfos={data?.mfos ?? []}
-              prs={data?.paymentRequests ?? []}
-              css={data?.contractSummaries ?? []}
-              customerId={overview.id}
-              accountNumber={overview.account_number}
-              onChanged={refetch}
-            />
-            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
-              <LockIcon className="h-3 w-3" /> Supplier API submission is not automated yet — use manual process.
+            <h3 className="font-display text-lg mb-3">Services</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Customers only see live services once the admin sets the status to <strong>active</strong>. Until then they see order progress only.
             </p>
-          </Card>
-          <Card className="border-2 border-foreground p-4">
-            <h3 className="font-display text-lg mb-3">Services (visibility)</h3>
             <div className="flex justify-end mb-2">
               <AddServiceDialog
                 trigger={<Button size="sm" variant="outline" className="border-2 border-foreground">Add service (manual)</Button>}
@@ -666,7 +565,7 @@ export const AdminCustomerDetail = () => {
               />
             </div>
             {services.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No services. Automatic service activation is not enabled yet — use manual process.</p>
+              <p className="text-sm text-muted-foreground">No services yet.</p>
             ) : (
               <Table>
                 <TableHeader>
@@ -706,28 +605,6 @@ export const AdminCustomerDetail = () => {
                 <div className="text-xs text-muted-foreground">Status: {order.status} · {formatDate(order.created_at)}</div>
               </div>
             ))}
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="tasks" className="mt-4 space-y-4">
-          <Card className="border-2 border-foreground p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display text-lg">Admin tasks</h3>
-              <Button asChild size="sm" variant="outline" className="border-2 border-foreground">
-                <Link to={`/admin/tasks?account=${overview.account_number ?? ""}`}>
-                  <ExternalLink className="w-3 h-3 mr-1" /> Open Tasks
-                </Link>
-              </Button>
-            </div>
-            {(data?.tasks ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tasks linked to this customer.</p>
-            ) : (
-              <div className="space-y-2">
-                {(data?.tasks ?? []).map((t: any) => (
-                  <TaskRow key={t.id} task={t} onChanged={refetch} />
-                ))}
-              </div>
-            )}
           </Card>
           <JourneyInternalNotes customerId={overview.id} />
         </TabsContent>

@@ -56,5 +56,5 @@ export function customerDetailHrefOrReconciliation(
   input: CustomerLinkInput | null | undefined,
 ): string {
   const t = customerDetailHref(input);
-  return t.href ?? "/admin/tasks?filter=reconciliation";
+  return t.href ?? "/admin/customers";
 }

@@ -35,7 +35,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
   const showInlineResult = !externalAddressSelect && status === "success" && result;
   const showFallback = !externalAddressSelect && status === "error" &&
     (errorType === "backend-unavailable" || errorType === "availability-failed" || errorType === "no-addresses");
-  const showAddressLookup = showFallback;
+  const showManualAddressLookup = showFallback && errorType === "no-addresses";
 
   const goToFallbackPlans = () => {
     triggerFallback(localPostcode);
@@ -81,16 +81,19 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
         </Button>
       </div>
 
-      {showAddressLookup && (
+      {showManualAddressLookup && (
         <div className="mt-4 border-4 border-foreground bg-card p-4">
           <AddressAutocomplete
             initialQuery={localPostcode || ctxPostcode}
             label="Choose your full address"
-            helperText="Pick your property if it appears, or continue to view plans while we confirm availability."
+            helperText="If your address appears here, pick it and we'll check the available plans for that property."
             onSelect={(addr) => {
-              const pc = addr.postcode || localPostcode || ctxPostcode;
-              triggerFallback(pc);
-              navigate(`/build-plan?availability=fallback${pc ? `&postcode=${encodeURIComponent(pc)}` : ""}`);
+              selectAddress({
+                sub_premises: addr.line2,
+                premises_name: addr.line1,
+                post_town: addr.city,
+                postcode: addr.postcode || localPostcode || ctxPostcode,
+              });
             }}
           />
         </div>
@@ -122,21 +125,21 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
 
       {/* Inline address selection (for pages without external panel) */}
       {showInlineAddresses && (
-        <div className="mt-3 border-2 border-foreground/10 bg-card">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-foreground/10">
+        <div className="mt-4 border-4 border-foreground bg-card">
+          <div className="flex items-center justify-between px-4 py-3 border-b-4 border-foreground">
             <p className="font-display text-xs uppercase tracking-wider">
-              {addresses.length} addresses found for {ctxPostcode}
+              Select your address — {addresses.length} found for {ctxPostcode}
             </p>
             <button onClick={reset} className="text-[11px] text-primary hover:underline font-medium">
               Change
             </button>
           </div>
-          <div className="max-h-[240px] overflow-y-auto">
+          <div className="max-h-[300px] overflow-y-auto">
             {addresses.map((addr, idx) => (
               <button
                 key={idx}
                 onClick={() => selectAddress(addr)}
-                className="w-full text-left px-4 py-2.5 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
+                className="w-full text-left px-4 py-3 hover:bg-primary/10 transition-colors border-b-2 border-foreground/10 last:border-b-0 flex items-center justify-between gap-2 group"
               >
                 <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />

@@ -264,6 +264,19 @@ const AnimatedRoutes = () => {
         <Route path="/best-broadband-deals-uk" element={<KeywordLanding />} />
         <Route path="/broadband-for-gaming" element={<KeywordLanding />} />
         <Route path="/broadband-for-working-from-home" element={<KeywordLanding />} />
+        {/* SEO content pages */}
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/coverage" element={<CoveragePage />} />
+        <Route path="/fibre-broadband" element={<FibreBroadbandPage />} />
+        <Route path="/broadband-and-digital-voice" element={<BroadbandAndDigitalVoicePage />} />
+        <Route path="/small-business-telecom" element={<SmallBusinessTelecomPage />} />
+        <Route path="/billing-explained" element={<BillingExplainedPage />} />
+        <Route path="/first-invoice-explained" element={<FirstInvoiceExplainedPage />} />
+        <Route path="/direct-debit-setup" element={<DirectDebitSetupPage />} />
+        <Route path="/pay-by-card" element={<PayByCardPage />} />
+        <Route path="/cancellation" element={<CancellationPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/vulnerable-customers" element={<VulnerableCustomersPublicPage />} />
 
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />

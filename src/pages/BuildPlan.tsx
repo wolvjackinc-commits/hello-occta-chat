@@ -194,20 +194,15 @@ function BuildPlanInner() {
   useEffect(() => {
     if (!bucket || !term) { setResolved(null); return; }
     if (isFallback) {
-      // Fallback estimate only needs bucket + term — show headline immediately
-      // so customers always see a price while they pick router/setup.
-      const headline = getHeadlineEstimate(bucket, term) ?? 0;
       setResolved({
-        ok: true,
-        quote_only: true,
-        message: "Estimate only — we'll confirm the final price after we verify availability at your address.",
-        monthly_broadband_incl_vat: headline,
+        ...(getClientEstimate(bucket, term, router, routerPay, setup, addons) as Resolved),
+        eligibility_wording: "Estimate only — final availability, setup and price are confirmed before order.",
       });
       setResolving(false);
       return;
     }
     // Live mode needs router + setup before calling the resolver.
-    if (!router || !setup) { setResolved(null); return; }
+    if (!router || !setup) { setResolved(getClientEstimate(bucket, term, router, routerPay, setup, addons)); return; }
     let cancelled = false;
     setResolving(true);
     supabase.functions.invoke("resolve-build-plan-price", {
@@ -225,7 +220,7 @@ function BuildPlanInner() {
       },
     }).then(({ data, error }) => {
       if (cancelled) return;
-      if (error) { setResolved({ ok: true, quote_only: true, message: "Couldn't resolve price right now." }); }
+      if (error) { setResolved({ ...(getClientEstimate(bucket, term, router, routerPay, setup, addons) as Resolved), eligibility_wording: "Estimate shown while we confirm the exact final price." }); }
       else { setResolved(data as Resolved); }
     }).finally(() => !cancelled && setResolving(false));
     return () => { cancelled = true; };

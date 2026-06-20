@@ -87,6 +87,38 @@ const getHeadlineEstimate = (bucket: SpeedBucket | null, term: PlanTerm | null) 
   return term === "price_lock_24" ? prices.lock24 : prices.flex30;
 };
 
+const getClientEstimate = (
+  bucket: SpeedBucket | null,
+  term: PlanTerm | null,
+  router: RouterChoice | null,
+  routerPay: RouterPaymentType,
+  setup: SetupChoice | null,
+  addonIds: string[],
+): Resolved | null => {
+  const broadband = getHeadlineEstimate(bucket, term);
+  if (broadband == null) return null;
+  const routerMonthly = router === "standard" && routerPay === "monthly" ? FAIR_PRICING_DEFAULTS.router.standardMonthly : router === "premium" && routerPay === "monthly" ? FAIR_PRICING_DEFAULTS.router.premiumMonthly : 0;
+  const routerOneOff = router === "standard" && routerPay === "one_off" ? FAIR_PRICING_DEFAULTS.router.standardOneOff : router === "premium" && routerPay === "one_off" ? FAIR_PRICING_DEFAULTS.router.premiumOneOff : 0;
+  const setupOneOff = setup === "standard" ? FAIR_PRICING_DEFAULTS.setup.standard : setup === "engineer" ? FAIR_PRICING_DEFAULTS.setup.engineer : 0;
+  const selectedAddons = ADDON_DEFS.filter((a) => addonIds.includes(a.id));
+  const addonsMonthly = selectedAddons.reduce((sum, a) => sum + a.monthly, 0);
+  const monthlyTotal = broadband + routerMonthly + addonsMonthly;
+  const oneOffTotal = routerOneOff + setupOneOff;
+  return {
+    ok: true,
+    quote_only: false,
+    monthly_broadband_incl_vat: broadband,
+    monthly_total_incl_vat: monthlyTotal,
+    vat_amount: monthlyTotal / 6,
+    router: router && router !== "own" && router !== "business" ? { label: ROUTER_LABELS[router], monthly: routerMonthly, oneOff: routerOneOff, payment_type: routerPay, option: router } : undefined,
+    setup: setup ? { label: SETUP_LABELS[setup], oneOff: setupOneOff, option: setup } : undefined,
+    addons: selectedAddons.map((a) => ({ id: a.id, label: a.label, monthly: a.monthly })),
+    one_off_incl_vat: oneOffTotal,
+    first_bill_incl_vat: monthlyTotal + oneOffTotal,
+    first_bill_promise: FIRST_BILL_PROMISE,
+  };
+};
+
 function BuildPlanInner() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();

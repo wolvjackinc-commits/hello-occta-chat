@@ -19,6 +19,7 @@ import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 
 const UK_TELECOM_PROVIDERS = [
   "BT", "Sky", "TalkTalk", "Virgin Media", "Vodafone", "Plusnet",
@@ -445,6 +446,19 @@ function BuildPlanInner() {
                   </div>
                   <div className="border-t-2 border-foreground/10 pt-4">
                     <p className="font-display uppercase text-xs tracking-wider text-muted-foreground mb-3">Installation address</p>
+                    <div className="mb-4">
+                      <AddressAutocomplete
+                        onSelect={(addr) =>
+                          setContact((c) => ({
+                            ...c,
+                            address_line_1: addr.line1 || c.address_line_1,
+                            address_line_2: addr.line2 || c.address_line_2,
+                            town: addr.city || c.town,
+                            postcode: addr.postcode || c.postcode,
+                          }))
+                        }
+                      />
+                    </div>
                     <div className="grid gap-3">
                       <div>
                         <Label className="text-sm">Address line 1 *</Label>

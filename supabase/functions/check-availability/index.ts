@@ -4,7 +4,8 @@ const corsHeaders = {
 }
 
 const ICUK_BASE_URL = (Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk').replace(/\/$/, '')
-const ICUK_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
+const configuredPlatform = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
+const ICUK_PLATFORMS = Array.from(new Set([configuredPlatform, configuredPlatform.toUpperCase(), 'LIVE', 'live']))
 
 async function getIcukAuthCandidates() {
   const user = Deno.env.get('ICUK_API_USER')
@@ -22,24 +23,34 @@ async function getIcukAuthCandidates() {
   }
 
   for (const [username, password] of credentialPairs) {
-    const tokenRes = await fetch(`${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
-        'ApiPlatform': ICUK_PLATFORM,
-        'Accept': 'application/json',
-        'Content-Length': '0',
-      },
-    })
+    for (const platform of ICUK_PLATFORMS) {
+      for (const request of [
+        { url: `${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, body: undefined, contentType: undefined },
+        { url: `${ICUK_BASE_URL}/oauth/token`, body: 'grant_type=client_credentials', contentType: 'application/x-www-form-urlencoded' },
+      ]) {
+        const tokenRes = await fetch(request.url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
+            'ApiPlatform': platform,
+            'Accept': 'application/json',
+            ...(request.contentType ? { 'Content-Type': request.contentType } : { 'Content-Length': '0' }),
+          },
+          body: request.body,
+        })
 
-    if (!tokenRes.ok) continue
+        if (!tokenRes.ok) continue
 
-    const tokenData = await tokenRes.json()
-    if (tokenData?.access_token) candidates.push(tokenData.access_token as string)
+        const tokenData = await tokenRes.json()
+        if (tokenData?.access_token) candidates.push(`${tokenData.access_token}|${platform}`)
+      }
+    }
   }
 
   for (const raw of [token, key]) {
-    if (raw && !candidates.includes(raw)) candidates.push(raw)
+    for (const platform of ICUK_PLATFORMS) {
+      if (raw && !candidates.includes(`${raw}|${platform}`)) candidates.push(`${raw}|${platform}`)
+    }
   }
 
   return candidates
@@ -210,7 +221,8 @@ Deno.serve(async (req) => {
     let rawData: any = null
     let lastStatus = 0
 
-    for (const token of authCandidates) {
+    for (const candidate of authCandidates) {
+      const [token, platform] = candidate.split('|')
       const res = hasExactIcukAddress
         ? await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
             method: 'POST',
@@ -218,7 +230,7 @@ Deno.serve(async (req) => {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
               'Authorization': `Bearer ${token}`,
-              'ApiPlatform': ICUK_PLATFORM,
+              'ApiPlatform': platform,
             },
             body: JSON.stringify(address),
           })
@@ -227,7 +239,7 @@ Deno.serve(async (req) => {
             headers: {
               'Accept': 'application/json',
               'Authorization': `Bearer ${token}`,
-              'ApiPlatform': ICUK_PLATFORM,
+              'ApiPlatform': platform,
             },
           })
 

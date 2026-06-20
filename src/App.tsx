@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { StructuredData } from "@/components/seo";
+import PrivateRouteNoIndex from "@/components/seo/PrivateRouteNoIndex";
 import { captureReferralFromUrl } from "@/lib/referral";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -140,6 +141,7 @@ const AnimatedRoutes = () => {
   return (
     <>
       <ScrollToTop />
+      <PrivateRouteNoIndex />
       <Routes location={location}>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />

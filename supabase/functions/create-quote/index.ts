@@ -24,6 +24,12 @@ const Schema = z.object({
   estimated_download_speed: z.number().int().min(0).max(100000).nullable().optional(),
   estimated_upload_speed: z.number().int().min(0).max(100000).nullable().optional(),
   speed_notes: z.string().max(800).nullable().optional(),
+  speed_disclaimer: z.string().max(800).nullable().optional(),
+  extra_line_items: z.array(z.object({
+    description: z.string().min(1).max(200),
+    net_amount: z.number().min(0).max(100000),
+    kind: z.enum(["one_off","monthly"]).default("one_off"),
+  })).max(20).optional(),
   reward_eligibility: z.string().max(200).nullable().optional(),
   expires_in_days: z.number().int().min(1).max(60).default(14),
   admin_notes: z.string().max(2000).nullable().optional(),
@@ -134,6 +140,22 @@ Deno.serve(async (req) => {
   }
   const totalDueToday = round2(s.gross + r.gross + d.gross + ins.gross);
 
+  // Extras: collapse one-off extras into total due today; monthly extras into monthly.
+  const extras = (i.extra_line_items ?? []).map((x) => ({
+    description: x.description,
+    kind: x.kind ?? "one_off",
+    net_amount: round2(x.net_amount),
+    vat_amount: round2(x.net_amount * rate),
+    gross_amount: round2(x.net_amount * (1 + rate)),
+  }));
+  const extrasOneOffGross = round2(extras.filter((x) => x.kind === "one_off").reduce((sum, x) => sum + x.gross_amount, 0));
+  const extrasMonthlyNet  = round2(extras.filter((x) => x.kind === "monthly").reduce((sum, x) => sum + x.net_amount, 0));
+  if (extrasMonthlyNet > 0) {
+    const ex = compute(m.net + extrasMonthlyNet);
+    m.net = ex.net; m.vat = ex.vat; m.gross = ex.gross;
+  }
+  const totalDueTodayWithExtras = round2(totalDueToday + extrasOneOffGross);
+
   const { raw, hash } = await generateTokenPair();
   const expiresAt = new Date(Date.now() + i.expires_in_days * 86400_000).toISOString();
 
@@ -160,10 +182,12 @@ Deno.serve(async (req) => {
     delivery_net: d.net, delivery_vat_amount: d.vat, delivery_gross: d.gross,
     installation_net: ins.net, installation_vat_amount: ins.vat, installation_gross: ins.gross,
     cease_fee_gross: i.cease_fee_gross ?? null,
-    total_due_today_gross: totalDueToday,
+    total_due_today_gross: totalDueTodayWithExtras,
     estimated_download_speed: i.estimated_download_speed ?? null,
     estimated_upload_speed: i.estimated_upload_speed ?? null,
     speed_notes: i.speed_notes ?? null,
+    speed_disclaimer: i.speed_disclaimer ?? null,
+    extra_line_items: extras,
     reward_eligibility: i.reward_eligibility ?? null,
     expires_at: expiresAt,
     token_expires_at: expiresAt,

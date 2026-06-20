@@ -3,208 +3,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const ICUK_BASE_URL = (Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk').replace(/\/$/, '')
-const configuredPlatform = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
-const ICUK_PLATFORMS = Array.from(new Set([configuredPlatform, configuredPlatform.toUpperCase(), 'LIVE', 'live']))
-
-async function getIcukAuthCandidates() {
-  const user = Deno.env.get('ICUK_API_USER')
-  const key = Deno.env.get('ICUK_API_KEY')
-  const token = Deno.env.get('ICUK_API_TOKEN')
-  const candidates: { scheme: 'Bearer' | 'Basic'; value: string; platform: string }[] = []
-  const credentialPairs = [
-    [user, token],
-    [user, key],
-    [key, token],
-  ].filter(([username, password]) => username && password) as [string, string][]
-
-  if (credentialPairs.length === 0 && !token && !key) {
-    throw new Error('ICUK credentials are not configured')
-  }
-
-  for (const [username, password] of credentialPairs) {
-    for (const platform of ICUK_PLATFORMS) {
-      for (const request of [
-        { url: `${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, body: undefined, contentType: undefined },
-        { url: `${ICUK_BASE_URL}/oauth/token`, body: 'grant_type=client_credentials', contentType: 'application/x-www-form-urlencoded' },
-      ]) {
-        const tokenRes = await fetch(request.url, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
-            'ApiPlatform': platform,
-            'Accept': 'application/json',
-            ...(request.contentType ? { 'Content-Type': request.contentType } : { 'Content-Length': '0' }),
-          },
-          body: request.body,
-        })
-
-        if (!tokenRes.ok) continue
-
-        const tokenData = await tokenRes.json()
-        if (tokenData?.access_token) candidates.push({ scheme: 'Bearer', value: tokenData.access_token as string, platform })
-      }
-    }
-  }
-
-  for (const raw of [token, key]) {
-    for (const platform of ICUK_PLATFORMS) {
-      if (raw) candidates.push({ scheme: 'Bearer', value: raw, platform })
-    }
-  }
-
-  for (const [username, password] of credentialPairs) {
-    for (const platform of ICUK_PLATFORMS) {
-      candidates.push({ scheme: 'Basic', value: btoa(`${username}:${password}`), platform })
-    }
-  }
-
-  return candidates
-}
-
-function normalizePostcode(value: unknown) {
-  return typeof value === 'string' ? value.trim().toUpperCase().replace(/\s+/g, '') : ''
-}
-
-const OCCTA_PLAN_MAP = [
-  { id: 'essential', techs: ['SOGEA', 'SoGEA', 'FTTP'], minLineSpeed: 0, maxLineSpeed: 80 },
-  { id: 'superfast', techs: ['FTTP'], minLineSpeed: 160, maxLineSpeed: 330 },
-  { id: 'ultrafast', techs: ['FTTP'], minLineSpeed: 500, maxLineSpeed: 550 },
-  { id: 'gigabit', techs: ['FTTP'], minLineSpeed: 900, maxLineSpeed: 1000 },
-]
-
-const TECH_PRIORITY: Record<string, number> = {
-  'FTTP': 100,
-  'SOGFast': 70,
-  'SOGEA': 50,
-  'SOADSL': 10,
-}
-
-const INVALID_PLACEHOLDERS = [2147483647, -1, 0]
-
-function isValidSpeed(val: unknown): val is number {
-  return typeof val === 'number' && !INVALID_PLACEHOLDERS.includes(val) && val > 0
-}
-
-interface NormalizedProduct {
-  id: string
-  name: string
-  technology: string
-  speed: string
-  availabilityFlag: string
-  likelyDownSpeed: number
-  likelyUpSpeed: number
-  speedRange: string
-  speedRangeUp: string
-}
-
-interface AvailabilityResponse {
-  available: boolean
-  primaryTechnology: string
-  maxDownload: number
-  maxUpload: number
-  technologies: { name: string; maxDown: number; maxUp: number }[]
-  normalizedProducts: NormalizedProduct[]
-  exchangeInfo: { name: string; code: string; status: string } | null
-  rawMessages: string[]
-  eligibleOcctaPlans: string[]
-  message?: string
-}
-
-function normalizeIcukResponse(data: any): AvailabilityResponse {
-  const products: NormalizedProduct[] = []
-  const techMap = new Map<string, { maxDown: number; maxUp: number }>()
-  const messages: string[] = []
-  let exchangeInfo = null
-
-  if (data.exchange) {
-    exchangeInfo = {
-      name: data.exchange.name || '',
-      code: data.exchange.code || '',
-      status: data.exchange.status || data.exchange.message || '',
-    }
-  }
-
-  if (Array.isArray(data.messages)) {
-    messages.push(...data.messages)
-  }
-  if (data.message) {
-    messages.push(data.message)
-  }
-
-  const rawProducts = data.products || data.broadband_products || []
-  const productList = Array.isArray(rawProducts) ? rawProducts : []
-
-  for (const p of productList) {
-    const tech = p.technology || p.type || ''
-    const downSpeed = p.likely_down_speed ?? p.likelyDownSpeed ?? p.download_speed ?? 0
-    const upSpeed = p.likely_up_speed ?? p.likelyUpSpeed ?? p.upload_speed ?? 0
-    const availability = p.availability ?? p.availability_flag ?? p.status ?? ''
-
-    if (!isValidSpeed(downSpeed) && !isValidSpeed(upSpeed)) continue
-
-    const validDown = isValidSpeed(downSpeed) ? downSpeed : 0
-    const validUp = isValidSpeed(upSpeed) ? upSpeed : 0
-
-    products.push({
-      id: p.id?.toString() || p.product_id?.toString() || '',
-      name: p.name || p.product_name || '',
-      technology: tech,
-      speed: `${validDown}/${validUp}`,
-      availabilityFlag: availability.toString(),
-      likelyDownSpeed: validDown,
-      likelyUpSpeed: validUp,
-      speedRange: p.speed_range || p.speedRange || `${validDown}Mbps`,
-      speedRangeUp: p.speed_range_up || p.speedRangeUp || `${validUp}Mbps`,
-    })
-
-    const existing = techMap.get(tech)
-    if (!existing || validDown > existing.maxDown) {
-      techMap.set(tech, { maxDown: validDown, maxUp: validUp })
-    }
-  }
-
-  const technologies = Array.from(techMap.entries())
-    .map(([name, speeds]) => ({ name, ...speeds }))
-    .sort((a, b) => (TECH_PRIORITY[b.name] || 0) - (TECH_PRIORITY[a.name] || 0))
-
-  const primary = technologies[0]
-  const primaryTechnology = primary?.name || 'none'
-  const maxDownload = primary?.maxDown || 0
-  const maxUpload = primary?.maxUp || 0
-
-  const availableTechs = new Set(technologies.map(t => t.name))
-  const eligibleOcctaPlans: string[] = []
-
-  // For each OCCTA plan, check if the line supports it based on max line speed
-  for (const plan of OCCTA_PLAN_MAP) {
-    const hasTech = plan.techs.some(t => availableTechs.has(t))
-    if (!hasTech) continue
-
-    // Check if the max line speed for any matching tech can support this plan
-    const canSupport = technologies.some(t => {
-      if (!plan.techs.includes(t.name)) return false
-      // The line's max speed must be >= the plan's minimum requirement
-      return t.maxDown >= plan.minLineSpeed
-    })
-
-    if (canSupport) {
-      eligibleOcctaPlans.push(plan.id)
-    }
-  }
-
-  return {
-    available: products.length > 0 && eligibleOcctaPlans.length > 0,
-    primaryTechnology,
-    maxDownload,
-    maxUpload,
-    technologies,
-    normalizedProducts: products,
-    exchangeInfo,
-    rawMessages: messages,
-    eligibleOcctaPlans,
-  }
-}
+// No external availability check — return the full OCCTA plan set so customers
+// can continue. Final line-by-line verification happens during onboarding.
+const ALL_PLANS = ['essential', 'superfast', 'ultrafast', 'gigabit']
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -221,66 +22,18 @@ Deno.serve(async (req) => {
       )
     }
 
-    const authCandidates = await getIcukAuthCandidates()
-    const hasExactIcukAddress = Boolean(address.nad_key || address.district_id)
-    const postcode = normalizePostcode(address.postcode)
-    let rawData: any = null
-    let lastStatus = 0
-
-    for (const candidate of authCandidates) {
-      const res = hasExactIcukAddress
-        ? await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': `${candidate.scheme} ${candidate.value}`,
-              'ApiPlatform': candidate.platform,
-            },
-            body: JSON.stringify(address),
-          })
-        : await fetch(`${ICUK_BASE_URL}/broadband/availability/${postcode}`, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Authorization': `${candidate.scheme} ${candidate.value}`,
-              'ApiPlatform': candidate.platform,
-            },
-          })
-
-      lastStatus = res.status
-      if (!res.ok) continue
-      rawData = await res.json()
-      break
-    }
-
-    if (!rawData) {
-      console.error(`ICUK check-availability failed with all configured auth candidates. Last status: ${lastStatus}`)
-      return new Response(
-        JSON.stringify({
-          available: false,
-          message: "We couldn't check availability for this address. Contact us and we'll check manually.",
-          eligibleOcctaPlans: [],
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log('ICUK check-availability response:', JSON.stringify(rawData).substring(0, 2000))
-    const normalized = normalizeIcukResponse(rawData)
-
-    if (!normalized.available) {
-      return new Response(
-        JSON.stringify({
-          ...normalized,
-          message: "We don't currently have orderable products at this address. Contact us and we'll check manually.",
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     return new Response(
-      JSON.stringify(normalized),
+      JSON.stringify({
+        available: true,
+        primaryTechnology: 'FTTP',
+        maxDownload: 1000,
+        maxUpload: 1000,
+        technologies: [],
+        normalizedProducts: [],
+        exchangeInfo: null,
+        rawMessages: [],
+        eligibleOcctaPlans: ALL_PLANS,
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {

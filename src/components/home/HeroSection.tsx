@@ -123,6 +123,58 @@ const HeroSection = () => {
               <PostcodeChecker variant="hero" externalAddressSelect />
             </motion.div>
 
+            {/* ── Results / address select / loading appear BELOW the checker ── */}
+            {isLoadingState && (
+              <motion.div
+                key="loading-below"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card p-5 flex flex-col items-center justify-center"
+              >
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                  {isLoadingPostcode ? "Checking your address…" : "Finding available speeds…"}
+                </p>
+              </motion.div>
+            )}
+
+            {isAddressSelect && (
+              <motion.div
+                key="addresses-below"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card p-5"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                      Select your address
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {addresses.length} addresses found for {postcode}
+                    </p>
+                  </div>
+                  <button onClick={reset} className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap">
+                    Change postcode
+                  </button>
+                </div>
+                <div className="border-2 border-foreground/10">
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {addresses.map((addr, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => selectAddress(addr)}
+                        className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
+                      >
+                        <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <motion.div variants={itemVariants} className="mt-2">
               <Link
                 to="/build-plan"
@@ -185,68 +237,6 @@ const HeroSection = () => {
           {/* ─── RIGHT COLUMN — state-driven panel replacement ─── */}
           <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
-            {/* LOADING STATE — replaces right panel while checking */}
-            {isLoadingState && (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-6 md:p-8 flex flex-col items-center justify-center min-h-[320px]"
-              >
-                <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                  {isLoadingPostcode ? "Checking your address…" : "Finding the fastest available speeds…"}
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">This only takes a moment</p>
-              </motion.div>
-            )}
-
-            {/* ADDRESS SELECT STATE — replaces right panel with address list */}
-            {isAddressSelect && (
-              <motion.div
-                key="addresses"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-5 md:p-6"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                      Select your address
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {addresses.length} addresses found for {postcode}
-                    </p>
-                  </div>
-                  <button
-                    onClick={reset}
-                    className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap"
-                  >
-                    Change postcode
-                  </button>
-                </div>
-
-                <div className="border-2 border-foreground/10 overflow-hidden">
-                  <div className="max-h-[340px] overflow-y-auto">
-                    {addresses.map((addr, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => selectAddress(addr)}
-                        className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
-                      >
-                        <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <p className="text-xs text-muted-foreground mt-3">
-                  We'll only show plans actually available at your address.
-                </p>
-              </motion.div>
-            )}
-
             {/* RESULT STATE — personalised plans */}
             {hasResult && (
               <motion.div
@@ -254,7 +244,7 @@ const HeroSection = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35 }}
-                className="card-brutal bg-card p-5 md:p-6"
+                className="card-brutal bg-card p-5 md:p-6 lg:col-span-2"
               >
                 <div className="flex items-start justify-between mb-1">
                   <div>
@@ -282,7 +272,7 @@ const HeroSection = () => {
                   <Wifi className="w-4 h-4 text-primary" />
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid sm:grid-cols-2 gap-3">
                   {getHeroPlanCards().map(plan => (
                     <div
                       key={plan.id}

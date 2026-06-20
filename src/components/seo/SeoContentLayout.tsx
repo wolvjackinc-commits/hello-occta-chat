@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
+import { SEO, JsonLd, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArrowRight, MessageCircle, PhoneCall, Mail } from "lucide-react";
@@ -71,7 +71,8 @@ export default function SeoContentLayout({
   return (
     <Layout>
       <SEO title={title} description={metaDescription} canonical={canonical} />
-      <StructuredData schemas={faqSchema ? [breadcrumb, faqSchema] : [breadcrumb]} />
+      <JsonLd data={breadcrumb} />
+      {faqSchema && <JsonLd data={faqSchema} />}
 
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12 md:py-16">
         <nav aria-label="Breadcrumb" className="text-xs font-display uppercase tracking-[0.18em] text-muted-foreground mb-4">

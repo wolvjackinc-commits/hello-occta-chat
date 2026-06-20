@@ -127,6 +127,11 @@ serve(async (req) => {
       'record-phone-payment',
       'send-email',
       'create-cs-payment',
+      'admin-create-dd-link',
+      'admin-resend-link',
+      'admin-void-request',
+      'admin-send-direct-email',
+      'admin-send-invoice',
     ]);
     let verifiedAdminUserId: string | null = null;
     if (ADMIN_ACTIONS.has(action)) {

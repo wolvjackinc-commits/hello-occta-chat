@@ -197,7 +197,7 @@ const CustomersNeedingAttentionQueueContent = () => {
                           navigate(
                             customer.account_number
                               ? `/admin/customers/${customer.account_number}`
-                              : "/admin/tasks?filter=reconciliation",
+                              : "/admin/customers",
                           )
                         }
                       >

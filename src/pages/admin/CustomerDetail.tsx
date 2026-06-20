@@ -601,43 +601,12 @@ export const AdminCustomerDetail = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="fulfilment" className="mt-4 space-y-3">
+        <TabsContent value="services" className="mt-4 space-y-3">
           <Card className="border-2 border-foreground p-4">
-            <h3 className="font-display text-lg mb-3">Provisioning readiness</h3>
-            {(data?.readiness ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">No readiness rows yet. Run checks from the Provisioning Readiness page.</p>
-            ) : (
-              <div className="space-y-2 text-xs">
-                {(data?.readiness ?? []).map((r: any) => {
-                  const pr = (data?.paymentRequests ?? []).find((p: any) => p.id === r.payment_request_id);
-                  return (
-                    <div key={r.id} className="border-2 border-foreground/20 p-3">
-                      <div className="font-mono">{pr?.payment_request_number ?? r.payment_request_id.slice(0, 8)}</div>
-                      <div className="text-muted-foreground">
-                        Install: {r.installation_confirmed ? "✓" : "—"} · Router: {r.router_confirmed ? "✓" : "—"} · Notes: {r.internal_notes_reviewed ? "✓" : "—"} · Review: {r.admin_review_complete ? "✓" : "—"}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-          <Card className="border-2 border-foreground p-4">
-            <h3 className="font-display text-lg mb-3">Manual fulfilment trackers</h3>
-            <FulfilmentSection
-              mfos={data?.mfos ?? []}
-              prs={data?.paymentRequests ?? []}
-              css={data?.contractSummaries ?? []}
-              customerId={overview.id}
-              accountNumber={overview.account_number}
-              onChanged={refetch}
-            />
-            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
-              <LockIcon className="h-3 w-3" /> Supplier API submission is not automated yet — use manual process.
+            <h3 className="font-display text-lg mb-3">Services</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Customers only see live services once the admin sets the status to <strong>active</strong>. Until then they see order progress only.
             </p>
-          </Card>
-          <Card className="border-2 border-foreground p-4">
-            <h3 className="font-display text-lg mb-3">Services (visibility)</h3>
             <div className="flex justify-end mb-2">
               <AddServiceDialog
                 trigger={<Button size="sm" variant="outline" className="border-2 border-foreground">Add service (manual)</Button>}
@@ -657,7 +626,7 @@ export const AdminCustomerDetail = () => {
               />
             </div>
             {services.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No services. Automatic service activation is not enabled yet — use manual process.</p>
+              <p className="text-sm text-muted-foreground">No services yet.</p>
             ) : (
               <Table>
                 <TableHeader>
@@ -697,28 +666,6 @@ export const AdminCustomerDetail = () => {
                 <div className="text-xs text-muted-foreground">Status: {order.status} · {formatDate(order.created_at)}</div>
               </div>
             ))}
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="tasks" className="mt-4 space-y-4">
-          <Card className="border-2 border-foreground p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display text-lg">Admin tasks</h3>
-              <Button asChild size="sm" variant="outline" className="border-2 border-foreground">
-                <Link to={`/admin/tasks?account=${overview.account_number ?? ""}`}>
-                  <ExternalLink className="w-3 h-3 mr-1" /> Open Tasks
-                </Link>
-              </Button>
-            </div>
-            {(data?.tasks ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tasks linked to this customer.</p>
-            ) : (
-              <div className="space-y-2">
-                {(data?.tasks ?? []).map((t: any) => (
-                  <TaskRow key={t.id} task={t} onChanged={refetch} />
-                ))}
-              </div>
-            )}
           </Card>
           <JourneyInternalNotes customerId={overview.id} />
         </TabsContent>

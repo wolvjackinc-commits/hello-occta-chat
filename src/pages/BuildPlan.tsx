@@ -81,6 +81,11 @@ const SETUP_LABELS: Record<string, string> = {
   complex: "Complex install (by quote)",
 };
 const TOTAL_STEPS = 7;
+const getHeadlineEstimate = (bucket: SpeedBucket | null, term: PlanTerm | null) => {
+  if (!bucket || !term) return null;
+  const prices = FAIR_PRICING_DEFAULTS.headline[bucket];
+  return term === "price_lock_24" ? prices.lock24 : prices.flex30;
+};
 
 function BuildPlanInner() {
   const nav = useNavigate();
@@ -113,10 +118,13 @@ function BuildPlanInner() {
   const [submitting, setSubmitting] = useState(false);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
-  // Whenever the step changes, scroll the new section heading into view
-  // (not the page top — that's disorienting after auto-advance).
+  // First screen opens at the page top; later steps start at the selector box.
   useEffect(() => {
     const t = setTimeout(() => {
+      if (step === 1) {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        return;
+      }
       const el = headingRef.current;
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -156,7 +164,7 @@ function BuildPlanInner() {
     if (isFallback) {
       // Fallback estimate only needs bucket + term — show headline immediately
       // so customers always see a price while they pick router/setup.
-      const headline = FAIR_PRICING_DEFAULTS.headline[bucket][term];
+      const headline = getHeadlineEstimate(bucket, term) ?? 0;
       setResolved({
         ok: true,
         quote_only: true,

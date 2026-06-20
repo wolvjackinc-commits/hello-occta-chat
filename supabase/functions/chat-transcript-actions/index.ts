@@ -107,11 +107,10 @@ Deno.serve(async (req) => {
 
     await svc.rpc("log_event", {
       _actor_type: "admin",
-      _actor_id: staff.userId,
       _event_type: "chat_escalated_to_ticket",
       _title: "Chat escalated to ticket",
       _source_module: "support",
-      _details: { session_id: sessionId, ticket_id: ticket.id },
+      _details: { session_id: sessionId, ticket_id: ticket.id, by: staff.userId },
       _ticket_id: ticket.id,
     });
 

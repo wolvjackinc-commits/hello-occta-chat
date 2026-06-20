@@ -6,21 +6,21 @@ const corsHeaders = {
 const ICUK_BASE_URL = (Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk').replace(/\/$/, '')
 const ICUK_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
 
-async function getIcukToken() {
+async function getIcukAuthCandidates() {
   const user = Deno.env.get('ICUK_API_USER')
   const key = Deno.env.get('ICUK_API_KEY')
   const token = Deno.env.get('ICUK_API_TOKEN')
+  const candidates: string[] = []
   const credentialPairs = [
     [user, token],
     [user, key],
     [key, token],
   ].filter(([username, password]) => username && password) as [string, string][]
 
-  if (credentialPairs.length === 0) {
+  if (credentialPairs.length === 0 && !token && !key) {
     throw new Error('ICUK credentials are not configured')
   }
 
-  let lastError = ''
   for (const [username, password] of credentialPairs) {
     const tokenRes = await fetch(`${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, {
       method: 'POST',
@@ -32,17 +32,17 @@ async function getIcukToken() {
       },
     })
 
-    if (!tokenRes.ok) {
-      lastError = `ICUK token request failed (${tokenRes.status})`
-      continue
-    }
+    if (!tokenRes.ok) continue
 
     const tokenData = await tokenRes.json()
-    if (tokenData?.access_token) return tokenData.access_token as string
-    lastError = 'ICUK token response did not include an access token'
+    if (tokenData?.access_token) candidates.push(tokenData.access_token as string)
   }
 
-  throw new Error(lastError || 'ICUK token request failed')
+  for (const raw of [token, key]) {
+    if (raw && !candidates.includes(raw)) candidates.push(raw)
+  }
+
+  return candidates
 }
 
 Deno.serve(async (req) => {
@@ -70,19 +70,29 @@ Deno.serve(async (req) => {
       )
     }
 
-    const token = await getIcukToken()
-    const res = await fetch(`${ICUK_BASE_URL}/broadband/address/${normalized}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'ApiPlatform': ICUK_PLATFORM,
-      },
-    })
+    const authCandidates = await getIcukAuthCandidates()
+    let data: any = null
+    let lastStatus = 0
 
-    if (!res.ok) {
-      const errText = await res.text()
-      console.error(`ICUK check-address failed (${res.status}):`, errText)
+    for (const token of authCandidates) {
+      const res = await fetch(`${ICUK_BASE_URL}/broadband/address/${normalized}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'ApiPlatform': ICUK_PLATFORM,
+        },
+      })
+
+      lastStatus = res.status
+      if (!res.ok) continue
+
+      data = await res.json()
+      break
+    }
+
+    if (!data) {
+      console.error(`ICUK check-address failed with all configured auth candidates. Last status: ${lastStatus}`)
       return new Response(
         JSON.stringify({
           addresses: [],
@@ -92,7 +102,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    const data = await res.json()
     console.log('ICUK check-address response keys:', Object.keys(data))
 
     const addressList = Array.isArray(data) ? data : (data?.addresses || data?.results || [])

@@ -27,7 +27,7 @@ import { QueueSkeleton } from "./QueueSkeleton";
 import { QueueErrorBoundary } from "./QueueErrorBoundary";
 
 const PAGE_SIZE = 8;
-const LIVE_STATUSES = ["new", "in_review", "needs_info", "assigned", "checking", "draft_quote_created"];
+const LIVE_STATUSES = ["new", "in_review", "needs_info", "assigned", "draft_quote_created"];
 
 type QuoteRequest = {
   id: string;

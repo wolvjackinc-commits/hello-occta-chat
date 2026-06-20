@@ -73,6 +73,7 @@ export function AddressAutocomplete({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const sessionTokenRef = useRef<any>(null);
   const placesLibRef = useRef<any>(null);
   const debounceRef = useRef<number | null>(null);
@@ -89,6 +90,7 @@ export function AddressAutocomplete({
         const places = await g.maps.importLibrary("places");
         placesLibRef.current = places;
         sessionTokenRef.current = new (places as any).AutocompleteSessionToken();
+        setReady(true);
       })
       .catch((e) => {
         console.warn("[AddressAutocomplete]", e);
@@ -99,7 +101,7 @@ export function AddressAutocomplete({
 
   useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    if (!query || query.length < 3 || !placesLibRef.current) {
+    if (!query || query.length < 3 || !ready || !placesLibRef.current) {
       setSuggestions([]);
       return;
     }
@@ -123,7 +125,7 @@ export function AddressAutocomplete({
         setLoading(false);
       }
     }, 220);
-  }, [query, onManualFallback]);
+  }, [query, ready, onManualFallback]);
 
   const choose = async (s: any) => {
     try {

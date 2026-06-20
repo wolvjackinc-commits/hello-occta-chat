@@ -248,6 +248,14 @@ serve(async (req) => {
       { dayOffset: 3, template: 'due_soon' },    // 3 days before due
       { dayOffset: 0, template: 'due_today' },   // Due today
       { dayOffset: -7, template: 'overdue_7' },  // 7 days overdue
+      // Recurring 7-day overdue reminders (continues until paid / cancelled)
+      { dayOffset: -14, template: 'overdue_14' as ReminderTemplate },
+      { dayOffset: -21, template: 'overdue_21' as ReminderTemplate },
+      { dayOffset: -28, template: 'overdue_28' as ReminderTemplate },
+      { dayOffset: -35, template: 'overdue_35' as ReminderTemplate },
+      { dayOffset: -42, template: 'overdue_42' as ReminderTemplate },
+      { dayOffset: -49, template: 'overdue_49' as ReminderTemplate },
+      { dayOffset: -56, template: 'overdue_56' as ReminderTemplate },
     ];
     
     const emailsSent: string[] = [];

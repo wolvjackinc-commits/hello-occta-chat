@@ -81,6 +81,43 @@ const SETUP_LABELS: Record<string, string> = {
   complex: "Complex install (by quote)",
 };
 const TOTAL_STEPS = 7;
+const getHeadlineEstimate = (bucket: SpeedBucket | null, term: PlanTerm | null) => {
+  if (!bucket || !term) return null;
+  const prices = FAIR_PRICING_DEFAULTS.headline[bucket];
+  return term === "price_lock_24" ? prices.lock24 : prices.flex30;
+};
+
+const getClientEstimate = (
+  bucket: SpeedBucket | null,
+  term: PlanTerm | null,
+  router: RouterChoice | null,
+  routerPay: RouterPaymentType,
+  setup: SetupChoice | null,
+  addonIds: string[],
+): Resolved | null => {
+  const broadband = getHeadlineEstimate(bucket, term);
+  if (broadband == null) return null;
+  const routerMonthly = router === "standard" && routerPay === "monthly" ? FAIR_PRICING_DEFAULTS.router.standardMonthly : router === "premium" && routerPay === "monthly" ? FAIR_PRICING_DEFAULTS.router.premiumMonthly : 0;
+  const routerOneOff = router === "standard" && routerPay === "one_off" ? FAIR_PRICING_DEFAULTS.router.standardOneOff : router === "premium" && routerPay === "one_off" ? FAIR_PRICING_DEFAULTS.router.premiumOneOff : 0;
+  const setupOneOff = setup === "standard" ? FAIR_PRICING_DEFAULTS.setup.standard : setup === "engineer" ? FAIR_PRICING_DEFAULTS.setup.engineer : 0;
+  const selectedAddons = ADDON_DEFS.filter((a) => addonIds.includes(a.id));
+  const addonsMonthly = selectedAddons.reduce((sum, a) => sum + a.monthly, 0);
+  const monthlyTotal = broadband + routerMonthly + addonsMonthly;
+  const oneOffTotal = routerOneOff + setupOneOff;
+  return {
+    ok: true,
+    quote_only: false,
+    monthly_broadband_incl_vat: broadband,
+    monthly_total_incl_vat: monthlyTotal,
+    vat_amount: monthlyTotal / 6,
+    router: router && router !== "own" && router !== "business" ? { label: ROUTER_LABELS[router], monthly: routerMonthly, oneOff: routerOneOff, payment_type: routerPay, option: router } : undefined,
+    setup: setup ? { label: SETUP_LABELS[setup], oneOff: setupOneOff, option: setup } : undefined,
+    addons: selectedAddons.map((a) => ({ id: a.id, label: a.label, monthly: a.monthly })),
+    one_off_incl_vat: oneOffTotal,
+    first_bill_incl_vat: monthlyTotal + oneOffTotal,
+    first_bill_promise: FIRST_BILL_PROMISE,
+  };
+};
 
 function BuildPlanInner() {
   const nav = useNavigate();
@@ -113,10 +150,13 @@ function BuildPlanInner() {
   const [submitting, setSubmitting] = useState(false);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
-  // Whenever the step changes, scroll the new section heading into view
-  // (not the page top — that's disorienting after auto-advance).
+  // First screen opens at the page top; later steps start at the selector box.
   useEffect(() => {
     const t = setTimeout(() => {
+      if (step === 1) {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        return;
+      }
       const el = headingRef.current;
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -154,20 +194,15 @@ function BuildPlanInner() {
   useEffect(() => {
     if (!bucket || !term) { setResolved(null); return; }
     if (isFallback) {
-      // Fallback estimate only needs bucket + term — show headline immediately
-      // so customers always see a price while they pick router/setup.
-      const headline = FAIR_PRICING_DEFAULTS.headline[bucket][term];
       setResolved({
-        ok: true,
-        quote_only: true,
-        message: "Estimate only — we'll confirm the final price after we verify availability at your address.",
-        monthly_broadband_incl_vat: headline,
+        ...(getClientEstimate(bucket, term, router, routerPay, setup, addons) as Resolved),
+        eligibility_wording: "Estimate only — final availability, setup and price are confirmed before order.",
       });
       setResolving(false);
       return;
     }
     // Live mode needs router + setup before calling the resolver.
-    if (!router || !setup) { setResolved(null); return; }
+    if (!router || !setup) { setResolved(getClientEstimate(bucket, term, router, routerPay, setup, addons)); return; }
     let cancelled = false;
     setResolving(true);
     supabase.functions.invoke("resolve-build-plan-price", {
@@ -185,7 +220,7 @@ function BuildPlanInner() {
       },
     }).then(({ data, error }) => {
       if (cancelled) return;
-      if (error) { setResolved({ ok: true, quote_only: true, message: "Couldn't resolve price right now." }); }
+      if (error) { setResolved({ ...(getClientEstimate(bucket, term, router, routerPay, setup, addons) as Resolved), eligibility_wording: "Estimate shown while we confirm the exact final price." }); }
       else { setResolved(data as Resolved); }
     }).finally(() => !cancelled && setResolving(false));
     return () => { cancelled = true; };

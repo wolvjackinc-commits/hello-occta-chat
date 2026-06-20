@@ -13,6 +13,9 @@ export interface ParsedAddress {
 interface Props {
   onSelect: (addr: ParsedAddress) => void;
   onManualFallback?: () => void;
+  initialQuery?: string;
+  label?: string;
+  helperText?: string;
 }
 
 const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
@@ -58,15 +61,28 @@ function parsePlace(place: any): ParsedAddress {
   return { line1, line2, city, postcode };
 }
 
-export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
-  const [query, setQuery] = useState("");
+export function AddressAutocomplete({
+  onSelect,
+  onManualFallback,
+  initialQuery = "",
+  label = "Search your address",
+  helperText = "Can't find it? Just type your address in the fields below.",
+}: Props) {
+  const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const sessionTokenRef = useRef<any>(null);
   const placesLibRef = useRef<any>(null);
   const debounceRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (initialQuery) {
+      setQuery((current) => (current === initialQuery ? current : initialQuery));
+    }
+  }, [initialQuery]);
 
   useEffect(() => {
     loadMaps()
@@ -74,6 +90,7 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
         const places = await g.maps.importLibrary("places");
         placesLibRef.current = places;
         sessionTokenRef.current = new (places as any).AutocompleteSessionToken();
+        setReady(true);
       })
       .catch((e) => {
         console.warn("[AddressAutocomplete]", e);
@@ -84,7 +101,7 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
 
   useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    if (!query || query.length < 3 || !placesLibRef.current) {
+    if (!query || query.length < 3 || !ready || !placesLibRef.current) {
       setSuggestions([]);
       return;
     }
@@ -108,7 +125,7 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
         setLoading(false);
       }
     }, 220);
-  }, [query, onManualFallback]);
+  }, [query, ready, onManualFallback]);
 
   const choose = async (s: any) => {
     try {
@@ -133,14 +150,10 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
     }
   };
 
-  if (error && !suggestions.length) {
-    return null; // fallback handled by parent showing manual fields
-  }
-
   return (
     <div className="relative">
       <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-        <MapPin className="w-3.5 h-3.5" /> Search your address
+        <MapPin className="w-3.5 h-3.5" /> {label}
       </Label>
       <div className="relative mt-1">
         <Input
@@ -181,7 +194,7 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
         </ul>
       )}
       <p className="text-xs text-muted-foreground mt-2">
-        Can't find it? Just type your address in the fields below.
+        {error || helperText}
       </p>
     </div>
   );

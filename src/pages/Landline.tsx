@@ -147,17 +147,19 @@ const Landline = () => {
             >
               <div className="inline-block stamp text-primary border-primary mb-4">
                 <PhoneCall className="w-4 h-4 inline mr-2" />
-                Digital Voice over Broadband
+                Digital Voice / Home Phone — runs over broadband
               </div>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-                DIGITAL
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.95] mb-4 text-foreground">
+                Digital Voice
                 <br />
-                <span className="text-gradient">VOICE</span>
+                <span className="text-gradient">/ Home Phone</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-lg mx-auto lg:mx-0">
-                Home Phone over broadband. Crystal clear calls through your OCCTA broadband connection,
-                keep your existing number, plug in your usual phone. Add-on — requires an active
-                OCCTA broadband plan. From £{getFromPrices().landline}/month, no contracts.
+                Home Phone that runs over your OCCTA broadband. Crystal-clear calls through your
+                broadband connection, keep your existing number, plug in your usual handset.
+                <strong className="text-foreground"> An active OCCTA broadband line is required —
+                this is an add-on, not a standalone landline.</strong>
+                {" "}From £{getFromPrices().landline}/month where eligible.
               </p>
               
               {/* Benefits */}

@@ -666,9 +666,6 @@ export const AdminQuoteRequests = () => {
                 {selected.status === "new" && (
                   <Button size="sm" variant="outline" onClick={() => assignToMe(selected.id)}>Assign to me</Button>
                 )}
-                {selected.status !== "checking" && selected.status !== "quoted" && selected.status !== "converted" && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(selected.id, "checking")}>Mark checking</Button>
-                )}
                 {selected.status !== "rejected" && (
                   <Button size="sm" variant="outline" onClick={() => updateStatus(selected.id, "rejected")}>Reject</Button>
                 )}

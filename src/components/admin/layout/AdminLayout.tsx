@@ -75,11 +75,8 @@ const navSections: NavSection[] = [
   {
     label: "Orders", icon: ClipboardList, children: [
       { label: "All Orders",             to: "/admin/orders" },
-      { label: "Manual Giacom Tracking", to: "/admin/manual-fulfilment" },
       { label: "Installations",          to: "/admin/installations" },
-      { label: "Readiness",              to: "/admin/readiness" },
       { label: "Services",               to: "/admin/services" },
-      { label: "Tasks",                  to: "/admin/tasks" },
     ],
   },
   {
@@ -117,7 +114,6 @@ const navSections: NavSection[] = [
       { label: "Settings",      to: "/admin/settings" },
       { label: "Compliance",    to: "/admin/compliance" },
       { label: "Audit Log",     to: "/admin/audit-log" },
-      { label: "Launch Safety", to: "/admin/launch-safety" },
     ],
   },
 ];
@@ -212,7 +208,7 @@ export const AdminLayout = () => {
           // through the reconciliation queue instead of a broken link.
           href: profile.account_number
             ? `/admin/customers/${profile.account_number}`
-            : "/admin/tasks?filter=reconciliation",
+            : "/admin/customers",
         });
       });
 
@@ -265,7 +261,7 @@ export const AdminLayout = () => {
       navigate(
         data.account_number
           ? `/admin/customers/${data.account_number}`
-          : "/admin/tasks?filter=reconciliation",
+          : "/admin/customers",
       );
       setSearchTerm("");
     };

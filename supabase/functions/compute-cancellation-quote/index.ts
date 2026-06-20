@@ -35,7 +35,7 @@ serve(async (req) => {
 
     const { data: svc, error: svcErr } = await admin
       .from("services")
-      .select("id,user_id,order_id,monthly_price,plan_type,contract_length_months,contract_start_date,activated_at")
+      .select("id,user_id,order_id,price_monthly,contract_type,minimum_term_months,minimum_term_end_date,activation_date,actual_activation_date,notice_period_days,plan_name")
       .eq("id", body.service_id)
       .single();
     if (svcErr || !svc) return new Response(JSON.stringify({ error: "Service not found" }), { status: 404, headers: corsHeaders });
@@ -47,8 +47,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
     }
 
-    const planType = (svc.plan_type as string)?.toLowerCase().includes("contract") ? "contract" : "flex";
-    const monthly = Number(svc.monthly_price || 0);
+    const ct = String(svc.contract_type || svc.plan_name || "").toLowerCase();
+    const planType = ct.includes("flex") || ct.includes("rolling") ? "flex" : "contract";
+    const monthly = Number(svc.price_monthly || 0);
 
     // Outstanding charges = sum of unpaid invoices for this service
     const { data: unpaid } = await admin
@@ -64,24 +65,28 @@ serve(async (req) => {
     let termination: Date | null = null;
 
     if (planType === "flex") {
-      noticeDays = 30;
-      termination = addDays(new Date(), 30);
+      noticeDays = Number(svc.notice_period_days || 30);
+      termination = addDays(new Date(), noticeDays);
       breakdown.push({ label: "30-day notice period", amount: +(monthly * (30 / 30)).toFixed(2) });
     } else {
       // contract
-      const start = svc.contract_start_date
-        ? new Date(svc.contract_start_date)
-        : svc.activated_at
-        ? new Date(svc.activated_at)
-        : new Date();
-      const lengthMonths = Number(svc.contract_length_months || 12);
-      const end = new Date(start); end.setMonth(end.getMonth() + lengthMonths);
+      const end = svc.minimum_term_end_date
+        ? new Date(svc.minimum_term_end_date)
+        : (() => {
+            const start = svc.actual_activation_date
+              ? new Date(svc.actual_activation_date)
+              : svc.activation_date
+              ? new Date(svc.activation_date)
+              : new Date();
+            const lengthMonths = Number(svc.minimum_term_months || 12);
+            const e = new Date(start); e.setMonth(e.getMonth() + lengthMonths); return e;
+          })();
       const now = new Date();
       const msPerMonth = 1000 * 60 * 60 * 24 * 30.4375;
       const remaining = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / msPerMonth));
       etf = +(remaining * monthly).toFixed(2);
-      noticeDays = 30;
-      termination = addDays(new Date(), 30);
+      noticeDays = Number(svc.notice_period_days || 30);
+      termination = addDays(new Date(), noticeDays);
       breakdown.push({ label: `Early termination fee (${remaining} mo × £${monthly.toFixed(2)})`, amount: etf });
     }
     if (outstanding > 0) breakdown.push({ label: "Outstanding unpaid invoices", amount: +outstanding.toFixed(2) });

@@ -428,6 +428,15 @@ serve(async (req) => {
 
           emailsSent.push(`${invoice.invoice_number} (${template}) -> ${profile.email}`);
           console.log(`Sent ${template} reminder for ${invoice.invoice_number} to ${profile.email}`);
+
+          // Track reminder cadence on the invoice itself
+          await supabase
+            .from('invoices')
+            .update({
+              last_reminder_sent_at: new Date().toISOString(),
+              reminder_count: (((invoice as unknown as { reminder_count?: number }).reminder_count) || 0) + 1,
+            })
+            .eq('id', invoice.id);
         } catch (emailErr) {
           console.error(`Failed to send email for ${invoice.invoice_number}:`, emailErr);
           

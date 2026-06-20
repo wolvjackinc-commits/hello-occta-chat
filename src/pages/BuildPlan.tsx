@@ -345,7 +345,7 @@ function BuildPlanInner() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
-          <div className="border-4 border-foreground bg-background p-6 md:p-8">
+          <div className="border-4 border-foreground bg-background p-6 md:p-8 lg:min-h-[640px] flex flex-col">
             {step === 1 && (
               <Step title="Choose your speed" headingRef={headingRef}>
                 <div className="grid gap-3">

@@ -123,58 +123,6 @@ const HeroSection = () => {
               <PostcodeChecker variant="hero" externalAddressSelect />
             </motion.div>
 
-            {/* ── Results / address select / loading appear BELOW the checker ── */}
-            {isLoadingState && (
-              <motion.div
-                key="loading-below"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-5 flex flex-col items-center justify-center"
-              >
-                <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
-                <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                  {isLoadingPostcode ? "Checking your address…" : "Finding available speeds…"}
-                </p>
-              </motion.div>
-            )}
-
-            {isAddressSelect && (
-              <motion.div
-                key="addresses-below"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-5"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                      Select your address
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {addresses.length} addresses found for {postcode}
-                    </p>
-                  </div>
-                  <button onClick={reset} className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap">
-                    Change postcode
-                  </button>
-                </div>
-                <div className="border-2 border-foreground/10">
-                  <div className="max-h-[300px] overflow-y-auto">
-                    {addresses.map((addr, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => selectAddress(addr)}
-                        className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
-                      >
-                        <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
             <motion.div variants={itemVariants} className="mt-2">
               <Link
                 to="/build-plan"
@@ -197,12 +145,75 @@ const HeroSection = () => {
               </motion.p>
             )}
 
-            {/* Fallback when availability API can't confirm */}
-            {status === "error" && errorType !== "invalid-postcode" && (
+            {status === "error" && errorType === "invalid-postcode" && (
+              <p className="text-sm text-destructive">That doesn't look like a proper postcode — please check and try again.</p>
+            )}
+          </motion.div>
+
+          {/* ─── RIGHT COLUMN — state-driven panel replacement ─── */}
+          {!hasResult && (
+          <motion.div variants={containerVariants} initial="hidden" animate="visible">
+
+            {/* LOADING STATE — shown in right panel so left column stays put */}
+            {isLoadingState && (
               <motion.div
+                key="loading-right"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 border-4 border-foreground bg-card max-w-[600px]"
+                className="card-brutal bg-card p-6 flex flex-col items-center justify-center min-h-[320px]"
+              >
+                <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+                <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                  {isLoadingPostcode ? "Checking your address…" : "Finding available speeds…"}
+                </p>
+              </motion.div>
+            )}
+
+            {/* ADDRESS SELECT — right panel so customers don't scroll down */}
+            {isAddressSelect && (
+              <motion.div
+                key="addresses-right"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card p-5"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                      Select your address
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {addresses.length} addresses found for {postcode}
+                    </p>
+                  </div>
+                  <button onClick={reset} className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap">
+                    Change postcode
+                  </button>
+                </div>
+                <div className="border-2 border-foreground/10">
+                  <div className="max-h-[420px] overflow-y-auto">
+                    {addresses.map((addr, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => selectAddress(addr)}
+                        className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
+                      >
+                        <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ERROR / FALLBACK STATE — right panel */}
+            {status === "error" && errorType !== "invalid-postcode" && (
+              <motion.div
+                key="error-right"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card p-5"
               >
                 <div className="flex items-start gap-2">
                   <Info className="w-5 h-5 text-foreground flex-shrink-0 mt-0.5" />
@@ -219,7 +230,7 @@ const HeroSection = () => {
                     navigate(`/build-plan?availability=fallback${postcode ? `&postcode=${encodeURIComponent(postcode)}` : ""}`);
                   }}
                   size="lg"
-                  className="mt-4 w-full sm:w-auto h-12 font-display uppercase tracking-wider"
+                  className="mt-4 w-full h-12 font-display uppercase tracking-wider"
                 >
                   View plans <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
@@ -228,15 +239,6 @@ const HeroSection = () => {
                 </p>
               </motion.div>
             )}
-
-            {status === "error" && errorType === "invalid-postcode" && (
-              <p className="text-sm text-destructive">That doesn't look like a proper postcode — please check and try again.</p>
-            )}
-          </motion.div>
-
-          {/* ─── RIGHT COLUMN — state-driven panel replacement ─── */}
-          {!hasResult && (
-          <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
             {/* IDLE / DEFAULT STATE — price anchor card */}
             {!isAddressSelect && !isLoadingState && status !== "error" && (

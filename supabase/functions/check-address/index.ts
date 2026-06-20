@@ -152,10 +152,19 @@ Deno.serve(async (req) => {
     ])
 
     if (addresses.length === 0) {
+      const fallback = [{
+        source: 'postcode_only',
+        google_place_id: '',
+        premises_name: displayPostcode,
+        post_town: '',
+        postcode: displayPostcode,
+        formatted_address: `Use this postcode (${displayPostcode})`,
+      }]
       return new Response(
         JSON.stringify({
-          addresses: [],
-          message: "We couldn't automatically find addresses for that postcode. Please try again or contact us and we'll check manually.",
+          addresses: fallback,
+          source: 'postcode_only',
+          message: "We couldn't list individual addresses for this postcode. Continue with the postcode and we'll confirm your address before activation.",
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )

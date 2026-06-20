@@ -1,11 +1,10 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info, FileText, MapPin } from "lucide-react";
+import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info, FileText } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/AvailabilityContext";
-import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 
 const HeroSection = () => {
   const prices = getFromPrices();
@@ -147,7 +146,6 @@ const HeroSection = () => {
           </motion.div>
 
           {/* ─── RIGHT COLUMN — state-driven panel replacement ─── */}
-          {!hasResult && (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="lg:sticky lg:top-24 self-start">
 
             {/* LOADING STATE — shown in right panel so left column stays put */}
@@ -186,44 +184,122 @@ const HeroSection = () => {
                     Change postcode
                   </button>
                 </div>
-                <div className="border-2 border-foreground/10 flex-1 min-h-0">
-                  <div className="h-full overflow-y-auto">
-                    {addresses.map((addr, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => selectAddress(addr)}
-                        className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
-                      >
-                        <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                    ))}
+                <div className="border-4 border-foreground bg-background flex-1 min-h-[220px] max-h-[min(52vh,430px)] overflow-y-auto">
+                  {addresses.map((addr, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => selectAddress(addr)}
+                      className="w-full text-left px-4 py-3.5 hover:bg-primary/10 transition-colors border-b-2 border-foreground/10 last:border-b-0 flex items-center justify-between gap-3 group"
+                    >
+                      <span className="text-sm sm:text-base font-medium leading-snug text-foreground">{getAddressLabel(addr)}</span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Select the exact property first — plans will appear here in this same panel.
+                </p>
+              </motion.div>
+            )}
+
+            {/* RESULT STATE — personalised plans stay in the same right-hand frame */}
+            {hasResult && (
+              <motion.div
+                key="results-right"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="card-brutal bg-card p-4 sm:p-5 max-h-[calc(100vh-7rem)] overflow-y-auto"
+              >
+                <div className="flex items-start justify-between mb-2 gap-4">
+                  <div className="min-w-0">
+                    <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                      Available at your address
+                    </p>
+                    {selectedAddress && (
+                      <p className="text-xs text-muted-foreground truncate max-w-[360px]">
+                        {getShortAddress(selectedAddress)}
+                      </p>
+                    )}
                   </div>
+                  <button
+                    onClick={reset}
+                    className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap mt-0.5"
+                  >
+                    Change postcode
+                  </button>
                 </div>
-                <div className="mt-3 pt-3 border-t-2 border-foreground/10">
-                  <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> Can't see your exact address?
+
+                <div className="flex items-center justify-between py-2 px-3 border-4 border-foreground bg-background mb-3">
+                  <p className="font-display text-sm uppercase">
+                    Up to {getSpeedLabel(result.maxDownload)} available
                   </p>
-                  <AddressAutocomplete
-                    initialQuery={postcode}
-                    label="Type your house number / street"
-                    helperText="Pick the closest match to your property and we'll show available plans."
-                    onSelect={(addr) => {
-                      selectAddress({
-                        sub_premises: addr.line2,
-                        premises_name: addr.line1,
-                        post_town: addr.city,
-                        postcode: addr.postcode || postcode,
-                        formatted_address: [addr.line1, addr.line2, addr.city, addr.postcode].filter(Boolean).join(", "),
-                      });
-                    }}
-                  />
+                  <Wifi className="w-4 h-4 text-primary" />
                 </div>
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {getHeroPlanCards().map(plan => (
+                    <div
+                      key={plan.id}
+                      className={`relative p-3.5 ${
+                        plan.isRecommended
+                          ? "border-[4px] border-primary"
+                          : "border-2 border-foreground/20"
+                      }`}
+                    >
+                      {plan.isRecommended && (
+                        <div className="absolute -top-2.5 left-3 bg-primary text-primary-foreground px-2 py-0.5 font-display uppercase tracking-wider text-[10px] border border-foreground flex items-center gap-1">
+                          <Star className="w-2.5 h-2.5" />
+                          Most Popular
+                        </div>
+                      )}
+                      {plan.isUpgrade && !plan.isRecommended && (
+                        <div className="absolute -top-2.5 left-3 bg-accent text-accent-foreground px-2 py-0.5 font-display uppercase tracking-wider text-[10px] border border-foreground">
+                          Upgrade Option
+                        </div>
+                      )}
+
+                      <div className={`flex items-start justify-between gap-2 ${plan.isRecommended ? "pt-1" : ""}`}>
+                        <div className="min-w-0">
+                          <h3 className="font-sans text-sm sm:text-base font-bold tracking-tight leading-tight">{plan.name}</h3>
+                          <p className="text-xs text-muted-foreground">{plan.speedLabel}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-display text-2xl text-primary leading-none">£{plan.price}</p>
+                          <p className="text-[10px] text-foreground/70">/month</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 mb-3">
+                        {["Unlimited usage", "Price Lock or Flex 30", "Bring your own router"].map(f => (
+                          <span key={f} className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <Check className="w-2.5 h-2.5 text-primary" />
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+
+                      <Button
+                        variant={plan.isRecommended ? "hero" : "outline"}
+                        size="sm"
+                        className="w-full font-display uppercase text-xs"
+                        onClick={() => handleChoosePlan(plan.id)}
+                      >
+                        Choose Plan
+                        <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-center text-[10px] text-muted-foreground pt-3">
+                  Estimated base prices shown now • addons update your estimate during the journey
+                </p>
               </motion.div>
             )}
 
             {/* ERROR / FALLBACK STATE — right panel */}
-            {false && status === "error" && errorType !== "invalid-postcode" && (
+            {status === "error" && errorType !== "invalid-postcode" && (
               <motion.div
                 key="error-right"
                 initial={{ opacity: 0, y: 8 }}
@@ -256,7 +332,7 @@ const HeroSection = () => {
             )}
 
             {/* IDLE / DEFAULT STATE — price anchor card */}
-            {!isAddressSelect && !isLoadingState && (
+            {!isAddressSelect && !isLoadingState && !hasResult && status !== "error" && (
               <motion.div
                 key="idle"
                 variants={itemVariants}
@@ -316,112 +392,6 @@ const HeroSection = () => {
               </motion.div>
             )}
           </motion.div>
-          )}
-
-          {/* RESULT STATE — personalised plans, spans full width BELOW the hero */}
-          {hasResult && (
-            <motion.div
-              key="results"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-              className="card-brutal bg-card p-5 md:p-6 lg:col-span-2"
-            >
-                <div className="flex items-start justify-between mb-1">
-                  <div>
-                    <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Available at your address
-                    </p>
-                    {selectedAddress && (
-                      <p className="text-xs text-muted-foreground truncate max-w-[240px]">
-                        {getShortAddress(selectedAddress)}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={reset}
-                    className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap mt-0.5"
-                  >
-                    Change postcode
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between py-2 px-3 border-2 border-foreground/10 bg-background mb-3">
-                  <p className="font-display text-sm uppercase">
-                    Up to {getSpeedLabel(result.maxDownload)} available
-                  </p>
-                  <Wifi className="w-4 h-4 text-primary" />
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {getHeroPlanCards().map(plan => (
-                    <div
-                      key={plan.id}
-                      className={`relative p-4 ${
-                        plan.isRecommended
-                          ? "border-[4px] border-primary"
-                          : "border-2 border-foreground/20"
-                      }`}
-                    >
-                      {plan.isRecommended && (
-                        <div className="absolute -top-2.5 left-3 bg-primary text-primary-foreground px-2 py-0.5 font-display uppercase tracking-wider text-[10px] border border-foreground flex items-center gap-1">
-                          <Star className="w-2.5 h-2.5" />
-                          Most Popular
-                        </div>
-                      )}
-                      {plan.isUpgrade && !plan.isRecommended && (
-                        <div className="absolute -top-2.5 left-3 bg-accent text-accent-foreground px-2 py-0.5 font-display uppercase tracking-wider text-[10px] border border-foreground">
-                          Upgrade Option
-                        </div>
-                      )}
-
-                      <div className={`flex items-start justify-between ${plan.isRecommended ? "pt-1" : ""}`}>
-                        <div>
-                          <h3 className="font-sans text-base font-bold tracking-tight leading-tight">{plan.name}</h3>
-                          <p className="text-xs text-muted-foreground">{plan.speedLabel}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-display text-2xl text-primary leading-none">£{plan.price}</p>
-                          <p className="text-[10px] text-foreground/70">/month</p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 mb-3">
-                        {["Unlimited usage", "Price Lock or Flex 30", "Bring your own router"].map(f => (
-                          <span key={f} className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                            <Check className="w-2.5 h-2.5 text-primary" />
-                            {f}
-                          </span>
-                        ))}
-                      </div>
-
-                      <Button
-                        variant={plan.isRecommended ? "hero" : "outline"}
-                        size="sm"
-                        className="w-full font-display uppercase text-xs"
-                        onClick={() => handleChoosePlan(plan.id)}
-                      >
-                        Choose Plan
-                        <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="text-center pt-3">
-                  <Link
-                    to="/broadband"
-                    className="text-xs text-primary hover:underline font-medium"
-                  >
-                    View all available plans →
-                  </Link>
-                </div>
-
-                <p className="text-center text-[10px] text-muted-foreground pt-2">
-                  Price Lock 24 or Flex 30 • Final price confirmed before order
-                </p>
-            </motion.div>
-          )}
         </div>
       </div>
     </section>

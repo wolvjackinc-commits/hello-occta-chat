@@ -1,9 +1,9 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // ── Types ──
 
-export interface ICUKAddress {
+export interface AvailabilityAddress {
   [key: string]: unknown;
 }
 
@@ -36,8 +36,8 @@ export interface AvailabilityResult {
 interface AvailabilityState {
   status: AvailabilityStatus;
   postcode: string;
-  addresses: ICUKAddress[];
-  selectedAddress: ICUKAddress | null;
+  addresses: AvailabilityAddress[];
+  selectedAddress: AvailabilityAddress | null;
   result: AvailabilityResult | null;
   errorType: AvailabilityErrorType | null;
   errorMessage: string;
@@ -45,7 +45,7 @@ interface AvailabilityState {
 
 interface AvailabilityActions {
   checkPostcode: (pc: string) => Promise<void>;
-  selectAddress: (addr: ICUKAddress) => Promise<void>;
+  selectAddress: (addr: AvailabilityAddress) => Promise<void>;
   triggerFallback: (pc?: string) => void;
   reset: () => void;
 }
@@ -89,7 +89,7 @@ function isValidPostcode(pc: string): boolean {
 
 // ── Address label helper ──
 
-export function getAddressLabel(addr: ICUKAddress): string {
+export function getAddressLabel(addr: AvailabilityAddress): string {
   if (typeof addr.formatted_address === "string" && addr.formatted_address.length > 0) {
     return addr.formatted_address;
   }
@@ -108,7 +108,7 @@ export function getAddressLabel(addr: ICUKAddress): string {
   return (fallback.slice(0, 4).join(", ") as string) || "Address";
 }
 
-export function getShortAddress(addr: ICUKAddress): string {
+export function getShortAddress(addr: AvailabilityAddress): string {
   if (typeof addr.formatted_address === "string" && addr.formatted_address.length > 0) {
     return addr.formatted_address;
   }
@@ -236,7 +236,7 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const selectAddress = useCallback(async (addr: ICUKAddress) => {
+  const selectAddress = useCallback(async (addr: AvailabilityAddress) => {
     setState((s) => ({
       ...s,
       status: "checking-address",

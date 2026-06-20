@@ -829,9 +829,9 @@ export const AdminQuoteRequests = () => {
 
       {/* Create quote dialog */}
       <Dialog open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl flex flex-col max-h-[90vh] overflow-hidden">
           <DialogHeader><DialogTitle>Create quote</DialogTitle></DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto pr-1">
             <div>
               <Label className="text-xs">Plan name</Label>
               <Input value={draft.plan_name} onChange={(e) => setDraft((p) => ({ ...p, plan_name: e.target.value }))} />
@@ -914,11 +914,123 @@ export const AdminQuoteRequests = () => {
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div><Label className="text-xs">Monthly £ (ex VAT)</Label><Input value={draft.monthly_net} onChange={(e) => setDraft((p) => ({ ...p, monthly_net: e.target.value }))} inputMode="decimal" /></div>
-              <div><Label className="text-xs">Setup £ (ex VAT)</Label><Input value={draft.setup_net} onChange={(e) => setDraft((p) => ({ ...p, setup_net: e.target.value }))} inputMode="decimal" /></div>
-              <div><Label className="text-xs">Router £ (ex VAT)</Label><Input value={draft.router_net} onChange={(e) => setDraft((p) => ({ ...p, router_net: e.target.value }))} inputMode="decimal" /></div>
+            {/* VAT toggle + live calc */}
+            <div className="border-2 border-foreground/30 p-3 space-y-3 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-display uppercase tracking-wider">Pricing</Label>
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setDraft((p) => ({ ...p, vat_inclusive_entry: false }))}
+                    className={`px-2 py-1 border-2 border-foreground ${!draft.vat_inclusive_entry ? "bg-foreground text-background" : "bg-background"}`}
+                  >Enter ex-VAT</button>
+                  <button
+                    type="button"
+                    onClick={() => setDraft((p) => ({ ...p, vat_inclusive_entry: true }))}
+                    className={`px-2 py-1 border-2 border-foreground ${draft.vat_inclusive_entry ? "bg-foreground text-background" : "bg-background"}`}
+                  >Enter inc-VAT</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label className="text-xs">Monthly £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.monthly_net} onChange={(e) => setDraft((p) => ({ ...p, monthly_net: e.target.value }))} inputMode="decimal" /></div>
+                <div><Label className="text-xs">Setup £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.setup_net} onChange={(e) => setDraft((p) => ({ ...p, setup_net: e.target.value }))} inputMode="decimal" /></div>
+                <div><Label className="text-xs">Router £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.router_net} onChange={(e) => setDraft((p) => ({ ...p, router_net: e.target.value }))} inputMode="decimal" /></div>
+              </div>
+              {(() => {
+                const VAT = 0.2;
+                const toNet = (v: string) => {
+                  const n = Number(v || 0);
+                  return draft.vat_inclusive_entry ? n / (1 + VAT) : n;
+                };
+                const m = toNet(draft.monthly_net);
+                const s = toNet(draft.setup_net || "0");
+                const r = toNet(draft.router_net || "0");
+                const extrasOneOff = draft.extras.filter((x) => x.kind === "one_off").reduce((a, x) => a + toNet(x.amount), 0);
+                const extrasMonthly = draft.extras.filter((x) => x.kind === "monthly").reduce((a, x) => a + toNet(x.amount), 0);
+                const monthlyInc = (m + extrasMonthly) * (1 + VAT);
+                const oneOffInc = (s + r + extrasOneOff) * (1 + VAT);
+                const sp = products.find((x: any) => x.id === draft.supplier_product_id);
+                const supplierMonthlyNet = sp?.supplier_monthly_net != null ? Number(sp.supplier_monthly_net) : null;
+                const supplierSetupNet = sp?.supplier_setup_net != null ? Number(sp.supplier_setup_net) : null;
+                return (
+                  <div className="text-xs grid grid-cols-2 gap-2 font-mono border-t-2 border-foreground/20 pt-2">
+                    <div>
+                      <p className="text-[10px] uppercase">Customer monthly (inc VAT)</p>
+                      <p className="text-lg">£{monthlyInc.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase">Customer due today (inc VAT)</p>
+                      <p className="text-lg">£{oneOffInc.toFixed(2)}</p>
+                    </div>
+                    {supplierMonthlyNet !== null && (
+                      <>
+                        <div>
+                          <p className="text-[10px] uppercase">Supplier monthly (inc VAT)</p>
+                          <p>£{(supplierMonthlyNet * (1 + VAT)).toFixed(2)} <span className="text-[10px] text-muted-foreground">(£{supplierMonthlyNet.toFixed(2)} ex)</span></p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase">Margin (ex VAT)</p>
+                          <p className={(m - supplierMonthlyNet) < 5 ? "text-destructive" : "text-primary"}>£{(m - supplierMonthlyNet).toFixed(2)}/mo</p>
+                        </div>
+                      </>
+                    )}
+                    {supplierSetupNet !== null && supplierSetupNet > 0 && (
+                      <div className="col-span-2">
+                        <p className="text-[10px] uppercase">Supplier setup (inc VAT)</p>
+                        <p>£{(supplierSetupNet * (1 + VAT)).toFixed(2)}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
+
+            {/* Extras repeater */}
+            <div className="border-2 border-foreground/30 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-display uppercase tracking-wider">Extra line items</Label>
+                <Button type="button" size="sm" variant="outline" onClick={() => setDraft((p) => ({ ...p, extras: [...p.extras, { description: "", amount: "", kind: "one_off" }] }))}>
+                  + Add line
+                </Button>
+              </div>
+              {draft.extras.length === 0 && <p className="text-[10px] text-muted-foreground">No extras. Add charges like engineer visit, install, custom hardware…</p>}
+              {draft.extras.map((x, idx) => (
+                <div key={idx} className="grid grid-cols-12 gap-2">
+                  <Input className="col-span-6" placeholder="Description (e.g. Engineer install)" value={x.description}
+                    onChange={(e) => setDraft((p) => ({ ...p, extras: p.extras.map((y, i) => i === idx ? { ...y, description: e.target.value } : y) }))} />
+                  <Input className="col-span-3" placeholder="£" inputMode="decimal" value={x.amount}
+                    onChange={(e) => setDraft((p) => ({ ...p, extras: p.extras.map((y, i) => i === idx ? { ...y, amount: e.target.value } : y) }))} />
+                  <Select value={x.kind} onValueChange={(v) => setDraft((p) => ({ ...p, extras: p.extras.map((y, i) => i === idx ? { ...y, kind: v as any } : y) }))}>
+                    <SelectTrigger className="col-span-2"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="one_off">One-off</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" size="sm" variant="outline" className="col-span-1" onClick={() => setDraft((p) => ({ ...p, extras: p.extras.filter((_, i) => i !== idx) }))}>×</Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Speed estimate + disclaimer */}
+            <div className="border-2 border-foreground/30 p-3 space-y-2">
+              <Label className="text-xs font-display uppercase tracking-wider">Estimated speeds (customer-visible)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px]">Download (Mbps)</Label>
+                  <Input value={draft.download_estimate} onChange={(e) => setDraft((p) => ({ ...p, download_estimate: e.target.value }))} inputMode="numeric" placeholder="e.g. 80" />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Upload (Mbps)</Label>
+                  <Input value={draft.upload_estimate} onChange={(e) => setDraft((p) => ({ ...p, upload_estimate: e.target.value }))} inputMode="numeric" placeholder="e.g. 20" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-[10px]">Speed disclaimer (shown to customer)</Label>
+                <Textarea rows={2} value={draft.speed_disclaimer} onChange={(e) => setDraft((p) => ({ ...p, speed_disclaimer: e.target.value }))} />
+              </div>
+            </div>
+
             <div>
               <Label className="text-xs">Expires in (days)</Label>
               <Input value={draft.expires_in_days} onChange={(e) => setDraft((p) => ({ ...p, expires_in_days: e.target.value }))} inputMode="numeric" />

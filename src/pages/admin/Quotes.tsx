@@ -48,7 +48,8 @@ export const AdminQuotes = () => {
         .select(`
           id, quote_number, plan_name, service_type, plan_type, customer_type,
           monthly_net, monthly_gross, total_due_today_gross, status, expires_at, created_at,
-          quote_request_id, unified_journey_opt_in
+          quote_request_id, unified_journey_opt_in,
+          sent_at, opened_at, completed_at, locked_at, revision_of_quote_id
         `)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -262,6 +263,7 @@ export const AdminQuotes = () => {
               <TableHead className="font-display uppercase">Plan</TableHead>
               <TableHead className="font-display uppercase">Monthly</TableHead>
               <TableHead className="font-display uppercase">Status</TableHead>
+              <TableHead className="font-display uppercase">Sent / Opened / Done</TableHead>
               <TableHead className="font-display uppercase">CS</TableHead>
               <TableHead className="font-display uppercase text-right">Actions</TableHead>
             </TableRow>
@@ -292,6 +294,11 @@ export const AdminQuotes = () => {
                       : <>£{Number(r.monthly_gross).toFixed(2)} <span className="text-muted-foreground">inc</span></>}
                   </TableCell>
                   <TableCell><Badge className="border-2 border-foreground capitalize">{r.status}</Badge></TableCell>
+                  <TableCell className="text-[10px] font-mono leading-tight">
+                    <div>S: {r.sent_at ? format(new Date(r.sent_at), "dd MMM HH:mm") : "—"}</div>
+                    <div>O: {r.opened_at ? format(new Date(r.opened_at), "dd MMM HH:mm") : "—"}</div>
+                    <div>D: {r.completed_at ? format(new Date(r.completed_at), "dd MMM HH:mm") : "—"}</div>
+                  </TableCell>
                   <TableCell className="text-xs">
                     {r.cs ? <span className="capitalize">{r.cs.cs_number} · {r.cs.status}</span> : <span className="text-muted-foreground">—</span>}
                   </TableCell>

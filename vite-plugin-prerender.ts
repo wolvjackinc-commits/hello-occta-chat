@@ -117,9 +117,9 @@ const globalSchemas = [organizationSchema, websiteSchema, localBusinessSchema];
 const routes: RouteSEO[] = [
   {
     path: "/",
-    title: "Cheap UK Broadband & SIM Plans | OCCTA - Cheap UK Broadband & SIM",
+    title: "OCCTA — Cheap UK Broadband & SIM, No Contracts",
     description:
-      "Cheap broadband UK from £22.99/mo. No contract broadband with 900Mbps speeds, 5G SIM plans from £7.99, digital home phone from £4.95. No credit check, cancel anytime. Get connected today!",
+      "Cheap UK broadband from £22.99/mo. No contracts, 900Mbps fibre, 5G SIMs from £7.99 and digital home phone. Cancel anytime.",
     canonical: "/",
     keywords:
       "cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband",
@@ -323,6 +323,14 @@ const routes: RouteSEO[] = [
     description: "Find the best cheap SIM only deals in the UK. No credit check, no contracts, 5G included.",
     canonical: "/guides/cheap-sim-only-deals",
     keywords: "cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only no contract, best SIM deals UK",
+    jsonLd: [localBusinessSchema],
+  },
+  {
+    path: "/guides/how-to-get-broadband-with-bad-credit",
+    title: "Broadband with Bad Credit — No Credit Check UK | OCCTA",
+    description: "Bad credit? Learn how to get UK broadband without a hard credit check and how OCCTA's flexible no long-contract plans help.",
+    canonical: "/guides/how-to-get-broadband-with-bad-credit",
+    keywords: "broadband no credit check, broadband with bad credit UK, bad credit broadband, no credit check broadband",
     jsonLd: [localBusinessSchema],
   },
   /* ─── Location broadband pages ─── */

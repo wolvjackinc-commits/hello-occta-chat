@@ -250,6 +250,12 @@
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
+  <url>
+    <loc>https://www.occta.co.uk/guides/how-to-get-broadband-with-bad-credit</loc>
+    <lastmod>2026-06-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
 
   <!-- Location Broadband Pages (50 cities) -->
   <url><loc>https://www.occta.co.uk/broadband-london</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>

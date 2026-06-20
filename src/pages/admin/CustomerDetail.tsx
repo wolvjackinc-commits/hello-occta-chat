@@ -196,22 +196,6 @@ export const AdminCustomerDetail = () => {
           .eq("customer_id", userId).order("created_at", { ascending: false }),
       ]);
 
-      const [{ data: mfos }, { data: readiness }, { data: tasks }] = await Promise.all([
-        prIds.length
-          ? (supabase as any).from("manual_fulfilment_orders")
-              .select("id, status, payment_request_id, contract_summary_id, supplier_name, supplier_product_ref, supplier_portal_reference, notes, created_at, updated_at, activated_at, cancelled_at")
-              .in("payment_request_id", prIds).order("created_at", { ascending: false })
-          : Promise.resolve({ data: [] as any[] }),
-        prIds.length
-          ? (supabase as any).from("provisioning_readiness")
-              .select("id, payment_request_id, contract_summary_id, installation_confirmed, router_confirmed, internal_notes_reviewed, admin_review_complete, updated_at")
-              .in("payment_request_id", prIds)
-          : Promise.resolve({ data: [] as any[] }),
-        (supabase as any).from("admin_tasks")
-          .select("id, task_number, title, status, priority, due_date, created_at, updated_at, related_payment_request_id, related_contract_summary_id, related_quote_id")
-          .eq("related_customer_id", userId).order("created_at", { ascending: false }).limit(100),
-      ]);
-
       return {
         profile: profileData,
         orders: orders.data ?? [],
@@ -225,9 +209,6 @@ export const AdminCustomerDetail = () => {
         allComms: allComms ?? [],
         quoteRequests: quoteRequests ?? [],
         quotes: quotes ?? [],
-        mfos: mfos ?? [],
-        readiness: readiness ?? [],
-        tasks: tasks ?? [],
       };
     },
   });

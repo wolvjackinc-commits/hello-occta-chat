@@ -3,7 +3,68 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const BACKEND_BASE = 'https://caleb-unfronted-contumeliously.ngrok-free.dev'
+const ICUK_BASE_URL = (Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk').replace(/\/$/, '')
+const configuredPlatform = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
+const ICUK_PLATFORMS = Array.from(new Set([configuredPlatform, configuredPlatform.toUpperCase(), 'LIVE', 'live']))
+
+async function getIcukAuthCandidates() {
+  const user = Deno.env.get('ICUK_API_USER')
+  const key = Deno.env.get('ICUK_API_KEY')
+  const token = Deno.env.get('ICUK_API_TOKEN')
+  const candidates: { scheme: 'Bearer' | 'Basic'; value: string; platform: string }[] = []
+  const credentialPairs = [
+    [user, token],
+    [user, key],
+    [key, token],
+  ].filter(([username, password]) => username && password) as [string, string][]
+
+  if (credentialPairs.length === 0 && !token && !key) {
+    throw new Error('ICUK credentials are not configured')
+  }
+
+  for (const [username, password] of credentialPairs) {
+    for (const platform of ICUK_PLATFORMS) {
+      for (const request of [
+        { url: `${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, body: undefined, contentType: undefined },
+        { url: `${ICUK_BASE_URL}/oauth/token`, body: 'grant_type=client_credentials', contentType: 'application/x-www-form-urlencoded' },
+      ]) {
+        const tokenRes = await fetch(request.url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
+            'ApiPlatform': platform,
+            'Accept': 'application/json',
+            ...(request.contentType ? { 'Content-Type': request.contentType } : { 'Content-Length': '0' }),
+          },
+          body: request.body,
+        })
+
+        if (!tokenRes.ok) continue
+
+        const tokenData = await tokenRes.json()
+        if (tokenData?.access_token) candidates.push({ scheme: 'Bearer', value: tokenData.access_token as string, platform })
+      }
+    }
+  }
+
+  for (const raw of [token, key]) {
+    for (const platform of ICUK_PLATFORMS) {
+      if (raw) candidates.push({ scheme: 'Bearer', value: raw, platform })
+    }
+  }
+
+  for (const [username, password] of credentialPairs) {
+    for (const platform of ICUK_PLATFORMS) {
+      candidates.push({ scheme: 'Basic', value: btoa(`${username}:${password}`), platform })
+    }
+  }
+
+  return candidates
+}
+
+function normalizePostcode(value: unknown) {
+  return typeof value === 'string' ? value.trim().toUpperCase().replace(/\s+/g, '') : ''
+}
 
 const OCCTA_PLAN_MAP = [
   { id: 'essential', techs: ['SOGEA', 'SoGEA', 'FTTP'], minLineSpeed: 0, maxLineSpeed: 80 },
@@ -160,18 +221,41 @@ Deno.serve(async (req) => {
       )
     }
 
-    const res = await fetch(`${BACKEND_BASE}/check-availability`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(address),
-    })
+    const authCandidates = await getIcukAuthCandidates()
+    const hasExactIcukAddress = Boolean(address.nad_key || address.district_id)
+    const postcode = normalizePostcode(address.postcode)
+    let rawData: any = null
+    let lastStatus = 0
 
-    if (!res.ok) {
-      const errText = await res.text()
-      console.error(`Backend check-availability failed (${res.status}):`, errText)
+    for (const candidate of authCandidates) {
+      const res = hasExactIcukAddress
+        ? await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': `${candidate.scheme} ${candidate.value}`,
+              'ApiPlatform': candidate.platform,
+            },
+            body: JSON.stringify(address),
+          })
+        : await fetch(`${ICUK_BASE_URL}/broadband/availability/${postcode}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `${candidate.scheme} ${candidate.value}`,
+              'ApiPlatform': candidate.platform,
+            },
+          })
+
+      lastStatus = res.status
+      if (!res.ok) continue
+      rawData = await res.json()
+      break
+    }
+
+    if (!rawData) {
+      console.error(`ICUK check-availability failed with all configured auth candidates. Last status: ${lastStatus}`)
       return new Response(
         JSON.stringify({
           available: false,
@@ -182,8 +266,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const rawData = await res.json()
-    console.log('Backend check-availability response:', JSON.stringify(rawData).substring(0, 2000))
+    console.log('ICUK check-availability response:', JSON.stringify(rawData).substring(0, 2000))
     const normalized = normalizeIcukResponse(rawData)
 
     if (!normalized.available) {

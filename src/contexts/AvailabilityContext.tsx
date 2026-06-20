@@ -90,6 +90,9 @@ function isValidPostcode(pc: string): boolean {
 // ── Address label helper ──
 
 export function getAddressLabel(addr: ICUKAddress): string {
+  if (typeof addr.formatted_address === "string" && addr.formatted_address.length > 0) {
+    return addr.formatted_address;
+  }
   const parts = [
     addr.sub_premises,
     addr.premises_name,
@@ -106,6 +109,9 @@ export function getAddressLabel(addr: ICUKAddress): string {
 }
 
 export function getShortAddress(addr: ICUKAddress): string {
+  if (typeof addr.formatted_address === "string" && addr.formatted_address.length > 0) {
+    return addr.formatted_address;
+  }
   const parts = [
     addr.sub_premises,
     addr.premises_name,

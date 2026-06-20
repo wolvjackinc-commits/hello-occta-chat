@@ -3,7 +3,111 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const BACKEND_BASE = 'https://caleb-unfronted-contumeliously.ngrok-free.dev'
+const ICUK_BASE_URL = (Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk').replace(/\/$/, '')
+const configuredPlatform = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
+const ICUK_PLATFORMS = Array.from(new Set([configuredPlatform, configuredPlatform.toUpperCase(), 'LIVE', 'live']))
+const GOOGLE_MAPS_GATEWAY = 'https://connector-gateway.lovable.dev/google_maps'
+
+function toGoogleAddress(candidate: any, postcode: string) {
+  const text = candidate?.placePrediction?.text?.text || candidate?.placePrediction?.structuredFormat?.mainText?.text || ''
+  const secondary = candidate?.placePrediction?.structuredFormat?.secondaryText?.text || ''
+  const full = [text, secondary].filter(Boolean).join(', ')
+  return {
+    source: 'google_places',
+    google_place_id: candidate?.placePrediction?.placeId || '',
+    premises_name: text,
+    post_town: secondary,
+    postcode,
+    formatted_address: full || postcode,
+  }
+}
+
+async function getGoogleAddressFallback(postcode: string) {
+  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
+  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
+  if (!lovableApiKey || !googleMapsKey) return []
+
+  const res = await fetch(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:autocomplete`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${lovableApiKey}`,
+      'X-Connection-Api-Key': googleMapsKey,
+      'Content-Type': 'application/json',
+      'Referer': 'https://www.occta.co.uk/',
+      'X-Goog-FieldMask': 'suggestions.placePrediction.placeId,suggestions.placePrediction.text,suggestions.placePrediction.structuredFormat',
+    },
+    body: JSON.stringify({
+      input: postcode,
+      includedRegionCodes: ['gb'],
+      languageCode: 'en-GB',
+    }),
+  })
+
+  if (!res.ok) {
+    console.error(`Google address fallback failed (${res.status}):`, await res.text())
+    return []
+  }
+
+  const data = await res.json()
+  return (Array.isArray(data?.suggestions) ? data.suggestions : [])
+    .map((suggestion: any) => toGoogleAddress(suggestion, postcode))
+    .filter((addr: any) => addr.premises_name || addr.formatted_address)
+}
+
+async function getIcukAuthCandidates() {
+  const user = Deno.env.get('ICUK_API_USER')
+  const key = Deno.env.get('ICUK_API_KEY')
+  const token = Deno.env.get('ICUK_API_TOKEN')
+  const candidates: { scheme: 'Bearer' | 'Basic'; value: string; platform: string }[] = []
+  const credentialPairs = [
+    [user, token],
+    [user, key],
+    [key, token],
+  ].filter(([username, password]) => username && password) as [string, string][]
+
+  if (credentialPairs.length === 0 && !token && !key) {
+    throw new Error('ICUK credentials are not configured')
+  }
+
+  for (const [username, password] of credentialPairs) {
+    for (const platform of ICUK_PLATFORMS) {
+      for (const request of [
+        { url: `${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, body: undefined, contentType: undefined },
+        { url: `${ICUK_BASE_URL}/oauth/token`, body: 'grant_type=client_credentials', contentType: 'application/x-www-form-urlencoded' },
+      ]) {
+        const tokenRes = await fetch(request.url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
+            'ApiPlatform': platform,
+            'Accept': 'application/json',
+            ...(request.contentType ? { 'Content-Type': request.contentType } : { 'Content-Length': '0' }),
+          },
+          body: request.body,
+        })
+
+        if (!tokenRes.ok) continue
+
+        const tokenData = await tokenRes.json()
+        if (tokenData?.access_token) candidates.push({ scheme: 'Bearer', value: tokenData.access_token as string, platform })
+      }
+    }
+  }
+
+  for (const raw of [token, key]) {
+    for (const platform of ICUK_PLATFORMS) {
+      if (raw) candidates.push({ scheme: 'Bearer', value: raw, platform })
+    }
+  }
+
+  for (const [username, password] of credentialPairs) {
+    for (const platform of ICUK_PLATFORMS) {
+      candidates.push({ scheme: 'Basic', value: btoa(`${username}:${password}`), platform })
+    }
+  }
+
+  return candidates
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,25 +134,46 @@ Deno.serve(async (req) => {
       )
     }
 
-    const res = await fetch(`${BACKEND_BASE}/check-address/${normalized}`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-    })
+    const authCandidates = await getIcukAuthCandidates()
+    let data: any = null
+    let lastStatus = 0
 
-    if (!res.ok) {
-      const errText = await res.text()
-      console.error(`Backend check-address failed (${res.status}):`, errText)
+    for (const candidate of authCandidates) {
+      const res = await fetch(`${ICUK_BASE_URL}/broadband/address/${normalized}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `${candidate.scheme} ${candidate.value}`,
+          'ApiPlatform': candidate.platform,
+        },
+      })
+
+      lastStatus = res.status
+      if (!res.ok) continue
+
+      data = await res.json()
+      break
+    }
+
+    if (!data) {
+      console.error(`ICUK check-address failed with all configured auth candidates. Last status: ${lastStatus}`)
+      const fallbackAddresses = await getGoogleAddressFallback(normalized)
+      if (fallbackAddresses.length > 0) {
+        return new Response(
+          JSON.stringify({ addresses: fallbackAddresses, source: 'google_places' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
       return new Response(
         JSON.stringify({
           addresses: [],
-          message: "We couldn't automatically find your address. Contact us and we'll check manually.",
+          message: "We couldn't automatically find your address. Please try again or contact us and we'll check manually.",
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const data = await res.json()
-    console.log('Backend check-address response keys:', Object.keys(data))
+    console.log('ICUK check-address response keys:', Object.keys(data))
 
     const addressList = Array.isArray(data) ? data : (data?.addresses || data?.results || [])
 

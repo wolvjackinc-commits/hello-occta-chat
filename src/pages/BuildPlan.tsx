@@ -163,7 +163,10 @@ function BuildPlanInner() {
       }
       const el = headingRef.current;
       if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        const headerOffset = 120; // sticky header + announcement bar
+        const rect = el.getBoundingClientRect();
+        const target = window.scrollY + rect.top - headerOffset;
+        window.scrollTo({ top: Math.max(0, target), left: 0, behavior: "smooth" });
         el.focus({ preventScroll: true });
       }
     }, 80);

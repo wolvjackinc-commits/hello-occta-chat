@@ -235,17 +235,81 @@ const HeroSection = () => {
           </motion.div>
 
           {/* ─── RIGHT COLUMN — state-driven panel replacement ─── */}
+          {!hasResult && (
           <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
-            {/* RESULT STATE — personalised plans */}
-            {hasResult && (
+            {/* IDLE / DEFAULT STATE — price anchor card */}
+            {!isAddressSelect && !isLoadingState && status !== "error" && (
               <motion.div
-                key="results"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35 }}
-                className="card-brutal bg-card p-5 md:p-6 lg:col-span-2"
+                key="idle"
+                variants={itemVariants}
+                className="card-brutal bg-card p-4 sm:p-5 md:p-6"
               >
+                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1 sm:mb-2">
+                  FROM
+                </p>
+                <p className="font-display text-4xl sm:text-5xl md:text-6xl text-primary leading-none">
+                  £{prices.broadband}
+                </p>
+                <p className="font-display text-sm sm:text-base font-semibold text-foreground mt-1">
+                  /month
+                </p>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground/60 mt-1 mb-1">
+                  *Subject to availability at your address
+                </p>
+                <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
+                  Price Lock 24 or Flex 30 • Final price confirmed before order
+                </p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mb-3 sm:mb-4">
+                  Join customers switching away from price rises
+                </p>
+
+                <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
+                  {[
+                    { name: "Essential", tagline: "Everyday browsing" },
+                    { name: "Superfast", tagline: "Streaming & busy homes" },
+                    { name: "Gigabit", tagline: "Serious speed" },
+                  ].map(cat => (
+                     <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/15 bg-background">
+                       <span className="font-sans text-sm uppercase font-extrabold tracking-wide text-foreground min-w-[78px]">{cat.name}</span>
+                       <span className="text-xs sm:text-sm text-foreground/75 font-medium">— {cat.tagline}</span>
+                     </div>
+                  ))}
+                </div>
+
+                <div className="space-y-1.5 sm:space-y-2.5 mb-3 sm:mb-4">
+                  {[
+                    "Full Fibre where available",
+                    "Works on the Openreach network",
+                    "UK-based support when you need it",
+                    "Installation costs (if any) shown in your Contract Summary",
+                  ].map(line => (
+                    <p key={line} className="flex items-center gap-2 sm:gap-2.5 text-[13px] sm:text-[15px] font-semibold text-foreground">
+                      <Check className="w-4 sm:w-[18px] h-4 sm:h-[18px] text-primary flex-shrink-0" />
+                      {line}
+                    </p>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-[9px] sm:text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
+                  <span>14-day cooling-off period</span>
+                  <span>Keep your number with Digital Voice</span>
+                  <span>No confusing mid-contract rises on Price Lock</span>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+          )}
+
+          {/* RESULT STATE — personalised plans, spans full width BELOW the hero */}
+          {hasResult && (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="card-brutal bg-card p-5 md:p-6 lg:col-span-2"
+            >
                 <div className="flex items-start justify-between mb-1">
                   <div>
                     <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -339,70 +403,8 @@ const HeroSection = () => {
                 <p className="text-center text-[10px] text-muted-foreground pt-2">
                   Price Lock 24 or Flex 30 • Final price confirmed before order
                 </p>
-              </motion.div>
-            )}
-
-            {/* IDLE / DEFAULT STATE — price anchor card */}
-            {!hasResult && !isAddressSelect && !isLoadingState && status !== "error" && (
-              <motion.div
-                key="idle"
-                variants={itemVariants}
-                className="card-brutal bg-card p-4 sm:p-5 md:p-6"
-              >
-                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1 sm:mb-2">
-                  FROM
-                </p>
-                <p className="font-display text-4xl sm:text-5xl md:text-6xl text-primary leading-none">
-                  £{prices.broadband}
-                </p>
-                <p className="font-display text-sm sm:text-base font-semibold text-foreground mt-1">
-                  /month
-                </p>
-                <p className="text-[10px] sm:text-[11px] text-muted-foreground/60 mt-1 mb-1">
-                  *Subject to availability at your address
-                </p>
-                <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
-                  Price Lock 24 or Flex 30 • Final price confirmed before order
-                </p>
-                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mb-3 sm:mb-4">
-                  Join customers switching away from price rises
-                </p>
-
-                <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-                  {[
-                    { name: "Essential", tagline: "Everyday browsing" },
-                    { name: "Superfast", tagline: "Streaming & busy homes" },
-                    { name: "Gigabit", tagline: "Serious speed" },
-                  ].map(cat => (
-                     <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/15 bg-background">
-                       <span className="font-sans text-sm uppercase font-extrabold tracking-wide text-foreground min-w-[78px]">{cat.name}</span>
-                       <span className="text-xs sm:text-sm text-foreground/75 font-medium">— {cat.tagline}</span>
-                     </div>
-                  ))}
-                </div>
-
-                <div className="space-y-1.5 sm:space-y-2.5 mb-3 sm:mb-4">
-                  {[
-                    "Full Fibre where available",
-                    "Works on the Openreach network",
-                    "UK-based support when you need it",
-                    "Installation costs (if any) shown in your Contract Summary",
-                  ].map(line => (
-                    <p key={line} className="flex items-center gap-2 sm:gap-2.5 text-[13px] sm:text-[15px] font-semibold text-foreground">
-                      <Check className="w-4 sm:w-[18px] h-4 sm:h-[18px] text-primary flex-shrink-0" />
-                      {line}
-                    </p>
-                  ))}
-                </div>
-
-                <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-[9px] sm:text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
-                  <span>14-day cooling-off period</span>
-                  <span>Keep your number with Digital Voice</span>
-                  <span>No confusing mid-contract rises on Price Lock</span>
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
+            </motion.div>
+          )}
         </div>
       </div>
     </section>

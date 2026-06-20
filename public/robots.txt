@@ -1,34 +1,49 @@
 # OCCTA Robots.txt
-# https://www.occta.co.uk
+# Canonical domain: https://www.occta.co.uk
 
 User-agent: *
 Allow: /
 
-# Disallow admin and auth pages
+# Private / authenticated / payment / customer-data routes
 Disallow: /admin
 Disallow: /auth
 Disallow: /dashboard
+Disallow: /billing-settings
+Disallow: /install
+Disallow: /offline
 Disallow: /checkout
 Disallow: /pre-checkout
 Disallow: /thank-you
-Disallow: /offline
-Disallow: /install
+Disallow: /business-checkout
+Disallow: /pay
+Disallow: /pay-invoice
+Disallow: /payment-result
+Disallow: /dd/setup
+Disallow: /receipt/
+Disallow: /quote/contract-summary/
+Disallow: /quote/payment/
+# Tokenised quote journey links (UnifiedJourney). Public funnel pages
+# (/quote/start, /quote/thank-you) are intentionally NOT disallowed.
+Disallow: /quote/$
 
-# Sitemap location
+# AI / answer-engine crawlers — explicitly allowed for AEO/GEO visibility
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+# Sitemap
 Sitemap: https://www.occta.co.uk/sitemap.xml
-
-# Crawl-delay for polite crawling
-Crawl-delay: 1
-
-# Search engine specific rules
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /

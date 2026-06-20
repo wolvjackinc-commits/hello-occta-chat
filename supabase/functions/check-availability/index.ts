@@ -3,7 +3,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const BACKEND_BASE = 'https://caleb-unfronted-contumeliously.ngrok-free.dev'
+const ICUK_BASE_URL = (Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk').replace(/\/$/, '')
+const ICUK_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
+
+async function getIcukToken() {
+  const username = Deno.env.get('ICUK_API_USER')
+  const password = Deno.env.get('ICUK_API_TOKEN') || Deno.env.get('ICUK_API_KEY')
+
+  if (!username || !password) {
+    throw new Error('ICUK credentials are not configured')
+  }
+
+  const tokenRes = await fetch(`${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
+      'ApiPlatform': ICUK_PLATFORM,
+      'Accept': 'application/json',
+      'Content-Length': '0',
+    },
+  })
+
+  if (!tokenRes.ok) {
+    const body = await tokenRes.text()
+    throw new Error(`ICUK token request failed (${tokenRes.status}): ${body}`)
+  }
+
+  const tokenData = await tokenRes.json()
+  if (!tokenData?.access_token) {
+    throw new Error('ICUK token response did not include an access token')
+  }
+
+  return tokenData.access_token as string
+}
 
 const OCCTA_PLAN_MAP = [
   { id: 'essential', techs: ['SOGEA', 'SoGEA', 'FTTP'], minLineSpeed: 0, maxLineSpeed: 80 },
@@ -160,18 +192,21 @@ Deno.serve(async (req) => {
       )
     }
 
-    const res = await fetch(`${BACKEND_BASE}/check-availability`, {
+    const token = await getIcukToken()
+    const res = await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'ApiPlatform': ICUK_PLATFORM,
       },
       body: JSON.stringify(address),
     })
 
     if (!res.ok) {
       const errText = await res.text()
-      console.error(`Backend check-availability failed (${res.status}):`, errText)
+      console.error(`ICUK check-availability failed (${res.status}):`, errText)
       return new Response(
         JSON.stringify({
           available: false,
@@ -183,7 +218,7 @@ Deno.serve(async (req) => {
     }
 
     const rawData = await res.json()
-    console.log('Backend check-availability response:', JSON.stringify(rawData).substring(0, 2000))
+    console.log('ICUK check-availability response:', JSON.stringify(rawData).substring(0, 2000))
     const normalized = normalizeIcukResponse(rawData)
 
     if (!normalized.available) {

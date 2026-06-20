@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info, FileText } from "lucide-react";
+import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info, FileText, MapPin } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/AvailabilityContext";
+import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 
 const HeroSection = () => {
   const prices = getFromPrices();
@@ -35,7 +36,7 @@ const HeroSection = () => {
   const getSpeedLabel = (speed: number) => speed >= 1000 ? "1Gbps" : `${speed}Mbps`;
 
   const handleChoosePlan = (planId: string) => {
-    navigate(`/broadband?plan=${planId}`);
+    navigate(`/build-plan?plan=${planId}`);
   };
 
   const getHeroPlanCards = () => {
@@ -58,14 +59,8 @@ const HeroSection = () => {
         id: string; name: string; speed: number; speedLabel: string;
         price: string | number; isRecommended: boolean; isUpgrade: boolean;
       }[];
-
-    const recommended = cards.find(c => c.isRecommended);
-    const upgrade = cards.find(c => c.isUpgrade);
-    const out: typeof cards = [];
-    if (recommended) out.push(recommended);
-    if (upgrade) out.push(upgrade);
-    if (out.length === 0 && cards.length > 0) out.push(cards[0]);
-    return out;
+    // Show ALL eligible plans (user can pick any to skip step 1 in /build-plan).
+    return cards;
   };
 
   const inlineConfirmation = hasResult ? (
@@ -76,8 +71,9 @@ const HeroSection = () => {
         : null
   ) : null;
 
-  // Determine right panel state
-  const isAddressSelect = false;
+  // Determine right panel state — addresses now render in the right panel
+  // so customers don't need to scroll under the hero on small viewports.
+  const isAddressSelect = status === "addresses" && addresses.length > 0;
   const isLoadingPostcode = status === "loading-postcode";
   const isCheckingAddress = status === "checking-address";
   const isLoadingState = isLoadingPostcode || isCheckingAddress;
@@ -120,7 +116,7 @@ const HeroSection = () => {
 
             {/* Checker — always visible */}
             <motion.div variants={itemVariants}>
-              <PostcodeChecker variant="hero" />
+              <PostcodeChecker variant="hero" externalAddressSelect />
             </motion.div>
 
             <motion.div variants={itemVariants} className="mt-2">
@@ -152,7 +148,7 @@ const HeroSection = () => {
 
           {/* ─── RIGHT COLUMN — state-driven panel replacement ─── */}
           {!hasResult && (
-          <motion.div variants={containerVariants} initial="hidden" animate="visible">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="lg:sticky lg:top-24 self-start">
 
             {/* LOADING STATE — shown in right panel so left column stays put */}
             {isLoadingState && (
@@ -175,7 +171,7 @@ const HeroSection = () => {
                 key="addresses-right"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-5"
+                className="card-brutal bg-card p-5 max-h-[calc(100vh-7rem)] flex flex-col"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -190,8 +186,8 @@ const HeroSection = () => {
                     Change postcode
                   </button>
                 </div>
-                <div className="border-2 border-foreground/10">
-                  <div className="max-h-[420px] overflow-y-auto">
+                <div className="border-2 border-foreground/10 flex-1 min-h-0">
+                  <div className="h-full overflow-y-auto">
                     {addresses.map((addr, idx) => (
                       <button
                         key={idx}
@@ -203,6 +199,25 @@ const HeroSection = () => {
                       </button>
                     ))}
                   </div>
+                </div>
+                <div className="mt-3 pt-3 border-t-2 border-foreground/10">
+                  <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> Can't see your exact address?
+                  </p>
+                  <AddressAutocomplete
+                    initialQuery={postcode}
+                    label="Type your house number / street"
+                    helperText="Pick the closest match to your property and we'll show available plans."
+                    onSelect={(addr) => {
+                      selectAddress({
+                        sub_premises: addr.line2,
+                        premises_name: addr.line1,
+                        post_town: addr.city,
+                        postcode: addr.postcode || postcode,
+                        formatted_address: [addr.line1, addr.line2, addr.city, addr.postcode].filter(Boolean).join(", "),
+                      });
+                    }}
+                  />
                 </div>
               </motion.div>
             )}

@@ -37,6 +37,10 @@ async function getIcukToken() {
   return tokenData.access_token as string
 }
 
+function normalizePostcode(value: unknown) {
+  return typeof value === 'string' ? value.trim().toUpperCase().replace(/\s+/g, '') : ''
+}
+
 const OCCTA_PLAN_MAP = [
   { id: 'essential', techs: ['SOGEA', 'SoGEA', 'FTTP'], minLineSpeed: 0, maxLineSpeed: 80 },
   { id: 'superfast', techs: ['FTTP'], minLineSpeed: 160, maxLineSpeed: 330 },
@@ -193,16 +197,27 @@ Deno.serve(async (req) => {
     }
 
     const token = await getIcukToken()
-    const res = await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'ApiPlatform': ICUK_PLATFORM,
-      },
-      body: JSON.stringify(address),
-    })
+    const hasExactIcukAddress = Boolean(address.nad_key || address.district_id)
+    const postcode = normalizePostcode(address.postcode)
+    const res = hasExactIcukAddress
+      ? await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'ApiPlatform': ICUK_PLATFORM,
+          },
+          body: JSON.stringify(address),
+        })
+      : await fetch(`${ICUK_BASE_URL}/broadband/availability/${postcode}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'ApiPlatform': ICUK_PLATFORM,
+          },
+        })
 
     if (!res.ok) {
       const errText = await res.text()

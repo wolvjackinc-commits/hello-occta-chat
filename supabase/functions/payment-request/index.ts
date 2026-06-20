@@ -127,6 +127,11 @@ serve(async (req) => {
       'record-phone-payment',
       'send-email',
       'create-cs-payment',
+      'admin-create-dd-link',
+      'admin-resend-link',
+      'admin-void-request',
+      'admin-send-direct-email',
+      'admin-send-invoice',
     ]);
     let verifiedAdminUserId: string | null = null;
     if (ADMIN_ACTIONS.has(action)) {
@@ -1256,6 +1261,323 @@ serve(async (req) => {
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
+      // ==========================================
+      // ADMIN: Create DD setup link for a customer
+      // ==========================================
+      case 'admin-create-dd-link': {
+        const { user_id, customer_email, customer_name, account_number, expires_in_days, notes } = data;
+        if (!user_id || !customer_email) {
+          return new Response(JSON.stringify({ success: false, error: 'user_id and customer_email required' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        const rawBytes = new Uint8Array(32);
+        crypto.getRandomValues(rawBytes);
+        const rawToken = btoa(String.fromCharCode(...rawBytes))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const tokenHash = await hashToken(rawToken);
+        const days = Math.max(1, Math.min(60, Number(expires_in_days) || 14));
+        const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+
+        const { data: inserted, error: insErr } = await supabase
+          .from('payment_requests')
+          .insert({
+            user_id,
+            type: 'dd_setup',
+            status: 'sent',
+            amount: 0,
+            currency: 'GBP',
+            customer_email,
+            customer_name: customer_name ?? null,
+            account_number: account_number ?? null,
+            notes: notes ? String(notes).slice(0, 1000) : null,
+            token_hash: tokenHash,
+            expires_at: expiresAt,
+            created_by: verifiedAdminUserId,
+          })
+          .select('id, payment_request_number, expires_at')
+          .single();
+        if (insErr || !inserted) {
+          return new Response(JSON.stringify({ success: false, error: insErr?.message || 'Failed to create DD link' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Send the DD setup email via existing template
+        const siteUrl = Deno.env.get('SITE_URL') || 'https://www.occta.co.uk';
+        const setupLink = `${siteUrl}/dd/setup?token=${encodeURIComponent(rawToken)}`;
+        const resendApiKey = Deno.env.get('RESEND_API_KEY');
+        if (resendApiKey) {
+          const email = getDDSetupEmail({
+            customerName: customer_name || 'Customer',
+            accountNumber: account_number ?? null,
+            setupLink,
+            expiresAt,
+          });
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: 'OCCTA Billing <billing@occta.co.uk>',
+              to: [customer_email],
+              subject: 'Set up your OCCTA Direct Debit',
+              html: email.html,
+              text: email.text,
+            }),
+          }).catch((e) => console.error('DD email send failed', e));
+        }
+
+        await supabase.from('payment_request_events').insert({
+          request_id: inserted.id,
+          event_type: 'admin_dd_link_sent',
+          metadata: { sent_by: verifiedAdminUserId, recipient: customer_email },
+        }).catch(() => {});
+
+        await supabase.from('communications_log').insert({
+          user_id,
+          payment_request_id: inserted.id,
+          template_name: 'dd_setup_link',
+          recipient_email: customer_email,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+        }).catch(() => {});
+
+        return new Response(JSON.stringify({
+          success: true,
+          payment_request: inserted,
+          token: rawToken,
+          setup_url_path: `/dd/setup?token=${encodeURIComponent(rawToken)}`,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // ==========================================
+      // ADMIN: Resend an existing payment request email
+      // ==========================================
+      case 'admin-resend-link': {
+        const { request_id } = data;
+        if (!request_id) {
+          return new Response(JSON.stringify({ success: false, error: 'request_id required' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        // We can't reconstruct the raw token from the hash. So we mint a fresh token,
+        // replace the hash on the existing row, and extend the expiry.
+        const { data: pr, error: prErr } = await supabase
+          .from('payment_requests')
+          .select('*')
+          .eq('id', request_id)
+          .single();
+        if (prErr || !pr) {
+          return new Response(JSON.stringify({ success: false, error: 'Request not found' }), {
+            status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (['paid', 'completed', 'cancelled', 'failed'].includes(pr.status)) {
+          return new Response(JSON.stringify({ success: false, error: `Cannot resend — request is ${pr.status}` }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const rawBytes = new Uint8Array(32);
+        crypto.getRandomValues(rawBytes);
+        const rawToken = btoa(String.fromCharCode(...rawBytes))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const tokenHash = await hashToken(rawToken);
+        const newExpiry = new Date(Date.now() + 14 * 86400000).toISOString();
+
+        await supabase.from('payment_requests')
+          .update({ token_hash: tokenHash, expires_at: newExpiry, status: 'sent' })
+          .eq('id', request_id);
+
+        const siteUrl = Deno.env.get('SITE_URL') || 'https://www.occta.co.uk';
+        const path = pr.type === 'card_payment' ? '/pay' : '/dd/setup';
+        const link = `${siteUrl}${path}?token=${encodeURIComponent(rawToken)}`;
+        const resendApiKey = Deno.env.get('RESEND_API_KEY');
+        if (resendApiKey && pr.customer_email) {
+          const email = pr.type === 'card_payment'
+            ? getCardPaymentEmail({
+                customerName: pr.customer_name || 'Customer',
+                amount: Number(pr.amount || 0),
+                accountNumber: pr.account_number ?? null,
+                dueDate: pr.due_date ?? null,
+                paymentLink: link,
+                expiresAt: newExpiry,
+              })
+            : getDDSetupEmail({
+                customerName: pr.customer_name || 'Customer',
+                accountNumber: pr.account_number ?? null,
+                setupLink: link,
+                expiresAt: newExpiry,
+              });
+          const subject = pr.type === 'card_payment' ? 'Your OCCTA payment link (resent)' : 'Set up your OCCTA Direct Debit (resent)';
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: 'OCCTA Billing <billing@occta.co.uk>',
+              to: [pr.customer_email],
+              subject,
+              html: email.html,
+              text: email.text,
+            }),
+          }).catch((e) => console.error('Resend email failed', e));
+        }
+
+        await supabase.from('payment_request_events').insert({
+          request_id,
+          event_type: 'admin_resent',
+          metadata: { resent_by: verifiedAdminUserId },
+        }).catch(() => {});
+
+        await supabase.from('communications_log').insert({
+          user_id: pr.user_id,
+          payment_request_id: request_id,
+          template_name: pr.type === 'card_payment' ? 'payment_link_resend' : 'dd_setup_resend',
+          recipient_email: pr.customer_email,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+        }).catch(() => {});
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // ==========================================
+      // ADMIN: Void / cancel an unpaid payment request
+      // ==========================================
+      case 'admin-void-request': {
+        const { request_id, reason } = data;
+        if (!request_id) {
+          return new Response(JSON.stringify({ success: false, error: 'request_id required' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        const { data: pr } = await supabase
+          .from('payment_requests')
+          .select('id, status')
+          .eq('id', request_id)
+          .single();
+        if (!pr) {
+          return new Response(JSON.stringify({ success: false, error: 'Not found' }), {
+            status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (['paid', 'completed'].includes(pr.status)) {
+          return new Response(JSON.stringify({ success: false, error: 'Cannot void a paid request' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        await supabase.from('payment_requests')
+          .update({ status: 'cancelled', metadata: { voided_by: verifiedAdminUserId, voided_reason: reason ?? null, voided_at: new Date().toISOString() } })
+          .eq('id', request_id);
+
+        await supabase.from('payment_request_events').insert({
+          request_id,
+          event_type: 'admin_voided',
+          metadata: { voided_by: verifiedAdminUserId, reason: reason ?? null },
+        }).catch(() => {});
+
+        await supabase.from('audit_logs').insert({
+          actor_user_id: verifiedAdminUserId,
+          action: 'cancel',
+          entity: 'payment_request',
+          entity_id: request_id,
+          metadata: { reason: reason ?? null },
+        }).catch(() => {});
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // ==========================================
+      // ADMIN: Send a direct (custom) email to the customer
+      // ==========================================
+      case 'admin-send-direct-email': {
+        const { user_id, to, subject, message } = data;
+        if (!user_id || !to || !subject || !message) {
+          return new Response(JSON.stringify({ success: false, error: 'user_id, to, subject, message all required' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        const resp = await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'custom_admin',
+            to,
+            data: { subject, message, customer_name: data.customer_name ?? '' },
+            logToCommunications: true,
+            userId: user_id,
+          },
+        });
+        if (resp.error) {
+          return new Response(JSON.stringify({ success: false, error: resp.error.message }), {
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // ==========================================
+      // ADMIN: Send / resend an invoice email
+      // ==========================================
+      case 'admin-send-invoice': {
+        const { invoice_id } = data;
+        if (!invoice_id) {
+          return new Response(JSON.stringify({ success: false, error: 'invoice_id required' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        const { data: inv } = await supabase
+          .from('invoices')
+          .select('id, invoice_number, total, due_date, user_id')
+          .eq('id', invoice_id)
+          .single();
+        if (!inv) {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice not found' }), {
+            status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        const { data: prof } = await supabase
+          .from('profiles').select('email, full_name').eq('id', inv.user_id).single();
+        if (!prof?.email) {
+          return new Response(JSON.stringify({ success: false, error: 'Customer has no email' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        const resp = await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'invoice_sent',
+            to: prof.email,
+            data: {
+              invoice_number: inv.invoice_number,
+              total: inv.total,
+              due_date: inv.due_date,
+              customer_name: prof.full_name ?? '',
+            },
+            logToCommunications: true,
+            invoiceId: inv.id,
+            userId: inv.user_id,
+          },
+        });
+        if (resp.error) {
+          return new Response(JSON.stringify({ success: false, error: resp.error.message }), {
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        await supabase.from('invoice_email_events').insert({
+          invoice_id: inv.id,
+          event_type: 'sent',
+          metadata: { sent_by: verifiedAdminUserId },
+        }).catch(() => {});
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ success: false, error: `Unknown action: ${action}` }), {
           status: 400,
@@ -1271,6 +1593,13 @@ serve(async (req) => {
     });
   }
 });
+
+// ==========================================
+// PHASE 4 — Admin-only helpers appended below to keep main switch tidy.
+// Actions handled inline above via switch are: admin-create-dd-link,
+// admin-resend-link, admin-void-request, admin-send-direct-email,
+// admin-send-invoice. The switch handlers live before the default branch.
+// ==========================================
 
 // ==========================================
 // EMAIL TEMPLATES (improved with plain-text)

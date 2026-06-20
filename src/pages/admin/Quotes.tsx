@@ -307,9 +307,25 @@ export const AdminQuotes = () => {
                       <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => runMarginCheck(r.id)} title="Run margin check">
                         <ShieldCheck className="w-3 h-3" />
                       </Button>
-                      {(r.status === "draft" || r.status === "sent" || r.status === "viewed" || r.status === "approved") && (
+                      {!r.locked_at && (r.status === "draft" || r.status === "approved") && (
                         <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => sendQuote(r.id, r.quote_number)}>
-                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : (r.status === "approved" ? "Send to customer" : "Send")}
+                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send & lock"}
+                        </Button>
+                      )}
+                      {r.locked_at && (
+                        <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={async () => {
+                          setBusyId(r.id);
+                          try {
+                            const { data, error } = await supabase.functions.invoke("edit-and-resend-quote", { body: { source_quote_id: r.id } });
+                            const err = (data as any)?.error || error?.message;
+                            if (err) throw new Error(err);
+                            toast({ title: `Revision ${(data as any).quote_number} created` });
+                            qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+                          } catch (e: any) {
+                            toast({ title: "Revision failed", description: e?.message, variant: "destructive" });
+                          } finally { setBusyId(null); }
+                        }}>
+                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Edit & Resend"}
                         </Button>
                       )}
                       <Button size="sm" variant="outline" onClick={() => setOverrideDialog({ open: true, quoteId: r.id, quoteNumber: r.quote_number })} title="Override red margin (admin)">

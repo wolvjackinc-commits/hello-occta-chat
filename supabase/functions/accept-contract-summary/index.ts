@@ -33,7 +33,19 @@ const Schema = z.object({
   cs_version: z.number().int().optional(),
   source_route: z.string().max(200).optional(),
   session_id: z.string().max(120).optional(),
+  // Phase 3 — date of birth captured at acceptance (18+ confirmation)
+  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
+
+function ageYears(dobIso: string): number {
+  const dob = new Date(dobIso + "T00:00:00Z");
+  if (isNaN(dob.getTime())) return -1;
+  const now = new Date();
+  let age = now.getUTCFullYear() - dob.getUTCFullYear();
+  const m = now.getUTCMonth() - dob.getUTCMonth();
+  if (m < 0 || (m === 0 && now.getUTCDate() < dob.getUTCDate())) age -= 1;
+  return age;
+}
 
 Deno.serve(perfServe("accept-contract-summary", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -74,6 +86,10 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   if (i.journey_mode) {
     if (!i.accepted_by_mobile) return jsonResponse({ error: "mobile_required" }, 400);
     if (i.address_confirmed !== true) return jsonResponse({ error: "address_confirmation_required" }, 400);
+    if (!i.date_of_birth) return jsonResponse({ error: "dob_required" }, 400);
+    const age = ageYears(i.date_of_birth);
+    if (age < 18) return jsonResponse({ error: "under_18", message: "You must be 18 or older to enter into this agreement." }, 400);
+    if (age > 120) return jsonResponse({ error: "invalid_dob" }, 400);
     const allTicked =
       i.checkbox_received_read === true &&
       i.checkbox_details_correct === true &&
@@ -174,6 +190,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     session_id: i.session_id ?? null,
     accepted_at_europe_london: acceptedAtLocal,
     acceptance_text_hash: acceptanceTextHash,
+    date_of_birth: i.date_of_birth ?? null,
   }).select("id").single();
   if (aErr) return jsonResponse({ error: "accept_failed", details: aErr.message }, 500);
   const acceptanceId = accInsert?.id;
@@ -190,6 +207,16 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   await supabase.from("quote_requests").update({ status: "contract_summary_accepted", updated_at: acceptedAt }).eq("id", cs.quote_request_id);
 
   if (journey) {
+    // Best-effort: propagate DOB to the linked customer profile if not already set.
+    if (i.date_of_birth && cs.customer_id) {
+      try {
+        await supabase
+          .from("profiles")
+          .update({ date_of_birth: i.date_of_birth })
+          .eq("user_id", cs.customer_id)
+          .is("date_of_birth", null);
+      } catch { /* non-fatal */ }
+    }
     // Compute cooling-off in Europe/London via the DB helper. Unified-journey-only —
     // legacy acceptances are never touched.
     const { data: coo } = await supabase.rpc("compute_cooling_off", { _accepted_at: acceptedAt });

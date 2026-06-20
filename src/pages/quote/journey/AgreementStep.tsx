@@ -38,6 +38,7 @@ export default function AgreementStep({
   const [fullName, setFullName] = useState("");
   const [emailConfirm, setEmailConfirm] = useState("");
   const [mobileConfirm, setMobileConfirm] = useState("");
+  const [dob, setDob] = useState("");
   const [addressConfirmed, setAddressConfirmed] = useState(false);
   const [checks, setChecks] = useState<Record<CbKey, boolean>>({ received_read: false, details_correct: false, understand_charges: false, consent: false });
   const [submitting, setSubmitting] = useState(false);
@@ -85,10 +86,23 @@ export default function AgreementStep({
   useEffect(() => { ensureCs(); }, [ensureCs]);
 
   const allChecksTicked = CHECKBOXES.every((c) => checks[c.key]);
+  // Compute age from DOB (YYYY-MM-DD)
+  const dobAge = (() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return -1;
+    const d = new Date(dob + "T00:00:00Z");
+    if (isNaN(d.getTime())) return -1;
+    const now = new Date();
+    let a = now.getUTCFullYear() - d.getUTCFullYear();
+    const m = now.getUTCMonth() - d.getUTCMonth();
+    if (m < 0 || (m === 0 && now.getUTCDate() < d.getUTCDate())) a -= 1;
+    return a;
+  })();
+  const dobValid = dobAge >= 18 && dobAge <= 120;
   const formValid =
     fullName.trim().length >= 2 &&
     emailConfirm.trim().length > 4 &&
     mobileConfirm.trim().length >= 7 &&
+    dobValid &&
     addressConfirmed &&
     allChecksTicked &&
     pdfReady;
@@ -105,6 +119,7 @@ export default function AgreementStep({
           accepted_by_email: emailConfirm.trim().toLowerCase(),
           accepted_by_mobile: mobileConfirm.trim(),
           address_confirmed: true,
+          date_of_birth: dob,
           checkbox_received_read: checks.received_read,
           checkbox_details_correct: checks.details_correct,
           checkbox_understand_charges: checks.understand_charges,
@@ -269,6 +284,24 @@ export default function AgreementStep({
             <div className="sm:col-span-2">
               <Label htmlFor="ag-mobile">Confirm mobile number</Label>
               <Input id="ag-mobile" type="tel" value={mobileConfirm} onChange={(e) => setMobileConfirm(e.target.value)} autoComplete="tel" placeholder="e.g. 07700 900123" />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="ag-dob">Date of birth (you must be 18 or older)</Label>
+              <Input
+                id="ag-dob"
+                type="date"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                max={new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                autoComplete="bday"
+              />
+              {dob && !dobValid && (
+                <p className="text-xs text-destructive mt-1">
+                  {dobAge >= 0 && dobAge < 18
+                    ? "You must be at least 18 years old to enter into this agreement."
+                    : "Please enter a valid date of birth."}
+                </p>
+              )}
             </div>
           </div>
 

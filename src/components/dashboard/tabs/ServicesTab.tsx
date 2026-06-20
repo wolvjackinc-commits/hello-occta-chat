@@ -33,13 +33,30 @@ export function ServicesTab({ userId }: { userId: string }) {
   }, [userId]);
 
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
-  if (services.length === 0) {
-    return <EmptyState icon={<Wifi className="w-8 h-8" />} title="No active services" message="Your services will appear here after activation." />;
+
+  // Phase 3: only surface services the admin has explicitly marked live/active.
+  // Anything still being provisioned stays hidden behind a friendly notice.
+  const liveStatuses = new Set(["live", "active"]);
+  const liveServices = services.filter((s) => liveStatuses.has((s.status || "").toLowerCase()));
+  const pendingCount = services.length - liveServices.length;
+
+  if (liveServices.length === 0) {
+    return (
+      <EmptyState
+        icon={<Wifi className="w-8 h-8" />}
+        title={pendingCount > 0 ? "Service being prepared" : "No active services"}
+        message={
+          pendingCount > 0
+            ? "Your service is being set up. It'll appear here as soon as our team marks it live — you'll get an email the moment it's ready."
+            : "Your services will appear here after activation."
+        }
+      />
+    );
   }
 
   return (
     <div className="space-y-3">
-      {services.map((s) => {
+      {liveServices.map((s) => {
         const hasVoice = (s.service_type || "").toLowerCase().includes("voice") || (s.service_type || "").toLowerCase().includes("landline");
         const contractType = (s.plan_name || "").toLowerCase().includes("saver") ? "Contract Saver" : "Flex";
         return (

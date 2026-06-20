@@ -1,0 +1,1 @@
+ALTER TABLE public.contract_acceptances ADD COLUMN IF NOT EXISTS date_of_birth date;

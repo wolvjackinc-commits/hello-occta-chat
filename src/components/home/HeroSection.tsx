@@ -123,6 +123,58 @@ const HeroSection = () => {
               <PostcodeChecker variant="hero" externalAddressSelect />
             </motion.div>
 
+            {/* ── Results / address select / loading appear BELOW the checker ── */}
+            {isLoadingState && (
+              <motion.div
+                key="loading-below"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card p-5 flex flex-col items-center justify-center"
+              >
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                  {isLoadingPostcode ? "Checking your address…" : "Finding available speeds…"}
+                </p>
+              </motion.div>
+            )}
+
+            {isAddressSelect && (
+              <motion.div
+                key="addresses-below"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card p-5"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                      Select your address
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {addresses.length} addresses found for {postcode}
+                    </p>
+                  </div>
+                  <button onClick={reset} className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap">
+                    Change postcode
+                  </button>
+                </div>
+                <div className="border-2 border-foreground/10">
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {addresses.map((addr, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => selectAddress(addr)}
+                        className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
+                      >
+                        <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <motion.div variants={itemVariants} className="mt-2">
               <Link
                 to="/build-plan"
@@ -183,79 +235,81 @@ const HeroSection = () => {
           </motion.div>
 
           {/* ─── RIGHT COLUMN — state-driven panel replacement ─── */}
+          {!hasResult && (
           <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
-            {/* LOADING STATE — replaces right panel while checking */}
-            {isLoadingState && (
+            {/* IDLE / DEFAULT STATE — price anchor card */}
+            {!isAddressSelect && !isLoadingState && status !== "error" && (
               <motion.div
-                key="loading"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-6 md:p-8 flex flex-col items-center justify-center min-h-[320px]"
+                key="idle"
+                variants={itemVariants}
+                className="card-brutal bg-card p-4 sm:p-5 md:p-6"
               >
-                <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                  {isLoadingPostcode ? "Checking your address…" : "Finding the fastest available speeds…"}
+                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1 sm:mb-2">
+                  FROM
                 </p>
-                <p className="text-xs text-muted-foreground mt-2">This only takes a moment</p>
-              </motion.div>
-            )}
+                <p className="font-display text-4xl sm:text-5xl md:text-6xl text-primary leading-none">
+                  £{prices.broadband}
+                </p>
+                <p className="font-display text-sm sm:text-base font-semibold text-foreground mt-1">
+                  /month
+                </p>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground/60 mt-1 mb-1">
+                  *Subject to availability at your address
+                </p>
+                <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
+                  Price Lock 24 or Flex 30 • Final price confirmed before order
+                </p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mb-3 sm:mb-4">
+                  Join customers switching away from price rises
+                </p>
 
-            {/* ADDRESS SELECT STATE — replaces right panel with address list */}
-            {isAddressSelect && (
-              <motion.div
-                key="addresses"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-5 md:p-6"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                      Select your address
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {addresses.length} addresses found for {postcode}
-                    </p>
-                  </div>
-                  <button
-                    onClick={reset}
-                    className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap"
-                  >
-                    Change postcode
-                  </button>
+                <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
+                  {[
+                    { name: "Essential", tagline: "Everyday browsing" },
+                    { name: "Superfast", tagline: "Streaming & busy homes" },
+                    { name: "Gigabit", tagline: "Serious speed" },
+                  ].map(cat => (
+                     <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/15 bg-background">
+                       <span className="font-sans text-sm uppercase font-extrabold tracking-wide text-foreground min-w-[78px]">{cat.name}</span>
+                       <span className="text-xs sm:text-sm text-foreground/75 font-medium">— {cat.tagline}</span>
+                     </div>
+                  ))}
                 </div>
 
-                <div className="border-2 border-foreground/10 overflow-hidden">
-                  <div className="max-h-[340px] overflow-y-auto">
-                    {addresses.map((addr, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => selectAddress(addr)}
-                        className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
-                      >
-                        <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                    ))}
-                  </div>
+                <div className="space-y-1.5 sm:space-y-2.5 mb-3 sm:mb-4">
+                  {[
+                    "Full Fibre where available",
+                    "Works on the Openreach network",
+                    "UK-based support when you need it",
+                    "Installation costs (if any) shown in your Contract Summary",
+                  ].map(line => (
+                    <p key={line} className="flex items-center gap-2 sm:gap-2.5 text-[13px] sm:text-[15px] font-semibold text-foreground">
+                      <Check className="w-4 sm:w-[18px] h-4 sm:h-[18px] text-primary flex-shrink-0" />
+                      {line}
+                    </p>
+                  ))}
                 </div>
 
-                <p className="text-xs text-muted-foreground mt-3">
-                  We'll only show plans actually available at your address.
-                </p>
+                <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-[9px] sm:text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
+                  <span>14-day cooling-off period</span>
+                  <span>Keep your number with Digital Voice</span>
+                  <span>No confusing mid-contract rises on Price Lock</span>
+                </div>
               </motion.div>
             )}
+          </motion.div>
+          )}
 
-            {/* RESULT STATE — personalised plans */}
-            {hasResult && (
-              <motion.div
-                key="results"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35 }}
-                className="card-brutal bg-card p-5 md:p-6"
-              >
+          {/* RESULT STATE — personalised plans, spans full width BELOW the hero */}
+          {hasResult && (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="card-brutal bg-card p-5 md:p-6 lg:col-span-2"
+            >
                 <div className="flex items-start justify-between mb-1">
                   <div>
                     <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -282,7 +336,7 @@ const HeroSection = () => {
                   <Wifi className="w-4 h-4 text-primary" />
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid sm:grid-cols-2 gap-3">
                   {getHeroPlanCards().map(plan => (
                     <div
                       key={plan.id}
@@ -349,70 +403,8 @@ const HeroSection = () => {
                 <p className="text-center text-[10px] text-muted-foreground pt-2">
                   Price Lock 24 or Flex 30 • Final price confirmed before order
                 </p>
-              </motion.div>
-            )}
-
-            {/* IDLE / DEFAULT STATE — price anchor card */}
-            {!hasResult && !isAddressSelect && !isLoadingState && status !== "error" && (
-              <motion.div
-                key="idle"
-                variants={itemVariants}
-                className="card-brutal bg-card p-4 sm:p-5 md:p-6"
-              >
-                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1 sm:mb-2">
-                  FROM
-                </p>
-                <p className="font-display text-4xl sm:text-5xl md:text-6xl text-primary leading-none">
-                  £{prices.broadband}
-                </p>
-                <p className="font-display text-sm sm:text-base font-semibold text-foreground mt-1">
-                  /month
-                </p>
-                <p className="text-[10px] sm:text-[11px] text-muted-foreground/60 mt-1 mb-1">
-                  *Subject to availability at your address
-                </p>
-                <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
-                  Price Lock 24 or Flex 30 • Final price confirmed before order
-                </p>
-                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mb-3 sm:mb-4">
-                  Join customers switching away from price rises
-                </p>
-
-                <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-                  {[
-                    { name: "Essential", tagline: "Everyday browsing" },
-                    { name: "Superfast", tagline: "Streaming & busy homes" },
-                    { name: "Gigabit", tagline: "Serious speed" },
-                  ].map(cat => (
-                     <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/15 bg-background">
-                       <span className="font-sans text-sm uppercase font-extrabold tracking-wide text-foreground min-w-[78px]">{cat.name}</span>
-                       <span className="text-xs sm:text-sm text-foreground/75 font-medium">— {cat.tagline}</span>
-                     </div>
-                  ))}
-                </div>
-
-                <div className="space-y-1.5 sm:space-y-2.5 mb-3 sm:mb-4">
-                  {[
-                    "Full Fibre where available",
-                    "Works on the Openreach network",
-                    "UK-based support when you need it",
-                    "Installation costs (if any) shown in your Contract Summary",
-                  ].map(line => (
-                    <p key={line} className="flex items-center gap-2 sm:gap-2.5 text-[13px] sm:text-[15px] font-semibold text-foreground">
-                      <Check className="w-4 sm:w-[18px] h-4 sm:h-[18px] text-primary flex-shrink-0" />
-                      {line}
-                    </p>
-                  ))}
-                </div>
-
-                <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-[9px] sm:text-[10px] text-muted-foreground/70 pt-2 border-t border-foreground/10">
-                  <span>14-day cooling-off period</span>
-                  <span>Keep your number with Digital Voice</span>
-                  <span>No confusing mid-contract rises on Price Lock</span>
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
+            </motion.div>
+          )}
         </div>
       </div>
     </section>

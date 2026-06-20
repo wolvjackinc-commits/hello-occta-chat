@@ -325,6 +325,14 @@ const routes: RouteSEO[] = [
     keywords: "cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only no contract, best SIM deals UK",
     jsonLd: [localBusinessSchema],
   },
+  {
+    path: "/guides/how-to-get-broadband-with-bad-credit",
+    title: "Broadband with Bad Credit — No Credit Check UK | OCCTA",
+    description: "Bad credit? Learn how to get UK broadband without a hard credit check and how OCCTA's flexible no long-contract plans help.",
+    canonical: "/guides/how-to-get-broadband-with-bad-credit",
+    keywords: "broadband no credit check, broadband with bad credit UK, bad credit broadband, no credit check broadband",
+    jsonLd: [localBusinessSchema],
+  },
   /* ─── Location broadband pages ─── */
   ...([
     { slug: "london", city: "London", region: "Greater London" },

@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow, format } from "date-fns";
-import { MessageSquare, Search, User, Bot, Clock, Hash } from "lucide-react";
+import { MessageSquare, Search, User, Bot, Clock, Hash, Download, Send, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ type SessionSummary = {
 export function AdminChatTranscripts() {
   const [search, setSearch] = useState("");
   const [activeSession, setActiveSession] = useState<string | null>(null);
+  const [busy, setBusy] = useState<null | "download" | "email" | "escalate">(null);
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["chat-analytics-recent"],
@@ -151,6 +153,56 @@ export function AdminChatTranscripts() {
     () => sessions.find((s) => s.session_id === activeSession) ?? null,
     [sessions, activeSession]
   );
+
+  const buildTranscriptText = () => {
+    if (!activeMeta) return "";
+    const header = `Chat transcript\nSession: ${activeMeta.session_id}\nCustomer: ${activeMeta.user_email ?? "Guest"}\nStarted: ${format(new Date(activeMeta.first_at), "PPp")}\nMessages: ${activeMeta.message_count}\n\n`;
+    const body = activeMessages
+      .map((m) => `[${format(new Date(m.created_at), "PPp")}] ${m.message_type === "user" ? "Customer" : "IRA"}: ${m.message_content}`)
+      .join("\n\n");
+    return header + body;
+  };
+
+  const handleDownload = () => {
+    if (!activeMeta) return;
+    setBusy("download");
+    try {
+      const text = buildTranscriptText();
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `chat-${activeMeta.session_id.slice(0, 12)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const invokeAction = async (action: "email_to_customer" | "escalate_to_ticket") => {
+    if (!activeMeta) return;
+    setBusy(action === "email_to_customer" ? "email" : "escalate");
+    try {
+      const { data, error } = await supabase.functions.invoke("chat-transcript-actions", {
+        body: { action, session_id: activeMeta.session_id },
+      });
+      if (error || (data as any)?.error) {
+        toast({ title: "Action failed", description: (data as any)?.error ?? error?.message ?? "Unknown error", variant: "destructive" });
+        return;
+      }
+      toast({
+        title: action === "email_to_customer" ? "Transcript emailed" : "Ticket created",
+        description: action === "email_to_customer"
+          ? "Customer has been emailed the full transcript."
+          : `Support ticket ${(data as any)?.ticket_id?.slice(0, 8) ?? ""} opened from this chat.`,
+      });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -292,7 +344,34 @@ export function AdminChatTranscripts() {
               )}
             </div>
           </ScrollArea>
-          <div className="p-4 border-t-2 border-foreground bg-muted/30 flex justify-end">
+          <div className="p-4 border-t-2 border-foreground bg-muted/30 flex flex-wrap justify-end gap-2">
+            <Button
+              variant="outline"
+              className="rounded-none border-2 border-foreground"
+              onClick={handleDownload}
+              disabled={!activeMeta || busy !== null}
+            >
+              <Download className="h-4 w-4 mr-2" /> Download .txt
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-none border-2 border-foreground"
+              onClick={() => invokeAction("email_to_customer")}
+              disabled={!activeMeta?.user_id || busy !== null}
+              title={!activeMeta?.user_id ? "Guest session — no customer to email" : ""}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {busy === "email" ? "Sending…" : "Email to customer"}
+            </Button>
+            <Button
+              className="rounded-none border-2 border-foreground bg-foreground text-background hover:bg-foreground/90"
+              onClick={() => invokeAction("escalate_to_ticket")}
+              disabled={!activeMeta?.user_id || busy !== null}
+              title={!activeMeta?.user_id ? "Guest session — sign-in required to escalate" : ""}
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              {busy === "escalate" ? "Creating…" : "Escalate to ticket"}
+            </Button>
             <Button
               variant="outline"
               className="rounded-none border-2 border-foreground"

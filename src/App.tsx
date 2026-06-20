@@ -68,6 +68,19 @@ import GuidePage from "./pages/guides/GuidePage";
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import KeywordLanding from "./pages/KeywordLanding";
+// SEO content pages
+import PricingPage from "./pages/seo/Pricing";
+import CoveragePage from "./pages/seo/Coverage";
+import FibreBroadbandPage from "./pages/seo/FibreBroadband";
+import BroadbandAndDigitalVoicePage from "./pages/seo/BroadbandAndDigitalVoice";
+import SmallBusinessTelecomPage from "./pages/seo/SmallBusinessTelecom";
+import BillingExplainedPage from "./pages/seo/BillingExplained";
+import FirstInvoiceExplainedPage from "./pages/seo/FirstInvoiceExplained";
+import DirectDebitSetupPage from "./pages/seo/DirectDebitSetup";
+import PayByCardPage from "./pages/seo/PayByCard";
+import CancellationPage from "./pages/seo/Cancellation";
+import ContactPage from "./pages/seo/Contact";
+import VulnerableCustomersPublicPage from "./pages/seo/VulnerableCustomers";
 import FlexBroadband from "./pages/broadband/Flex";
 import ContractSaverBroadband from "./pages/broadband/ContractSaver";
 import SwitchingPage from "./pages/Switching";
@@ -251,6 +264,19 @@ const AnimatedRoutes = () => {
         <Route path="/best-broadband-deals-uk" element={<KeywordLanding />} />
         <Route path="/broadband-for-gaming" element={<KeywordLanding />} />
         <Route path="/broadband-for-working-from-home" element={<KeywordLanding />} />
+        {/* SEO content pages */}
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/coverage" element={<CoveragePage />} />
+        <Route path="/fibre-broadband" element={<FibreBroadbandPage />} />
+        <Route path="/broadband-and-digital-voice" element={<BroadbandAndDigitalVoicePage />} />
+        <Route path="/small-business-telecom" element={<SmallBusinessTelecomPage />} />
+        <Route path="/billing-explained" element={<BillingExplainedPage />} />
+        <Route path="/first-invoice-explained" element={<FirstInvoiceExplainedPage />} />
+        <Route path="/direct-debit-setup" element={<DirectDebitSetupPage />} />
+        <Route path="/pay-by-card" element={<PayByCardPage />} />
+        <Route path="/cancellation" element={<CancellationPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/vulnerable-customers" element={<VulnerableCustomersPublicPage />} />
 
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />

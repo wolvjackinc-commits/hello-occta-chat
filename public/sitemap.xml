@@ -302,4 +302,18 @@
   <url><loc>https://www.occta.co.uk/broadband-stockport</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
   <url><loc>https://www.occta.co.uk/broadband-wigan</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
   <url><loc>https://www.occta.co.uk/broadband-cheltenham</loc><lastmod>2026-03-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+
+  <!-- SEO Content Pages -->
+  <url><loc>https://www.occta.co.uk/pricing</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://www.occta.co.uk/coverage</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://www.occta.co.uk/fibre-broadband</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.90</priority></url>
+  <url><loc>https://www.occta.co.uk/broadband-and-digital-voice</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://www.occta.co.uk/small-business-telecom</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://www.occta.co.uk/billing-explained</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://www.occta.co.uk/first-invoice-explained</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/direct-debit-setup</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/pay-by-card</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/cancellation</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/contact</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/vulnerable-customers</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
 </urlset>

@@ -1278,6 +1278,13 @@ serve(async (req) => {
 });
 
 // ==========================================
+// PHASE 4 — Admin-only helpers appended below to keep main switch tidy.
+// Actions handled inline above via switch are: admin-create-dd-link,
+// admin-resend-link, admin-void-request, admin-send-direct-email,
+// admin-send-invoice. The switch handlers live before the default branch.
+// ==========================================
+
+// ==========================================
 // EMAIL TEMPLATES (improved with plain-text)
 // ==========================================
 

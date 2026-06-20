@@ -287,15 +287,27 @@ export const AdminQuoteRequests = () => {
     }
     setCreating(true);
     try {
+      const VAT = 0.2;
+      const toNet = (v: string) => {
+        const n = Number(v || 0);
+        return draft.vat_inclusive_entry ? Math.round((n / (1 + VAT)) * 100) / 100 : n;
+      };
+      const extras = draft.extras
+        .filter((x) => x.description.trim() && Number(x.amount) > 0)
+        .map((x) => ({
+          description: x.description.trim(),
+          net_amount: toNet(x.amount),
+          kind: x.kind,
+        }));
       const body = {
         quote_request_id: selected.id,
         plan_name: draft.plan_name,
         service_type: selected.service_interest,
         plan_type: draft.plan_type,
         customer_type: selected.customer_type,
-        monthly_net: Number(draft.monthly_net),
-        setup_net: Number(draft.setup_net || 0),
-        router_net: Number(draft.router_net || 0),
+        monthly_net: toNet(draft.monthly_net),
+        setup_net: toNet(draft.setup_net || "0"),
+        router_net: toNet(draft.router_net || "0"),
         delivery_net: 0,
         installation_net: 0,
         contract_length_months: draft.plan_type === "contract_saver"
@@ -305,6 +317,10 @@ export const AdminQuoteRequests = () => {
         supplier_product_id: draft.supplier_product_id || null,
         supplier_name: draft.supplier_name || null,
         admin_notes: draft.bucket_override_reason ? `[BUCKET OVERRIDE] ${draft.bucket_override_reason}` : null,
+        estimated_download_speed: draft.download_estimate ? Number(draft.download_estimate) : null,
+        estimated_upload_speed: draft.upload_estimate ? Number(draft.upload_estimate) : null,
+        speed_disclaimer: draft.speed_disclaimer || null,
+        extra_line_items: extras,
       };
       const { data, error } = await supabase.functions.invoke("create-quote", { body });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);

@@ -606,7 +606,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                               </div>
                             )}
                               <div
-                              className={`max-w-[86%] px-4 py-3 text-sm leading-relaxed ${
+                              className={`max-w-[78%] break-words px-4 py-3 text-sm leading-relaxed ${
                                 message.role === "user"
                                   ? "bg-accent text-accent-foreground border-2 border-foreground"
                                   : "bg-card border-2 border-foreground/60"

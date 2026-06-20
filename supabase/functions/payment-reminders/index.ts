@@ -102,6 +102,18 @@ const getTemplateConfig = (template: ReminderTemplate): { subject: string; urgen
         title: 'Payment Overdue',
         bodyText: 'Your payment is now 7 days overdue. Please settle this invoice immediately to avoid additional late fees and potential service suspension.',
       };
+    default: {
+      // Recurring overdue_N reminders (every 7 days)
+      const m = /^overdue_(\d+)$/.exec(template as string);
+      const days = m ? parseInt(m[1], 10) : 14;
+      return {
+        subject: `⚠️ Payment ${days} Days Overdue`,
+        urgencyColor: '#b91c1c',
+        icon: '⚠️',
+        title: 'Payment Still Outstanding',
+        bodyText: `Your payment is now ${days} days overdue. Please settle this invoice immediately. Continued non-payment may result in additional late fees and service suspension.`,
+      };
+    }
   }
 };
 

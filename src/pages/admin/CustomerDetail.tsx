@@ -394,8 +394,6 @@ export const AdminCustomerDetail = () => {
           <TabsTrigger value="payments">Payments &amp; Receipts</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="communications">Communications</TabsTrigger>
-          <TabsTrigger value="fulfilment">Fulfilment</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks &amp; Notes</TabsTrigger>
           <TabsTrigger value="billing">Billing / DD</TabsTrigger>
         </TabsList>
 

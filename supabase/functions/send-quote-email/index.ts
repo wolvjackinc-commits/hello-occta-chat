@@ -70,7 +70,11 @@ Deno.serve(async (req) => {
   const sendRes = await sendResendEmail({ to: qr!.email, subject: `Your OCCTA quote ${quote.quote_number}`, html });
   if (!sendRes.ok) return jsonResponse({ error: "email_failed", details: sendRes.error }, 502);
 
-  await supabase.from("quotes").update({ status: "sent" }).eq("id", quote.id);
+  await supabase.from("quotes").update({
+    status: "sent",
+    sent_at: new Date().toISOString(),
+    locked_at: new Date().toISOString(),
+  }).eq("id", quote.id);
   await supabase.rpc("log_event", {
     _actor_type: "admin", _event_type: "quote_sent",
     _title: `Quote sent ${quote.quote_number}`,

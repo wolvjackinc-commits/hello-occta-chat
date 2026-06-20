@@ -340,11 +340,18 @@ const Dashboard = () => {
   // Otherwise preserve whatever status the guest order already carries.
   const allOrders = [
     ...orders,
-    ...guestOrders.map(g => ({
-      ...g,
-      status: (g.status as any) ?? 'order_received',
-      service_type: g.service_type as 'broadband' | 'sim' | 'landline',
-    })),
+    ...guestOrders
+      .filter((g: any) => {
+        const ref = g.order_number ?? g.occta_order_number;
+        if (!ref) return true;
+        // Exclude guest orders already represented in the canonical orders table
+        return !orders.some((o: any) => (o.occta_order_number ?? o.order_number) === ref);
+      })
+      .map(g => ({
+        ...g,
+        status: (g.status as any) ?? 'order_received',
+        service_type: g.service_type as 'broadband' | 'sim' | 'landline',
+      })),
   ];
   
   // Filter invoice files from user files (for document download section)

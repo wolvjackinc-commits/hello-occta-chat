@@ -169,6 +169,10 @@ export default function UnifiedJourney() {
 
   const step: JourneyStepKey = state.journey?.current_step ?? "quote";
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step, state?.journey?.status]);
+
   return (
     <Layout>
       <SEO

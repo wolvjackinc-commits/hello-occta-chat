@@ -192,4 +192,4 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
 ];
 
 export const FULL_CONTRACT_INTRO =
-  "The sections below form your full Contract Summary. They mirror the same legally-binding terms that big UK telecoms providers (such as BT, Sky, Virgin Media and TalkTalk) are required to publish under Ofcom General Condition C1.3 — written in plain English, with nothing hidden in small print.";
+  "The sections below form your full Contract Summary — the legally-binding terms of your agreement with OCCTA, written in plain English under Ofcom General Condition C1.3, with nothing hidden in small print.";

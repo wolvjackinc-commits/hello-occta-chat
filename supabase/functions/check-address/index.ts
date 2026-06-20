@@ -32,6 +32,7 @@ async function getGoogleAddressFallback(postcode: string) {
       'Authorization': `Bearer ${lovableApiKey}`,
       'X-Connection-Api-Key': googleMapsKey,
       'Content-Type': 'application/json',
+      'Referer': 'https://www.occta.co.uk/',
       'X-Goog-FieldMask': 'suggestions.placePrediction.placeId,suggestions.placePrediction.text,suggestions.placePrediction.structuredFormat',
     },
     body: JSON.stringify({

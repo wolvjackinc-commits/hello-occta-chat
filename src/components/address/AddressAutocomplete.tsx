@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ParsedAddress {
   line1: string;
@@ -18,47 +19,17 @@ interface Props {
   helperText?: string;
 }
 
-const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
-const TRACKING_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined;
+type Suggestion = {
+  placeId: string;
+  mainText: string;
+  secondaryText: string;
+  fullText: string;
+};
 
-let mapsLoader: Promise<any> | null = null;
-function loadMaps(): Promise<any> {
-  if (typeof window === "undefined") return Promise.reject(new Error("no window"));
-  if ((window as any).google?.maps?.importLibrary) return Promise.resolve((window as any).google);
-  if (mapsLoader) return mapsLoader;
-  if (!BROWSER_KEY) return Promise.reject(new Error("Google Maps browser key missing"));
-  mapsLoader = new Promise((resolve, reject) => {
-    (window as any).__lovInitGmaps = () => resolve((window as any).google);
-    const s = document.createElement("script");
-    const channel = TRACKING_ID ? `&channel=${encodeURIComponent(TRACKING_ID)}` : "";
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${BROWSER_KEY}&loading=async&libraries=places&callback=__lovInitGmaps${channel}`;
-    s.async = true;
-    s.onerror = () => reject(new Error("Failed to load Google Maps"));
-    document.head.appendChild(s);
-  });
-  return mapsLoader;
-}
-
-function parsePlace(place: any): ParsedAddress {
-  const comps: any[] = place.addressComponents ?? place.address_components ?? [];
-  const get = (type: string) =>
-    comps.find((c) => (c.types || []).includes(type)) || null;
-  const longOf = (c: any) => (c ? (c.longText ?? c.long_name ?? "") : "");
-  const shortOf = (c: any) => (c ? (c.shortText ?? c.short_name ?? "") : "");
-
-  const streetNumber = longOf(get("street_number"));
-  const route = longOf(get("route"));
-  const subpremise = longOf(get("subpremise"));
-  const premise = longOf(get("premise"));
-  const line1 = [streetNumber, route].filter(Boolean).join(" ") || premise || route || "";
-  const line2 = subpremise ? `Flat ${subpremise}` : "";
-  const city =
-    longOf(get("postal_town")) ||
-    longOf(get("locality")) ||
-    longOf(get("administrative_area_level_2")) ||
-    "";
-  const postcode = (shortOf(get("postal_code")) || longOf(get("postal_code")) || "").toUpperCase();
-  return { line1, line2, city, postcode };
+function newToken() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random()}`;
 }
 
 export function AddressAutocomplete({
@@ -69,14 +40,12 @@ export function AddressAutocomplete({
   helperText = "Can't find it? Just type your address in the fields below.",
 }: Props) {
   const [query, setQuery] = useState(initialQuery);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-  const sessionTokenRef = useRef<any>(null);
-  const placesLibRef = useRef<any>(null);
   const debounceRef = useRef<number | null>(null);
+  const sessionTokenRef = useRef<string>(newToken());
 
   useEffect(() => {
     if (initialQuery) {
@@ -85,38 +54,24 @@ export function AddressAutocomplete({
   }, [initialQuery]);
 
   useEffect(() => {
-    loadMaps()
-      .then(async (g) => {
-        const places = await g.maps.importLibrary("places");
-        placesLibRef.current = places;
-        sessionTokenRef.current = new (places as any).AutocompleteSessionToken();
-        setReady(true);
-      })
-      .catch((e) => {
-        console.warn("[AddressAutocomplete]", e);
-        setError("Address lookup unavailable");
-        onManualFallback?.();
-      });
-  }, [onManualFallback]);
-
-  useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    if (!query || query.length < 3 || !ready || !placesLibRef.current) {
+    if (!query || query.trim().length < 3) {
       setSuggestions([]);
       return;
     }
     debounceRef.current = window.setTimeout(async () => {
       try {
         setLoading(true);
-        const { AutocompleteSuggestion } = placesLibRef.current as any;
-        const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-          input: query,
-          sessionToken: sessionTokenRef.current,
-          includedRegionCodes: ["gb"],
-          language: "en-GB",
+        const { data, error: invokeErr } = await supabase.functions.invoke("places-autocomplete", {
+          body: { action: "suggest", input: query, sessionToken: sessionTokenRef.current },
         });
-        setSuggestions(suggestions || []);
-        setOpen(true);
+        if (invokeErr || (data as any)?.error) {
+          throw new Error((data as any)?.error || invokeErr?.message || "lookup_failed");
+        }
+        const list: Suggestion[] = (data as any)?.suggestions || [];
+        setSuggestions(list);
+        setOpen(list.length > 0);
+        setError(null);
       } catch (e) {
         console.warn("[AddressAutocomplete] fetch failed", e);
         setError("Address lookup unavailable");
@@ -124,23 +79,23 @@ export function AddressAutocomplete({
       } finally {
         setLoading(false);
       }
-    }, 220);
-  }, [query, ready, onManualFallback]);
+    }, 250);
+  }, [query, onManualFallback]);
 
-  const choose = async (s: any) => {
+  const choose = async (s: Suggestion) => {
     try {
       setLoading(true);
-      const place = s.placePrediction.toPlace();
-      await place.fetchFields({
-        fields: ["addressComponents", "formattedAddress"],
+      const { data, error: invokeErr } = await supabase.functions.invoke("places-autocomplete", {
+        body: { action: "details", placeId: s.placeId, sessionToken: sessionTokenRef.current },
       });
-      const parsed = parsePlace(place);
-      onSelect(parsed);
-      setQuery(place.formattedAddress || "");
+      if (invokeErr || (data as any)?.error || !(data as any)?.address) {
+        throw new Error((data as any)?.error || invokeErr?.message || "details_failed");
+      }
+      const addr = (data as any).address as ParsedAddress & { formattedAddress?: string };
+      onSelect({ line1: addr.line1, line2: addr.line2, city: addr.city, postcode: addr.postcode });
+      setQuery(addr.formattedAddress || [s.mainText, s.secondaryText].filter(Boolean).join(", "));
       setOpen(false);
-      // reset session token after a selection
-      const { AutocompleteSessionToken } = placesLibRef.current as any;
-      sessionTokenRef.current = new AutocompleteSessionToken();
+      sessionTokenRef.current = newToken();
     } catch (e) {
       console.warn("[AddressAutocomplete] details failed", e);
       setError("Could not load address details. Enter manually below.");
@@ -172,11 +127,10 @@ export function AddressAutocomplete({
       {open && suggestions.length > 0 && (
         <ul className="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-auto border-4 border-foreground bg-background shadow-[6px_6px_0_0_hsl(var(--foreground))] rounded-none">
           {suggestions.map((s, i) => {
-            const pp = s.placePrediction;
-            const main = pp?.mainText?.text ?? "";
-            const secondary = pp?.secondaryText?.text ?? "";
+            const main = s.mainText || s.fullText;
+            const secondary = s.secondaryText;
             return (
-              <li key={i}>
+              <li key={s.placeId || i}>
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}

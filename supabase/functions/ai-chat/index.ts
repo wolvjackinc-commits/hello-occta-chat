@@ -215,10 +215,24 @@ async function buildSignedInAccountReply(
   }
 
   if (intent === "orders" || intent === "tracking") {
-    const combined = [
-      ...orders.map((order) => ({ ref: order.occta_order_number ?? order.id, ...order })),
-      ...guestOrders.map((order) => ({ ref: order.order_number, ...order })),
+    const canonicalRefs = new Set(
+      orders
+        .map((order: any) => order.occta_order_number)
+        .filter((ref: string | null | undefined): ref is string => Boolean(ref)),
+    );
+    const combinedRaw = [
+      ...orders.map((order: any) => ({ ref: order.occta_order_number ?? order.id, ...order })),
+      ...guestOrders
+        .filter((order: any) => order.order_number && !canonicalRefs.has(order.order_number))
+        .map((order: any) => ({ ref: order.order_number, ...order })),
     ];
+    const seenRefs = new Set<string>();
+    const combined = combinedRaw.filter((order: any) => {
+      if (!order.ref) return true;
+      if (seenRefs.has(order.ref)) return false;
+      seenRefs.add(order.ref);
+      return true;
+    });
     if (combined.length === 0) {
       return withOptions(
         `Hi ${firstName} — I checked your account and I can't see any orders linked to it yet. If you placed an order as a guest, the OCCTA team may need to link it for you.`,

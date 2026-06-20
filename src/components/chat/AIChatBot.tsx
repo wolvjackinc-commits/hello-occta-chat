@@ -509,10 +509,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 opacity: 1, 
                 scale: 1, 
                 y: 0,
-                height: isMinimized ? "auto" : "min(660px, calc(100dvh - 7rem))"
+                height: isMinimized ? "auto" : "min(620px, calc(100dvh - 8rem))"
               }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`fixed bottom-20 sm:bottom-6 right-4 z-40 w-[440px] max-w-[calc(100vw-24px)] max-h-[calc(100dvh-4rem)] bg-card border-4 border-foreground shadow-[10px_10px_0_hsl(var(--foreground))] flex flex-col overflow-hidden ${className}`}
+              className={`fixed bottom-24 sm:bottom-6 right-4 z-40 w-[400px] max-w-[calc(100vw-32px)] max-h-[calc(100dvh-8rem)] bg-card border-4 border-foreground shadow-[10px_10px_0_hsl(var(--foreground))] flex flex-col overflow-hidden ${className}`}
             >
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">
@@ -606,7 +606,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                               </div>
                             )}
                               <div
-                              className={`max-w-[86%] px-4 py-3 text-sm leading-relaxed ${
+                              className={`max-w-[78%] break-words px-4 py-3 text-sm leading-relaxed ${
                                 message.role === "user"
                                   ? "bg-accent text-accent-foreground border-2 border-foreground"
                                   : "bg-card border-2 border-foreground/60"

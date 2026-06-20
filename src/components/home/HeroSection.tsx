@@ -29,7 +29,7 @@ const HeroSection = () => {
     { icon: Lock, text: "Price Lock 24" },
     { icon: RefreshCcw, text: "Flex 30 where eligible" },
     { icon: Shield, text: "No confusing mid-contract rises on Price Lock" },
-    { icon: Receipt, text: "First bill before order" },
+    { icon: Receipt, text: "Estimated price before order" },
     { icon: Phone, text: "UK-based support" },
   ];
 

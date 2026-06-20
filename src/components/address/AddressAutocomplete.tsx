@@ -13,6 +13,9 @@ export interface ParsedAddress {
 interface Props {
   onSelect: (addr: ParsedAddress) => void;
   onManualFallback?: () => void;
+  initialQuery?: string;
+  label?: string;
+  helperText?: string;
 }
 
 const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
@@ -58,8 +61,14 @@ function parsePlace(place: any): ParsedAddress {
   return { line1, line2, city, postcode };
 }
 
-export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
-  const [query, setQuery] = useState("");
+export function AddressAutocomplete({
+  onSelect,
+  onManualFallback,
+  initialQuery = "",
+  label = "Search your address",
+  helperText = "Can't find it? Just type your address in the fields below.",
+}: Props) {
+  const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -67,6 +76,10 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
   const sessionTokenRef = useRef<any>(null);
   const placesLibRef = useRef<any>(null);
   const debounceRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (initialQuery && initialQuery !== query) setQuery(initialQuery);
+  }, [initialQuery]);
 
   useEffect(() => {
     loadMaps()
@@ -133,14 +146,10 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
     }
   };
 
-  if (error && !suggestions.length) {
-    return null; // fallback handled by parent showing manual fields
-  }
-
   return (
     <div className="relative">
       <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-        <MapPin className="w-3.5 h-3.5" /> Search your address
+        <MapPin className="w-3.5 h-3.5" /> {label}
       </Label>
       <div className="relative mt-1">
         <Input
@@ -181,7 +190,7 @@ export function AddressAutocomplete({ onSelect, onManualFallback }: Props) {
         </ul>
       )}
       <p className="text-xs text-muted-foreground mt-2">
-        Can't find it? Just type your address in the fields below.
+        {error || helperText}
       </p>
     </div>
   );

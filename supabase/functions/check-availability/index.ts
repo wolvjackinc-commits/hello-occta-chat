@@ -7,34 +7,42 @@ const ICUK_BASE_URL = (Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co
 const ICUK_PLATFORM = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
 
 async function getIcukToken() {
-  const username = Deno.env.get('ICUK_API_USER')
-  const password = Deno.env.get('ICUK_API_TOKEN') || Deno.env.get('ICUK_API_KEY')
+  const user = Deno.env.get('ICUK_API_USER')
+  const key = Deno.env.get('ICUK_API_KEY')
+  const token = Deno.env.get('ICUK_API_TOKEN')
+  const credentialPairs = [
+    [user, token],
+    [user, key],
+    [key, token],
+  ].filter(([username, password]) => username && password) as [string, string][]
 
-  if (!username || !password) {
+  if (credentialPairs.length === 0) {
     throw new Error('ICUK credentials are not configured')
   }
 
-  const tokenRes = await fetch(`${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
-      'ApiPlatform': ICUK_PLATFORM,
-      'Accept': 'application/json',
-      'Content-Length': '0',
-    },
-  })
+  let lastError = ''
+  for (const [username, password] of credentialPairs) {
+    const tokenRes = await fetch(`${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
+        'ApiPlatform': ICUK_PLATFORM,
+        'Accept': 'application/json',
+        'Content-Length': '0',
+      },
+    })
 
-  if (!tokenRes.ok) {
-    const body = await tokenRes.text()
-    throw new Error(`ICUK token request failed (${tokenRes.status}): ${body}`)
+    if (!tokenRes.ok) {
+      lastError = `ICUK token request failed (${tokenRes.status})`
+      continue
+    }
+
+    const tokenData = await tokenRes.json()
+    if (tokenData?.access_token) return tokenData.access_token as string
+    lastError = 'ICUK token response did not include an access token'
   }
 
-  const tokenData = await tokenRes.json()
-  if (!tokenData?.access_token) {
-    throw new Error('ICUK token response did not include an access token')
-  }
-
-  return tokenData.access_token as string
+  throw new Error(lastError || 'ICUK token request failed')
 }
 
 function normalizePostcode(value: unknown) {

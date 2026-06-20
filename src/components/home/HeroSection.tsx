@@ -77,7 +77,7 @@ const HeroSection = () => {
   ) : null;
 
   // Determine right panel state
-  const isAddressSelect = status === "addresses" && addresses.length > 0;
+  const isAddressSelect = false;
   const isLoadingPostcode = status === "loading-postcode";
   const isCheckingAddress = status === "checking-address";
   const isLoadingState = isLoadingPostcode || isCheckingAddress;
@@ -120,7 +120,7 @@ const HeroSection = () => {
 
             {/* Checker — always visible */}
             <motion.div variants={itemVariants}>
-              <PostcodeChecker variant="hero" externalAddressSelect />
+              <PostcodeChecker variant="hero" />
             </motion.div>
 
             <motion.div variants={itemVariants} className="mt-2">
@@ -208,7 +208,7 @@ const HeroSection = () => {
             )}
 
             {/* ERROR / FALLBACK STATE — right panel */}
-            {status === "error" && errorType !== "invalid-postcode" && (
+            {false && status === "error" && errorType !== "invalid-postcode" && (
               <motion.div
                 key="error-right"
                 initial={{ opacity: 0, y: 8 }}
@@ -241,7 +241,7 @@ const HeroSection = () => {
             )}
 
             {/* IDLE / DEFAULT STATE — price anchor card */}
-            {!isAddressSelect && !isLoadingState && status !== "error" && (
+            {!isAddressSelect && !isLoadingState && (
               <motion.div
                 key="idle"
                 variants={itemVariants}

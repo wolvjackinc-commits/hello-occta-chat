@@ -887,6 +887,66 @@ export type Database = {
           },
         ]
       }
+      cancellation_quotes: {
+        Row: {
+          accepted_at: string | null
+          breakdown: Json
+          created_at: string
+          created_by: string | null
+          etf_amount: number
+          id: string
+          monthly_amount: number
+          notice_days: number
+          order_id: string | null
+          outstanding_charges: number
+          plan_type: string
+          remaining_months: number
+          service_id: string | null
+          status: string
+          termination_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          breakdown?: Json
+          created_at?: string
+          created_by?: string | null
+          etf_amount?: number
+          id?: string
+          monthly_amount?: number
+          notice_days?: number
+          order_id?: string | null
+          outstanding_charges?: number
+          plan_type: string
+          remaining_months?: number
+          service_id?: string | null
+          status?: string
+          termination_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          breakdown?: Json
+          created_at?: string
+          created_by?: string | null
+          etf_amount?: number
+          id?: string
+          monthly_amount?: number
+          notice_days?: number
+          order_id?: string | null
+          outstanding_charges?: number
+          plan_type?: string
+          remaining_months?: number
+          service_id?: string | null
+          status?: string
+          termination_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_analytics: {
         Row: {
           created_at: string
@@ -2650,6 +2710,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          adjustment_of_invoice_id: string | null
+          adjustment_reason: string | null
           billing_period_end: string | null
           billing_period_start: string | null
           cancellation_case_id: string | null
@@ -2663,7 +2725,9 @@ export type Database = {
           id: string
           invoice_number: string
           invoice_type: string
+          is_permanent_addition: boolean
           issue_date: string
+          last_reminder_sent_at: string | null
           late_fee_amount: number | null
           late_fee_applied_at: string | null
           notes: string | null
@@ -2674,6 +2738,7 @@ export type Database = {
           pdf_storage_key: string | null
           pdf_url: string | null
           pro_rata: Json | null
+          reminder_count: number
           service_id: string | null
           status: string
           subtotal: number
@@ -2686,6 +2751,8 @@ export type Database = {
           vat_total: number
         }
         Insert: {
+          adjustment_of_invoice_id?: string | null
+          adjustment_reason?: string | null
           billing_period_end?: string | null
           billing_period_start?: string | null
           cancellation_case_id?: string | null
@@ -2699,7 +2766,9 @@ export type Database = {
           id?: string
           invoice_number: string
           invoice_type?: string
+          is_permanent_addition?: boolean
           issue_date?: string
+          last_reminder_sent_at?: string | null
           late_fee_amount?: number | null
           late_fee_applied_at?: string | null
           notes?: string | null
@@ -2710,6 +2779,7 @@ export type Database = {
           pdf_storage_key?: string | null
           pdf_url?: string | null
           pro_rata?: Json | null
+          reminder_count?: number
           service_id?: string | null
           status?: string
           subtotal?: number
@@ -2722,6 +2792,8 @@ export type Database = {
           vat_total?: number
         }
         Update: {
+          adjustment_of_invoice_id?: string | null
+          adjustment_reason?: string | null
           billing_period_end?: string | null
           billing_period_start?: string | null
           cancellation_case_id?: string | null
@@ -2735,7 +2807,9 @@ export type Database = {
           id?: string
           invoice_number?: string
           invoice_type?: string
+          is_permanent_addition?: boolean
           issue_date?: string
+          last_reminder_sent_at?: string | null
           late_fee_amount?: number | null
           late_fee_applied_at?: string | null
           notes?: string | null
@@ -2746,6 +2820,7 @@ export type Database = {
           pdf_storage_key?: string | null
           pdf_url?: string | null
           pro_rata?: Json | null
+          reminder_count?: number
           service_id?: string | null
           status?: string
           subtotal?: number
@@ -2758,6 +2833,13 @@ export type Database = {
           vat_total?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_adjustment_of_invoice_id_fkey"
+            columns: ["adjustment_of_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_service_id_fkey"
             columns: ["service_id"]
@@ -5070,6 +5152,62 @@ export type Database = {
           {
             foreignKeyName: "receipts_invoice_id_fkey"
             columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_billing_addons: {
+        Row: {
+          active: boolean
+          amount_ex_vat: number
+          created_at: string
+          created_by: string | null
+          description: string
+          ends_on: string | null
+          id: string
+          service_id: string | null
+          source_invoice_id: string | null
+          starts_on: string
+          updated_at: string
+          user_id: string
+          vat_rate: number
+        }
+        Insert: {
+          active?: boolean
+          amount_ex_vat: number
+          created_at?: string
+          created_by?: string | null
+          description: string
+          ends_on?: string | null
+          id?: string
+          service_id?: string | null
+          source_invoice_id?: string | null
+          starts_on?: string
+          updated_at?: string
+          user_id: string
+          vat_rate?: number
+        }
+        Update: {
+          active?: boolean
+          amount_ex_vat?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          ends_on?: string | null
+          id?: string
+          service_id?: string | null
+          source_invoice_id?: string | null
+          starts_on?: string
+          updated_at?: string
+          user_id?: string
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_billing_addons_source_invoice_id_fkey"
+            columns: ["source_invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]

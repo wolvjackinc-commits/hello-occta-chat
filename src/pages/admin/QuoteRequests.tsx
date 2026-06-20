@@ -707,19 +707,23 @@ export const AdminQuoteRequests = () => {
                     <p>calculated margin ex VAT: {latestSupplierProduct?.supplier_monthly_net != null ? `£${(Number(latestQuote.monthly_net ?? 0) - Number(latestSupplierProduct.supplier_monthly_net)).toFixed(2)}` : "—"}</p>
                     <p>margin check after buffers: {marginInfo?.estimated_monthly_margin != null ? `£${Number(marginInfo.estimated_monthly_margin).toFixed(2)}` : "—"}</p>
                   </div>
-                  {latestQuote.status !== "approved" && (
-                    <Button size="sm" variant="hero" onClick={approveFinal} disabled={busy === "approve"}>
-                      {busy === "approve" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Approve final quote
-                    </Button>
-                  )}
-                  {latestQuote.status === "approved" && (
+                  {!latestQuote.locked_at && (
                     <div className="space-y-2">
-                      <p className="text-xs text-primary font-medium">✓ Approved {latestQuote.approved_at ? `· ${format(new Date(latestQuote.approved_at), "dd MMM HH:mm")}` : ""}</p>
-                      <Button size="sm" variant="hero" disabled={busy === "send_quote"} onClick={sendApprovedQuote}>
-                        {busy === "send_quote" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                        {latestQuote.customer_intent_proceeded_at ? "Resend approved quote to customer" : "Send approved quote to customer"}
+                      <Button size="sm" variant="hero" disabled={busy === "send_quote" || busy === "approve"} onClick={sendQuoteToCustomer}>
+                        {(busy === "send_quote" || busy === "approve") ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                        Send Quote to Customer
                       </Button>
-                      <p className="text-[10px] text-muted-foreground">Emails the customer a secure link to accept or decline this quote.</p>
+                      <p className="text-[10px] text-muted-foreground">Approves, emails the secure link and locks the quote. Use Edit &amp; Resend to revise after sending.</p>
+                    </div>
+                  )}
+                  {latestQuote.locked_at && (
+                    <div className="space-y-1 border-2 border-primary/30 bg-primary/5 p-2">
+                      <p className="text-xs font-medium">🔒 Locked — sent {latestQuote.sent_at ? format(new Date(latestQuote.sent_at), "dd MMM HH:mm") : ""}</p>
+                      {latestQuote.opened_at && <p className="text-[10px] text-muted-foreground">Opened by customer · {format(new Date(latestQuote.opened_at), "dd MMM HH:mm")}</p>}
+                      {latestQuote.completed_at && <p className="text-[10px] text-primary">✓ Customer proceeded · {format(new Date(latestQuote.completed_at), "dd MMM HH:mm")}</p>}
+                      <Button size="sm" variant="outline" onClick={editAndResend} disabled={busy === "revise"} className="mt-1">
+                        {busy === "revise" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Edit &amp; Resend (new revision)
+                      </Button>
                     </div>
                   )}
                   <div className="border-2 border-foreground/20 bg-background p-2 space-y-2">

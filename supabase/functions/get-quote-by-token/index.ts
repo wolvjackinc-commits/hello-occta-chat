@@ -39,7 +39,10 @@ Deno.serve(async (req) => {
 
   // Mark viewed (idempotent: only if status sent)
   if (q.status === "sent") {
-    await supabase.from("quotes").update({ status: "viewed" }).eq("id", q.id);
+    await supabase.from("quotes").update({
+      status: "viewed",
+      opened_at: new Date().toISOString(),
+    }).eq("id", q.id);
     await supabase.rpc("log_event", {
       _actor_type: "public", _event_type: "quote_viewed",
       _title: `Quote viewed ${q.quote_number}`,

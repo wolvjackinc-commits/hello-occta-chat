@@ -11,7 +11,7 @@ async function getIcukAuthCandidates() {
   const user = Deno.env.get('ICUK_API_USER')
   const key = Deno.env.get('ICUK_API_KEY')
   const token = Deno.env.get('ICUK_API_TOKEN')
-  const candidates: string[] = []
+  const candidates: { scheme: 'Bearer' | 'Basic'; value: string; platform: string }[] = []
   const credentialPairs = [
     [user, token],
     [user, key],
@@ -42,14 +42,20 @@ async function getIcukAuthCandidates() {
         if (!tokenRes.ok) continue
 
         const tokenData = await tokenRes.json()
-        if (tokenData?.access_token) candidates.push(`${tokenData.access_token}|${platform}`)
+        if (tokenData?.access_token) candidates.push({ scheme: 'Bearer', value: tokenData.access_token as string, platform })
       }
     }
   }
 
   for (const raw of [token, key]) {
     for (const platform of ICUK_PLATFORMS) {
-      if (raw && !candidates.includes(`${raw}|${platform}`)) candidates.push(`${raw}|${platform}`)
+      if (raw) candidates.push({ scheme: 'Bearer', value: raw, platform })
+    }
+  }
+
+  for (const [username, password] of credentialPairs) {
+    for (const platform of ICUK_PLATFORMS) {
+      candidates.push({ scheme: 'Basic', value: btoa(`${username}:${password}`), platform })
     }
   }
 
@@ -222,15 +228,14 @@ Deno.serve(async (req) => {
     let lastStatus = 0
 
     for (const candidate of authCandidates) {
-      const [token, platform] = candidate.split('|')
       const res = hasExactIcukAddress
         ? await fetch(`${ICUK_BASE_URL}/broadband/availability`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
-              'Authorization': `Bearer ${token}`,
-              'ApiPlatform': platform,
+              'Authorization': `${candidate.scheme} ${candidate.value}`,
+              'ApiPlatform': candidate.platform,
             },
             body: JSON.stringify(address),
           })
@@ -238,8 +243,8 @@ Deno.serve(async (req) => {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
-              'Authorization': `Bearer ${token}`,
-              'ApiPlatform': platform,
+              'Authorization': `${candidate.scheme} ${candidate.value}`,
+              'ApiPlatform': candidate.platform,
             },
           })
 

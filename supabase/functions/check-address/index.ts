@@ -3,9 +3,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const ICUK_BASE_URL = (Deno.env.get('ICUK_BASE_URL') || 'https://api.interdns.co.uk').replace(/\/$/, '')
-const configuredPlatform = Deno.env.get('ICUK_API_PLATFORM') || 'LIVE'
-const ICUK_PLATFORMS = Array.from(new Set([configuredPlatform, configuredPlatform.toUpperCase(), 'LIVE', 'live']))
 const GOOGLE_MAPS_GATEWAY = 'https://connector-gateway.lovable.dev/google_maps'
 
 function toGoogleAddress(candidate: any, postcode: string) {
@@ -54,61 +51,6 @@ async function getGoogleAddressFallback(postcode: string) {
     .filter((addr: any) => addr.premises_name || addr.formatted_address)
 }
 
-async function getIcukAuthCandidates() {
-  const user = Deno.env.get('ICUK_API_USER')
-  const key = Deno.env.get('ICUK_API_KEY')
-  const token = Deno.env.get('ICUK_API_TOKEN')
-  const candidates: { scheme: 'Bearer' | 'Basic'; value: string; platform: string }[] = []
-  const credentialPairs = [
-    [user, token],
-    [user, key],
-    [key, token],
-  ].filter(([username, password]) => username && password) as [string, string][]
-
-  if (credentialPairs.length === 0 && !token && !key) {
-    throw new Error('ICUK credentials are not configured')
-  }
-
-  for (const [username, password] of credentialPairs) {
-    for (const platform of ICUK_PLATFORMS) {
-      for (const request of [
-        { url: `${ICUK_BASE_URL}/oauth/token?grant_type=client_credentials`, body: undefined, contentType: undefined },
-        { url: `${ICUK_BASE_URL}/oauth/token`, body: 'grant_type=client_credentials', contentType: 'application/x-www-form-urlencoded' },
-      ]) {
-        const tokenRes = await fetch(request.url, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
-            'ApiPlatform': platform,
-            'Accept': 'application/json',
-            ...(request.contentType ? { 'Content-Type': request.contentType } : { 'Content-Length': '0' }),
-          },
-          body: request.body,
-        })
-
-        if (!tokenRes.ok) continue
-
-        const tokenData = await tokenRes.json()
-        if (tokenData?.access_token) candidates.push({ scheme: 'Bearer', value: tokenData.access_token as string, platform })
-      }
-    }
-  }
-
-  for (const raw of [token, key]) {
-    for (const platform of ICUK_PLATFORMS) {
-      if (raw) candidates.push({ scheme: 'Bearer', value: raw, platform })
-    }
-  }
-
-  for (const [username, password] of credentialPairs) {
-    for (const platform of ICUK_PLATFORMS) {
-      candidates.push({ scheme: 'Basic', value: btoa(`${username}:${password}`), platform })
-    }
-  }
-
-  return candidates
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -134,36 +76,9 @@ Deno.serve(async (req) => {
       )
     }
 
-    const authCandidates = await getIcukAuthCandidates()
-    let data: any = null
-    let lastStatus = 0
+    const addresses = await getGoogleAddressFallback(normalized)
 
-    for (const candidate of authCandidates) {
-      const res = await fetch(`${ICUK_BASE_URL}/broadband/address/${normalized}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `${candidate.scheme} ${candidate.value}`,
-          'ApiPlatform': candidate.platform,
-        },
-      })
-
-      lastStatus = res.status
-      if (!res.ok) continue
-
-      data = await res.json()
-      break
-    }
-
-    if (!data) {
-      console.error(`ICUK check-address failed with all configured auth candidates. Last status: ${lastStatus}`)
-      const fallbackAddresses = await getGoogleAddressFallback(normalized)
-      if (fallbackAddresses.length > 0) {
-        return new Response(
-          JSON.stringify({ addresses: fallbackAddresses, source: 'google_places' }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
+    if (addresses.length === 0) {
       return new Response(
         JSON.stringify({
           addresses: [],
@@ -173,22 +88,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('ICUK check-address response keys:', Object.keys(data))
-
-    const addressList = Array.isArray(data) ? data : (data?.addresses || data?.results || [])
-
-    if (!Array.isArray(addressList) || addressList.length === 0) {
-      return new Response(
-        JSON.stringify({
-          addresses: [],
-          message: data?.message || "We couldn't automatically find your address. Contact us and we'll check manually.",
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     return new Response(
-      JSON.stringify({ addresses: addressList }),
+      JSON.stringify({ addresses, source: 'google_places' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {

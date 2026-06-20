@@ -124,12 +124,16 @@ function BuildPlanInner() {
   const [searchParams] = useSearchParams();
   const isTestMode = searchParams.get("test") === "1";
   const isFallback = searchParams.get("availability") === "fallback";
+  const prefillPlan = searchParams.get("plan") as SpeedBucket | null;
   const testMaxDownload = Number(searchParams.get("max_download") ?? "0") || undefined;
   const testTech = searchParams.get("primary_technology") || undefined;
   const { toast } = useToast();
   const { status, result, selectedAddress } = useAvailability();
-  const [step, setStep] = useState(1);
-  const [bucket, setBucket] = useState<SpeedBucket | null>(null);
+  const validBuckets: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
+  const initialBucket: SpeedBucket | null =
+    prefillPlan && validBuckets.includes(prefillPlan) ? prefillPlan : null;
+  const [step, setStep] = useState(initialBucket ? 2 : 1);
+  const [bucket, setBucket] = useState<SpeedBucket | null>(initialBucket);
   const [term, setTerm] = useState<PlanTerm | null>(null);
   const [router, setRouter] = useState<RouterChoice | null>(null);
   const [routerPay, setRouterPay] = useState<RouterPaymentType>("none");
@@ -341,7 +345,7 @@ function BuildPlanInner() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
-          <div className="border-4 border-foreground bg-background p-6 md:p-8">
+          <div className="border-4 border-foreground bg-background p-6 md:p-8 lg:min-h-[640px] flex flex-col">
             {step === 1 && (
               <Step title="Choose your speed" headingRef={headingRef}>
                 <div className="grid gap-3">
@@ -580,7 +584,9 @@ function BuildPlanInner() {
                   <ReviewLine label="Postcode" value={(contact.postcode || "").toUpperCase() || "—"} />
                   <div className="border-t-4 border-foreground pt-3 mt-3 space-y-1">
                     <ReviewLine label="Estimated monthly total" value={resolved?.monthly_total_incl_vat != null ? `£${resolved.monthly_total_incl_vat.toFixed(2)}` : (resolved?.monthly_broadband_incl_vat != null ? `From £${resolved.monthly_broadband_incl_vat.toFixed(2)}` : "—")} bold />
-                    <ReviewLine label="Estimated first bill" value={resolved?.first_bill_incl_vat != null ? `£${resolved.first_bill_incl_vat.toFixed(2)}` : "—"} bold />
+                    {(resolved?.one_off_incl_vat ?? 0) > 0 && (
+                      <ReviewLine label="Estimated one-off total" value={`£${(resolved?.one_off_incl_vat ?? 0).toFixed(2)}`} bold />
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
                     Estimate — final speed, setup and order details confirmed before you proceed.
@@ -715,14 +721,14 @@ function FirstBillPreview({ resolved, resolving, isFallback }: { resolved: Resol
   return (
     <aside className="border-4 border-foreground bg-background p-6 self-start lg:sticky lg:top-24">
       <p className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
-        {isFallback ? "Estimate — subject to confirmation" : "First bill preview"}
+        Estimated price{isFallback ? " — subject to confirmation" : ""}
       </p>
-      <h3 className="font-display text-xl uppercase mb-4">{isFallback ? "Estimated price" : "Your first bill"}</h3>
+      <h3 className="font-display text-xl uppercase mb-4">Your estimate</h3>
 
       {resolving && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Calculating…</div>}
 
       {!resolving && !resolved && (
-        <p className="text-sm text-muted-foreground">Pick a speed and plan type to see your bill preview.</p>
+        <p className="text-sm text-muted-foreground">Pick a speed and plan type to see your estimate.</p>
       )}
 
       {!resolving && resolved?.quote_only && (
@@ -752,12 +758,11 @@ function FirstBillPreview({ resolved, resolving, isFallback }: { resolved: Resol
             <div className="border-t-2 border-foreground/10 pt-2">
               {resolved.router && resolved.router.oneOff > 0 && <Line label={`${resolved.router.label} (one-off)`} value={`£${resolved.router.oneOff.toFixed(2)}`} />}
               {resolved.setup && resolved.setup.oneOff > 0 && <Line label={`${resolved.setup.label} (one-off)`} value={`£${resolved.setup.oneOff.toFixed(2)}`} />}
-              <Line label="One-off total" value={`£${(resolved.one_off_incl_vat ?? 0).toFixed(2)}`} />
+              <div className="border-t-4 border-foreground pt-3 mt-2">
+                <Line label="Estimated one-off total" value={`£${(resolved.one_off_incl_vat ?? 0).toFixed(2)}`} bold />
+              </div>
             </div>
           )}
-          <div className="border-t-4 border-foreground pt-3 mt-3">
-            <Line label="Estimated first bill" value={`£${(resolved.first_bill_incl_vat ?? 0).toFixed(2)}`} bold />
-          </div>
           {resolved.eligibility_wording && (
             <p className="text-xs text-muted-foreground leading-relaxed mt-3 pt-3 border-t-2 border-foreground/10">{resolved.eligibility_wording}</p>
           )}

@@ -144,6 +144,51 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAppMode } = useAppMode();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Map a single ?tab=<value> param to (outer, inner) tab keys so deep links from
+  // QuoteRequests / emails / notifications land on the right sub-tab.
+  const TAB_PARENT: Record<string, { outer: string; inner?: string }> = useMemo(() => ({
+    overview: { outer: "overview" },
+    "order-service": { outer: "order-service" },
+    orders: { outer: "order-service", inner: "orders" },
+    services: { outer: "order-service", inner: "services" },
+    quotes: { outer: "order-service", inner: "quotes" },
+    quoteRequests: { outer: "order-service", inner: "quoteRequests" },
+    cs: { outer: "order-service", inner: "cs" },
+    billing: { outer: "billing" },
+    invoices: { outer: "billing", inner: "invoices" },
+    payments: { outer: "billing", inner: "payments" },
+    documents: { outer: "documents" },
+    support: { outer: "support" },
+    tickets: { outer: "support", inner: "tickets" },
+    chat: { outer: "support", inner: "chat" },
+    complaints: { outer: "support", inner: "complaints" },
+    vuln: { outer: "support", inner: "vuln" },
+    rewards: { outer: "rewards" },
+    account: { outer: "account" },
+  }), []);
+
+  const initialTabParam = searchParams.get("tab");
+  const initialResolved = (initialTabParam && TAB_PARENT[initialTabParam]) || { outer: "overview" };
+  const [outerTab, setOuterTab] = useState<string>(initialResolved.outer);
+  const [osTab, setOsTab] = useState<string>(initialResolved.inner && initialResolved.outer === "order-service" ? initialResolved.inner : "orders");
+  const [billingTab, setBillingTab] = useState<string>(initialResolved.inner && initialResolved.outer === "billing" ? initialResolved.inner : "invoices");
+  const [supportTab, setSupportTab] = useState<string>(initialResolved.inner && initialResolved.outer === "support" ? initialResolved.inner : "tickets");
+
+  // Sync state when ?tab= changes (e.g. user clicks "View final quote" elsewhere on the page)
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (!t) return;
+    const r = TAB_PARENT[t];
+    if (!r) return;
+    setOuterTab(r.outer);
+    if (r.inner) {
+      if (r.outer === "order-service") setOsTab(r.inner);
+      else if (r.outer === "billing") setBillingTab(r.inner);
+      else if (r.outer === "support") setSupportTab(r.inner);
+    }
+  }, [searchParams, TAB_PARENT]);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);

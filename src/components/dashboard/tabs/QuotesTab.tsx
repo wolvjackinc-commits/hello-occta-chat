@@ -50,6 +50,7 @@ export function QuotesTab({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [openQuote, setOpenQuote] = useState<any | null>(null);
   const [openLoading, setOpenLoading] = useState(false);
+  const [openError, setOpenError] = useState<string | null>(null);
   const [proceedingId, setProceedingId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -64,13 +65,18 @@ export function QuotesTab({ userId }: { userId: string }) {
   }, [userId]);
 
   const viewFinalQuote = async (id: string) => {
+    // Seed dialog with whatever we already know from the list so mobile users
+    // immediately see something open even before the RPC resolves.
+    const seed = quotes.find((q) => q.id === id) ?? { id };
+    setOpenError(null);
     setOpenLoading(true);
-    setOpenQuote({ id });
+    setOpenQuote(seed);
     const { data, error } = await (supabase as any).rpc("get_customer_quote_by_id", { _id: id });
     setOpenLoading(false);
     if (error || !data?.[0]) {
-      toast({ title: "Final quote not ready yet", variant: "destructive" });
-      setOpenQuote(null);
+      // Keep the dialog open with a clear inline message instead of silently
+      // closing — toasts are easy to miss on small screens.
+      setOpenError("Your final quote isn't ready to view yet. Please refresh or contact us if this persists.");
       return;
     }
     setOpenQuote(data[0]);
@@ -156,12 +162,19 @@ export function QuotesTab({ userId }: { userId: string }) {
         );
       })}
 
-      <Dialog open={!!openQuote} onOpenChange={(o) => !o && setOpenQuote(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={!!openQuote} onOpenChange={(o) => { if (!o) { setOpenQuote(null); setOpenError(null); } }}>
+        <DialogContent className="w-[calc(100vw-1rem)] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{openQuote?.plan_name ?? "Your OCCTA quote"}</DialogTitle>
           </DialogHeader>
-          {openLoading || !openQuote?.quote_number ? (
+          {openError ? (
+            <div className="p-4 border-2 border-destructive bg-destructive/10 text-sm">
+              {openError}
+              <div className="mt-3">
+                <Button size="sm" variant="outline" onClick={() => openQuote?.id && viewFinalQuote(openQuote.id)}>Try again</Button>
+              </div>
+            </div>
+          ) : openLoading || !openQuote?.quote_number ? (
             <div className="p-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
           ) : (
             <div className="space-y-4">

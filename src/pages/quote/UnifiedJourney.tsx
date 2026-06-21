@@ -88,6 +88,12 @@ export default function UnifiedJourney() {
 
   useEffect(() => { load(); }, [load]);
 
+  const step: JourneyStepKey = state?.journey?.current_step ?? "quote";
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step, state?.journey?.status]);
+
   const handleContinue = async () => {
     if (!token || continuing) return;
     setContinuing(true);
@@ -166,12 +172,6 @@ export default function UnifiedJourney() {
       </Layout>
     );
   }
-
-  const step: JourneyStepKey = state.journey?.current_step ?? "quote";
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [step, state?.journey?.status]);
 
   return (
     <Layout>

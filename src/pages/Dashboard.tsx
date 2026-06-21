@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -144,6 +144,51 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAppMode } = useAppMode();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Map a single ?tab=<value> param to (outer, inner) tab keys so deep links from
+  // QuoteRequests / emails / notifications land on the right sub-tab.
+  const TAB_PARENT: Record<string, { outer: string; inner?: string }> = useMemo(() => ({
+    overview: { outer: "overview" },
+    "order-service": { outer: "order-service" },
+    orders: { outer: "order-service", inner: "orders" },
+    services: { outer: "order-service", inner: "services" },
+    quotes: { outer: "order-service", inner: "quotes" },
+    quoteRequests: { outer: "order-service", inner: "quoteRequests" },
+    cs: { outer: "order-service", inner: "cs" },
+    billing: { outer: "billing" },
+    invoices: { outer: "billing", inner: "invoices" },
+    payments: { outer: "billing", inner: "payments" },
+    documents: { outer: "documents" },
+    support: { outer: "support" },
+    tickets: { outer: "support", inner: "tickets" },
+    chat: { outer: "support", inner: "chat" },
+    complaints: { outer: "support", inner: "complaints" },
+    vuln: { outer: "support", inner: "vuln" },
+    rewards: { outer: "rewards" },
+    account: { outer: "account" },
+  }), []);
+
+  const initialTabParam = searchParams.get("tab");
+  const initialResolved = (initialTabParam && TAB_PARENT[initialTabParam]) || { outer: "overview" };
+  const [outerTab, setOuterTab] = useState<string>(initialResolved.outer);
+  const [osTab, setOsTab] = useState<string>(initialResolved.inner && initialResolved.outer === "order-service" ? initialResolved.inner : "orders");
+  const [billingTab, setBillingTab] = useState<string>(initialResolved.inner && initialResolved.outer === "billing" ? initialResolved.inner : "invoices");
+  const [supportTab, setSupportTab] = useState<string>(initialResolved.inner && initialResolved.outer === "support" ? initialResolved.inner : "tickets");
+
+  // Sync state when ?tab= changes (e.g. user clicks "View final quote" elsewhere on the page)
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (!t) return;
+    const r = TAB_PARENT[t];
+    if (!r) return;
+    setOuterTab(r.outer);
+    if (r.inner) {
+      if (r.outer === "order-service") setOsTab(r.inner);
+      else if (r.outer === "billing") setBillingTab(r.inner);
+      else if (r.outer === "support") setSupportTab(r.inner);
+    }
+  }, [searchParams, TAB_PARENT]);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -510,7 +555,7 @@ const Dashboard = () => {
               Invoices / Payments / Direct Debit → Billing & Payments.
               Complaints / Vulnerable / Chat → Support.
               Historical routes are preserved (no data deleted). */}
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs value={outerTab} onValueChange={(v) => { setOuterTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
             <TabsList className="w-full overflow-x-auto flex-nowrap justify-start gap-1 h-auto bg-transparent border-b-4 border-foreground rounded-none p-0 mb-6 whitespace-nowrap">
               {([
                 ["overview", "Overview", true],
@@ -548,7 +593,7 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="order-service">
-              <Tabs defaultValue="orders" className="w-full">
+              <Tabs value={osTab} onValueChange={(v) => { setOsTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
                 <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
                   {[["orders","Orders"],["services","Services"],["quotes","Quotes"],["quoteRequests","Quote Requests"],["cs","Contract Summaries"]].map(([v,l]) => (
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
@@ -563,7 +608,7 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="billing">
-              <Tabs defaultValue="invoices" className="w-full">
+              <Tabs value={billingTab} onValueChange={(v) => { setBillingTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
                 <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
                   {[["invoices","Invoices"],["payments","Payments & Receipts"]].map(([v,l]) => (
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
@@ -577,7 +622,7 @@ const Dashboard = () => {
             <TabsContent value="documents"><DocumentsTab userId={user.id} /></TabsContent>
 
             <TabsContent value="support">
-              <Tabs defaultValue="tickets" className="w-full">
+              <Tabs value={supportTab} onValueChange={(v) => { setSupportTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
                 <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
                   {[["tickets","Tickets"],["chat","Chat History"],["complaints","Complaints"],["vuln","Vulnerable Support"]].map(([v,l]) => (
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>

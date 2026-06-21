@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { FileText, Info, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { EmptyState } from "./EmptyState";
 import { logClientEvent } from "@/lib/activityLog";
 
@@ -128,7 +129,7 @@ export function QuoteRequestsTab({ userId }: { userId: string }) {
                     <span>Your final quote is ready. No payment has been taken. A Contract Summary will follow before any order.</span>
                   </div>
                   <Button asChild size="sm" variant="hero">
-                    <a href="/dashboard?tab=quotes">View final quote</a>
+                    <Link to="/dashboard?tab=quotes">View final quote</Link>
                   </Button>
                 </div>
               )}

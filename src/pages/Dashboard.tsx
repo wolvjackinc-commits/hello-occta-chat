@@ -555,7 +555,7 @@ const Dashboard = () => {
               Invoices / Payments / Direct Debit → Billing & Payments.
               Complaints / Vulnerable / Chat → Support.
               Historical routes are preserved (no data deleted). */}
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs value={outerTab} onValueChange={(v) => { setOuterTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
             <TabsList className="w-full overflow-x-auto flex-nowrap justify-start gap-1 h-auto bg-transparent border-b-4 border-foreground rounded-none p-0 mb-6 whitespace-nowrap">
               {([
                 ["overview", "Overview", true],
@@ -593,7 +593,7 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="order-service">
-              <Tabs defaultValue="orders" className="w-full">
+              <Tabs value={osTab} onValueChange={(v) => { setOsTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
                 <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
                   {[["orders","Orders"],["services","Services"],["quotes","Quotes"],["quoteRequests","Quote Requests"],["cs","Contract Summaries"]].map(([v,l]) => (
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
@@ -608,7 +608,7 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="billing">
-              <Tabs defaultValue="invoices" className="w-full">
+              <Tabs value={billingTab} onValueChange={(v) => { setBillingTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
                 <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
                   {[["invoices","Invoices"],["payments","Payments & Receipts"]].map(([v,l]) => (
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
@@ -622,7 +622,7 @@ const Dashboard = () => {
             <TabsContent value="documents"><DocumentsTab userId={user.id} /></TabsContent>
 
             <TabsContent value="support">
-              <Tabs defaultValue="tickets" className="w-full">
+              <Tabs value={supportTab} onValueChange={(v) => { setSupportTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
                 <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
                   {[["tickets","Tickets"],["chat","Chat History"],["complaints","Complaints"],["vuln","Vulnerable Support"]].map(([v,l]) => (
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>

@@ -42,6 +42,10 @@ const MISSING_REQ_TO_HUMAN: Record<string, string> = {
   missing_billing_anchor_day: "Preferred billing anchor day is not set.",
   contract_summary_not_found: "Contract Summary record could not be found.",
   order_not_found: "Order could not be found.",
+  missing_monthly_price: "Monthly plan price is missing from the accepted Contract Summary.",
+  service_upsert_failed: "The live service record could not be created.",
+  activation_outbox_failed: "The activation email job could not be queued.",
+  first_billing_job_failed: "The first billing job could not be queued.",
 };
 
 Deno.serve(async (req) => {
@@ -77,12 +81,15 @@ Deno.serve(async (req) => {
   try { body = await req.json(); }
   catch { return jsonResponse({ error: "invalid_json" }, 400); }
 
-  if (!body?.order_id) return jsonResponse({ error: "missing_order_id" }, 400);
-  if (!body?.confirm) return jsonResponse({ error: "explicit_confirmation_required" }, 400);
-  if (!body?.actual_activation_date) return jsonResponse({ error: "missing_actual_activation_date" }, 400);
+  if (!body?.order_id) return jsonResponse({ error: "missing_order_id", message: "Order could not be found." });
+  if (!body?.confirm) return jsonResponse({ error: "explicit_confirmation_required", message: "Please tick the confirmation box before applying." });
+  if (!body?.actual_activation_date) return jsonResponse({ error: "missing_actual_activation_date", message: MISSING_REQ_TO_HUMAN.missing_actual_activation_date });
   if (!body?.activation_reference || !body.activation_reference.trim()) {
-    return jsonResponse({ error: "missing_activation_reference" }, 400);
+    return jsonResponse({ error: "missing_activation_reference", message: MISSING_REQ_TO_HUMAN.missing_activation_reference });
   }
+
+  const activationReference = body.activation_reference.trim();
+  const giacomReference = body.giacom_reference?.trim() || activationReference;
 
   // Atomic transaction.
   let tx: any;
@@ -91,16 +98,23 @@ Deno.serve(async (req) => {
       _order_id: body.order_id,
       _actor: actor.id,
       _actual_activation_date: body.actual_activation_date,
-      _activation_reference: body.activation_reference.trim(),
+      _activation_reference: activationReference,
       _activation_notes: body.activation_notes ?? null,
-      _giacom_reference: body.giacom_reference ?? null,
+      _giacom_reference: giacomReference,
       _customer_note: body.customer_note ?? null,
       _internal_note: body.internal_note ?? null,
     });
     if (error) {
       const code = String(error.message ?? "").replace(/^.*?confirm_service_live_tx[^:]*:\s*/, "").split(":")[0] || "tx_failed";
       const human = MISSING_REQ_TO_HUMAN[code] ?? error.message;
-      return jsonResponse({ error: code, message: human }, 422);
+      console.error("confirm_service_live_tx failed", {
+        code,
+        order_id: body.order_id,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      return jsonResponse({ error: code, message: human });
     }
     tx = data;
   } catch (e) {

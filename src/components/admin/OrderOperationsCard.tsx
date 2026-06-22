@@ -137,7 +137,19 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
           confirm: form.confirm,
         };
         const { data, error } = await supabase.functions.invoke("confirm-service-live", { body: payload });
-        if (error) throw error;
+        if (error) {
+          // Surface the real server-side error message instead of the generic
+          // "Edge Function returned a non-2xx status code".
+          let msg = (error as Error).message;
+          try {
+            const ctx = (error as { context?: { response?: Response } }).context;
+            if (ctx?.response) {
+              const body = await ctx.response.clone().json();
+              if (body?.message || body?.error) msg = String(body.message ?? body.error);
+            }
+          } catch { /* ignore */ }
+          throw new Error(msg);
+        }
         if (data?.error) throw new Error(String(data.message ?? data.error));
         toast({
           title: data?.already_live ? "Already live" : "Service activated",
@@ -375,7 +387,16 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAction(null)} disabled={submitting}>Cancel</Button>
-            <Button onClick={submit} disabled={submitting}>
+            <Button
+              onClick={submit}
+              disabled={
+                submitting ||
+                (openAction?.key === "confirm_live" &&
+                  (!form.confirm ||
+                    !form.actual_activation_date ||
+                    !form.activation_reference.trim()))
+              }
+            >
               {submitting ? "Working…" : "Apply"}
             </Button>
           </DialogFooter>

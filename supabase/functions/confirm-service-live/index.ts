@@ -81,11 +81,11 @@ Deno.serve(async (req) => {
   try { body = await req.json(); }
   catch { return jsonResponse({ error: "invalid_json" }, 400); }
 
-  if (!body?.order_id) return jsonResponse({ error: "missing_order_id" }, 400);
-  if (!body?.confirm) return jsonResponse({ error: "explicit_confirmation_required" }, 400);
-  if (!body?.actual_activation_date) return jsonResponse({ error: "missing_actual_activation_date" }, 400);
+  if (!body?.order_id) return jsonResponse({ error: "missing_order_id", message: "Order could not be found." });
+  if (!body?.confirm) return jsonResponse({ error: "explicit_confirmation_required", message: "Please tick the confirmation box before applying." });
+  if (!body?.actual_activation_date) return jsonResponse({ error: "missing_actual_activation_date", message: MISSING_REQ_TO_HUMAN.missing_actual_activation_date });
   if (!body?.activation_reference || !body.activation_reference.trim()) {
-    return jsonResponse({ error: "missing_activation_reference" }, 400);
+    return jsonResponse({ error: "missing_activation_reference", message: MISSING_REQ_TO_HUMAN.missing_activation_reference });
   }
 
   const activationReference = body.activation_reference.trim();
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
         details: error.details,
         hint: error.hint,
       });
-      return jsonResponse({ error: code, message: human }, 422);
+      return jsonResponse({ error: code, message: human });
     }
     tx = data;
   } catch (e) {

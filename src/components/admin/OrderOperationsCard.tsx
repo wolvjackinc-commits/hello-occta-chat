@@ -126,29 +126,40 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
     try {
       // Special path: confirm-service-live uses its own edge function.
       if (openAction.key === "confirm_live") {
+        const actualActivationDate = form.actual_activation_date.trim();
+        const activationReference = form.activation_reference.trim();
+        const giacomReference = (form.giacom_reference || order.giacom_reference || activationReference).trim();
+
+        if (!actualActivationDate || !activationReference || !form.confirm) {
+          throw new Error("Confirm the activation date, reference, and checkbox before applying.");
+        }
+
         const payload: Record<string, unknown> = {
           order_id: order.id,
-          actual_activation_date: form.actual_activation_date,
-          activation_reference: form.activation_reference,
-          activation_notes: form.activation_notes,
-          giacom_reference: form.giacom_reference || undefined,
+          actual_activation_date: actualActivationDate,
+          activation_reference: activationReference,
+          activation_notes: form.activation_notes.trim() || undefined,
+          giacom_reference: giacomReference,
           customer_note: form.customer_note || undefined,
           internal_note: form.internal_note || undefined,
           confirm: form.confirm,
         };
-        const { data, error } = await supabase.functions.invoke("confirm-service-live", { body: payload });
-        if (error) {
-          // Surface the real server-side error message instead of the generic
-          // "Edge Function returned a non-2xx status code".
-          let msg = (error as Error).message;
-          try {
-            const ctx = (error as { context?: { response?: Response } }).context;
-            if (ctx?.response) {
-              const body = await ctx.response.clone().json();
-              if (body?.message || body?.error) msg = String(body.message ?? body.error);
-            }
-          } catch { /* ignore */ }
-          throw new Error(msg);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
+
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/confirm-service-live`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(String(data?.message ?? data?.error ?? `Activation failed (${response.status})`));
         }
         if (data?.error) throw new Error(String(data.message ?? data.error));
         toast({
@@ -156,6 +167,12 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
           description: `Next billing: ${data?.next_billing_date ?? "—"}`,
         });
         setOpenAction(null);
+        setForm({
+          giacom_reference: "", giacom_product_ref: "", router_reference: "",
+          entered_in_giacom_at: "", expected_activation_date: "",
+          customer_note: "", internal_note: "", override: false,
+          actual_activation_date: "", activation_reference: "", activation_notes: "", confirm: false,
+        });
         qc.invalidateQueries({ queryKey: ["order-operations", orderId] });
         qc.invalidateQueries({ queryKey: ["order-history", orderId] });
         qc.invalidateQueries({ queryKey: ["admin-customer"] });

@@ -20,6 +20,10 @@ import { JourneyInternalNotes } from "@/components/admin/JourneyInternalNotes";
 import { OrderOperationsCard } from "@/components/admin/OrderOperationsCard";
 import { CancellationCasesCard } from "@/components/admin/CancellationCasesCard";
 import { CustomerActionsCard } from "@/components/admin/CustomerActionsCard";
+import { CustomerSendEmailDialog } from "@/components/admin/CustomerSendEmailDialog";
+import { CustomerCreateTicketDialog } from "@/components/admin/CustomerCreateTicketDialog";
+import { BillingSchedulePanel } from "@/components/admin/BillingSchedulePanel";
+import { useEffect } from "react";
 
 function ReconciliationWarnings(_: { userId: string }) { return null; }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -148,11 +152,22 @@ export const AdminCustomerDetail = () => {
       // Quote requests + final quotes + customer_proceeded events
       const [{ data: quoteRequests }, { data: quotes }] = await Promise.all([
         (supabase as any).from("quote_requests")
-          .select("id, reference, status, service_interest, customer_type, postcode, created_at, final_quote_id")
+          .select("id, reference, status, service_interest, customer_type, postcode, address_line_1, address_line_2, created_at, final_quote_id")
           .eq("customer_id", userId).order("created_at", { ascending: false }),
         (supabase as any).from("quotes")
           .select("id, quote_number, status, plan_name, monthly_gross, customer_intent_proceeded_at, quote_request_id, created_at, public_token_hash")
           .eq("customer_id", userId).order("created_at", { ascending: false }),
+      ]);
+
+      // Look up DOB / postcode from any available source to suppress false "missing" warnings
+      const [{ data: contractAcc }, { data: guestOrder }, { data: emailLog }] = await Promise.all([
+        supabase.from("contract_acceptances").select("date_of_birth, accepted_at").eq("customer_id", userId).order("accepted_at", { ascending: false }).limit(1),
+        profileData.email
+          ? supabase.from("guest_orders").select("date_of_birth, postcode").eq("email", profileData.email).order("created_at", { ascending: false }).limit(1)
+          : Promise.resolve({ data: [] as any[] } as any),
+        profileData.email
+          ? (supabase as any).from("email_send_log").select("id, message_id, template_name, recipient_email, status, created_at, metadata").eq("recipient_email", profileData.email).order("created_at", { ascending: false }).limit(200)
+          : Promise.resolve({ data: [] as any[] } as any),
       ]);
 
       return {
@@ -168,6 +183,9 @@ export const AdminCustomerDetail = () => {
         allComms: allComms ?? [],
         quoteRequests: quoteRequests ?? [],
         quotes: quotes ?? [],
+        contractAcceptances: contractAcc ?? [],
+        guestOrders: guestOrder ?? [],
+        emailLog: emailLog ?? [],
       };
     },
   });
@@ -175,6 +193,40 @@ export const AdminCustomerDetail = () => {
   const overview = useMemo(() => data?.profile, [data?.profile]);
   const services = useMemo(() => data?.services ?? [], [data?.services]);
   const invoices = useMemo(() => data?.invoices ?? [], [data?.invoices]);
+
+  // Auto-backfill profile DOB/postcode from other sources so admins don't have to re-key.
+  const altPostcode = useMemo(() => {
+    return (
+      (data?.quoteRequests ?? [])[0]?.postcode ||
+      (data?.orders ?? [])[0]?.postcode ||
+      (data?.guestOrders ?? [])[0]?.postcode ||
+      null
+    );
+  }, [data?.quoteRequests, data?.orders, data?.guestOrders]);
+  const altDob = useMemo(() => {
+    return (
+      (data?.contractAcceptances ?? [])[0]?.date_of_birth ||
+      (data?.guestOrders ?? [])[0]?.date_of_birth ||
+      null
+    );
+  }, [data?.contractAcceptances, data?.guestOrders]);
+
+  useEffect(() => {
+    if (!overview?.id) return;
+    const patch: Record<string, any> = {};
+    if (!overview.postcode && altPostcode) patch.postcode = altPostcode;
+    if (!overview.date_of_birth && altDob) patch.date_of_birth = altDob;
+    if (Object.keys(patch).length > 0) {
+      (supabase.from("profiles") as any)
+        .update(patch)
+        .eq("id", overview.id)
+        .then(({ error }) => {
+          if (!error) refetch();
+          else console.warn("profile backfill failed", error);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overview?.id, altPostcode, altDob, overview?.postcode, overview?.date_of_birth]);
 
   if (isLoading) {
     return (
@@ -345,6 +397,8 @@ export const AdminCustomerDetail = () => {
               cs={(data?.contractSummaries ?? [])[0] ?? null}
               pr={(data?.paymentRequests ?? [])[0] ?? null}
               quotes={data?.quotes ?? []}
+              altPostcode={altPostcode}
+              altDob={altDob}
             />
             <CustomerActionsCard
               customer={{
@@ -498,11 +552,54 @@ export const AdminCustomerDetail = () => {
         </TabsContent>
 
         <TabsContent value="communications" className="mt-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">All emails sent to this customer — automated and manual — appear here.</p>
+            <div className="flex gap-2">
+              <CustomerSendEmailDialog
+                customer={{ id: overview.id, full_name: overview.full_name, email: overview.email, account_number: overview.account_number }}
+                onSent={refetch}
+              />
+              <CustomerCreateTicketDialog
+                customer={{ id: overview.id, full_name: overview.full_name, email: overview.email, account_number: overview.account_number }}
+                onCreated={refetch}
+              />
+            </div>
+          </div>
           <Card className="border-2 border-foreground p-4">
             <h3 className="font-display text-lg mb-3">Communications log</h3>
-            {(!data?.allComms || data.allComms.length === 0) ? (
-              <p className="text-sm text-muted-foreground">No emails sent to this customer yet.</p>
-            ) : (
+            {(() => {
+              // Merge email_send_log + communications_log, dedupe by message_id / id
+              const fromLegacy = (data?.allComms ?? []).map((c: any) => ({
+                id: c.id,
+                key: `legacy:${c.id}`,
+                when: c.sent_at ?? c.created_at,
+                template: c.template_name,
+                recipient: c.recipient_email,
+                status: c.status,
+                related: c.payment_request_id ? "Payment request" : c.invoice_id ? "Invoice" : "—",
+              }));
+              const seenMsg = new Set<string>();
+              const fromLog = (data?.emailLog ?? [])
+                .filter((r: any) => {
+                  if (!r.message_id) return true;
+                  if (seenMsg.has(r.message_id)) return false;
+                  seenMsg.add(r.message_id);
+                  return true;
+                })
+                .map((r: any) => ({
+                  id: r.id,
+                  key: `log:${r.id}`,
+                  when: r.created_at,
+                  template: r.template_name,
+                  recipient: r.recipient_email,
+                  status: r.status,
+                  related: (r.metadata as any)?.subject ?? "—",
+                }));
+              const merged = [...fromLog, ...fromLegacy].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
+              if (merged.length === 0) {
+                return <p className="text-sm text-muted-foreground">No emails sent to this customer yet.</p>;
+              }
+              return (
               <Table>
                 <TableHeader>
                   <TableRow className="border-b-4 border-foreground">
@@ -514,25 +611,23 @@ export const AdminCustomerDetail = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.allComms.map((c: any) => {
-                    const pr = (data.paymentRequests ?? []).find((p: any) => p.id === c.payment_request_id);
-                    return (
-                      <TableRow key={c.id} className="border-b-2 border-foreground/15">
-                        <TableCell className="text-xs whitespace-nowrap">{format(new Date(c.sent_at ?? c.created_at), "dd MMM HH:mm")}</TableCell>
-                        <TableCell className="text-xs">{c.template_name}</TableCell>
-                        <TableCell className="text-xs break-all">{c.recipient_email ?? "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={`border-2 capitalize ${c.status === "failed" ? "border-destructive text-destructive" : "border-foreground"}`}>
-                            {c.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs">{pr ? `PR ${pr.payment_request_number}` : c.invoice_id ? "Invoice" : "—"}</TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {merged.map((c: any) => (
+                    <TableRow key={c.key} className="border-b-2 border-foreground/15">
+                      <TableCell className="text-xs whitespace-nowrap">{format(new Date(c.when), "dd MMM HH:mm")}</TableCell>
+                      <TableCell className="text-xs">{c.template}</TableCell>
+                      <TableCell className="text-xs break-all">{c.recipient ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`border-2 capitalize ${c.status === "failed" || c.status === "dlq" ? "border-destructive text-destructive" : c.status === "suppressed" ? "border-warning text-warning" : "border-foreground"}`}>
+                          {c.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">{c.related}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
-            )}
+              );
+            })()}
           </Card>
           <Card className="border-2 border-foreground p-4">
             <h3 className="font-display text-lg mb-3">Support tickets</h3>
@@ -621,6 +716,7 @@ export const AdminCustomerDetail = () => {
         </TabsContent>
 
         <TabsContent value="billing" className="mt-4 space-y-4">
+          <BillingSchedulePanel userId={overview.id} />
           <CustomerBillingSettings
             userId={overview.id}
             accountNumber={overview.account_number}
@@ -680,7 +776,7 @@ export const AdminCustomerDetail = () => {
 
 /* ----------------------------- helpers ----------------------------- */
 
-function Customer360Header({ profile, cs, pr, quotes }: { profile: any; cs: any; pr: any; quotes: any[] }) {
+function Customer360Header({ profile, cs, pr, quotes, altPostcode, altDob }: { profile: any; cs: any; pr: any; quotes: any[]; altPostcode?: string | null; altDob?: string | null }) {
   const warnings: string[] = [];
   if (!cs) warnings.push("No Contract Summary issued");
   else if (cs.status !== "accepted") warnings.push("Contract Summary not yet accepted");
@@ -688,8 +784,8 @@ function Customer360Header({ profile, cs, pr, quotes }: { profile: any; cs: any;
     const ageDays = (Date.now() - new Date(pr.created_at).getTime()) / 86400000;
     if (ageDays > 7) warnings.push(`Payment request ${pr.payment_request_number} unpaid > 7 days`);
   }
-  if (!profile.date_of_birth) warnings.push("Date of birth missing");
-  if (!profile.postcode) warnings.push("Postcode missing");
+  if (!profile.date_of_birth && !altDob) warnings.push("Date of birth missing");
+  if (!profile.postcode && !altPostcode) warnings.push("Postcode missing");
 
   const stage = !quotes.length
     ? "Lead"

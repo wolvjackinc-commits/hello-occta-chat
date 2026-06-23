@@ -1,259 +1,114 @@
-Do not create another plan. Implement the SEO upgrade now.
 
-## REQUIRED CORRECTIONS BEFORE BUILD
+# Customer 360 & Quote Lifecycle Overhaul
 
-1. Canonical domain must match the real preferred live domain
-
-Do not hard-code `https://www.occta.co.uk` unless the production site actually redirects all non-www traffic to [www](http://www).
-
-Use the real canonical domain consistently:
-
-- either `https://occta.co.uk`
-- or `https://www.occta.co.uk`
-
-Confirm one preferred domain and ensure canonical tags, sitemap URLs, Open Graph URLs and redirects all match it.
-
-2. Do not accidentally noindex public acquisition pages
-
-Review these carefully before adding noindex:
-
-- `/quote/start`
-- `/build-plan`
-- `/coverage`
-- `/pricing`
-- `/pay-by-card`
-- `/billing-explained`
-
-If the page is a public marketing/acquisition page with useful SEO content, keep it indexable.
-
-Only noindex:
-
-- private quote-token pages;
-- customer-specific Contract Summary pages;
-- payment links;
-- admin;
-- dashboard;
-- authenticated account pages;
-- receipts/invoices/private documents;
-- support ticket private pages.
-
-3. Split public payment content from private payment links
-
-If `/pay-invoice` is a private customer payment route, keep it noindex.
-
-Create or use a public SEO page like:
-
-- `/pay-by-card`
-- `/manual-card-payment`
-- `/billing-explained`
-
-for search content about manual card invoice payments.
-
-Do not index real invoice-payment links.
-
-4. Digital Voice wording
-
-Keep `/landline` if it already exists, but update the page label, H1 and copy to:
-
-“Digital Voice / Home Phone”
-
-Make clear:
-
-- Digital Voice requires broadband;
-- no standalone landline is being sold unless OCCTA truly offers one;
-- availability depends on address and service setup.
-
-5. Location pages
-
-Do not mass-generate city pages.
-
-Only keep or create curated, useful location pages with genuine information and an availability CTA.
-
-No fake local branches, no fake shops, no fake local phone numbers.
-
-6. Schema safety
-
-Only add schema that matches visible content.
-
-Do not add:
-
-- fake reviews;
-- fake ratings;
-- fake local branches;
-- Product/Offer schema where the price is not visible;
-- FAQ schema where the FAQ is not visible.
-
-7. Legal/private pages
-
-Legal, privacy, cookie, complaints and vulnerable customer pages can be indexable if they are public informational pages.
-
-Customer-specific legal documents, signed Contract Summaries, invoices, receipts and token links must stay private/noindex.
-
-8. Search Console/Bing placeholders
-
-Add verification placeholders only. Do not invent verification codes.
-
-9. Do not touch private business logic
-
-Do not modify:
-
-- quote journey logic;
-- Contract Summary generation or acceptance;
-- Worldpay;
-- Direct Debit;
-- billing;
-- service activation;
-- cancellation/ETF;
-- admin/customer dashboard logic;
-- AI assistant logic;
-- RLS/security policies.
-
-## FINAL IMPLEMENTATION SCOPE
-
-Complete:
-
-- public page metadata;
-- sitemap generator;
-- robots.txt cleanup;
-- structured data;
-- public SEO pages;
-- AEO question-answer blocks;
-- FAQ sections;
-- internal links;
-- image alt/performance fixes;
-- noindex audit;
-- public route prerender audit;
-- Search Console/Bing readiness;
-- Lighthouse/PageSpeed spot checks;
-- build/typecheck.
-
-## FINAL REPORT
-
-Return:
-
-- files changed;
-- pages created/improved;
-- canonical domain used;
-- sitemap result;
-- robots result;
-- pages marked noindex;
-- schema added;
-- FAQ/AEO sections added;
-- internal linking result;
-- image optimisation result;
-- structured-data validation result;
-- Lighthouse/PageSpeed result;
-- private-route noindex result;
-- quote journey regression result;
-- build/typecheck result.
-
-Proceed with implementation now.
-
-  
-OCCTA SEO + AI Search Optimisation — Implementation Plan
-
-Scope: improve SEO, AEO/GEO, technical hygiene, structured data, content depth and conversion across the **public** site only. Zero changes to quote journey, Contract Summary, Worldpay, Direct Debit, dashboard, admin, lifecycle, billing, activation, cancellation, AI assistant, RLS or customer data.
-
-What's already in place (reuse, do not rebuild):
-
-- `src/components/seo/SEO.tsx` + `StructuredData.tsx` (Helmet-based per-route head)
-- `vite-plugin-prerender.ts` SSG for public routes
-- `public/robots.txt`, `public/sitemap.xml`
-- Centralised company identity in `src/lib/companyConfig.ts`
-- Guides, locations, comparisons, keyword pages, FAQ system, schema standard (per project memory)
+Eight connected issues. Grouped into 4 workstreams so they ship coherently.
 
 ---
 
-### 1. Technical SEO foundation
+## A. Customer Overview accuracy (Image 1)
 
-- Sweep every public page (Index, Broadband, NoContractBroadband, Flex, ContractSaver, Business, BusinessOffers, BusinessSales, SimPlans, Landline, Switching, Rewards, Support, Faq, About, Complaints, ServiceStatus, OrderLookup, PayInvoice marketing copy, Legal/*, Guides, Locations, Keyword, Comparison) and ensure each renders via `<SEO>` with:
-  - unique `<title>` (<60 chars, brand suffix " · OCCTA")
-  - unique meta description (<160 chars)
-  - self-referencing `canonical` on `https://www.occta.co.uk`
-  - matching `og:title`, `og:description`, `og:url`, `og:type`, `twitter:card=summary_large_image`
-  - single H1 audit
-- Confirm SSG prerender list covers every public route; exclude private/tokenised ones.
-- Add `<meta name="robots" content="noindex,nofollow">` (via SEO component prop) on: `/auth`, `/dashboard/*`, `/admin/*`, `/checkout`, `/pre-checkout`, `/thank-you`, `/install`, `/build-plan`, `/quote/*`, `/receipt/*`, `/pay-invoice`, `/business-checkout`, `/offline`.
-- Add `hreflang="en-GB"` and `<html lang="en-GB">`.
+**Problem:** Overview shows "Date of birth missing" and "Postcode missing" even though the customer supplied them at quote/checkout.
 
-### 2. robots.txt + sitemap.xml
-
-- Move sitemap to a generator script (`scripts/generate-sitemap.ts`) wired via `predev`/`prebuild`, driven by a single `PUBLIC_ROUTES` source of truth that also drives the prerender plugin (eliminates drift).
-- Sitemap entries: home, all marketing/service pages, all guides (from `src/data/guides.ts`), all comparisons (`src/data/comparisons.ts`), all keyword pages (`src/data/keywordPages.ts`), curated locations (`src/data/locations.ts`), legal pages.
-- robots.txt: keep public-everything default; tighten Disallow list to match private routes above; keep `Sitemap:` directive; drop redundant per-bot blocks; remove `Crawl-delay` for Googlebot (it ignores it and can confuse Bing).
-
-### 3. Structured data (JSON-LD)
-
-- Sitewide (`index.html`): Organization + WebSite + SearchAction.
-- Per-route via existing `StructuredData` component:
-  - Service pages → `Service` + `Offer` (only when price is visibly displayed)
-  - Bundle/Plan landing pages → `Product` + `Offer` (visible prices only)
-  - Guides → `Article` + `BreadcrumbList`
-  - Comparison pages → `Article` + `BreadcrumbList` (no fake `Review`)
-  - Location pages → `Service` + `BreadcrumbList` + `Place` reference (no fake `LocalBusiness` branches)
-  - FAQ pages and any page with visible FAQ block → `FAQPage` (customOnly, already standardised in memory)
-  - Support/Contact → `ContactPoint` + `PostalAddress`
-- Remove any existing schema that is not visibly backed by content.
-
-### 4. Public page content + AEO/GEO answers
-
-Create or upgrade with genuine, useful content (no thin pages, no keyword stuffing). New routes only if missing:
-
-- New: `/fibre-broadband`, `/broadband-and-digital-voice`, `/small-business-telecom`, `/pricing`, `/coverage`, `/billing-explained`, `/first-invoice-explained`, `/direct-debit-setup`, `/pay-by-card`, `/cancellation`, `/contact`, `/vulnerable-customers` (public-facing companion to the legal one).
-- Improve existing: Home, Broadband, NoContractBroadband, Business, SimPlans, Landline (rename label to "Digital Voice / Home Phone"), Switching, Support, About, Complaints, Faq.
-- Each service page sections: What it is · Who it's for · Key benefits · How ordering works · How billing works · Activation & start date · FAQs · CTA · related-service internal links.
-- Add concise AEO answer blocks (question H2 + 40–60 word answer) covering the 13 questions in the brief, on the most relevant page each.
-
-### 5. Local SEO
-
-- Add real `PostalAddress` + `ContactPoint` (0800 260 6626 / [hello@occta.co.uk](mailto:hello@occta.co.uk) / HD3 3WU) in Organization schema and on `/contact` + footer.
-- Keep current curated location pages only; do not mass-generate. Honest coverage disclaimer + availability CTA on each.
-- No false claims of physical shops.
-
-### 6. Internal linking
-
-- Add a shared `RelatedLinks` section component used on every service/guide/location page with descriptive anchor text (no "click here").
-- Footer audit: ensure links to Pricing, Coverage, Billing, Cancellation, Support, Complaints, Vulnerable Customers, Switching, About.
-
-### 7. Image SEO + performance
-
-- Audit `src/assets` for descriptive filenames; add/fix `alt` on every public image; ensure `loading="lazy"` everywhere except the LCP hero; `decoding="async"` already standardised.
-- Convert oversized JPG/PNG hero assets to WebP via `vite-imagetools` (where the asset is bundled). Preload only the LCP hero in `index.html`.
-- Verify route code-splitting still keeps admin/dashboard bundles out of public pages (already standardised).
-
-### 8. Analytics / Search Console readiness
-
-- Add Search Console + Bing meta verification slots (commented placeholders the user can fill).
-- GA4 already configured per memory — leave untouched; document `gtag` event names for the key conversions (`check_availability`, `quote_started`, `order_submitted`, `pay_now_clicked`).
-
-### 9. Compliance & honesty
-
-- Sweep marketing copy: remove any "guaranteed cheapest / instant activation / Ofcom approved / BT partner" style claims.
-- Add standard disclosures (availability address-dependent, estimated speeds, billing starts at activation, pro-rata first invoice, DV needs broadband) to the relevant pages.
-
-### 10. Verification & report
-
-- Build + typecheck.
-- Validate sitemap.xml syntax; confirm zero private routes leak in.
-- Spot-check rendered HTML of 5 public routes for unique title/description/canonical and valid JSON-LD.
-- Manual smoke: open `/`, `/broadband`, `/quote/start`, `/build-plan`, `/dashboard`, `/admin` — confirm no behaviour regressions and private routes carry `noindex`.
-- Produce final report (files changed, pages created/improved, schema added, sitemap/robots diff, keyword map, FAQ list, link audit, image audit, perf notes, noindex audit, build result).
+**Fix:**
+- Compliance flag logic currently only reads `profiles.date_of_birth` / `profiles.postcode`. Extend `useComplianceFlags` (and the server `compliance_flags` view if used) to also resolve from: latest accepted `quote_requests` row, latest `orders.service_address` JSON, and `customer_services.service_address`.
+- When any source has the value, backfill `profiles` (one-shot edge function `backfill-profile-from-quote` triggered on customer view load if missing). This way the warning disappears and admin doesn't have to re-key.
+- Add a small "Source: quote QR-…" hint next to the auto-filled value in Edit Customer.
 
 ---
 
-### Out of scope (will not touch)
+## B. Service-Live customer experience + admin in-life controls (Images 2, 6)
 
-- Any edge function except optional `places-autocomplete` (untouched here).
-- Any DB schema, RLS, migrations.
-- Quote journey, Contract Summary, Worldpay, DD, payment, dashboard, admin, AI assistant logic.
-- Pricing engine, catalogue, availability logic.
+**Problem:** Service went live, but no welcome comms; admin Operations page is cluttered and lacks proper in-life suspend/cancel with the right termination maths.
 
-### Risks / mitigations
+**1. Welcome / Service-Live email pack (auto-triggered on `confirm_service_live_tx`):**
+- New email templates in `supabase/functions/_shared/transactional-email-templates/`:
+  - `service-live-welcome.tsx` — account number, login link, plan summary, activation date, first-bill date & amount, payment method, how to pay, support contact, link to "Getting started" guide.
+  - `getting-started-tips.tsx` — sent 24h later (cron) — router placement, speed test, digital voice setup, app links.
+- Trigger from `confirm-service-live` edge function after RPC success: enqueue both emails (second with `send_after` timestamp).
 
-- Renaming `/landline` to a new slug would break inbound links → keep slug, update H1/copy to "Digital Voice / Home Phone" and add a Service schema name accordingly.
-- Sitemap generator could drift from router → single `PUBLIC_ROUTES` constant shared with prerender plugin.
-- Adding FAQ schema without visible FAQ would be a Google violation → only emit FAQPage JSON-LD on pages that visibly render the same Q&A.
+**2. Reimagined Operations + Services & Orders page (merge):**
+- Single page **"Service & Lifecycle"** combining current OrderOperationsCard (Image 2) and Services & Orders (Image 6).
+- Sections:
+  1. **Live Service Card** — plan, address, monthly price, next bill date, Giacom ref, router/tracking.
+  2. **Lifecycle Actions** (context-aware buttons that swap based on status):
+     - Pre-live: Record in Giacom / Mark Processing / Committed / Hold / Resume / Mark Failed / Confirm Live.
+     - Live: **Suspend service**, **Reactivate**, **Start Cancellation** (opens new dialog below).
+  3. **Status history timeline** (kept as-is).
+  4. **In-life cancellation cases** (kept, populated by dialog).
 
-### Deliverable
+**3. Cancellation dialog with correct ETF logic:**
+- Detect plan type from `orders.plan_type` (`flex` vs `contract_saver` / contract).
+- **Flex:** notice = 30 days from request date → show "Service ends DD MMM YYYY (30 days notice)". No ETF.
+- **Contract:** compute `remaining_months = months between today and contract_end_date`, ETF = `remaining_months * monthly_price + (89 * 1.20)` = `remaining_months * price + £106.80`. Show breakdown.
+- Persist into `cancellation_cases` (new table if missing) with `type`, `effective_date`, `etf_amount`, `reason`, `requested_by`.
+- Generate cancellation invoice when ETF > 0 (reuse invoice pipeline).
+- Email customer "Cancellation confirmed" with terms relevant to flex/contract.
 
-One coherent SEO upgrade implementation, no follow-up plan, no private-flow changes, no fabricated content.
+**4. Contract terms parity:** update `src/lib/legal/fullContractTerms.ts` & contract summary generation so the issued contract embeds the matching clause (Flex 30-day vs Contract ETF formula) based on `plan_type`.
+
+---
+
+## C. Billing transparency + DD/Billing page fix (Images 3, 5)
+
+**Problem:** Customer/admin don't know when first bill lands; Billing/DD page renders broken (yellow highlight everywhere = focus/contrast bug).
+
+**1. Billing explainer (admin + customer):**
+- New `BillingSchedulePanel` component on customer Dashboard Billing tab AND admin Billing/DD tab.
+- Shows: Activation date, Billing mode (Anniversary/Calendar), Billing day, **First invoice date** (= activation + 30 days, or next anniversary, per mode), **First payment due** (invoice date + payment_terms_days), recurring cycle thereafter, payment method.
+- Plain-English line: "Service went live 22 Jun 2026. First invoice will be raised on 22 Jul 2026 and is due by 29 Jul 2026 via invoice link / Direct Debit."
+
+**2. Fix Billing/DD page styling (Image 5):**
+- Audit `src/pages/admin/CustomerDetail.tsx` Billing tab + `BillingSettings` components: all `bg-yellow-*` / `text-yellow-*` selected-state classes are leaking. Replace with brutalist tokens (`bg-background`, `border-foreground`, `data-[state=active]` only).
+- Save button should be neutral; remove yellow fill, use `variant="default"` brutalist.
+
+---
+
+## D. Communications hub + Quote real-time status + Quote action lifecycle (Images 4, 7, 8)
+
+**1. Communications tab (Image 4):**
+- Query `email_send_log` filtered by `recipient_email = customer.email` AND/OR `metadata->>customer_id`. Deduplicate by `message_id` (latest status). Render: template, subject, sent timestamp, status badge, "View" (opens rendered email preview drawer).
+- **All system emails must log here** — audit triggers (quote sent, contract summary, payment receipt, welcome, etc.) to ensure they pass `metadata: { customer_id }` to `send-transactional-email`.
+- Header buttons:
+  - **Send Email** → dialog: subject + rich text body, uses standard OCCTA email template wrapper (`occta-admin-message.tsx` — new template using existing brutalist email shell). Logs to `email_send_log` with template_name `admin-direct-message`.
+  - **Create Ticket** → dialog: category dropdown (Billing, Technical, Account, Complaint, Cancellation, Other), priority, subject, message. Inserts into `support_tickets` linked to customer; sends `ticket-created` email; appears in customer dashboard Support tab + admin Tickets queue.
+
+**2. Quote Requests real-time status (Image 7):**
+- Replace static `status` column with a computed `journey_stage` resolved server-side via new view `quote_request_status_v` that joins:
+  - `quote_requests` → `customer_services.status` → `orders.status`.
+- Status ladder shown as a single badge with color:
+  `Draft → Quote Sent → Opened → Accepted → Order Submitted → Processing → Committed → **Live** → Suspended / Cancelled / Failed`.
+- "Opened" derived from `quote_email_events` (add `opened_at` via Mailgun open webhook or a pixel in the quote email).
+- Subscribe via Supabase Realtime on `quote_requests`, `customer_services`, `orders` so admin list updates without refresh.
+
+**3. Quote action panel lifecycle (Image 8):**
+- After a quote is sent, replace "Create Quote" with:
+  - **Edit & Resend** (creates new revision; old revision archived with reason).
+  - **View Quote** (opens customer-facing link).
+  - **Revoke Quote** (with reason).
+- New `quote_events` table (`quote_id`, `event_type`, `actor`, `metadata`, `occurred_at`) capturing: `created`, `sent`, `opened`, `viewed_page_N`, `accepted`, `declined`, `expired`, `revised`, `revoked`, `payment_requested`, `paid`, `order_submitted`, `processing`, `committed`, `live`, `cancelled`.
+- Render as timeline below the action buttons: "Sent 22 Jun 16:48 → Opened 22 Jun 17:02 → Accepted 22 Jun 17:10 → Closed by customer at Payment step 22 Jun 17:14".
+- Hook tracking points in: `send-quote` function, contract summary view route loader, payment page mount, payment success webhook, journey cancel dialog.
+
+---
+
+## Technical layout
+
+**New / changed files (high level):**
+- `src/hooks/useComplianceFlags.ts` — multi-source resolution.
+- `supabase/migrations/*` — `quote_events`, `cancellation_cases`, `quote_request_status_v`, `quote_email_events.opened_at`, GRANTs + RLS.
+- `supabase/functions/confirm-service-live/index.ts` — enqueue welcome + delayed tips emails.
+- `supabase/functions/_shared/transactional-email-templates/` — `service-live-welcome`, `getting-started-tips`, `admin-direct-message`, `ticket-created`, `cancellation-confirmed-flex`, `cancellation-confirmed-contract`.
+- `supabase/functions/send-quote/`, `quote-open-pixel/`, `cancel-service/` (ETF maths server-side).
+- `src/pages/admin/CustomerDetail.tsx` — merge Operations + Services & Orders, fix Billing tab styling, add Comms hub buttons.
+- `src/components/admin/customer/*` — `BillingSchedulePanel`, `CancellationDialog`, `CommunicationsLog`, `SendEmailDialog`, `CreateTicketDialog`, `QuoteActionPanel`, `QuoteTimeline`.
+- `src/pages/admin/QuoteRequests.tsx` — switch to status view + realtime subscription.
+- `src/lib/legal/fullContractTerms.ts` — flex vs contract clauses.
+
+**Order of execution:**
+1. DB migrations (events, cases, status view, RLS, GRANTs).
+2. Edge functions (welcome pack, cancel-service, quote tracking).
+3. Email templates + registry.
+4. Admin UI refactor (Operations merge, Comms hub, Billing fix, Quote pages).
+5. Customer Dashboard surfacing (billing panel, tickets, welcome content links).
+
+Estimated to land in 3 implementation passes; I'll ship A+C first (quick wins), then B, then D.

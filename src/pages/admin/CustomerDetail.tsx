@@ -552,9 +552,83 @@ export const AdminCustomerDetail = () => {
         </TabsContent>
 
         <TabsContent value="communications" className="mt-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">All emails sent to this customer — automated and manual — appear here.</p>
+            <div className="flex gap-2">
+              <CustomerSendEmailDialog
+                customer={{ id: overview.id, full_name: overview.full_name, email: overview.email, account_number: overview.account_number }}
+                onSent={refetch}
+              />
+              <CustomerCreateTicketDialog
+                customer={{ id: overview.id, full_name: overview.full_name, email: overview.email, account_number: overview.account_number }}
+                onCreated={refetch}
+              />
+            </div>
+          </div>
           <Card className="border-2 border-foreground p-4">
             <h3 className="font-display text-lg mb-3">Communications log</h3>
-            {(!data?.allComms || data.allComms.length === 0) ? (
+            {(() => {
+              // Merge email_send_log + communications_log, dedupe by message_id / id
+              const fromLegacy = (data?.allComms ?? []).map((c: any) => ({
+                id: c.id,
+                key: `legacy:${c.id}`,
+                when: c.sent_at ?? c.created_at,
+                template: c.template_name,
+                recipient: c.recipient_email,
+                status: c.status,
+                related: c.payment_request_id ? "Payment request" : c.invoice_id ? "Invoice" : "—",
+              }));
+              const seenMsg = new Set<string>();
+              const fromLog = (data?.emailLog ?? [])
+                .filter((r: any) => {
+                  if (!r.message_id) return true;
+                  if (seenMsg.has(r.message_id)) return false;
+                  seenMsg.add(r.message_id);
+                  return true;
+                })
+                .map((r: any) => ({
+                  id: r.id,
+                  key: `log:${r.id}`,
+                  when: r.created_at,
+                  template: r.template_name,
+                  recipient: r.recipient_email,
+                  status: r.status,
+                  related: (r.metadata as any)?.subject ?? "—",
+                }));
+              const merged = [...fromLog, ...fromLegacy].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
+              if (merged.length === 0) {
+                return <p className="text-sm text-muted-foreground">No emails sent to this customer yet.</p>;
+              }
+              return (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b-4 border-foreground">
+                    <TableHead className="font-display uppercase">When</TableHead>
+                    <TableHead className="font-display uppercase">Template</TableHead>
+                    <TableHead className="font-display uppercase">Recipient</TableHead>
+                    <TableHead className="font-display uppercase">Status</TableHead>
+                    <TableHead className="font-display uppercase">Related</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {merged.map((c: any) => (
+                    <TableRow key={c.key} className="border-b-2 border-foreground/15">
+                      <TableCell className="text-xs whitespace-nowrap">{format(new Date(c.when), "dd MMM HH:mm")}</TableCell>
+                      <TableCell className="text-xs">{c.template}</TableCell>
+                      <TableCell className="text-xs break-all">{c.recipient ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`border-2 capitalize ${c.status === "failed" || c.status === "dlq" ? "border-destructive text-destructive" : c.status === "suppressed" ? "border-warning text-warning" : "border-foreground"}`}>
+                          {c.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">{c.related}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              );
+            })()}
+            {false && (!data?.allComms || data.allComms.length === 0) ? (
               <p className="text-sm text-muted-foreground">No emails sent to this customer yet.</p>
             ) : (
               <Table>

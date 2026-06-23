@@ -63,6 +63,7 @@ serve(async (req) => {
     let etf = 0;
     let noticeDays = 0;
     let termination: Date | null = null;
+    const CONTRACT_ADMIN_FEE = 106.80; // £89 + 20% VAT
 
     if (planType === "flex") {
       noticeDays = Number(svc.notice_period_days || 30);
@@ -84,10 +85,14 @@ serve(async (req) => {
       const now = new Date();
       const msPerMonth = 1000 * 60 * 60 * 24 * 30.4375;
       const remaining = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / msPerMonth));
-      etf = +(remaining * monthly).toFixed(2);
+      const remainingCharges = +(remaining * monthly).toFixed(2);
+      etf = +(remainingCharges + CONTRACT_ADMIN_FEE).toFixed(2);
       noticeDays = Number(svc.notice_period_days || 30);
       termination = addDays(new Date(), noticeDays);
-      breakdown.push({ label: `Early termination fee (${remaining} mo × £${monthly.toFixed(2)})`, amount: etf });
+      if (remaining > 0) {
+        breakdown.push({ label: `Remaining contract (${remaining} mo × £${monthly.toFixed(2)})`, amount: remainingCharges });
+      }
+      breakdown.push({ label: "Early termination admin fee (£89 + VAT)", amount: CONTRACT_ADMIN_FEE });
     }
     if (outstanding > 0) breakdown.push({ label: "Outstanding unpaid invoices", amount: +outstanding.toFixed(2) });
 

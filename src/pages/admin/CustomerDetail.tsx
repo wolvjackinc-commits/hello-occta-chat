@@ -397,6 +397,8 @@ export const AdminCustomerDetail = () => {
               cs={(data?.contractSummaries ?? [])[0] ?? null}
               pr={(data?.paymentRequests ?? [])[0] ?? null}
               quotes={data?.quotes ?? []}
+              altPostcode={altPostcode}
+              altDob={altDob}
             />
             <CustomerActionsCard
               customer={{

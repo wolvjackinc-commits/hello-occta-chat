@@ -83,6 +83,34 @@ const businessInfo = {
   ],
 };
 
+// Self-service knowledge base — feeds Ira so she can link customers to the
+// right help article or guide instead of inventing answers.
+const helpKnowledgeBase = {
+  helpCentre: "https://www.occta.co.uk/help",
+  guides: "https://www.occta.co.uk/guides",
+  articles: [
+    { slug: "getting-started", title: "Getting Started With Your OCCTA Service", topics: ["new service", "router setup", "first day", "speed test", "wifi setup"] },
+    { slug: "billing", title: "Billing Explained", topics: ["invoice", "billing date", "vat", "direct debit", "late fee", "refund"] },
+    { slug: "router-setup", title: "Router Setup: Lights, Ports & Common Issues", topics: ["router lights", "lan port", "wan port", "reboot router"] },
+    { slug: "slow-wifi-fix", title: "Why Your Wi-Fi is Slow", topics: ["slow wifi", "wifi signal", "wifi vs broadband", "mesh", "5ghz"] },
+    { slug: "no-internet-troubleshooting", title: "No Internet? Try This Before You Call", topics: ["no internet", "broadband down", "outage", "offline"] },
+    { slug: "digital-voice-setup", title: "Digital Voice Setup", topics: ["digital voice", "home phone", "landline", "voip", "999 calls"] },
+    { slug: "direct-debit-setup-help", title: "Setting Up & Managing Direct Debit", topics: ["direct debit", "dd mandate", "bank details"] },
+    { slug: "first-invoice-explained-help", title: "Your First Invoice, Explained", topics: ["first bill", "prorated", "one-off charges"] },
+    { slug: "move-home", title: "Moving Home With OCCTA", topics: ["moving home", "new address", "transfer broadband"] },
+    { slug: "cancel-or-switch", title: "Cancelling or Switching", topics: ["cancel", "switch provider", "one touch switch", "exit fee"] },
+    { slug: "vulnerable-customer-support", title: "Vulnerable Customer Support", topics: ["vulnerable", "telecare", "battery backup", "priority"] },
+  ],
+  blogs: [
+    { slug: "what-broadband-speed-do-i-need", title: "What Broadband Speed Do I Really Need?" },
+    { slug: "fibre-vs-full-fibre-explained", title: "Fibre vs Full Fibre Explained" },
+    { slug: "how-to-switch-broadband-uk", title: "How to Switch Broadband (3 Steps)" },
+    { slug: "why-your-wifi-is-slow", title: "Why Your Wi-Fi is Slow (6 Fixes)" },
+    { slug: "digital-voice-vs-landline", title: "Digital Voice vs Landline" },
+    { slug: "working-from-home-broadband", title: "Ideal Home Network for WFH" },
+  ],
+};
+
 const formatMoney = (value: unknown) => {
   const amount = typeof value === "number" ? value : Number(value ?? 0);
   return `£${amount.toFixed(2)}`;
@@ -1715,6 +1743,14 @@ serve(async (req) => {
     const personaName = isAdmin ? "OCCTA Copilot" : "Ollie — OCCTA Assist";
     const systemPrompt = `You are ${personaName}, OCCTA Telecom's premium AI assistant. Tone: professional, warm, plain English, lightly human. Never robotic, never pushy, never "as an AI". Light wit is fine for general questions, but stay calm and serious on billing, cancellations, complaints, vulnerable-customer support, and identity questions.
 ${signedInContextBlock}
+
+## SELF-SERVICE KNOWLEDGE BASE (link these instead of guessing)
+Help Centre: ${helpKnowledgeBase.helpCentre} · Guides/Blog: ${helpKnowledgeBase.guides}
+Help articles (always link as https://www.occta.co.uk/help/<slug>):
+${helpKnowledgeBase.articles.map((a) => `- ${a.slug}: ${a.title} — covers ${a.topics.join(", ")}`).join("\n")}
+Guides/blog posts (always link as https://www.occta.co.uk/guides/<slug>):
+${helpKnowledgeBase.blogs.map((b) => `- ${b.slug}: ${b.title}`).join("\n")}
+When the user asks about setup, slow Wi-Fi, billing, moving home, cancelling, Digital Voice or anything self-serviceable, answer briefly AND link to the most relevant article above (as a clickable markdown link). Don't invent slugs.
 
 ## ABSOLUTE SAFETY RULES
 - Never invent prices, speeds, offers, fees, notice periods, billing dates, ETF figures, or contract terms. If it's not in approved data, say you'll check or create a case via escalate_to_team.

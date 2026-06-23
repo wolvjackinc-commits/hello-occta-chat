@@ -69,8 +69,31 @@ export default function ContractSummaryView() {
     <Layout>
       <SEO title={`Contract Summary ${cs.cs_number}`} description="OCCTA Contract Summary — review and accept before payment." canonical={`/quote/contract-summary/${token}`} />
       <section className="container mx-auto px-4 py-10 max-w-2xl">
-        <p className="font-display text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Contract Summary · {cs.cs_number} · v{cs.version}</p>
-        <h1 className="font-display uppercase text-3xl md:text-4xl mb-4">{cs.plan_name}</h1>
+        {/* Branded header — OCCTA mark + Ofcom GC C1.3 framing */}
+        <div className="border-4 border-foreground bg-background shadow-brutal mb-6">
+          <div className="flex items-center gap-4 p-5 border-b-4 border-foreground bg-secondary">
+            <div className="w-14 h-14 bg-primary border-4 border-foreground shadow-brutal flex items-center justify-center flex-shrink-0">
+              <span className="font-display text-2xl text-primary-foreground">O</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-display text-2xl tracking-tight leading-none">OCCTA</span>
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-1">
+                Telecom That Gets It
+              </span>
+            </div>
+            <div className="ml-auto text-right">
+              <p className="font-display text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Contract Summary</p>
+              <p className="font-display text-sm">{cs.cs_number} <span className="text-muted-foreground">· v{cs.version}</span></p>
+            </div>
+          </div>
+          <div className="p-5">
+            <p className="font-display text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Your plan</p>
+            <h1 className="font-display uppercase text-3xl md:text-4xl mt-1">{cs.plan_name}</h1>
+            <p className="text-xs text-muted-foreground mt-3">
+              Prepared in accordance with Ofcom General Condition C1.3 and the UK implementation of the European Electronic Communications Code. Issued by OCCTA LIMITED, registered in England &amp; Wales.
+            </p>
+          </div>
+        </div>
 
         <div className="border-4 border-foreground p-5 mb-5">
           <h2 className="font-display uppercase text-sm mb-2">Customer & service</h2>

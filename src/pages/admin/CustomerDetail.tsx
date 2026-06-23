@@ -716,6 +716,7 @@ export const AdminCustomerDetail = () => {
         </TabsContent>
 
         <TabsContent value="billing" className="mt-4 space-y-4">
+          <BillingSchedulePanel userId={overview.id} />
           <CustomerBillingSettings
             userId={overview.id}
             accountNumber={overview.account_number}

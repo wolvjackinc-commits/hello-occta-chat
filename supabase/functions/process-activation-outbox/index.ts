@@ -118,7 +118,7 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
     try {
       // Enrich payload with the canonical payment method type (no bank details).
       const { data: svc } = await supabase
-        .from("services").select("order_id")
+        .from("services").select("order_id, user_id")
         .eq("id", row.service_id).maybeSingle();
       let paymentLabel = "Direct Debit / Invoice link";
       let speedDown: number | null = null;
@@ -145,18 +145,29 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
         ...row.payload,
         payment_method_label: paymentLabel,
         estimated_download_speed: speedDown,
+        user_id: svc?.user_id ?? null,
       };
 
       const dashboardUrl = (Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk") + "/dashboard";
       const html = buildEmailHtml(payload, dashboardUrl);
 
-      // Send via existing send-email function. Failure -> retry (no new row).
+      // Send via existing send-email function (custom_admin renders any html_body
+      // inside the OCCTA branded shell). Service role bypasses admin role check.
+      const subjectLine = `Your OCCTA service is live${payload.occta_order_number ? " — " + payload.occta_order_number : ""}`.trim();
       const sendResp = await supabase.functions.invoke("send-email", {
         body: {
+          type: "custom_admin",
           to: payload.recipient_email,
-          subject: `Your OCCTA service is live — ${payload.occta_order_number ?? ""}`.trim(),
-          html,
-          idempotencyKey: `activation:${row.service_id}`,
+          userId: payload.user_id ?? undefined,
+          logToCommunications: true,
+          data: {
+            subject: subjectLine,
+            title: "Your service is live",
+            title_banner: true,
+            preheader: `Welcome to OCCTA — your ${payload.plan_name ?? "service"} is now active.`,
+            greeting: `Hi ${payload.recipient_name || "there"}`,
+            html_body: html,
+          },
         },
       });
 

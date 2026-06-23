@@ -25,11 +25,18 @@ const fmtDate = (iso: string) => {
 function buildEmailHtml(p: any, dashboardUrl: string) {
   const speed = (p.estimated_download_speed
     ? `${p.estimated_download_speed} Mbps` : "");
+  const supportEmail = "support@occta.co.uk";
+  const billingEmail = "billing@occta.co.uk";
+  const supportPhone = "0330 822 0123";
+  const helpUrl = "https://www.occta.co.uk/help";
+  const billingHelpUrl = "https://www.occta.co.uk/help/billing";
+  const gettingStartedUrl = "https://www.occta.co.uk/help/getting-started";
   return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#111;background:#fff">
   <div style="max-width:600px;margin:0 auto;padding:24px;border:4px solid #111">
     <h1 style="font-size:22px;margin:0 0 12px">Your OCCTA service is live</h1>
     <p>Hi ${escapeHtml(p.recipient_name || "there")},</p>
-    <p>Good news — your service has been activated.</p>
+    <p>Good news — your service has been activated. Everything you need to manage it is below. No contracts. No pressure.</p>
+    <h2 style="font-size:16px;margin:20px 0 8px;border-top:2px solid #111;padding-top:14px">Your service</h2>
     <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
       <tr><td style="padding:6px 0;color:#555">Account number</td><td style="text-align:right"><b>${escapeHtml(p.account_number || "")}</b></td></tr>
       <tr><td style="padding:6px 0;color:#555">Order number</td><td style="text-align:right"><b>${escapeHtml(p.occta_order_number || "")}</b></td></tr>
@@ -39,9 +46,27 @@ function buildEmailHtml(p: any, dashboardUrl: string) {
       <tr><td style="padding:6px 0;color:#555">Payment method</td><td style="text-align:right">${escapeHtml(p.payment_method_label || "")}</td></tr>
       <tr><td style="padding:6px 0;color:#555">Next billing date</td><td style="text-align:right">${escapeHtml(fmtDate(p.next_billing_date))}</td></tr>
     </table>
-    <p><b>What happens next:</b> Your first invoice will be issued on your billing date. You can manage everything from your dashboard.</p>
-    <p><a href="${dashboardUrl}" style="display:inline-block;background:#111;color:#fff;padding:12px 18px;text-decoration:none;border:2px solid #111;font-weight:bold">Open dashboard</a></p>
-    <p style="font-size:12px;color:#666;margin-top:24px">Need help? Reply to this email or visit our Support page. No contracts. No pressure.</p>
+    <h2 style="font-size:16px;margin:20px 0 8px;border-top:2px solid #111;padding-top:14px">How and when you'll be billed</h2>
+    <ul style="padding-left:18px;font-size:14px;line-height:1.55;margin:8px 0">
+      <li>Your first invoice will be raised on <b>${escapeHtml(fmtDate(p.next_billing_date))}</b> for <b>${fmtMoney(p.monthly_price_minor || 0)}</b>.</li>
+      <li>Payment method on file: <b>${escapeHtml(p.payment_method_label || "")}</b>. ${p.payment_method_label === "Direct Debit" ? "We'll collect automatically — no action needed." : "You'll receive a secure pay-link with each invoice."}</li>
+      <li>VAT is already included in your monthly price.</li>
+      <li>Questions about a bill? Email <a href="mailto:${billingEmail}">${billingEmail}</a> or see our <a href="${billingHelpUrl}">billing guide</a>.</li>
+    </ul>
+    <h2 style="font-size:16px;margin:20px 0 8px;border-top:2px solid #111;padding-top:14px">Getting started</h2>
+    <ul style="padding-left:18px;font-size:14px;line-height:1.55;margin:8px 0">
+      <li>Plug your router into the master socket and power on — most lines connect in under 10 minutes.</li>
+      <li>Run a <a href="https://www.speedtest.net">speed test</a> after 24 hours so the line can stabilise.</li>
+      <li>Read our <a href="${gettingStartedUrl}">getting started guide</a> for router placement, Wi-Fi tips and Digital Voice setup.</li>
+    </ul>
+    <h2 style="font-size:16px;margin:20px 0 8px;border-top:2px solid #111;padding-top:14px">Need a hand?</h2>
+    <ul style="padding-left:18px;font-size:14px;line-height:1.55;margin:8px 0">
+      <li>Support email: <a href="mailto:${supportEmail}">${supportEmail}</a></li>
+      <li>Support phone: <b>${supportPhone}</b> (Mon–Fri 9–6)</li>
+      <li>Help centre: <a href="${helpUrl}">${helpUrl}</a></li>
+    </ul>
+    <p style="margin-top:20px"><a href="${dashboardUrl}" style="display:inline-block;background:#111;color:#fff;padding:12px 18px;text-decoration:none;border:2px solid #111;font-weight:bold">Open your dashboard</a></p>
+    <p style="font-size:12px;color:#666;margin-top:24px">Keep this email for your records — your account number is your reference for any future contact.</p>
   </div></body></html>`;
 }
 

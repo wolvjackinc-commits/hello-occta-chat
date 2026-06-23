@@ -1,114 +1,50 @@
+create guides for everythign and make sure the links are emeberd in the emsals and are working properly.  
+  
+  
+1. Welcome (activation) email — match Contract Summary look & tone
 
-# Customer 360 & Quote Lifecycle Overhaul
+Rewrite `supabase/functions/process-activation-outbox/index.ts` `buildEmailHtml()` so the email mirrors the Contract Summary view:
 
-Eight connected issues. Grouped into 4 workstreams so they ship coherently.
+- **OCCTA branded header band** (same as `ContractSummaryView.tsx`): black 4px border container, `O` logo tile, "OCCTA" wordmark, "Telecom That Gets It" tagline, and right-aligned eyebrow "Welcome — your service is live" with the order number.
+- **Confetti moment**: a 2-second animated confetti GIF placed inline at the very top, beside/above the greeting "Welcome, {name} 🎉". GIF will be generated and committed at `public/email/confetti-2s.gif` (≈220×80, transparent-ish, plays once, ends on a clean frame so it doesn't loop forever in clients that respect single-play). Referenced via absolute URL `https://www.occta.co.uk/email/confetti-2s.gif` so Gmail/Outlook can fetch it. (JS/CSS animation is stripped by email clients — GIF is the only reliable way, same technique Stripe uses.)
+- **Warmer copy** explaining *why their decision is good*: no contracts, no mid-contract price hikes, UK support, fair pricing, easy switching, ownership of their line. Short, friendly, on-brand.
+- **Bordered "cards"** matching CS view alignment: Customer & service / Your plan & price / How and when you'll be billed / Getting started / Need a hand — each in a `border:4px solid #111;padding:20px;margin-bottom:16px` block with the same uppercase mini-heading style.
+- **Solid black CTA button** "Open your dashboard" (matches brutalist `shadow-brutal` style — drop shadow via offset border trick that survives email).
+- **Footer** with company reg, VAT, address, support/billing contact (already in `companyConfig.ts`).
 
----
+No business logic changes — only the HTML template + payload already passed in.
 
-## A. Customer Overview accuracy (Image 1)
+## 2. Fix the /help/getting-started 404 and missing /help hub
 
-**Problem:** Overview shows "Date of birth missing" and "Postcode missing" even though the customer supplied them at quote/checkout.
+The welcome email links to `/help`, `/help/billing`, `/help/getting-started`. None of these routes exist (only `/guides/:slug` does). Two-part fix:
 
-**Fix:**
-- Compliance flag logic currently only reads `profiles.date_of_birth` / `profiles.postcode`. Extend `useComplianceFlags` (and the server `compliance_flags` view if used) to also resolve from: latest accepted `quote_requests` row, latest `orders.service_address` JSON, and `customer_services.service_address`.
-- When any source has the value, backfill `profiles` (one-shot edge function `backfill-profile-from-quote` triggered on customer view load if missing). This way the warning disappears and admin doesn't have to re-key.
-- Add a small "Source: quote QR-…" hint next to the auto-filled value in Edit Customer.
+- **Add new routes in `src/App.tsx**`:
+  - `/help` → new `src/pages/help/HelpCenter.tsx` (hub: search + category tiles + featured guides + "Chat with Ira" CTA).
+  - `/help/:slug` → new `src/pages/help/HelpArticle.tsx` (renders from a new `src/data/helpArticles.ts` data file using the same brutalist `Layout` + `SeoContentLayout`).
+- **Seed `helpArticles.ts**` with the articles the email links to plus the broader self-help library:
+  - `getting-started` — full step-by-step (unbox router, master socket, lights meaning, first 24h speed stabilisation, Wi-Fi placement, Digital Voice handset setup, speed test, what "good" looks like).
+  - `billing` — when you're billed, how to read your invoice, VAT, Direct Debit Guarantee, late fees, how to pay, refunds.
+  - `router-setup`, `slow-wifi-fix`, `no-internet-troubleshooting`, `digital-voice-setup`, `move-home`, `change-plan`, `cancel-or-switch`, `password-and-account-security`, `parental-controls`, `mesh-and-extenders`, `gaming-and-streaming-optimisation`, `business-vs-residential`, `power-cuts-and-emergencies`, `vulnerable-customer-support`.
+- Each article uses the same brutalist card layout (`border-4 border-foreground`, uppercase display headings) and includes an inline FAQ block plus a "Still stuck? Chat with Ira" CTA that opens the existing `AIChatBot`.
+- Add all articles to `public/sitemap.xml` and `public/robots.txt` allow list.
 
----
+## 3. Blog / guides expansion + feed the AI chatbot
 
-## B. Service-Live customer experience + admin in-life controls (Images 2, 6)
+- Extend `src/data/guides.ts` with ~10 new SEO blog posts covering: "What broadband speed do I really need?", "Fibre vs Full Fibre explained", "How to switch broadband in 3 steps", "Why your Wi-Fi is slow (and 5 fixes)", "Digital Voice vs old landline", "Working from home: the ideal home network", "Best router placement", "What is a static IP and do I need one?", "Understanding your first bill", "Moving home with OCCTA".
+- Cross-link guides ↔ help articles via `relatedSlugs`.
+- **Chatbot grounding**: extend the system prompt context used by the AI chat edge function to include a compact JSON index of all `guides` + `helpArticles` (title, slug, summary, top FAQ Q&A). Add a small `src/lib/aiKnowledgeBase.ts` builder consumed by the chat function's prompt so Ira can answer with references and link to the right `/help/...` or `/guides/...` page.
 
-**Problem:** Service went live, but no welcome comms; admin Operations page is cluttered and lacks proper in-life suspend/cancel with the right termination maths.
+## 4. Other lifecycle emails — same shell
 
-**1. Welcome / Service-Live email pack (auto-triggered on `confirm_service_live_tx`):**
-- New email templates in `supabase/functions/_shared/transactional-email-templates/`:
-  - `service-live-welcome.tsx` — account number, login link, plan summary, activation date, first-bill date & amount, payment method, how to pay, support contact, link to "Getting started" guide.
-  - `getting-started-tips.tsx` — sent 24h later (cron) — router placement, speed test, digital voice setup, app links.
-- Trigger from `confirm-service-live` edge function after RPC success: enqueue both emails (second with `send_after` timestamp).
+Refactor the welcome email's branded shell into a small reusable HTML builder (`supabase/functions/_shared/brandedEmailShell.ts`) and reuse it from `process-cancellation-outbox` and other transactional senders so every customer email shares the Contract Summary look (header band, bordered cards, brutalist CTA, footer).
 
-**2. Reimagined Operations + Services & Orders page (merge):**
-- Single page **"Service & Lifecycle"** combining current OrderOperationsCard (Image 2) and Services & Orders (Image 6).
-- Sections:
-  1. **Live Service Card** — plan, address, monthly price, next bill date, Giacom ref, router/tracking.
-  2. **Lifecycle Actions** (context-aware buttons that swap based on status):
-     - Pre-live: Record in Giacom / Mark Processing / Committed / Hold / Resume / Mark Failed / Confirm Live.
-     - Live: **Suspend service**, **Reactivate**, **Start Cancellation** (opens new dialog below).
-  3. **Status history timeline** (kept as-is).
-  4. **In-life cancellation cases** (kept, populated by dialog).
+## Technical notes
 
-**3. Cancellation dialog with correct ETF logic:**
-- Detect plan type from `orders.plan_type` (`flex` vs `contract_saver` / contract).
-- **Flex:** notice = 30 days from request date → show "Service ends DD MMM YYYY (30 days notice)". No ETF.
-- **Contract:** compute `remaining_months = months between today and contract_end_date`, ETF = `remaining_months * monthly_price + (89 * 1.20)` = `remaining_months * price + £106.80`. Show breakdown.
-- Persist into `cancellation_cases` (new table if missing) with `type`, `effective_date`, `etf_amount`, `reason`, `requested_by`.
-- Generate cancellation invoice when ETF > 0 (reuse invoice pipeline).
-- Email customer "Cancellation confirmed" with terms relevant to flex/contract.
+- Confetti GIF will be generated locally (Python/PIL, 2s, 30fps, ends still) and committed under `public/email/`. The asset is referenced by absolute URL so it works from external mail clients.
+- All inline styles only — no `<style>` blocks, no web fonts, no JS. Max width 600px, single-column.
+- Help/guides routes are static pages (no DB) — no migrations needed.
+- No changes to billing, payment, or activation logic. Edge functions touched: `process-activation-outbox`, optionally `process-cancellation-outbox`, plus the chat function for the knowledge base.
 
-**4. Contract terms parity:** update `src/lib/legal/fullContractTerms.ts` & contract summary generation so the issued contract embeds the matching clause (Flex 30-day vs Contract ETF formula) based on `plan_type`.
+## Out of scope (ask if wanted)
 
----
-
-## C. Billing transparency + DD/Billing page fix (Images 3, 5)
-
-**Problem:** Customer/admin don't know when first bill lands; Billing/DD page renders broken (yellow highlight everywhere = focus/contrast bug).
-
-**1. Billing explainer (admin + customer):**
-- New `BillingSchedulePanel` component on customer Dashboard Billing tab AND admin Billing/DD tab.
-- Shows: Activation date, Billing mode (Anniversary/Calendar), Billing day, **First invoice date** (= activation + 30 days, or next anniversary, per mode), **First payment due** (invoice date + payment_terms_days), recurring cycle thereafter, payment method.
-- Plain-English line: "Service went live 22 Jun 2026. First invoice will be raised on 22 Jul 2026 and is due by 29 Jul 2026 via invoice link / Direct Debit."
-
-**2. Fix Billing/DD page styling (Image 5):**
-- Audit `src/pages/admin/CustomerDetail.tsx` Billing tab + `BillingSettings` components: all `bg-yellow-*` / `text-yellow-*` selected-state classes are leaking. Replace with brutalist tokens (`bg-background`, `border-foreground`, `data-[state=active]` only).
-- Save button should be neutral; remove yellow fill, use `variant="default"` brutalist.
-
----
-
-## D. Communications hub + Quote real-time status + Quote action lifecycle (Images 4, 7, 8)
-
-**1. Communications tab (Image 4):**
-- Query `email_send_log` filtered by `recipient_email = customer.email` AND/OR `metadata->>customer_id`. Deduplicate by `message_id` (latest status). Render: template, subject, sent timestamp, status badge, "View" (opens rendered email preview drawer).
-- **All system emails must log here** — audit triggers (quote sent, contract summary, payment receipt, welcome, etc.) to ensure they pass `metadata: { customer_id }` to `send-transactional-email`.
-- Header buttons:
-  - **Send Email** → dialog: subject + rich text body, uses standard OCCTA email template wrapper (`occta-admin-message.tsx` — new template using existing brutalist email shell). Logs to `email_send_log` with template_name `admin-direct-message`.
-  - **Create Ticket** → dialog: category dropdown (Billing, Technical, Account, Complaint, Cancellation, Other), priority, subject, message. Inserts into `support_tickets` linked to customer; sends `ticket-created` email; appears in customer dashboard Support tab + admin Tickets queue.
-
-**2. Quote Requests real-time status (Image 7):**
-- Replace static `status` column with a computed `journey_stage` resolved server-side via new view `quote_request_status_v` that joins:
-  - `quote_requests` → `customer_services.status` → `orders.status`.
-- Status ladder shown as a single badge with color:
-  `Draft → Quote Sent → Opened → Accepted → Order Submitted → Processing → Committed → **Live** → Suspended / Cancelled / Failed`.
-- "Opened" derived from `quote_email_events` (add `opened_at` via Mailgun open webhook or a pixel in the quote email).
-- Subscribe via Supabase Realtime on `quote_requests`, `customer_services`, `orders` so admin list updates without refresh.
-
-**3. Quote action panel lifecycle (Image 8):**
-- After a quote is sent, replace "Create Quote" with:
-  - **Edit & Resend** (creates new revision; old revision archived with reason).
-  - **View Quote** (opens customer-facing link).
-  - **Revoke Quote** (with reason).
-- New `quote_events` table (`quote_id`, `event_type`, `actor`, `metadata`, `occurred_at`) capturing: `created`, `sent`, `opened`, `viewed_page_N`, `accepted`, `declined`, `expired`, `revised`, `revoked`, `payment_requested`, `paid`, `order_submitted`, `processing`, `committed`, `live`, `cancelled`.
-- Render as timeline below the action buttons: "Sent 22 Jun 16:48 → Opened 22 Jun 17:02 → Accepted 22 Jun 17:10 → Closed by customer at Payment step 22 Jun 17:14".
-- Hook tracking points in: `send-quote` function, contract summary view route loader, payment page mount, payment success webhook, journey cancel dialog.
-
----
-
-## Technical layout
-
-**New / changed files (high level):**
-- `src/hooks/useComplianceFlags.ts` — multi-source resolution.
-- `supabase/migrations/*` — `quote_events`, `cancellation_cases`, `quote_request_status_v`, `quote_email_events.opened_at`, GRANTs + RLS.
-- `supabase/functions/confirm-service-live/index.ts` — enqueue welcome + delayed tips emails.
-- `supabase/functions/_shared/transactional-email-templates/` — `service-live-welcome`, `getting-started-tips`, `admin-direct-message`, `ticket-created`, `cancellation-confirmed-flex`, `cancellation-confirmed-contract`.
-- `supabase/functions/send-quote/`, `quote-open-pixel/`, `cancel-service/` (ETF maths server-side).
-- `src/pages/admin/CustomerDetail.tsx` — merge Operations + Services & Orders, fix Billing tab styling, add Comms hub buttons.
-- `src/components/admin/customer/*` — `BillingSchedulePanel`, `CancellationDialog`, `CommunicationsLog`, `SendEmailDialog`, `CreateTicketDialog`, `QuoteActionPanel`, `QuoteTimeline`.
-- `src/pages/admin/QuoteRequests.tsx` — switch to status view + realtime subscription.
-- `src/lib/legal/fullContractTerms.ts` — flex vs contract clauses.
-
-**Order of execution:**
-1. DB migrations (events, cases, status view, RLS, GRANTs).
-2. Edge functions (welcome pack, cancel-service, quote tracking).
-3. Email templates + registry.
-4. Admin UI refactor (Operations merge, Comms hub, Billing fix, Quote pages).
-5. Customer Dashboard surfacing (billing panel, tickets, welcome content links).
-
-Estimated to land in 3 implementation passes; I'll ship A+C first (quick wins), then B, then D.
+- Animated header logo, dark-mode email media query, multilingual help centre, admin CMS for editing help articles. Happy to add any of these as a follow-up.

@@ -1,6 +1,7 @@
 import {
   corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp,
   maskEmail, sendResendEmail, brutalistEmailShell, escapeHtml,
+  getAdminNotificationEmail, recordEmailCommunication,
 } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
@@ -105,20 +106,37 @@ Deno.serve(async (req) => {
      <p>OCCTA will check the best available option for your address and confirm speed, price, installation and switching details before you pay.</p>
      <p style="font-size:12px;color:#555;">Your final price, speed estimate, contract length, one-off charges, installation details, cancellation/cease charges and key terms will be confirmed in your Contract Summary before you pay.</p>`,
   );
-  void sendResendEmail({ to: input.email, subject: `OCCTA quote request ${row.reference}`, html: customerHtml });
+  const customerSend = await sendResendEmail({ to: input.email, subject: `OCCTA quote request ${row.reference}`, html: customerHtml });
+  await recordEmailCommunication(supabase, {
+    template_name: "quote_request_customer_acknowledgement",
+    recipient_email: input.email,
+    sendResult: customerSend,
+    user_id: customer_id,
+    metadata: { quote_request_id: row.id, reference: row.reference, service_interest: input.service_interest },
+  });
 
-  const adminEmail = Deno.env.get("RESEND_FROM_EMAIL") || "hello@occta.co.uk";
-  void sendResendEmail({
+  const adminEmail = getAdminNotificationEmail();
+  const adminSend = await sendResendEmail({
     to: adminEmail,
     subject: `[Quote Request] ${row.reference} — ${input.service_interest}`,
     html: brutalistEmailShell(
       `New quote request: ${row.reference}`,
-      `<p><strong>Service:</strong> ${escapeHtml(input.service_interest)} · ${escapeHtml(input.customer_type)}</p>
+      `<p><strong>Name:</strong> ${escapeHtml(input.full_name)}</p>
+       <p><strong>Email:</strong> <a href="mailto:${escapeHtml(input.email)}" style="color:#111;">${escapeHtml(input.email)}</a></p>
+       <p><strong>Phone:</strong> ${escapeHtml(input.phone)}</p>
+       <p><strong>Service:</strong> ${escapeHtml(input.service_interest)} · ${escapeHtml(input.customer_type)}</p>
        <p><strong>Postcode:</strong> ${escapeHtml(input.postcode.toUpperCase())}</p>
        <p><strong>Preferred contact:</strong> ${escapeHtml(input.preferred_contact_method)}</p>
+       ${input.message ? `<p><strong>Message:</strong> ${escapeHtml(input.message)}</p>` : ""}
        <p>Open the admin Quote Requests queue to action.</p>`,
       { label: "Open admin", url: "https://www.occta.co.uk/admin/quote-requests" },
     ),
+  });
+  await recordEmailCommunication(supabase, {
+    template_name: "quote_request_admin_notification",
+    recipient_email: adminEmail,
+    sendResult: adminSend,
+    metadata: { quote_request_id: row.id, reference: row.reference, customer_email_masked: maskEmail(input.email) },
   });
 
   return jsonResponse({ ok: true, reference: row.reference, quote_request_id: row.id });

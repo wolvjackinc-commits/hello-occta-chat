@@ -86,9 +86,12 @@ export async function sendResendEmail(opts: {
   html: string;
   replyTo?: string;
   attachments?: Array<{ filename: string; content: string; contentType?: string }>;
-}) {
+}): Promise<{ ok: true; messageId: string | null } | { ok: false; error: string }> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  if (!apiKey) return { ok: false, error: "RESEND_API_KEY missing" };
+  if (!apiKey) {
+    console.error("[quote-email] RESEND_API_KEY missing");
+    return { ok: false, error: "RESEND_API_KEY missing" };
+  }
   // Always present as "OCCTA Limited" in the recipient's inbox, regardless of
   // what the RESEND_FROM_EMAIL env var contains. If the env var already has a
   // display name ("Name <addr@x>"), we still force the display name to
@@ -116,9 +119,35 @@ export async function sendResendEmail(opts: {
   });
   if (!res.ok) {
     const text = await res.text();
+    console.error(`[quote-email] send failed ${res.status}: ${text.slice(0, 500)}`);
     return { ok: false, error: `resend_${res.status}: ${text.slice(0, 200)}` };
   }
-  return { ok: true };
+  const json = await res.json().catch(() => null) as { id?: string } | null;
+  return { ok: true, messageId: json?.id ?? null };
+}
+
+export function getAdminNotificationEmail(): string {
+  return (Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("ADMIN_EMAIL") || "hello@occta.co.uk").trim();
+}
+
+export async function recordEmailCommunication(supabase: any, entry: {
+  template_name: string;
+  recipient_email: string;
+  sendResult: { ok: true; messageId: string | null } | { ok: false; error: string };
+  metadata?: Record<string, unknown>;
+  user_id?: string | null;
+}) {
+  const { error } = await supabase.from("communications_log").insert({
+    user_id: entry.user_id ?? null,
+    template_name: entry.template_name,
+    recipient_email: entry.recipient_email,
+    status: entry.sendResult.ok ? "sent" : "failed",
+    provider_message_id: entry.sendResult.ok ? entry.sendResult.messageId : null,
+    error_message: entry.sendResult.ok ? null : entry.sendResult.error,
+    sent_at: entry.sendResult.ok ? new Date().toISOString() : null,
+    metadata: entry.metadata ?? {},
+  });
+  if (error) console.error("[quote-email] communications_log insert failed", error.message);
 }
 
 export function escapeHtml(s: string | null | undefined): string {

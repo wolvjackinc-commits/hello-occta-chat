@@ -204,6 +204,7 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
             preheader: `Welcome to OCCTA — your ${payload.plan_name ?? "service"} is now active.`,
             greeting: `Hi ${payload.recipient_name || "there"}`,
             html_body: html,
+            use_raw_html: true,
           },
         },
       });

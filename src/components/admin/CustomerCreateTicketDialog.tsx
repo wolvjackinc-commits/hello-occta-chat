@@ -54,8 +54,8 @@ export function CustomerCreateTicketDialog({ customer, onCreated, trigger }: Pro
           user_id: customer.id,
           subject: subject.trim(),
           description: description.trim(),
-          category,
-          priority,
+          category: category as any,
+          priority: priority as any,
           status: "open",
         })
         .select()

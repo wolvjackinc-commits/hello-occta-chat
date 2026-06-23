@@ -1004,6 +1004,10 @@ const getInvoicePaidHtml = (data: Record<string, unknown>) => {
 const getCustomAdminHtml = (data: Record<string, unknown>) => {
   const safeBody = data.html_body as string || escapeHtml(data.body as string || '');
   const safeGreeting = escapeHtml(data.greeting as string || 'Dear Customer');
+
+  if (data.use_raw_html === true && safeBody.trim().toLowerCase().startsWith('<!doctype html')) {
+    return safeBody;
+  }
   
   return `
 <!DOCTYPE html>

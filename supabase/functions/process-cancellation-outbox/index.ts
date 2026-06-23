@@ -36,14 +36,10 @@ function buildHtml(kind: string, c: any, dashboardUrl: string) {
       `<p>We've reviewed your accepted agreement.</p>
        <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
          <tr><td style="padding:6px 0;color:#555">Proposed cease date</td><td style="text-align:right"><b>${escapeHtml(fmtDate(p.proposed_cease_date))}</b></td></tr>
-         <tr><td style="padding:6px 0;color:#555">Notice period</td><td style="text-align:right">${escapeHtml(String(p.notice_period_days ?? "—"))} days</td></tr>
-         <tr><td style="padding:6px 0;color:#555">Service charges to cease</td><td style="text-align:right">${gbp(p.unbilled_service_minor)}</td></tr>
-         <tr><td style="padding:6px 0;color:#555">Unpaid invoices</td><td style="text-align:right">${gbp(p.unpaid_invoices_minor)}</td></tr>
-         ${p.etf_minor ? `<tr><td style="padding:6px 0;color:#555">Early termination charge</td><td style="text-align:right">${gbp(p.etf_minor)}</td></tr>` : ""}
-         <tr><td style="padding:6px 0;color:#555">Credits</td><td style="text-align:right">${gbp(p.credits_minor)}</td></tr>
-         <tr><td style="padding:6px 0;color:#555"><b>Estimated final balance</b></td><td style="text-align:right"><b>${gbp(p.final_balance_minor)}</b></td></tr>
+         <tr><td style="padding:6px 0;color:#555"><b>Final amount you will be charged</b></td><td style="text-align:right"><b>${gbp(p.final_balance_minor)}</b></td></tr>
        </table>
-       <p style="font-size:12px;color:#666">These figures remain subject to confirmation by our team.</p>`);
+       <p>This is the final balance you will be charged to close the service, calculated in line with the cease &amp; cancellation terms in the Contract Summary you accepted. The full breakdown (notice period, any early termination charge, unpaid invoices and credits) is available on your dashboard.</p>
+       <p style="font-size:12px;color:#666">Figures are subject to final confirmation by our team. You will receive a closing invoice or credit note on the cease date.</p>`);
   }
   // completed
   return head("Your service has been cancelled",

@@ -1,15 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { perfServe } from "../_shared/perfLog.ts";
+import { renderBrandedEmail, escapeEmailHtml } from "../_shared/brandedEmailShell.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const escapeHtml = (s: string) =>
-  String(s ?? "").replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as any)[c],
-  );
+const escapeHtml = escapeEmailHtml;
 
 const fmtMoney = (minor: number) =>
   `£${(Math.round(minor) / 100).toFixed(2)}`;
@@ -25,49 +23,88 @@ const fmtDate = (iso: string) => {
 function buildEmailHtml(p: any, dashboardUrl: string) {
   const speed = (p.estimated_download_speed
     ? `${p.estimated_download_speed} Mbps` : "");
-  const supportEmail = "support@occta.co.uk";
-  const billingEmail = "billing@occta.co.uk";
-  const supportPhone = "0330 822 0123";
+  const supportEmail = "hello@occta.co.uk";
   const helpUrl = "https://www.occta.co.uk/help";
   const billingHelpUrl = "https://www.occta.co.uk/help/billing";
   const gettingStartedUrl = "https://www.occta.co.uk/help/getting-started";
-  return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#111;background:#fff">
-  <div style="max-width:600px;margin:0 auto;padding:24px;border:4px solid #111">
-    <h1 style="font-size:22px;margin:0 0 12px">Your OCCTA service is live</h1>
-    <p>Hi ${escapeHtml(p.recipient_name || "there")},</p>
-    <p>Good news — your service has been activated. Everything you need to manage it is below. No contracts. No pressure.</p>
-    <h2 style="font-size:16px;margin:20px 0 8px;border-top:2px solid #111;padding-top:14px">Your service</h2>
-    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
-      <tr><td style="padding:6px 0;color:#555">Account number</td><td style="text-align:right"><b>${escapeHtml(p.account_number || "")}</b></td></tr>
-      <tr><td style="padding:6px 0;color:#555">Order number</td><td style="text-align:right"><b>${escapeHtml(p.occta_order_number || "")}</b></td></tr>
-      <tr><td style="padding:6px 0;color:#555">Plan</td><td style="text-align:right">${escapeHtml(p.plan_name || "")}${speed ? " · " + escapeHtml(speed) : ""}</td></tr>
-      <tr><td style="padding:6px 0;color:#555">Activation date</td><td style="text-align:right">${escapeHtml(fmtDate(p.activation_date))}</td></tr>
-      <tr><td style="padding:6px 0;color:#555">Monthly price</td><td style="text-align:right">${fmtMoney(p.monthly_price_minor || 0)}</td></tr>
-      <tr><td style="padding:6px 0;color:#555">Payment method</td><td style="text-align:right">${escapeHtml(p.payment_method_label || "")}</td></tr>
-      <tr><td style="padding:6px 0;color:#555">Next billing date</td><td style="text-align:right">${escapeHtml(fmtDate(p.next_billing_date))}</td></tr>
-    </table>
-    <h2 style="font-size:16px;margin:20px 0 8px;border-top:2px solid #111;padding-top:14px">How and when you'll be billed</h2>
-    <ul style="padding-left:18px;font-size:14px;line-height:1.55;margin:8px 0">
-      <li>Your first invoice will be raised on <b>${escapeHtml(fmtDate(p.next_billing_date))}</b> for <b>${fmtMoney(p.monthly_price_minor || 0)}</b>.</li>
-      <li>Payment method on file: <b>${escapeHtml(p.payment_method_label || "")}</b>. ${p.payment_method_label === "Direct Debit" ? "We'll collect automatically — no action needed." : "You'll receive a secure pay-link with each invoice."}</li>
+  const slowWifiUrl = "https://www.occta.co.uk/help/slow-wifi-fix";
+  const noInternetUrl = "https://www.occta.co.uk/help/no-internet-troubleshooting";
+  const guidesUrl = "https://www.occta.co.uk/guides";
+  const confettiUrl =
+    "https://www.occta.co.uk/__l5e/assets-v1/fed0a658-1ea3-4379-a1bb-b8bb8e25374e/welcome-confetti.gif";
+
+  const name = p.recipient_name || "there";
+  const isDirectDebit = p.payment_method_label === "Direct Debit";
+
+  const intro = `
+    <p style="margin:0 0 12px 0">You did a smart thing. You picked the provider that doesn't believe in 24-month lock-ins, mid-contract price hikes, or chatbots that pretend to be human. Your service is now live and ready to use.</p>
+    <p style="margin:0">Here's everything you need to manage it — bookmark this email, your account number on it is your reference for anything down the line.</p>
+  `;
+
+  const whyGoodHtml = `
+    <p style="margin:0 0 8px 0">A few things you've quietly signed up to <em>not</em> deal with:</p>
+    <ul style="margin:0;padding-left:18px">
+      <li><strong>No contracts.</strong> Rolling monthly. Leave with 30 days' notice, no exit fee.</li>
+      <li><strong>No mid-contract price hikes.</strong> The price you saw is the price you pay.</li>
+      <li><strong>UK humans on support.</strong> No offshore phone trees, no scripts.</li>
+      <li><strong>VAT included.</strong> The total you see is the total you pay.</li>
+      <li><strong>Move home with us, free.</strong> No transfer charge.</li>
+    </ul>`;
+
+  const serviceTableHtml = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font:14px/1.55 Arial,Helvetica,sans-serif">
+      <tr><td style="padding:6px 0;color:#666">Account number</td><td style="text-align:right"><strong>${escapeHtml(p.account_number || "")}</strong></td></tr>
+      <tr><td style="padding:6px 0;color:#666">Order number</td><td style="text-align:right"><strong>${escapeHtml(p.occta_order_number || "")}</strong></td></tr>
+      <tr><td style="padding:6px 0;color:#666">Plan</td><td style="text-align:right">${escapeHtml(p.plan_name || "")}${speed ? " · " + escapeHtml(speed) : ""}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Activation date</td><td style="text-align:right">${escapeHtml(fmtDate(p.activation_date))}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Monthly price</td><td style="text-align:right"><strong>${fmtMoney(p.monthly_price_minor || 0)}</strong> <span style="color:#666">(incl. VAT)</span></td></tr>
+      <tr><td style="padding:6px 0;color:#666">Payment method</td><td style="text-align:right">${escapeHtml(p.payment_method_label || "")}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Next billing date</td><td style="text-align:right">${escapeHtml(fmtDate(p.next_billing_date))}</td></tr>
+    </table>`;
+
+  const billingHtml = `
+    <ul style="margin:0;padding-left:18px">
+      <li>First invoice is raised on <strong>${escapeHtml(fmtDate(p.next_billing_date))}</strong> for <strong>${fmtMoney(p.monthly_price_minor || 0)}</strong>.</li>
+      <li>Payment method on file: <strong>${escapeHtml(p.payment_method_label || "")}</strong>. ${isDirectDebit ? "We collect automatically — nothing for you to do. Fully protected by the Direct Debit Guarantee." : "Each invoice comes with a one-tap secure Worldpay link."}</li>
       <li>VAT is already included in your monthly price.</li>
-      <li>Questions about a bill? Email <a href="mailto:${billingEmail}">${billingEmail}</a> or see our <a href="${billingHelpUrl}">billing guide</a>.</li>
-    </ul>
-    <h2 style="font-size:16px;margin:20px 0 8px;border-top:2px solid #111;padding-top:14px">Getting started</h2>
-    <ul style="padding-left:18px;font-size:14px;line-height:1.55;margin:8px 0">
-      <li>Plug your router into the master socket and power on — most lines connect in under 10 minutes.</li>
-      <li>Run a <a href="https://www.speedtest.net">speed test</a> after 24 hours so the line can stabilise.</li>
-      <li>Read our <a href="${gettingStartedUrl}">getting started guide</a> for router placement, Wi-Fi tips and Digital Voice setup.</li>
-    </ul>
-    <h2 style="font-size:16px;margin:20px 0 8px;border-top:2px solid #111;padding-top:14px">Need a hand?</h2>
-    <ul style="padding-left:18px;font-size:14px;line-height:1.55;margin:8px 0">
-      <li>Support email: <a href="mailto:${supportEmail}">${supportEmail}</a></li>
-      <li>Support phone: <b>${supportPhone}</b> (Mon–Fri 9–6)</li>
-      <li>Help centre: <a href="${helpUrl}">${helpUrl}</a></li>
-    </ul>
-    <p style="margin-top:20px"><a href="${dashboardUrl}" style="display:inline-block;background:#111;color:#fff;padding:12px 18px;text-decoration:none;border:2px solid #111;font-weight:bold">Open your dashboard</a></p>
-    <p style="font-size:12px;color:#666;margin-top:24px">Keep this email for your records — your account number is your reference for any future contact.</p>
-  </div></body></html>`;
+      <li>Questions about a bill? See the <a href="${billingHelpUrl}" style="color:#111">billing guide</a> or email <a href="mailto:${supportEmail}" style="color:#111">${supportEmail}</a>.</li>
+    </ul>`;
+
+  const gettingStartedSection = `
+    <ol style="margin:0;padding-left:20px">
+      <li>Plug your router into the master socket and power it on. Most lines come up in under 10 minutes.</li>
+      <li>Connect to the Wi-Fi using the name and password printed on the router.</li>
+      <li>Run a <a href="https://www.speedtest.net" style="color:#111">speed test</a> after 24 hours — the line stabilises over the first 10 days.</li>
+      <li>Read the <a href="${gettingStartedUrl}" style="color:#111"><strong>Getting Started guide</strong></a> for router placement, Wi-Fi tips and Digital Voice setup.</li>
+    </ol>`;
+
+  const helpHtml = `
+    <ul style="margin:0;padding-left:18px">
+      <li>Help centre: <a href="${helpUrl}" style="color:#111">occta.co.uk/help</a> — self-service for billing, Wi-Fi, moving home and more.</li>
+      <li>Slow Wi-Fi? <a href="${slowWifiUrl}" style="color:#111">Fix it in 5 minutes</a>.</li>
+      <li>No internet? <a href="${noInternetUrl}" style="color:#111">Run our 5-step check</a>.</li>
+      <li>Guides &amp; blog: <a href="${guidesUrl}" style="color:#111">occta.co.uk/guides</a>.</li>
+      <li>Talk to a human: <a href="mailto:${supportEmail}" style="color:#111">${supportEmail}</a> — we reply in hours, not days.</li>
+    </ul>`;
+
+  return renderBrandedEmail({
+    preheader: `Welcome to OCCTA — your ${p.plan_name ?? "service"} is now live.`,
+    eyebrow: "Welcome — Service Live",
+    reference: p.occta_order_number || "",
+    topImageUrl: confettiUrl,
+    topImageAlt: "Welcome confetti animation",
+    greeting: `Welcome, ${name} 🎉`,
+    intro,
+    sections: [
+      { heading: "Why this was a good decision", html: whyGoodHtml },
+      { heading: "Your service", html: serviceTableHtml },
+      { heading: "How and when you'll be billed", html: billingHtml },
+      { heading: "Getting started in 4 steps", html: gettingStartedSection },
+      { heading: "Need a hand?", html: helpHtml },
+    ],
+    cta: { label: "Open your dashboard", url: dashboardUrl },
+    closingHtml: `Keep this email — your account number <strong>${escapeHtml(p.account_number || "")}</strong> is your reference for anything in future. Welcome aboard.`,
+  });
 }
 
 Deno.serve(perfServe("process-activation-outbox", async (req) => {

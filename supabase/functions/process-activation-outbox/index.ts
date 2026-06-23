@@ -118,7 +118,7 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
     try {
       // Enrich payload with the canonical payment method type (no bank details).
       const { data: svc } = await supabase
-        .from("services").select("order_id")
+        .from("services").select("order_id, user_id")
         .eq("id", row.service_id).maybeSingle();
       let paymentLabel = "Direct Debit / Invoice link";
       let speedDown: number | null = null;
@@ -145,6 +145,7 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
         ...row.payload,
         payment_method_label: paymentLabel,
         estimated_download_speed: speedDown,
+        user_id: svc?.user_id ?? null,
       };
 
       const dashboardUrl = (Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk") + "/dashboard";

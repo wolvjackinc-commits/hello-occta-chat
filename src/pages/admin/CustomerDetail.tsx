@@ -628,39 +628,6 @@ export const AdminCustomerDetail = () => {
               </Table>
               );
             })()}
-            {false && (!data?.allComms || data.allComms.length === 0) ? (
-              <p className="text-sm text-muted-foreground">No emails sent to this customer yet.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b-4 border-foreground">
-                    <TableHead className="font-display uppercase">When</TableHead>
-                    <TableHead className="font-display uppercase">Template</TableHead>
-                    <TableHead className="font-display uppercase">Recipient</TableHead>
-                    <TableHead className="font-display uppercase">Status</TableHead>
-                    <TableHead className="font-display uppercase">Related</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.allComms.map((c: any) => {
-                    const pr = (data.paymentRequests ?? []).find((p: any) => p.id === c.payment_request_id);
-                    return (
-                      <TableRow key={c.id} className="border-b-2 border-foreground/15">
-                        <TableCell className="text-xs whitespace-nowrap">{format(new Date(c.sent_at ?? c.created_at), "dd MMM HH:mm")}</TableCell>
-                        <TableCell className="text-xs">{c.template_name}</TableCell>
-                        <TableCell className="text-xs break-all">{c.recipient_email ?? "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={`border-2 capitalize ${c.status === "failed" ? "border-destructive text-destructive" : "border-foreground"}`}>
-                            {c.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs">{pr ? `PR ${pr.payment_request_number}` : c.invoice_id ? "Invoice" : "—"}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
           </Card>
           <Card className="border-2 border-foreground p-4">
             <h3 className="font-display text-lg mb-3">Support tickets</h3>

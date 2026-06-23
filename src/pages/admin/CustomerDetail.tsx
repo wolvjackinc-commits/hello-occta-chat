@@ -20,6 +20,10 @@ import { JourneyInternalNotes } from "@/components/admin/JourneyInternalNotes";
 import { OrderOperationsCard } from "@/components/admin/OrderOperationsCard";
 import { CancellationCasesCard } from "@/components/admin/CancellationCasesCard";
 import { CustomerActionsCard } from "@/components/admin/CustomerActionsCard";
+import { CustomerSendEmailDialog } from "@/components/admin/CustomerSendEmailDialog";
+import { CustomerCreateTicketDialog } from "@/components/admin/CustomerCreateTicketDialog";
+import { BillingSchedulePanel } from "@/components/admin/BillingSchedulePanel";
+import { useEffect } from "react";
 
 function ReconciliationWarnings(_: { userId: string }) { return null; }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

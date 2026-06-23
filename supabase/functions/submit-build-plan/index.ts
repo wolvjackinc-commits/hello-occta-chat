@@ -8,6 +8,7 @@
 import {
   corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp,
   maskEmail, sendResendEmail, brutalistEmailShell, escapeHtml, generateTokenPair,
+  getAdminNotificationEmail, recordEmailCommunication,
 } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 import {
@@ -157,36 +158,57 @@ Deno.serve(async (req) => {
   });
 
   // Admin notification (suppressed in test mode unless tagged)
-  const adminEmail = Deno.env.get("RESEND_FROM_EMAIL") || "hello@occta.co.uk";
-  if (!inTestMode) void sendResendEmail({
-    to: adminEmail,
-    subject: `[Build Plan] ${qr.reference} — ${i.speed_bucket}/${i.plan_term}${resolved.quote_only ? " (quote-only)" : ""}`,
-    html: brutalistEmailShell(
-      `New Build Plan: ${qr.reference}`,
-      `<p><strong>Speed:</strong> ${escapeHtml(speedBucketLabel(i.speed_bucket))}</p>
-       <p><strong>Plan term:</strong> ${escapeHtml(planTermLabel(i.plan_term))}</p>
-       <p><strong>Router:</strong> ${escapeHtml(i.router_option)} / ${escapeHtml(i.router_payment_type)}</p>
-       <p><strong>Setup:</strong> ${escapeHtml(i.setup_option)}</p>
-       <p><strong>Addons:</strong> ${escapeHtml((i.addons ?? []).join(", ") || "none")}</p>
-       <p><strong>Postcode:</strong> ${escapeHtml(i.postcode.toUpperCase())}</p>
-       <p><strong>Outcome:</strong> ${resolved.quote_only ? "Quote-only — needs manual quote" : "Customer-ready quote auto-created"}</p>`,
-      { label: "Open admin", url: "https://www.occta.co.uk/admin/quote-requests" },
-    ),
-  });
+  const adminEmail = getAdminNotificationEmail();
+  if (!inTestMode) {
+    const adminSend = await sendResendEmail({
+      to: adminEmail,
+      subject: `[Build Plan] ${qr.reference} — ${i.speed_bucket}/${i.plan_term}${resolved.quote_only ? " (quote-only)" : ""}`,
+      html: brutalistEmailShell(
+        `New Build Plan: ${qr.reference}`,
+        `<p><strong>Name:</strong> ${escapeHtml(i.full_name)}</p>
+         <p><strong>Email:</strong> <a href="mailto:${escapeHtml(i.email)}" style="color:#111;">${escapeHtml(i.email)}</a></p>
+         <p><strong>Phone:</strong> ${escapeHtml(i.phone)}</p>
+         <p><strong>Speed:</strong> ${escapeHtml(speedBucketLabel(i.speed_bucket))}</p>
+         <p><strong>Plan term:</strong> ${escapeHtml(planTermLabel(i.plan_term))}</p>
+         <p><strong>Router:</strong> ${escapeHtml(i.router_option)} / ${escapeHtml(i.router_payment_type)}</p>
+         <p><strong>Setup:</strong> ${escapeHtml(i.setup_option)}</p>
+         <p><strong>Addons:</strong> ${escapeHtml((i.addons ?? []).join(", ") || "none")}</p>
+         <p><strong>Postcode:</strong> ${escapeHtml(i.postcode.toUpperCase())}</p>
+         <p><strong>Preferred contact:</strong> ${escapeHtml(i.preferred_contact_method)}</p>
+         <p><strong>Outcome:</strong> ${resolved.quote_only ? "Quote-only — needs manual quote" : "Customer-ready quote auto-created"}</p>`,
+        { label: "Open admin", url: "https://www.occta.co.uk/admin/quote-requests" },
+      ),
+    });
+    await recordEmailCommunication(supabase, {
+      template_name: "build_plan_admin_notification",
+      recipient_email: adminEmail,
+      sendResult: adminSend,
+      metadata: { quote_request_id: qr.id, reference: qr.reference, customer_email_masked: maskEmail(i.email), quote_only: resolved.quote_only },
+    });
+  }
 
   // ── Quote-only path: just a request, manual quote will follow ──
   if (resolved.quote_only) {
-    if (!inTestMode) void sendResendEmail({
-      to: i.email,
-      subject: `We're preparing your quote — ${qr.reference}`,
-      html: brutalistEmailShell(
-        "Your address needs a manual quote",
-        `<p>Hi ${escapeHtml(i.full_name.split(" ")[0])},</p>
-         <p>Your reference is <strong>${escapeHtml(qr.reference)}</strong>.</p>
-         <p>${escapeHtml(resolved.message)} We'll be in touch by your preferred method shortly to confirm the best available option, speed, price and any setup.</p>
-         <p style="font-size:12px;color:#555;">If it is not shown in your Contract Summary, we do not add it without your agreement.</p>`,
-      ),
-    });
+    if (!inTestMode) {
+      const customerSend = await sendResendEmail({
+        to: i.email,
+        subject: `We're preparing your quote — ${qr.reference}`,
+        html: brutalistEmailShell(
+          "Your address needs a manual quote",
+          `<p>Hi ${escapeHtml(i.full_name.split(" ")[0])},</p>
+           <p>Your reference is <strong>${escapeHtml(qr.reference)}</strong>.</p>
+           <p>${escapeHtml(resolved.message)} We'll be in touch by your preferred method shortly to confirm the best available option, speed, price and any setup.</p>
+           <p style="font-size:12px;color:#555;">If it is not shown in your Contract Summary, we do not add it without your agreement.</p>`,
+        ),
+      });
+      await recordEmailCommunication(supabase, {
+        template_name: "build_plan_quote_only_customer_acknowledgement",
+        recipient_email: i.email,
+        sendResult: customerSend,
+        user_id: customer_id,
+        metadata: { quote_request_id: qr.id, reference: qr.reference },
+      });
+    }
     return jsonResponse({
       ok: true,
       mode: "quote_only",
@@ -277,7 +299,7 @@ Deno.serve(async (req) => {
 
   // Customer email with quote link
   const quoteUrl = `https://www.occta.co.uk/quote/${encodeURIComponent(tokenRaw)}`;
-  void sendResendEmail({
+  const quoteSend = await sendResendEmail({
     to: i.email,
     subject: `Your OCCTA quote ${quote.quote_number}`,
     html: brutalistEmailShell(
@@ -289,6 +311,13 @@ Deno.serve(async (req) => {
        <p style="font-size:12px;color:#555;">If it is not shown in your Contract Summary, we do not add it without your agreement.</p>`,
       { label: "View your quote", url: quoteUrl },
     ),
+  });
+  await recordEmailCommunication(supabase, {
+    template_name: "build_plan_quote_ready_customer",
+    recipient_email: i.email,
+    sendResult: quoteSend,
+    user_id: customer_id,
+    metadata: { quote_request_id: qr.id, quote_id: quote.id, reference: qr.reference, quote_number: quote.quote_number },
   });
 
   return jsonResponse({

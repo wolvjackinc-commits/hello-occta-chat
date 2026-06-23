@@ -3,7 +3,7 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const ADMIN_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "hello@occta.co.uk";
+const ADMIN_EMAIL = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("ADMIN_EMAIL") || "hello@occta.co.uk";
 const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk";
 const ADMIN_DASHBOARD_URL = "https://www.occta.co.uk/admin";
 
@@ -14,7 +14,7 @@ const corsHeaders = {
 };
 
 interface NotificationPayload {
-  type: "new_guest_order" | "new_order" | "new_ticket" | "failed_payment" | "customer_proceeded_quote";
+  type: "new_guest_order" | "new_order" | "new_ticket" | "failed_payment" | "customer_proceeded_quote" | "new_business_enquiry" | "new_quote_request";
   data: Record<string, unknown>;
 }
 
@@ -648,6 +648,83 @@ function generateProceededQuoteEmail(data: Record<string, unknown>): { subject: 
   return { subject, html };
 }
 
+function generateBusinessEnquiryEmail(data: Record<string, unknown>): { subject: string; html: string } {
+  const leadId = escapeHtml(String(data.lead_id || data.order_number || "N/A"));
+  const enquiryType = escapeHtml(String(data.enquiry_type || "Business enquiry"));
+  const businessName = escapeHtml(String(data.business_name || "N/A"));
+  const contactName = escapeHtml(String(data.contact_name || "N/A"));
+  const customerEmail = escapeHtml(String(data.customer_email || data.email || "N/A"));
+  const customerPhone = escapeHtml(String(data.customer_phone || data.phone || "N/A"));
+  const postcode = escapeHtml(String(data.postcode || "N/A"));
+  const address = escapeHtml(String(data.address || "N/A"));
+  const plan = escapeHtml(String(data.plan || "N/A"));
+  const services = escapeHtml(String(data.services || "None selected"));
+  const notes = escapeHtml(String(data.notes || data.message || "None"));
+  const ipAddress = escapeHtml(String(data.ip_address || "Not captured"));
+  const subject = `🏢 New Business Enquiry | ${businessName}`;
+
+  const html = `<!DOCTYPE html><html><body style="margin:0;font-family:Arial,sans-serif;background:#f4f4f5;padding:24px;color:#111">
+    <div style="max-width:640px;margin:0 auto;background:#fff;border:4px solid #111">
+      <div style="background:#111;color:#facc15;padding:18px 24px;font-weight:900;letter-spacing:3px;text-transform:uppercase">OCCTA Admin</div>
+      <div style="padding:24px">
+        <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;color:#666">Business enquiry</p>
+        <h1 style="font-size:22px;margin:0 0 16px">${enquiryType}</h1>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:7px 0;color:#666;width:150px">Lead</td><td><strong>${leadId}</strong></td></tr>
+          <tr><td style="padding:7px 0;color:#666">Business</td><td><strong>${businessName}</strong></td></tr>
+          <tr><td style="padding:7px 0;color:#666">Contact</td><td>${contactName}</td></tr>
+          <tr><td style="padding:7px 0;color:#666">Email</td><td><a href="mailto:${customerEmail}" style="color:#111">${customerEmail}</a></td></tr>
+          <tr><td style="padding:7px 0;color:#666">Phone</td><td><a href="tel:${customerPhone}" style="color:#111">${customerPhone}</a></td></tr>
+          <tr><td style="padding:7px 0;color:#666">Address</td><td>${address}</td></tr>
+          <tr><td style="padding:7px 0;color:#666">Postcode</td><td>${postcode}</td></tr>
+          <tr><td style="padding:7px 0;color:#666">Plan</td><td>${plan}</td></tr>
+          <tr><td style="padding:7px 0;color:#666">Services</td><td>${services}</td></tr>
+          <tr><td style="padding:7px 0;color:#666;vertical-align:top">Notes</td><td>${notes}</td></tr>
+          <tr><td style="padding:7px 0;color:#666">IP</td><td>${ipAddress}</td></tr>
+        </table>
+        <a href="${ADMIN_DASHBOARD_URL}/orders" style="display:inline-block;background:#111;color:#fff;padding:14px 28px;text-decoration:none;font-weight:700;border:2px solid #111">Open admin →</a>
+      </div>
+    </div></body></html>`;
+  return { subject, html };
+}
+
+function generateQuoteRequestEmail(data: Record<string, unknown>): { subject: string; html: string } {
+  const reference = escapeHtml(String(data.reference || "N/A"));
+  const customerName = escapeHtml(String(data.full_name || data.customer_name || "N/A"));
+  const customerEmail = escapeHtml(String(data.email || data.customer_email || "N/A"));
+  const phone = escapeHtml(String(data.phone || "N/A"));
+  const service = escapeHtml(String(data.service_interest || "N/A"));
+  const customerType = escapeHtml(String(data.customer_type || "N/A"));
+  const postcode = escapeHtml(String(data.postcode || "N/A"));
+  const preferredContact = escapeHtml(String(data.preferred_contact_method || "N/A"));
+  const source = escapeHtml(String(data.source || "web"));
+  const message = escapeHtml(String(data.message || "None"));
+  const createdAt = formatDate(String(data.created_at || new Date().toISOString()));
+  const subject = `📩 New Quote Enquiry | ${reference}`;
+
+  const html = `<!DOCTYPE html><html><body style="margin:0;font-family:Arial,sans-serif;background:#f4f4f5;padding:24px;color:#111">
+    <div style="max-width:640px;margin:0 auto;background:#fff;border:4px solid #111">
+      <div style="background:#111;color:#facc15;padding:18px 24px;font-weight:900;letter-spacing:3px;text-transform:uppercase">OCCTA Admin</div>
+      <div style="padding:24px">
+        <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;color:#666">Quote enquiry</p>
+        <h1 style="font-size:22px;margin:0 0 16px">${reference}</h1>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:7px 0;color:#666;width:150px">Customer</td><td><strong>${customerName}</strong></td></tr>
+          <tr><td style="padding:7px 0;color:#666">Email</td><td><a href="mailto:${customerEmail}" style="color:#111">${customerEmail}</a></td></tr>
+          <tr><td style="padding:7px 0;color:#666">Phone</td><td><a href="tel:${phone}" style="color:#111">${phone}</a></td></tr>
+          <tr><td style="padding:7px 0;color:#666">Service</td><td>${service} · ${customerType}</td></tr>
+          <tr><td style="padding:7px 0;color:#666">Postcode</td><td>${postcode}</td></tr>
+          <tr><td style="padding:7px 0;color:#666">Preferred contact</td><td>${preferredContact}</td></tr>
+          <tr><td style="padding:7px 0;color:#666">Source</td><td>${source}</td></tr>
+          <tr><td style="padding:7px 0;color:#666">Submitted</td><td>${createdAt}</td></tr>
+          <tr><td style="padding:7px 0;color:#666;vertical-align:top">Message</td><td>${message}</td></tr>
+        </table>
+        <a href="${ADMIN_DASHBOARD_URL}/quote-requests" style="display:inline-block;background:#111;color:#fff;padding:14px 28px;text-decoration:none;font-weight:700;border:2px solid #111">Open quote requests →</a>
+      </div>
+    </div></body></html>`;
+  return { subject, html };
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -734,6 +811,12 @@ const handler = async (req: Request): Promise<Response> => {
         break;
       case "customer_proceeded_quote":
         emailContent = generateProceededQuoteEmail(enrichedData);
+        break;
+      case "new_business_enquiry":
+        emailContent = generateBusinessEnquiryEmail(enrichedData);
+        break;
+      case "new_quote_request":
+        emailContent = generateQuoteRequestEmail(enrichedData);
         break;
       default:
         return new Response(

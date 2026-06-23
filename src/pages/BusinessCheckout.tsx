@@ -32,8 +32,6 @@ import {
   type CheckoutContext,
 } from "@/lib/requireContractSummary";
 
-const adminEmail = "hello@occta.co.uk";
-
 const checkoutSchema = z.object({
   businessName: z.string().min(2, "Business name is required").max(120, "Business name too long"),
   contactName: z.string().min(2, "Contact name is required").max(80, "Contact name too long"),
@@ -187,22 +185,22 @@ const BusinessCheckout = () => {
       if (error) throw error;
 
       try {
-        await supabase.functions.invoke("send-email", {
+        await supabase.functions.invoke("admin-notify", {
           body: {
-            to: adminEmail,
-            subject: `New Business Plan Checkout: ${selectedPlan.name}`,
-            html: `
-              <h2>New Business Plan Checkout</h2>
-              <p><strong>Order:</strong> ${orderNumber}</p>
-              <p><strong>Business:</strong> ${formData.businessName}</p>
-              <p><strong>Contact:</strong> ${formData.contactName}</p>
-              <p><strong>Email:</strong> ${formData.email}</p>
-              <p><strong>Phone:</strong> ${formData.phone}</p>
-              <p><strong>Address:</strong> ${formData.addressLine1}, ${formData.city}, ${formData.postcode}</p>
-              <p><strong>Plan:</strong> ${selectedPlan.name} (${selectedPlan.price}/mo)</p>
-              <p><strong>Add-ons:</strong> ${selectedServiceDetails.map((service) => service.title).join(", ") || "None"}</p>
-              <p><strong>Notes:</strong> ${formData.notes || "None"}</p>
-            `,
+            type: "new_business_enquiry",
+            data: {
+              lead_id: orderNumber,
+              enquiry_type: `New Business Plan Checkout: ${selectedPlan.name}`,
+              business_name: formData.businessName,
+              contact_name: formData.contactName,
+              customer_email: formData.email,
+              customer_phone: formData.phone,
+              address: `${formData.addressLine1}, ${formData.city}`,
+              postcode: formData.postcode,
+              plan: `${selectedPlan.name} (${selectedPlan.price}/mo)`,
+              services: selectedServiceDetails.map((service) => service.title).join(", ") || "None",
+              notes: formData.notes || "None",
+            },
           },
         });
       } catch (emailError) {

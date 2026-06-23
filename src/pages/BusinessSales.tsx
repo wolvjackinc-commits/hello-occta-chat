@@ -19,8 +19,6 @@ import { Loader2 } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 
-const adminEmail = "hello@occta.co.uk";
-
 const salesSchema = z.object({
   businessName: z.string().min(2, "Business name is required").max(120, "Business name too long"),
   contactName: z.string().min(2, "Contact name is required").max(80, "Contact name too long"),
@@ -139,22 +137,22 @@ const BusinessSales = () => {
       if (error) throw error;
 
       try {
-        await supabase.functions.invoke("send-email", {
+        await supabase.functions.invoke("admin-notify", {
           body: {
-            to: adminEmail,
-            subject: "New Business Sales Inquiry",
-            html: `
-              <h2>New Business Sales Inquiry</h2>
-              <p><strong>Lead ID:</strong> ${orderNumber}</p>
-              <p><strong>Business:</strong> ${formData.businessName}</p>
-              <p><strong>Contact:</strong> ${formData.contactName}</p>
-              <p><strong>Email:</strong> ${formData.email}</p>
-              <p><strong>Phone:</strong> ${formData.phone}</p>
-              <p><strong>Location:</strong> ${formData.addressLine1}, ${formData.city}, ${formData.postcode}</p>
-              <p><strong>Goal:</strong> ${formData.goal}</p>
-              <p><strong>Interested services:</strong> ${selectedAddonDetails.map((item) => item.name).join(", ") || "None selected"}</p>
-              <p><strong>Message:</strong> ${formData.message}</p>
-            `,
+            type: "new_business_enquiry",
+            data: {
+              lead_id: orderNumber,
+              enquiry_type: "New Business Sales Inquiry",
+              business_name: formData.businessName,
+              contact_name: formData.contactName,
+              customer_email: formData.email,
+              customer_phone: formData.phone,
+              address: `${formData.addressLine1}, ${formData.city}`,
+              postcode: formData.postcode,
+              plan: formData.goal,
+              services: selectedAddonDetails.map((item) => item.name).join(", ") || "None selected",
+              notes: formData.message || "None",
+            },
           },
         });
       } catch (emailError) {

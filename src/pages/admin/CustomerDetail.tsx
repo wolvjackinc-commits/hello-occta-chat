@@ -217,8 +217,7 @@ export const AdminCustomerDetail = () => {
     if (!overview.postcode && altPostcode) patch.postcode = altPostcode;
     if (!overview.date_of_birth && altDob) patch.date_of_birth = altDob;
     if (Object.keys(patch).length > 0) {
-      supabase
-        .from("profiles")
+      (supabase.from("profiles") as any)
         .update(patch)
         .eq("id", overview.id)
         .then(({ error }) => {

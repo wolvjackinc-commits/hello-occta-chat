@@ -152,11 +152,22 @@ export const AdminCustomerDetail = () => {
       // Quote requests + final quotes + customer_proceeded events
       const [{ data: quoteRequests }, { data: quotes }] = await Promise.all([
         (supabase as any).from("quote_requests")
-          .select("id, reference, status, service_interest, customer_type, postcode, created_at, final_quote_id")
+          .select("id, reference, status, service_interest, customer_type, postcode, address_line_1, address_line_2, created_at, final_quote_id")
           .eq("customer_id", userId).order("created_at", { ascending: false }),
         (supabase as any).from("quotes")
           .select("id, quote_number, status, plan_name, monthly_gross, customer_intent_proceeded_at, quote_request_id, created_at, public_token_hash")
           .eq("customer_id", userId).order("created_at", { ascending: false }),
+      ]);
+
+      // Look up DOB / postcode from any available source to suppress false "missing" warnings
+      const [{ data: contractAcc }, { data: guestOrder }, { data: emailLog }] = await Promise.all([
+        supabase.from("contract_acceptances").select("date_of_birth, accepted_at").eq("customer_id", userId).order("accepted_at", { ascending: false }).limit(1),
+        profileData.email
+          ? supabase.from("guest_orders").select("date_of_birth, postcode").eq("email", profileData.email).order("created_at", { ascending: false }).limit(1)
+          : Promise.resolve({ data: [] as any[] } as any),
+        profileData.email
+          ? (supabase as any).from("email_send_log").select("id, message_id, template_name, recipient_email, status, created_at, metadata").eq("recipient_email", profileData.email).order("created_at", { ascending: false }).limit(200)
+          : Promise.resolve({ data: [] as any[] } as any),
       ]);
 
       return {
@@ -172,6 +183,9 @@ export const AdminCustomerDetail = () => {
         allComms: allComms ?? [],
         quoteRequests: quoteRequests ?? [],
         quotes: quotes ?? [],
+        contractAcceptances: contractAcc ?? [],
+        guestOrders: guestOrder ?? [],
+        emailLog: emailLog ?? [],
       };
     },
   });

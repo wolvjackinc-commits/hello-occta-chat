@@ -194,6 +194,41 @@ export const AdminCustomerDetail = () => {
   const services = useMemo(() => data?.services ?? [], [data?.services]);
   const invoices = useMemo(() => data?.invoices ?? [], [data?.invoices]);
 
+  // Auto-backfill profile DOB/postcode from other sources so admins don't have to re-key.
+  const altPostcode = useMemo(() => {
+    return (
+      (data?.quoteRequests ?? [])[0]?.postcode ||
+      (data?.orders ?? [])[0]?.postcode ||
+      (data?.guestOrders ?? [])[0]?.postcode ||
+      null
+    );
+  }, [data?.quoteRequests, data?.orders, data?.guestOrders]);
+  const altDob = useMemo(() => {
+    return (
+      (data?.contractAcceptances ?? [])[0]?.date_of_birth ||
+      (data?.guestOrders ?? [])[0]?.date_of_birth ||
+      null
+    );
+  }, [data?.contractAcceptances, data?.guestOrders]);
+
+  useEffect(() => {
+    if (!overview?.id) return;
+    const patch: Record<string, any> = {};
+    if (!overview.postcode && altPostcode) patch.postcode = altPostcode;
+    if (!overview.date_of_birth && altDob) patch.date_of_birth = altDob;
+    if (Object.keys(patch).length > 0) {
+      supabase
+        .from("profiles")
+        .update(patch)
+        .eq("id", overview.id)
+        .then(({ error }) => {
+          if (!error) refetch();
+          else console.warn("profile backfill failed", error);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overview?.id, altPostcode, altDob, overview?.postcode, overview?.date_of_birth]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">

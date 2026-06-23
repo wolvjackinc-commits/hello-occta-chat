@@ -65,6 +65,8 @@ import BillingSettings from "./pages/BillingSettings";
 import NoContractBroadband from "./pages/NoContractBroadband";
 import Guides from "./pages/guides/Guides";
 import GuidePage from "./pages/guides/GuidePage";
+import HelpCenter from "./pages/help/HelpCenter";
+import HelpArticlePage from "./pages/help/HelpArticle";
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import KeywordLanding from "./pages/KeywordLanding";
@@ -248,6 +250,8 @@ const AnimatedRoutes = () => {
         <Route path="/dd/setup" element={<DDSetup />} />
         <Route path="/guides" element={<Guides />} />
         <Route path="/guides/:slug" element={<GuidePage />} />
+        <Route path="/help" element={<HelpCenter />} />
+        <Route path="/help/:slug" element={<HelpArticlePage />} />
 
         {/* Location broadband pages (50 cities) */}
         {locations.map((loc) => (

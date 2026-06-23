@@ -322,4 +322,26 @@
   <url><loc>https://www.occta.co.uk/cancellation</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
   <url><loc>https://www.occta.co.uk/contact</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
   <url><loc>https://www.occta.co.uk/vulnerable-customers</loc><lastmod>2026-06-20</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+
+  <!-- Help Centre -->
+  <url><loc>https://www.occta.co.uk/help</loc><lastmod>2026-06-23</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/help/getting-started</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/help/billing</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://www.occta.co.uk/help/router-setup</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/help/slow-wifi-fix</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://www.occta.co.uk/help/no-internet-troubleshooting</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://www.occta.co.uk/help/digital-voice-setup</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/help/direct-debit-setup-help</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://www.occta.co.uk/help/first-invoice-explained-help</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://www.occta.co.uk/help/move-home</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/help/cancel-or-switch</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/help/vulnerable-customer-support</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+
+  <!-- New Guides / Blog -->
+  <url><loc>https://www.occta.co.uk/guides/what-broadband-speed-do-i-need</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://www.occta.co.uk/guides/fibre-vs-full-fibre-explained</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://www.occta.co.uk/guides/how-to-switch-broadband-uk</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://www.occta.co.uk/guides/why-your-wifi-is-slow</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://www.occta.co.uk/guides/digital-voice-vs-landline</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/guides/working-from-home-broadband</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
 </urlset>

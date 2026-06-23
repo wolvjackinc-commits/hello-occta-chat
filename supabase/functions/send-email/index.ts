@@ -1259,6 +1259,19 @@ const handler = async (req: Request): Promise<Response> => {
       html,
     });
 
+    const resendResult = emailResponse as {
+      data?: { id?: string } | null;
+      error?: { message?: string; name?: string; statusCode?: number } | string | null;
+      id?: string;
+    };
+    if (resendResult.error) {
+      const errorMessage = typeof resendResult.error === "string"
+        ? resendResult.error
+        : resendResult.error.message || resendResult.error.name || "Email provider rejected the send";
+      console.error(`Email provider rejected ${type} to ${to}: ${errorMessage}`);
+      throw new Error(errorMessage);
+    }
+
     console.log(`Email sent successfully: ${type} to ${to}`);
 
     // Log to communications_log if requested (use already-parsed values from earlier)
@@ -1281,7 +1294,7 @@ const handler = async (req: Request): Promise<Response> => {
           template_name: type,
           recipient_email: to,
           status: "sent",
-          provider_message_id: (emailResponse as { id?: string })?.id || null,
+          provider_message_id: resendResult.data?.id || resendResult.id || null,
           sent_at: new Date().toISOString(),
           metadata: { subject },
         });

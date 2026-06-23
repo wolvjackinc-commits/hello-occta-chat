@@ -36,9 +36,9 @@ export function BillingSchedulePanel({ userId }: Props) {
           setPaymentMethod(liveOrder.payment_method ?? null);
         }
         // Try to read activation from a customer_service row or first active service
-        const { data: svc } = await supabase.from("services").select("activated_at, created_at, status").eq("user_id", userId).order("created_at", { ascending: false });
+        const { data: svc } = await supabase.from("services").select("created_at, updated_at, status").eq("user_id", userId).order("created_at", { ascending: false });
         const live = (svc ?? []).find((s: any) => s.status === "active");
-        const act = (live as any)?.activated_at || (live as any)?.created_at || (svc ?? [])[0]?.created_at || liveOrder?.created_at || null;
+        const act = (live as any)?.updated_at || (live as any)?.created_at || (svc ?? [])[0]?.created_at || liveOrder?.created_at || null;
         setActivation(act);
       } finally {
         setLoading(false);

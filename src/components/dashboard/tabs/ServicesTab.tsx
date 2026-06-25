@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Wifi, AlertTriangle } from "lucide-react";
+import { Wifi, AlertTriangle, Router } from "lucide-react";
+import { Link } from "react-router-dom";
 import { EmptyState } from "./EmptyState";
 import { CancellationRequestCard } from "@/components/dashboard/CancellationRequestCard";
 
@@ -81,6 +82,18 @@ export function ServicesTab({ userId }: { userId: string }) {
               <div className="mt-3">
                 <CancellationRequestCard userId={userId} serviceId={s.id} />
               </div>
+            )}
+            {(s.status === "active" || s.status === "live") && (s.service_type || "").toLowerCase().includes("broadband") && (
+              <Link
+                to="/help/own-router-setup"
+                className="mt-3 flex items-center gap-2 border-2 border-foreground bg-secondary p-3 text-xs hover:bg-primary hover:text-primary-foreground transition-colors"
+              >
+                <Router className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1">
+                  <strong className="font-display uppercase">Using your own router?</strong>{" "}
+                  Step-by-step PPPoE setup guide. Use the username and password from your welcome email.
+                </span>
+              </Link>
             )}
           </div>
         );

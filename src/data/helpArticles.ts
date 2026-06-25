@@ -248,6 +248,24 @@ export const helpArticles: HelpArticle[] = [
     ],
     related: ["digital-voice-setup", "billing"],
   },
+  {
+    slug: "own-router-setup",
+    title: "Set Up Your Own Router with OCCTA Broadband",
+    metaTitle: "How to Set Up Your Own Router with OCCTA Broadband",
+    description: "Step-by-step PPPoE setup for OCCTA customers using their own router — covers FTTP, SoGEA, popular router brands and troubleshooting.",
+    keywords: "occta own router, pppoe setup, broadband router setup uk, occta pppoe username password",
+    category: "Getting Started",
+    readMinutes: 8,
+    intro: "Using your own router with OCCTA broadband? Follow this PPPoE setup guide — no support call needed.",
+    sections: [
+      { heading: "Open the full guide", paragraphs: ["This guide has a searchable router-brand table, troubleshooting accordion and a printable cheat-sheet. Open the full guide at /help/own-router-setup."] },
+    ],
+    faqs: [
+      { question: "Where do I find my PPPoE username and password?", answer: "They're in your OCCTA welcome / go-live email. We never display real PPPoE credentials on public pages." },
+      { question: "Can I use any router?", answer: "Most routers that support PPPoE work fine. Some ISP-supplied routers may be locked to that provider." },
+    ],
+    related: ["getting-started", "router-setup", "no-internet-troubleshooting"],
+  },
 ];
 
 export const helpCategories = [

@@ -67,6 +67,7 @@ import Guides from "./pages/guides/Guides";
 import GuidePage from "./pages/guides/GuidePage";
 import HelpCenter from "./pages/help/HelpCenter";
 import HelpArticlePage from "./pages/help/HelpArticle";
+import OwnRouterSetup from "./pages/help/OwnRouterSetup";
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import KeywordLanding from "./pages/KeywordLanding";

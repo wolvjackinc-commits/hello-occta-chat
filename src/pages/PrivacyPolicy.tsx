@@ -139,7 +139,7 @@ const PrivacyPolicy = () => {
           <div className="max-w-4xl mx-auto">
             <div className="mb-10 card-brutal bg-card p-8">
               <p className="font-display uppercase text-primary text-sm">Privacy Policy</p>
-              <h1 className="text-display-md mt-2">{companyConfig.name}</h1>
+              <h1 className="text-display-md mt-2">{companyConfig.name} — Privacy Policy</h1>
               <p className="text-muted-foreground mt-2">Last updated: 18 January 2026</p>
               <p className="text-muted-foreground mt-4">
                 {companyConfig.name} ("{companyConfig.tradingName}", "we", "us", or "our") is committed to protecting and

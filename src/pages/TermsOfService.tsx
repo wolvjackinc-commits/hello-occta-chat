@@ -249,7 +249,7 @@ const TermsOfService = () => {
           <div className="max-w-4xl mx-auto">
             <div className="mb-10 card-brutal bg-card p-8">
               <p className="font-display uppercase text-primary text-sm">Terms of Service</p>
-              <h1 className="text-display-md mt-2">{companyConfig.name}</h1>
+              <h1 className="text-display-md mt-2">{companyConfig.name} — Terms of Service</h1>
               <p className="text-muted-foreground mt-2">Effective date: 18 January 2026</p>
               <p className="text-muted-foreground mt-4">
                 These Terms of Service set out the terms on which {companyConfig.name} provides

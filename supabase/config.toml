@@ -86,3 +86,5 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = true
   [functions.process-email-queue]
     verify_jwt = true
+  [functions.oneshot-dd-active-notice]
+    verify_jwt = false

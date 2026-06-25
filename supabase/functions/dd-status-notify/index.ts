@@ -1,6 +1,87 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { jsPDF } from "npm:jspdf@2.5.1";
+import { DD_GUARANTEE_TEXT } from "../_shared/directDebitGuarantee.ts";
+
+// Build a branded OCCTA Direct Debit Guarantee PDF and return base64
+function buildDDGuaranteePdf(opts: {
+  customerName: string;
+  accountNumber: string | null;
+  mandateRef: string | null;
+  bankLast4: string | null;
+}): string {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const W = doc.internal.pageSize.getWidth();
+
+  // Header band
+  doc.setFillColor(13, 13, 13);
+  doc.rect(0, 0, W, 90, "F");
+  doc.setFillColor(250, 204, 21); // accent yellow
+  doc.rect(W - 110, 0, 110, 90, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(28);
+  doc.text("OCCTA", 40, 50);
+  doc.setFontSize(10);
+  doc.setTextColor(250, 204, 21);
+  doc.text("TELECOM • CONNECTED", 40, 70);
+
+  // Title
+  doc.setTextColor(13, 13, 13);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text("The Direct Debit Guarantee", 40, 130);
+  doc.setDrawColor(13, 13, 13);
+  doc.setLineWidth(2);
+  doc.line(40, 138, W - 40, 138);
+
+  // Mandate details box
+  let y = 160;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("CUSTOMER", 40, y);
+  doc.text("ACCOUNT", 220, y);
+  doc.text("MANDATE REF", 360, y);
+  doc.text("BANK", 480, y);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  y += 16;
+  doc.text(String(opts.customerName || "—"), 40, y, { maxWidth: 170 });
+  doc.text(String(opts.accountNumber || "—"), 220, y);
+  doc.text(String(opts.mandateRef || "—"), 360, y, { maxWidth: 110 });
+  doc.text(opts.bankLast4 ? `****${opts.bankLast4}` : "—", 480, y);
+  y += 18;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(40, y, W - 40, y);
+
+  // Guarantee body
+  y += 24;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  const paras = DD_GUARANTEE_TEXT.split(/\n\n+/);
+  for (const p of paras) {
+    const lines = doc.splitTextToSize(p, W - 80);
+    doc.text(lines, 40, y);
+    y += lines.length * 14 + 8;
+  }
+
+  // Footer
+  const FY = doc.internal.pageSize.getHeight() - 60;
+  doc.setFillColor(13, 13, 13);
+  doc.rect(0, FY, W, 60, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.text("OCCTA Limited · Company No. 13828933 · 22 Pavilion View, Huddersfield, HD3 3WU", 40, FY + 22);
+  doc.setTextColor(250, 204, 21);
+  doc.text("billing@occta.co.uk  ·  0800 260 6626  ·  www.occta.co.uk", 40, FY + 40);
+
+  const out = doc.output("arraybuffer");
+  const bytes = new Uint8Array(out);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -315,6 +396,17 @@ serve(async (req) => {
         to: [profile.email],
         subject: config.subject,
         html: emailHtml,
+        attachments: (newStatus === "active" || newStatus === "verified") ? [
+          {
+            filename: "OCCTA-Direct-Debit-Guarantee.pdf",
+            content: buildDDGuaranteePdf({
+              customerName: profile.full_name || "Customer",
+              accountNumber: profile.account_number || null,
+              mandateRef: mandate.mandate_reference,
+              bankLast4: mandate.bank_last4,
+            }),
+          },
+        ] : undefined,
       });
 
       if (emailResult.error) {

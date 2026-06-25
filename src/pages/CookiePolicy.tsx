@@ -116,7 +116,7 @@ const CookiePolicy = () => {
           <div className="max-w-4xl mx-auto">
             <div className="mb-10 card-brutal bg-card p-8">
               <p className="font-display uppercase text-primary text-sm">Cookie Policy</p>
-              <h1 className="text-display-md mt-2">{companyConfig.name}</h1>
+              <h1 className="text-display-md mt-2">{companyConfig.name} — Cookie Policy</h1>
               <p className="text-muted-foreground mt-2">Last updated: 18 January 2026</p>
               <p className="text-muted-foreground mt-4">
                 This Cookie Policy explains how we use cookies and similar technologies to make

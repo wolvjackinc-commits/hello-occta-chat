@@ -198,7 +198,7 @@ serve(async (req) => {
     });
   }
 
-  await supabase.from("communications_log").insert({
+  try { await supabase.from("communications_log").insert({
     user_id: TARGET_USER_ID,
     payment_request_id: pr.id,
     template_name: "dd_facility_active_notice",
@@ -206,13 +206,13 @@ serve(async (req) => {
     status: "sent",
     sent_at: new Date().toISOString(),
     metadata: { bcc: BCC_EMAIL, dd_link_pr: pr.payment_request_number },
-  }).catch(() => {});
+  }); } catch (_e) { /* non-fatal */ }
 
-  await supabase.from("payment_request_events").insert({
+  try { await supabase.from("payment_request_events").insert({
     request_id: pr.id,
     event_type: "admin_dd_link_sent",
     metadata: { source: "oneshot-dd-active-notice", recipient: TO_EMAIL, bcc: BCC_EMAIL },
-  }).catch(() => {});
+  }); } catch (_e) { /* non-fatal */ }
 
   return new Response(JSON.stringify({
     success: true,

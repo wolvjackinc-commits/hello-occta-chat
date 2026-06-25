@@ -1,50 +1,65 @@
-create guides for everythign and make sure the links are emeberd in the emsals and are working properly.  
-  
-  
-1. Welcome (activation) email — match Contract Summary look & tone
+# Own-Router Setup Guide — Plan
 
-Rewrite `supabase/functions/process-activation-outbox/index.ts` `buildEmailHtml()` so the email mirrors the Contract Summary view:
+Build a comprehensive self-help guide so customers can configure their own router with OCCTA broadband using the PPPoE credentials from their welcome email — without contacting support.
 
-- **OCCTA branded header band** (same as `ContractSummaryView.tsx`): black 4px border container, `O` logo tile, "OCCTA" wordmark, "Telecom That Gets It" tagline, and right-aligned eyebrow "Welcome — your service is live" with the order number.
-- **Confetti moment**: a 2-second animated confetti GIF placed inline at the very top, beside/above the greeting "Welcome, {name} 🎉". GIF will be generated and committed at `public/email/confetti-2s.gif` (≈220×80, transparent-ish, plays once, ends on a clean frame so it doesn't loop forever in clients that respect single-play). Referenced via absolute URL `https://www.occta.co.uk/email/confetti-2s.gif` so Gmail/Outlook can fetch it. (JS/CSS animation is stripped by email clients — GIF is the only reliable way, same technique Stripe uses.)
-- **Warmer copy** explaining *why their decision is good*: no contracts, no mid-contract price hikes, UK support, fair pricing, easy switching, ownership of their line. Short, friendly, on-brand.
-- **Bordered "cards"** matching CS view alignment: Customer & service / Your plan & price / How and when you'll be billed / Getting started / Need a hand — each in a `border:4px solid #111;padding:20px;margin-bottom:16px` block with the same uppercase mini-heading style.
-- **Solid black CTA button** "Open your dashboard" (matches brutalist `shadow-brutal` style — drop shadow via offset border trick that survives email).
-- **Footer** with company reg, VAT, address, support/billing contact (already in `companyConfig.ts`).
+## 1. New help article: `/help/own-router-setup`
 
-No business logic changes — only the HTML template + payload already passed in.
+Add a new entry to `src/data/helpArticles.ts` (slug `own-router-setup`) rendered by the existing `HelpArticle.tsx` route, OR — because the content is rich (table, accordions, conditional auth card) — create a dedicated page `src/pages/help/OwnRouterSetup.tsx` mounted at `/help/own-router-setup` in `src/App.tsx`, and register a short stub in `helpArticles.ts` so it appears in the Help Centre list and search.
 
-## 2. Fix the /help/getting-started 404 and missing /help hub
+Page sections (brutalist OCCTA brand, white bg, navy text, accent borders, mobile-first, icons from `lucide-react`: Router, Cable, Wifi, AlertTriangle, LifeBuoy, Printer):
 
-The welcome email links to `/help`, `/help/billing`, `/help/getting-started`. None of these routes exist (only `/guides/:slug` does). Two-part fix:
+1. **Intro card** — "Your OCCTA broadband is live…"
+2. **Before you start** — checklist (PPPoE username, password, PPPoE-capable router, ONT/socket, device).
+3. **Physical connection** — two sub-cards: FTTP/Full Fibre, SoGEA/FTTC, plus a warning callout: "Do not connect the broadband cable into a LAN port…"
+4. **Main PPPoE setup steps** — numbered list using `{{pppoe_username}}` / `{{pppoe_password}}` placeholders (MTU 1492, VLAN blank/101, DNS auto).
+5. **Router brand quick-access table** — searchable (client-side `useState` filter input) with the 15 rows supplied (BT, EE, Plusnet, Sky, TalkTalk, Vodafone, Virgin, TP-Link, Netgear, ASUS, DrayTek, Zyxel, D-Link, Linksys, FRITZ!Box).
+6. **Troubleshooting accordion** — 7 Q&As using shadcn `Accordion`.
+7. **Authenticated "Your PPPoE details" card** — rendered ONLY when arriving via tokenized welcome-email link `?t=<token>` OR when `supabase.auth.getUser()` resolves to a customer whose service was opened via token. Shows username + masked password with "Show"/"Copy"/"Print" buttons. No localStorage persistence. Falls back to placeholder note for anonymous visitors: "Use the PPPoE details sent to you by OCCTA — never share them."
+8. **Support block** — OCCTA LIMITED, www.occta.co.uk, support@occta.co.uk, phone **0800 260 6626**, guidance to include account name / address / router model / screenshot.
+9. **Print this guide** button (`window.print()`) + "Still need help?" CTA → `/support`.
+10. **SEO** — `<Helmet>` title "How to Set Up Your Own Router with OCCTA Broadband", meta description per spec, canonical `https://www.occta.co.uk/help/own-router-setup`, HowTo + FAQPage JSON-LD via existing `StructuredData` helper.
 
-- **Add new routes in `src/App.tsx**`:
-  - `/help` → new `src/pages/help/HelpCenter.tsx` (hub: search + category tiles + featured guides + "Chat with Ira" CTA).
-  - `/help/:slug` → new `src/pages/help/HelpArticle.tsx` (renders from a new `src/data/helpArticles.ts` data file using the same brutalist `Layout` + `SeoContentLayout`).
-- **Seed `helpArticles.ts**` with the articles the email links to plus the broader self-help library:
-  - `getting-started` — full step-by-step (unbox router, master socket, lights meaning, first 24h speed stabilisation, Wi-Fi placement, Digital Voice handset setup, speed test, what "good" looks like).
-  - `billing` — when you're billed, how to read your invoice, VAT, Direct Debit Guarantee, late fees, how to pay, refunds.
-  - `router-setup`, `slow-wifi-fix`, `no-internet-troubleshooting`, `digital-voice-setup`, `move-home`, `change-plan`, `cancel-or-switch`, `password-and-account-security`, `parental-controls`, `mesh-and-extenders`, `gaming-and-streaming-optimisation`, `business-vs-residential`, `power-cuts-and-emergencies`, `vulnerable-customer-support`.
-- Each article uses the same brutalist card layout (`border-4 border-foreground`, uppercase display headings) and includes an inline FAQ block plus a "Still stuck? Chat with Ira" CTA that opens the existing `AIChatBot`.
-- Add all articles to `public/sitemap.xml` and `public/robots.txt` allow list.
+## 2. Tokenized PPPoE reveal (secure)
 
-## 3. Blog / guides expansion + feed the AI chatbot
+Avoid building a new edge function from scratch — reuse the existing welcome-email link contract:
+- Welcome email already mints a per-service magic link. Extend `process-activation-outbox/index.ts` to include `pppoe_username` and a short-lived signed token (HMAC over `service_id + exp`) in the URL: `/help/own-router-setup?u=<username>&t=<token>`.
+- Add a tiny edge function `get-pppoe-credentials` that accepts `{ token }`, validates HMAC + expiry against `services` row, and returns `{ username, password }`. Token TTL 30 days, single-use NOT required (customer may revisit). Rate-limit per token via existing `rate_limits` table.
+- Frontend calls this function client-side only when `?t=` is present. Never stores password in localStorage; held in component state, masked by default.
+- If logged-in customer (no token), look up their active service via existing RLS-scoped `services` query and offer "Reveal PPPoE details" button that calls the same function with a session-derived path (or new RPC `get_my_pppoe(service_id)` security-definer scoped to `auth.uid()`).
 
-- Extend `src/data/guides.ts` with ~10 new SEO blog posts covering: "What broadband speed do I really need?", "Fibre vs Full Fibre explained", "How to switch broadband in 3 steps", "Why your Wi-Fi is slow (and 5 fixes)", "Digital Voice vs old landline", "Working from home: the ideal home network", "Best router placement", "What is a static IP and do I need one?", "Understanding your first bill", "Moving home with OCCTA".
-- Cross-link guides ↔ help articles via `relatedSlugs`.
-- **Chatbot grounding**: extend the system prompt context used by the AI chat edge function to include a compact JSON index of all `guides` + `helpArticles` (title, slug, summary, top FAQ Q&A). Add a small `src/lib/aiKnowledgeBase.ts` builder consumed by the chat function's prompt so Ira can answer with references and link to the right `/help/...` or `/guides/...` page.
+## 3. Integrations
 
-## 4. Other lifecycle emails — same shell
+- **Help Centre index** (`HelpCenter.tsx` / `helpArticles.ts`): add card under "Broadband setup" category with router icon.
+- **Broadband FAQ** (`src/data/faqs.ts` + `Faq.tsx`): add "Can I use my own router?" Q linking to the guide.
+- **Welcome email** (`process-activation-outbox/index.ts` branded shell): add a "Using your own router?" section with the tokenized link + inline PPPoE username + masked password reveal-on-page note.
+- **Router setup email template**: new template `own-router-setup` in `_shared/transactional-email-templates/` (if scaffolded) OR a section appended to the welcome email. Triggered manually from admin Customer Detail page via existing `CustomerSendEmailDialog`.
+- **Customer portal / order details**: add "Your PPPoE details" card on `ServicesTab.tsx` (Dashboard) using the authenticated reveal flow above, plus a "Setup guide" link.
+- **Thank-you / post-activation flow** (`ThankYou.tsx` and `service_activation_outbox` follow-ups): add CTA "Using your own router? Setup guide →".
+- **Public broadband / SEO pages** where "Can I use my own router?" is asked (`Broadband.tsx`, `NoContractBroadband.tsx`, `seo/FibreBroadband.tsx`): add a short answer block linking to the guide.
+- **AI chatbot** (`supabase/functions/ai-chat/index.ts` system prompt): append knowledge block covering PPPoE definition, brand-specific admin URLs, troubleshooting steps, and the safety rule — **never reveal or invent PPPoE passwords**; instead, direct the customer to the welcome email link or to log in to the portal. Add intent triggers for the listed phrases ("how do I set up my own router", "what is PPPoE", brand names, etc.).
+- **Sitemap** (`public/sitemap.xml`): add `/help/own-router-setup`.
 
-Refactor the welcome email's branded shell into a small reusable HTML builder (`supabase/functions/_shared/brandedEmailShell.ts`) and reuse it from `process-cancellation-outbox` and other transactional senders so every customer email shares the Contract Summary look (header band, bordered cards, brutalist CTA, footer).
+## 4. Security & privacy
+
+- Public page renders ONLY `{{pppoe_username}}` / `{{pppoe_password}}` placeholders.
+- Real credentials only fetched via signed token or authenticated RPC; password masked by default; no localStorage; no analytics event with credential payload.
+- Chatbot never echoes credentials, even if asked.
+- Audit: log credential reveals into `activity_log` (`event: pppoe_credentials_viewed`).
+- Add wording: "Only use the PPPoE details sent to you by OCCTA."
+
+## 5. Testing checklist
+
+- Mobile + desktop render of `/help/own-router-setup` (Playwright screenshot).
+- Brand table search filters rows.
+- Accordion expands/collapses.
+- Anonymous visitor sees placeholders only — no credential fetch.
+- Token link reveals masked credentials; "Show" toggles; "Copy" copies.
+- Logged-in customer on `/dashboard` Services tab can reveal own PPPoE only.
+- Chatbot answers "how do I set up my TP-Link router?" with correct steps and refuses to reveal a password.
+- Sitemap contains new URL; Helmet tags + JSON-LD present in built HTML.
 
 ## Technical notes
 
-- Confetti GIF will be generated locally (Python/PIL, 2s, 30fps, ends still) and committed under `public/email/`. The asset is referenced by absolute URL so it works from external mail clients.
-- All inline styles only — no `<style>` blocks, no web fonts, no JS. Max width 600px, single-column.
-- Help/guides routes are static pages (no DB) — no migrations needed.
-- No changes to billing, payment, or activation logic. Edge functions touched: `process-activation-outbox`, optionally `process-cancellation-outbox`, plus the chat function for the knowledge base.
-
-## Out of scope (ask if wanted)
-
-- Animated header logo, dark-mode email media query, multilingual help centre, admin CMS for editing help articles. Happy to add any of these as a follow-up.
+- Files to add: `src/pages/help/OwnRouterSetup.tsx`, `supabase/functions/get-pppoe-credentials/index.ts`, migration for `get_my_pppoe` SECURITY DEFINER (`search_path = public`).
+- Files to edit: `src/App.tsx`, `src/data/helpArticles.ts`, `src/data/faqs.ts`, `src/pages/Faq.tsx`, `src/pages/Broadband.tsx`, `src/pages/NoContractBroadband.tsx`, `src/pages/seo/FibreBroadband.tsx`, `src/components/dashboard/tabs/ServicesTab.tsx`, `src/pages/ThankYou.tsx`, `supabase/functions/process-activation-outbox/index.ts`, `supabase/functions/ai-chat/index.ts`, `public/sitemap.xml`.
+- Phone number `0800 260 6626` added to `src/lib/companyConfig.ts` if not already present (keeps single source of truth).

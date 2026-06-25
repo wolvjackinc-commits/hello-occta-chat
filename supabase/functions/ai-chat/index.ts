@@ -100,6 +100,7 @@ const helpKnowledgeBase = {
     { slug: "move-home", title: "Moving Home With OCCTA", topics: ["moving home", "new address", "transfer broadband"] },
     { slug: "cancel-or-switch", title: "Cancelling or Switching", topics: ["cancel", "switch provider", "one touch switch", "exit fee"] },
     { slug: "vulnerable-customer-support", title: "Vulnerable Customer Support", topics: ["vulnerable", "telecare", "battery backup", "priority"] },
+    { slug: "own-router-setup", title: "Set Up Your Own Router (PPPoE)", topics: ["own router", "pppoe", "pppoe username", "pppoe password", "router admin", "tp-link", "tplink", "netgear", "asus", "bt", "ee", "plusnet", "sky", "talktalk", "vodafone", "draytek", "zyxel", "d-link", "linksys", "fritzbox", "vlan", "mtu", "wan port", "openreach ont", "fttp"] },
   ],
   blogs: [
     { slug: "what-broadband-speed-do-i-need", title: "What Broadband Speed Do I Really Need?" },

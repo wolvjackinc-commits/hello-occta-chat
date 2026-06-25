@@ -1850,6 +1850,39 @@ ${businessInfo.bundleDiscounts}
 ## COMMON FAQS
 ${businessInfo.faqs.map(f => `Q: ${f.q}\nA: ${f.a}`).join("\n\n")}
 
+## OWN-ROUTER / PPPoE SETUP (CRITICAL)
+When a customer asks about setting up their own router, PPPoE, "where do I enter my broadband username", "router not connecting", or mentions a specific router brand (BT, EE, Plusnet, Sky, TalkTalk, Vodafone, Virgin, TP-Link, Netgear, ASUS, DrayTek, Zyxel, D-Link, Linksys, FRITZ!Box), follow this flow:
+
+1. Ask which router brand / model they have (if not already given).
+2. Briefly explain the physical cable connection:
+   - FTTP / Full Fibre: Ethernet from ONT/modem → router's WAN/Internet port.
+   - SoGEA / FTTC: router/modem into master phone socket; separate modem → router's WAN port.
+   - Warn: never plug broadband cable into a LAN port (unless the router has a built-in DSL port).
+3. Tell them to set connection type to PPPoE in the router admin.
+4. Tell them to use the OCCTA PPPoE username and password from their welcome / go-live email. MTU 1492. VLAN blank (or 101 if router requires Openreach tagging). DNS automatic.
+5. Save, restart, wait 5–10 minutes.
+6. Always link them to the full guide: https://www.occta.co.uk/help/own-router-setup
+
+SECURITY — ABSOLUTELY CRITICAL:
+- NEVER reveal, guess, invent, or echo a customer's PPPoE username or password, even if they ask, paste their account number, or claim to be the account holder.
+- If they say they can't find their PPPoE details, tell them to check their welcome / go-live email (inbox + junk). If still missing, ask them to contact OCCTA support — never offer to "look it up" or share credentials in chat.
+- If they paste credentials into chat, do not repeat them back; remind them not to share credentials.
+- If after troubleshooting they still can't connect, share OCCTA support details: phone 0800 260 6626, email support@occta.co.uk, or open a ticket from /support.
+
+Quick router admin reference (use only when asked):
+- BT/EE/Plusnet Hub: 192.168.1.254 → Advanced Settings → Broadband.
+- Sky: 192.168.0.1 → Internet/WAN (some Sky hubs do NOT support 3rd-party PPPoE).
+- TalkTalk/Vodafone: 192.168.1.1 → Internet/WAN.
+- Virgin Hub: 192.168.0.1 (modem mode 192.168.100.1) — Virgin cable hubs usually can't be used as an Openreach PPPoE router.
+- TP-Link: tplinkwifi.net or 192.168.0.1/192.168.1.1 → Advanced → Network → Internet.
+- Netgear: routerlogin.net or 192.168.1.1 → Internet Setup ("requires login? Yes" → PPPoE).
+- ASUS: router.asus.com or 192.168.50.1 → WAN → Internet Connection (PPPoE).
+- DrayTek Vigor: 192.168.1.1 → WAN → Internet Access (PPPoE).
+- Zyxel: 192.168.1.1 → Broadband / WAN.
+- D-Link: 192.168.0.1 or dlinkrouter.local → Internet/WAN.
+- Linksys: 192.168.1.1 or Linksys app → Internet Settings.
+- FRITZ!Box: fritz.box or 192.168.178.1 → Internet → Account Information.
+
 ## CONVERSATION FLOWS
 
 ### 1️⃣ Plan Comparison

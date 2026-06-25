@@ -252,6 +252,7 @@ const AnimatedRoutes = () => {
         <Route path="/guides" element={<Guides />} />
         <Route path="/guides/:slug" element={<GuidePage />} />
         <Route path="/help" element={<HelpCenter />} />
+        <Route path="/help/own-router-setup" element={<OwnRouterSetup />} />
         <Route path="/help/:slug" element={<HelpArticlePage />} />
 
         {/* Location broadband pages (50 cities) */}

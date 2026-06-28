@@ -58,6 +58,7 @@ const GuidePage = () => {
         description={guide.description}
         canonical={`/guides/${guide.slug}`}
         keywords={guide.keywords}
+        type="article"
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 

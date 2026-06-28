@@ -5,7 +5,7 @@ import HeroSection from "@/components/home/HeroSection";
 import HowItWorksStrip from "@/components/home/HowItWorksStrip";
 import { useAppMode } from "@/hooks/useAppMode";
 import { supabase } from "@/integrations/supabase/client";
-import { SEO } from "@/components/seo";
+import { SEO, StructuredData } from "@/components/seo";
 import { getFromPrices } from "@/lib/pricing/engine";
 import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 
@@ -62,6 +62,7 @@ const Index = () => {
           keywords="cheap broadband UK, no contract broadband, flexible broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband"
           price={getFromPrices().broadband}
         />
+        <StructuredData type="all" />
         <HeroSection />
         <HowItWorksStrip />
         <Suspense fallback={null}>

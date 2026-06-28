@@ -31,7 +31,7 @@ export const SEO = ({
 }: SEOProps) => {
   const fullTitle = title
     ? `${title} | ${SITE_NAME}`
-    : `${SITE_NAME} — UK Broadband, SIM & Landline · Price Lock 24 or Flex 30`;
+    : `${SITE_NAME} — UK Broadband & SIM, No Contracts`;
   const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : undefined;
 
   return (

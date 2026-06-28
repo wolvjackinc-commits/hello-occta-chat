@@ -30,6 +30,7 @@ http://www.occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 /best-broadband-deals-uk /best-broadband-deals-uk/index.html  200
 /broadband-for-gaming    /broadband-for-gaming/index.html      200
 /broadband-for-working-from-home /broadband-for-working-from-home/index.html 200
+/broadband-no-upfront-cost /broadband-no-upfront-cost/index.html 200
 
 # Comparison pages
 /compare/occta-vs-bt     /compare/occta-vs-bt/index.html      200

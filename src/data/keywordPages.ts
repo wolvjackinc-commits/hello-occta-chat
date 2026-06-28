@@ -308,6 +308,62 @@ export const keywordPages: KeywordPage[] = [
     ctaButton: "Check Availability",
     price: "34.99",
   },
+  {
+    slug: "broadband-no-upfront-cost",
+    metaTitle: "Broadband With No Upfront Cost — £0 Setup Where Available",
+    metaDescription: "Broadband with no upfront cost. OCCTA full-fibre from \u00A334.99/mo, £0 setup where available, bring your own router for £0. No hidden activation fees.",
+    keywords: "broadband no upfront cost, broadband no setup fee, no upfront cost broadband, free setup broadband, broadband no activation fee, no upfront broadband uk",
+    heroTitle: "BROADBAND WITH",
+    heroHighlight: "NO UPFRONT COST",
+    heroSubtitle: "Full-fibre broadband from \u00A334.99/mo. \u00A30 setup where available. Bring your own router for \u00A30. No hidden activation fees.",
+    sections: [
+      {
+        heading: "What \u201CNo Upfront Cost\u201D Actually Means",
+        paragraphs: [
+          "Most big UK ISPs advertise a low monthly headline price, then add £30\u2013£60 in setup, activation, delivery, or router fees before your service even starts. OCCTA does it differently \u2014 setup is £0 on most full-fibre addresses, you can bring your own router for £0, and your first bill is shown to you in plain English on the Contract Summary before you commit.",
+          "If your address needs an engineer-led install (some SoGEA copper-to-fibre transitions, for example), we show the setup fee on the Contract Summary before you pay anything. You will never be surprised by a charge after you order.",
+        ],
+      },
+      {
+        heading: "Why OCCTA Has No Upfront Cost on Most Plans",
+        paragraphs: ["Here is exactly what you pay before service starts on a standard OCCTA full-fibre order:"],
+        bullets: [
+          "\u00A30 setup fee on most full-fibre (FTTP) addresses",
+          "\u00A30 router \u2014 bring your own, or choose one at checkout",
+          "\u00A30 delivery on bring-your-own-router orders",
+          "\u00A30 activation fee \u2014 we don\u2019t charge to switch you on",
+          "No deposit, no credit-check fee, no upfront contract payment",
+          "First monthly payment by Direct Debit, in arrears, after your service is live",
+        ],
+      },
+      {
+        heading: "How OCCTA Compares on Upfront Cost",
+        paragraphs: [
+          "Major UK ISPs commonly charge between £30 and £60 upfront in setup, activation, router or delivery fees, on top of the first monthly bill. With OCCTA on a standard full-fibre order, that upfront cost is typically £0 \u2014 and any fee that does apply at your address is shown on the Contract Summary before you order, not buried in the small print.",
+          "You also pay in arrears: your first invoice arrives after the first month of service, not before it starts. That keeps the cost-to-get-connected as close to zero as we can honestly make it.",
+        ],
+      },
+      {
+        heading: "Check Your Address \u2014 See Your Exact Upfront Cost",
+        paragraphs: [
+          "Enter your postcode at the top of the page. We\u2019ll show the plans available at your address, the exact setup fee (£0 on most full-fibre), and a clear estimated first bill before you commit. Nothing hidden, nothing surprise-added at checkout.",
+        ],
+      },
+    ],
+    faqs: [
+      { question: "Is OCCTA broadband really no upfront cost?", answer: "On most full-fibre (FTTP) addresses, yes \u2014 setup is £0, delivery is £0 if you bring your own router, and there is no activation fee. If your address needs an engineer-led install with a setup charge, we show it on the Contract Summary before you pay anything." },
+      { question: "Do I have to pay for a router upfront?", answer: "No. You can bring your own router for £0, or choose one at checkout. We never force a router rental onto your bill." },
+      { question: "When do I make my first payment?", answer: "OCCTA bills in arrears. Your first invoice is issued after your first month of service and collected by Direct Debit 14 days later \u2014 so you never pay for service before you get it." },
+      { question: "Are there hidden activation or connection fees?", answer: "No. We do not charge an activation fee, a connection fee, or a credit-check fee. The only upfront cost (if any) at your address is the setup fee shown on your Contract Summary." },
+      { question: "Do I need to pay a deposit?", answer: "No. OCCTA does not take deposits or upfront contract payments." },
+      { question: "What if my address needs a paid engineer install?", answer: "Some SoGEA copper-to-fibre conversions can attract a setup fee. If that applies at your address, the exact amount is shown on the Contract Summary before you order \u2014 you decide whether to proceed with full visibility." },
+    ],
+    ctaTitle: "See Your Upfront Cost Before You Order",
+    ctaText: "Check your postcode \u2014 we\u2019ll show plans, setup fee, and your estimated first bill before you commit.",
+    ctaLink: "/broadband",
+    ctaButton: "Check My Address",
+    price: "34.99",
+  },
 ];
 
 export const getKeywordPageBySlug = (slug: string): KeywordPage | undefined =>

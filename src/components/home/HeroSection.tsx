@@ -266,7 +266,7 @@ const HeroSection = () => {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="font-display text-2xl text-primary leading-none">£{plan.price}</p>
-                          <p className="text-[10px] text-foreground/70">/month</p>
+                          <p className="text-[10px] text-foreground">/month</p>
                         </div>
                       </div>
 
@@ -347,7 +347,7 @@ const HeroSection = () => {
                 <p className="font-display text-sm sm:text-base font-semibold text-foreground mt-1">
                   /month
                 </p>
-                <p className="text-[10px] sm:text-[11px] text-muted-foreground/60 mt-1 mb-1">
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-1 mb-1">
                   *Subject to availability at your address
                 </p>
                 <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">

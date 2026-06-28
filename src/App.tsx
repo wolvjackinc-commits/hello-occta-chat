@@ -270,6 +270,7 @@ const AnimatedRoutes = () => {
         <Route path="/best-broadband-deals-uk" element={<KeywordLanding />} />
         <Route path="/broadband-for-gaming" element={<KeywordLanding />} />
         <Route path="/broadband-for-working-from-home" element={<KeywordLanding />} />
+        <Route path="/broadband-no-upfront-cost" element={<KeywordLanding />} />
         {/* SEO content pages */}
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/coverage" element={<CoveragePage />} />

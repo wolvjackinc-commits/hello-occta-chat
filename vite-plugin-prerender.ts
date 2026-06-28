@@ -449,6 +449,15 @@ const routes: RouteSEO[] = [
     price: "22.99",
     jsonLd: [localBusinessSchema],
   },
+  {
+    path: "/broadband-no-upfront-cost",
+    title: "Broadband With No Upfront Cost — £0 Setup Where Available | OCCTA",
+    description: "Broadband with no upfront cost. Full-fibre from £34.99/mo, £0 setup where available, bring your own router for £0. No hidden activation fees.",
+    canonical: "/broadband-no-upfront-cost",
+    keywords: "broadband no upfront cost, broadband no setup fee, no upfront cost broadband, free setup broadband, broadband no activation fee",
+    price: "34.99",
+    jsonLd: [localBusinessSchema],
+  },
   /* ─── Comparison pages ─── */
   ...([
     { slug: "occta-vs-bt", competitor: "BT" },

@@ -70,6 +70,7 @@ import HelpArticlePage from "./pages/help/HelpArticle";
 import OwnRouterSetup from "./pages/help/OwnRouterSetup";
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
+import NoContractBroadbandComparison from "./pages/NoContractBroadbandComparison";
 import KeywordLanding from "./pages/KeywordLanding";
 // SEO content pages
 import PricingPage from "./pages/seo/Pricing";
@@ -261,6 +262,7 @@ const AnimatedRoutes = () => {
         ))}
 
         {/* Comparison pages */}
+        <Route path="/compare/no-contract-broadband" element={<NoContractBroadbandComparison />} />
         <Route path="/compare/:slug" element={<ComparisonPage />} />
 
         {/* Keyword landing pages */}

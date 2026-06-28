@@ -54,6 +54,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
         <div className={`relative ${isHero ? "sm:w-[68%] w-full" : "flex-1"}`}>
           <Input
             type="text"
+            aria-label="Postcode"
             placeholder="E.g. HD3 3WU"
             value={localPostcode}
             onChange={handleInputChange}

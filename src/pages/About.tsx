@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Users, Award, Heart, ArrowRight, Phone, X } from "lucide-react";
-import { SEO } from "@/components/seo";
+import { SEO, StructuredData } from "@/components/seo";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 
 const About = () => {
@@ -29,6 +29,7 @@ const About = () => {
         canonical="/about"
         keywords="OCCTA, UK telecom company, cheap broadband provider, affordable internet UK, honest broadband, UK internet provider"
       />
+      <StructuredData type="organization" />
       {/* Hero - Compact */}
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 hero-pattern">
         <div className="container mx-auto px-4">

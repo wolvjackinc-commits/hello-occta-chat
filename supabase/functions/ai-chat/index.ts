@@ -110,6 +110,20 @@ const helpKnowledgeBase = {
     { slug: "digital-voice-vs-landline", title: "Digital Voice vs Landline" },
     { slug: "working-from-home-broadband", title: "Ideal Home Network for WFH" },
   ],
+  legal: [
+    { url: "https://www.occta.co.uk/legal/terms", title: "Terms of Service", topics: ["terms", "tnc", "t&c", "contract", "agreement"] },
+    { url: "https://www.occta.co.uk/legal/privacy", title: "Privacy Policy", topics: ["privacy", "data", "gdpr", "personal data", "cookies data"] },
+    { url: "https://www.occta.co.uk/cookies", title: "Cookie Policy", topics: ["cookies", "tracking"] },
+    { url: "https://www.occta.co.uk/legal/acceptable-use", title: "Acceptable Use Policy", topics: ["acceptable use", "aup", "abuse", "prohibited"] },
+    { url: "https://www.occta.co.uk/legal/code-of-practice", title: "Code of Practice", topics: ["code of practice", "ofcom", "standards"] },
+    { url: "https://www.occta.co.uk/legal/complaints-code", title: "Complaints Code of Practice", topics: ["complaints code", "complain", "adr", "ombudsman"] },
+    { url: "https://www.occta.co.uk/legal/vulnerable-customers", title: "Vulnerable Customers Policy", topics: ["vulnerable", "priority services", "telecare"] },
+    { url: "https://www.occta.co.uk/legal/switching-policy", title: "Switching Policy", topics: ["switching", "one touch switch", "ots"] },
+    { url: "https://www.occta.co.uk/legal/price-transparency", title: "Price Transparency", topics: ["price transparency", "mid-contract", "cpi", "price rise"] },
+    { url: "https://www.occta.co.uk/legal/network-management", title: "Traffic Management & Network Policy", topics: ["traffic management", "net neutrality", "throttling"] },
+    { url: "https://www.occta.co.uk/legal/accessibility", title: "Accessibility Statement", topics: ["accessibility", "wcag", "disability"] },
+    { url: "https://www.occta.co.uk/legal/modern-slavery", title: "Modern Slavery Statement", topics: ["modern slavery", "supply chain", "labour"] },
+  ],
 };
 
 const formatMoney = (value: unknown) => {

@@ -127,6 +127,8 @@ export default function QuoteStart() {
     }
     setSubmitting(true);
     try {
+      const { getAttribution } = await import("@/lib/attribution");
+      const attribution = getAttribution();
       const body = {
         ...parsed.data,
         business_name: parsed.data.business_name || null,
@@ -138,6 +140,7 @@ export default function QuoteStart() {
         current_monthly_bill: parsed.data.current_monthly_bill
           ? Number(parsed.data.current_monthly_bill) : null,
         message: parsed.data.message || null,
+        ...attribution,
       };
       // Strip privacy_ack — server doesn't accept it
       delete (body as any).privacy_ack;

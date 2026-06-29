@@ -747,6 +747,83 @@ export const guides: Guide[] = [
     ctaLink: '/broadband',
     relatedSlugs: ['what-broadband-speed-do-i-need', 'fibre-vs-full-fibre-explained'],
   },
+  {
+    slug: 'no-credit-check-broadband-uk',
+    title: 'No Credit Check Broadband UK: How to Get Online Without a Credit Check',
+    metaTitle: 'No Credit Check Broadband UK | OCCTA',
+    description: 'Looking for broadband without a credit check? Learn how OCCTA\u2019s flexible, no-contract plans and card payment options make it easy to get online — even with poor or no credit history.',
+    keywords: 'broadband no credit check, no credit check broadband uk, broadband without credit check, bad credit broadband, broadband for poor credit',
+    category: 'broadband',
+    categoryLabel: 'Broadband',
+    intro: 'Most UK broadband providers run a hard credit check before they will switch you on. If your credit file is thin, damaged, or simply private, that is a real barrier. OCCTA is built differently: flexible terms, card payment up front, and no long lock-in. Here is how to get connected without the credit-check hurdle.',
+    sections: [
+      {
+        heading: 'Why do broadband providers run credit checks?',
+        paragraphs: [
+          'Big-name providers usually sign you to an 18 or 24-month contract and bill you in arrears. To them, that is lending — so they run a hard credit search to decide whether to take you on. A hard search shows on your credit file and can affect your score.',
+          'If you have missed payments in the past, are new to the UK, or simply do not have much credit history, that search can come back as a decline — even though you can clearly afford the monthly bill.',
+        ],
+      },
+      {
+        heading: 'How OCCTA works without a hard credit check',
+        paragraphs: [
+          'OCCTA offers no-contract, rolling monthly broadband. Because we are not locking you into a long term, we do not need to underwrite you the way a 24-month provider does.',
+          'You can start service by paying your first month and any setup fee by card up front. From there you choose how to pay each month — Direct Debit, card, or bank transfer. No hard credit search, no long-term commitment.',
+        ],
+        bullets: [
+          'No 18 or 24-month contract — leave any time with 30 days notice',
+          'Pay your first invoice by card to get connected quickly',
+          'Optional Direct Debit later, once you are happy',
+          'No early termination fees or hidden penalties',
+        ],
+      },
+      {
+        heading: 'Who is this best for?',
+        paragraphs: ['No credit check broadband suits a wide range of households:'],
+        bullets: [
+          'People rebuilding their credit after past missed payments',
+          'New UK residents with little or no credit footprint',
+          'Students and young adults who have never borrowed',
+          'Anyone who prefers not to have a hard search on their file',
+          'Renters who move often and want flexible terms',
+        ],
+      },
+      {
+        heading: 'What you will need to sign up',
+        paragraphs: [
+          'We keep onboarding light: your installation address and postcode, a contact email and phone number, your date of birth, and a payment card for the first invoice. That is it.',
+          'There is no hard credit search and no impact on your credit score from signing up with OCCTA.',
+        ],
+      },
+      {
+        heading: 'How fast can you get connected?',
+        paragraphs: [
+          'Most addresses are activated within 7\u201314 working days of order. If your line is already active, switching to OCCTA is usually faster. You will get a confirmed activation date by email before any work happens.',
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: 'Does OCCTA run a hard credit check?',
+        answer: 'No. Because OCCTA is no-contract and your first invoice is paid by card, we do not run a hard credit search at signup. Your credit score is not affected.',
+      },
+      {
+        question: 'Can I get broadband with bad credit in the UK?',
+        answer: 'Yes. OCCTA\u2019s flexible, no-contract plans and card-first payment option mean you can get connected without passing a traditional credit check.',
+      },
+      {
+        question: 'What if I cannot set up a Direct Debit?',
+        answer: 'That is fine. You can pay each invoice by card or bank transfer. Direct Debit is optional, not required.',
+      },
+      {
+        question: 'Will OCCTA report me to credit agencies?',
+        answer: 'We do not report routine broadband payments to credit reference agencies. We only share data where law requires it, for example for serious unpaid debt recovery.',
+      },
+    ],
+    ctaText: 'Check your address',
+    ctaLink: '/broadband',
+    relatedSlugs: ['no-contract-broadband-uk', 'how-to-get-broadband-with-bad-credit', 'cheap-broadband-uk'],
+  },
 ];
 
 export const getGuideBySlug = (slug: string): Guide | undefined =>

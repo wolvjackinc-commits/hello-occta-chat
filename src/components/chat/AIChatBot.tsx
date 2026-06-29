@@ -492,10 +492,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 setHasUserOpened(true);
                 setIsOpen(true);
               }}
-              className="fixed bottom-24 right-4 z-40 w-12 h-12 bg-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all"
+              className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all"
               aria-label="Open chat"
             >
-              <MessageCircle className="w-6 h-6 text-primary-foreground" />
+              <MessageCircle className="w-7 h-7 text-primary-foreground" />
             </motion.button>
           )}
         </AnimatePresence>
@@ -509,10 +509,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 opacity: 1, 
                 scale: 1, 
                 y: 0,
-                height: isMinimized ? "auto" : "min(620px, calc(100dvh - 8rem))"
+                height: isMinimized ? "auto" : undefined
               }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`fixed bottom-24 sm:bottom-6 right-4 z-40 w-[400px] max-w-[calc(100vw-32px)] max-h-[calc(100dvh-8rem)] bg-card border-4 border-foreground shadow-[10px_10px_0_hsl(var(--foreground))] flex flex-col overflow-hidden ${className}`}
+              className={`fixed z-50 bg-card border-4 border-foreground shadow-[10px_10px_0_hsl(var(--foreground))] flex flex-col overflow-hidden inset-x-2 bottom-2 top-2 sm:inset-auto sm:bottom-6 sm:right-6 sm:top-auto sm:w-[420px] sm:h-[min(680px,calc(100dvh-3rem))] ${className}`}
             >
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">

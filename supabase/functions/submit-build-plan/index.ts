@@ -51,6 +51,14 @@ const Schema = z.object({
   // Switcher context (optional)
   in_contract: z.enum(["yes","no","unsure"]).optional().nullable(),
   current_provider: z.string().trim().max(80).optional().nullable(),
+  // Attribution
+  gclid: z.string().trim().max(200).optional().nullable(),
+  utm_source: z.string().trim().max(200).optional().nullable(),
+  utm_campaign: z.string().trim().max(200).optional().nullable(),
+  utm_term: z.string().trim().max(200).optional().nullable(),
+  utm_medium: z.string().trim().max(200).optional().nullable(),
+  landing_page: z.string().trim().max(500).optional().nullable(),
+  conversion_page: z.string().trim().max(500).optional().nullable(),
 });
 
 function planNameFor(b: string, t: string) {
@@ -114,6 +122,13 @@ Deno.serve(async (req) => {
     source: inTestMode ? "build_plan_test" : (isFallback ? "build_plan_fallback" : "build_plan"),
     ip,
     user_agent: req.headers.get("user-agent")?.slice(0, 400) ?? null,
+    gclid: i.gclid ?? null,
+    utm_source: i.utm_source ?? null,
+    utm_campaign: i.utm_campaign ?? null,
+    utm_term: i.utm_term ?? null,
+    utm_medium: i.utm_medium ?? null,
+    landing_page: i.landing_page ?? null,
+    conversion_page: i.conversion_page ?? null,
   }).select("id, reference").single();
   if (qrErr || !qr) return jsonResponse({ error: "create_failed" }, 500);
 

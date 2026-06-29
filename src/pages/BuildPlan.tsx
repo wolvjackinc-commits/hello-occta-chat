@@ -254,6 +254,8 @@ function BuildPlanInner() {
     setSubmitting(true);
     try {
       const addr: any = selectedAddress ?? {};
+      const { getAttribution } = await import("@/lib/attribution");
+      const attribution = getAttribution();
       const { data, error } = await supabase.functions.invoke("submit-build-plan", {
         body: {
           speed_bucket: bucket, plan_term: term,
@@ -278,6 +280,7 @@ function BuildPlanInner() {
           current_provider: contact.in_contract === "yes" ? (contact.current_provider || null) : null,
           preferred_contact_method: "email",
           marketing_consent: contact.marketing_consent,
+          ...attribution,
         },
       });
       if (error || !data || (data as any).error) {

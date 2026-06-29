@@ -261,7 +261,7 @@ const HeroSection = () => {
 
                       <div className={`flex items-start justify-between gap-2 ${plan.isRecommended ? "pt-1" : ""}`}>
                         <div className="min-w-0">
-                          <h3 className="font-sans text-sm sm:text-base font-bold tracking-tight leading-tight">{plan.name}</h3>
+                          <h2 className="font-sans text-sm sm:text-base font-bold tracking-tight leading-tight">{plan.name}</h2>
                           <p className="text-xs text-muted-foreground">{plan.speedLabel}</p>
                         </div>
                         <div className="text-right flex-shrink-0">

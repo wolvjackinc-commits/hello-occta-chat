@@ -110,6 +110,20 @@ const helpKnowledgeBase = {
     { slug: "digital-voice-vs-landline", title: "Digital Voice vs Landline" },
     { slug: "working-from-home-broadband", title: "Ideal Home Network for WFH" },
   ],
+  legal: [
+    { url: "https://www.occta.co.uk/legal/terms", title: "Terms of Service", topics: ["terms", "tnc", "t&c", "contract", "agreement"] },
+    { url: "https://www.occta.co.uk/legal/privacy", title: "Privacy Policy", topics: ["privacy", "data", "gdpr", "personal data", "cookies data"] },
+    { url: "https://www.occta.co.uk/cookies", title: "Cookie Policy", topics: ["cookies", "tracking"] },
+    { url: "https://www.occta.co.uk/legal/acceptable-use", title: "Acceptable Use Policy", topics: ["acceptable use", "aup", "abuse", "prohibited"] },
+    { url: "https://www.occta.co.uk/legal/code-of-practice", title: "Code of Practice", topics: ["code of practice", "ofcom", "standards"] },
+    { url: "https://www.occta.co.uk/legal/complaints-code", title: "Complaints Code of Practice", topics: ["complaints code", "complain", "adr", "ombudsman"] },
+    { url: "https://www.occta.co.uk/legal/vulnerable-customers", title: "Vulnerable Customers Policy", topics: ["vulnerable", "priority services", "telecare"] },
+    { url: "https://www.occta.co.uk/legal/switching-policy", title: "Switching Policy", topics: ["switching", "one touch switch", "ots"] },
+    { url: "https://www.occta.co.uk/legal/price-transparency", title: "Price Transparency", topics: ["price transparency", "mid-contract", "cpi", "price rise"] },
+    { url: "https://www.occta.co.uk/legal/network-management", title: "Traffic Management & Network Policy", topics: ["traffic management", "net neutrality", "throttling"] },
+    { url: "https://www.occta.co.uk/legal/accessibility", title: "Accessibility Statement", topics: ["accessibility", "wcag", "disability"] },
+    { url: "https://www.occta.co.uk/legal/modern-slavery", title: "Modern Slavery Statement", topics: ["modern slavery", "supply chain", "labour"] },
+  ],
 };
 
 const formatMoney = (value: unknown) => {
@@ -1752,6 +1766,10 @@ ${helpKnowledgeBase.articles.map((a) => `- ${a.slug}: ${a.title} — covers ${a.
 Guides/blog posts (always link as https://www.occta.co.uk/guides/<slug>):
 ${helpKnowledgeBase.blogs.map((b) => `- ${b.slug}: ${b.title}`).join("\n")}
 When the user asks about setup, slow Wi-Fi, billing, moving home, cancelling, Digital Voice or anything self-serviceable, answer briefly AND link to the most relevant article above (as a clickable markdown link). Don't invent slugs.
+
+Legal & policy pages (link with full URL when the user asks about terms, privacy, cookies, complaints, switching, vulnerable customers, accessibility, price rises, traffic management or supply chain):
+${helpKnowledgeBase.legal.map((l) => `- ${l.title} — ${l.url} (topics: ${l.topics.join(", ")})`).join("\n")}
+When summarising legal terms, give a one-line plain-English answer first, then link to the official policy page above. Never paraphrase legal wording as binding — always direct the customer to the linked page for the authoritative version.
 
 ## ABSOLUTE SAFETY RULES
 - Never invent prices, speeds, offers, fees, notice periods, billing dates, ETF figures, or contract terms. If it's not in approved data, say you'll check or create a case via escalate_to_team.

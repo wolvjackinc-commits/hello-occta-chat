@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { startUpdateChecker } from "./lib/updateChecker";
+import { initAttribution } from "./lib/attribution";
 
 // ── Service-worker cleanup: remove stale app-shell caches so returning visitors get the newest deploy ──
 const isInIframe = (() => {
@@ -47,6 +48,9 @@ const unregisterStaleAppShellServiceWorker = () => {
 };
 
 unregisterStaleAppShellServiceWorker();
+
+// ── Capture Google Ads / UTM attribution on first load ──
+initAttribution();
 
 // ── Render ──
 createRoot(document.getElementById("root")!).render(

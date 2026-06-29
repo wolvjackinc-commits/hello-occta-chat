@@ -24,6 +24,14 @@ const Schema = z.object({
   message: z.string().trim().max(2000).optional().nullable(),
   marketing_consent: z.boolean().default(false),
   source: z.string().trim().max(40).optional(),
+  // Attribution
+  gclid: z.string().trim().max(200).optional().nullable(),
+  utm_source: z.string().trim().max(200).optional().nullable(),
+  utm_campaign: z.string().trim().max(200).optional().nullable(),
+  utm_term: z.string().trim().max(200).optional().nullable(),
+  utm_medium: z.string().trim().max(200).optional().nullable(),
+  landing_page: z.string().trim().max(500).optional().nullable(),
+  conversion_page: z.string().trim().max(500).optional().nullable(),
 });
 
 Deno.serve(async (req) => {
@@ -76,6 +84,13 @@ Deno.serve(async (req) => {
       source: input.source ?? "web",
       ip,
       user_agent: req.headers.get("user-agent")?.slice(0, 400) ?? null,
+      gclid: input.gclid ?? null,
+      utm_source: input.utm_source ?? null,
+      utm_campaign: input.utm_campaign ?? null,
+      utm_term: input.utm_term ?? null,
+      utm_medium: input.utm_medium ?? null,
+      landing_page: input.landing_page ?? null,
+      conversion_page: input.conversion_page ?? null,
     })
     .select("id, reference")
     .single();

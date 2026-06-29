@@ -4673,6 +4673,7 @@ export type Database = {
           address_line_2: string | null
           assigned_admin_id: string | null
           business_name: string | null
+          conversion_page: string | null
           county: string | null
           created_at: string
           current_monthly_bill: number | null
@@ -4683,8 +4684,10 @@ export type Database = {
           email: string
           final_quote_id: string | null
           full_name: string
+          gclid: string | null
           id: string
           ip: string | null
+          landing_page: string | null
           marketing_consent: boolean
           message: string | null
           phone: string
@@ -4698,12 +4701,17 @@ export type Database = {
           town: string | null
           updated_at: string
           user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           address_line_1?: string | null
           address_line_2?: string | null
           assigned_admin_id?: string | null
           business_name?: string | null
+          conversion_page?: string | null
           county?: string | null
           created_at?: string
           current_monthly_bill?: number | null
@@ -4714,8 +4722,10 @@ export type Database = {
           email: string
           final_quote_id?: string | null
           full_name: string
+          gclid?: string | null
           id?: string
           ip?: string | null
+          landing_page?: string | null
           marketing_consent?: boolean
           message?: string | null
           phone: string
@@ -4729,12 +4739,17 @@ export type Database = {
           town?: string | null
           updated_at?: string
           user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           address_line_1?: string | null
           address_line_2?: string | null
           assigned_admin_id?: string | null
           business_name?: string | null
+          conversion_page?: string | null
           county?: string | null
           created_at?: string
           current_monthly_bill?: number | null
@@ -4745,8 +4760,10 @@ export type Database = {
           email?: string
           final_quote_id?: string | null
           full_name?: string
+          gclid?: string | null
           id?: string
           ip?: string | null
+          landing_page?: string | null
           marketing_consent?: boolean
           message?: string | null
           phone?: string
@@ -4760,6 +4777,10 @@ export type Database = {
           town?: string | null
           updated_at?: string
           user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {

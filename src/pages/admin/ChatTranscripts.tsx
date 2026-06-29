@@ -54,7 +54,7 @@ export function AdminChatTranscripts() {
         .from("chat_analytics")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(2000);
+        .limit(5000);
       if (error) throw error;
       return (data as ChatRow[]) ?? [];
     },
@@ -142,12 +142,23 @@ export function AdminChatTranscripts() {
     );
   }, [sessions, search]);
 
-  const activeMessages = useMemo(() => {
-    if (!activeSession || !rows) return [];
-    return rows
-      .filter((r) => r.session_id === activeSession)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at));
-  }, [activeSession, rows]);
+  // Always fetch the FULL session (not just what's in the capped recent rows),
+  // so admins can see and download every message even on long conversations.
+  const { data: activeMessagesData } = useQuery({
+    queryKey: ["chat-analytics-session", activeSession],
+    enabled: !!activeSession,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chat_analytics")
+        .select("*")
+        .eq("session_id", activeSession!)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data as ChatRow[]) ?? [];
+    },
+  });
+
+  const activeMessages = activeMessagesData ?? [];
 
   const activeMeta = useMemo(
     () => sessions.find((s) => s.session_id === activeSession) ?? null,

@@ -26,6 +26,17 @@ async function hashToken(token: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+function generateRawToken(): string {
+  const rawBytes = new Uint8Array(32);
+  crypto.getRandomValues(rawBytes);
+  return btoa(String.fromCharCode(...rawBytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+const ACTIVE_CARD_PAYMENT_STATUSES = ['sent', 'opened', 'checkout_created'];
+
 // Check rate limit for token validation attempts
 async function checkRateLimit(supabase: any, identifier: string): Promise<{ allowed: boolean; locked: boolean }> {
   const action = 'payment_token_validation';
@@ -234,8 +245,9 @@ serve(async (req) => {
           });
         }
 
-        // Only allow sent or opened status
-        if (!['sent', 'opened'].includes(request.status)) {
+        // Only allow active payment statuses. checkout_created remains reusable
+        // until the webhook marks the request paid/completed.
+        if (!ACTIVE_CARD_PAYMENT_STATUSES.includes(request.status)) {
           return new Response(JSON.stringify({ 
             success: false, 
             error: 'This request is not available'
@@ -245,10 +257,14 @@ serve(async (req) => {
           });
         }
 
-        // Update to opened status and last_opened_at
+        // Update to opened status and last_opened_at. Preserve checkout_created
+        // because it represents an already-created Worldpay session, not a lock.
         await supabase
           .from('payment_requests')
-          .update({ status: 'opened', last_opened_at: new Date().toISOString() })
+          .update({
+            ...(request.status === 'checkout_created' ? {} : { status: 'opened' }),
+            last_opened_at: new Date().toISOString(),
+          })
           .eq('id', request.id);
 
         await supabase.from('payment_request_events').insert({
@@ -303,6 +319,143 @@ serve(async (req) => {
       }
 
       // ==========================================
+      // PUBLIC INVOICE LINK -> PUBLIC PAYMENT TOKEN
+      // ==========================================
+      case 'issue-invoice-payment-token': {
+        const { invoiceId } = data;
+
+        if (!invoiceId || typeof invoiceId !== 'string') {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: invoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .select('id, user_id, invoice_number, total, currency, status, due_date')
+          .eq('id', invoiceId)
+          .single();
+
+        if (invoiceError || !invoice) {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (invoice.status === 'paid') {
+          return new Response(JSON.stringify({ success: false, already_paid: true, error: 'Invoice already paid' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email, full_name, account_number')
+          .eq('id', invoice.user_id)
+          .single();
+
+        if (!profile?.email) {
+          return new Response(JSON.stringify({ success: false, error: 'Customer email missing' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: existingRequests } = await supabase
+          .from('payment_requests')
+          .select('id, status, expires_at')
+          .eq('invoice_id', invoice.id)
+          .eq('type', 'card_payment')
+          .not('status', 'in', '(paid,completed,cancelled,failed)')
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        const existingRequest = existingRequests?.[0] ?? null;
+        const rawToken = generateRawToken();
+        const tokenHash = await hashToken(rawToken);
+        const existingExpiry = existingRequest?.expires_at ? new Date(existingRequest.expires_at).getTime() : 0;
+        const minimumExpiry = Date.now() + 14 * 86400000;
+        const expiresAt = new Date(Math.max(existingExpiry, minimumExpiry)).toISOString();
+
+        let requestId = existingRequest?.id ?? null;
+        let paymentRequestNumber: string | null = null;
+
+        if (existingRequest) {
+          const { data: updated, error: updateError } = await supabase
+            .from('payment_requests')
+            .update({
+              token_hash: tokenHash,
+              expires_at: expiresAt,
+              status: 'sent',
+              last_opened_at: new Date().toISOString(),
+            })
+            .eq('id', existingRequest.id)
+            .select('id, payment_request_number')
+            .single();
+
+          if (updateError || !updated) {
+            return new Response(JSON.stringify({ success: false, error: 'Unable to refresh payment link' }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          requestId = updated.id;
+          paymentRequestNumber = updated.payment_request_number;
+        } else {
+          const { data: inserted, error: insertError } = await supabase
+            .from('payment_requests')
+            .insert({
+              type: 'card_payment',
+              invoice_id: invoice.id,
+              user_id: invoice.user_id,
+              customer_name: profile.full_name || 'Customer',
+              customer_email: profile.email,
+              account_number: profile.account_number,
+              amount: invoice.total,
+              currency: invoice.currency || 'GBP',
+              status: 'sent',
+              token_hash: tokenHash,
+              expires_at: expiresAt,
+              due_date: invoice.due_date,
+              metadata: {
+                source: 'public_pay_invoice_redirect',
+                invoice_number: invoice.invoice_number,
+              },
+            })
+            .select('id, payment_request_number')
+            .single();
+
+          if (insertError || !inserted) {
+            return new Response(JSON.stringify({ success: false, error: 'Unable to create payment link' }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          requestId = inserted.id;
+          paymentRequestNumber = inserted.payment_request_number;
+        }
+
+        await supabase.from('payment_request_events').insert({
+          request_id: requestId,
+          event_type: 'public_invoice_link_opened',
+          metadata: { invoice_id: invoice.id, client_ip: clientIp },
+        });
+
+        return new Response(JSON.stringify({
+          success: true,
+          token: rawToken,
+          payment_request_id: requestId,
+          payment_request_number: paymentRequestNumber,
+          pay_url_path: `/pay?token=${encodeURIComponent(rawToken)}`,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // ==========================================
       // CREATE WORLDPAY SESSION
       // ==========================================
       case 'create-worldpay-session': {
@@ -336,8 +489,9 @@ serve(async (req) => {
           });
         }
 
-        // SECURITY: Only allow sent/opened status
-        if (!['sent', 'opened'].includes(request.status)) {
+        // SECURITY: Only allow active statuses. checkout_created can be retried
+        // by anyone holding the token until the webhook marks it paid/completed.
+        if (!ACTIVE_CARD_PAYMENT_STATUSES.includes(request.status)) {
           return new Response(JSON.stringify({ success: false, error: 'Request not active' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1554,6 +1708,7 @@ serve(async (req) => {
             to: prof.email,
             data: {
               invoice_number: inv.invoice_number,
+                invoice_id: inv.id,
               total: inv.total,
               due_date: inv.due_date,
               customer_name: prof.full_name ?? '',

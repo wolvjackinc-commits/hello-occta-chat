@@ -442,7 +442,7 @@ serve(async (req) => {
           request_id: requestId,
           event_type: 'public_invoice_link_opened',
           metadata: { invoice_id: invoice.id, client_ip: clientIp },
-        }).catch(() => {});
+        });
 
         return new Response(JSON.stringify({
           success: true,

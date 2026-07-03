@@ -730,6 +730,12 @@ const Checkout = () => {
                         <p className="text-muted-foreground text-xs mt-3 text-center">
                           Prices include VAT where applicable
                         </p>
+                        <p className="text-muted-foreground text-[11px] mt-2 leading-snug">
+                          Billing starts only once your service is confirmed live. Your first invoice may
+                          include your activation fee and a pro-rata charge from your live date to your
+                          chosen billing date. After that, your monthly service is billed in advance on
+                          your selected billing date.
+                        </p>
                         {resolvedProduct?.technology === 'SOGEA' && (
                           <p className="text-muted-foreground text-[10px] text-center italic">
                             {getSOGEANote()}

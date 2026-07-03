@@ -1,104 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
 import { perfServe } from "../_shared/perfLog.ts";
+import {
+  itemiseInvoice,
+  buildInvoicePdfBytes,
+  buildInvoiceEmailHtml,
+  computeProRataMinor,
+  sha256Hex,
+  type RawLine,
+  type VatMode,
+} from "../_shared/billingHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
-
-async function sha256(s: string) {
-  const data = new TextEncoder().encode(s);
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function escapeHtml(s: string) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as any)[c]);
-}
-
-function fmtDate(iso: string | null) {
-  if (!iso) return "";
-  try { return new Date(iso).toLocaleDateString("en-GB", { day:"2-digit", month:"long", year:"numeric" }); }
-  catch { return iso ?? ""; }
-}
-
-function buildInvoicePdfBytes(args: {
-  invoiceNumber: string; accountNumber: string; customerName: string;
-  issueDate: string; dueDate: string;
-  periodStart: string; periodEnd: string;
-  lineDescription: string; total: number; isProRata: boolean;
-}): Uint8Array {
-  const doc = new jsPDF();
-  const w = doc.internal.pageSize.getWidth();
-  doc.setFillColor(13,13,13); doc.rect(0,0,w,32,"F");
-  doc.setTextColor(255,255,255); doc.setFontSize(20); doc.setFont("helvetica","bold");
-  doc.text("OCCTA", 14, 20);
-  doc.setFillColor(250,204,21); doc.rect(44, 11, 38, 13, "F");
-  doc.setTextColor(13,13,13); doc.setFontSize(11); doc.text("TELECOM", 47, 20);
-  doc.setTextColor(255,255,255); doc.setFontSize(14);
-  doc.text("INVOICE", w - 14, 20, { align: "right" });
-
-  let y = 46; doc.setTextColor(13,13,13); doc.setFontSize(9);
-  doc.text(`Invoice #: ${args.invoiceNumber}`, 14, y);
-  doc.text(`Account: ${args.accountNumber}`, 14, y + 6);
-  doc.text(`Issue date: ${fmtDate(args.issueDate)}`, w - 14, y, { align: "right" });
-  doc.text(`Due date: ${fmtDate(args.dueDate)}`, w - 14, y + 6, { align: "right" });
-
-  y += 22; doc.setFontSize(10); doc.setFont("helvetica","bold");
-  doc.text("Bill to", 14, y); doc.setFont("helvetica","normal");
-  doc.text(args.customerName || "Customer", 14, y + 6);
-
-  y += 22; doc.setFillColor(245,245,240); doc.rect(14, y, w - 28, 8, "F");
-  doc.setFont("helvetica","bold"); doc.setFontSize(9);
-  doc.text("Description", 18, y + 5);
-  doc.text("Amount", w - 18, y + 5, { align: "right" });
-
-  y += 12; doc.setFont("helvetica","normal");
-  doc.text(args.lineDescription, 18, y);
-  doc.text(`£${args.total.toFixed(2)}`, w - 18, y, { align: "right" });
-  doc.text(`Period: ${fmtDate(args.periodStart)} – ${fmtDate(args.periodEnd)}${args.isProRata ? "  (pro-rata)" : ""}`,
-           18, y + 6);
-
-  y += 22; doc.setFillColor(13,13,13); doc.rect(14, y, w - 28, 10, "F");
-  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold");
-  doc.text("TOTAL DUE", 18, y + 7);
-  doc.text(`£${args.total.toFixed(2)}`, w - 18, y + 7, { align: "right" });
-
-  doc.setTextColor(102,102,102); doc.setFontSize(8); doc.setFont("helvetica","normal");
-  doc.text("OCCTA Limited · Company No. 13828933 · 22 Pavilion View, Huddersfield, HD3 3WU",
-           w / 2, 285, { align: "center" });
-
-  return doc.output("arraybuffer") as unknown as Uint8Array;
-}
-
-function buildEmailHtml(args: {
-  customerName: string; invoiceNumber: string; total: number;
-  issueDate: string; dueDate: string;
-  periodStart: string; periodEnd: string;
-  payNowUrl: string | null; pdfUrl: string | null; dashboardUrl: string;
-}) {
-  return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#111;background:#fff">
-  <div style="max-width:600px;margin:0 auto;padding:24px;border:4px solid #111">
-    <h1 style="font-size:22px;margin:0 0 12px">Your OCCTA invoice ${escapeHtml(args.invoiceNumber)}</h1>
-    <p>Hi ${escapeHtml(args.customerName || "there")},</p>
-    <p>Your first invoice is ready.</p>
-    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
-      <tr><td style="padding:6px 0;color:#555">Invoice number</td><td style="text-align:right"><b>${escapeHtml(args.invoiceNumber)}</b></td></tr>
-      <tr><td style="padding:6px 0;color:#555">Billing period</td><td style="text-align:right">${escapeHtml(fmtDate(args.periodStart))} – ${escapeHtml(fmtDate(args.periodEnd))}</td></tr>
-      <tr><td style="padding:6px 0;color:#555">Issued</td><td style="text-align:right">${escapeHtml(fmtDate(args.issueDate))}</td></tr>
-      <tr><td style="padding:6px 0;color:#555">Due</td><td style="text-align:right">${escapeHtml(fmtDate(args.dueDate))}</td></tr>
-      <tr><td style="padding:6px 0;color:#555">Total due</td><td style="text-align:right"><b>£${args.total.toFixed(2)}</b></td></tr>
-    </table>
-    ${args.payNowUrl ? `<p style="text-align:center"><a href="${args.payNowUrl}" style="display:inline-block;background:#facc15;color:#111;padding:12px 24px;text-decoration:none;border:3px solid #111;font-weight:bold">Pay now</a></p>` : ""}
-    <p>
-      ${args.pdfUrl ? `<a href="${args.pdfUrl}">Download PDF</a> · ` : ""}
-      <a href="${args.dashboardUrl}">Open dashboard</a>
-    </p>
-    <p style="font-size:12px;color:#666;margin-top:24px">Need help? Reply to this email or visit our Support page.</p>
-  </div></body></html>`;
-}
 
 Deno.serve(perfServe("process-first-billing", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -136,9 +51,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
 
   const results: any[] = [];
   for (const job of jobs ?? []) {
-    // Eligibility gate: only process jobs linked to a live canonical order,
-    // an active service, a valid customer + payment method, not blocked,
-    // not already invoiced for this period.
+    // Eligibility helper skips rows with any non-null/manual_hold blocker.
     const { data: eligible } = await supabase.rpc(
       "first_billing_job_is_eligible", { _job_id: job.id });
     if (!eligible) {
@@ -156,7 +69,6 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
     if (!claimed) { results.push({ id: job.id, skipped: true }); continue; }
 
     try {
-      // Re-read canonical state (eligibility was already checked).
       const { data: ord } = await supabase
         .from("orders")
         .select("id, lifecycle_status, payment_method_id, customer_id, occta_order_number")
@@ -183,21 +95,53 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       const accountNumber = profile?.account_number ?? "";
       if (!recipientEmail) throw new Error("customer_email_missing");
 
-      // Compute amount in pence via DB helper (stays consistent with stored inputs).
-      const { data: amtMinor } = await supabase.rpc("compute_first_billing_amount_minor", {
-        _monthly_minor: job.amount_minor,
-        _billable_days: job.billable_days,
-        _full_cycle_days: job.full_cycle_days,
-        _is_pro_rata: job.is_pro_rata,
-      });
-      const totalMinor = Number(amtMinor ?? job.amount_minor ?? 0);
-      const total = Math.round(totalMinor) / 100;
+      // ── Compose invoice lines from job snapshot ──
+      const vatMode: VatMode = (job.vat_mode as VatMode) ?? "inclusive";
+      const vatRate = Number(job.vat_rate ?? 20);
 
-      // Idempotency: only one invoice per (service, period, type='first_pro_rata'|'monthly').
+      const proRataMinor = computeProRataMinor(
+        Number(job.amount_minor),
+        Number(job.billable_days),
+        Number(job.full_cycle_days),
+        !!job.is_pro_rata,
+      );
+
+      const rawLines: RawLine[] = [];
+      if (proRataMinor > 0) {
+        rawLines.push({
+          description: `${svc.plan_name ?? svc.service_type} — ${job.is_pro_rata ? "pro-rata service" : "monthly service"}`,
+          amount_minor: proRataMinor,
+          period_label: `${job.period_start} to ${job.period_end} · ${job.billable_days}/${job.full_cycle_days} days`,
+        });
+      }
+      if (Number(job.activation_fee_minor) > 0) {
+        rawLines.push({
+          description: "Activation / setup fee",
+          amount_minor: Number(job.activation_fee_minor),
+          period_label: "One-off (per accepted Contract Summary)",
+        });
+      }
+      const oneOffLines = Array.isArray(job.one_off_lines) ? job.one_off_lines : [];
+      for (const l of oneOffLines) {
+        const amt = Number(l?.amount_minor ?? 0);
+        if (amt > 0) {
+          rawLines.push({
+            description: String(l?.label ?? "One-off charge"),
+            amount_minor: amt,
+            period_label: "One-off (per accepted Contract Summary)",
+          });
+        }
+      }
+
+      const totals = itemiseInvoice(rawLines, vatMode, vatRate);
+      const totalMinor = totals.total_gross_minor;
+      const total = totalMinor / 100;
+
+      // Idempotency: unique per (service, period, invoice_type).
       const invoiceType = job.is_pro_rata ? "first_pro_rata" : "monthly";
       const { data: existingInv } = await supabase
         .from("invoices")
-        .select("id, invoice_number, status, pdf_storage_key, pdf_hash, email_sent_at")
+        .select("id, invoice_number, status, pdf_storage_key, pdf_hash, email_sent_at, email_attempts")
         .eq("service_id", job.service_id)
         .eq("billing_period_start", job.period_start)
         .eq("billing_period_end", job.period_end)
@@ -215,9 +159,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         const { data: invNumData } = await supabase.rpc("generate_invoice_number");
         invoiceNumber = invNumData || `INV-${Date.now().toString(36).toUpperCase()}`;
 
-        // Always start as `draft` — promoted only after PDF + email succeed.
         invoiceStatus = "draft";
-
         const dueDate = new Date(); dueDate.setDate(dueDate.getDate() + 14);
 
         const { data: inv, error: invErr } = await supabase.from("invoices").insert({
@@ -231,16 +173,25 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           billing_period_start: job.period_start,
           billing_period_end: job.period_end,
           invoice_type: invoiceType,
-          subtotal: total,
-          vat_total: 0,
+          subtotal: totals.subtotal_net_minor / 100,
+          vat_total: totals.vat_total_minor / 100,
+          vat_enabled: true,
+          vat_rate: totals.vat_rate,
           total,
           pro_rata: {
-            amount_minor: totalMinor,
+            amount_minor: proRataMinor,
             monthly_minor: job.amount_minor,
             billable_days: job.billable_days,
             full_cycle_days: job.full_cycle_days,
             is_pro_rata: job.is_pro_rata,
             calc_method: job.calc_method,
+            activation_fee_minor: job.activation_fee_minor ?? 0,
+            one_off_charges_minor: job.one_off_charges_minor ?? 0,
+            vat_mode: vatMode,
+            vat_rate: totals.vat_rate,
+            subtotal_net_minor: totals.subtotal_net_minor,
+            vat_total_minor: totals.vat_total_minor,
+            total_gross_minor: totals.total_gross_minor,
           },
           notes: job.is_pro_rata
             ? `First (pro-rata) invoice: ${job.billable_days} of ${job.full_cycle_days} days`
@@ -249,30 +200,32 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         if (invErr) throw invErr;
         invoiceId = inv.id;
 
-        await supabase.from("invoice_lines").insert({
+        const lineRows = totals.lines.map((l) => ({
           invoice_id: invoiceId,
-          description: `${svc.plan_name ?? svc.service_type} — ${job.is_pro_rata ? "pro-rata " : ""}service (${job.period_start} to ${job.period_end})`,
+          description: l.period_label ? `${l.description} (${l.period_label})` : l.description,
           qty: 1,
-          unit_price: total,
-          line_total: total,
-          vat_rate: 0,
-        });
+          unit_price: l.gross_minor / 100,
+          line_total: l.gross_minor / 100,
+          vat_rate: l.vat_rate,
+        }));
+        if (lineRows.length > 0) {
+          await supabase.from("invoice_lines").insert(lineRows);
+        }
       }
 
-      // -------- Invoice PDF (idempotent) --------
+      // ── PDF (idempotent) ──
       if (!pdfStorageKey) {
         const pdfBytes = buildInvoicePdfBytes({
           invoiceNumber: invoiceNumber!, accountNumber, customerName,
           issueDate: today,
-          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0,10),
-          periodStart: job.period_start, periodEnd: job.period_end,
-          lineDescription: `${svc.plan_name ?? svc.service_type} — ${job.is_pro_rata ? "pro-rata " : "monthly"} service`,
-          total, isProRata: !!job.is_pro_rata,
+          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+          periodStart: job.period_start,
+          periodEndExclusive: job.period_end,
+          totals,
+          isFirstInvoice: true,
         });
         const buf = pdfBytes instanceof Uint8Array ? pdfBytes : new Uint8Array(pdfBytes as any);
-        const hashBuf = await crypto.subtle.digest("SHA-256", buf);
-        pdfHash = Array.from(new Uint8Array(hashBuf))
-          .map((b) => b.toString(16).padStart(2, "0")).join("");
+        pdfHash = await sha256Hex(buf);
         pdfStorageKey = `${svc.user_id}/${invoiceId}/${invoiceNumber}.pdf`;
         const { error: upErr } = await supabase.storage
           .from("invoice-pdfs")
@@ -285,7 +238,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         }).eq("id", invoiceId);
       }
 
-      // -------- Branch on payment method (PR for invoice_link, task for DD-pending) --------
+      // ── Branch on payment method ──
       let prId: string | null = job.payment_request_id ?? null;
       let ddTaskId: string | null = job.dd_setup_task_id ?? null;
       let payNowUrl: string | null = null;
@@ -300,7 +253,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
             payNowUrl = (existingPR as any).provider_checkout_url ?? null;
           } else {
             const token = crypto.randomUUID();
-            const tokenHash = await sha256(token);
+            const tokenHash = await sha256Hex(token);
             const expires = new Date(); expires.setDate(expires.getDate() + 14);
             const { data: pr, error: prErr } = await supabase
               .from("payment_requests").insert({
@@ -322,10 +275,19 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           }
         }
       } else if (pm.method === "direct_debit") {
-        if (pm.dd_setup_status !== "active" && !ddTaskId) {
+        // Only mark as awaiting_dd_collection if a confirmed active mandate exists.
+        // Never call the DD provider from this worker.
+        const { data: activeMandate } = await supabase.from("dd_mandates")
+          .select("id, status").eq("user_id", svc.user_id).eq("status", "active").maybeSingle();
+        if (activeMandate && pm.dd_setup_status === "active") {
+          await supabase.from("invoices").update({
+            status: "awaiting_dd_collection",
+          }).eq("id", invoiceId);
+          invoiceStatus = "awaiting_dd_collection";
+        } else if (!ddTaskId) {
           const { data: task } = await supabase.from("admin_tasks").insert({
-            title: `Direct Debit setup pending for invoice ${invoiceNumber}`,
-            description: `Customer's Direct Debit is not yet active for order ${ord.occta_order_number ?? job.order_id}. Issue a Worldpay fallback link if appropriate.`,
+            title: `DD not active for first invoice ${invoiceNumber}`,
+            description: `Customer's Direct Debit mandate is not active for order ${ord.occta_order_number ?? job.order_id}. No provider collection has been attempted. Issue a Worldpay fallback link if appropriate.`,
             priority: "high",
             status: "open",
             created_by: ord.customer_id ?? svc.user_id,
@@ -335,13 +297,11 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         }
       }
 
-      // -------- Promote invoice to ready_to_send before attempting email --------
       if (invoiceStatus === "draft") {
         await supabase.from("invoices").update({ status: "ready_to_send" }).eq("id", invoiceId);
         invoiceStatus = "ready_to_send";
       }
 
-      // -------- Send invoice email (only if not already sent) --------
       let emailMessageId: string | null = null;
       if (!alreadyEmailed) {
         let pdfSignedUrl: string | null = null;
@@ -350,12 +310,15 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
             .from("invoice-pdfs").createSignedUrl(pdfStorageKey, 60 * 60 * 24 * 14);
           pdfSignedUrl = signed?.signedUrl ?? null;
         }
-        const html = buildEmailHtml({
-          customerName, invoiceNumber: invoiceNumber!, total,
+        const html = buildInvoiceEmailHtml({
+          customerName, invoiceNumber: invoiceNumber!,
           issueDate: today,
-          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0,10),
-          periodStart: job.period_start, periodEnd: job.period_end,
+          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+          periodStart: job.period_start,
+          periodEndExclusive: job.period_end,
+          totals,
           payNowUrl, pdfUrl: pdfSignedUrl, dashboardUrl,
+          isFirstInvoice: true,
         });
         const sendResp = await supabase.functions.invoke("send-email", {
           body: {
@@ -366,7 +329,6 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           },
         });
         if (sendResp.error) {
-          // Mark invoice email as failed (but keep PR and invoice intact, no duplicates).
           await supabase.from("invoices").update({
             email_error: String(sendResp.error.message || "send_failed").slice(0, 1000),
             email_attempts: (existingInv as any)?.email_attempts != null
@@ -376,9 +338,9 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         }
         emailMessageId = (sendResp.data as any)?.message_id ?? null;
 
-        // Email accepted -> mark invoice as sent + log.
+        const nextStatus = invoiceStatus === "awaiting_dd_collection" ? "awaiting_dd_collection" : "sent";
         await supabase.from("invoices").update({
-          status: "sent",
+          status: nextStatus,
           email_sent_at: new Date().toISOString(),
           email_provider_message_id: emailMessageId,
           email_error: null,
@@ -406,7 +368,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         last_error: null,
       }).eq("id", job.id);
 
-      results.push({ id: job.id, invoice_id: invoiceId, method: pm.method });
+      results.push({ id: job.id, invoice_id: invoiceId, method: pm.method, total });
     } catch (e) {
       const attempts = (job.attempts ?? 0) + 1;
       const giveUp = attempts >= 6;

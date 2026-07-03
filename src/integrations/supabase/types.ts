@@ -2257,6 +2257,7 @@ export type Database = {
       first_billing_jobs: {
         Row: {
           activation_date: string
+          activation_fee_minor: number
           amount_minor: number | null
           attempts: number
           billable_days: number | null
@@ -2274,6 +2275,8 @@ export type Database = {
           last_error: string | null
           next_attempt_at: string
           next_billing_date: string
+          one_off_charges_minor: number
+          one_off_lines: Json
           order_id: string
           payload: Json
           payment_request_id: string | null
@@ -2283,9 +2286,12 @@ export type Database = {
           service_id: string | null
           status: string
           updated_at: string
+          vat_mode: string
+          vat_rate: number
         }
         Insert: {
           activation_date: string
+          activation_fee_minor?: number
           amount_minor?: number | null
           attempts?: number
           billable_days?: number | null
@@ -2303,6 +2309,8 @@ export type Database = {
           last_error?: string | null
           next_attempt_at?: string
           next_billing_date: string
+          one_off_charges_minor?: number
+          one_off_lines?: Json
           order_id: string
           payload?: Json
           payment_request_id?: string | null
@@ -2312,9 +2320,12 @@ export type Database = {
           service_id?: string | null
           status?: string
           updated_at?: string
+          vat_mode?: string
+          vat_rate?: number
         }
         Update: {
           activation_date?: string
+          activation_fee_minor?: number
           amount_minor?: number | null
           attempts?: number
           billable_days?: number | null
@@ -2332,6 +2343,8 @@ export type Database = {
           last_error?: string | null
           next_attempt_at?: string
           next_billing_date?: string
+          one_off_charges_minor?: number
+          one_off_lines?: Json
           order_id?: string
           payload?: Json
           payment_request_id?: string | null
@@ -2341,6 +2354,8 @@ export type Database = {
           service_id?: string | null
           status?: string
           updated_at?: string
+          vat_mode?: string
+          vat_rate?: number
         }
         Relationships: [
           {

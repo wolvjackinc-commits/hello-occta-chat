@@ -682,7 +682,9 @@ const getInvoiceSentHtml = (data: Record<string, unknown>) => {
         </div>
         
         <div class="cta-wrap">
-          <a href="${siteUrl}/pay-invoice?id=${escapeHtml(data.invoice_id)}" class="cta" style="box-shadow: 4px 4px 0 0 #3b82f6;">Pay Now →</a>
+          <a href="${data.pay_now_url ? escapeHtml(data.pay_now_url) : `${siteUrl}/pay-invoice?id=${escapeHtml(data.invoice_id)}`}" class="cta" style="box-shadow: 4px 4px 0 0 #3b82f6;">Pay Now →</a>
+          ${data.invoice_pdf_url ? `<div style="margin-top:12px;"><a href="${escapeHtml(data.invoice_pdf_url)}" style="color:#0d0d0d;text-decoration:underline;font-size:13px;">Download PDF invoice</a></div>` : ''}
+          ${data.dashboard_url ? `<div style="margin-top:8px;"><a href="${escapeHtml(data.dashboard_url)}" style="color:#666;text-decoration:underline;font-size:12px;">View in your dashboard</a></div>` : ''}
         </div>
         
         <p class="text" style="text-align: center; color: #666; font-size: 13px;">

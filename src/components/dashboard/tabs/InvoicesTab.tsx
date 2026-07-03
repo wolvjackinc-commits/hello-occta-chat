@@ -33,6 +33,14 @@ export function InvoicesTab({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-6">
+      <div className="border-4 border-foreground bg-muted/40 p-4 text-sm">
+        <p className="font-display uppercase text-xs mb-1">How your billing works</p>
+        <p className="text-muted-foreground">
+          Billing starts only once your service is confirmed live. Your first invoice may include your
+          activation fee and a pro-rata charge from your live date to your chosen billing date. After
+          that, your monthly service is billed in advance on your selected billing date.
+        </p>
+      </div>
       <section>
         <h3 className="font-display uppercase mb-3">Unpaid invoices</h3>
         {unpaid.length === 0 ? (

@@ -3,7 +3,6 @@ import { perfServe } from "../_shared/perfLog.ts";
 import {
   itemiseInvoice,
   buildInvoicePdfBytes,
-  buildInvoiceEmailHtml,
   sha256Hex,
   nextAnchorBillingDate,
   poundsToMinor,
@@ -47,6 +46,18 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
   const today = new Date().toISOString().slice(0, 10);
   const appOrigin = Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk";
   const dashboardUrl = `${appOrigin}/dashboard`;
+
+  const fmtDate = (iso: string) => {
+    try {
+      return new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB",
+        { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+    } catch { return iso; }
+  };
+  const fmtInclusivePeriod = (startIso: string, endExclusiveIso: string) => {
+    const end = new Date(endExclusiveIso + "T00:00:00Z");
+    end.setUTCDate(end.getUTCDate() - 1);
+    return `${fmtDate(startIso)} to ${fmtDate(end.toISOString().slice(0, 10))}`;
+  };
 
   // Pull due active services. Limit per run to keep the function bounded.
   const { data: services, error } = await supabase
@@ -137,7 +148,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
         {
           description: `${svc.plan_name ?? svc.service_type} — monthly service`,
           amount_minor: monthlyMinor,
-          period_label: `${periodStart} to ${periodEnd} (billed in advance)`,
+          period_label: `${fmtInclusivePeriod(periodStart, periodEnd)} (billed in advance)`,
         },
       ];
       const totals = itemiseInvoice(rawLines, vatMode, 20);
@@ -273,21 +284,37 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
             .from("invoice-pdfs").createSignedUrl(pdfStorageKey, 60 * 60 * 24 * 14);
           pdfSignedUrl = signed?.signedUrl ?? null;
         }
-        const html = buildInvoiceEmailHtml({
-          customerName, invoiceNumber: invoiceNumber!,
-          issueDate: today,
-          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
-          periodStart, periodEndExclusive: periodEnd, totals,
-          payNowUrl, pdfUrl: pdfSignedUrl, dashboardUrl,
-          isFirstInvoice: false,
-        });
+        const dueDateStr = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+        const emailLines = totals.lines.map((l) => ({
+          description: l.period_label ? `${l.description} (${l.period_label})` : l.description,
+          qty: 1,
+          line_total: l.gross_minor / 100,
+        }));
         const sendResp = await supabase.functions.invoke("send-email", {
           body: {
+            type: "invoice_sent",
             to: recipientEmail,
-            subject: `Your OCCTA invoice ${invoiceNumber}`,
-            html,
-            idempotencyKey: `invoice-monthly:${invoiceId}`,
+            invoiceId,
+            logToCommunications: true,
+            userId: svc.user_id,
+            data: {
+              customer_name: customerName,
+              account_number: accountNumber,
+              invoice_number: invoiceNumber,
+              invoice_id: invoiceId,
+              issue_date: fmtDate(today),
+              due_date: fmtDate(dueDateStr),
+              billing_period: fmtInclusivePeriod(periodStart, periodEnd),
+              lines: emailLines,
+              subtotal: totals.subtotal_net_minor / 100,
+              vat_total: totals.vat_total_minor / 100,
+              total,
+              pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${invoiceId}`,
+              invoice_pdf_url: pdfSignedUrl,
+              dashboard_url: dashboardUrl,
+            },
           },
+          headers: { "idempotency-key": `invoice-monthly:${invoiceId}` } as any,
         });
         if (sendResp.error) {
           await supabase.from("invoices").update({

@@ -3,7 +3,6 @@ import { perfServe } from "../_shared/perfLog.ts";
 import {
   itemiseInvoice,
   buildInvoicePdfBytes,
-  buildInvoiceEmailHtml,
   computeProRataMinor,
   sha256Hex,
   type RawLine,
@@ -36,6 +35,18 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
   const nowIso = new Date().toISOString();
   const appOrigin = Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk";
   const dashboardUrl = `${appOrigin}/dashboard`;
+
+  const fmtDate = (iso: string) => {
+    try {
+      return new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB",
+        { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+    } catch { return iso; }
+  };
+  const fmtInclusivePeriod = (startIso: string, endExclusiveIso: string) => {
+    const end = new Date(endExclusiveIso + "T00:00:00Z");
+    end.setUTCDate(end.getUTCDate() - 1);
+    return `${fmtDate(startIso)} to ${fmtDate(end.toISOString().slice(0, 10))}`;
+  };
 
   const { data: jobs, error } = await supabase
     .from("first_billing_jobs")
@@ -111,7 +122,9 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         rawLines.push({
           description: `${svc.plan_name ?? svc.service_type} — ${job.is_pro_rata ? "pro-rata service" : "monthly service"}`,
           amount_minor: proRataMinor,
-          period_label: `${job.period_start} to ${job.period_end} · ${job.billable_days}/${job.full_cycle_days} days`,
+          period_label: job.is_pro_rata
+            ? `${fmtInclusivePeriod(job.period_start, job.period_end)} · ${job.billable_days} of ${job.full_cycle_days} days`
+            : `${fmtInclusivePeriod(job.period_start, job.period_end)}`,
         });
       }
       if (Number(job.activation_fee_minor) > 0) {
@@ -310,23 +323,37 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
             .from("invoice-pdfs").createSignedUrl(pdfStorageKey, 60 * 60 * 24 * 14);
           pdfSignedUrl = signed?.signedUrl ?? null;
         }
-        const html = buildInvoiceEmailHtml({
-          customerName, invoiceNumber: invoiceNumber!,
-          issueDate: today,
-          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
-          periodStart: job.period_start,
-          periodEndExclusive: job.period_end,
-          totals,
-          payNowUrl, pdfUrl: pdfSignedUrl, dashboardUrl,
-          isFirstInvoice: true,
-        });
+        const dueDateStr = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+        const emailLines = totals.lines.map((l) => ({
+          description: l.period_label ? `${l.description} (${l.period_label})` : l.description,
+          qty: 1,
+          line_total: l.gross_minor / 100,
+        }));
         const sendResp = await supabase.functions.invoke("send-email", {
           body: {
+            type: "invoice_sent",
             to: recipientEmail,
-            subject: `Your OCCTA invoice ${invoiceNumber}`,
-            html,
-            idempotencyKey: `invoice-first:${invoiceId}`,
+            invoiceId,
+            logToCommunications: true,
+            userId: svc.user_id,
+            data: {
+              customer_name: customerName,
+              account_number: accountNumber,
+              invoice_number: invoiceNumber,
+              invoice_id: invoiceId,
+              issue_date: fmtDate(today),
+              due_date: fmtDate(dueDateStr),
+              billing_period: fmtInclusivePeriod(job.period_start, job.period_end),
+              lines: emailLines,
+              subtotal: totals.subtotal_net_minor / 100,
+              vat_total: totals.vat_total_minor / 100,
+              total,
+              pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${invoiceId}`,
+              invoice_pdf_url: pdfSignedUrl,
+              dashboard_url: dashboardUrl,
+            },
           },
+          headers: { "idempotency-key": `invoice-first:${invoiceId}` } as any,
         });
         if (sendResp.error) {
           await supabase.from("invoices").update({

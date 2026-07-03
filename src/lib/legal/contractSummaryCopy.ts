@@ -18,4 +18,4 @@ export const PRICE_RISE_POLICY_TEXT =
   "OCCTA does not apply automatic CPI or annual price rises on residential telecom services. If we ever need to change a price, you'll be told in writing and given the right to leave penalty-free.";
 
 export const PAYMENT_SCHEDULE_TEXT_MONTHLY =
-  "Monthly: charged in advance via the agreed payment method on your stated billing date. Any one-off charges shown above are taken before service activation.";
+  "Monthly: charged in advance via the agreed payment method on your stated billing date. Any one-off charges shown above are taken before service activation. Billing starts only once your service is confirmed live. Your first invoice may include your activation fee and a pro-rata charge from your live date to your chosen billing date. After that, your monthly service is billed in advance on your selected billing date.";

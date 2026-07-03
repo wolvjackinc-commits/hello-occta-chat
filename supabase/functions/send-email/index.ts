@@ -652,6 +652,7 @@ const getInvoiceSentHtml = (data: Record<string, unknown>) => {
             <div class="meta-row"><span class="meta-label">Account Number</span><span class="meta-value">${escapeHtml(data.account_number)}</span></div>
             <div class="meta-row"><span class="meta-label">Issue Date</span><span class="meta-value">${escapeHtml(data.issue_date)}</span></div>
             ${data.due_date ? `<div class="meta-row"><span class="meta-label">Due Date</span><span class="meta-value" style="color: #ef4444; font-weight: 700;">${escapeHtml(data.due_date)}</span></div>` : ''}
+            ${data.billing_period ? `<div class="meta-row"><span class="meta-label">Billing Period</span><span class="meta-value">${escapeHtml(data.billing_period)}</span></div>` : ''}
           </div>
         </div>
         

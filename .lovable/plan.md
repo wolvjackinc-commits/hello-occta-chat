@@ -290,9 +290,10 @@ No updates to existing rows in `invoices`, `contract_summaries`, `payment_reques
 
 ## Verification after implementation
 
-- Example A: monthly £37.99 inc, activation £80.40 inc, live 26 May 2026, day 1 → pro-rata £7.59 + activation £80.40 = **£87.99 inc VAT** (net £73.33, VAT £14.66). Next invoice period: 1 Jun 2026 → 1 Jul 2026.
-- Example B: monthly £42.99 inc, activation £80.40 inc, live 28 Jun 2026, day 15 → pro-rata £23.57 + activation £80.40 = **£103.97 inc VAT** (net £86.64, VAT £17.33). Next period: 15 Jul 2026 → 15 Aug 2026.
-- Example C: monthly £39.99 inc, activation £0, live 10 Jul 2026, day 1 → pro-rata **£28.37 inc VAT** (net £23.64, VAT £4.73). Next period: 1 Aug 2026 → 1 Sep 2026.
+- Example A: monthly £37.99 inc, activation £80.40 inc, live 26 May 2026, day 1 → pro-rata £7.60 + activation £80.40 = **£88.00 inc VAT** (net £73.33, VAT £14.67). Next invoice period: 1 Jun 2026 → 1 Jul 2026.
+- Example B: monthly £42.99 inc, activation £80.40 inc, live 28 Jun 2026, day 15 → pro-rata £23.58 + activation £80.40 = **£103.98 inc VAT** (net £86.65, VAT £17.33). Next period: 15 Jul 2026 → 15 Aug 2026.
+- Example C: monthly £39.99 inc, activation £0, live 10 Jul 2026, day 1 → pro-rata **£28.38 inc VAT** (net £23.65, VAT £4.73). Next period: 1 Aug 2026 → 1 Sep 2026.
+- Note: invoices round to the nearest penny using the system's billing calculation (half-up).
 - 29/30/31 tests: billing day 31, cycle Jan 31 → Feb 28 (or 29 in leap year) → Mar 31 → Apr 30 → May 31 …
 - Duplicate test: run each worker twice — second run inserts nothing.
 - Regression scope: no edits to quote journey, CS acceptance, Worldpay webhook, DD encryption, activation UI, cancellation/ETF, admin nav, or RLS.

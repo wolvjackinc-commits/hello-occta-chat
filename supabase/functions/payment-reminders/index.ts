@@ -151,7 +151,7 @@ const getReminderHtml = (data: {
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div style="background: ${config.urgencyColor}; padding: 16px 32px; border-bottom: 4px solid #0d0d0d;">
@@ -407,7 +407,7 @@ serve(async (req) => {
         try {
           const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "billing@occta.co.uk";
           const emailResponse = await resend.emails.send({
-            from: `OCCTA Billing <${fromEmail}>`,
+            from: `OCCTA <${fromEmail}>`,
             to: [profile.email],
             subject,
             html,

@@ -73,7 +73,7 @@ export function renderBrandedEmail(opts: ShellOptions): string {
           </td>
           <td style="padding:16px 12px;vertical-align:middle">
             <div style="font:700 22px/1 Arial Black,Arial,sans-serif;letter-spacing:-0.5px">OCCTA</div>
-            <div style="font:500 10px/1 Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;color:${BRAND.muted};margin-top:4px">Telecom That Gets It</div>
+            <div style="font:500 10px/1 Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;color:${BRAND.muted};margin-top:4px">Brilliant Made Simple</div>
           </td>
           <td align="right" style="padding:16px 20px;vertical-align:middle">
             <div style="font:600 10px/1 Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;color:${BRAND.muted}">${esc(opts.eyebrow)}</div>

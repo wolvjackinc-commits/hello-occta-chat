@@ -274,7 +274,7 @@ serve(async (req) => {
         const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk";
         
         await resend.emails.send({
-          from: `OCCTA Telecom <${fromEmail}>`,
+          from: `OCCTA <${fromEmail}>`,
           to: [user.email],
           subject: 'Your OCCTA Account Has Been Deleted',
           html: `
@@ -301,7 +301,7 @@ serve(async (req) => {
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div style="background: #6b7280; padding: 16px 32px; border-bottom: 4px solid #0d0d0d;">

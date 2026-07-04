@@ -758,7 +758,7 @@ serve(async (req) => {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    from: 'OCCTA Billing <billing@occta.co.uk>',
+                    from: 'OCCTA <billing@occta.co.uk>',
                     to: [customerEmail],
                     subject: emailContent.subject,
                     html: emailContent.html,
@@ -1031,7 +1031,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'OCCTA Billing <billing@occta.co.uk>',
+            from: 'OCCTA <billing@occta.co.uk>',
             to: [request.customer_email],
             subject,
             html: emailContent.html,
@@ -1318,7 +1318,7 @@ serve(async (req) => {
             method: 'POST',
             headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from: 'OCCTA Billing <billing@occta.co.uk>',
+              from: 'OCCTA <billing@occta.co.uk>',
               to: [customer_email],
               subject: 'Set up your OCCTA Direct Debit',
               html: email.html,
@@ -1414,7 +1414,7 @@ serve(async (req) => {
             method: 'POST',
             headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from: 'OCCTA Billing <billing@occta.co.uk>',
+              from: 'OCCTA <billing@occta.co.uk>',
               to: [pr.customer_email],
               subject,
               html: email.html,

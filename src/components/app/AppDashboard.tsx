@@ -25,6 +25,8 @@ import {
   Share2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { readCache, writeCache } from "@/lib/offlineCache";
+import { useRealtimeSync, useReconnectSync } from "@/hooks/useRealtimeSync";
 
 type Order = {
   id: string;
@@ -61,8 +63,8 @@ const AppDashboard = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(() => readCache<Profile>(null, "dashboard.profile"));
+  const [orders, setOrders] = useState<Order[]>(() => readCache<Order[]>(null, "dashboard.orders") ?? []);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -93,17 +95,47 @@ const AppDashboard = () => {
 
   const fetchUserData = async (userId: string) => {
     try {
+      const cachedProfile = readCache<Profile>(userId, "dashboard.profile");
+      const cachedOrders = readCache<Order[]>(userId, "dashboard.orders");
+      if (cachedProfile) setProfile(cachedProfile);
+      if (cachedOrders) setOrders(cachedOrders);
+
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+
       const [profileResult, ordersResult] = await Promise.all([
         supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
         supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
       ]);
 
-      if (profileResult.data) setProfile(profileResult.data as any);
-      if (ordersResult.data) setOrders(ordersResult.data as any);
+      if (profileResult.data) {
+        setProfile(profileResult.data as any);
+        writeCache(userId, "dashboard.profile", profileResult.data);
+      }
+      if (ordersResult.data) {
+        setOrders(ordersResult.data as any);
+        writeCache(userId, "dashboard.orders", ordersResult.data);
+      }
     } catch (error) {
       logError("AppDashboard.fetchUserData", error);
     }
   };
+
+  // Realtime: orders/invoices/services/profile changes for this user.
+  useRealtimeSync(
+    `app-dashboard-${user?.id ?? "anon"}`,
+    user
+      ? [
+          { table: "orders", filter: `user_id=eq.${user.id}` },
+          { table: "invoices", filter: `user_id=eq.${user.id}` },
+          { table: "services", filter: `user_id=eq.${user.id}` },
+          { table: "profiles", filter: `id=eq.${user.id}` },
+        ]
+      : [],
+    () => { if (user) fetchUserData(user.id); },
+    !!user,
+  );
+
+  useReconnectSync(() => { if (user) fetchUserData(user.id); }, !!user);
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();

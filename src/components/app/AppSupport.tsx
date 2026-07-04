@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -26,6 +26,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { readCache, writeCache } from "@/lib/offlineCache";
+import { useRealtimeSync, useReconnectSync } from "@/hooks/useRealtimeSync";
 
 type TicketType = {
   id: string;
@@ -46,29 +48,55 @@ const faqItems = [
 const AppSupport = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [tickets, setTickets] = useState<TicketType[]>([]);
+  const [tickets, setTickets] = useState<TicketType[]>(() => readCache<TicketType[]>(null, "support.tickets") ?? []);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      
-      if (user) {
-        const { data } = await supabase
-          .from("support_tickets")
-          .select("id, subject, status, created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(3);
-        
-        if (data) setTickets(data);
-      }
+  const fetchData = useCallback(async (uid?: string) => {
+    let currentUserId = uid;
+    if (!currentUserId) {
+      const { data: { user: u } } = await supabase.auth.getUser();
+      setUser(u);
+      currentUserId = u?.id;
+    }
+    if (!currentUserId) {
       setIsLoading(false);
-    };
-    
-    fetchData();
+      return;
+    }
+
+    const cached = readCache<TicketType[]>(currentUserId, "support.tickets");
+    if (cached) setTickets(cached);
+
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setIsLoading(false);
+      return;
+    }
+
+    const { data } = await supabase
+      .from("support_tickets")
+      .select("id, subject, status, created_at")
+      .eq("user_id", currentUserId)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    if (data) {
+      setTickets(data);
+      writeCache(currentUserId, "support.tickets", data);
+    }
+    setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useRealtimeSync(
+    `app-support-${user?.id ?? "anon"}`,
+    user ? [{ table: "support_tickets", filter: `user_id=eq.${user.id}` }] : [],
+    () => fetchData(user?.id),
+    !!user,
+  );
+
+  useReconnectSync(() => fetchData(user?.id), !!user);
 
   const statusColors: Record<string, string> = {
     open: "bg-warning/20 text-warning",

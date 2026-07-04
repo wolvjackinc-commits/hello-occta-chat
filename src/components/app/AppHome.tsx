@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "./PullToRefresh";
 import { useToast } from "@/hooks/use-toast";
+import { readCache, writeCache } from "@/lib/offlineCache";
+import { useRealtimeSync, useReconnectSync } from "@/hooks/useRealtimeSync";
 
 type Order = {
   id: string;
@@ -42,8 +44,10 @@ const AppHome = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [activeService, setActiveService] = useState<Order | null>(null);
+  const [profile, setProfile] = useState<any>(() => readCache<any>(null, "home.profile"));
+  const [activeService, setActiveService] = useState<Order | null>(
+    () => readCache<Order>(null, "home.activeService"),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
@@ -51,14 +55,33 @@ const AppHome = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setUser(user);
-      
+      // Hydrate from per-user cache first for instant paint / offline support.
+      const cachedProfile = readCache<any>(user.id, "home.profile");
+      const cachedService = readCache<Order>(user.id, "home.activeService");
+      if (cachedProfile) setProfile(cachedProfile);
+      if (cachedService) setActiveService(cachedService);
+
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        setIsLoading(false);
+        return;
+      }
+
       const [profileRes, ordersRes] = await Promise.all([
         supabase.from("customer_profile" as any).select("*").eq("id", user.id).maybeSingle(),
         supabase.from("customer_orders" as any).select("*").eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }).limit(1),
       ]);
-      
-      if (profileRes.data) setProfile(profileRes.data as any);
-      if (ordersRes.data && ordersRes.data.length > 0) setActiveService(ordersRes.data[0] as any);
+
+      if (profileRes.data) {
+        setProfile(profileRes.data as any);
+        writeCache(user.id, "home.profile", profileRes.data);
+      }
+      if (ordersRes.data && ordersRes.data.length > 0) {
+        setActiveService(ordersRes.data[0] as any);
+        writeCache(user.id, "home.activeService", ordersRes.data[0]);
+      } else if (ordersRes.data) {
+        setActiveService(null);
+        writeCache(user.id, "home.activeService", null);
+      }
     }
     setIsLoading(false);
   }, []);
@@ -69,6 +92,23 @@ const AppHome = () => {
       setNotificationsEnabled(Notification.permission === "granted");
     }
   }, [fetchUserData]);
+
+  // Live-refresh when this user's orders or profile change server-side.
+  useRealtimeSync(
+    `app-home-${user?.id ?? "anon"}`,
+    user
+      ? [
+          { table: "orders", filter: `user_id=eq.${user.id}` },
+          { table: "profiles", filter: `id=eq.${user.id}` },
+          { table: "services", filter: `user_id=eq.${user.id}` },
+        ]
+      : [],
+    fetchUserData,
+    !!user,
+  );
+
+  // Reconcile when the device comes back online.
+  useReconnectSync(fetchUserData);
 
   const handleRefresh = async () => {
     await fetchUserData();

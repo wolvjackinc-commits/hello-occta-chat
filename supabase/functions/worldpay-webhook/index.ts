@@ -186,6 +186,26 @@ serve(async (req) => {
 
   const body = await req.text();
   const payloadSha256 = await sha256Hex(body);
+  const bodyPreview = body.slice(0, 2000);
+
+  // Always log every incoming webhook request (fingerprint only in prod,
+  // full preview here for debuggability). Never awaited into the response
+  // to keep latency low.
+  await supabase.from("audit_logs").insert({
+    action: "worldpay_webhook_received",
+    entity: "payment",
+    metadata: {
+      gateway,
+      payload_sha256: payloadSha256,
+      body_preview: bodyPreview,
+      content_length: body.length,
+      headers: {
+        has_signature: !!(req.headers.get("x-wp-signature") || req.headers.get("X-WP-Signature")),
+        content_type: req.headers.get("content-type"),
+        user_agent: req.headers.get("user-agent"),
+      },
+    },
+  }).then(undefined, () => {});
 
   // Access Enterprise (HMAC) — preserved for forward compatibility.
   if (gateway === "access_enterprise") {
@@ -207,6 +227,14 @@ serve(async (req) => {
         entity: "payment",
         metadata: { gateway, hasSignature: !!signature },
       });
+      await raiseAdminAlert(supabase, {
+        title: "Worldpay webhook: invalid signature",
+        description:
+          `A Worldpay webhook was received with an invalid HMAC signature.\n` +
+          `gateway=${gateway} hasSignature=${!!signature}\n` +
+          `payload_sha256=${payloadSha256}`,
+        priority: "urgent",
+      });
       return json(401, { error: "Invalid signature" });
     }
     // Fall through to SMB-style processing for parity; both shapes now use
@@ -222,7 +250,14 @@ serve(async (req) => {
     await supabase.from("audit_logs").insert({
       action: "worldpay_webhook_malformed",
       entity: "payment",
-      metadata: { gateway, payload_sha256: payloadSha256 },
+      metadata: { gateway, payload_sha256: payloadSha256, body_preview: bodyPreview },
+    });
+    await raiseAdminAlert(supabase, {
+      title: "Worldpay webhook: malformed JSON",
+      description:
+        `Worldpay sent a webhook whose body is not valid JSON. Investigate and reply to Worldpay if this repeats.\n\n` +
+        `payload_sha256=${payloadSha256}\nbody_preview=${bodyPreview}`,
+      priority: "high",
     });
     return json(400, { error: "Malformed JSON" });
   }
@@ -232,7 +267,14 @@ serve(async (req) => {
     await supabase.from("audit_logs").insert({
       action: "worldpay_webhook_invalid_shape",
       entity: "payment",
-      metadata: { gateway, missing: shape.missing, payload_sha256: payloadSha256 },
+      metadata: { gateway, missing: shape.missing, payload_sha256: payloadSha256, body_preview: bodyPreview },
+    });
+    await raiseAdminAlert(supabase, {
+      title: "Worldpay webhook: invalid payload shape",
+      description:
+        `Missing fields: ${shape.missing.join(", ")}\n` +
+        `payload_sha256=${payloadSha256}\nbody_preview=${bodyPreview}`,
+      priority: "high",
     });
     return json(shape.status, { error: "Invalid payload", missing: shape.missing });
   }
@@ -280,6 +322,21 @@ serve(async (req) => {
         payload_sha256: payloadSha256,
       },
     });
+    // Only alert on settlements to avoid noise on early lifecycle events for
+    // sessions the customer abandoned before we recorded the reference.
+    if (ev.type === SETTLE_EVENT) {
+      await raiseAdminAlert(supabase, {
+        title: `Worldpay webhook: unknown settlement reference ${ev.transactionReference}`,
+        description:
+          `Worldpay reported a settlement but no payment_request matches this transactionReference. ` +
+          `Manually reconcile the payment.\n\n` +
+          `eventId=${ev.eventId}\n` +
+          `type=${ev.type}\n` +
+          `transactionReference=${ev.transactionReference}\n` +
+          `payload_sha256=${payloadSha256}`,
+        priority: "urgent",
+      });
+    }
     return json(200, { received: true, unknown_reference: true });
   }
 
@@ -298,6 +355,15 @@ serve(async (req) => {
         payload_sha256: payloadSha256,
       },
     });
+    if (ev.type === SETTLE_EVENT) {
+      await raiseAdminAlert(supabase, {
+        title: `Worldpay webhook: settlement on unlinked PR ${pr.id}`,
+        description:
+          `Payment request ${pr.id} is not linked to an invoice or contract summary but received a settlement webhook. ` +
+          `Reconcile manually.`,
+        priority: "urgent",
+      });
+    }
     return json(200, { received: true, rejected: "unlinked" });
   }
 
@@ -362,6 +428,15 @@ serve(async (req) => {
         expectedCurrency,
         payload_sha256: payloadSha256,
       },
+    });
+    await raiseAdminAlert(supabase, {
+      title: `Worldpay webhook: amount/currency mismatch on PR ${pr.id}`,
+      description:
+        `Worldpay reported provider=${providerMinor} ${providerCurrency} but the payment_request expects ${expectedMinor} ${expectedCurrency}. ` +
+        `Do NOT mark this invoice paid without manual reconciliation.\n\n` +
+        `eventId=${ev.eventId} type=${ev.type}`,
+      priority: "urgent",
+      relatedUserId: pr.user_id ?? null,
     });
     return json(200, { received: true, mismatch: true });
   }

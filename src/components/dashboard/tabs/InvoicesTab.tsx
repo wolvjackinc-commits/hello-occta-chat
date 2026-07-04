@@ -40,6 +40,10 @@ export function InvoicesTab({ userId }: { userId: string }) {
           activation fee and a pro-rata charge from your live date to your chosen billing date. After
           that, your monthly service is billed in advance on your selected billing date.
         </p>
+        <p className="text-muted-foreground mt-2">
+          <strong>Invoice link customers:</strong> You are not automatically charged. We send you an
+          invoice with a secure payment link, and you pay manually.
+        </p>
       </div>
       <section>
         <h3 className="font-display uppercase mb-3">Unpaid invoices</h3>

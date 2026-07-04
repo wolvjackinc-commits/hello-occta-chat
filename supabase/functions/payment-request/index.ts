@@ -1090,7 +1090,7 @@ serve(async (req) => {
             request_id: requestId,
             event_type: `redirect_${status}`,
             metadata: { reported_by: 'client_redirect', client_ip: clientIp },
-          }).catch(() => {});
+          }).then(undefined, () => {});
         }
 
         const isPaid = request.status === 'paid' || request.status === 'completed';
@@ -1243,7 +1243,7 @@ serve(async (req) => {
           request_id: inserted.id,
           event_type: 'created_cs_linked',
           metadata: { cs_number: cs.cs_number, created_by: verifiedAdminUserId },
-        }).catch(() => {});
+        }).then(undefined, () => {});
 
         await supabase.from('audit_logs').insert({
           actor_user_id: verifiedAdminUserId,
@@ -1251,7 +1251,7 @@ serve(async (req) => {
           entity: 'payment_request',
           entity_id: inserted.id,
           metadata: { cs_id: cs.id, cs_number: cs.cs_number, amount: inserted.amount },
-        }).catch(() => {});
+        }).then(undefined, () => {});
 
         return new Response(JSON.stringify({
           success: true,
@@ -1324,14 +1324,14 @@ serve(async (req) => {
               html: email.html,
               text: email.text,
             }),
-          }).catch((e) => console.error('DD email send failed', e));
+          }).then(undefined, (e) => console.error('DD email send failed', e));
         }
 
         await supabase.from('payment_request_events').insert({
           request_id: inserted.id,
           event_type: 'admin_dd_link_sent',
           metadata: { sent_by: verifiedAdminUserId, recipient: customer_email },
-        }).catch(() => {});
+        }).then(undefined, () => {});
 
         await supabase.from('communications_log').insert({
           user_id,
@@ -1340,7 +1340,7 @@ serve(async (req) => {
           recipient_email: customer_email,
           status: 'sent',
           sent_at: new Date().toISOString(),
-        }).catch(() => {});
+        }).then(undefined, () => {});
 
         return new Response(JSON.stringify({
           success: true,
@@ -1420,14 +1420,14 @@ serve(async (req) => {
               html: email.html,
               text: email.text,
             }),
-          }).catch((e) => console.error('Resend email failed', e));
+          }).then(undefined, (e) => console.error('Resend email failed', e));
         }
 
         await supabase.from('payment_request_events').insert({
           request_id,
           event_type: 'admin_resent',
           metadata: { resent_by: verifiedAdminUserId },
-        }).catch(() => {});
+        }).then(undefined, () => {});
 
         await supabase.from('communications_log').insert({
           user_id: pr.user_id,
@@ -1436,7 +1436,7 @@ serve(async (req) => {
           recipient_email: pr.customer_email,
           status: 'sent',
           sent_at: new Date().toISOString(),
-        }).catch(() => {});
+        }).then(undefined, () => {});
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1477,7 +1477,7 @@ serve(async (req) => {
           request_id,
           event_type: 'admin_voided',
           metadata: { voided_by: verifiedAdminUserId, reason: reason ?? null },
-        }).catch(() => {});
+        }).then(undefined, () => {});
 
         await supabase.from('audit_logs').insert({
           actor_user_id: verifiedAdminUserId,
@@ -1485,7 +1485,7 @@ serve(async (req) => {
           entity: 'payment_request',
           entity_id: request_id,
           metadata: { reason: reason ?? null },
-        }).catch(() => {});
+        }).then(undefined, () => {});
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1572,7 +1572,7 @@ serve(async (req) => {
           invoice_id: inv.id,
           event_type: 'sent',
           metadata: { sent_by: verifiedAdminUserId },
-        }).catch(() => {});
+        }).then(undefined, () => {});
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

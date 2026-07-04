@@ -124,6 +124,24 @@ Deno.serve(async (req) => {
   const serviceId: string | null = tx?.service_id ?? null;
   const alreadyLive: boolean = !!tx?.already_live;
 
+  // Fire process-first-billing immediately so the first invoice is created on
+  // service-live confirmation rather than waiting for the next cron tick.
+  // Non-blocking: cron will retry any job that we don't process here.
+  if (!alreadyLive) {
+    try {
+      const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
+      const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/process-first-billing`;
+      // Fire-and-forget-ish: we await briefly but ignore errors so activation
+      // still returns 200 (the job row already exists and cron will retry).
+      await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-cron-secret": cronSecret },
+      }).catch((e) => console.error("process-first-billing kickoff failed", e));
+    } catch (e) {
+      console.error("process-first-billing kickoff exception", e);
+    }
+  }
+
   // NOTE: service-activation-email outbox and first-billing-job rows are
   // written atomically inside `confirm_service_live_tx`. Do not insert
   // them here — that would double-write or hide rollback failures.

@@ -74,6 +74,8 @@ export default function Pay() {
   const [webhookVerified, setWebhookVerified] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [verifyAttempts, setVerifyAttempts] = useState(0);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   // Handle return from Worldpay. The browser return is NEVER authoritative —
   // we poll the backend until the worldpay-webhook marks the request paid+verified.
@@ -85,6 +87,7 @@ export default function Pay() {
 
     const tick = async () => {
       attempts++;
+      setVerifyAttempts(attempts);
       try {
         const { data } = await supabase.functions.invoke("payment-request", {
           body: { action: "verify-payment", requestId, status },
@@ -100,6 +103,9 @@ export default function Pay() {
         }
       } catch (err) {
         console.warn("[Pay] verify-payment poll error:", err);
+        setVerifyError(
+          err instanceof Error ? err.message : "Verification service is temporarily unavailable"
+        );
       }
       if (cancelled) return;
 

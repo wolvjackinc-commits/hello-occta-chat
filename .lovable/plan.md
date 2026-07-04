@@ -1,306 +1,344 @@
-  
-Approve the Billing Fix Plan with these mandatory corrections before implementation.
+FINAL OCCTA BILLING POLICY CORRECTION — IMPLEMENT EXACTLY
 
-## 1. Do not double-charge router/add-ons
+Use this billing rule. This overrides the previous confusion.
 
-Before adding `router_charge`, `selected_addons` or add-ons to the first invoice, classify each charge as:
+## FINAL BILLING RULE
 
-- one-off setup/activation charge;
-- one-off delivery/installation charge;
-- recurring monthly add-on;
-- already included in monthly plan price.
+1. Billing starts from the actual service live date.
+2. First invoice is created when admin confirms the service live.
+3. First invoice includes:
+  - activation/setup fee if shown in the accepted Contract Summary;
+  - accepted one-off charges;
+  - pro-rata service charge from actual live date to the customer’s chosen billing day;
+  - VAT itemisation;
+  - secure Worldpay payment link for invoice_link customers.
+4. After the first invoice, all recurring monthly invoices follow the customer’s chosen billing/pay day.
+5. Monthly service is billed in advance.
+6. Customer payment status must be tracked as paid, unpaid, overdue or partially paid where applicable.
+7. If unpaid, reminders must be sent automatically according to the approved reminder schedule.
+8. No duplicate invoice, payment request, email or receipt.
 
-Do not automatically treat all router/add-ons as one-off charges.
+## EXAMPLE
 
-If router is a recurring monthly add-on, it must be included in the monthly recurring charge or shown as a recurring monthly line, not charged once as a one-off.
+If:
 
-If unclear, block billing and create an admin reconciliation task.
+- service live date = 10 July;
+- chosen billing day = 25;
+- monthly price = £40;
+- setup fee = £67;
 
-## 2. Use the accepted Contract Summary money units correctly
+Then:
 
-Check whether `setup_charge`, `one_off_charges_json`, `monthly_price_incl_vat`, router and add-on values are stored as:
+First invoice is created immediately on service live confirmation.
 
-- pounds/pence decimal;
-- integer minor units;
-- VAT-inclusive;
-- VAT-exclusive.
+First invoice covers:
 
-Convert once only.
+- setup fee £67;
+- pro-rata service from 10 July to 24 July;
+- VAT itemised;
+- payment due according to payment terms.
 
-Do not double-convert pounds to pence or pence to pounds.
+Next recurring invoice:
 
-Store the snapshot values on `first_billing_jobs` in minor units with clear column names.
+- issued on 25 July;
+- covers 25 July to 24 August;
+- then monthly on the 25th.
 
-## 3. Existing blocked jobs must stay blocked until reviewed
+Do not wait until 25 July to send the first invoice.
 
-The new auto-unblocked behaviour must apply only to new service-live confirmations after this fix.
+## FIRST INVOICE BEHAVIOUR
 
-Do not automatically release historical `awaiting_billing_engine_handover` jobs.
+When Confirm Service Live is clicked:
 
-For existing blocked jobs:
+- create/update the service;
+- store actual activation date;
+- create first billing job immediately if data is complete;
+- first billing worker generates invoice immediately;
+- create invoice PDF;
+- create Worldpay payment request for invoice_link customers;
+- send invoice email;
+- set invoice status to sent;
+- track due date;
+- track payment status.
 
-- classify them;
-- create admin reconciliation tasks if needed;
-- release only after manual approval.
+If required data is missing, block the first invoice and create an admin task explaining what is missing.
 
-## 4. Recurring worker duplicate rule must check all existing invoices
+## RECURRING BILLING BEHAVIOUR
 
-The recurring worker must not only check for unpaid invoices.
+After first invoice:
 
-It must check for any existing non-cancelled invoice for:
+- use `services.next_billing_date` as the next customer chosen billing day;
+- create monthly invoice on that day;
+- invoice period should run from that billing day to the next billing day;
+- use anchor-day logic for 29/30/31 and short months;
+- advance `services.next_billing_date` only after successful invoice creation/email workflow;
+- prevent duplicate monthly invoices.
 
-- service_id;
-- billing_period_start;
-- billing_period_end;
-- invoice_type.
+## PAID / UNPAID / OVERDUE TRACKING
 
-Do not create a second invoice just because the first invoice is paid, sent, overdue or awaiting payment.
+Every invoice must have clear status:
 
-## 5. Email failure must not cause billing duplication or billing cursor problems
+- draft;
+- sent;
+- unpaid;
+- paid;
+- partially_paid if supported;
+- overdue;
+- cancelled;
+- written_off only if admin-approved.
 
-If invoice creation succeeds but PDF/email/payment-link sending fails:
+For invoice_link customers:
 
-- keep the invoice;
-- retry the same invoice/email/payment request idempotently;
-- do not create another invoice;
-- do not skip the customer permanently;
-- do not advance the billing cursor in a way that loses the failed invoice.
+- payment request is created;
+- customer pays manually using Worldpay link;
+- receipt is created only after verified Worldpay settlement;
+- invoice changes to paid only after verified payment.
 
-Use invoice/outbox state clearly.
+For Direct Debit customers:
 
-## 6. Period dates must be consistent
+- do not mark paid until collection/settlement is confirmed;
+- if DD mandate/provider is not active, create admin task and/or fallback payment link according to policy.
 
-Use one consistent rule internally:
+## REMINDERS
 
-- `billing_period_start` inclusive;
-- `billing_period_end` exclusive.
+Add or verify automated reminders for unpaid invoices.
 
-For customer-facing invoice display, show the friendly inclusive range, for example:
+Reminder schedule:
 
-- internal: 1 June to 1 July;
-- customer display: 1 June to 30 June.
+- due date reminder if invoice remains unpaid;
+- overdue reminder after due date;
+- final reminder after configured grace period;
+- admin task if still unpaid.
 
-Do not confuse customers by showing an end date that looks like the next period’s start date.
+Do not send aggressive or misleading debt wording.
 
-## 7. VAT source must come from the accepted agreement, not guessed customer type alone
+Reminder emails must include:
 
-Do not infer VAT mode only from `customer_type`.
+- invoice number;
+- amount due;
+- due date;
+- secure payment link if invoice_link;
+- support contact;
+- polite wording.
 
-Use the VAT/pricing basis stored in the accepted quote/Contract Summary snapshot.
+Use idempotency so the same reminder is not sent twice for the same reminder stage.
 
-If the accepted snapshot does not clearly say whether the price is VAT-inclusive or VAT-exclusive, block billing and create a reconciliation task.
+## BILLING DISPLAY
 
-## 8. First invoice should not run until final billing data is complete
+Admin and customer dashboard must show:
 
-Before clearing the first-billing blocker, verify:
+- actual service live date;
+- first invoice number/date/amount/status;
+- next invoice date;
+- next billing period;
+- payment method;
+- due date;
+- paid/unpaid/overdue status;
+- payment link status;
+- last payment date;
+- outstanding balance.
 
-- accepted Contract Summary exists;
-- accepted PDF/hash exists;
-- actual activation date exists;
-- monthly price source exists;
-- activation/setup fee source checked;
-- one-off/add-on charges classified;
-- payment method exists;
-- billing anchor exists;
-- VAT mode/rate exists;
-- no existing invoice for the same service/period/type.
+For invoice_link, show:
 
-If any required data is missing, set explicit blocker and create admin task.
+“The customer is not automatically charged. They receive an invoice with a secure payment link and pay manually.”
 
-## 9. Direct Debit active status still must not imply collection
+## EXISTING CUSTOMERS
 
-For DD active customers:
+Run reconciliation for all existing customers.
 
-- invoice can be marked awaiting DD collection only if an active mandate record exists;
-- no provider call is made;
-- customer wording must not say “collected” or “paid” until actual confirmation exists;
-- if no collection integration exists, admin task must explain the manual next step.
+Classify:
 
-## 10. Contract Summary wording applies only to new documents
+- OK;
+- missing first invoice;
+- first invoice missing activation/setup fee;
+- unpaid invoice;
+- overdue invoice;
+- missing payment request;
+- missing invoice email;
+- missing next billing date;
+- recurring schedule broken;
+- duplicate risk;
+- manual review required.
 
-Add the billing wording only to newly generated Contract Summaries.
+Auto-fix only safe deterministic cases.
 
-Do not alter historical accepted PDFs, hashes, receipts, invoices or payment records.
+Do not guess.
 
-## 11. Final report must prove examples from the actual code
+Do not edit accepted Contract Summary PDFs/hashes.
 
-After implementation, report:
+Do not duplicate invoices.
 
-- files/functions changed;
-- example A/B/C calculated by the updated code;
-- whether activation fee appears as invoice line;
-- whether one-off charges appear as invoice lines;
-- whether recurring add-ons are classified correctly;
-- VAT net/VAT/gross output;
-- 29/30/31 billing-date test;
-- duplicate worker test;
-- historical blocked-job safety result;
-- Worldpay webhook regression result;
-- quote journey and Contract Summary acceptance regression result;
+## CHRIS HUTT
+
+Chris Hutt already has first invoice INV-2607-0001.
+
+Do not recreate it.
+
+Fix only schedule display and future recurring invoices.
+
+His next invoice should follow `services.next_billing_date`.
+
+## FINAL REPORT
+
+Return:
+
+- files changed;
+- first invoice trigger confirmed;
+- recurring billing schedule confirmed;
+- paid/unpaid/overdue tracking result;
+- reminder schedule result;
+- dashboard/admin billing display result;
+- existing customer reconciliation result;
+- Chris Hutt result;
+- duplicate protection result;
+- payment link result;
 - build/typecheck result.
 
-Proceed with implementation only after these corrections are included.  
-  
-  
-Billing Fix Plan (approved scope only)
+Do not change quote journey, Contract Summary acceptance, Worldpay webhook, DD encryption, cancellation/ETF, admin navigation or RLS.
 
-Fixes only apply to billing worker, invoice generation, first-billing job creation, and customer-visible billing wording. Quote journey, Contract Summary generation/acceptance, Worldpay webhook, DD encryption, service activation UI, cancellation/ETF, admin nav and RLS are not touched.
+  
+  
+  
+  
+OCCTA Billing — End-to-End Fix Plan
+
+Goal: make billing correct for every existing customer and every future activation, using one canonical source of truth, without touching quote journey, Contract Summary acceptance, signed PDFs/hashes, Worldpay webhook, DD encryption, cancellation/ETF, admin nav, or RLS.
 
 ---
 
-## 1. Extend `first_billing_jobs` to carry accepted charges
+## 1. Canonical model (single source of truth)
 
-Migration: add columns
+Define once, use everywhere:
 
-- `activation_fee_minor int not null default 0`
-- `one_off_charges_minor int not null default 0`
-- `one_off_lines jsonb not null default '[]'` (label + amount, snapshot for invoice lines)
-- `vat_mode text not null default 'inclusive'` (`inclusive` = residential, `exclusive` = business)
-- `vat_rate numeric not null default 20`
+- **Actual activation date** → `services.actual_activation_date`
+- **Preferred billing/pay day** → `services.billing_anchor_day` (customer's chosen day)
+- **Next billing date** → `services.next_billing_date`
+- **Invoices** → `invoices` table (issue_date, due_date, billing_period_start/end, status, total)
+- **Payment method** → snapshot on `services.payment_method` (`invoice_link` | `direct_debit` | `card`)
+- **CS snapshot** → `contract_summaries` (monthly_price, setup_fee, one_off_charges, vat_mode/rate)
 
-No changes to historical rows other than defaults.
+Stop using `services.updated_at` and `billing_settings.next_invoice_date` for any customer-facing display or scheduling decision. `billing_settings` remains only for global tenant defaults (terms days, mode).
 
-## 2. `confirm_service_live_tx` — snapshot fees from accepted Contract Summary
+---
 
-Read from the accepted CS (source of truth, no hard-coding, no changes to the CS itself):
+## 2. Fix Billing Schedule display (admin + customer)
 
-- `monthly_price_incl_vat` → `amount_minor` (unchanged)
-- `setup_charge` → activation fee (minor)
-- `one_off_charges_json` → array snapshot (label + amount) + summed one-off total
-- `router_charge`, `delivery_charge`, `installation_charge`, `selected_addons` (accepted addons only) → added to one-off lines
-- `customer_type` → `vat_mode` (`residential` = inclusive, `business` = exclusive)
+Rewrite `src/components/admin/BillingSchedulePanel.tsx` and mirror on customer dashboard billing tab. It will read:
 
-Insert those into the new columns on `first_billing_jobs`.
+- **Service activated** ← `services.actual_activation_date` (fallback: earliest invoice.billing_period_start).
+- **First invoice** ← earliest `invoices` row for service (number, issue, due, status, £).
+- **Next invoice** ← `services.next_billing_date`; compute period `[next_billing_date, next_billing_date + 1 month on anchor)`, due = issue + `payment_terms_days`.
+- **Payment method label**:
+  - `invoice_link` → "Invoice link / manual card payment — you are not automatically charged."
+  - `direct_debit` → shows mandate/provider status from `dd_mandates_list`.
+- Removes fake computed dates when real invoices exist.
 
-Blocker policy (fix "always blocked"):
-
-- If all required inputs present (CS accepted with PDF + hash, payment method, anchor day, actual activation date), insert with `blocker = NULL`.
-- Otherwise set an explicit blocker enum and open an `admin_tasks` row describing the missing field. Manual hold flag remains supported via `blocker='manual_hold'`.
-
-Also seed the recurring cursor (see §4): set/update `services.next_billing_date` (already done) and upsert a `billing_settings` row for the customer with `next_invoice_date = services.next_billing_date`, `billing_day = anchor`, `billing_mode='fixed_day'`, VAT fields from CS. This makes recurring pick up seamlessly.
-
-## 3. `process-first-billing` — build the first invoice from the snapshot
-
-Compose invoice lines from the job row:
-
-1. `pro-rata service` line — existing pro-rata calc unchanged.
-2. `activation_fee` line — if `activation_fee_minor > 0`.
-3. One line per entry in `one_off_lines` — if any.
-
-Totals:
-
-- `subtotal_incl = pro_rata + activation_fee + sum(one_off)`
-- If `vat_mode='inclusive'`: `net = subtotal_incl / 1.2`, `vat = subtotal_incl − net`, `total = subtotal_incl`. Write `subtotal = net`, `vat_total = vat`, `total = subtotal_incl`, `vat_enabled=true`, `vat_rate=20`.
-- If `vat_mode='exclusive'`: `net = subtotal_ex`, `vat = net * 0.2`, `total = net + vat`.
-
-Invoice PDF + email get updated to show a proper table (Description | Net | VAT | Line total) plus Subtotal / VAT / Total. Line descriptions include their own period where relevant.
-
-Idempotency reused via existing `invoices_service_period_unique` (`service_id, period_start, period_end, invoice_type`).
-
-After successful send, insert/refresh a recurring row (§4) — no monthly job written yet, that's the recurring worker's job.
-
-## 4. Recurring monthly billing driven by services
-
-New edge function `process-recurring-billing` (replaces the current cron target). Runs on the existing `daily-invoice-generation` cron slot.
-
-Loop:
-
-- Select `services` where `status='active'`, `billing_enabled=true`, `next_billing_date <= today`, and no unpaid same-period invoice exists.
-- For each service:
-  - `period_start = next_billing_date`
-  - `period_end = next_anchor_billing_date(period_start + 1, billing_anchor_day)` (uses existing helper → correctly handles 29/30/31; if the chosen day doesn't exist in the target month it clamps to the last valid day).
-  - Invoice type = `monthly`, single service line = `price_monthly` (VAT inclusive/exclusive per snapshot).
-  - Same unique index prevents duplicates.
-  - Create PDF + Worldpay payment request (invoice-link) OR admin task (DD not-yet-active) OR mark ready-for-collection (DD active) — same branch logic as first-billing.
-  - Email once (idempotency key `invoice-monthly:<id>`).
-  - Advance `services.next_billing_date := period_end`.
-
-Legacy `generate-invoices` becomes a thin wrapper that delegates to the new worker (kept for cron URL compatibility) and no longer reads `billing_settings.next_invoice_date` as the driver. `billing_settings` is kept in sync but is informational.
-
-## 5. Billing day 29/30/31
-
-All date advancement goes through `public.next_anchor_billing_date`, which already clamps to month-length. Remove `Math.min(billing_day, 28)` from `generate-invoices`. New recurring worker never uses that cap.
-
-## 6. VAT itemisation
-
-Every invoice row (first + monthly) writes:
-
-- `subtotal` = net
-- `vat_total` = VAT
-- `vat_enabled` = true, `vat_rate` = 20
-- `total` = gross
-
-Invoice PDF and email template updated to show all three. Applies to new invoices only; historical rows untouched.
-
-## 7. Duplicate protection
-
-Single canonical rule: `invoices_service_period_unique(service_id, period_start, period_end, invoice_type)`. Both first-billing and recurring insert through this constraint (already present).
-
-Additional guards preserved:
-
-- PDF: `pdf_storage_key` presence check + `upsert:true` upload.
-- Payment request: lookup by `invoice_id`.
-- Email: `email_sent_at` + `send-email` idempotency key per invoice.
-- Receipt: only via Worldpay webhook.
-
-Legacy `idx_invoices_user_period` remains but is no longer relied on for correctness.
-
-## 8. Direct Debit behaviour
-
-Invoice is always created. Then:
-
-- `pm.method='direct_debit'` AND `pm.dd_setup_status='active'` AND a confirmed provider mandate is present (`dd_mandates` row with status `active`): mark invoice as `awaiting_dd_collection` (existing status wording preserved; no provider call — no automated collection is triggered from this repo, per approved scope).
-- DD pending / no active mandate: open `admin_tasks` row and (optional per policy) attach a fallback Worldpay `payment_requests` link. Customer is never told DD has been collected.
-
-No provider collection call is made from these workers.
-
-## 9. Customer-facing wording
-
-Add the exact sentence:
+Customer dashboard `InvoicesTab` gets the same explanatory block:
 
 > "Billing starts only once your service is confirmed live. Your first invoice may include your activation fee and a pro-rata charge from your live date to your chosen billing date. After that, your monthly service is billed in advance on your selected billing date."
-
-Locations:
-
-- New Contract Summary PDF template (only for CSes generated after deploy — historical PDFs + hashes untouched).
-- Checkout order summary block.
-- Invoice email template (first + monthly).
-- Invoice PDF footer note.
-- Dashboard billing tab notice.
-- `src/pages/seo/BillingExplained.tsx` / `FirstInvoiceExplained.tsx` cross-linked.
-
-## 10. Historical data
-
-No updates to existing rows in `invoices`, `contract_summaries`, `payment_requests`, `receipts`. Any correction needed for an existing customer goes through a new `admin_reconciliation_tasks` row (table already exists).
+> For `invoice_link`: "You are not automatically charged. We send you an invoice with a secure payment link, and you pay manually."
 
 ---
 
-## Files / DB objects to change
+## 3. Confirm Service Live — future customer automation
 
-- Migration: new columns on `first_billing_jobs`; no changes to existing invoice/CS structure.
-- DB: replace `confirm_service_live_tx` body (signature unchanged) to snapshot fees, seed billing_settings, set blocker only when required.
-- `supabase/functions/process-first-billing/index.ts` — multi-line invoice, VAT split, updated PDF/email.
-- `supabase/functions/generate-invoices/index.ts` — replaced by delegation to new worker (kept for cron URL).
-- `supabase/functions/process-recurring-billing/index.ts` — new, service-driven.
-- Cron: existing `daily-invoice-generation` continues to hit `/generate-invoices` (delegates).
-- `src/pages/seo/BillingExplained.tsx`, `src/pages/seo/FirstInvoiceExplained.tsx` — reinforce wording.
-- Checkout summary component (presentation only).
-- Dashboard billing tab (presentation only).
-- New CS PDF template block (new documents only).
+`supabase/functions/confirm-service-live` + `confirm_service_live_tx`:
 
-## Verification after implementation
+- Require `actual_activation_date`, activation reference.
+- Snapshot from accepted CS into service/first-billing-job: monthly price, setup fee, one-off charges, VAT mode/rate, payment method, billing_anchor_day.
+- Enqueue first-billing job unblocked when all required data present.
+- Block (create `admin_reconciliation_tasks` row) only when a required field is genuinely missing.
+- Compute `services.next_billing_date` = next occurrence of `billing_anchor_day` strictly after activation.
 
-- Example A: monthly £37.99 inc, activation £80.40 inc, live 26 May 2026, day 1 → pro-rata £7.60 + activation £80.40 = **£88.00 inc VAT** (net £73.33, VAT £14.67). Next invoice period: 1 Jun 2026 → 1 Jul 2026.
-- Example B: monthly £42.99 inc, activation £80.40 inc, live 28 Jun 2026, day 15 → pro-rata £23.58 + activation £80.40 = **£103.98 inc VAT** (net £86.65, VAT £17.33). Next period: 15 Jul 2026 → 15 Aug 2026.
-- Example C: monthly £39.99 inc, activation £0, live 10 Jul 2026, day 1 → pro-rata **£28.38 inc VAT** (net £23.65, VAT £4.73). Next period: 1 Aug 2026 → 1 Sep 2026.
-- Note: invoices round to the nearest penny using the system's billing calculation (half-up).
-- 29/30/31 tests: billing day 31, cycle Jan 31 → Feb 28 (or 29 in leap year) → Mar 31 → Apr 30 → May 31 …
-- Duplicate test: run each worker twice — second run inserts nothing.
-- Regression scope: no edits to quote journey, CS acceptance, Worldpay webhook, DD encryption, activation UI, cancellation/ETF, admin nav, or RLS.
+`process-first-billing` produces first invoice covering:
 
-## Non-goals
+- Pro-rata: activation date → next anchor
+- Activation/setup fee if in accepted CS and not previously charged
+- Accepted one-off charges
+- VAT itemised
+- If `invoice_link`: create payment_request + Worldpay HPP link, send `invoice_sent` email including `/pay?token=…`
 
-- No provider-side DD collection.
-- No re-issuing of historical invoices.
-- No changes to Worldpay webhook or verification.
-- No changes to Contract Summary schema or acceptance flow.
+Then `process-recurring-billing` picks up from `services.next_billing_date`.
+
+---
+
+## 4. Reconciliation for existing customers
+
+New admin page `src/pages/admin/BillingReconciliation.tsx` + edge function `billing-reconciliation` (dry-run by default).
+
+**Report columns**: account #, name/email, order #, order status, service status, actual activation date, accepted CS id, monthly £, setup £, one-off £, payment method, anchor day, first invoice exists, activation fee invoiced, last invoice period, last payment status, payment request exists, invoice email sent, receipt exists, `services.next_billing_date`, recurring ready, classification, recommended action.
+
+**Classifications**: OK | missing_first_invoice | first_invoice_missing_setup_fee | recurring_schedule_missing | next_billing_date_wrong | duplicate_risk | payment_link_missing | email_missing | manual_review.
+
+**Safe auto-fix** (admin clicks Apply after review) only when ALL true: service active, CS accepted + PDF/hash present, activation date present, monthly price present, payment method present, anchor present, no conflicting/duplicate invoices, no manual hold.
+
+Auto-fixable actions:
+
+- Backfill `services.next_billing_date`.
+- Enqueue missing first-billing job.
+- Unblock previously blocked first-billing jobs.
+- Create missing payment_request for an existing invoice (invoice_link only).
+- Re-send missing invoice email for an existing invoice (idempotent via `message_id`).
+
+Never auto-fix: conflicting invoices, unclear setup fee, missing CS/activation date, unclear payment method, potential overcharge, doc mismatch → create `admin_reconciliation_tasks` instead.
+
+**Existing live customers specific rules**:
+
+- No first invoice → generate correct invoice from live date + accepted CS (setup fee only if in CS).
+- First invoice sent but setup fee missed → create correction invoice only if clearly in CS and not charged; never edit old invoice.
+- Monthly stopped → produce next unbilled period only; period-dedup via `(service_id, billing_period_start, billing_period_end)` unique guard.
+- Overcharge → manual review + credit note workflow (queued task only).
+
+---
+
+## 5. Cron / worker verification
+
+Verify (and fix wiring only where broken, no rewrites):
+
+- `process-first-billing` scheduled & authenticated (`x-cron-secret`).
+- `process-recurring-billing` scheduled & authenticated.
+- `generate-invoices` delegates to recurring (already does).
+- `send-email` uses `invoice_sent` template with `/pay?token=…`.
+- Invoice PDFs served via signed URLs only.
+- Payment requests deduped per invoice.
+- Receipts only on Worldpay settlement (webhook path untouched).
+
+---
+
+## 6. Guardrails
+
+- Do not edit historical accepted CS PDFs/hashes.
+- Do not duplicate invoices: enforce unique on `(service_id, billing_period_start, billing_period_end)` at fixer + DB level (add index if missing, no destructive migration).
+- Idempotency keys on all email sends (`invoice-<invoice_id>`).
+- All admin errors surface original backend message via existing `invokeFn` wrapper.
+
+---
+
+## 7. Verification
+
+- **Chris Hutt (OCC69244673)** after fix: activated 25 Jun 2026; first invoice INV-2607-0001, £101.99, sent; next 25 Jul 2026 → 24 Aug 2026; payment method "Invoice link / manual card payment"; no new invoice created.
+- **Future test activation**: Confirm Live → first invoice with setup+service+VAT → email sent → `/pay?token=…` opens without login → next monthly scheduled.
+- Build + typecheck clean.
+
+---
+
+## Technical Details
+
+**Files to change**
+
+- `src/components/admin/BillingSchedulePanel.tsx` — rewrite to canonical sources.
+- `src/components/dashboard/tabs/InvoicesTab.tsx` — payment-method explanation for invoice_link.
+- `src/pages/admin/BillingReconciliation.tsx` — new admin page.
+- `src/components/admin/CustomerActionsCard.tsx` — add "Reconcile billing" quick action linking to report row.
+- `supabase/functions/billing-reconciliation/index.ts` — new (dry-run + apply modes, admin-only).
+- `supabase/functions/confirm-service-live/index.ts` — ensure snapshot + unblock logic; add clear error codes if fields missing.
+- `supabase/functions/process-first-billing/index.ts` — ensure setup fee + pro-rata + VAT + payment_request + email; idempotent.
+- `supabase/functions/process-recurring-billing/index.ts` — ensure driven only by `services.next_billing_date`; period dedup.
+- Migration: add columns if missing (`services.billing_anchor_day`, `actual_activation_date` already exist per audit); add unique index `invoices(service_id, billing_period_start, billing_period_end) WHERE type='monthly'`; add `admin_reconciliation_tasks` rows structure only if needed.
+- No changes to: quote journey, CS acceptance, Worldpay webhook, DD encryption, cancellation, admin nav, RLS.
+
+**Non-destructive rules**
+
+- All fixer writes go through explicit admin "Apply" — never on page load.
+- Every fixer action writes an `audit_logs` row.
+- Duplicate protection via DB-level unique index + pre-check in worker.

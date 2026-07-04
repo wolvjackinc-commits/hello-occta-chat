@@ -12,6 +12,7 @@ import PrivateRouteNoIndex from "@/components/seo/PrivateRouteNoIndex";
 import { captureReferralFromUrl } from "@/lib/referral";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import OAuthConsent from "./pages/OAuthConsent";
 import Dashboard from "./pages/Dashboard";
 import { ProtectedAdminRoute } from "./components/admin/layout/ProtectedAdminRoute";
 import { AdminLayout } from "./components/admin/layout/AdminLayout";
@@ -161,6 +162,7 @@ const AnimatedRoutes = () => {
       <Routes location={location}>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin/*" element={<ProtectedAdminRoute />}>
           <Route element={<AdminLayout />}>

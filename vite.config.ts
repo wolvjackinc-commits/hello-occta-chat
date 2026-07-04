@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { seoPrerender } from "./vite-plugin-prerender";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 const publicBackendEnv = {
   VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ?? "https://oexgjmuvgdndizsufipe.supabase.co",
@@ -32,6 +33,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     seoPrerender(),
+    mcpPlugin(),
   ].filter(Boolean),
   resolve: {
     alias: {

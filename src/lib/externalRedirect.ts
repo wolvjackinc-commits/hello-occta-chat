@@ -9,7 +9,10 @@ export function redirectToExternal(url: string) {
   if (typeof window === "undefined") return;
 
   const host = window.location.hostname;
-  const isPreviewHost = host.startsWith("id-preview--");
+  const isPreviewHost =
+    host.startsWith("id-preview--") ||
+    host.endsWith(".lovableproject.com") ||
+    host === "lovableproject.com";
 
   // In embedded preview iframes, accessing window.top can throw (cross-origin).
   // Also, 3DS/postMessage flows can break inside the Lovable preview iframe.

@@ -62,7 +62,8 @@ export default function Pay() {
   const isRunningOnStableOrigin =
     typeof window === "undefined" ? true : window.location.origin === stableOrigin;
 
-  const shouldOpenOnStableOrigin = !isRunningOnStableOrigin && !!token && !status;
+  const shouldOpenOnStableOrigin =
+    !isRunningOnStableOrigin && (!!token || !!requestId || !!status);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -80,7 +81,7 @@ export default function Pay() {
     if (!status || !requestId) return;
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 20; // ~60s at 3s intervals
+    const maxAttempts = 40; // ~60s at 1.5s intervals
 
     const tick = async () => {
       attempts++;
@@ -121,7 +122,7 @@ export default function Pay() {
         setIsLoading(false);
         return;
       }
-      setTimeout(tick, 3000);
+      setTimeout(tick, 1500);
     };
 
     setVerifying(true);
@@ -248,6 +249,18 @@ export default function Pay() {
   // domain BEFORE starting Worldpay.
   if (shouldOpenOnStableOrigin) {
     const stableUrl = `${stableOrigin}/pay?${searchParams.toString()}`;
+    // Return flows (with status/requestId) auto-redirect — the customer already
+    // completed the payment; don't make them click an extra button.
+    if (status || requestId) {
+      if (typeof window !== "undefined") {
+        window.location.replace(stableUrl);
+      }
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md border-4 border-foreground">

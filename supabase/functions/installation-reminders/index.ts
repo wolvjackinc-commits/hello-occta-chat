@@ -119,7 +119,7 @@ const getReminderEmailHtml = (booking: InstallationBooking, orderDetails: { addr
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div style="background: #22c55e; padding: 16px 32px; border-bottom: 4px solid #0d0d0d;">
@@ -284,7 +284,7 @@ const handler = async (req: Request): Promise<Response> => {
         const slotTime = TIME_SLOT_LABELS[booking.installation_slots?.slot_time] || booking.installation_slots?.slot_time || "scheduled time";
         
         const emailResult = await resend.emails.send({
-          from: `OCCTA Telecom <${fromEmail}>`,
+          from: `OCCTA <${fromEmail}>`,
           to: [booking.customer_email],
           subject: `📅 Installation Tomorrow – ${slotTime}`,
           html: getReminderEmailHtml(booking, orderDetails),

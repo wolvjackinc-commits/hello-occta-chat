@@ -121,7 +121,7 @@ const getEmailWrapper = (content: string, trackingPixel: string) => `
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       <div class="content">
         ${content}

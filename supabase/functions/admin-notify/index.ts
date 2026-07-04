@@ -829,7 +829,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`[admin-notify] Subject: ${emailContent.subject}`);
 
     const emailResponse = await resend.emails.send({
-      from: `OCCTA Admin <${FROM_EMAIL}>`,
+      from: `OCCTA <${FROM_EMAIL}>`,
       to: [ADMIN_EMAIL],
       subject: emailContent.subject,
       html: emailContent.html,

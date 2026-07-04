@@ -162,7 +162,7 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -265,7 +265,7 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -361,7 +361,7 @@ const getStatusUpdateHtml = (data: Record<string, unknown>) => {
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -432,7 +432,7 @@ const getOrderMessageHtml = (data: Record<string, unknown>) => `
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -492,7 +492,7 @@ const getTicketReplyHtml = (data: Record<string, unknown>) => `
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -554,7 +554,7 @@ const getPasswordResetHtml = (data: Record<string, unknown>) => `
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -634,7 +634,7 @@ const getInvoiceSentHtml = (data: Record<string, unknown>) => {
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -740,7 +740,7 @@ const getPaymentLinkHtml = (data: Record<string, unknown>) => {
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -843,7 +843,7 @@ const getInvoiceExternalPaymentHtml = (data: Record<string, unknown>) => {
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -966,7 +966,7 @@ const getInvoicePaidHtml = (data: Record<string, unknown>) => {
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       <div class="title-banner">
@@ -1042,7 +1042,7 @@ const getCustomAdminHtml = (data: Record<string, unknown>) => {
     <div class="container">
       <div class="header">
         <div class="logo">OCCTA</div>
-        <div class="tagline">Telecom • Connected</div>
+        <div class="tagline">Brilliant Made Simple</div>
       </div>
       
       ${data.title_banner !== false ? `
@@ -1259,7 +1259,7 @@ const handler = async (req: Request): Promise<Response> => {
     const bccList = type === "order_confirmation" && adminEmail ? [adminEmail] : undefined;
     
     const emailResponse = await resend.emails.send({
-      from: `OCCTA Telecom <${fromEmail}>`,
+      from: `OCCTA <${fromEmail}>`,
       to: [to],
       bcc: bccList,
       subject,

@@ -100,7 +100,7 @@ export async function sendResendEmail(opts: {
   const rawFrom = (Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk").trim();
   const addrMatch = rawFrom.match(/<([^>]+)>/);
   const address = (addrMatch ? addrMatch[1] : rawFrom).trim();
-  const from = `OCCTA Limited <${address}>`;
+  const from = `OCCTA <${address}>`;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },

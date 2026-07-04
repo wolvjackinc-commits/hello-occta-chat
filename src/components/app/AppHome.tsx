@@ -152,7 +152,23 @@ const AppHome = () => {
                   <span className="text-sm text-muted-foreground capitalize">{activeService.service_type}</span>
                   <span className="px-2 py-0.5 bg-success/20 text-success text-xs rounded-full font-medium">Active</span>
                 </div>
-                <button className="flex items-center gap-1 text-accent text-sm font-medium">
+              <button
+                className="flex items-center gap-1 text-accent text-sm font-medium"
+                aria-label="Share service details"
+                onClick={async () => {
+                  const serviceText = `${activeService.plan_name} at ${activeService.postcode} — £${activeService.plan_price}/mo`;
+                  try {
+                    if (navigator.share) {
+                      await navigator.share({ title: "My OCCTA service", text: serviceText, url: window.location.origin });
+                    } else if (navigator.clipboard) {
+                      await navigator.clipboard.writeText(serviceText);
+                      toast({ title: "Copied", description: "Service details copied" });
+                    }
+                  } catch {
+                    toast({ title: "Share cancelled", description: "Nothing was shared" });
+                  }
+                }}
+              >
                   <Share2 className="w-4 h-4" />
                 </button>
               </div>

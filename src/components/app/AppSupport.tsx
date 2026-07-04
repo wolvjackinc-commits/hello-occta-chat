@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Phone, 
@@ -35,15 +35,16 @@ type TicketType = {
 };
 
 const faqItems = [
-  { icon: CreditCard, label: "Billing & Payments", description: "Invoices, refunds, payment methods" },
-  { icon: Wifi, label: "Broadband Help", description: "Speed, setup, troubleshooting" },
-  { icon: Smartphone, label: "SIM & Mobile", description: "Activation, data, roaming" },
-  { icon: AlertTriangle, label: "Faults & Outages", description: "Report issues, check status" },
-  { icon: Lock, label: "Account & Security", description: "Password, settings, privacy" },
-  { icon: ShoppingCart, label: "Orders & Activation", description: "Track orders, activation" },
+  { icon: CreditCard, label: "Billing & Payments", description: "Invoices, refunds, payment methods", link: "/faq?category=billing" },
+  { icon: Wifi, label: "Broadband Help", description: "Speed, setup, troubleshooting", link: "/faq?category=services" },
+  { icon: Smartphone, label: "SIM & Mobile", description: "Activation, data, roaming", link: "/faq?category=services" },
+  { icon: AlertTriangle, label: "Faults & Outages", description: "Report issues, check status", link: "/status" },
+  { icon: Lock, label: "Account & Security", description: "Password, settings, privacy", link: "/dashboard?tab=settings" },
+  { icon: ShoppingCart, label: "Orders & Activation", description: "Track orders, activation", link: "/dashboard?tab=orders" },
 ];
 
 const AppSupport = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,6 +77,8 @@ const AppSupport = () => {
     closed: "bg-muted text-muted-foreground",
   };
 
+  const openChat = () => window.dispatchEvent(new CustomEvent("open-ai-chat"));
+
   return (
     <div className="min-h-screen bg-muted/30 pb-20">
       {/* Header Area - AI First */}
@@ -93,7 +96,7 @@ const AppSupport = () => {
             <p className="text-sm text-muted-foreground mb-3">
               Solve issues in seconds with our AI assistant
             </p>
-            <Button className="w-full rounded-xl bg-primary hover:bg-primary/90">
+            <Button className="w-full rounded-xl bg-primary hover:bg-primary/90" onClick={openChat}>
               <MessageCircle className="w-4 h-4 mr-2" />
               Start AI Chat
             </Button>
@@ -143,6 +146,7 @@ const AppSupport = () => {
           {faqItems.map((item, index) => (
             <button
               key={item.label}
+              onClick={() => navigate(item.link)}
               className={`flex items-center gap-4 p-4 w-full text-left ${index !== faqItems.length - 1 ? 'border-b border-border' : ''}`}
             >
               <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
@@ -191,9 +195,9 @@ const AppSupport = () => {
                 </div>
               ))}
             </div>
-            <Button className="w-full mt-4 rounded-xl" variant="outline">
+            <Button className="w-full mt-4 rounded-xl" variant="outline" onClick={openChat}>
               <Plus className="w-4 h-4 mr-2" />
-              New Ticket
+              Start AI Chat
             </Button>
             <p className="text-xs text-muted-foreground text-center mt-2">
               Tip: Try our AI assistant first for faster help
@@ -217,9 +221,9 @@ const AppSupport = () => {
               <p className="text-sm text-muted-foreground mb-3">
                 Most issues can be resolved instantly with our AI assistant or FAQs above.
               </p>
-              <Button variant="outline" className="rounded-xl">
+              <Button variant="outline" className="rounded-xl" onClick={openChat}>
                 <Plus className="w-4 h-4 mr-2" />
-                Create Ticket
+                Start AI Chat
               </Button>
             </div>
           </motion.div>

@@ -57,28 +57,69 @@ export default function PayInvoice() {
 
   const checkAuthAndLoadInvoice = async () => {
     try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        navigate(`/auth?redirect=/pay-invoice?id=${invoiceId}`);
+        return;
+      }
+      
+      setUser(currentUser);
+
       if (!invoiceId) {
         setError('No invoice specified');
         setLoading(false);
         return;
       }
 
-      const { data, error: tokenError } = await supabase.functions.invoke('payment-request', {
-        body: { action: 'issue-invoice-payment-token', invoiceId },
-      });
+      // Load invoice
+      const { data: invoiceData, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('id', invoiceId)
+        .single();
 
-      if (tokenError) throw tokenError;
-
-      if (!data?.success) {
-        setError(data?.error || 'Unable to open this invoice payment link');
+      if (invoiceError || !invoiceData) {
+        setError('Invoice not found');
         setLoading(false);
         return;
       }
 
-      navigate(data.pay_url_path || `/pay?token=${encodeURIComponent(data.token)}`, { replace: true });
+      // Check user owns this invoice
+      if (invoiceData.user_id !== currentUser.id) {
+        setError('You do not have permission to view this invoice');
+        setLoading(false);
+        return;
+      }
+
+      setInvoice(invoiceData);
+
+      // Load profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('email, full_name, account_number')
+        .eq('id', currentUser.id)
+        .single();
+
+      setProfile(profileData);
+
+      // If invoice is paid, load receipt
+      if (invoiceData.status === 'paid') {
+        const { data: receiptData } = await supabase
+          .from('receipts')
+          .select('id, amount, paid_at, method, reference')
+          .eq('invoice_id', invoiceId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        setReceipt(receiptData);
+      }
+
+      setLoading(false);
     } catch (err) {
       console.error('Error loading invoice:', err);
-      setError('Failed to open invoice payment link');
+      setError('Failed to load invoice');
       setLoading(false);
     }
   };

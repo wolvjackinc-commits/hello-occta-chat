@@ -366,7 +366,6 @@ export const AdminBilling = () => {
                 customer_name: profile.full_name || "Customer",
                 account_number: profile.account_number || "",
                 invoice_number: invoice.invoice_number,
-                  invoice_id: invoice.id,
                 issue_date: format(new Date(invoice.issue_date), "dd MMM yyyy"),
                 due_date: invoice.due_date ? format(new Date(invoice.due_date), "dd MMM yyyy") : null,
                 subtotal: invoice.subtotal,

@@ -59,7 +59,8 @@ export const BrandLayout: React.FC<BrandLayoutProps> = ({
               <div style={logoMark}>O</div>
             </Column>
             <Column style={{ verticalAlign: 'middle' }}>
-              <Text style={logoText}>OCCTA LIMITED</Text>
+              <Text style={logoText}>OCCTA</Text>
+              <Text style={logoTagline}>Brilliant Made Simple</Text>
             </Column>
           </Row>
         </Section>
@@ -93,8 +94,8 @@ export const BrandLayout: React.FC<BrandLayoutProps> = ({
 
         {/* Footer — three columns + legal */}
         <Section style={footer}>
-          <Text style={footerBrand}>OCCTA LIMITED</Text>
-          <Text style={tagline}>No contracts. No price-rise nonsense. Just proper British telecom.</Text>
+          <Text style={footerBrand}>OCCTA</Text>
+          <Text style={tagline}>Brilliant Made Simple — no contracts, no price-rise nonsense, just proper British telecom.</Text>
 
           <Row style={{ marginTop: '20px' }}>
             <Column style={footerCol}>
@@ -179,6 +180,16 @@ const logoText: React.CSSProperties = {
   color: '#0d0d0d',
   margin: 0,
   paddingLeft: '12px',
+}
+const logoTagline: React.CSSProperties = {
+  fontSize: '9px',
+  fontWeight: 700,
+  letterSpacing: '2px',
+  color: '#0d0d0d',
+  margin: '2px 0 0',
+  paddingLeft: '12px',
+  textTransform: 'uppercase',
+  opacity: 0.75,
 }
 const content: React.CSSProperties = { padding: '32px 32px 8px' }
 const h1: React.CSSProperties = {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -58,6 +58,7 @@ const statusConfig = {
 
 const AppDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -126,15 +127,136 @@ const AppDashboard = () => {
   const userInitials = userName.slice(0, 2).toUpperCase();
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
   const totalMonthly = activeOrders.reduce((sum, o) => sum + o.plan_price, 0);
+  const activeSection = searchParams.get("tab") || "account";
 
   const menuItems = [
-    { icon: Package, label: "All Orders", description: "View order history", link: "/dashboard", badge: orders.length },
+    { icon: Package, label: "All Orders", description: "View order history", link: "/dashboard?tab=orders", badge: orders.length },
     { icon: HelpCircle, label: "Support", description: "Get help & contact us", link: "/support" },
-    { icon: FileText, label: "Documents", description: "Bills & statements", link: "/dashboard" },
-    { icon: Bell, label: "Notifications", description: "Manage alerts", link: "/dashboard" },
-    { icon: Shield, label: "Privacy", description: "Security settings", link: "/dashboard" },
-    { icon: Settings, label: "Settings", description: "App preferences", link: "/dashboard" },
+    { icon: FileText, label: "Documents", description: "Bills & statements", link: "/dashboard?tab=documents" },
+    { icon: Bell, label: "Notifications", description: "Manage alerts", link: "/dashboard?tab=notifications" },
+    { icon: Shield, label: "Privacy", description: "Security settings", link: "/dashboard?tab=privacy" },
+    { icon: Settings, label: "Settings", description: "App preferences", link: "/dashboard?tab=settings" },
   ];
+
+  const renderSection = () => {
+    const sectionTitle: Record<string, string> = {
+      orders: "All Orders",
+      documents: "Documents",
+      notifications: "Notifications",
+      privacy: "Privacy",
+      settings: "Settings",
+    };
+
+    if (!sectionTitle[activeSection]) return null;
+
+    return (
+      <div className="min-h-screen bg-muted/30 pb-8">
+        <div className="bg-accent px-4 pt-4 pb-8 rounded-b-3xl">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="w-10 h-10 rounded-full bg-background/15 text-accent-foreground flex items-center justify-center"
+              aria-label="Back to account"
+            >
+              <ChevronRight className="w-5 h-5 rotate-180" />
+            </button>
+            <h2 className="font-bold text-lg text-accent-foreground">{sectionTitle[activeSection]}</h2>
+          </div>
+        </div>
+
+        <div className="px-4 -mt-4">
+          {activeSection === "orders" && (
+            <div className="bg-background rounded-2xl shadow-sm overflow-hidden">
+              {orders.length > 0 ? orders.map((order, index) => {
+                const Icon = serviceIcons[order.service_type] || Package;
+                const status = statusConfig[order.status];
+                return (
+                  <div key={order.id} className={`flex items-center gap-3 p-4 ${index !== orders.length - 1 ? "border-b border-border" : ""}`}>
+                    <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center">
+                      <Icon className="w-5 h-5 text-accent" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{order.plan_name}</p>
+                      <p className="text-sm text-muted-foreground">{order.postcode}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${status.color}`}>{status.label}</span>
+                      <p className="text-sm font-bold mt-1">£{order.plan_price}/mo</p>
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div className="p-5 text-center">
+                  <Package className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="font-medium">No orders yet</p>
+                  <Link to="/broadband" className="block mt-4"><Button className="rounded-xl">Add Broadband</Button></Link>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeSection === "documents" && (
+            <div className="space-y-3">
+              <Link to="/dashboard?tab=invoices" className="flex items-center gap-4 p-4 bg-background rounded-2xl shadow-sm">
+                <FileText className="w-5 h-5 text-accent" />
+                <div className="flex-1"><p className="font-medium">Bills & statements</p><p className="text-sm text-muted-foreground">Invoices and receipts</p></div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </Link>
+              <Link to="/dashboard?tab=orders" className="flex items-center gap-4 p-4 bg-background rounded-2xl shadow-sm">
+                <Package className="w-5 h-5 text-accent" />
+                <div className="flex-1"><p className="font-medium">Order documents</p><p className="text-sm text-muted-foreground">Service paperwork</p></div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </Link>
+            </div>
+          )}
+
+          {activeSection === "notifications" && (
+            <div className="bg-background rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-4"><Bell className="w-5 h-5 text-accent" /><div><p className="font-medium">Service alerts</p><p className="text-sm text-muted-foreground">Billing, orders and support updates</p></div></div>
+              <Button className="w-full rounded-xl" onClick={async () => {
+                if (!("Notification" in window)) {
+                  toast({ title: "Unavailable", description: "Notifications are not supported on this device" });
+                  return;
+                }
+                const permission = await Notification.requestPermission();
+                toast({ title: permission === "granted" ? "Notifications enabled" : "Notifications not enabled" });
+              }}>
+                Manage Notifications
+              </Button>
+            </div>
+          )}
+
+          {activeSection === "privacy" && (
+            <div className="bg-background rounded-2xl shadow-sm overflow-hidden">
+              {[{ label: "Privacy Policy", to: "/privacy" }, { label: "Cookie Policy", to: "/cookies" }, { label: "Terms of Service", to: "/terms" }].map((item, index) => (
+                <Link key={item.to} to={item.to} className={`flex items-center gap-4 p-4 ${index !== 2 ? "border-b border-border" : ""}`}>
+                  <Shield className="w-5 h-5 text-accent" />
+                  <span className="flex-1 font-medium">{item.label}</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {activeSection === "settings" && (
+            <div className="space-y-3">
+              <div className="bg-background rounded-2xl p-4 shadow-sm">
+                <p className="text-sm text-muted-foreground">Signed in as</p>
+                <p className="font-medium truncate">{user.email}</p>
+              </div>
+              <Link to="/broadband" className="block"><Button variant="outline" className="w-full rounded-xl h-12"><Wifi className="w-4 h-4 mr-2" />Add Broadband</Button></Link>
+              <Button variant="outline" className="w-full rounded-xl h-12 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={handleSignOut}>
+                <LogOut className="w-4 h-4 mr-2" />Sign Out
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const sectionContent = renderSection();
+  if (sectionContent) return sectionContent;
 
   return (
     <div className="min-h-screen bg-muted/30">

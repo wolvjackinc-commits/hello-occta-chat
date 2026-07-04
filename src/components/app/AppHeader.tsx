@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, MoreHorizontal } from "lucide-react";
 
@@ -27,6 +27,7 @@ const getPageTitle = (pathname: string): string => {
 
 const AppHeader = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === "/";
   const title = getPageTitle(location.pathname);
 
@@ -47,12 +48,14 @@ const AppHeader = () => {
         
         <div className="flex items-center gap-2">
           <button 
+            onClick={() => navigate("/support")}
             className="w-10 h-10 rounded-full flex items-center justify-center"
             aria-label="Search"
           >
             <Search className="w-5 h-5 text-accent-foreground" />
           </button>
           <button 
+            onClick={() => navigate("/dashboard?tab=settings")}
             className="w-10 h-10 rounded-full flex items-center justify-center"
             aria-label="More options"
           >

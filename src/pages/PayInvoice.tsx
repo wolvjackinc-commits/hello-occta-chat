@@ -10,7 +10,6 @@ import { format } from 'date-fns';
 import { generateReceiptPdf } from '@/lib/generateReceiptPdf';
 import { toast } from 'sonner';
 import { CONTACT_PHONE_DISPLAY } from '@/lib/constants';
-import { hashToken } from '@/lib/tokenHash';
 
 interface Invoice {
   id: string;
@@ -133,8 +132,6 @@ export default function PayInvoice() {
 
     // Handle case where profile might not be loaded yet
     const customerEmail = profile?.email || user.email;
-    const customerName = profile?.full_name || user.user_metadata?.full_name || 'Customer';
-    const accountNumber = profile?.account_number || null;
 
     if (!customerEmail) {
       console.error('No customer email available');
@@ -144,58 +141,19 @@ export default function PayInvoice() {
 
     setProcessing(true);
     try {
-      // Create new payment request with hashed token
-      const rawToken = crypto.randomUUID();
-      console.log('Generated raw token:', rawToken);
-      
-      // Compute SHA-256 hash of the token
-      let tokenHash: string;
-      try {
-        tokenHash = await hashToken(rawToken);
-        console.log('Computed token hash:', tokenHash, 'length:', tokenHash.length);
-        
-        // Verify hash looks correct (should be 64 hex chars)
-        if (tokenHash.length !== 64 || !/^[a-f0-9]+$/.test(tokenHash)) {
-          throw new Error('Invalid hash format');
-        }
-      } catch (hashError) {
-        console.error('Token hashing failed:', hashError);
-        toast.error('Security error. Please try again.');
-        setProcessing(false);
-        return;
-      }
-      
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
+      const { data, error: fnError } = await supabase.functions.invoke('payment-request', {
+        body: {
+          action: 'customer-create-invoice-payment',
+          invoiceId: invoice.id,
+        },
+      });
 
-      console.log('Creating payment request for invoice:', invoice.id);
-
-      const { error: insertError } = await supabase
-        .from('payment_requests')
-        .insert({
-          type: 'card_payment',
-          invoice_id: invoice.id,
-          user_id: user.id,
-          customer_name: customerName,
-          customer_email: customerEmail,
-          account_number: accountNumber,
-          amount: invoice.total,
-          currency: invoice.currency || 'GBP',
-          status: 'sent',
-          token_hash: tokenHash, // Store SHA-256 hashed token
-          expires_at: expiresAt.toISOString(),
-          due_date: invoice.due_date,
-        });
-
-      if (insertError) {
-        console.error('Failed to create payment request:', insertError);
+      if (fnError || !data?.success || !data?.token) {
+        console.error('Failed to create payment request:', fnError || data?.error);
         throw new Error('Failed to create payment request');
       }
 
-      console.log('Payment request created, redirecting to /pay with token');
-
-      // Redirect to payment page with raw token (not the hash)
-      navigate(`/pay?token=${rawToken}`);
+      navigate(data.pay_url_path || `/pay?token=${encodeURIComponent(data.token)}`);
     } catch (err) {
       console.error('Error creating payment request:', err);
       toast.error('Failed to start payment. Please try again.');

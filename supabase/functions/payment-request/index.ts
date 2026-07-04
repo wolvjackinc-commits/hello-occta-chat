@@ -165,6 +165,142 @@ serve(async (req) => {
 
     switch (action) {
       // ==========================================
+      // CUSTOMER: create invoice payment link from dashboard
+      // ==========================================
+      case 'customer-create-invoice-payment': {
+        const { invoiceId } = data;
+
+        if (!invoiceId) {
+          return new Response(JSON.stringify({ success: false, error: 'invoiceId required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const authHeader = req.headers.get('Authorization') || '';
+        const token = authHeader.replace(/^Bearer\s+/i, '');
+        if (!token) {
+          return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+        const currentUser = userData?.user;
+        if (userErr || !currentUser) {
+          return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: invoice, error: invoiceErr } = await supabase
+          .from('invoices')
+          .select('id, invoice_number, total, currency, status, due_date, user_id')
+          .eq('id', invoiceId)
+          .single();
+
+        if (invoiceErr || !invoice) {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (invoice.user_id !== currentUser.id) {
+          return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (['paid', 'completed', 'cancelled'].includes(String(invoice.status))) {
+          return new Response(JSON.stringify({ success: false, error: 'This invoice is not payable' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const amount = Number(invoice.total || 0);
+        if (!isFinite(amount) || amount <= 0) {
+          return new Response(JSON.stringify({ success: false, error: 'This invoice has no outstanding balance' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email, full_name, account_number')
+          .eq('id', currentUser.id)
+          .single();
+
+        const customerEmail = profile?.email || currentUser.email;
+        if (!customerEmail) {
+          return new Response(JSON.stringify({ success: false, error: 'No email address on file' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const rawBytes = new Uint8Array(32);
+        crypto.getRandomValues(rawBytes);
+        const rawToken = btoa(String.fromCharCode(...rawBytes))
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
+        const tokenHash = await hashToken(rawToken);
+        const expiresAt = new Date(Date.now() + 14 * 86400000).toISOString();
+
+        const { data: inserted, error: insertErr } = await supabase
+          .from('payment_requests')
+          .insert({
+            type: 'card_payment',
+            invoice_id: invoice.id,
+            user_id: currentUser.id,
+            customer_name: profile?.full_name || currentUser.user_metadata?.full_name || 'Customer',
+            customer_email: customerEmail,
+            account_number: profile?.account_number || null,
+            amount,
+            currency: invoice.currency || 'GBP',
+            status: 'sent',
+            token_hash: tokenHash,
+            expires_at: expiresAt,
+            due_date: invoice.due_date,
+            metadata: {
+              source: 'customer_dashboard',
+              invoice_number: invoice.invoice_number,
+            },
+          })
+          .select('id')
+          .single();
+
+        if (insertErr || !inserted) {
+          console.error('customer-create-invoice-payment insert error:', insertErr);
+          return new Response(JSON.stringify({ success: false, error: 'Failed to create payment request' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        await supabase.from('payment_request_events').insert({
+          request_id: inserted.id,
+          event_type: 'customer_dashboard_created',
+          metadata: { invoice_id: invoice.id, client_ip: clientIp },
+        }).then(undefined, () => {});
+
+        return new Response(JSON.stringify({
+          success: true,
+          payment_request_id: inserted.id,
+          token: rawToken,
+          pay_url_path: `/pay?token=${encodeURIComponent(rawToken)}`,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // ==========================================
       // VALIDATE TOKEN (with security enhancements)
       // ==========================================
       case 'validate-token': {

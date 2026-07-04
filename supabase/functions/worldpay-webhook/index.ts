@@ -234,7 +234,7 @@ serve(async (req) => {
   const { data: pr, error: prErr } = await supabase
     .from("payment_requests")
     .select(
-      "id, status, amount, currency, contract_summary_id, webhook_verified, metadata",
+      "id, status, amount, currency, contract_summary_id, invoice_id, user_id, webhook_verified, metadata",
     )
     .eq("provider_reference", ev.transactionReference)
     .maybeSingle();
@@ -258,10 +258,12 @@ serve(async (req) => {
     return json(200, { received: true, unknown_reference: true });
   }
 
-  // CS-linked guard — all live PRs in this phase must be CS-linked.
-  if (!pr.contract_summary_id) {
+  // A payment request must be linked to either a contract summary (new-customer
+  // onboarding) or an existing invoice (customer dashboard / admin payment link).
+  // Anything else is rejected as unrecognised.
+  if (!pr.contract_summary_id && !pr.invoice_id) {
     await supabase.from("audit_logs").insert({
-      action: "worldpay_webhook_non_cs_linked_rejected",
+      action: "worldpay_webhook_unlinked_rejected",
       entity: "payment_request",
       entity_id: pr.id,
       metadata: {
@@ -271,7 +273,7 @@ serve(async (req) => {
         payload_sha256: payloadSha256,
       },
     });
-    return json(200, { received: true, rejected: "non_cs_linked" });
+    return json(200, { received: true, rejected: "unlinked" });
   }
 
   // Idempotency: dedupe by eventId across this PR's event log.
@@ -442,6 +444,47 @@ serve(async (req) => {
         cs_linked: true,
       },
     });
+
+    // Invoice-linked PR (customer dashboard / admin payment link):
+    // mark the invoice paid and create a receipt so the customer can
+    // download it and the app shows "paid" instantly.
+    if (pr.invoice_id && !pr.contract_summary_id) {
+      try {
+        const receiptRef = `WP-${ev.transactionReference.slice(0, 12).toUpperCase()}`;
+        const { data: existingReceipt } = await supabase
+          .from("receipts")
+          .select("id")
+          .eq("invoice_id", pr.invoice_id)
+          .eq("reference", receiptRef)
+          .maybeSingle();
+        if (!existingReceipt) {
+          await supabase.from("receipts").insert({
+            invoice_id: pr.invoice_id,
+            user_id: pr.user_id,
+            amount: Number(pr.amount || 0),
+            method: "card",
+            reference: receiptRef,
+            paid_at: nowIso,
+          });
+        }
+        await supabase
+          .from("invoices")
+          .update({ status: "paid", updated_at: nowIso })
+          .eq("id", pr.invoice_id)
+          .neq("status", "paid");
+        await supabase.from("payment_attempts").insert({
+          user_id: pr.user_id,
+          invoice_id: pr.invoice_id,
+          amount: Number(pr.amount || 0),
+          status: "success",
+          provider: "worldpay",
+          provider_ref: ev.transactionReference,
+          reason: "Card payment via Worldpay HPP",
+        }).then(undefined, () => {});
+      } catch (e) {
+        console.error("invoice_paid_side_effects_failed", e);
+      }
+    }
 
     // NOTE: Phase E payment verification only. DO NOT create invoices,
     // services, supplier orders, DD mandates, installation bookings or

@@ -12,8 +12,12 @@ export function getPaymentReturnOrigin(): string {
 
   const host = window.location.hostname;
 
-  // Lovable preview domains are ephemeral and can break 3DS postMessage/origin checks.
-  const isPreviewHost = host.startsWith("id-preview--");
+  // Lovable preview/sandbox domains are ephemeral and can break 3DS postMessage/origin
+  // checks. Any host on lovableproject.com or an id-preview-- lovable.app is a preview.
+  const isPreviewHost =
+    host.startsWith("id-preview--") ||
+    host.endsWith(".lovableproject.com") ||
+    host === "lovableproject.com";
   const isLocalhost = host === "localhost" || host === "127.0.0.1";
 
   if (isPreviewHost || isLocalhost) {

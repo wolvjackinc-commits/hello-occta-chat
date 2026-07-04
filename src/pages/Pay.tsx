@@ -80,7 +80,7 @@ export default function Pay() {
     if (!status || !requestId) return;
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 20; // ~60s at 3s intervals
+    const maxAttempts = 40; // ~60s at 1.5s intervals
 
     const tick = async () => {
       attempts++;
@@ -121,7 +121,7 @@ export default function Pay() {
         setIsLoading(false);
         return;
       }
-      setTimeout(tick, 3000);
+      setTimeout(tick, 1500);
     };
 
     setVerifying(true);

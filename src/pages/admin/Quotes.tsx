@@ -275,7 +275,14 @@ export const AdminQuotes = () => {
               <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No quotes.</TableCell></TableRow>
             ) : (
               filtered.map((r: any) => (
-                <TableRow key={r.id} className="border-b-2 border-foreground/10">
+                <TableRow
+                  key={r.id}
+                  className={`border-b-2 border-foreground/10 ${
+                    r.status === "accepted" || r.status === "converted"
+                      ? "bg-success/15 hover:bg-success/25"
+                      : ""
+                  }`}
+                >
                   <TableCell className="text-xs">{format(new Date(r.created_at), "dd MMM HH:mm")}</TableCell>
                   <TableCell className="text-xs font-mono">{r.quote_number}</TableCell>
                   <TableCell className="text-sm">
@@ -293,7 +300,17 @@ export const AdminQuotes = () => {
                       ? <>£{Number(r.monthly_net).toFixed(2)} ex<br/>£{Number(r.monthly_gross).toFixed(2)} inc</>
                       : <>£{Number(r.monthly_gross).toFixed(2)} <span className="text-muted-foreground">inc</span></>}
                   </TableCell>
-                  <TableCell><Badge className="border-2 border-foreground capitalize">{r.status}</Badge></TableCell>
+                  <TableCell>
+                    <Badge
+                      className={`border-2 border-foreground capitalize ${
+                        r.status === "accepted" || r.status === "converted"
+                          ? "bg-success text-success-foreground"
+                          : ""
+                      }`}
+                    >
+                      {r.status}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-[10px] font-mono leading-tight">
                     <div>S: {r.sent_at ? format(new Date(r.sent_at), "dd MMM HH:mm") : "—"}</div>
                     <div>O: {r.opened_at ? format(new Date(r.opened_at), "dd MMM HH:mm") : "—"}</div>

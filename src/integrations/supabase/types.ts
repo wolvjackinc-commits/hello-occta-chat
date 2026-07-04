@@ -1611,6 +1611,8 @@ export type Database = {
           accepted_ip: string | null
           accepted_user_agent: string | null
           account_number: string | null
+          archived_at: string | null
+          archived_reason: string | null
           business_monthly_ex_vat: number | null
           business_monthly_incl_vat: number | null
           cease_cancellation_charges: string | null
@@ -1668,6 +1670,8 @@ export type Database = {
           accepted_ip?: string | null
           accepted_user_agent?: string | null
           account_number?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null
           cease_cancellation_charges?: string | null
@@ -1725,6 +1729,8 @@ export type Database = {
           accepted_ip?: string | null
           accepted_user_agent?: string | null
           account_number?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null
           cease_cancellation_charges?: string | null
@@ -3983,6 +3989,8 @@ export type Database = {
         Row: {
           account_number: string | null
           amount: number | null
+          archived_at: string | null
+          archived_reason: string | null
           completed_at: string | null
           contract_acceptance_id: string | null
           contract_summary_id: string | null
@@ -4018,6 +4026,8 @@ export type Database = {
         Insert: {
           account_number?: string | null
           amount?: number | null
+          archived_at?: string | null
+          archived_reason?: string | null
           completed_at?: string | null
           contract_acceptance_id?: string | null
           contract_summary_id?: string | null
@@ -4053,6 +4063,8 @@ export type Database = {
         Update: {
           account_number?: string | null
           amount?: number | null
+          archived_at?: string | null
+          archived_reason?: string | null
           completed_at?: string | null
           contract_acceptance_id?: string | null
           contract_summary_id?: string | null
@@ -4455,6 +4467,9 @@ export type Database = {
           address_line1: string | null
           address_line2: string | null
           admin_notes: string | null
+          archived_at: string | null
+          archived_by: string | null
+          archived_reason: string | null
           city: string | null
           created_at: string
           date_of_birth: string | null
@@ -4463,6 +4478,7 @@ export type Database = {
           id: string
           phone: string | null
           postcode: string | null
+          suspended_at: string | null
           updated_at: string
         }
         Insert: {
@@ -4470,6 +4486,9 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_reason?: string | null
           city?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -4478,6 +4497,7 @@ export type Database = {
           id: string
           phone?: string | null
           postcode?: string | null
+          suspended_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -4485,6 +4505,9 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_reason?: string | null
           city?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -4493,6 +4516,7 @@ export type Database = {
           id?: string
           phone?: string | null
           postcode?: string | null
+          suspended_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -5747,6 +5771,8 @@ export type Database = {
           activation_notes: string | null
           activation_reference: string | null
           actual_activation_date: string | null
+          archived_at: string | null
+          archived_reason: string | null
           billing_anchor_day: number | null
           billing_enabled: boolean
           contract_summary_id: string | null
@@ -5781,6 +5807,8 @@ export type Database = {
           activation_notes?: string | null
           activation_reference?: string | null
           actual_activation_date?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
           billing_anchor_day?: number | null
           billing_enabled?: boolean
           contract_summary_id?: string | null
@@ -5815,6 +5843,8 @@ export type Database = {
           activation_notes?: string | null
           activation_reference?: string | null
           actual_activation_date?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
           billing_anchor_day?: number | null
           billing_enabled?: boolean
           contract_summary_id?: string | null
@@ -7418,6 +7448,10 @@ export type Database = {
       admin_approve_final_quote: {
         Args: { _quote_id: string }
         Returns: undefined
+      }
+      admin_archive_customer: {
+        Args: { p_action: string; p_customer_id: string; p_reason: string }
+        Returns: Json
       }
       admin_link_quote_request: {
         Args: { _new_user_id: string; _qr_id: string; _reason: string }

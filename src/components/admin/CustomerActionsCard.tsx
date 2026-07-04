@@ -8,13 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Banknote, FileText, Mail, ShieldCheck, Loader2, Copy } from "lucide-react";
+import { Banknote, FileText, Mail, ShieldCheck, Loader2, Copy, PauseCircle, PlayCircle, XCircle } from "lucide-react";
 
 interface Customer {
   id: string;
   full_name: string | null;
   email: string | null;
   account_number: string | null;
+  suspended_at?: string | null;
+  archived_at?: string | null;
 }
 
 interface Invoice {
@@ -31,14 +33,20 @@ interface Props {
 }
 
 export function CustomerActionsCard({ customer, invoices, onChanged }: Props) {
-  const [open, setOpen] = useState<null | "dd" | "email" | "invoice">(null);
+  const [open, setOpen] = useState<null | "dd" | "email" | "invoice" | "suspend" | "cancel" | "resume">(null);
+  const isSuspended = !!customer.suspended_at;
+  const isArchived = !!customer.archived_at;
 
   return (
     <Card className="border-2 border-foreground p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Customer 360 actions</div>
-          <div className="text-sm">Send links, invoices and direct comms — all logged.</div>
+          <div className="text-sm">
+            Send links, invoices and direct comms — all logged.
+            {isArchived && <span className="ml-2 inline-block px-2 py-0.5 bg-destructive text-destructive-foreground text-[10px] uppercase font-bold">Archived</span>}
+            {isSuspended && !isArchived && <span className="ml-2 inline-block px-2 py-0.5 bg-warning text-warning-foreground text-[10px] uppercase font-bold">Suspended</span>}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" className="border-2 border-foreground" onClick={() => setOpen("dd")}>
@@ -50,13 +58,132 @@ export function CustomerActionsCard({ customer, invoices, onChanged }: Props) {
           <Button size="sm" variant="outline" className="border-2 border-foreground" onClick={() => setOpen("email")}>
             <Mail className="h-4 w-4 mr-2" /> Direct email
           </Button>
+          {!isArchived && !isSuspended && (
+            <Button size="sm" variant="outline" className="border-2 border-warning text-warning" onClick={() => setOpen("suspend")}>
+              <PauseCircle className="h-4 w-4 mr-2" /> Suspend
+            </Button>
+          )}
+          {isSuspended && (
+            <Button size="sm" variant="outline" className="border-2 border-foreground" onClick={() => setOpen("resume")}>
+              <PlayCircle className="h-4 w-4 mr-2" /> Resume
+            </Button>
+          )}
+          {!isArchived && (
+            <Button size="sm" variant="destructive" onClick={() => setOpen("cancel")}>
+              <XCircle className="h-4 w-4 mr-2" /> Cancel & archive
+            </Button>
+          )}
         </div>
       </div>
 
       <SendDDLinkDialog open={open === "dd"} onClose={() => { setOpen(null); onChanged?.(); }} customer={customer} />
       <SendDirectEmailDialog open={open === "email"} onClose={() => { setOpen(null); onChanged?.(); }} customer={customer} />
       <SendInvoiceDialog open={open === "invoice"} onClose={() => { setOpen(null); onChanged?.(); }} customer={customer} invoices={invoices} />
+      <LifecycleDialog
+        open={open === "suspend" || open === "cancel" || open === "resume"}
+        action={open === "suspend" ? "suspend" : open === "cancel" ? "cancel" : "resume"}
+        onClose={() => { setOpen(null); onChanged?.(); }}
+        customer={customer}
+      />
     </Card>
+  );
+}
+
+/* -------------------- Suspend / Cancel / Resume -------------------- */
+
+function LifecycleDialog({
+  open,
+  action,
+  onClose,
+  customer,
+}: {
+  open: boolean;
+  action: "suspend" | "cancel" | "resume";
+  onClose: () => void;
+  customer: Customer;
+}) {
+  const { toast } = useToast();
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (reason.trim().length < 3) {
+      toast({ title: "Reason required (3+ chars)", variant: "destructive" });
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("admin_archive_customer", {
+        p_customer_id: customer.id,
+        p_action: action,
+        p_reason: reason.trim(),
+      });
+      if (error) throw new Error(error.message);
+      const r = data as any;
+      toast({
+        title:
+          action === "cancel"
+            ? "Account cancelled & archived"
+            : action === "suspend"
+            ? "Account suspended"
+            : "Account resumed",
+        description: `Services: ${r?.services_updated ?? 0}${action === "cancel" ? ` · Payment requests voided: ${r?.payment_requests_updated ?? 0} · Summaries archived: ${r?.contract_summaries_updated ?? 0}` : ""}`,
+      });
+      setReason("");
+      onClose();
+    } catch (e: any) {
+      toast({ title: `${action} failed`, description: e.message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const heading =
+    action === "cancel"
+      ? "Cancel account & archive"
+      : action === "suspend"
+      ? "Suspend account"
+      : "Resume account";
+  const body =
+    action === "cancel"
+      ? "Cancels every live service, voids any outstanding payment requests and archives contract summaries. Records are preserved in the archive for compliance."
+      : action === "suspend"
+      ? "Pauses all live services. Reversible via Resume."
+      : "Restores suspended services to active.";
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-md flex flex-col max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle>{heading}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">{body}</p>
+          <div>
+            <Label>Reason (audit log)</Label>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={4}
+              maxLength={500}
+              placeholder={action === "cancel" ? "e.g. customer request — moving supplier" : "e.g. non-payment"}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
+          <Button
+            onClick={submit}
+            disabled={busy}
+            variant={action === "cancel" ? "destructive" : "default"}
+            className="border-2 border-foreground"
+          >
+            {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            {action === "cancel" ? "Confirm cancel & archive" : action === "suspend" ? "Suspend" : "Resume"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, lazy, Suspense, useCallback } from "react";
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -44,6 +44,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { GlobalSearch, useGlobalSearch } from "@/components/admin/GlobalSearch";
+
+const AIChatBot = lazy(() => import("@/components/chat/AIChatBot"));
 
 /**
  * Phase 5 — Admin navigation consolidated into exactly eight top-level
@@ -139,6 +141,12 @@ export const AdminLayout = () => {
   const { toast } = useToast();
   const { open: globalSearchOpen, setOpen: setGlobalSearchOpen } = useGlobalSearch();
   const [searchTerm, setSearchTerm] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
+  const openChat = useCallback(() => setChatOpen(true), []);
+  useEffect(() => {
+    window.addEventListener("open-ai-chat", openChat);
+    return () => window.removeEventListener("open-ai-chat", openChat);
+  }, [openChat]);
   const [activeAction, setActiveAction] = useState<QuickActionType>(null);
   const [actionPayload, setActionPayload] = useState({
     accountNumber: "",

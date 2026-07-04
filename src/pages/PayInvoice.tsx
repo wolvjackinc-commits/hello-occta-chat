@@ -132,8 +132,6 @@ export default function PayInvoice() {
 
     // Handle case where profile might not be loaded yet
     const customerEmail = profile?.email || user.email;
-    const customerName = profile?.full_name || user.user_metadata?.full_name || 'Customer';
-    const accountNumber = profile?.account_number || null;
 
     if (!customerEmail) {
       console.error('No customer email available');

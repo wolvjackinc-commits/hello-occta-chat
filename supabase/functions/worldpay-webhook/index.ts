@@ -445,6 +445,47 @@ serve(async (req) => {
       },
     });
 
+    // Invoice-linked PR (customer dashboard / admin payment link):
+    // mark the invoice paid and create a receipt so the customer can
+    // download it and the app shows "paid" instantly.
+    if (pr.invoice_id && !pr.contract_summary_id) {
+      try {
+        const receiptRef = `WP-${ev.transactionReference.slice(0, 12).toUpperCase()}`;
+        const { data: existingReceipt } = await supabase
+          .from("receipts")
+          .select("id")
+          .eq("invoice_id", pr.invoice_id)
+          .eq("reference", receiptRef)
+          .maybeSingle();
+        if (!existingReceipt) {
+          await supabase.from("receipts").insert({
+            invoice_id: pr.invoice_id,
+            user_id: pr.user_id,
+            amount: Number(pr.amount || 0),
+            method: "card",
+            reference: receiptRef,
+            paid_at: nowIso,
+          });
+        }
+        await supabase
+          .from("invoices")
+          .update({ status: "paid", updated_at: nowIso })
+          .eq("id", pr.invoice_id)
+          .neq("status", "paid");
+        await supabase.from("payment_attempts").insert({
+          user_id: pr.user_id,
+          invoice_id: pr.invoice_id,
+          amount: Number(pr.amount || 0),
+          status: "success",
+          provider: "worldpay",
+          provider_ref: ev.transactionReference,
+          reason: "Card payment via Worldpay HPP",
+        }).then(undefined, () => {});
+      } catch (e) {
+        console.error("invoice_paid_side_effects_failed", e);
+      }
+    }
+
     // NOTE: Phase E payment verification only. DO NOT create invoices,
     // services, supplier orders, DD mandates, installation bookings or
     // provisioning rows here. DO NOT send automatic emails.

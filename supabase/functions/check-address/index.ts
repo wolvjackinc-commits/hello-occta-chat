@@ -54,7 +54,8 @@ function toGooglePlaceAddress(place: any, postcode: string) {
 
 async function getGoogleTextSearchAddresses(postcode: string) {
   const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
-  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
+  const googleMapsKey =
+    Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
   if (!lovableApiKey || !googleMapsKey) return []
 
   const res = await fetch(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:searchText`, {
@@ -89,7 +90,8 @@ async function getGoogleTextSearchAddresses(postcode: string) {
 
 async function getGoogleAddressFallback(postcode: string) {
   const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
-  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
+  const googleMapsKey =
+    Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
   if (!lovableApiKey || !googleMapsKey) return []
 
   const res = await fetch(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:autocomplete`, {

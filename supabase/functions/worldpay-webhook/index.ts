@@ -14,6 +14,31 @@ const json = (status: number, data: unknown) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+// Raise an admin task for operationally critical webhook failures so staff
+// can react quickly to missed / mismatched Worldpay settlements.
+async function raiseAdminAlert(
+  supabase: any,
+  opts: {
+    title: string;
+    description: string;
+    priority?: "low" | "medium" | "high" | "urgent";
+    relatedUserId?: string | null;
+  },
+) {
+  try {
+    await supabase.from("admin_tasks").insert({
+      title: opts.title.slice(0, 200),
+      description: opts.description.slice(0, 4000),
+      priority: opts.priority ?? "high",
+      status: "open",
+      source: "worldpay_webhook",
+      related_user_id: opts.relatedUserId ?? null,
+    });
+  } catch (e) {
+    console.error("admin_alert_insert_failed", e);
+  }
+}
+
 async function sha256Hex(input: string): Promise<string> {
   const bytes = new TextEncoder().encode(input);
   const buf = await crypto.subtle.digest("SHA-256", bytes);

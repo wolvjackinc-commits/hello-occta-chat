@@ -25,6 +25,7 @@ const AdminCustomerDetail = lazy(() => import("./pages/admin/CustomerDetail").th
 const AdminOrders = lazy(() => import("./pages/admin/Orders").then(m => ({ default: m.AdminOrders })));
 const AdminTickets = lazy(() => import("./pages/admin/Tickets").then(m => ({ default: m.AdminTickets })));
 const AdminBilling = lazy(() => import("./pages/admin/Billing").then(m => ({ default: m.AdminBilling })));
+const AdminBillingReconciliation = lazy(() => import("./pages/admin/BillingReconciliation").then(m => ({ default: m.AdminBillingReconciliation })));
 const AdminServices = lazy(() => import("./pages/admin/Services").then(m => ({ default: m.AdminServices })));
 const AdminPaymentsDD = lazy(() => import("./pages/admin/PaymentsDD").then(m => ({ default: m.AdminPaymentsDD })));
 const AdminInstallations = lazy(() => import("./pages/admin/Installations").then(m => ({ default: m.AdminInstallations })));
@@ -174,6 +175,7 @@ const AnimatedRoutes = () => {
             <Route path="orders" element={<Suspense fallback={<AdminRouteFallback />}><AdminOrders /></Suspense>} />
             <Route path="tickets" element={<Suspense fallback={<AdminRouteFallback />}><AdminTickets /></Suspense>} />
             <Route path="billing" element={<Suspense fallback={<AdminRouteFallback />}><AdminBilling /></Suspense>} />
+            <Route path="billing/reconciliation" element={<Suspense fallback={<AdminRouteFallback />}><AdminBillingReconciliation /></Suspense>} />
             <Route path="services" element={<Suspense fallback={<AdminRouteFallback />}><AdminServices /></Suspense>} />
             <Route path="payments-dd" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentsDD /></Suspense>} />
             <Route path="installations" element={<Suspense fallback={<AdminRouteFallback />}><AdminInstallations /></Suspense>} />

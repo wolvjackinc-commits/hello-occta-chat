@@ -249,6 +249,18 @@ export default function Pay() {
   // domain BEFORE starting Worldpay.
   if (shouldOpenOnStableOrigin) {
     const stableUrl = `${stableOrigin}/pay?${searchParams.toString()}`;
+    // Return flows (with status/requestId) auto-redirect — the customer already
+    // completed the payment; don't make them click an extra button.
+    if (status || requestId) {
+      if (typeof window !== "undefined") {
+        window.location.replace(stableUrl);
+      }
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md border-4 border-foreground">

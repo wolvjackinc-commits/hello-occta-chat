@@ -31,9 +31,10 @@ export function AdminBillingReconciliation() {
   const run = async (m: "report" | "apply") => {
     setLoading(true); setMode(m);
     try {
-      const data = await invokeFn<{ summary: any; rows: Row[] }>("billing-reconciliation", { mode: m });
-      setRows(data.rows ?? []); setSummary(data.summary ?? null);
-      toast({ title: m === "apply" ? "Auto-fixes applied" : "Report generated", description: `${data.summary?.total ?? 0} services reviewed.` });
+      const { data, error } = await invokeFn<{ summary: any; rows: Row[] }>("billing-reconciliation", { body: { mode: m } });
+      if (error) throw error;
+      setRows(data?.rows ?? []); setSummary(data?.summary ?? null);
+      toast({ title: m === "apply" ? "Auto-fixes applied" : "Report generated", description: `${data?.summary?.total ?? 0} services reviewed.` });
     } catch (e: any) {
       toast({ title: "Reconciliation failed", description: e.message || String(e), variant: "destructive" });
     } finally { setLoading(false); }

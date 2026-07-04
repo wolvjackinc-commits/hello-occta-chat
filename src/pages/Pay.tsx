@@ -74,6 +74,8 @@ export default function Pay() {
   const [webhookVerified, setWebhookVerified] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [verifyAttempts, setVerifyAttempts] = useState(0);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   // Handle return from Worldpay. The browser return is NEVER authoritative —
   // we poll the backend until the worldpay-webhook marks the request paid+verified.
@@ -85,6 +87,7 @@ export default function Pay() {
 
     const tick = async () => {
       attempts++;
+      setVerifyAttempts(attempts);
       try {
         const { data } = await supabase.functions.invoke("payment-request", {
           body: { action: "verify-payment", requestId, status },
@@ -100,6 +103,9 @@ export default function Pay() {
         }
       } catch (err) {
         console.warn("[Pay] verify-payment poll error:", err);
+        setVerifyError(
+          err instanceof Error ? err.message : "Verification service is temporarily unavailable"
+        );
       }
       if (cancelled) return;
 
@@ -338,6 +344,7 @@ export default function Pay() {
 
   // Result screens
   if (status && !paymentResult && verifying) {
+    const slowConfirmation = verifyAttempts >= 8; // ~12s in
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md border-4 border-foreground">
@@ -350,6 +357,22 @@ export default function Pay() {
             <p className="text-muted-foreground text-sm">
               We're waiting for confirmation from Worldpay. This can take a few moments. Please don't close this page.
             </p>
+            {slowConfirmation && (
+              <div className="border-2 border-foreground bg-secondary/40 p-3 text-left text-xs space-y-2">
+                <p className="font-semibold uppercase tracking-widest">Taking longer than usual</p>
+                <p className="text-muted-foreground">
+                  Your bank has authorised the payment but Worldpay hasn't sent us the settlement notification yet.
+                  Your card <strong>will not be charged twice</strong> if you wait here.
+                </p>
+                <p className="text-muted-foreground">
+                  If it stays like this for another minute, you can safely close this page. We'll email you a receipt as
+                  soon as the payment is confirmed, and you can also check your dashboard.
+                </p>
+                {verifyError && (
+                  <p className="text-destructive">Last verification error: {verifyError}</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -367,10 +390,29 @@ export default function Pay() {
             <Clock className="h-10 w-10 mx-auto" />
             <h1 className="font-display text-2xl">Payment still confirming</h1>
             <p className="text-muted-foreground text-sm">
-              Your payment is being processed. Refresh this page in a moment to check the status, or contact us if it stays pending.
+              We haven't received the final confirmation from Worldpay yet — this occasionally takes a
+              few extra minutes. <strong>Do not attempt the payment again</strong>; that could double-charge you.
             </p>
+            <div className="border-2 border-foreground bg-secondary/40 p-3 text-left text-xs space-y-2">
+              <p className="font-semibold uppercase tracking-widest">What to do next</p>
+              <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                <li>Wait 1–2 minutes and press <em>Refresh status</em> below.</li>
+                <li>Check your email — a receipt is sent automatically once the payment settles.</li>
+                <li>Log into your dashboard to see the invoice status update.</li>
+                <li>If nothing changes after 10 minutes, call us on <strong>{CONTACT_PHONE_DISPLAY}</strong>.</li>
+              </ul>
+              {verifyError && (
+                <p className="text-destructive">Last verification error: {verifyError}</p>
+              )}
+            </div>
             <Button className="w-full" onClick={() => window.location.reload()}>Refresh status</Button>
-            <p className="text-xs text-muted-foreground">Questions? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => navigate(isLoggedIn ? "/dashboard" : "/")}
+            >
+              {isLoggedIn ? "Back to dashboard" : "Back to home"}
+            </Button>
           </CardContent>
         </Card>
       </div>

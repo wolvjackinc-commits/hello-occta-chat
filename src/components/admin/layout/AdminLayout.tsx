@@ -541,6 +541,12 @@ export const AdminLayout = () => {
         </div>
       </div>
 
+      {chatOpen && (
+        <Suspense fallback={null}>
+          <AIChatBot initialOpen onClose={() => setChatOpen(false)} />
+        </Suspense>
+      )}
+
       <Dialog open={!!activeAction} onOpenChange={() => setActiveAction(null)}>
         <DialogContent className="max-w-xl">
           <DialogHeader>

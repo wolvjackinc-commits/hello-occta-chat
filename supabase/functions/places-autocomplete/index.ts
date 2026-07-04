@@ -22,7 +22,8 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    const googleMapsKey =
+      Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1');
     if (!lovableApiKey || !googleMapsKey) return err(500, 'Address lookup not configured');
 
     const body = await req.json().catch(() => ({}));

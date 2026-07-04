@@ -62,7 +62,8 @@ export default function Pay() {
   const isRunningOnStableOrigin =
     typeof window === "undefined" ? true : window.location.origin === stableOrigin;
 
-  const shouldOpenOnStableOrigin = !isRunningOnStableOrigin && !!token && !status;
+  const shouldOpenOnStableOrigin =
+    !isRunningOnStableOrigin && (!!token || !!requestId || !!status);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);

@@ -188,7 +188,8 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
       };
 
       const dashboardUrl = (Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk") + "/dashboard";
-      const html = buildEmailHtml(payload, dashboardUrl);
+      const helpfulLinksHtml = await fetchHelpfulLinksHtml(supabase, "service_live", { max: 4 });
+      const html = buildEmailHtml(payload, dashboardUrl, helpfulLinksHtml);
 
       // Send via existing send-email function (custom_admin renders any html_body
       // inside the OCCTA branded shell). Service role bypasses admin role check.

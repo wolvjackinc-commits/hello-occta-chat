@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, requireStaff, sendResendEmail, brutalistEmailShell, escapeHtml, generateTokenPair } from "../_shared/quoteHelpers.ts";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -57,13 +58,16 @@ Deno.serve(async (req) => {
 
   const url = `https://www.occta.co.uk/quote/${publicToken}`;
 
+  const helpfulLinksHtml = await fetchHelpfulLinksHtml(supabase, "quote_sent");
+
   const html = brutalistEmailShell(
     "Your OCCTA quote is ready",
     `<p>Hi ${escapeHtml(qr?.full_name?.split(" ")[0] ?? "there")},</p>
      <p>Your OCCTA quote (<strong>${escapeHtml(quote.quote_number)}</strong>) is ready to view.</p>
      <p><strong>Plan:</strong> ${escapeHtml(quote.plan_name)} — £${Number(quote.monthly_gross).toFixed(2)}/month</p>
      <p style="font-size:12px;color:#555;">Your final price, speed estimate, contract length, one-off charges, installation details, cancellation/cease charges and key terms will be confirmed in your Contract Summary before you pay. No payment is taken until you've reviewed and accepted your Contract Summary.</p>
-     <p style="font-size:11px;color:#777;">This link is unique to you. Quote expires ${new Date(quote.expires_at).toLocaleDateString("en-GB")}.</p>`,
+     <p style="font-size:11px;color:#777;">This link is unique to you. Quote expires ${new Date(quote.expires_at).toLocaleDateString("en-GB")}.</p>
+     ${helpfulLinksHtml}`,
     { label: "View your quote", url },
   );
 

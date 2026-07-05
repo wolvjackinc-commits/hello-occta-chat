@@ -2,6 +2,7 @@ import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit,
 import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { perfServe } from "../_shared/perfLog.ts";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 /**
  * Phase F — Final order submission.
@@ -470,7 +471,7 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
       `;
       const html = brutalistEmailShell(
         "Your OCCTA order is in",
-        body,
+        body + (await fetchHelpfulLinksHtml(supabase, "order_received")),
         csSignedUrl
           ? { label: "View your signed contract summary", url: csSignedUrl }
           : undefined,

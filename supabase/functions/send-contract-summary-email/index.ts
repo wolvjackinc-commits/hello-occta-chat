@@ -2,6 +2,7 @@ import {
   corsHeaders, jsonResponse, getServiceClient, requireStaff,
   generateTokenPair, sendResendEmail, brutalistEmailShell, escapeHtml,
 } from "../_shared/quoteHelpers.ts";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 // Admin-only: send the "Contract Summary ready" email to the customer.
@@ -112,7 +113,8 @@ Deno.serve(async (req) => {
      <p><strong>What you need to do:</strong> open the Contract Summary, read it, then tick the box and accept if you're happy. If anything looks off, just reply to this email and we'll sort it.</p>
      <p><strong>What happens after acceptance:</strong> we send a secure payment link from OCCTA — we never take card details over email — then arrange your install / activation.</p>
      <p style="font-size:12px;color:#555;">This link is private to you and expires in ${daysValid} days. Sending a new copy disables old links.</p>
-     <p style="font-size:12px;color:#555;">Questions? Reply to this email or contact <a href="mailto:hello@occta.co.uk" style="color:#555;">hello@occta.co.uk</a>.</p>`,
+     <p style="font-size:12px;color:#555;">Questions? Reply to this email or contact <a href="mailto:hello@occta.co.uk" style="color:#555;">hello@occta.co.uk</a>.</p>
+     ${await fetchHelpfulLinksHtml(supabase, "contract_summary_ready")}`,
     { label: "View and accept Contract Summary", url: csUrl },
   );
 

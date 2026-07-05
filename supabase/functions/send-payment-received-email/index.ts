@@ -2,6 +2,7 @@ import {
   corsHeaders, jsonResponse, getServiceClient, generateTokenPair,
   sendResendEmail, brutalistEmailShell, escapeHtml,
 } from "../_shared/quoteHelpers.ts";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 // Sends/resends the "Payment received" email for a paid + webhook-verified PR.
 // Idempotent: refuses duplicate sends unless force=true (admin resend).
@@ -100,7 +101,8 @@ Deno.serve(async (req) => {
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Method</td><td style="padding:6px 0;font-size:13px;">Card (Worldpay)</td></tr>
      </table>
      <p><strong>What's next:</strong> OCCTA is preparing your setup. We'll be in touch shortly with the next step. No further action is needed from you right now.</p>
-     <p style="font-size:12px;color:#555;">Questions about your payment? Reply to this email or contact <a href="mailto:hello@occta.co.uk" style="color:#555;">hello@occta.co.uk</a>.</p>`,
+     <p style="font-size:12px;color:#555;">Questions about your payment? Reply to this email or contact <a href="mailto:hello@occta.co.uk" style="color:#555;">hello@occta.co.uk</a>.</p>
+     ${await fetchHelpfulLinksHtml(supabase, "payment_received")}`,
     { label: "View / print receipt", url: receiptUrl },
   );
 

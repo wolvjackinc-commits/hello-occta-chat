@@ -24,11 +24,10 @@ export default defineTool({
     }
     const sb = supabaseForUser(ctx);
     const { data, error } = await sb
-      .from("services")
+      .from("customer_services")
       .select(
-        "id, service_type, status, supplier_reference, activation_date, suspension_reason, identifiers",
+        "id, service_type, status, plan_name, activation_date, price_monthly",
       )
-      .eq("user_id", ctx.getUserId())
       .limit(limit ?? 20);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return {

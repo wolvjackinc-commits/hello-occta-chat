@@ -457,6 +457,13 @@ export type Database = {
             foreignKeyName: "billing_events_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
+            referencedRelation: "customer_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
             referencedRelation: "services"
             referencedColumns: ["id"]
           },
@@ -823,6 +830,13 @@ export type Database = {
             foreignKeyName: "cancellation_case_history_case_id_fkey"
             columns: ["case_id"]
             isOneToOne: false
+            referencedRelation: "customer_cancellation_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellation_case_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
             referencedRelation: "service_cancellation_cases"
             referencedColumns: ["id"]
           },
@@ -878,6 +892,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cancellation_email_outbox_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "customer_cancellation_cases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cancellation_email_outbox_case_id_fkey"
             columns: ["case_id"]
@@ -2389,6 +2410,13 @@ export type Database = {
             foreignKeyName: "first_billing_jobs_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
+            referencedRelation: "customer_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "first_billing_jobs_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
             referencedRelation: "services"
             referencedColumns: ["id"]
           },
@@ -2859,6 +2887,13 @@ export type Database = {
             columns: ["adjustment_of_invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "customer_services"
             referencedColumns: ["id"]
           },
           {
@@ -3383,6 +3418,13 @@ export type Database = {
             columns: ["journey_id"]
             isOneToOne: false
             referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_billing_snapshots_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "customer_services"
             referencedColumns: ["id"]
           },
           {
@@ -3942,6 +3984,13 @@ export type Database = {
             columns: ["journey_id"]
             isOneToOne: false
             referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_methods_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "customer_services"
             referencedColumns: ["id"]
           },
           {
@@ -5575,6 +5624,13 @@ export type Database = {
             foreignKeyName: "service_activation_outbox_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
+            referencedRelation: "customer_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_activation_outbox_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
             referencedRelation: "services"
             referencedColumns: ["id"]
           },
@@ -5752,6 +5808,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "customer_services"
             referencedColumns: ["id"]
           },
           {
@@ -6387,6 +6450,134 @@ export type Database = {
           user_messages: number | null
         }
         Relationships: []
+      }
+      customer_cancellation_cases: {
+        Row: {
+          actual_cease_date: string | null
+          approved_at: string | null
+          cease_committed_at: string | null
+          completed_at: string | null
+          contract_summary_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          customer_preview: Json | null
+          id: string | null
+          minimum_term_end_date: string | null
+          notes: string | null
+          notice_period_days: number | null
+          order_id: string | null
+          proposed_cease_date: string | null
+          reason_code: string | null
+          requested_date: string | null
+          service_id: string | null
+          source: string | null
+          status: string | null
+          supplier_confirmed_cease_date: string | null
+          updated_at: string | null
+          withdrawn_at: string | null
+          withdrawn_reason: string | null
+        }
+        Insert: {
+          actual_cease_date?: string | null
+          approved_at?: string | null
+          cease_committed_at?: string | null
+          completed_at?: string | null
+          contract_summary_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_preview?: never
+          id?: string | null
+          minimum_term_end_date?: string | null
+          notes?: string | null
+          notice_period_days?: number | null
+          order_id?: string | null
+          proposed_cease_date?: string | null
+          reason_code?: string | null
+          requested_date?: string | null
+          service_id?: string | null
+          source?: string | null
+          status?: string | null
+          supplier_confirmed_cease_date?: string | null
+          updated_at?: string | null
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Update: {
+          actual_cease_date?: string | null
+          approved_at?: string | null
+          cease_committed_at?: string | null
+          completed_at?: string | null
+          contract_summary_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_preview?: never
+          id?: string | null
+          minimum_term_end_date?: string | null
+          notes?: string | null
+          notice_period_days?: number | null
+          order_id?: string | null
+          proposed_cease_date?: string | null
+          reason_code?: string | null
+          requested_date?: string | null
+          service_id?: string | null
+          source?: string | null
+          status?: string | null
+          supplier_confirmed_cease_date?: string | null
+          updated_at?: string | null
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "customer_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_contract_acceptances: {
         Row: {
@@ -7218,6 +7409,96 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      customer_services: {
+        Row: {
+          activation_date: string | null
+          actual_activation_date: string | null
+          billing_anchor_day: number | null
+          billing_enabled: boolean | null
+          contract_summary_id: string | null
+          contract_type: string | null
+          created_at: string | null
+          id: string | null
+          journey_id: string | null
+          minimum_term_end_date: string | null
+          minimum_term_months: number | null
+          next_billing_date: string | null
+          notice_period_days: number | null
+          order_id: string | null
+          plan_name: string | null
+          price_monthly: number | null
+          selected_addons: Json | null
+          service_address: string | null
+          service_type: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activation_date?: string | null
+          actual_activation_date?: string | null
+          billing_anchor_day?: number | null
+          billing_enabled?: boolean | null
+          contract_summary_id?: string | null
+          contract_type?: string | null
+          created_at?: string | null
+          id?: string | null
+          journey_id?: string | null
+          minimum_term_end_date?: string | null
+          minimum_term_months?: number | null
+          next_billing_date?: string | null
+          notice_period_days?: number | null
+          order_id?: string | null
+          plan_name?: string | null
+          price_monthly?: number | null
+          selected_addons?: Json | null
+          service_address?: string | null
+          service_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activation_date?: string | null
+          actual_activation_date?: string | null
+          billing_anchor_day?: number | null
+          billing_enabled?: boolean | null
+          contract_summary_id?: string | null
+          contract_type?: string | null
+          created_at?: string | null
+          id?: string | null
+          journey_id?: string | null
+          minimum_term_end_date?: string | null
+          minimum_term_months?: number | null
+          next_billing_date?: string | null
+          notice_period_days?: number | null
+          order_id?: string | null
+          plan_name?: string | null
+          price_monthly?: number | null
+          selected_addons?: Json | null
+          service_address?: string | null
+          service_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dd_mandates_list: {
         Row: {

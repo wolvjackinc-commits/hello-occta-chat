@@ -368,19 +368,10 @@ const Dashboard = () => {
     return null;
   }
 
-  // App mode: show the compact app UI ONLY on the plain /dashboard (or ?tab=account).
-  // Any other ?tab= value (invoices, contracts, services, payments, tickets, etc.)
-  // falls through to the full dashboard tabs wrapped in AppLayout so PWA users
-  // get the same functionality as the web dashboard.
-  const rawTab = searchParams.get("tab");
-  const appNativeSections = new Set(["orders", "documents", "notifications", "privacy", "settings"]);
-  if (isAppMode && (!rawTab || rawTab === "account" || appNativeSections.has(rawTab))) {
-    return (
-      <AppLayout>
-        <AppDashboard />
-      </AppLayout>
-    );
-  }
+  // App mode users see the same full customer dashboard as the web, wrapped in
+  // AppLayout so they still get the bottom nav, header and offline indicator.
+  // The compact AppDashboard is intentionally no longer used — feature parity
+  // with the web dashboard is required.
 
   const userFullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer";
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
@@ -440,7 +431,7 @@ const Dashboard = () => {
   };
 
   return (
-    <Layout>
+    <LayoutComponent>
       <div className="container mx-auto px-4 py-8 md:py-12">
         <motion.div
           initial="hidden"
@@ -654,7 +645,7 @@ const Dashboard = () => {
         open={ticketDialogOpen}
         onOpenChange={setTicketDialogOpen}
       />
-    </Layout>
+    </LayoutComponent>
   );
 };
 

@@ -99,9 +99,9 @@ var list_my_services_default = defineTool3({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const sb = supabaseForUser3(ctx);
-    const { data, error } = await sb.from("services").select(
-      "id, service_type, status, supplier_reference, activation_date, suspension_reason, identifiers"
-    ).eq("user_id", ctx.getUserId()).limit(limit ?? 20);
+    const { data, error } = await sb.from("customer_services").select(
+      "id, service_type, status, plan_name, activation_date, price_monthly"
+    ).limit(limit ?? 20);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],

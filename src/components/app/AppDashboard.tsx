@@ -127,7 +127,6 @@ const AppDashboard = () => {
       ? [
           { table: "orders", filter: `user_id=eq.${user.id}` },
           { table: "invoices", filter: `user_id=eq.${user.id}` },
-          { table: "services", filter: `user_id=eq.${user.id}` },
           { table: "profiles", filter: `id=eq.${user.id}` },
         ]
       : [],

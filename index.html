@@ -52,6 +52,9 @@
     <!-- Preconnect for Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Preload display font stylesheet so the LCP H1 paints without waiting on CSS import -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" />
     <link rel="dns-prefetch" href="https://oexgjmuvgdndizsufipe.supabase.co" />
 
     <!-- Open Graph / Facebook (static fallback for non-JS crawlers; per-route SEO component overrides for Googlebot) -->

@@ -403,10 +403,28 @@ export default function Pay() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="text-muted-foreground mb-6"
+                  className="text-muted-foreground mb-4"
                 >
-                  Thank you for your payment. A confirmation email has been sent.
+                  {webhookVerified
+                    ? "Thank you for your payment. A confirmation email is on its way."
+                    : "Your bank has approved the payment. We're finalising your receipt now — a confirmation email will follow shortly."}
                 </motion.p>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.55 }}
+                  className={`inline-flex items-center gap-2 border-2 px-3 py-1 text-xs font-semibold uppercase tracking-widest mb-6 ${
+                    webhookVerified
+                      ? "border-primary text-primary"
+                      : "border-foreground/40 text-muted-foreground"
+                  }`}
+                >
+                  {webhookVerified ? (
+                    <>✓ Payment confirmed</>
+                  ) : (
+                    <><Loader2 className="h-3 w-3 animate-spin" /> Finalising receipt…</>
+                  )}
+                </motion.div>
 
                 {/* Transaction Details */}
                 {paymentDetails && (

@@ -471,7 +471,7 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
       `;
       const html = brutalistEmailShell(
         "Your OCCTA order is in",
-        body,
+        body + (await fetchHelpfulLinksHtml(supabase, "order_received")),
         csSignedUrl
           ? { label: "View your signed contract summary", url: csSignedUrl }
           : undefined,

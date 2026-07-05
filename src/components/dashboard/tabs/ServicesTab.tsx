@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Wifi, AlertTriangle, Router } from "lucide-react";
+import { Wifi, AlertTriangle, Router, ArrowUpRight, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "./EmptyState";
 import { CancellationRequestCard } from "@/components/dashboard/CancellationRequestCard";
 
@@ -94,6 +95,22 @@ export function ServicesTab({ userId }: { userId: string }) {
                   Step-by-step PPPoE setup guide. Use the username and password from your welcome email.
                 </span>
               </Link>
+            )}
+            {(s.status === "active" || s.status === "live") && (
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Link to="/broadband?change=1" className="w-full">
+                  <Button variant="outline" className="w-full border-2 border-foreground justify-between">
+                    <span className="flex items-center gap-2"><Zap className="w-4 h-4" /> Change or upgrade plan</span>
+                    <ArrowUpRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link to="/support" className="w-full">
+                  <Button variant="outline" className="w-full border-2 border-foreground justify-between">
+                    <span className="flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Report a fault</span>
+                    <ArrowUpRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
         );

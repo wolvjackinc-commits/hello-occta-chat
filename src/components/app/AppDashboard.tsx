@@ -27,6 +27,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { readCache, writeCache } from "@/lib/offlineCache";
 import { useRealtimeSync, useReconnectSync } from "@/hooks/useRealtimeSync";
+import { InvoicesTab } from "@/components/dashboard/tabs/InvoicesTab";
+import { PaymentsTab } from "@/components/dashboard/tabs/PaymentsTab";
+import { ServicesTab } from "@/components/dashboard/tabs/ServicesTab";
+import { ContractSummariesTab } from "@/components/dashboard/tabs/ContractSummariesTab";
+import { SupportTab } from "@/components/dashboard/tabs/SupportTab";
+import { DocumentsTab } from "@/components/dashboard/tabs/DocumentsTab";
+import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsTab";
+import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab";
 
 type Order = {
   id: string;
@@ -218,6 +226,12 @@ const AppDashboard = () => {
       notifications: "Notifications",
       privacy: "Privacy",
       settings: "Settings",
+      invoices: "Invoices & Payments",
+      payments: "Payments & Receipts",
+      services: "My Services",
+      cs: "Contract Details",
+      tickets: "Support Tickets",
+      account: "Account",
     };
 
     if (!sectionTitle[activeSection]) return null;
@@ -238,48 +252,54 @@ const AppDashboard = () => {
         </div>
 
         <div className="px-4 -mt-4">
+          {activeSection === "invoices" && (
+            <div className="bg-background rounded-2xl p-3 shadow-sm">
+              <InvoicesTab userId={user.id} />
+            </div>
+          )}
+
+          {activeSection === "payments" && (
+            <div className="bg-background rounded-2xl p-3 shadow-sm">
+              <PaymentsTab userId={user.id} />
+            </div>
+          )}
+
+          {activeSection === "services" && (
+            <div className="bg-background rounded-2xl p-3 shadow-sm">
+              <ServicesTab userId={user.id} />
+            </div>
+          )}
+
+          {activeSection === "cs" && (
+            <div className="bg-background rounded-2xl p-3 shadow-sm">
+              <ContractSummariesTab userId={user.id} />
+            </div>
+          )}
+
+          {activeSection === "tickets" && (
+            <div className="bg-background rounded-2xl p-3 shadow-sm">
+              <SupportTab tickets={[] as any} />
+              <div className="mt-3">
+                <Link to="/support"><Button variant="outline" className="w-full rounded-xl">Open support</Button></Link>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "account" && (
+            <div className="bg-background rounded-2xl p-3 shadow-sm">
+              <AccountSettingsTab profile={(profile as any) ?? { id: user.id, full_name: null, email: user.email ?? null }} />
+            </div>
+          )}
+
           {activeSection === "orders" && (
-            <div className="bg-background rounded-2xl shadow-sm overflow-hidden">
-              {orders.length > 0 ? orders.map((order, index) => {
-                const Icon = serviceIcons[order.service_type] || Package;
-                const status = statusConfig[order.status];
-                return (
-                  <div key={order.id} className={`flex items-center gap-3 p-4 ${index !== orders.length - 1 ? "border-b border-border" : ""}`}>
-                    <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-accent" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{order.plan_name}</p>
-                      <p className="text-sm text-muted-foreground">{order.postcode}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${status.color}`}>{status.label}</span>
-                      <p className="text-sm font-bold mt-1">£{order.plan_price}/mo</p>
-                    </div>
-                  </div>
-                );
-              }) : (
-                <div className="p-5 text-center">
-                  <Package className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                  <p className="font-medium">No orders yet</p>
-                  <Link to="/broadband" className="block mt-4"><Button className="rounded-xl">Add Broadband</Button></Link>
-                </div>
-              )}
+            <div className="bg-background rounded-2xl p-3 shadow-sm">
+              <OrdersTimelineTab userId={user.id} userEmail={user.email ?? null} />
             </div>
           )}
 
           {activeSection === "documents" && (
-            <div className="space-y-3">
-              <Link to="/dashboard?tab=invoices" className="flex items-center gap-4 p-4 bg-background rounded-2xl shadow-sm">
-                <FileText className="w-5 h-5 text-accent" />
-                <div className="flex-1"><p className="font-medium">Bills & statements</p><p className="text-sm text-muted-foreground">Invoices and receipts</p></div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </Link>
-              <Link to="/dashboard?tab=orders" className="flex items-center gap-4 p-4 bg-background rounded-2xl shadow-sm">
-                <Package className="w-5 h-5 text-accent" />
-                <div className="flex-1"><p className="font-medium">Order documents</p><p className="text-sm text-muted-foreground">Service paperwork</p></div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </Link>
+            <div className="bg-background rounded-2xl p-3 shadow-sm">
+              <DocumentsTab userId={user.id} />
             </div>
           )}
 

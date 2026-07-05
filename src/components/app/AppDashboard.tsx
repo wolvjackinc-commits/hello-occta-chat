@@ -236,8 +236,6 @@ const AppDashboard = () => {
 
     if (!sectionTitle[activeSection]) return null;
 
-    const [supportTickets, setSupportTicketsUnused] = [[], () => {}]; // eslint-disable-line
-
     return (
       <div className="min-h-screen bg-muted/30 pb-8">
         <div className="bg-accent px-4 pt-4 pb-8 rounded-b-3xl">

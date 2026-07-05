@@ -2,6 +2,7 @@ import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit,
 import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { perfServe } from "../_shared/perfLog.ts";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 /**
  * Phase F — Final order submission.

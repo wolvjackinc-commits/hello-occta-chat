@@ -28,7 +28,7 @@ export function ServicesTab({ userId }: { userId: string }) {
         .from("customer_services" as any)
         .select("id,service_type,plan_name,status,activation_date,price_monthly")
         .order("created_at", { ascending: false });
-      setServices((data as Service[]) || []);
+      setServices(((data as unknown) as Service[]) || []);
       setLoading(false);
     })();
   }, [userId]);

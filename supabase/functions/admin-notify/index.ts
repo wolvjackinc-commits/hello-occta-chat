@@ -753,7 +753,7 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: allowed } = await supabase.rpc("check_rate_limit", {
         _identifier: ipAddress,
         _action: "admin_notify",
-        _max_requests: 20,
+        _max_requests: 5,
         _window_minutes: 60,
       });
 
@@ -762,6 +762,47 @@ const handler = async (req: Request): Promise<Response> => {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // SECURITY: For public callers, require the payload to reference a real
+      // DB record that was just created by the same flow. This prevents
+      // arbitrary attackers from injecting fabricated content into admin
+      // notification emails (the record must actually exist in one of the
+      // whitelisted tables). Internal callers (edge functions / cron) with the
+      // shared secret bypass this check.
+      let earlyPayload: NotificationPayload | null = null;
+      try {
+        earlyPayload = await req.clone().json();
+      } catch {
+        return new Response(
+          JSON.stringify({ error: "Invalid JSON body" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const t = earlyPayload?.type;
+      const rid = String((earlyPayload?.data as Record<string, unknown>)?.id ?? "");
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const tableForType: Record<string, string> = {
+        new_guest_order: "guest_orders",
+        new_order: "orders",
+        new_ticket: "support_tickets",
+        new_business_enquiry: "guest_orders",
+        new_quote_request: "quote_requests",
+        customer_proceeded_quote: "quotes",
+      };
+      const table = t ? tableForType[t] : undefined;
+      if (!table || !uuidRe.test(rid)) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { data: row } = await supabase.from(table).select("id").eq("id", rid).maybeSingle();
+      if (!row) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }

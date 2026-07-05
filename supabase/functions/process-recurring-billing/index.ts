@@ -31,8 +31,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
 
   const cronSecret = req.headers.get("x-cron-secret");
   const expected = Deno.env.get("CRON_JOB_SECRET");
-  const auth = req.headers.get("Authorization");
-  if (!auth && cronSecret !== expected) {
+  if (!expected || cronSecret !== expected) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

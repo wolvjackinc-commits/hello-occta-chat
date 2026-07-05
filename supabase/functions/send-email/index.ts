@@ -1192,6 +1192,38 @@ const handler = async (req: Request): Promise<Response> => {
             );
           }
         }
+
+        // SECURITY: types that are normally triggered by backend/cron flows
+        // (welcome, password_reset, status_update) must not be relay-able by
+        // arbitrary authenticated users to arbitrary recipients, otherwise
+        // any signed-up customer can send legitimate-looking OCCTA-branded
+        // emails from a verified domain to any external address.
+        const internalOnlyTypes = ["welcome", "password_reset", "status_update"];
+        if (internalOnlyTypes.includes(type)) {
+          const userIsAdmin = await isAdmin(supabaseAdmin, user.id);
+          if (!userIsAdmin) {
+            console.error(`Forbidden: user ${user.id} attempted to send internal-only type '${type}' to ${to}`);
+            return new Response(
+              JSON.stringify({ error: "Forbidden - internal email type" }),
+              { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+        }
+
+        // For any remaining user-triggered types, the recipient must be the
+        // caller's own registered email address. This prevents non-admin
+        // authenticated users from using the transactional email endpoint as
+        // a spam/phishing relay against arbitrary third parties.
+        if (!adminOnlyTypes.includes(type) && !internalOnlyTypes.includes(type)) {
+          const userEmail = (user.email ?? "").toLowerCase();
+          if (!userEmail || userEmail !== String(to).toLowerCase()) {
+            console.error(`Forbidden: user ${user.id} (${userEmail}) attempted to send '${type}' to ${to}`);
+            return new Response(
+              JSON.stringify({ error: "Forbidden - recipient must match caller" }),
+              { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+        }
       }
     }
 

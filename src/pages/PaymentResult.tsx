@@ -40,6 +40,7 @@ export default function PaymentResult() {
   const invoiceId = searchParams.get('invoiceId');
   
   const [verifying, setVerifying] = useState(true);
+  const [webhookVerified, setWebhookVerified] = useState(false);
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
@@ -49,61 +50,61 @@ export default function PaymentResult() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
   useEffect(() => {
-    verifyPayment();
-  }, [status, invoiceId]);
-
-  const verifyPayment = async () => {
     if (!invoiceId || !status) {
-      setResult({
-        success: false,
-        message: 'Invalid payment response',
-        status: 'error',
-      });
+      setResult({ success: false, message: 'Invalid payment response', status: 'error' });
       setVerifying(false);
       return;
     }
 
-    try {
-      const { data, error } = await supabase.functions.invoke('worldpay-payment', {
-        body: {
-          action: 'verify-payment',
-          invoiceId,
-          status,
-        },
-      });
-
-      if (error) {
-        console.error('Verification error:', error);
-        setResult({
-          success: false,
-          message: 'Failed to verify payment status',
-          status: 'error',
-        });
-      } else {
-        setResult({
-          success: data.success,
-          message: data.message,
-          status: data.status,
-        });
-
-        // If successful, fetch payment details for receipt
-        if (data.success) {
-          await fetchPaymentDetails();
-          // Send confirmation email
-          await sendPaymentConfirmationEmail();
-        }
-      }
-    } catch (err) {
-      console.error('Error verifying payment:', err);
-      setResult({
-        success: false,
-        message: 'An error occurred while verifying payment',
-        status: 'error',
-      });
-    } finally {
+    // Terminal statuses from Worldpay — show immediately.
+    if (status === 'cancelled') {
+      setResult({ success: false, message: 'Payment cancelled', status: 'cancelled' });
       setVerifying(false);
+      return;
     }
-  };
+    if (status === 'failed') {
+      setResult({ success: false, message: 'Payment failed', status: 'failed' });
+      setVerifying(false);
+      return;
+    }
+
+    // Optimistic: Worldpay only returns success after the card is authorised.
+    // Render success immediately, reconcile with webhook silently in background.
+    setResult({ success: true, message: 'Payment received', status: 'paid' });
+    setVerifying(false);
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 30;
+    const intervalFor = (n: number) => (n < 5 ? 800 : n < 15 ? 1500 : 3000);
+    let emailSent = false;
+
+    const tick = async () => {
+      attempts++;
+      try {
+        const { data } = await supabase.functions.invoke('worldpay-payment', {
+          body: { action: 'verify-payment', invoiceId, status },
+        });
+        if (cancelled) return;
+        if (data?.success) {
+          setWebhookVerified(true);
+          await fetchPaymentDetails();
+          if (!emailSent) {
+            emailSent = true;
+            sendPaymentConfirmationEmail().catch(() => {});
+          }
+          return; // stop polling
+        }
+      } catch (err) {
+        console.warn('Verify poll error:', err);
+      }
+      if (cancelled || attempts >= maxAttempts) return;
+      setTimeout(tick, intervalFor(attempts));
+    };
+    tick();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, invoiceId]);
 
   const fetchPaymentDetails = async () => {
     try {
@@ -301,13 +302,16 @@ export default function PaymentResult() {
 
           {/* Content */}
           <div className="p-8">
-            {result?.success && paymentDetails ? (
+            {result?.success ? (
               <motion.div variants={itemVariants} className="space-y-6">
                 <p className="text-center text-muted-foreground">
-                  Your payment has been processed successfully. A confirmation email has been sent to your registered email address.
+                  {webhookVerified
+                    ? 'Your payment has been processed successfully. A confirmation email has been sent to your registered email address.'
+                    : 'Your bank has approved the payment. We\'re finalising your receipt — a confirmation email will follow shortly.'}
                 </p>
 
                 {/* Transaction Details */}
+                {paymentDetails ? (
                 <div className="border-4 border-foreground bg-secondary/30 p-6 space-y-4">
                   <h3 className="font-display text-lg border-b-2 border-foreground pb-2">
                     TRANSACTION DETAILS
@@ -366,8 +370,15 @@ export default function PaymentResult() {
                     </div>
                   </div>
                 </div>
+                ) : (
+                  <div className="border-4 border-foreground bg-secondary/30 p-6 flex items-center justify-center gap-3 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Fetching your receipt…</span>
+                  </div>
+                )}
 
                 {/* Download Receipt */}
+                {paymentDetails && (
                 <motion.div
                   whileHover={{ y: -4, x: -4, boxShadow: "8px 8px 0px 0px hsl(var(--foreground))" }}
                 >
@@ -385,9 +396,10 @@ export default function PaymentResult() {
                     Download Receipt
                   </Button>
                 </motion.div>
+                )}
 
-                <Badge className="w-full justify-center py-2 bg-primary/10 text-primary border-2 border-primary">
-                  ✓ Payment confirmed • Receipt available
+                <Badge className={`w-full justify-center py-2 border-2 ${webhookVerified ? 'bg-primary/10 text-primary border-primary' : 'bg-muted text-muted-foreground border-foreground/30'}`}>
+                  {webhookVerified ? '✓ Payment confirmed • Receipt available' : 'Finalising receipt…'}
                 </Badge>
               </motion.div>
             ) : result?.status === 'cancelled' ? (

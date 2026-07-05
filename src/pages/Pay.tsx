@@ -77,13 +77,38 @@ export default function Pay() {
   const [verifyAttempts, setVerifyAttempts] = useState(0);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
-  // Handle return from Worldpay. The browser return is NEVER authoritative —
-  // we poll the backend until the worldpay-webhook marks the request paid+verified.
+  // Handle return from Worldpay.
+  // UX: Worldpay only redirects to successURL after the bank has authorised the
+  // card, so we optimistically render the success screen immediately and
+  // reconcile with the webhook silently in the background. If the webhook is
+  // slow, the success screen still renders and the receipt/details fill in
+  // as soon as `worldpay-webhook` marks the request paid.
   useEffect(() => {
     if (!status || !requestId) return;
+
+    // Terminal browser statuses — no need to poll.
+    if (status === "failed") {
+      setPaymentResult("failed");
+      setVerifying(false);
+      setIsLoading(false);
+      return;
+    }
+    if (status === "cancelled") {
+      setPaymentResult("cancelled");
+      setVerifying(false);
+      setIsLoading(false);
+      return;
+    }
+
+    // status === "success" — show success immediately, poll silently for webhook.
+    setPaymentResult("success");
+    setVerifying(false);
+    setIsLoading(false);
+
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 40; // ~60s at 1.5s intervals
+    const maxAttempts = 30;
+    const intervalFor = (n: number) => (n < 5 ? 800 : n < 15 ? 1500 : 3000);
 
     const tick = async () => {
       attempts++;
@@ -93,13 +118,9 @@ export default function Pay() {
           body: { action: "verify-payment", requestId, status },
         });
         if (cancelled) return;
-        const verified = data?.webhook_verified === true && data?.status === "paid";
-        if (verified) {
+        if (data?.webhook_verified === true && data?.status === "paid") {
           setWebhookVerified(true);
-          setPaymentResult("success");
-          setVerifying(false);
-          setIsLoading(false);
-          return;
+          return; // stop polling
         }
       } catch (err) {
         console.warn("[Pay] verify-payment poll error:", err);
@@ -107,32 +128,10 @@ export default function Pay() {
           err instanceof Error ? err.message : "Verification service is temporarily unavailable"
         );
       }
-      if (cancelled) return;
-
-      if (status === "failed") {
-        setPaymentResult("failed");
-        setVerifying(false);
-        setIsLoading(false);
-        return;
-      }
-      if (status === "cancelled") {
-        setPaymentResult("cancelled");
-        setVerifying(false);
-        setIsLoading(false);
-        return;
-      }
-
-      if (attempts >= maxAttempts) {
-        // Stop polling; UI will show pending state with manual refresh.
-        setVerifying(false);
-        setIsLoading(false);
-        return;
-      }
-      setTimeout(tick, 1500);
+      if (cancelled || attempts >= maxAttempts) return;
+      setTimeout(tick, intervalFor(attempts));
     };
 
-    setVerifying(true);
-    setIsLoading(false);
     tick();
     return () => { cancelled = true; };
   }, [status, requestId]);
@@ -342,83 +341,6 @@ export default function Pay() {
     else navigate("/");
   };
 
-  // Result screens
-  if (status && !paymentResult && verifying) {
-    const slowConfirmation = verifyAttempts >= 8; // ~12s in
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-4 border-foreground">
-          <CardHeader className="bg-foreground text-background">
-            <CardTitle className="font-display text-2xl text-center tracking-widest">OCCTA</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-8 pb-8 text-center space-y-4">
-            <Loader2 className="h-10 w-10 animate-spin mx-auto" />
-            <h1 className="font-display text-2xl">Confirming your payment…</h1>
-            <p className="text-muted-foreground text-sm">
-              We're waiting for confirmation from Worldpay. This can take a few moments. Please don't close this page.
-            </p>
-            {slowConfirmation && (
-              <div className="border-2 border-foreground bg-secondary/40 p-3 text-left text-xs space-y-2">
-                <p className="font-semibold uppercase tracking-widest">Taking longer than usual</p>
-                <p className="text-muted-foreground">
-                  Your bank has authorised the payment but Worldpay hasn't sent us the settlement notification yet.
-                  Your card <strong>will not be charged twice</strong> if you wait here.
-                </p>
-                <p className="text-muted-foreground">
-                  If it stays like this for another minute, you can safely close this page. We'll email you a receipt as
-                  soon as the payment is confirmed, and you can also check your dashboard.
-                </p>
-                {verifyError && (
-                  <p className="text-destructive">Last verification error: {verifyError}</p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (status && !paymentResult && !verifying) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-4 border-foreground">
-          <CardHeader className="bg-foreground text-background">
-            <CardTitle className="font-display text-2xl text-center tracking-widest">OCCTA</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-8 pb-8 text-center space-y-4">
-            <Clock className="h-10 w-10 mx-auto" />
-            <h1 className="font-display text-2xl">Payment still confirming</h1>
-            <p className="text-muted-foreground text-sm">
-              We haven't received the final confirmation from Worldpay yet — this occasionally takes a
-              few extra minutes. <strong>Do not attempt the payment again</strong>; that could double-charge you.
-            </p>
-            <div className="border-2 border-foreground bg-secondary/40 p-3 text-left text-xs space-y-2">
-              <p className="font-semibold uppercase tracking-widest">What to do next</p>
-              <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
-                <li>Wait 1–2 minutes and press <em>Refresh status</em> below.</li>
-                <li>Check your email — a receipt is sent automatically once the payment settles.</li>
-                <li>Log into your dashboard to see the invoice status update.</li>
-                <li>If nothing changes after 10 minutes, call us on <strong>{CONTACT_PHONE_DISPLAY}</strong>.</li>
-              </ul>
-              {verifyError && (
-                <p className="text-destructive">Last verification error: {verifyError}</p>
-              )}
-            </div>
-            <Button className="w-full" onClick={() => window.location.reload()}>Refresh status</Button>
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => navigate(isLoggedIn ? "/dashboard" : "/")}
-            >
-              {isLoggedIn ? "Back to dashboard" : "Back to home"}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (paymentResult) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
@@ -481,10 +403,28 @@ export default function Pay() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="text-muted-foreground mb-6"
+                  className="text-muted-foreground mb-4"
                 >
-                  Thank you for your payment. A confirmation email has been sent.
+                  {webhookVerified
+                    ? "Thank you for your payment. A confirmation email is on its way."
+                    : "Your bank has approved the payment. We're finalising your receipt now — a confirmation email will follow shortly."}
                 </motion.p>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.55 }}
+                  className={`inline-flex items-center gap-2 border-2 px-3 py-1 text-xs font-semibold uppercase tracking-widest mb-6 ${
+                    webhookVerified
+                      ? "border-primary text-primary"
+                      : "border-foreground/40 text-muted-foreground"
+                  }`}
+                >
+                  {webhookVerified ? (
+                    <>✓ Payment confirmed</>
+                  ) : (
+                    <><Loader2 className="h-3 w-3 animate-spin" /> Finalising receipt…</>
+                  )}
+                </motion.div>
 
                 {/* Transaction Details */}
                 {paymentDetails && (

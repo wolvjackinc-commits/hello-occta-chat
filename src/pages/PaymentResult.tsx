@@ -302,7 +302,7 @@ export default function PaymentResult() {
 
           {/* Content */}
           <div className="p-8">
-            {result?.success && paymentDetails ? (
+            {result?.success ? (
               <motion.div variants={itemVariants} className="space-y-6">
                 <p className="text-center text-muted-foreground">
                   {webhookVerified
@@ -311,6 +311,7 @@ export default function PaymentResult() {
                 </p>
 
                 {/* Transaction Details */}
+                {paymentDetails ? (
                 <div className="border-4 border-foreground bg-secondary/30 p-6 space-y-4">
                   <h3 className="font-display text-lg border-b-2 border-foreground pb-2">
                     TRANSACTION DETAILS
@@ -369,8 +370,15 @@ export default function PaymentResult() {
                     </div>
                   </div>
                 </div>
+                ) : (
+                  <div className="border-4 border-foreground bg-secondary/30 p-6 flex items-center justify-center gap-3 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Fetching your receipt…</span>
+                  </div>
+                )}
 
                 {/* Download Receipt */}
+                {paymentDetails && (
                 <motion.div
                   whileHover={{ y: -4, x: -4, boxShadow: "8px 8px 0px 0px hsl(var(--foreground))" }}
                 >
@@ -388,9 +396,10 @@ export default function PaymentResult() {
                     Download Receipt
                   </Button>
                 </motion.div>
+                )}
 
-                <Badge className="w-full justify-center py-2 bg-primary/10 text-primary border-2 border-primary">
-                  ✓ Payment confirmed • Receipt available
+                <Badge className={`w-full justify-center py-2 border-2 ${webhookVerified ? 'bg-primary/10 text-primary border-primary' : 'bg-muted text-muted-foreground border-foreground/30'}`}>
+                  {webhookVerified ? '✓ Payment confirmed • Receipt available' : 'Finalising receipt…'}
                 </Badge>
               </motion.div>
             ) : result?.status === 'cancelled' ? (

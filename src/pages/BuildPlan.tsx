@@ -124,7 +124,7 @@ function BuildPlanInner() {
   const [searchParams] = useSearchParams();
   const isTestMode = searchParams.get("test") === "1";
   const isFallback = searchParams.get("availability") === "fallback";
-  const prefillPlan = searchParams.get("plan") as SpeedBucket | null;
+  const prefillPlan = (searchParams.get("plan") || searchParams.get("bucket")) as SpeedBucket | null;
   const testMaxDownload = Number(searchParams.get("max_download") ?? "0") || undefined;
   const testTech = searchParams.get("primary_technology") || undefined;
   const { toast } = useToast();
@@ -657,19 +657,23 @@ function MobileEstimateBar({ bucket, term, resolved, isUnpersonalised }: {
 }) {
   const monthly = resolved?.monthly_total_incl_vat ?? resolved?.monthly_broadband_incl_vat;
   return (
-    <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-background border-t-4 border-foreground p-3 z-40" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+    <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-background border-t-4 border-foreground px-3 pt-3 pr-20 z-40" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground truncate">
             {bucket ? SPEED_LABELS[bucket] : "Choose your plan"}{term ? ` · ${TERM_LABELS[term]}` : ""}
           </p>
-          <p className="font-display text-lg leading-tight">
-            {monthly != null ? `${isUnpersonalised ? "From " : ""}£${monthly.toFixed(2)}/mo` : "Estimate —"}
+          <p className="font-display text-lg leading-tight truncate">
+            {monthly != null
+              ? `${isUnpersonalised ? "From " : ""}£${monthly.toFixed(2)}/mo`
+              : bucket
+                ? `From £${FAIR_PRICING_DEFAULTS.headline[bucket].lock24.toFixed(2)}/mo`
+                : "Pick a speed"}
+          </p>
+          <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+            Final price confirmed before you proceed.
           </p>
         </div>
-        <p className="text-[10px] text-muted-foreground text-right max-w-[45%] leading-tight">
-          Estimate — final details confirmed before you proceed.
-        </p>
       </div>
     </div>
   );

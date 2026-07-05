@@ -45,6 +45,24 @@ type Profile = {
   phone: string | null;
 };
 
+type UnpaidInvoice = {
+  id: string;
+  invoice_number: string | null;
+  total: number;
+  status: string;
+  due_date: string | null;
+  issue_date: string | null;
+};
+
+type ContractSummary = {
+  id: string;
+  cs_number: string | null;
+  status: string | null;
+  plan_name: string | null;
+  monthly_total: number | null;
+  created_at: string | null;
+};
+
 const serviceIcons = {
   broadband: Wifi,
   sim: Smartphone,
@@ -65,6 +83,8 @@ const AppDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => readCache<Profile>(null, "dashboard.profile"));
   const [orders, setOrders] = useState<Order[]>(() => readCache<Order[]>(null, "dashboard.orders") ?? []);
+  const [latestInvoice, setLatestInvoice] = useState<UnpaidInvoice | null>(() => readCache<UnpaidInvoice>(null, "dashboard.latestInvoice"));
+  const [contract, setContract] = useState<ContractSummary | null>(() => readCache<ContractSummary>(null, "dashboard.contract"));
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -102,9 +122,22 @@ const AppDashboard = () => {
 
       if (typeof navigator !== "undefined" && navigator.onLine === false) return;
 
-      const [profileResult, ordersResult] = await Promise.all([
+      const [profileResult, ordersResult, invoiceResult, contractResult] = await Promise.all([
         supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
         supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase
+          .from("invoices")
+          .select("id, invoice_number, total, status, due_date, issue_date")
+          .eq("user_id", userId)
+          .in("status", ["draft", "sent", "overdue"])
+          .order("due_date", { ascending: true })
+          .limit(1),
+        supabase
+          .from("contract_summaries" as any)
+          .select("id, cs_number, status, plan_name, monthly_total, created_at")
+          .eq("customer_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(1),
       ]);
 
       if (profileResult.data) {
@@ -115,6 +148,12 @@ const AppDashboard = () => {
         setOrders(ordersResult.data as any);
         writeCache(userId, "dashboard.orders", ordersResult.data);
       }
+      const inv = (invoiceResult.data as any[] | null)?.[0] ?? null;
+      setLatestInvoice(inv);
+      writeCache(userId, "dashboard.latestInvoice", inv);
+      const cs = (contractResult.data as any[] | null)?.[0] ?? null;
+      setContract(cs);
+      writeCache(userId, "dashboard.contract", cs);
     } catch (error) {
       logError("AppDashboard.fetchUserData", error);
     }
@@ -161,9 +200,12 @@ const AppDashboard = () => {
   const activeSection = searchParams.get("tab") || "account";
 
   const menuItems = [
+    { icon: CreditCard, label: "Invoices & Payments", description: "Bills, receipts and Pay Now", link: "/dashboard?tab=invoices" },
+    { icon: FileText, label: "Contract details", description: "Your signed contract summary", link: "/dashboard?tab=cs" },
+    { icon: Wifi, label: "My services", description: "Active broadband & SIM", link: "/dashboard?tab=services" },
     { icon: Package, label: "All Orders", description: "View order history", link: "/dashboard?tab=orders", badge: orders.length },
-    { icon: HelpCircle, label: "Support", description: "Get help & contact us", link: "/support" },
-    { icon: FileText, label: "Documents", description: "Bills & statements", link: "/dashboard?tab=documents" },
+    { icon: HelpCircle, label: "Support tickets", description: "Raised tickets & chat", link: "/dashboard?tab=tickets" },
+    { icon: FileText, label: "Documents", description: "Downloads and paperwork", link: "/dashboard?tab=documents" },
     { icon: Bell, label: "Notifications", description: "Manage alerts", link: "/dashboard?tab=notifications" },
     { icon: Shield, label: "Privacy", description: "Security settings", link: "/dashboard?tab=privacy" },
     { icon: Settings, label: "Settings", description: "App preferences", link: "/dashboard?tab=settings" },
@@ -326,6 +368,69 @@ const AppDashboard = () => {
       </div>
 
       <div className="px-4 -mt-4">
+        {/* Latest unpaid invoice — Pay Now */}
+        {latestInvoice && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-background rounded-2xl p-4 shadow-sm mb-4 border-2 border-warning/40"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-warning/15 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-warning" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Latest invoice</p>
+                  <p className="font-bold">{latestInvoice.invoice_number || latestInvoice.id.slice(0, 8)}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-lg">£{Number(latestInvoice.total || 0).toFixed(2)}</p>
+                {latestInvoice.due_date && (
+                  <p className="text-xs text-muted-foreground">Due {new Date(latestInvoice.due_date).toLocaleDateString("en-GB")}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Link to={`/pay-invoice?id=${latestInvoice.id}`} className="flex-1">
+                <Button className="w-full rounded-xl">Pay now</Button>
+              </Link>
+              <Link to="/dashboard?tab=invoices" className="flex-1">
+                <Button variant="outline" className="w-full rounded-xl">All invoices</Button>
+              </Link>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Contract summary shortcut */}
+        {contract && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="bg-background rounded-2xl p-4 shadow-sm mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5 text-accent" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Your contract</p>
+                  <p className="font-medium truncate">{contract.plan_name || contract.cs_number || "Contract summary"}</p>
+                  {contract.monthly_total != null && (
+                    <p className="text-xs text-muted-foreground">£{Number(contract.monthly_total).toFixed(2)}/mo · {contract.status ?? "active"}</p>
+                  )}
+                </div>
+              </div>
+              <Link to="/dashboard?tab=cs" aria-label="View contract">
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </Link>
+            </div>
+          </motion.div>
+        )}
+
         {/* Active Services */}
         {activeOrders.length > 0 && (
           <motion.div

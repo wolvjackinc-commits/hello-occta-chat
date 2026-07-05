@@ -368,8 +368,13 @@ const Dashboard = () => {
     return null;
   }
 
-  // App mode: show compact app UI
-  if (isAppMode) {
+  // App mode: show the compact app UI ONLY on the plain /dashboard (or ?tab=account).
+  // Any other ?tab= value (invoices, contracts, services, payments, tickets, etc.)
+  // falls through to the full dashboard tabs wrapped in AppLayout so PWA users
+  // get the same functionality as the web dashboard.
+  const rawTab = searchParams.get("tab");
+  const appNativeSections = new Set(["orders", "documents", "notifications", "privacy", "settings"]);
+  if (isAppMode && (!rawTab || rawTab === "account" || appNativeSections.has(rawTab))) {
     return (
       <AppLayout>
         <AppDashboard />

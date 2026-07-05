@@ -57,7 +57,7 @@ export function InvoicesTab({ userId }: { userId: string }) {
         vatRate: inv.vat_rate != null ? Number(inv.vat_rate) : 20,
       });
       toast.success(`Invoice ${invoiceNumber} downloaded`);
-      logClientEvent({ event_type: "invoice_download", title: "invoice.download", source_module: "dashboard" });
+      logClientEvent({ event_type: "invoice_view_from_dashboard", title: "invoice.download", source_module: "dashboard" });
     } catch (err) {
       logError("InvoicesTab.handleDownload", err);
       toast.error("Couldn't download invoice. Please try again.");

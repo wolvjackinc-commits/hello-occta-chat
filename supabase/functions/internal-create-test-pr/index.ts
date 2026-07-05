@@ -21,6 +21,21 @@ async function sha256Hex(s: string): Promise<string> {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
+    // Guarded by CRON_JOB_SECRET as the header comment claims. Without this
+    // check, anyone on the internet could create real Worldpay HPP sessions
+    // and payment_requests rows tied to the allowlisted internal-test CS.
+    const cronSecret = Deno.env.get('CRON_JOB_SECRET');
+    const providedSecret =
+      req.headers.get('x-cron-secret') ||
+      req.headers.get('X-Cron-Secret') ||
+      req.headers.get('x-internal-secret');
+    if (!cronSecret || !providedSecret || providedSecret !== cronSecret) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // TEMPORARY HELPER — restricted to a single allowlisted internal-test CS id
     // at a max amount of £1.00. Will be deleted immediately after Phase E verification.
     const ALLOWED_CS = new Set<string>([

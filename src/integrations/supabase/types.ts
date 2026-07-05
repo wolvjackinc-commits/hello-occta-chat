@@ -7014,6 +7014,57 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_journey_cancellation_events: {
+        Row: {
+          actor_type: string | null
+          confirmation_text_version: string | null
+          created_at: string | null
+          details: Json | null
+          event_type: string | null
+          id: string | null
+          journey_id: string | null
+          reason_code: string | null
+          reason_text: string | null
+        }
+        Insert: {
+          actor_type?: string | null
+          confirmation_text_version?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string | null
+          id?: string | null
+          journey_id?: string | null
+          reason_code?: string | null
+          reason_text?: string | null
+        }
+        Update: {
+          actor_type?: string | null
+          confirmation_text_version?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string | null
+          id?: string | null
+          journey_id?: string | null
+          reason_code?: string | null
+          reason_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_cancellation_events_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "customer_order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_cancellation_events_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_order_journeys: {
         Row: {
           billing_anchor_day: number | null

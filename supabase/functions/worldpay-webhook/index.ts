@@ -207,39 +207,65 @@ serve(async (req) => {
     },
   }).then(undefined, () => {});
 
-  // Access Enterprise (HMAC) — preserved for forward compatibility.
-  if (gateway === "access_enterprise") {
-    const webhookSecret = Deno.env.get("WORLDPAY_WEBHOOK_SECRET");
-    const signature =
-      req.headers.get("x-wp-signature") || req.headers.get("X-WP-Signature");
-    if (!webhookSecret) {
-      await supabase.from("audit_logs").insert({
-        action: "worldpay_webhook_missing_secret",
-        entity: "payment",
-        metadata: { gateway, payload_sha256: payloadSha256 },
-      });
-      return json(500, { error: "Webhook configuration error" });
-    }
-    const valid = await verifyHmacSignature(body, signature, webhookSecret);
-    if (!valid) {
-      await supabase.from("audit_logs").insert({
-        action: "worldpay_webhook_invalid_signature",
-        entity: "payment",
-        metadata: { gateway, hasSignature: !!signature },
-      });
-      await raiseAdminAlert(supabase, {
-        title: "Worldpay webhook: invalid signature",
-        description:
-          `A Worldpay webhook was received with an invalid HMAC signature.\n` +
-          `gateway=${gateway} hasSignature=${!!signature}\n` +
-          `payload_sha256=${payloadSha256}`,
-        priority: "urgent",
-      });
-      return json(401, { error: "Invalid signature" });
-    }
-    // Fall through to SMB-style processing for parity; both shapes now use
-    // strict reference/amount validation. Worldpay Access uses a similar
-    // event envelope.
+  // Fail-closed auth for ALL gateway paths. Both Access Enterprise (HMAC on
+  // request body) and SMB eCommerce (shared-secret custom header configured
+  // in the Worldpay dashboard) MUST authenticate before we process anything.
+  // Without this, any unauthenticated caller could POST a forged
+  // `sentForSettlement` event and mark invoices/payment_requests as paid,
+  // because transactionReference values are returned to the customer and are
+  // therefore not secret.
+  const webhookSecret = Deno.env.get("WORLDPAY_WEBHOOK_SECRET");
+  if (!webhookSecret) {
+    await supabase.from("audit_logs").insert({
+      action: "worldpay_webhook_missing_secret",
+      entity: "payment",
+      metadata: { gateway, payload_sha256: payloadSha256 },
+    });
+    return json(500, { error: "Webhook configuration error" });
+  }
+
+  const signature =
+    req.headers.get("x-wp-signature") || req.headers.get("X-WP-Signature");
+  const sharedSecretHeader =
+    req.headers.get("x-webhook-secret") ||
+    req.headers.get("X-Webhook-Secret") ||
+    req.headers.get("x-worldpay-webhook-secret");
+
+  // Constant-time string compare for the shared-secret path.
+  const constantTimeEq = (a: string, b: string): boolean => {
+    if (a.length !== b.length) return false;
+    let r = 0;
+    for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return r === 0;
+  };
+
+  let authed = false;
+  if (signature) {
+    authed = await verifyHmacSignature(body, signature, webhookSecret);
+  } else if (sharedSecretHeader) {
+    authed = constantTimeEq(sharedSecretHeader, webhookSecret);
+  }
+
+  if (!authed) {
+    await supabase.from("audit_logs").insert({
+      action: "worldpay_webhook_invalid_signature",
+      entity: "payment",
+      metadata: {
+        gateway,
+        hasSignature: !!signature,
+        hasSharedSecretHeader: !!sharedSecretHeader,
+        payload_sha256: payloadSha256,
+      },
+    });
+    await raiseAdminAlert(supabase, {
+      title: "Worldpay webhook: unauthenticated request rejected",
+      description:
+        `A Worldpay webhook was received without a valid HMAC signature or shared-secret header.\n` +
+        `gateway=${gateway} hasSignature=${!!signature} hasSharedSecretHeader=${!!sharedSecretHeader}\n` +
+        `payload_sha256=${payloadSha256}`,
+      priority: "urgent",
+    });
+    return json(401, { error: "Unauthorized" });
   }
 
   // Parse JSON

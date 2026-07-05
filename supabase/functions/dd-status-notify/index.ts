@@ -289,6 +289,22 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Auth: only trusted internal callers (DB triggers via pg_net, cron jobs,
+  // admin edge functions with the service role) may invoke this. Without
+  // this check, anyone who can guess a mandate UUID could spam a real
+  // customer with DD status emails containing their masked bank details.
+  const cronSecret = Deno.env.get("CRON_JOB_SECRET");
+  const providedSecret =
+    req.headers.get("x-cron-secret") ||
+    req.headers.get("X-Cron-Secret") ||
+    req.headers.get("x-internal-secret");
+  if (!cronSecret || !providedSecret || providedSecret !== cronSecret) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const resendApiKey = Deno.env.get("RESEND_API_KEY");

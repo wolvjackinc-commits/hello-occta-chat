@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { perfServe } from "../_shared/perfLog.ts";
 import { renderBrandedEmail, escapeEmailHtml } from "../_shared/brandedEmailShell.ts";
-import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+import { fetchHelpfulLinks } from "../_shared/helpfulLinks.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -188,8 +188,11 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
       };
 
       const dashboardUrl = (Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk") + "/dashboard";
-      const helpfulLinksHtml = await fetchHelpfulLinksHtml(supabase, "service_live", { max: 4 });
-      const html = buildEmailHtml(payload, dashboardUrl, helpfulLinksHtml);
+      const helpfulLinks = await fetchHelpfulLinks(supabase, "service_live", { max: 4 });
+      const helpfulLinksInnerHtml = helpfulLinks.length
+        ? `<ul style="margin:0;padding-left:18px">${helpfulLinks.map((l) => `<li><a href="${escapeHtml(l.url)}" style="color:#111"><strong>${escapeHtml(l.title)}</strong></a>${l.summary ? ` — <span style="color:#555">${escapeHtml(l.summary)}</span>` : ""}</li>`).join("")}</ul>`
+        : "";
+      const html = buildEmailHtml(payload, dashboardUrl, helpfulLinksInnerHtml);
 
       // Send via existing send-email function (custom_admin renders any html_body
       // inside the OCCTA branded shell). Service role bypasses admin role check.

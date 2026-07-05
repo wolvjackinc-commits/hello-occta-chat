@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { readCache, writeCache } from "@/lib/offlineCache";
 import { useRealtimeSync, useReconnectSync } from "@/hooks/useRealtimeSync";
+import { RaiseTicketDialog } from "@/components/app/RaiseTicketDialog";
 
 type TicketType = {
   id: string;
@@ -50,6 +51,7 @@ const AppSupport = () => {
   const [user, setUser] = useState<any>(null);
   const [tickets, setTickets] = useState<TicketType[]>(() => readCache<TicketType[]>(null, "support.tickets") ?? []);
   const [isLoading, setIsLoading] = useState(true);
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
   const fetchData = useCallback(async (uid?: string) => {
     let currentUserId = uid;
@@ -106,6 +108,10 @@ const AppSupport = () => {
   };
 
   const openChat = () => window.dispatchEvent(new CustomEvent("open-ai-chat"));
+  const openRaise = () => {
+    if (!user) { navigate("/auth"); return; }
+    setTicketDialogOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-muted/30 pb-20">
@@ -127,6 +133,10 @@ const AppSupport = () => {
             <Button className="w-full rounded-xl bg-primary hover:bg-primary/90" onClick={openChat}>
               <MessageCircle className="w-4 h-4 mr-2" />
               Start AI Chat
+            </Button>
+            <Button variant="outline" className="w-full rounded-xl mt-2" onClick={openRaise}>
+              <Ticket className="w-4 h-4 mr-2" />
+              Raise a ticket
             </Button>
           </div>
         </motion.div>
@@ -227,6 +237,10 @@ const AppSupport = () => {
               <Plus className="w-4 h-4 mr-2" />
               Start AI Chat
             </Button>
+            <Button className="w-full mt-2 rounded-xl" variant="outline" onClick={openRaise}>
+              <Ticket className="w-4 h-4 mr-2" />
+              Raise a new ticket
+            </Button>
             <p className="text-xs text-muted-foreground text-center mt-2">
               Tip: Try our AI assistant first for faster help
             </p>
@@ -252,6 +266,10 @@ const AppSupport = () => {
               <Button variant="outline" className="rounded-xl" onClick={openChat}>
                 <Plus className="w-4 h-4 mr-2" />
                 Start AI Chat
+              </Button>
+              <Button variant="outline" className="rounded-xl ml-2" onClick={openRaise}>
+                <Ticket className="w-4 h-4 mr-2" />
+                Raise a ticket
               </Button>
             </div>
           </motion.div>
@@ -307,6 +325,12 @@ const AppSupport = () => {
         {/* Padding for bottom nav */}
         <div className="h-4" />
       </div>
+
+      <RaiseTicketDialog
+        open={ticketDialogOpen}
+        onOpenChange={setTicketDialogOpen}
+        onSubmitted={() => fetchData(user?.id)}
+      />
     </div>
   );
 };

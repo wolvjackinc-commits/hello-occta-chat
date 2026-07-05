@@ -105,7 +105,18 @@ Deno.serve(perfServe("journey-cs-detail", async (req) => {
     }
   }
 
-  const { public_token_hash: _h, ...safe } = cs;
+  // Strip internal audit / storage / archival fields — never expose to token holders.
+  const {
+    public_token_hash: _h,
+    accepted_ip: _ip,
+    accepted_user_agent: _ua,
+    pdf_storage_key: _psk,
+    pdf_sha256: _psha,
+    pdf_generated_by: _pgb,
+    archived_reason: _ar,
+    archived_at: _aa,
+    ...safe
+  } = cs as Record<string, unknown>;
   return jsonResponse({
     ok: true,
     contract_summary: safe,

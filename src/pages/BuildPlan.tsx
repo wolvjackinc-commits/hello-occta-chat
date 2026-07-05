@@ -124,7 +124,7 @@ function BuildPlanInner() {
   const [searchParams] = useSearchParams();
   const isTestMode = searchParams.get("test") === "1";
   const isFallback = searchParams.get("availability") === "fallback";
-  const prefillPlan = searchParams.get("plan") as SpeedBucket | null;
+  const prefillPlan = (searchParams.get("plan") || searchParams.get("bucket")) as SpeedBucket | null;
   const testMaxDownload = Number(searchParams.get("max_download") ?? "0") || undefined;
   const testTech = searchParams.get("primary_technology") || undefined;
   const { toast } = useToast();

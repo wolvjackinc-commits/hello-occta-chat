@@ -368,6 +368,69 @@ const AppDashboard = () => {
       </div>
 
       <div className="px-4 -mt-4">
+        {/* Latest unpaid invoice — Pay Now */}
+        {latestInvoice && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-background rounded-2xl p-4 shadow-sm mb-4 border-2 border-warning/40"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-warning/15 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-warning" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Latest invoice</p>
+                  <p className="font-bold">{latestInvoice.invoice_number || latestInvoice.id.slice(0, 8)}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-lg">£{Number(latestInvoice.total || 0).toFixed(2)}</p>
+                {latestInvoice.due_date && (
+                  <p className="text-xs text-muted-foreground">Due {new Date(latestInvoice.due_date).toLocaleDateString("en-GB")}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Link to={`/pay-invoice?id=${latestInvoice.id}`} className="flex-1">
+                <Button className="w-full rounded-xl">Pay now</Button>
+              </Link>
+              <Link to="/dashboard?tab=invoices" className="flex-1">
+                <Button variant="outline" className="w-full rounded-xl">All invoices</Button>
+              </Link>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Contract summary shortcut */}
+        {contract && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="bg-background rounded-2xl p-4 shadow-sm mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5 text-accent" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Your contract</p>
+                  <p className="font-medium truncate">{contract.plan_name || contract.cs_number || "Contract summary"}</p>
+                  {contract.monthly_total != null && (
+                    <p className="text-xs text-muted-foreground">£{Number(contract.monthly_total).toFixed(2)}/mo · {contract.status ?? "active"}</p>
+                  )}
+                </div>
+              </div>
+              <Link to="/dashboard?tab=cs" aria-label="View contract">
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </Link>
+            </div>
+          </motion.div>
+        )}
+
         {/* Active Services */}
         {activeOrders.length > 0 && (
           <motion.div

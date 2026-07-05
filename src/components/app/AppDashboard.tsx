@@ -35,6 +35,10 @@ import { SupportTab } from "@/components/dashboard/tabs/SupportTab";
 import { DocumentsTab } from "@/components/dashboard/tabs/DocumentsTab";
 import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsTab";
 import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab";
+import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
+import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
+import { format } from "date-fns";
+import { Download, Gift, Receipt as ReceiptIcon } from "lucide-react";
 
 type Order = {
   id: string;
@@ -59,6 +63,13 @@ type UnpaidInvoice = {
   total: number;
   status: string;
   due_date: string | null;
+  issue_date: string | null;
+};
+
+type PaidInvoice = {
+  id: string;
+  invoice_number: string | null;
+  total: number;
   issue_date: string | null;
 };
 
@@ -93,6 +104,9 @@ const AppDashboard = () => {
   const [orders, setOrders] = useState<Order[]>(() => readCache<Order[]>(null, "dashboard.orders") ?? []);
   const [latestInvoice, setLatestInvoice] = useState<UnpaidInvoice | null>(() => readCache<UnpaidInvoice>(null, "dashboard.latestInvoice"));
   const [contract, setContract] = useState<ContractSummary | null>(() => readCache<ContractSummary>(null, "dashboard.contract"));
+  const [paidInvoices, setPaidInvoices] = useState<PaidInvoice[]>(() => readCache<PaidInvoice[]>(null, "dashboard.paidInvoices") ?? []);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadingContract, setDownloadingContract] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -130,7 +144,7 @@ const AppDashboard = () => {
 
       if (typeof navigator !== "undefined" && navigator.onLine === false) return;
 
-      const [profileResult, ordersResult, invoiceResult, contractResult] = await Promise.all([
+      const [profileResult, ordersResult, invoiceResult, contractResult, paidResult] = await Promise.all([
         supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
         supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase
@@ -146,6 +160,13 @@ const AppDashboard = () => {
           .eq("customer_id", userId)
           .order("created_at", { ascending: false })
           .limit(1),
+        supabase
+          .from("invoices")
+          .select("id, invoice_number, total, issue_date")
+          .eq("user_id", userId)
+          .eq("status", "paid")
+          .order("issue_date", { ascending: false })
+          .limit(3),
       ]);
 
       if (profileResult.data) {
@@ -162,8 +183,74 @@ const AppDashboard = () => {
       const cs = (contractResult.data as any[] | null)?.[0] ?? null;
       setContract(cs);
       writeCache(userId, "dashboard.contract", cs);
+      const paid = (paidResult.data as any[] | null) ?? [];
+      setPaidInvoices(paid);
+      writeCache(userId, "dashboard.paidInvoices", paid);
     } catch (error) {
       logError("AppDashboard.fetchUserData", error);
+    }
+  };
+
+  const handleDownloadInvoice = async (invoiceId: string) => {
+    if (!user) return;
+    setDownloadingId(invoiceId);
+    try {
+      const [invRes, linesRes, profileRes] = await Promise.all([
+        supabase.from("invoices").select("*").eq("id", invoiceId).maybeSingle(),
+        supabase.from("invoice_lines").select("*").eq("invoice_id", invoiceId).order("created_at", { ascending: true }),
+        supabase.from("customer_profile" as any).select("*").eq("id", user.id).maybeSingle(),
+      ]);
+      if (invRes.error || !invRes.data) throw invRes.error ?? new Error("invoice_missing");
+      const inv: any = invRes.data;
+      const p: any = profileRes.data ?? {};
+      const lines = (linesRes.data as any[]) ?? [];
+      generateInvoicePdf({
+        invoiceNumber: inv.invoice_number,
+        customerName: p.full_name || "Customer",
+        customerEmail: p.email || "",
+        accountNumber: p.account_number || "",
+        postcode: p.postcode || "",
+        issueDate: inv.issue_date,
+        dueDate: inv.due_date ?? undefined,
+        status: inv.status,
+        lines: lines.map((l) => ({
+          description: l.description ?? "",
+          qty: Number(l.qty ?? 1),
+          unit_price: Number(l.unit_price ?? 0),
+          line_total: Number(l.line_total ?? 0),
+          vat_rate: l.vat_rate != null ? Number(l.vat_rate) : undefined,
+        })),
+        subtotal: Number(inv.subtotal ?? 0),
+        vatTotal: Number(inv.vat_total ?? 0),
+        total: Number(inv.total ?? 0),
+        notes: inv.notes ?? undefined,
+        vatEnabled: inv.vat_enabled !== false,
+        vatRate: inv.vat_rate != null ? Number(inv.vat_rate) : 20,
+      });
+      toast({ title: "Invoice downloaded" });
+    } catch (e) {
+      logError("AppDashboard.handleDownloadInvoice", e);
+      toast({ title: "Couldn't download invoice", variant: "destructive" });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleDownloadContract = async (csId: string) => {
+    setDownloadingContract(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-contract-summary-pdf", {
+        body: { contract_summary_id: csId },
+      });
+      const err = (data as any)?.error || error?.message;
+      if (err) throw new Error(err);
+      const url = (data as any)?.signed_url;
+      if (!url) throw new Error("no_signed_url");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      toast({ title: "Couldn't open contract PDF", variant: "destructive" });
+    } finally {
+      setDownloadingContract(false);
     }
   };
 
@@ -209,11 +296,13 @@ const AppDashboard = () => {
 
   const menuItems = [
     { icon: CreditCard, label: "Invoices & Payments", description: "Bills, receipts and Pay Now", link: "/dashboard?tab=invoices" },
+    { icon: ReceiptIcon, label: "Payments & Receipts", description: "Payment history and receipts", link: "/dashboard?tab=payments" },
     { icon: FileText, label: "Contract details", description: "Your signed contract summary", link: "/dashboard?tab=cs" },
     { icon: Wifi, label: "My services", description: "Active broadband & SIM", link: "/dashboard?tab=services" },
     { icon: Package, label: "All Orders", description: "View order history", link: "/dashboard?tab=orders", badge: orders.length },
     { icon: HelpCircle, label: "Support tickets", description: "Raised tickets & chat", link: "/dashboard?tab=tickets" },
     { icon: FileText, label: "Documents", description: "Downloads and paperwork", link: "/dashboard?tab=documents" },
+    { icon: Gift, label: "Rewards", description: "Points and referrals", link: "/dashboard?tab=rewards" },
     { icon: Bell, label: "Notifications", description: "Manage alerts", link: "/dashboard?tab=notifications" },
     { icon: Shield, label: "Privacy", description: "Security settings", link: "/dashboard?tab=privacy" },
     { icon: Settings, label: "Settings", description: "App preferences", link: "/dashboard?tab=settings" },
@@ -232,6 +321,7 @@ const AppDashboard = () => {
       cs: "Contract Details",
       tickets: "Support Tickets",
       account: "Account",
+      rewards: "Rewards",
     };
 
     if (!sectionTitle[activeSection]) return null;
@@ -300,6 +390,12 @@ const AppDashboard = () => {
           {activeSection === "documents" && (
             <div className="bg-background rounded-2xl p-3 shadow-sm">
               <DocumentsTab userId={user.id} />
+            </div>
+          )}
+
+          {activeSection === "rewards" && (
+            <div className="bg-background rounded-2xl p-3 shadow-sm">
+              <RewardsTab userId={user.id} />
             </div>
           )}
 

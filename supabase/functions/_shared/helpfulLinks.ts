@@ -37,9 +37,9 @@ export async function fetchHelpfulLinks(
     const max = Math.max(1, Math.min(4, opts.max ?? 3));
     const { data: maps } = await supabase
       .from("email_template_help_links")
-      .select("article_slug, sort_order")
+      .select("article_slug, display_order")
       .eq("template_key", templateKey)
-      .order("sort_order", { ascending: true })
+      .order("display_order", { ascending: true })
       .limit(max);
     const slugs = (maps ?? []).map((m: any) => m.article_slug).filter(Boolean);
     if (!slugs.length) return [];

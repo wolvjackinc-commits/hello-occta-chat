@@ -27,8 +27,8 @@ var list_my_orders_default = defineTool({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const sb = supabaseForUser(ctx);
-    const { data, error } = await sb.from("orders").select(
+    const sb5 = supabaseForUser(ctx);
+    const { data, error } = await sb5.from("orders").select(
       "id, occta_order_number, service_type, plan_name, plan_price, status, lifecycle_status, postcode, address_line1, city, installation_date, preferred_start_date, actual_activation_date, created_at"
     ).eq("user_id", ctx.getUserId()).order("created_at", { ascending: false }).limit(limit ?? 20);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
@@ -62,8 +62,8 @@ var list_my_invoices_default = defineTool2({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const sb = supabaseForUser2(ctx);
-    let q = sb.from("invoices").select(
+    const sb5 = supabaseForUser2(ctx);
+    let q = sb5.from("invoices").select(
       "id, invoice_number, status, issue_date, due_date, currency, subtotal, vat_total, total, billing_period_start, billing_period_end, invoice_type"
     ).eq("user_id", ctx.getUserId()).order("issue_date", { ascending: false }).limit(limit ?? 20);
     if (status) q = q.eq("status", status);
@@ -98,8 +98,8 @@ var list_my_services_default = defineTool3({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const sb = supabaseForUser3(ctx);
-    const { data, error } = await sb.from("customer_services").select(
+    const sb5 = supabaseForUser3(ctx);
+    const { data, error } = await sb5.from("customer_services").select(
       "id, service_type, status, plan_name, activation_date, price_monthly"
     ).limit(limit ?? 20);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
@@ -133,8 +133,8 @@ var list_my_tickets_default = defineTool4({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const sb = supabaseForUser4(ctx);
-    let q = sb.from("support_tickets").select("id, subject, description, category, priority, status, created_at").eq("user_id", ctx.getUserId()).order("created_at", { ascending: false }).limit(limit ?? 20);
+    const sb5 = supabaseForUser4(ctx);
+    let q = sb5.from("support_tickets").select("id, subject, description, category, priority, status, created_at").eq("user_id", ctx.getUserId()).order("created_at", { ascending: false }).limit(limit ?? 20);
     if (status) q = q.eq("status", status);
     const { data, error } = await q;
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
@@ -164,8 +164,8 @@ var get_my_profile_default = defineTool5({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const sb = supabaseForUser5(ctx);
-    const { data, error } = await sb.from("profiles").select(
+    const sb5 = supabaseForUser5(ctx);
+    const { data, error } = await sb5.from("profiles").select(
       "id, email, full_name, phone, address_line1, address_line2, city, postcode, account_number, created_at"
     ).eq("id", ctx.getUserId()).maybeSingle();
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
@@ -173,6 +173,124 @@ var get_my_profile_default = defineTool5({
       content: [{ type: "text", text: JSON.stringify(data ?? {}) }],
       structuredContent: { profile: data ?? {} }
     };
+  }
+});
+
+// src/lib/mcp/tools/get-my-billing-summary.ts
+import { createClient as createClient6 } from "npm:@supabase/supabase-js@^2.89.0";
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.20.0";
+function sb(ctx) {
+  return createClient6(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var get_my_billing_summary_default = defineTool6({
+  name: "get_my_billing_summary",
+  title: "Get my billing summary",
+  description: "Return the signed-in customer's billing configuration: billing day, billing mode, VAT setting, and Direct Debit status. Read-only. Does not include costs, margins or supplier data.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const client = sb(ctx);
+    const userId = ctx.getUserId();
+    const [{ data: settings }, { data: dd }] = await Promise.all([
+      client.from("billing_settings").select("billing_mode, billing_day, vat_enabled_default, vat_rate_default, next_invoice_date, payment_terms_days, auto_pay_enabled, preferred_payment_method, updated_at").eq("user_id", userId).maybeSingle(),
+      client.from("dd_mandates").select("status, mandate_reference, bank_last4, account_holder_name, provider, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle()
+    ]);
+    const summary = {
+      billing: settings ?? null,
+      direct_debit: dd ? {
+        status: dd.status,
+        active: dd.status === "active",
+        mandate_reference: dd.mandate_reference,
+        bank_last4: dd.bank_last4,
+        account_holder_name: dd.account_holder_name,
+        provider: dd.provider
+      } : null
+    };
+    return { content: [{ type: "text", text: JSON.stringify(summary) }], structuredContent: summary };
+  }
+});
+
+// src/lib/mcp/tools/list-my-payment-requests.ts
+import { createClient as createClient7 } from "npm:@supabase/supabase-js@^2.89.0";
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z5 } from "npm:zod@^3.25.76";
+function sb2(ctx) {
+  return createClient7(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var list_my_payment_requests_default = defineTool7({
+  name: "list_my_payment_requests",
+  title: "List my payment links",
+  description: "List secure payment links (pay-by-invoice-link requests) issued to the signed-in customer. Excludes internal Worldpay payload data.",
+  inputSchema: {
+    limit: z5.number().int().min(1).max(50).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const client = sb2(ctx);
+    const { data, error } = await client.from("payment_requests").select("id, payment_request_number, amount, currency, status, type, notes, expires_at, paid_at, created_at, invoice_id, provider_checkout_url").eq("user_id", ctx.getUserId()).order("created_at", { ascending: false }).limit(limit ?? 20);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: JSON.stringify(data ?? []) }], structuredContent: { payment_requests: data ?? [] } };
+  }
+});
+
+// src/lib/mcp/tools/list-my-receipts.ts
+import { createClient as createClient8 } from "npm:@supabase/supabase-js@^2.89.0";
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z6 } from "npm:zod@^3.25.76";
+function sb3(ctx) {
+  return createClient8(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var list_my_receipts_default = defineTool8({
+  name: "list_my_receipts",
+  title: "List my receipts",
+  description: "List receipts issued to the signed-in customer for confirmed payments. Read-only; excludes Worldpay/DD private fields.",
+  inputSchema: { limit: z6.number().int().min(1).max(50).optional() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const client = sb3(ctx);
+    const { data, error } = await client.from("receipts").select("id, invoice_id, amount, method, reference, paid_at, created_at").eq("user_id", ctx.getUserId()).order("created_at", { ascending: false }).limit(limit ?? 20);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: JSON.stringify(data ?? []) }], structuredContent: { receipts: data ?? [] } };
+  }
+});
+
+// src/lib/mcp/tools/get-my-router-status.ts
+import { createClient as createClient9 } from "npm:@supabase/supabase-js@^2.89.0";
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.20.0";
+function sb4(ctx) {
+  return createClient9(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var get_my_router_status_default = defineTool9({
+  name: "get_my_router_status",
+  title: "Get my router / activation readiness",
+  description: "Return activation readiness and router/provisioning status for the signed-in customer's most recent order. Customer-safe fields only; excludes supplier refs.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const client = sb4(ctx);
+    const userId = ctx.getUserId();
+    const { data: order } = await client.from("orders").select("id, occta_order_number, status, lifecycle_status, expected_activation_date, actual_activation_date, plan_name").or(`user_id.eq.${userId},customer_id.eq.${userId}`).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (!order) return { content: [{ type: "text", text: "No order found for signed-in customer." }], structuredContent: { order: null, readiness: null } };
+    const { data: pr } = await client.from("payment_requests").select("id").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const { data: readiness } = pr?.id ? await client.from("provisioning_readiness").select("installation_confirmed, router_confirmed, admin_review_complete, reviewer_notes, updated_at").eq("payment_request_id", pr.id).maybeSingle() : { data: null };
+    const payload = { order, readiness: readiness ?? null };
+    return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
   }
 });
 
@@ -192,7 +310,11 @@ var mcp_default = defineMcp({
     list_my_orders_default,
     list_my_invoices_default,
     list_my_services_default,
-    list_my_tickets_default
+    list_my_tickets_default,
+    get_my_billing_summary_default,
+    list_my_payment_requests_default,
+    list_my_receipts_default,
+    get_my_router_status_default
   ]
 });
 

@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import SuggestedArticles from "@/components/kb/SuggestedArticles";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
@@ -130,6 +131,8 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted }: Props) {
               <Input id="ticket-subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Short summary" maxLength={120} aria-invalid={!!errors.subject} />
               {errors.subject && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.subject}</p>}
             </div>
+
+            <SuggestedArticles subject={`${category} ${subject}`.trim()} />
 
             <div className="space-y-1">
               <Label htmlFor="ticket-msg">Describe your issue</Label>

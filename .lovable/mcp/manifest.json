@@ -149,6 +149,84 @@
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
+      },
+      {
+        "name": "get_my_billing_summary",
+        "title": "Get my billing summary",
+        "description": "Return the signed-in customer's billing configuration: billing day, billing mode, VAT setting, and Direct Debit status. Read-only. Does not include costs, margins or supplier data.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_payment_requests",
+        "title": "List my payment links",
+        "description": "List secure payment links (pay-by-invoice-link requests) issued to the signed-in customer. Excludes internal Worldpay payload data.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_receipts",
+        "title": "List my receipts",
+        "description": "List receipts issued to the signed-in customer for confirmed payments. Read-only; excludes Worldpay/DD private fields.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_my_router_status",
+        "title": "Get my router / activation readiness",
+        "description": "Return activation readiness and router/provisioning status for the signed-in customer's most recent order. Customer-safe fields only; excludes supplier refs.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
       }
     ]
   }

@@ -70,6 +70,11 @@ import GuidePage from "./pages/guides/GuidePage";
 import HelpCenter from "./pages/help/HelpCenter";
 import HelpArticlePage from "./pages/help/HelpArticle";
 import OwnRouterSetup from "./pages/help/OwnRouterSetup";
+// DB-backed knowledge-base pages (loaded lazily — public site)
+const DbHelpArticle = lazy(() => import("./pages/kb/DbHelpArticle"));
+const DbGuidePage = lazy(() => import("./pages/kb/DbGuidePage"));
+const BlogIndex = lazy(() => import("./pages/kb/BlogIndex"));
+const BlogPost = lazy(() => import("./pages/kb/BlogPost"));
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import NoContractBroadbandComparison from "./pages/NoContractBroadbandComparison";
@@ -254,10 +259,12 @@ const AnimatedRoutes = () => {
         <Route path="/pay/_internal" element={<PayInternalReturn />} />
         <Route path="/dd/setup" element={<DDSetup />} />
         <Route path="/guides" element={<Guides />} />
-        <Route path="/guides/:slug" element={<GuidePage />} />
+        <Route path="/guides/:slug" element={<Suspense fallback={null}><DbGuidePage /></Suspense>} />
         <Route path="/help" element={<HelpCenter />} />
         <Route path="/help/own-router-setup" element={<OwnRouterSetup />} />
-        <Route path="/help/:slug" element={<HelpArticlePage />} />
+        <Route path="/help/:slug" element={<Suspense fallback={null}><DbHelpArticle /></Suspense>} />
+        <Route path="/blog" element={<Suspense fallback={null}><BlogIndex /></Suspense>} />
+        <Route path="/blog/:slug" element={<Suspense fallback={null}><BlogPost /></Suspense>} />
 
         {/* Location broadband pages (50 cities) — explicit routes keep the sitemap and SEO scans in sync. */}
         <Route path="/broadband-london" element={<LocationBroadband />} />

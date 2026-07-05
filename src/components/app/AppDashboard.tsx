@@ -395,7 +395,7 @@ const AppDashboard = () => {
 
           {activeSection === "rewards" && (
             <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <RewardsTab userId={user.id} />
+              <RewardsTab />
             </div>
           )}
 

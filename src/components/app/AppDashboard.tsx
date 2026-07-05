@@ -512,9 +512,58 @@ const AppDashboard = () => {
               <Link to={`/pay-invoice?id=${latestInvoice.id}`} className="flex-1">
                 <Button className="w-full rounded-xl">Pay now</Button>
               </Link>
+              <Button
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => handleDownloadInvoice(latestInvoice.id)}
+                disabled={downloadingId === latestInvoice.id}
+                aria-label="Download invoice"
+              >
+                {downloadingId === latestInvoice.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              </Button>
               <Link to="/dashboard?tab=invoices" className="flex-1">
                 <Button variant="outline" className="w-full rounded-xl">All invoices</Button>
               </Link>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Recent paid invoices */}
+        {paidInvoices.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="bg-background rounded-2xl p-4 shadow-sm mb-4"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Recent paid invoices</h3>
+              <Link to="/dashboard?tab=invoices" className="text-sm text-accent font-medium">View all</Link>
+            </div>
+            <div className="space-y-2">
+              {paidInvoices.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-xl">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{inv.invoice_number || inv.id.slice(0, 8)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {inv.issue_date ? format(new Date(inv.issue_date), "dd MMM yyyy") : "—"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-sm">£{Number(inv.total || 0).toFixed(2)}</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl h-9 w-9 p-0"
+                      onClick={() => handleDownloadInvoice(inv.id)}
+                      disabled={downloadingId === inv.id}
+                      aria-label={`Download invoice ${inv.invoice_number ?? ""}`}
+                    >
+                      {downloadingId === inv.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </motion.div>
         )}
@@ -540,9 +589,21 @@ const AppDashboard = () => {
                   )}
                 </div>
               </div>
-              <Link to="/dashboard?tab=cs" aria-label="View contract">
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </Link>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-xl h-9 w-9 p-0"
+                  onClick={() => handleDownloadContract(contract.id)}
+                  disabled={downloadingContract}
+                  aria-label="Download contract PDF"
+                >
+                  {downloadingContract ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                </Button>
+                <Link to="/dashboard?tab=cs" aria-label="View contract">
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </Link>
+              </div>
             </div>
           </motion.div>
         )}

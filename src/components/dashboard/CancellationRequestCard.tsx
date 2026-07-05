@@ -31,15 +31,14 @@ export function CancellationRequestCard({ userId, serviceId }: Props) {
     enabled: !!serviceId,
     queryFn: async () => {
       const { data } = await supabase
-        .from("service_cancellation_cases")
-        .select("id, status, proposed_cease_date, preview_snapshot, requested_date, created_at")
+        .from("customer_cancellation_cases" as any)
+        .select("id, status, proposed_cease_date, customer_preview, requested_date, created_at")
         .eq("service_id", serviceId)
-        .eq("customer_id", userId)
         .not("status", "in", "(completed,withdrawn,rejected)")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data;
+      return data as any;
     },
   });
 
@@ -79,7 +78,7 @@ export function CancellationRequestCard({ userId, serviceId }: Props) {
     } finally { setBusy(false); }
   }
 
-  const preview = (openCase?.preview_snapshot as any) ?? null;
+  const preview = (openCase as any)?.customer_preview ?? null;
 
   return (
     <Card className="p-4 border-2 border-foreground rounded-none">

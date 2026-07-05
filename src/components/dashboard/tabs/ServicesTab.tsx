@@ -25,9 +25,8 @@ export function ServicesTab({ userId }: { userId: string }) {
     (async () => {
       // Phase 7: customer-safe — never expose supplier_reference / supplier_*
       const { data } = await supabase
-        .from("services")
+        .from("customer_services" as any)
         .select("id,service_type,plan_name,status,activation_date,price_monthly")
-        .eq("user_id", userId)
         .order("created_at", { ascending: false });
       setServices((data as Service[]) || []);
       setLoading(false);

@@ -1,5 +1,6 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp, sendResendEmail, brutalistEmailShell, escapeHtml } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 /**
  * Phase G — Step 2 of cancellation.
@@ -129,12 +130,14 @@ Deno.serve(async (req) => {
     try {
       const whenLondon = new Date(flip.data.cancelled_at as string)
         .toLocaleString("en-GB", { timeZone: "Europe/London", dateStyle: "long", timeStyle: "short" });
+      const helpful = await fetchHelpfulLinksHtml(supabase, "cancellation_confirmed");
       const body = `
         <p>Hi ${escapeHtml(customerName ?? "there")},</p>
         <p>We've recorded your cancellation request${orderNumber ? ` for order <strong>${escapeHtml(orderNumber)}</strong>` : ""}.</p>
         <p><strong>Cancelled:</strong> ${escapeHtml(whenLondon)} (UK time)</p>
         <p>No further action is needed from you. If anything else is required, the OCCTA team will contact you directly.</p>
         <p style="font-size:13px;color:#444;">If you didn't request this cancellation, please reply to this email straight away.</p>
+        ${helpful}
       `;
       const html = brutalistEmailShell("Your OCCTA order has been cancelled", body, {
         label: "Open your account",

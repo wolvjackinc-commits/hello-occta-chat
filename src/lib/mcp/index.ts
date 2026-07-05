@@ -4,6 +4,10 @@ import listMyInvoicesTool from "./tools/list-my-invoices";
 import listMyServicesTool from "./tools/list-my-services";
 import listMyTicketsTool from "./tools/list-my-tickets";
 import getMyProfileTool from "./tools/get-my-profile";
+import getMyBillingSummaryTool from "./tools/get-my-billing-summary";
+import listMyPaymentRequestsTool from "./tools/list-my-payment-requests";
+import listMyReceiptsTool from "./tools/list-my-receipts";
+import getMyRouterStatusTool from "./tools/get-my-router-status";
 
 // The OAuth issuer MUST be the direct Supabase host — never SUPABASE_URL, which
 // on Lovable Cloud is a .lovable.cloud proxy that mcp-js rejects at token
@@ -27,5 +31,9 @@ export default defineMcp({
     listMyInvoicesTool,
     listMyServicesTool,
     listMyTicketsTool,
+    getMyBillingSummaryTool,
+    listMyPaymentRequestsTool,
+    listMyReceiptsTool,
+    getMyRouterStatusTool,
   ],
 });

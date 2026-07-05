@@ -42,6 +42,8 @@ const Footer = () => {
       { name: "Digital Voice UK", path: "/guides/digital-voice-uk" },
       { name: "Cheap SIM Deals", path: "/guides/cheap-sim-only-deals" },
       { name: "All Guides", path: "/guides" },
+      { name: "Help Centre", path: "/help" },
+      { name: "Blog", path: "/blog" },
     ],
   };
 

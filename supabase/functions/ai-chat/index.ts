@@ -1754,10 +1754,37 @@ serve(async (req) => {
       ? [...baseCustomerTools, ...adminTools, ...adminCopilotTools]
       : baseCustomerTools;
 
+    // Live retrieval from the DB-backed knowledge base. Only cite approved,
+    // ai_allowed articles. Signed-in customers additionally see 'customer'
+    // audience articles; anonymous callers see 'public' only. Failures are
+    // swallowed so retrieval never breaks the chat.
+    let kbContextBlock = "";
+    try {
+      const q = (lastUserMessage?.content ?? "").toString().slice(0, 200);
+      if (q.trim().length >= 3) {
+        const { data: kbRows } = await supabaseServiceClient.rpc("search_kb_for_ai", {
+          _q: q,
+          _include_customer: Boolean(userId),
+          _limit: 6,
+        });
+        if (Array.isArray(kbRows) && kbRows.length > 0) {
+          const lines = (kbRows as Array<{ slug: string; title: string; summary: string | null; kind: string; content: string }>).map((row) => {
+            const excerpt = (row.summary && row.summary.length > 20 ? row.summary : (row.content ?? "")).slice(0, 400).replace(/\s+/g, " ").trim();
+            const path = row.kind === "blog" ? `/blog/${row.slug}` : row.kind === "guide" ? `/guides/${row.slug}` : `/help/${row.slug}`;
+            return `- [${row.title}](https://www.occta.co.uk${path}) — ${excerpt}`;
+          });
+          kbContextBlock = `\n\n## LIVE KNOWLEDGE BASE MATCHES (use these first; prefer citing them over the static list; do not invent URLs)\n${lines.join("\n")}\n`;
+        }
+      }
+    } catch (kbErr) {
+      console.warn("kb retrieval failed", (kbErr as Error).message);
+    }
+
     // Ollie — OCCTA Assist (professional, human, safe)
     const personaName = isAdmin ? "OCCTA Copilot" : "Ollie — OCCTA Assist";
     const systemPrompt = `You are ${personaName}, OCCTA Telecom's premium AI assistant. Tone: professional, warm, plain English, lightly human. Never robotic, never pushy, never "as an AI". Light wit is fine for general questions, but stay calm and serious on billing, cancellations, complaints, vulnerable-customer support, and identity questions.
 ${signedInContextBlock}
+${kbContextBlock}
 
 ## SELF-SERVICE KNOWLEDGE BASE (link these instead of guessing)
 Help Centre: ${helpKnowledgeBase.helpCentre} · Guides/Blog: ${helpKnowledgeBase.guides}

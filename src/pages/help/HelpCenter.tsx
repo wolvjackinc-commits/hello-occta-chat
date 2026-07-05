@@ -4,8 +4,21 @@ import { LifeBuoy, ArrowRight, MessageCircle, BookOpen } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { SEO, StructuredData, createBreadcrumbSchema } from "@/components/seo";
 import { helpArticles, helpCategories } from "@/data/helpArticles";
+import KbSearchBar from "@/components/kb/KbSearchBar";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+type DbArticle = { id: string; slug: string; title: string; summary: string | null; kind: string; read_minutes: number | null };
 
 const HelpCenter = () => {
+  const [extra, setExtra] = useState<DbArticle[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.rpc("get_kb_articles_by_kind", { _kind: "help" });
+      setExtra((data as DbArticle[]) ?? []);
+    })();
+  }, []);
+
   const breadcrumb = createBreadcrumbSchema([
     { name: "Home", url: "/" },
     { name: "Help Centre", url: "/help" },
@@ -34,12 +47,31 @@ const HelpCenter = () => {
             <p className="text-lg text-muted-foreground max-w-xl">
               Most issues are fixed in under five minutes. Find your topic, follow the steps, and you're sorted.
             </p>
+            <div className="mt-6 max-w-xl">
+              <KbSearchBar />
+            </div>
           </motion.div>
         </div>
       </section>
 
       <section className="py-12 bg-background">
         <div className="container mx-auto px-4">
+          {extra.length > 0 && (
+            <div className="mb-12">
+              <h2 className="text-2xl font-display uppercase mb-4 text-foreground">Latest help articles</h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {extra.slice(0, 9).map((a) => (
+                  <Link key={a.id} to={`/help/${a.slug}`} className="block card-brutal bg-card p-5 group">
+                    <span className="text-xs font-display uppercase text-primary mb-2 block">
+                      {a.read_minutes ? `${a.read_minutes} min read` : "Help"}
+                    </span>
+                    <h3 className="font-display text-xl mb-2 group-hover:text-primary transition-colors">{a.title}</h3>
+                    {a.summary && <p className="text-sm text-muted-foreground line-clamp-3">{a.summary}</p>}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
           {helpCategories.map((cat) => {
             const items = helpArticles.filter((a) => a.category === cat);
             if (!items.length) return null;

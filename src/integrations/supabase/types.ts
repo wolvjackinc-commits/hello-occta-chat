@@ -2190,6 +2190,30 @@ export type Database = {
         }
         Relationships: []
       }
+      email_template_help_links: {
+        Row: {
+          article_slug: string
+          created_at: string
+          display_order: number
+          id: string
+          template_key: string
+        }
+        Insert: {
+          article_slug: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          template_key: string
+        }
+        Update: {
+          article_slug?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          template_key?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           auto_send: boolean
@@ -2578,6 +2602,65 @@ export type Database = {
           service_type?: string
           status?: string
           updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      help_article_feedback: {
+        Row: {
+          article_id: string
+          created_at: string
+          helpful: boolean
+          id: string
+          note: string | null
+          user_id: string | null
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          helpful: boolean
+          id?: string
+          note?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          helpful?: boolean
+          id?: string
+          note?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_article_feedback_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "kb_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_search_logs: {
+        Row: {
+          created_at: string
+          id: string
+          query: string
+          results_count: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query: string
+          results_count?: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query?: string
+          results_count?: number
           user_id?: string | null
         }
         Relationships: []
@@ -3083,45 +3166,81 @@ export type Database = {
       }
       kb_articles: {
         Row: {
+          ai_allowed: boolean
           approved_at: string | null
           approved_by: string | null
+          audience: string
           category_id: string | null
           content: string
           created_at: string
           created_by: string | null
+          hero_image_url: string | null
           id: string
+          kind: string
+          last_reviewed_at: string | null
+          read_minutes: number | null
+          related_slugs: string[]
+          seo_description: string | null
+          seo_title: string | null
           slug: string
           status: Database["public"]["Enums"]["kb_status"]
+          structured_data: Json | null
+          summary: string | null
+          tags: string[]
           title: string
           updated_at: string
           version: number
           visibility: Database["public"]["Enums"]["kb_visibility"]
         }
         Insert: {
+          ai_allowed?: boolean
           approved_at?: string | null
           approved_by?: string | null
+          audience?: string
           category_id?: string | null
           content: string
           created_at?: string
           created_by?: string | null
+          hero_image_url?: string | null
           id?: string
+          kind?: string
+          last_reviewed_at?: string | null
+          read_minutes?: number | null
+          related_slugs?: string[]
+          seo_description?: string | null
+          seo_title?: string | null
           slug: string
           status?: Database["public"]["Enums"]["kb_status"]
+          structured_data?: Json | null
+          summary?: string | null
+          tags?: string[]
           title: string
           updated_at?: string
           version?: number
           visibility?: Database["public"]["Enums"]["kb_visibility"]
         }
         Update: {
+          ai_allowed?: boolean
           approved_at?: string | null
           approved_by?: string | null
+          audience?: string
           category_id?: string | null
           content?: string
           created_at?: string
           created_by?: string | null
+          hero_image_url?: string | null
           id?: string
+          kind?: string
+          last_reviewed_at?: string | null
+          read_minutes?: number | null
+          related_slugs?: string[]
+          seo_description?: string | null
+          seo_title?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["kb_status"]
+          structured_data?: Json | null
+          summary?: string | null
+          tags?: string[]
           title?: string
           updated_at?: string
           version?: number
@@ -8225,6 +8344,21 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_kb_articles_by_kind: {
+        Args: { _kind: string }
+        Returns: {
+          hero_image_url: string
+          id: string
+          kind: string
+          last_reviewed_at: string
+          read_minutes: number
+          slug: string
+          summary: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }[]
+      }
       get_my_customer_overview: { Args: never; Returns: Json }
       get_order_journey_by_token: {
         Args: { _token_hash: string }
@@ -8401,6 +8535,27 @@ export type Database = {
       recompute_reward_balances: {
         Args: { _customer_id: string }
         Returns: undefined
+      }
+      search_kb_for_ai: {
+        Args: { _include_customer?: boolean; _limit?: number; _q: string }
+        Returns: {
+          content: string
+          kind: string
+          slug: string
+          summary: string
+          title: string
+        }[]
+      }
+      search_public_kb: {
+        Args: { _kind?: string; _limit?: number; _q: string }
+        Returns: {
+          id: string
+          kind: string
+          slug: string
+          summary: string
+          tags: string[]
+          title: string
+        }[]
       }
     }
     Enums: {

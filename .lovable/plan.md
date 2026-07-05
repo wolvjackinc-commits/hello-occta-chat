@@ -1,344 +1,152 @@
-FINAL OCCTA BILLING POLICY CORRECTION — IMPLEMENT EXACTLY
+## Goal
 
-Use this billing rule. This overrides the previous confusion.
+Ship a production-ready OCCTA self-help + knowledge system that:
+- deflects support tickets,
+- gives Ira AI (public & signed-in modes) a safe, curated knowledge source,
+- adds SEO-friendly `/help`, `/guides`, `/blog` sections rendered from `kb_articles`,
+- integrates helpful links into transactional emails,
+- protects private data at every layer.
 
-## FINAL BILLING RULE
+Nothing in the quote journey, contract-summary flow, billing, Worldpay, DD, or admin RLS is touched.
 
-1. Billing starts from the actual service live date.
-2. First invoice is created when admin confirms the service live.
-3. First invoice includes:
-  - activation/setup fee if shown in the accepted Contract Summary;
-  - accepted one-off charges;
-  - pro-rata service charge from actual live date to the customer’s chosen billing day;
-  - VAT itemisation;
-  - secure Worldpay payment link for invoice_link customers.
-4. After the first invoice, all recurring monthly invoices follow the customer’s chosen billing/pay day.
-5. Monthly service is billed in advance.
-6. Customer payment status must be tracked as paid, unpaid, overdue or partially paid where applicable.
-7. If unpaid, reminders must be sent automatically according to the approved reminder schedule.
-8. No duplicate invoice, payment request, email or receipt.
+## Scope for this deployment
 
-## EXAMPLE
+**Full structure + 20 priority articles seeded**. Remaining ~88 help + 20 blog + 20 guides = admin-authored via the CMS in follow-up passes (structure supports them immediately).
 
-If:
+## 1. Database (single migration)
 
-- service live date = 10 July;
-- chosen billing day = 25;
-- monthly price = £40;
-- setup fee = £67;
+Extend the existing `kb_articles` table (non-destructive `ALTER … ADD COLUMN IF NOT EXISTS`):
 
-Then:
+- `kind text NOT NULL DEFAULT 'help'` — `help` | `guide` | `blog`
+- `summary text`
+- `seo_title text`, `seo_description text`
+- `tags text[] NOT NULL DEFAULT '{}'`
+- `related_slugs text[] NOT NULL DEFAULT '{}'`
+- `structured_data jsonb`
+- `audience text NOT NULL DEFAULT 'public'` — `public` | `customer`
+- `ai_allowed boolean NOT NULL DEFAULT true`
+- `last_reviewed_at timestamptz`
+- `hero_image_url text`, `read_minutes int`
+- Indexes: `(kind, status, visibility)`, `(slug)`, `GIN(tags)`.
 
-First invoice is created immediately on service live confirmation.
+New tables (with GRANT + RLS in same migration):
 
-First invoice covers:
+- `help_article_feedback` — `article_id`, `helpful bool`, `note text`, `user_id nullable`, `created_at`. RLS: anyone can INSERT; admin/compliance SELECT.
+- `help_search_logs` — `query text`, `results_count int`, `user_id nullable`, `created_at`. RLS: anyone INSERT; admin SELECT.
+- `email_template_help_links` — `template_key text`, `article_slug text` (soft ref). RLS: admin manage; server role read.
 
-- setup fee £67;
-- pro-rata service from 10 July to 24 July;
-- VAT itemised;
-- payment due according to payment terms.
+Two SECURITY DEFINER read-only RPCs (search_path=public), returning only customer-safe fields:
 
-Next recurring invoice:
+- `get_public_kb_articles_by_kind(_kind text)` → published+public rows.
+- `search_public_kb(_q text, _kind text default null, _limit int default 20)` → title/summary trigram-ish `ILIKE` search, logs to `help_search_logs`.
 
-- issued on 25 July;
-- covers 25 July to 24 August;
-- then monthly on the 25th.
+## 2. Public routes (all lazy-loaded)
 
-Do not wait until 25 July to send the first invoice.
+New pages under `src/pages/kb/`, all wrapped in existing `Layout` + `SEO` + `StructuredData`, styled with existing brutalist tokens (reuse `SeoContentLayout` patterns):
 
-## FIRST INVOICE BEHAVIOUR
+- `/help` — `HelpIndex.tsx` — category grid + search bar
+- `/help/:slug` — `HelpArticle.tsx` — renders article body, FAQ, "was this helpful?", related, CTA. Also handles the 14 predefined category-landing slugs listed in the request (billing, payments, activation, router-setup, wifi-troubleshooting, speeds, digital-voice, switching, cancellations, complaints, account, vulnerable-customers, business) which are just seeded articles/hubs.
+- `/blog` — `BlogIndex.tsx`
+- `/blog/:slug` — `BlogPost.tsx`
+- `/guides` — reuses existing `Guides.tsx` (already present) but extended to also list DB-authored guides.
+- `/guides/:slug` — extends existing `GuidePage.tsx` to fall back to DB when static slug not found.
 
-When Confirm Service Live is clicked:
+Article page renders:
+- H1, "last reviewed", short-answer callout, TOC (auto from `##` headings), body (markdown via `react-markdown`), inline FAQ, related-article grid, support CTA row (Check availability / Ask Ira / phone / email), "Was this helpful?" thumbs.
+- SEO: title, meta description, canonical, FAQ JSON-LD (from FAQ blocks), HowTo JSON-LD when `structured_data` provides it, Breadcrumb JSON-LD.
 
-- create/update the service;
-- store actual activation date;
-- create first billing job immediately if data is complete;
-- first billing worker generates invoice immediately;
-- create invoice PDF;
-- create Worldpay payment request for invoice_link customers;
-- send invoice email;
-- set invoice status to sent;
-- track due date;
-- track payment status.
+## 3. Public search + support deflection
 
-If required data is missing, block the first invoice and create an admin task explaining what is missing.
+- Shared `<KbSearchBar />` component queries `search_public_kb` RPC; results grouped by kind.
+- New `<SuggestedArticles subject={…} />` component — used inside existing `RaiseTicketDialog` and complaint form. Debounced query; shows up to 3 suggestions above the submit button; never blocks submission.
 
-## RECURRING BILLING BEHAVIOUR
+## 4. Admin CMS (extend existing page)
 
-After first invoice:
+Extend `src/pages/admin/KnowledgeBase.tsx`:
+- Add `kind` / `audience` / `ai_allowed` / `tags` / `related_slugs` / `summary` / `seo_title` / `seo_description` / `last_reviewed_at` fields to the form.
+- Filter tabs: Help / Guide / Blog / All.
+- Feedback + no-result-search view (read from the two new tables).
+- Preview button opens the live route in a new tab.
+- Publish/unpublish/archive (uses existing `kb-approve-article` function).
 
-- use `services.next_billing_date` as the next customer chosen billing day;
-- create monthly invoice on that day;
-- invoice period should run from that billing day to the next billing day;
-- use anchor-day logic for 29/30/31 and short months;
-- advance `services.next_billing_date` only after successful invoice creation/email workflow;
-- prevent duplicate monthly invoices.
+## 5. Ira AI chat integration
 
-## PAID / UNPAID / OVERDUE TRACKING
+Update `supabase/functions/ai-chat` (existing edge fn behind `AIChatBot.tsx`):
 
-Every invoice must have clear status:
+**Retrieval layer** — before calling the model, do a keyword search against `kb_articles` where `ai_allowed=true AND status='approved' AND audience matches session state`, inject up to 6 top matches as system context (title + summary + slug). Cite `[slug]`.
 
-- draft;
-- sent;
-- unpaid;
-- paid;
-- partially_paid if supported;
-- overdue;
-- cancelled;
-- written_off only if admin-approved.
+**Public mode** (unauthenticated) — audience filter `public` only. If user asks account-specific question (detected via keywords: "my invoice/order/bill/dd/mandate/ticket…"), respond with sign-in prompt; do not call account tools.
 
-For invoice_link customers:
+**Authenticated customer mode** — audience filter `public` + `customer`. Reuse & extend existing MCP tools already present under `src/lib/mcp/tools/`:
+- keep: `get-my-profile`, `list-my-invoices`, `list-my-orders`, `list-my-services`, `list-my-tickets`
+- add: `get-my-billing-summary` (billing_settings + next invoice date + DD status), `list-my-payment-requests`, `list-my-receipts`, `get-my-router-status` (from provisioning_readiness).
 
-- payment request is created;
-- customer pays manually using Worldpay link;
-- receipt is created only after verified Worldpay settlement;
-- invoice changes to paid only after verified payment.
+Each new tool: SECURITY-scoped SELECT on `auth.uid()`; returns only customer-safe columns; forbids supplier refs, costs/margins, Worldpay/DD encrypted payloads.
 
-For Direct Debit customers:
+Ira system prompt updated with: tone rules, safety rules (never mark paid / never cancel / never process refunds — instead offer "raise a ticket" action which calls existing create-ticket flow with explicit user confirmation).
 
-- do not mark paid until collection/settlement is confirmed;
-- if DD mandate/provider is not active, create admin task and/or fallback payment link according to policy.
+**Admin mode** unchanged behaviour, but same knowledge base retrieval.
 
-## REMINDERS
+## 6. Transactional email updates
 
-Add or verify automated reminders for unpaid invoices.
+Add a "Helpful links" block (renders links from `email_template_help_links` where matching `template_key`) to these templates in `supabase/functions/send-email/templates/` (or wherever they live — will locate):
 
-Reminder schedule:
+quote-sent, contract-summary-ready, order-received, order-committed, router-dispatched, service-live, invoice-sent, payment-reminder, overdue-reminder, receipt, dd-setup, fault-update, cancellation-request, complaint-ack.
 
-- due date reminder if invoice remains unpaid;
-- overdue reminder after due date;
-- final reminder after configured grace period;
-- admin task if still unpaid.
+Legal wording untouched; only adds a small helpful-links section.
 
-Do not send aggressive or misleading debt wording.
+## 7. Seeded content (20 priority help articles)
 
-Reminder emails must include:
+Seed via `supabase--insert` after migration. Categories & articles:
 
-- invoice number;
-- amount due;
-- due date;
-- secure payment link if invoice_link;
-- support contact;
-- polite wording.
+- **Getting started**: How OCCTA broadband works · What happens after you place an order · Understanding your Contract Summary
+- **Activation**: How broadband activation works · What to do before your engineer appointment
+- **Router setup**: How to set up your router · Router lights explained · Where to place your router
+- **Wi-Fi / speeds**: Slow Wi-Fi troubleshooting · How to test broadband speed correctly
+- **Billing**: How OCCTA billing works (uses exact required wording) · Why your first bill may be higher · How to pay by invoice link
+- **Payments**: What to do if your card payment fails · How Direct Debit setup works
+- **Account**: How to log in to your OCCTA account · How to raise a support request
+- **Digital Voice**: What is Digital Voice? · Alarm systems & medical devices notice
+- **Cancellation**: How cancellation works · Cooling-off period explained
 
-Use idempotency so the same reminder is not sent twice for the same reminder stage.
+Each article ships with: summary, ~400–600 word body, 3–5 FAQs, related_slugs, structured_data where relevant, `last_reviewed_at=now()`, `ai_allowed=true`, `audience='public'`, `status='approved'`.
 
-## BILLING DISPLAY
+Remaining ~88 help + 20 blog + 20 guides = admin creates via CMS post-launch (structure and CMS support them). Report will list what remains.
 
-Admin and customer dashboard must show:
+## 8. Sitemap / SEO / prerender
 
-- actual service live date;
-- first invoice number/date/amount/status;
-- next invoice date;
-- next billing period;
-- payment method;
-- due date;
-- paid/unpaid/overdue status;
-- payment link status;
-- last payment date;
-- outstanding balance.
+- Extend `scripts/generate-sitemap.ts` (if present) or `vite-plugin-prerender.ts` to fetch approved public `kb_articles` and add `/help/:slug`, `/blog/:slug`, `/guides/:slug`.
+- Every article page emits canonical + og tags via existing `SEO` component.
+- FAQ / HowTo / BreadcrumbList JSON-LD via `StructuredData`.
 
-For invoice_link, show:
+## 9. Safety & compliance
 
-“The customer is not automatically charged. They receive an invoice with a secure payment link and pay manually.”
+- Public help pages never render customer/order rows.
+- All Ira account tools scoped to `auth.uid()`.
+- All new tables have RLS + explicit GRANTs.
+- All new SECURITY DEFINER functions `SET search_path = public`.
+- Regulatory disclaimer footer on articles tagged `regulatory`.
 
-## EXISTING CUSTOMERS
+## 10. Files touched / created
 
-Run reconciliation for all existing customers.
+**New**
+- `supabase/migrations/2026…_kb_expansion.sql`
+- `src/pages/kb/HelpIndex.tsx`, `HelpArticle.tsx`, `BlogIndex.tsx`, `BlogPost.tsx`, `DbGuidePage.tsx`
+- `src/components/kb/KbSearchBar.tsx`, `SuggestedArticles.tsx`, `FeedbackWidget.tsx`, `KbArticleView.tsx`
+- `src/lib/mcp/tools/get-my-billing-summary.ts`, `list-my-payment-requests.ts`, `list-my-receipts.ts`, `get-my-router-status.ts`
+- `supabase/functions/kb-search/index.ts` (thin wrapper if needed; else RPC only)
 
-Classify:
+**Edited**
+- `src/App.tsx` — add lazy routes
+- `src/pages/admin/KnowledgeBase.tsx` — CMS extensions
+- `supabase/functions/ai-chat/index.ts` — retrieval + safety
+- `src/lib/mcp/index.ts` — register new tools
+- Existing email templates under `supabase/functions/send-email/` — add helpful-links block
+- Sitemap generator (`scripts/generate-sitemap.ts` or `vite-plugin-prerender.ts`)
+- `src/components/dashboard/*RaiseTicketDialog*` / complaint form — inject `SuggestedArticles`
 
-- OK;
-- missing first invoice;
-- first invoice missing activation/setup fee;
-- unpaid invoice;
-- overdue invoice;
-- missing payment request;
-- missing invoice email;
-- missing next billing date;
-- recurring schedule broken;
-- duplicate risk;
-- manual review required.
+**Untouched**: quote journey, contract summary, Worldpay flows, DD flows, billing workers, existing admin RLS, existing SEO pages.
 
-Auto-fix only safe deterministic cases.
+## 11. Verification (in final report)
 
-Do not guess.
-
-Do not edit accepted Contract Summary PDFs/hashes.
-
-Do not duplicate invoices.
-
-## CHRIS HUTT
-
-Chris Hutt already has first invoice INV-2607-0001.
-
-Do not recreate it.
-
-Fix only schedule display and future recurring invoices.
-
-His next invoice should follow `services.next_billing_date`.
-
-## FINAL REPORT
-
-Return:
-
-- files changed;
-- first invoice trigger confirmed;
-- recurring billing schedule confirmed;
-- paid/unpaid/overdue tracking result;
-- reminder schedule result;
-- dashboard/admin billing display result;
-- existing customer reconciliation result;
-- Chris Hutt result;
-- duplicate protection result;
-- payment link result;
-- build/typecheck result.
-
-Do not change quote journey, Contract Summary acceptance, Worldpay webhook, DD encryption, cancellation/ETF, admin navigation or RLS.
-
-  
-  
-  
-  
-OCCTA Billing — End-to-End Fix Plan
-
-Goal: make billing correct for every existing customer and every future activation, using one canonical source of truth, without touching quote journey, Contract Summary acceptance, signed PDFs/hashes, Worldpay webhook, DD encryption, cancellation/ETF, admin nav, or RLS.
-
----
-
-## 1. Canonical model (single source of truth)
-
-Define once, use everywhere:
-
-- **Actual activation date** → `services.actual_activation_date`
-- **Preferred billing/pay day** → `services.billing_anchor_day` (customer's chosen day)
-- **Next billing date** → `services.next_billing_date`
-- **Invoices** → `invoices` table (issue_date, due_date, billing_period_start/end, status, total)
-- **Payment method** → snapshot on `services.payment_method` (`invoice_link` | `direct_debit` | `card`)
-- **CS snapshot** → `contract_summaries` (monthly_price, setup_fee, one_off_charges, vat_mode/rate)
-
-Stop using `services.updated_at` and `billing_settings.next_invoice_date` for any customer-facing display or scheduling decision. `billing_settings` remains only for global tenant defaults (terms days, mode).
-
----
-
-## 2. Fix Billing Schedule display (admin + customer)
-
-Rewrite `src/components/admin/BillingSchedulePanel.tsx` and mirror on customer dashboard billing tab. It will read:
-
-- **Service activated** ← `services.actual_activation_date` (fallback: earliest invoice.billing_period_start).
-- **First invoice** ← earliest `invoices` row for service (number, issue, due, status, £).
-- **Next invoice** ← `services.next_billing_date`; compute period `[next_billing_date, next_billing_date + 1 month on anchor)`, due = issue + `payment_terms_days`.
-- **Payment method label**:
-  - `invoice_link` → "Invoice link / manual card payment — you are not automatically charged."
-  - `direct_debit` → shows mandate/provider status from `dd_mandates_list`.
-- Removes fake computed dates when real invoices exist.
-
-Customer dashboard `InvoicesTab` gets the same explanatory block:
-
-> "Billing starts only once your service is confirmed live. Your first invoice may include your activation fee and a pro-rata charge from your live date to your chosen billing date. After that, your monthly service is billed in advance on your selected billing date."
-> For `invoice_link`: "You are not automatically charged. We send you an invoice with a secure payment link, and you pay manually."
-
----
-
-## 3. Confirm Service Live — future customer automation
-
-`supabase/functions/confirm-service-live` + `confirm_service_live_tx`:
-
-- Require `actual_activation_date`, activation reference.
-- Snapshot from accepted CS into service/first-billing-job: monthly price, setup fee, one-off charges, VAT mode/rate, payment method, billing_anchor_day.
-- Enqueue first-billing job unblocked when all required data present.
-- Block (create `admin_reconciliation_tasks` row) only when a required field is genuinely missing.
-- Compute `services.next_billing_date` = next occurrence of `billing_anchor_day` strictly after activation.
-
-`process-first-billing` produces first invoice covering:
-
-- Pro-rata: activation date → next anchor
-- Activation/setup fee if in accepted CS and not previously charged
-- Accepted one-off charges
-- VAT itemised
-- If `invoice_link`: create payment_request + Worldpay HPP link, send `invoice_sent` email including `/pay?token=…`
-
-Then `process-recurring-billing` picks up from `services.next_billing_date`.
-
----
-
-## 4. Reconciliation for existing customers
-
-New admin page `src/pages/admin/BillingReconciliation.tsx` + edge function `billing-reconciliation` (dry-run by default).
-
-**Report columns**: account #, name/email, order #, order status, service status, actual activation date, accepted CS id, monthly £, setup £, one-off £, payment method, anchor day, first invoice exists, activation fee invoiced, last invoice period, last payment status, payment request exists, invoice email sent, receipt exists, `services.next_billing_date`, recurring ready, classification, recommended action.
-
-**Classifications**: OK | missing_first_invoice | first_invoice_missing_setup_fee | recurring_schedule_missing | next_billing_date_wrong | duplicate_risk | payment_link_missing | email_missing | manual_review.
-
-**Safe auto-fix** (admin clicks Apply after review) only when ALL true: service active, CS accepted + PDF/hash present, activation date present, monthly price present, payment method present, anchor present, no conflicting/duplicate invoices, no manual hold.
-
-Auto-fixable actions:
-
-- Backfill `services.next_billing_date`.
-- Enqueue missing first-billing job.
-- Unblock previously blocked first-billing jobs.
-- Create missing payment_request for an existing invoice (invoice_link only).
-- Re-send missing invoice email for an existing invoice (idempotent via `message_id`).
-
-Never auto-fix: conflicting invoices, unclear setup fee, missing CS/activation date, unclear payment method, potential overcharge, doc mismatch → create `admin_reconciliation_tasks` instead.
-
-**Existing live customers specific rules**:
-
-- No first invoice → generate correct invoice from live date + accepted CS (setup fee only if in CS).
-- First invoice sent but setup fee missed → create correction invoice only if clearly in CS and not charged; never edit old invoice.
-- Monthly stopped → produce next unbilled period only; period-dedup via `(service_id, billing_period_start, billing_period_end)` unique guard.
-- Overcharge → manual review + credit note workflow (queued task only).
-
----
-
-## 5. Cron / worker verification
-
-Verify (and fix wiring only where broken, no rewrites):
-
-- `process-first-billing` scheduled & authenticated (`x-cron-secret`).
-- `process-recurring-billing` scheduled & authenticated.
-- `generate-invoices` delegates to recurring (already does).
-- `send-email` uses `invoice_sent` template with `/pay?token=…`.
-- Invoice PDFs served via signed URLs only.
-- Payment requests deduped per invoice.
-- Receipts only on Worldpay settlement (webhook path untouched).
-
----
-
-## 6. Guardrails
-
-- Do not edit historical accepted CS PDFs/hashes.
-- Do not duplicate invoices: enforce unique on `(service_id, billing_period_start, billing_period_end)` at fixer + DB level (add index if missing, no destructive migration).
-- Idempotency keys on all email sends (`invoice-<invoice_id>`).
-- All admin errors surface original backend message via existing `invokeFn` wrapper.
-
----
-
-## 7. Verification
-
-- **Chris Hutt (OCC69244673)** after fix: activated 25 Jun 2026; first invoice INV-2607-0001, £101.99, sent; next 25 Jul 2026 → 24 Aug 2026; payment method "Invoice link / manual card payment"; no new invoice created.
-- **Future test activation**: Confirm Live → first invoice with setup+service+VAT → email sent → `/pay?token=…` opens without login → next monthly scheduled.
-- Build + typecheck clean.
-
----
-
-## Technical Details
-
-**Files to change**
-
-- `src/components/admin/BillingSchedulePanel.tsx` — rewrite to canonical sources.
-- `src/components/dashboard/tabs/InvoicesTab.tsx` — payment-method explanation for invoice_link.
-- `src/pages/admin/BillingReconciliation.tsx` — new admin page.
-- `src/components/admin/CustomerActionsCard.tsx` — add "Reconcile billing" quick action linking to report row.
-- `supabase/functions/billing-reconciliation/index.ts` — new (dry-run + apply modes, admin-only).
-- `supabase/functions/confirm-service-live/index.ts` — ensure snapshot + unblock logic; add clear error codes if fields missing.
-- `supabase/functions/process-first-billing/index.ts` — ensure setup fee + pro-rata + VAT + payment_request + email; idempotent.
-- `supabase/functions/process-recurring-billing/index.ts` — ensure driven only by `services.next_billing_date`; period dedup.
-- Migration: add columns if missing (`services.billing_anchor_day`, `actual_activation_date` already exist per audit); add unique index `invoices(service_id, billing_period_start, billing_period_end) WHERE type='monthly'`; add `admin_reconciliation_tasks` rows structure only if needed.
-- No changes to: quote journey, CS acceptance, Worldpay webhook, DD encryption, cancellation, admin nav, RLS.
-
-**Non-destructive rules**
-
-- All fixer writes go through explicit admin "Apply" — never on page load.
-- Every fixer action writes an `audit_logs` row.
-- Duplicate protection via DB-level unique index + pre-check in worker.
+files changed · migrations added · routes created · articles/guides/blogs seeded counts · email templates updated · Ira knowledge integrated Y/N · authenticated account tools Y/N · public search Y/N · sitemap Y/N · SEO/structured-data Y/N · RLS/security check result · build/typecheck result · list of remaining content needing admin authoring.

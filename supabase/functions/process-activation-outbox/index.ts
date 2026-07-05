@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { perfServe } from "../_shared/perfLog.ts";
 import { renderBrandedEmail, escapeEmailHtml } from "../_shared/brandedEmailShell.ts";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,15 +21,15 @@ const fmtDate = (iso: string) => {
   } catch { return iso; }
 };
 
-function buildEmailHtml(p: any, dashboardUrl: string) {
+function buildEmailHtml(p: any, dashboardUrl: string, helpfulLinksHtml = "") {
   const speed = (p.estimated_download_speed
     ? `${p.estimated_download_speed} Mbps` : "");
   const supportEmail = "hello@occta.co.uk";
   const helpUrl = "https://www.occta.co.uk/help";
-  const billingHelpUrl = "https://www.occta.co.uk/help/billing";
-  const gettingStartedUrl = "https://www.occta.co.uk/help/getting-started";
-  const slowWifiUrl = "https://www.occta.co.uk/help/slow-wifi-fix";
-  const noInternetUrl = "https://www.occta.co.uk/help/no-internet-troubleshooting";
+  const billingHelpUrl = "https://www.occta.co.uk/help/how-occta-billing-works";
+  const gettingStartedUrl = "https://www.occta.co.uk/help/how-to-set-up-your-router";
+  const slowWifiUrl = "https://www.occta.co.uk/help/slow-wifi-troubleshooting";
+  const noInternetUrl = "https://www.occta.co.uk/help/router-lights-explained";
   const guidesUrl = "https://www.occta.co.uk/guides";
   const confettiUrl =
     "https://www.occta.co.uk/__l5e/assets-v1/fed0a658-1ea3-4379-a1bb-b8bb8e25374e/welcome-confetti.gif";
@@ -101,6 +102,7 @@ function buildEmailHtml(p: any, dashboardUrl: string) {
       { heading: "How and when you'll be billed", html: billingHtml },
       { heading: "Getting started in 4 steps", html: gettingStartedSection },
       { heading: "Need a hand?", html: helpHtml },
+      ...(helpfulLinksHtml ? [{ heading: "Helpful reading", html: helpfulLinksHtml }] : []),
     ],
     cta: { label: "Open your dashboard", url: dashboardUrl },
     closingHtml: `Keep this email — your account number <strong>${escapeHtml(p.account_number || "")}</strong> is your reference for anything in future. Welcome aboard.`,

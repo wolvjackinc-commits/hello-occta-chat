@@ -33,7 +33,8 @@ interface EmailRequest {
     | "invoice_paid"
     | "payment_link"
     | "invoice_external_payment"
-    | "custom_admin";
+    | "custom_admin"
+    | "sim_lifecycle";
   to: string;
   data: Record<string, unknown>;
   orderNumber?: string;

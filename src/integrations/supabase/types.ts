@@ -6683,6 +6683,361 @@ export type Database = {
           },
         ]
       }
+      sim_esim_deliveries: {
+        Row: {
+          activation_code: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string
+          qr_storage_path: string | null
+          sent_at: string | null
+          sent_by: string | null
+          smdp_address: string | null
+        }
+        Insert: {
+          activation_code?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          qr_storage_path?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          smdp_address?: string | null
+        }
+        Update: {
+          activation_code?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          qr_storage_path?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          smdp_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sim_esim_deliveries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "sim_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sim_esim_deliveries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "sim_orders_customer"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sim_orders: {
+        Row: {
+          admin_notes: string | null
+          billing_address: Json
+          billing_anchor_day: number | null
+          consent: Json
+          created_at: string
+          current_msisdn: string | null
+          current_provider: string | null
+          customer_id: string | null
+          delivery_address: Json | null
+          delivery_fee_minor_snapshot: number
+          dispatch_tracking: string | null
+          dispatched_at: string | null
+          email: string
+          esim_device_brand: string | null
+          esim_device_model: string | null
+          esim_eid: string | null
+          first_payment_credit_minor: number
+          first_payment_invoice_id: string | null
+          first_payment_minor_snapshot: number
+          first_payment_paid_minor: number
+          full_name: string
+          iccid: string | null
+          id: string
+          min_term_months_snapshot: number
+          monthly_price_minor_snapshot: number
+          number_choice: string
+          order_number: string
+          pac_code: string | null
+          pac_expiry: string | null
+          payment_method: string
+          phone: string | null
+          plan_id: string | null
+          plan_name_snapshot: string
+          plan_slug_snapshot: string
+          port_completed_at: string | null
+          port_requested_at: string | null
+          port_scheduled_at: string | null
+          preferred_transfer_date: string | null
+          provisioned_msisdn: string | null
+          provisioned_plan_name: string | null
+          service_live_date: string | null
+          sim_type: string
+          stac_code: string | null
+          status: string
+          supplier_ref: string | null
+          updated_at: string
+          vat_mode_snapshot: string
+          vat_rate_snapshot: number
+        }
+        Insert: {
+          admin_notes?: string | null
+          billing_address?: Json
+          billing_anchor_day?: number | null
+          consent?: Json
+          created_at?: string
+          current_msisdn?: string | null
+          current_provider?: string | null
+          customer_id?: string | null
+          delivery_address?: Json | null
+          delivery_fee_minor_snapshot?: number
+          dispatch_tracking?: string | null
+          dispatched_at?: string | null
+          email: string
+          esim_device_brand?: string | null
+          esim_device_model?: string | null
+          esim_eid?: string | null
+          first_payment_credit_minor?: number
+          first_payment_invoice_id?: string | null
+          first_payment_minor_snapshot?: number
+          first_payment_paid_minor?: number
+          full_name: string
+          iccid?: string | null
+          id?: string
+          min_term_months_snapshot?: number
+          monthly_price_minor_snapshot: number
+          number_choice: string
+          order_number?: string
+          pac_code?: string | null
+          pac_expiry?: string | null
+          payment_method: string
+          phone?: string | null
+          plan_id?: string | null
+          plan_name_snapshot: string
+          plan_slug_snapshot: string
+          port_completed_at?: string | null
+          port_requested_at?: string | null
+          port_scheduled_at?: string | null
+          preferred_transfer_date?: string | null
+          provisioned_msisdn?: string | null
+          provisioned_plan_name?: string | null
+          service_live_date?: string | null
+          sim_type: string
+          stac_code?: string | null
+          status?: string
+          supplier_ref?: string | null
+          updated_at?: string
+          vat_mode_snapshot?: string
+          vat_rate_snapshot?: number
+        }
+        Update: {
+          admin_notes?: string | null
+          billing_address?: Json
+          billing_anchor_day?: number | null
+          consent?: Json
+          created_at?: string
+          current_msisdn?: string | null
+          current_provider?: string | null
+          customer_id?: string | null
+          delivery_address?: Json | null
+          delivery_fee_minor_snapshot?: number
+          dispatch_tracking?: string | null
+          dispatched_at?: string | null
+          email?: string
+          esim_device_brand?: string | null
+          esim_device_model?: string | null
+          esim_eid?: string | null
+          first_payment_credit_minor?: number
+          first_payment_invoice_id?: string | null
+          first_payment_minor_snapshot?: number
+          first_payment_paid_minor?: number
+          full_name?: string
+          iccid?: string | null
+          id?: string
+          min_term_months_snapshot?: number
+          monthly_price_minor_snapshot?: number
+          number_choice?: string
+          order_number?: string
+          pac_code?: string | null
+          pac_expiry?: string | null
+          payment_method?: string
+          phone?: string | null
+          plan_id?: string | null
+          plan_name_snapshot?: string
+          plan_slug_snapshot?: string
+          port_completed_at?: string | null
+          port_requested_at?: string | null
+          port_scheduled_at?: string | null
+          preferred_transfer_date?: string | null
+          provisioned_msisdn?: string | null
+          provisioned_plan_name?: string | null
+          service_live_date?: string | null
+          sim_type?: string
+          stac_code?: string | null
+          status?: string
+          supplier_ref?: string | null
+          updated_at?: string
+          vat_mode_snapshot?: string
+          vat_rate_snapshot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sim_orders_first_payment_invoice_id_fkey"
+            columns: ["first_payment_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sim_orders_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "sim_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sim_orders_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "sim_plans_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sim_plans: {
+        Row: {
+          calls_label: string
+          checkout_visible: boolean
+          created_at: string
+          data_label: string
+          delivery_fee_minor: number
+          esim_available: boolean
+          features: Json
+          first_payment_minor: number
+          id: string
+          internal_notes: string | null
+          is_active: boolean
+          is_rolling: boolean
+          min_term_months: number
+          monthly_price_minor: number
+          name: string
+          network_display_name: string | null
+          physical_sim_available: boolean
+          plan_type: string
+          setup_fee_minor: number
+          slug: string
+          sort_order: number
+          terms_url: string | null
+          texts_label: string
+          updated_at: string
+          vat_mode: string
+          vat_rate: number
+        }
+        Insert: {
+          calls_label?: string
+          checkout_visible?: boolean
+          created_at?: string
+          data_label: string
+          delivery_fee_minor?: number
+          esim_available?: boolean
+          features?: Json
+          first_payment_minor?: number
+          id?: string
+          internal_notes?: string | null
+          is_active?: boolean
+          is_rolling?: boolean
+          min_term_months?: number
+          monthly_price_minor: number
+          name: string
+          network_display_name?: string | null
+          physical_sim_available?: boolean
+          plan_type?: string
+          setup_fee_minor?: number
+          slug: string
+          sort_order?: number
+          terms_url?: string | null
+          texts_label?: string
+          updated_at?: string
+          vat_mode?: string
+          vat_rate?: number
+        }
+        Update: {
+          calls_label?: string
+          checkout_visible?: boolean
+          created_at?: string
+          data_label?: string
+          delivery_fee_minor?: number
+          esim_available?: boolean
+          features?: Json
+          first_payment_minor?: number
+          id?: string
+          internal_notes?: string | null
+          is_active?: boolean
+          is_rolling?: boolean
+          min_term_months?: number
+          monthly_price_minor?: number
+          name?: string
+          network_display_name?: string | null
+          physical_sim_available?: boolean
+          plan_type?: string
+          setup_fee_minor?: number
+          slug?: string
+          sort_order?: number
+          terms_url?: string | null
+          texts_label?: string
+          updated_at?: string
+          vat_mode?: string
+          vat_rate?: number
+        }
+        Relationships: []
+      }
+      sim_settings: {
+        Row: {
+          created_at: string
+          direct_debit_enabled: boolean
+          dispatch_lead_time_days: number
+          esim_enabled: boolean
+          id: string
+          pay_monthly_enabled: boolean
+          payg_enabled: boolean
+          physical_sim_enabled: boolean
+          singleton: boolean
+          standalone_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          direct_debit_enabled?: boolean
+          dispatch_lead_time_days?: number
+          esim_enabled?: boolean
+          id?: string
+          pay_monthly_enabled?: boolean
+          payg_enabled?: boolean
+          physical_sim_enabled?: boolean
+          singleton?: boolean
+          standalone_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          direct_debit_enabled?: boolean
+          dispatch_lead_time_days?: number
+          esim_enabled?: boolean
+          id?: string
+          pay_monthly_enabled?: boolean
+          payg_enabled?: boolean
+          physical_sim_enabled?: boolean
+          singleton?: boolean
+          standalone_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_copy: {
         Row: {
           created_at: string
@@ -8563,6 +8918,236 @@ export type Database = {
           starts_at?: string | null
           terms_text?: string | null
           value_label?: string | null
+        }
+        Relationships: []
+      }
+      sim_orders_customer: {
+        Row: {
+          billing_anchor_day: number | null
+          created_at: string | null
+          current_msisdn: string | null
+          current_provider: string | null
+          customer_id: string | null
+          delivery_address: Json | null
+          dispatched_at: string | null
+          email: string | null
+          esim_device_brand: string | null
+          esim_device_model: string | null
+          first_payment_invoice_id: string | null
+          first_payment_minor_snapshot: number | null
+          first_payment_paid_minor: number | null
+          full_name: string | null
+          id: string | null
+          min_term_months_snapshot: number | null
+          monthly_price_minor_snapshot: number | null
+          number_choice: string | null
+          order_number: string | null
+          pac_code: string | null
+          pac_expiry: string | null
+          payment_method: string | null
+          plan_name_snapshot: string | null
+          plan_slug_snapshot: string | null
+          port_completed_at: string | null
+          port_requested_at: string | null
+          port_scheduled_at: string | null
+          preferred_transfer_date: string | null
+          provisioned_msisdn: string | null
+          provisioned_plan_name: string | null
+          service_live_date: string | null
+          sim_type: string | null
+          stac_code: string | null
+          status: string | null
+          updated_at: string | null
+          vat_mode_snapshot: string | null
+          vat_rate_snapshot: number | null
+        }
+        Insert: {
+          billing_anchor_day?: number | null
+          created_at?: string | null
+          current_msisdn?: string | null
+          current_provider?: string | null
+          customer_id?: string | null
+          delivery_address?: Json | null
+          dispatched_at?: string | null
+          email?: string | null
+          esim_device_brand?: string | null
+          esim_device_model?: string | null
+          first_payment_invoice_id?: string | null
+          first_payment_minor_snapshot?: number | null
+          first_payment_paid_minor?: number | null
+          full_name?: string | null
+          id?: string | null
+          min_term_months_snapshot?: number | null
+          monthly_price_minor_snapshot?: number | null
+          number_choice?: string | null
+          order_number?: string | null
+          pac_code?: string | null
+          pac_expiry?: string | null
+          payment_method?: string | null
+          plan_name_snapshot?: string | null
+          plan_slug_snapshot?: string | null
+          port_completed_at?: string | null
+          port_requested_at?: string | null
+          port_scheduled_at?: string | null
+          preferred_transfer_date?: string | null
+          provisioned_msisdn?: string | null
+          provisioned_plan_name?: string | null
+          service_live_date?: string | null
+          sim_type?: string | null
+          stac_code?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vat_mode_snapshot?: string | null
+          vat_rate_snapshot?: number | null
+        }
+        Update: {
+          billing_anchor_day?: number | null
+          created_at?: string | null
+          current_msisdn?: string | null
+          current_provider?: string | null
+          customer_id?: string | null
+          delivery_address?: Json | null
+          dispatched_at?: string | null
+          email?: string | null
+          esim_device_brand?: string | null
+          esim_device_model?: string | null
+          first_payment_invoice_id?: string | null
+          first_payment_minor_snapshot?: number | null
+          first_payment_paid_minor?: number | null
+          full_name?: string | null
+          id?: string | null
+          min_term_months_snapshot?: number | null
+          monthly_price_minor_snapshot?: number | null
+          number_choice?: string | null
+          order_number?: string | null
+          pac_code?: string | null
+          pac_expiry?: string | null
+          payment_method?: string | null
+          plan_name_snapshot?: string | null
+          plan_slug_snapshot?: string | null
+          port_completed_at?: string | null
+          port_requested_at?: string | null
+          port_scheduled_at?: string | null
+          preferred_transfer_date?: string | null
+          provisioned_msisdn?: string | null
+          provisioned_plan_name?: string | null
+          service_live_date?: string | null
+          sim_type?: string | null
+          stac_code?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vat_mode_snapshot?: string | null
+          vat_rate_snapshot?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sim_orders_first_payment_invoice_id_fkey"
+            columns: ["first_payment_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sim_plans_public: {
+        Row: {
+          calls_label: string | null
+          data_label: string | null
+          delivery_fee_minor: number | null
+          esim_available: boolean | null
+          features: Json | null
+          first_payment_minor: number | null
+          id: string | null
+          is_rolling: boolean | null
+          min_term_months: number | null
+          monthly_price_minor: number | null
+          name: string | null
+          network_display_name: string | null
+          physical_sim_available: boolean | null
+          plan_type: string | null
+          setup_fee_minor: number | null
+          slug: string | null
+          sort_order: number | null
+          terms_url: string | null
+          texts_label: string | null
+          vat_mode: string | null
+          vat_rate: number | null
+        }
+        Insert: {
+          calls_label?: string | null
+          data_label?: string | null
+          delivery_fee_minor?: number | null
+          esim_available?: boolean | null
+          features?: Json | null
+          first_payment_minor?: number | null
+          id?: string | null
+          is_rolling?: boolean | null
+          min_term_months?: number | null
+          monthly_price_minor?: number | null
+          name?: string | null
+          network_display_name?: string | null
+          physical_sim_available?: boolean | null
+          plan_type?: string | null
+          setup_fee_minor?: number | null
+          slug?: string | null
+          sort_order?: number | null
+          terms_url?: string | null
+          texts_label?: string | null
+          vat_mode?: string | null
+          vat_rate?: number | null
+        }
+        Update: {
+          calls_label?: string | null
+          data_label?: string | null
+          delivery_fee_minor?: number | null
+          esim_available?: boolean | null
+          features?: Json | null
+          first_payment_minor?: number | null
+          id?: string | null
+          is_rolling?: boolean | null
+          min_term_months?: number | null
+          monthly_price_minor?: number | null
+          name?: string | null
+          network_display_name?: string | null
+          physical_sim_available?: boolean | null
+          plan_type?: string | null
+          setup_fee_minor?: number | null
+          slug?: string | null
+          sort_order?: number | null
+          terms_url?: string | null
+          texts_label?: string | null
+          vat_mode?: string | null
+          vat_rate?: number | null
+        }
+        Relationships: []
+      }
+      sim_settings_public: {
+        Row: {
+          direct_debit_enabled: boolean | null
+          dispatch_lead_time_days: number | null
+          esim_enabled: boolean | null
+          pay_monthly_enabled: boolean | null
+          payg_enabled: boolean | null
+          physical_sim_enabled: boolean | null
+          standalone_enabled: boolean | null
+        }
+        Insert: {
+          direct_debit_enabled?: boolean | null
+          dispatch_lead_time_days?: number | null
+          esim_enabled?: boolean | null
+          pay_monthly_enabled?: boolean | null
+          payg_enabled?: boolean | null
+          physical_sim_enabled?: boolean | null
+          standalone_enabled?: boolean | null
+        }
+        Update: {
+          direct_debit_enabled?: boolean | null
+          dispatch_lead_time_days?: number | null
+          esim_enabled?: boolean | null
+          pay_monthly_enabled?: boolean | null
+          payg_enabled?: boolean | null
+          physical_sim_enabled?: boolean | null
+          standalone_enabled?: boolean | null
         }
         Relationships: []
       }

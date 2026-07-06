@@ -79,6 +79,8 @@ const navSections: NavSection[] = [
       { label: "All Orders",             to: "/admin/orders" },
       { label: "Installations",          to: "/admin/installations" },
       { label: "Services",               to: "/admin/services" },
+      { label: "SIM Orders",             to: "/admin/sim-orders" },
+      { label: "SIM Plans",              to: "/admin/sim-plans" },
     ],
   },
   {

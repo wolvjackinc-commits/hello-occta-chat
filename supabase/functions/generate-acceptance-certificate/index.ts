@@ -53,7 +53,7 @@ function renderCertificatePdf(opts: {
   doc.setFont("helvetica", "bold"); doc.setFontSize(22);
   doc.text("OCCTA", M, 38);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text("No contracts. No pressure.", M, 54);
+  doc.text("Simple telecom. Clear terms.", M, 54);
   doc.text("www.occta.co.uk", M, 66);
   doc.setFont("helvetica", "bold"); doc.setFontSize(11);
   doc.text("ACCEPTANCE CERTIFICATE", W - M, 38, { align: "right" });

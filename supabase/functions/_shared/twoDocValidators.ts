@@ -197,5 +197,24 @@ export function validateTwoDocAcceptance(input: ValidationInput): ValidationResu
 export function validateTwoDocIssue(
   input: Omit<ValidationInput, "digital_voice_answers">,
 ): ValidationResult {
-  return validateTwoDocAcceptance({ ...input, digital_voice_answers: null });
+  // DV acknowledgement is an accept-time concern (the customer ticks the
+  // box). At issue-time we only enforce component-level correctness — ETF
+  // completeness, price-change safety, and component presence. The
+  // DV ack requirement is still enforced by validateTwoDocAcceptance at
+  // the accept-service-aware-cs entrypoint.
+  const blocks: ValidationBlock[] = [];
+  if (!Array.isArray(input.components) || input.components.length === 0) {
+    blocks.push({ code: "no_components", message: "No service components provided." });
+  }
+  for (const c of input.components ?? []) {
+    blocks.push(...validateEtf(c));
+    blocks.push(...validatePriceChange(c, input.customer_segment));
+  }
+  const requiresAck = (input.components ?? []).some((c) => c.kind === "digital_voice");
+  return {
+    ok: blocks.length === 0,
+    blocks,
+    vulnerability_review_required: false,
+    requires_dv_acknowledgement: requiresAck,
+  };
 }

@@ -49,6 +49,15 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
+  // Bootstrap-only side action: mint a 1h signed URL for the certificate bucket.
+  if (isBootstrap && body.action === "sign_certificate") {
+    const key = String(body.storage_key ?? "");
+    if (!key) return jsonResponse({ error: "storage_key_required" }, 400);
+    const { data: sig } = await supabase.storage
+      .from("acceptance-certificates")
+      .createSignedUrl(key, 3600);
+    return jsonResponse({ ok: true, signed_url: sig?.signedUrl ?? null });
+  }
   const scenarios = body.scenarios as Record<ScenarioKey, string> | undefined;
   if (!scenarios || typeof scenarios !== "object") {
     return jsonResponse({
@@ -122,6 +131,9 @@ Deno.serve(async (req) => {
         version: csJson?.version ?? null,
         body_snapshot: csJson?.body_snapshot ?? null,
         error: csJson?.error ?? null,
+        // Only returned to the bootstrap caller; used to complete a pilot
+        // acceptance for a single sample. Not stored anywhere.
+        public_token: isBootstrap ? (csJson?.public_token ?? null) : undefined,
       },
       contract_information_pack: {
         id: packJson?.pack_id ?? null,

@@ -13,6 +13,7 @@ import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidat
 import {
   DV_ACKNOWLEDGEMENT_CHECKBOX, TWO_DOC_TEMPLATE_VERSION,
 } from "../_shared/twoDocLegalText.ts";
+import { isTwoDocEnabledFor, callerUserIdFromRequest, logPilotEvent } from "../_shared/twoDocFlowGate.ts";
 
 const CHECKBOXES = {
   received_read:
@@ -73,12 +74,25 @@ Deno.serve(async (req) => {
 
   const supabase = getServiceClient();
 
-  const { data: ps } = await supabase
-    .from("platform_settings")
-    .select("two_document_contract_flow_enabled" as any)
-    .limit(1)
-    .maybeSingle();
-  if (!(ps as any)?.two_document_contract_flow_enabled) return jsonResponse({ error: "feature_disabled" }, 409);
+  // Bootstrap-token path lets the pilot review flow test acceptance without
+  // flipping the global flag. Honoured only when the token env var is set.
+  const bootstrapToken = Deno.env.get("PILOT_BOOTSTRAP_TOKEN");
+  const providedToken = req.headers.get("x-bootstrap-token");
+  const isBootstrap = !!bootstrapToken && providedToken === bootstrapToken;
+  const callerUserId = isBootstrap
+    ? (req.headers.get("x-pilot-caller-id") ?? null)
+    : callerUserIdFromRequest(req);
+  const gate = isBootstrap
+    ? { enabled: true as const, reason: "pilot" as const }
+    : await isTwoDocEnabledFor(supabase, callerUserId);
+  if (!gate.enabled) {
+    await logPilotEvent(supabase, {
+      event_type: "access_denied",
+      user_id: callerUserId,
+      metadata: { fn: "accept-service-aware-cs" },
+    });
+    return jsonResponse({ error: "feature_disabled" }, 409);
+  }
 
   const age = ageYears(i.date_of_birth);
   if (age < 18) return jsonResponse({ error: "under_18" }, 400);

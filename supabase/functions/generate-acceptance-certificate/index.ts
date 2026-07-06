@@ -18,18 +18,6 @@ import { perfServe } from "../_shared/perfLog.ts";
 const BUCKET = "acceptance-certificates";
 const SIGNED_TTL = 60 * 60 * 24 * 7;
 
-function maskIp(ip: string | null | undefined): string {
-  if (!ip) return "—";
-  // IPv4: drop last octet. IPv6: drop last 4 segments.
-  if (ip.includes(":")) {
-    const parts = ip.split(":");
-    return parts.slice(0, Math.max(1, parts.length - 4)).join(":") + ":****";
-  }
-  const parts = ip.split(".");
-  if (parts.length === 4) return `${parts[0]}.${parts[1]}.${parts[2]}.***`;
-  return "***";
-}
-
 async function sha256HexFromBytes(bytes: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -50,9 +38,6 @@ function renderCertificatePdf(opts: {
   acceptanceTextVersion: string;
   acceptanceTextHash: string;
   csPdfSha256: string;
-  ipMasked: string;
-  userAgentShort: string;
-  sourceRoute: string;
   checkboxes: { label: string; ticked: boolean }[];
 }): Uint8Array {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -121,9 +106,9 @@ function renderCertificatePdf(opts: {
   kv("Acceptance wording version", opts.acceptanceTextVersion);
   kv("Terms version", opts.termsVersion);
   kv("Acceptance text (SHA-256)", opts.acceptanceTextHash);
-  kv("IP address (masked)", opts.ipMasked);
-  kv("Browser", opts.userAgentShort);
-  kv("Source", opts.sourceRoute);
+  // NOTE: IP, user-agent and source route are audit-only fields and are NOT
+  // rendered onto the customer-facing certificate. They remain in
+  // `acceptance_audit_records` for admin/compliance review only.
 
   heading("Consent statements ticked");
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
@@ -222,9 +207,6 @@ Deno.serve(perfServe("generate-acceptance-certificate", async (req) => {
     acceptanceTextVersion: acc.acceptance_text_version ?? "—",
     acceptanceTextHash: acc.acceptance_text_hash ?? "—",
     csPdfSha256: cs.pdf_sha256 ?? "—",
-    ipMasked: maskIp(acc.ip),
-    userAgentShort: (acc.user_agent ?? "—").slice(0, 120),
-    sourceRoute: acc.source_route ?? "—",
     checkboxes,
   });
 

@@ -75,10 +75,16 @@ Deno.serve(async (req) => {
   const supabase = getServiceClient();
 
   // Bootstrap-token path lets the pilot review flow test acceptance without
-  // flipping the global flag. Honoured only when the token env var is set.
+  // flipping the global flag. Locked behind TWO independent env switches so it
+  // is hard-disabled in production even if the token secret is accidentally
+  // reintroduced: PILOT_ENV must NOT equal "production" AND ALLOW_PILOT_BOOTSTRAP
+  // must equal "1" AND PILOT_BOOTSTRAP_TOKEN must match.
+  const pilotEnv = Deno.env.get("PILOT_ENV");
+  const allowBootstrap = Deno.env.get("ALLOW_PILOT_BOOTSTRAP") === "1";
+  const isNonProdBootstrap = pilotEnv !== "production" && allowBootstrap;
   const bootstrapToken = Deno.env.get("PILOT_BOOTSTRAP_TOKEN");
   const providedToken = req.headers.get("x-bootstrap-token");
-  const isBootstrap = !!bootstrapToken && providedToken === bootstrapToken;
+  const isBootstrap = isNonProdBootstrap && !!bootstrapToken && providedToken === bootstrapToken;
   const callerUserId = isBootstrap
     ? (req.headers.get("x-pilot-caller-id") ?? null)
     : callerUserIdFromRequest(req);

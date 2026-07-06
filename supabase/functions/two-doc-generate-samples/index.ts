@@ -32,9 +32,15 @@ Deno.serve(async (req) => {
   // Two acceptable auth paths:
   //  (a) Admin/super_admin JWT AND caller is in two_doc_pilot_allowlist
   //  (b) Bootstrap token header for the one-shot review pack
+  // Bootstrap gate: hard-disabled in production. Requires:
+  //   PILOT_ENV != "production"  AND  ALLOW_PILOT_BOOTSTRAP == "1"
+  //   AND matching x-bootstrap-token header
+  const pilotEnv = Deno.env.get("PILOT_ENV");
+  const allowBootstrap = Deno.env.get("ALLOW_PILOT_BOOTSTRAP") === "1";
+  const isNonProdBootstrap = pilotEnv !== "production" && allowBootstrap;
   const bootstrapToken = Deno.env.get("PILOT_BOOTSTRAP_TOKEN");
   const providedToken = req.headers.get("x-bootstrap-token");
-  const isBootstrap = !!bootstrapToken && providedToken === bootstrapToken;
+  const isBootstrap = isNonProdBootstrap && !!bootstrapToken && providedToken === bootstrapToken;
   if (!isBootstrap) {
     const callerId = callerUserIdFromRequest(req);
     if (!callerId) return jsonResponse({ error: "unauthorized" }, 401);
@@ -57,6 +63,37 @@ Deno.serve(async (req) => {
       .from("acceptance-certificates")
       .createSignedUrl(key, 3600);
     return jsonResponse({ ok: true, signed_url: sig?.signedUrl ?? null });
+  }
+  // Bootstrap-only side action: sign the standalone Contract Summary PDF for
+  // one or more CS ids. Used to hand back direct CS PDF links in the review
+  // evidence pack without regenerating any documents.
+  if (isBootstrap && body.action === "sign_cs") {
+    const ids = Array.isArray(body.contract_summary_ids)
+      ? (body.contract_summary_ids as string[])
+      : [];
+    if (!ids.length) return jsonResponse({ error: "contract_summary_ids_required" }, 400);
+    const { data: rows } = await supabase
+      .from("contract_summaries")
+      .select("id, cs_number, version, pdf_sha256, pdf_storage_path")
+      .in("id", ids);
+    const signed = await Promise.all((rows ?? []).map(async (r) => {
+      let url: string | null = null;
+      if ((r as any).pdf_storage_path) {
+        const { data: sig } = await supabase.storage
+          .from("contract-documents")
+          .createSignedUrl((r as any).pdf_storage_path, 3600);
+        url = sig?.signedUrl ?? null;
+      }
+      return {
+        id: (r as any).id,
+        cs_number: (r as any).cs_number,
+        version: (r as any).version,
+        pdf_sha256: (r as any).pdf_sha256,
+        pdf_storage_path: (r as any).pdf_storage_path,
+        pdf_signed_url_1h: url,
+      };
+    }));
+    return jsonResponse({ ok: true, signed });
   }
   const scenarios = body.scenarios as Record<ScenarioKey, string> | undefined;
   if (!scenarios || typeof scenarios !== "object") {

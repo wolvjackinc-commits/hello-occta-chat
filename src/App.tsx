@@ -121,6 +121,11 @@ const AdminKnowledgeBase = lazy(() => import("./pages/admin/KnowledgeBase").then
 const AdminFairPricing = lazy(() => import("./pages/admin/FairPricing").then(m => ({ default: m.AdminFairPricing })));
 const AdminSuppliersGiacomImport = lazy(() => import("./pages/admin/SuppliersGiacomImport").then(m => ({ default: m.AdminSuppliersGiacomImport })));
 const AdminCustomerJourney = lazy(() => import("./pages/admin/CustomerJourney"));
+const AdminSimPlans = lazy(() => import("./pages/admin/SimPlansAdmin").then(m => ({ default: m.AdminSimPlans })));
+const AdminSimOrders = lazy(() => import("./pages/admin/SimOrders").then(m => ({ default: m.AdminSimOrders })));
+const SimIndex = lazy(() => import("./pages/sim/SimIndex"));
+const SimCheckout = lazy(() => import("./pages/sim/SimCheckout"));
+const SimOrderSuccess = lazy(() => import("./pages/sim/SimOrderSuccess"));
 import AcceptableUse from "./pages/legal/AcceptableUse";
 import ComplaintsCode from "./pages/legal/ComplaintsCode";
 import VulnerableCustomers from "./pages/legal/VulnerableCustomers";
@@ -207,6 +212,8 @@ const AnimatedRoutes = () => {
             <Route path="knowledge-base" element={<Suspense fallback={<AdminRouteFallback />}><AdminKnowledgeBase /></Suspense>} />
             <Route path="fair-pricing" element={<Suspense fallback={<AdminRouteFallback />}><AdminFairPricing /></Suspense>} />
             <Route path="suppliers/giacom-import" element={<Suspense fallback={<AdminRouteFallback />}><AdminSuppliersGiacomImport /></Suspense>} />
+            <Route path="sim-plans" element={<Suspense fallback={<AdminRouteFallback />}><AdminSimPlans /></Suspense>} />
+            <Route path="sim-orders" element={<Suspense fallback={<AdminRouteFallback />}><AdminSimOrders /></Suspense>} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />
@@ -233,7 +240,10 @@ const AnimatedRoutes = () => {
         <Route path="/legal/price-transparency" element={<PriceTransparency />} />
         <Route path="/legal/switching-policy" element={<SwitchingPolicy />} />
         <Route path="/legal/network-management" element={<NetworkManagement />} />
-        <Route path="/sim-plans" element={<SimPlans />} />
+        <Route path="/sim-plans" element={<Navigate to="/sim" replace />} />
+        <Route path="/sim" element={<Suspense fallback={<AdminRouteFallback />}><SimIndex /></Suspense>} />
+        <Route path="/sim/checkout" element={<Suspense fallback={<AdminRouteFallback />}><SimCheckout /></Suspense>} />
+        <Route path="/sim/order-success/:orderId" element={<Suspense fallback={<AdminRouteFallback />}><SimOrderSuccess /></Suspense>} />
         <Route path="/landline" element={<Landline />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/pre-checkout" element={<PreCheckout />} />

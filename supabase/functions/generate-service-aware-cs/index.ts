@@ -15,6 +15,7 @@ import {
 import { buildServiceComponentsSnapshot, bundleTotalMonthly, hasComponent } from "../_shared/serviceComponents.ts";
 import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment } from "../_shared/twoDocValidators.ts";
+import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -26,12 +27,14 @@ Deno.serve(async (req) => {
 
   const supabase = getServiceClient();
 
-  const { data: ps } = await supabase
-    .from("platform_settings")
-    .select("two_document_contract_flow_enabled" as any)
-    .limit(1)
-    .maybeSingle();
-  if (!(ps as any)?.two_document_contract_flow_enabled) {
+  const callerUserId = callerUserIdFromRequest(req);
+  const gate = await isTwoDocEnabledFor(supabase, callerUserId);
+  if (!gate.enabled) {
+    await logPilotEvent(supabase, {
+      event_type: "access_denied",
+      user_id: callerUserId,
+      metadata: { fn: "generate-service-aware-cs", quote_id: quoteId },
+    });
     return jsonResponse({ error: "feature_disabled" }, 409);
   }
 
@@ -123,6 +126,13 @@ Deno.serve(async (req) => {
   }).select("id, cs_number").single();
 
   if (csErr || !cs) return jsonResponse({ error: "create_failed", details: csErr?.message }, 500);
+
+  await logPilotEvent(supabase, {
+    event_type: "pdf_issued",
+    user_id: callerUserId,
+    document_id: cs.id,
+    metadata: { doc_kind: "contract_summary", cs_number: cs.cs_number, gate: gate.reason },
+  });
 
   // Trigger pack generation (best-effort — safe to retry).
   try {

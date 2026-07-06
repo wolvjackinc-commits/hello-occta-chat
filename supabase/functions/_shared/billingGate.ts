@@ -8,6 +8,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 export interface BillingGateInput {
   orderId: string;
+  // Optional service id. When provided the gate also checks the service-level
+  // activation_blocked_pending_review flag and (when the two-doc flow is on)
+  // delegates to the DB assert_service_live() function.
+  serviceId?: string;
   supabaseUrl: string;
   serviceRoleKey: string;
 }
@@ -42,12 +46,16 @@ export async function assertServiceLive(
 
   const { data: order, error } = await supabase
     .from("orders")
-    .select("id, actual_service_live_at_utc, status")
+    .select("id, actual_service_live_at_utc, status, activation_blocked_pending_review, contract_summary_pdf_hash, contract_information_pack_pdf_hash")
     .eq("id", input.orderId)
     .maybeSingle();
 
   if (error || !order) {
     return { allowed: false, reason: "order-not-found" };
+  }
+
+  if ((order as any).activation_blocked_pending_review === true) {
+    return { allowed: false, reason: "activation-blocked-pending-review" };
   }
 
   if (!order.actual_service_live_at_utc) {
@@ -56,6 +64,26 @@ export async function assertServiceLive(
       reason: "service-not-live",
       actualServiceLiveAtUtc: null,
     };
+  }
+
+  // Two-doc flow requires both accepted document hashes recorded on the order.
+  if (!(order as any).contract_summary_pdf_hash || !(order as any).contract_information_pack_pdf_hash) {
+    return { allowed: false, reason: "missing-accepted-document-hashes" };
+  }
+
+  if (input.serviceId) {
+    const { data: svc } = await supabase
+      .from("services")
+      .select("activation_blocked_pending_review, actual_activation_date, activation_confirmed_at, billing_enabled")
+      .eq("id", input.serviceId)
+      .maybeSingle();
+    if (!svc) return { allowed: false, reason: "service-not-found" };
+    if ((svc as any).activation_blocked_pending_review === true) {
+      return { allowed: false, reason: "service-activation-blocked-pending-review" };
+    }
+    if (!(svc as any).actual_activation_date || !(svc as any).activation_confirmed_at || (svc as any).billing_enabled !== true) {
+      return { allowed: false, reason: "service-not-confirmed-live" };
+    }
   }
 
   return {

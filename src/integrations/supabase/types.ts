@@ -4269,6 +4269,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          activation_blocked_pending_review: boolean
           actual_activation_date: string | null
           actual_service_live_at_utc: string | null
           address_line1: string | null
@@ -4326,6 +4327,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activation_blocked_pending_review?: boolean
           actual_activation_date?: string | null
           actual_service_live_at_utc?: string | null
           address_line1?: string | null
@@ -4383,6 +4385,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activation_blocked_pending_review?: boolean
           actual_activation_date?: string | null
           actual_service_live_at_utc?: string | null
           address_line1?: string | null
@@ -6505,6 +6508,7 @@ export type Database = {
       }
       services: {
         Row: {
+          activation_blocked_pending_review: boolean
           activation_confirmed_at: string | null
           activation_confirmed_by: string | null
           activation_date: string | null
@@ -6541,6 +6545,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activation_blocked_pending_review?: boolean
           activation_confirmed_at?: string | null
           activation_confirmed_by?: string | null
           activation_date?: string | null
@@ -6577,6 +6582,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activation_blocked_pending_review?: boolean
           activation_confirmed_at?: string | null
           activation_confirmed_by?: string | null
           activation_date?: string | null
@@ -8543,6 +8549,7 @@ export type Database = {
         Returns: boolean
       }
       anonymize_old_account_deletions: { Args: never; Returns: number }
+      assert_service_live: { Args: { _service_id: string }; Returns: boolean }
       calculate_next_invoice_date: {
         Args: {
           p_billing_day: number

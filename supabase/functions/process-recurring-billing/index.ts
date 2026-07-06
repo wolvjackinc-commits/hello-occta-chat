@@ -9,6 +9,7 @@ import {
   type RawLine,
   type VatMode,
 } from "../_shared/billingHelpers.ts";
+import { assertServiceLive } from "../_shared/billingGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,6 +79,17 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
 
   for (const svc of services ?? []) {
     try {
+      // Two-doc billing gate. Legacy flow (flag off) is unchanged.
+      const gate = await assertServiceLive({
+        orderId: (svc as any).order_id,
+        serviceId: svc.id,
+        supabaseUrl: Deno.env.get("SUPABASE_URL")!,
+        serviceRoleKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      });
+      if (!gate.allowed) {
+        results.push({ service_id: svc.id, skipped: `billing_gate:${gate.reason}` });
+        continue;
+      }
       const anchor = Number(svc.billing_anchor_day ?? 1);
       const periodStart = svc.next_billing_date as string;
       // period_end is exclusive = next anchor strictly after period_start.

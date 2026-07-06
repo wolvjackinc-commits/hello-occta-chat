@@ -7040,6 +7040,66 @@ export type Database = {
           },
         ]
       }
+      two_doc_pilot_allowlist: {
+        Row: {
+          active: boolean
+          added_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      two_doc_pilot_events: {
+        Row: {
+          created_at: string
+          document_id: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          order_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_id?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_files: {
         Row: {
           created_at: string
@@ -9013,6 +9073,10 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      is_two_doc_flow_enabled_for: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_vat_active: { Args: never; Returns: boolean }
       link_quote_requests_to_user: {
         Args: { _user_id: string }

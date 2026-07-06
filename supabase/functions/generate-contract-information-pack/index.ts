@@ -19,6 +19,7 @@ import {
 import { buildServiceComponentsSnapshot, hasComponent } from "../_shared/serviceComponents.ts";
 import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidators.ts";
+import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -30,14 +31,16 @@ Deno.serve(async (req) => {
 
   const supabase = getServiceClient();
 
-  // Feature flag hard-gate.
-  const { data: ps } = await supabase
-    .from("platform_settings")
-    .select("two_document_contract_flow_enabled" as any)
-    .limit(1)
-    .maybeSingle();
-  if (!(ps as any)?.two_document_contract_flow_enabled) {
-    return jsonResponse({ error: "feature_disabled", message: "two_document_contract_flow_enabled is off." }, 409);
+  // Feature-flag OR staff pilot allowlist.
+  const callerUserId = callerUserIdFromRequest(req);
+  const gate = await isTwoDocEnabledFor(supabase, callerUserId);
+  if (!gate.enabled) {
+    await logPilotEvent(supabase, {
+      event_type: "access_denied",
+      user_id: callerUserId,
+      metadata: { fn: "generate-contract-information-pack", quote_id: quoteId },
+    });
+    return jsonResponse({ error: "feature_disabled", message: "two_document_contract_flow_enabled is off and caller is not in pilot allowlist." }, 409);
   }
 
   const { data: q } = await supabase.from("quotes").select("*").eq("id", quoteId).maybeSingle();

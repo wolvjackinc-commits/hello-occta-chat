@@ -3,6 +3,7 @@
 // audit metadata (IP, UA, session, security event IDs).
 
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16).max(512) });
@@ -19,12 +20,16 @@ Deno.serve(async (req) => {
 
   const supabase = getServiceClient();
 
-  const { data: ps } = await supabase
-    .from("platform_settings")
-    .select("two_document_contract_flow_enabled" as any)
-    .limit(1)
-    .maybeSingle();
-  if (!(ps as any)?.two_document_contract_flow_enabled) return jsonResponse({ error: "feature_disabled" }, 409);
+  const callerUserId = callerUserIdFromRequest(req);
+  const gate = await isTwoDocEnabledFor(supabase, callerUserId);
+  if (!gate.enabled) {
+    await logPilotEvent(supabase, {
+      event_type: "access_denied",
+      user_id: callerUserId,
+      metadata: { fn: "get-two-doc-bundle" },
+    });
+    return jsonResponse({ error: "feature_disabled" }, 409);
+  }
 
   const hash = await sha256Hex(parsed.data.token);
   const { data: cs } = await supabase

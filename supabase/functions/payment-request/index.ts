@@ -1,5 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+
+// Append helpful KB links to an email HTML string (fail-soft).
+async function withHelpfulLinks(supabase: any, html: string, key: string): Promise<string> {
+  try {
+    const block = await fetchHelpfulLinksHtml(supabase, key);
+    if (!block) return html;
+    return html.includes('</body>') ? html.replace('</body>', `${block}</body>`) : `${html}${block}`;
+  } catch {
+    return html;
+  }
+}
 
 // CORS: must allow all headers used by the web client / SDK
 const corsHeaders = {
@@ -1160,6 +1172,9 @@ serve(async (req) => {
           ? 'Your OCCTA payment link'
           : 'Set up your OCCTA Direct Debit';
 
+        const helpKey = request.type === 'card_payment' ? 'payment_reminder' : 'dd_setup';
+        const htmlWithHelp = await withHelpfulLinks(supabase, emailContent.html, helpKey);
+
         const emailResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -1170,7 +1185,7 @@ serve(async (req) => {
             from: 'OCCTA <billing@occta.co.uk>',
             to: [request.customer_email],
             subject,
-            html: emailContent.html,
+            html: htmlWithHelp,
             text: emailContent.text,
           }),
         });
@@ -1450,6 +1465,7 @@ serve(async (req) => {
             setupLink,
             expiresAt,
           });
+          const htmlWithHelp = await withHelpfulLinks(supabase, email.html, 'dd_setup');
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
@@ -1457,7 +1473,7 @@ serve(async (req) => {
               from: 'OCCTA <billing@occta.co.uk>',
               to: [customer_email],
               subject: 'Set up your OCCTA Direct Debit',
-              html: email.html,
+              html: htmlWithHelp,
               text: email.text,
             }),
           }).then(undefined, (e) => console.error('DD email send failed', e));
@@ -1546,6 +1562,8 @@ serve(async (req) => {
                 expiresAt: newExpiry,
               });
           const subject = pr.type === 'card_payment' ? 'Your OCCTA payment link (resent)' : 'Set up your OCCTA Direct Debit (resent)';
+          const helpKey = pr.type === 'card_payment' ? 'payment_reminder' : 'dd_setup';
+          const htmlWithHelp = await withHelpfulLinks(supabase, email.html, helpKey);
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
@@ -1553,7 +1571,7 @@ serve(async (req) => {
               from: 'OCCTA <billing@occta.co.uk>',
               to: [pr.customer_email],
               subject,
-              html: email.html,
+              html: htmlWithHelp,
               text: email.text,
             }),
           }).then(undefined, (e) => console.error('Resend email failed', e));

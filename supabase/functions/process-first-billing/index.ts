@@ -8,6 +8,7 @@ import {
   type RawLine,
   type VatMode,
 } from "../_shared/billingHelpers.ts";
+import { assertServiceLive } from "../_shared/billingGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -90,6 +91,17 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         .select("id, status, plan_name, service_type, price_monthly, user_id")
         .eq("id", job.service_id).maybeSingle();
       if (!svc || svc.status !== "active") throw new Error("service_not_active");
+
+      // Two-doc billing gate. No-op when flag off; blocks when service not
+      // confirmed live, activation blocked pending review, or accepted
+      // document hashes missing.
+      const gate = await assertServiceLive({
+        orderId: job.order_id,
+        serviceId: job.service_id,
+        supabaseUrl: Deno.env.get("SUPABASE_URL")!,
+        serviceRoleKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      });
+      if (!gate.allowed) throw new Error(`billing_gate_blocked:${gate.reason}`);
 
       const { data: pm } = await supabase.from("payment_methods")
         .select("method, dd_setup_status, active")

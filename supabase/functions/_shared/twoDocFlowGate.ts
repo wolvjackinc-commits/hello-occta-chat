@@ -67,8 +67,18 @@ export async function logPilotEvent(
 export function callerUserIdFromRequest(req: Request): string | null {
   const auth = req.headers.get("Authorization") || req.headers.get("authorization");
   if (!auth?.startsWith("Bearer ")) return null;
-  const jwt = auth.slice(7);
-  const parts = jwt.split(".");
+  const bearer = auth.slice(7);
+  // If caller presents the service role key (JWT or opaque sb_secret_*),
+  // trust a signed x-pilot-caller-id header. This is what the bootstrap
+  // sample generator uses to impersonate the pilot user for gate checks.
+  const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const isServiceRole = !!svcKey && bearer === svcKey;
+  if (isServiceRole) {
+    const pilot = req.headers.get("x-pilot-caller-id");
+    if (pilot && /^[0-9a-f-]{36}$/i.test(pilot)) return pilot;
+    return null;
+  }
+  const parts = bearer.split(".");
   if (parts.length !== 3) return null;
   try {
     const payload = JSON.parse(

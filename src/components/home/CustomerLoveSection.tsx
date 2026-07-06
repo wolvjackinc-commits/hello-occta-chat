@@ -24,7 +24,7 @@ I don't know what a telecom provider is, but this one didn't break anything. Soâ
 OCCTA showed me the price, didn't hide anything, and didn't lock me into a contract longer than my mortgage.
 
 It worked. That's the review.`,
-    caption: "No jargon. No pressure. Just internet.",
+    caption: "No jargon. Just internet.",
   },
   {
     icon: Users,

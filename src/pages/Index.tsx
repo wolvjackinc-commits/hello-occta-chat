@@ -55,11 +55,11 @@ const Index = () => {
   return (
     <AvailabilityProvider>
       <Layout>
-        <SEO 
-          title="Cheap UK Broadband & SIM Plans"
-          description={`Cheap UK broadband from £${getFromPrices().broadband}/mo, 5G SIM from £${getFromPrices().sim}, digital home phone from £${getFromPrices().landline}. No contracts, no price rises.`}
+        <SEO
+          title="UK Broadband, SIM & Digital Voice"
+          description={`UK broadband from £${getFromPrices().broadband}/mo, 5G SIM from £${getFromPrices().sim}, digital home phone from £${getFromPrices().landline}. Simple telecom. Clear terms.`}
           canonical="/"
-          keywords="cheap broadband UK, no contract broadband, flexible broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband"
+          keywords="UK broadband, flexible broadband, price lock broadband, affordable internet UK, 5G SIM UK, SIM deals UK, fibre broadband UK, digital home phone UK, OCCTA broadband"
           price={getFromPrices().broadband}
         />
         <StructuredData type="all" />

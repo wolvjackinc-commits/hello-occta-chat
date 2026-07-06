@@ -4888,6 +4888,7 @@ export type Database = {
           customer_facing_message: string | null
           customer_id: string | null
           customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          date_of_birth: string | null
           email: string
           final_quote_id: string | null
           full_name: string
@@ -4926,6 +4927,7 @@ export type Database = {
           customer_facing_message?: string | null
           customer_id?: string | null
           customer_type?: Database["public"]["Enums"]["customer_type_kind"]
+          date_of_birth?: string | null
           email: string
           final_quote_id?: string | null
           full_name: string
@@ -4964,6 +4966,7 @@ export type Database = {
           customer_facing_message?: string | null
           customer_id?: string | null
           customer_type?: Database["public"]["Enums"]["customer_type_kind"]
+          date_of_birth?: string | null
           email?: string
           final_quote_id?: string | null
           full_name?: string

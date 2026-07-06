@@ -109,6 +109,7 @@ Deno.serve(async (req) => {
     full_name: i.full_name,
     email: i.email,
     phone: i.phone,
+    date_of_birth: i.date_of_birth ?? null,
     postcode: i.postcode.toUpperCase(),
     address_line_1: i.address_line_1 ?? null,
     address_line_2: i.address_line_2 ?? null,
@@ -133,10 +134,13 @@ Deno.serve(async (req) => {
   }).select("id, reference").single();
   if (qrErr || !qr) return jsonResponse({ error: "create_failed" }, 500);
 
-  // If a signed-in customer supplied their DOB, persist to their profile (fail-soft).
+  // If a signed-in customer supplied their DOB, sync it to their profile so
+  // it appears everywhere (dashboard, admin views) across sessions.
   if (customer_id && i.date_of_birth) {
     try {
-      await supabase.from("profiles").update({ date_of_birth: i.date_of_birth }).eq("id", customer_id).is("date_of_birth", null);
+      await supabase.from("profiles")
+        .update({ date_of_birth: i.date_of_birth })
+        .eq("id", customer_id);
     } catch (_e) { /* non-fatal */ }
   }
 

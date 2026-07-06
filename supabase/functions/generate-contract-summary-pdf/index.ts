@@ -55,7 +55,7 @@ function renderPdf(cs: any): Uint8Array {
   doc.setFont("helvetica", "bold"); doc.setFontSize(22);
   doc.text("OCCTA", M, 38);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text("No contracts. No pressure.", M, 54);
+  doc.text("Simple telecom. Clear terms.", M, 54);
   doc.text("www.occta.co.uk", M, 66);
   doc.setFont("helvetica", "bold"); doc.setFontSize(11);
   doc.text("CONTRACT SUMMARY", W - M, 38, { align: "right" });
@@ -167,7 +167,7 @@ function renderPdf(cs: any): Uint8Array {
     doc.line(M, H - 40, W - M, H - 40);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(100);
     doc.text(`OCCTA Ltd · www.occta.co.uk · ${cs.cs_number} v${cs.version}`, M, H - 26);
-    doc.text("No contracts. No pressure.", M, H - 14);
+    doc.text("Simple telecom. Clear terms.", M, H - 14);
     doc.text(`Page ${i} of ${pages}`, W - M, H - 26, { align: "right" });
   }
 

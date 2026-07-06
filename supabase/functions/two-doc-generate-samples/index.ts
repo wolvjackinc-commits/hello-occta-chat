@@ -74,26 +74,69 @@ Deno.serve(async (req) => {
     if (!ids.length) return jsonResponse({ error: "contract_summary_ids_required" }, 400);
     const { data: rows } = await supabase
       .from("contract_summaries")
-      .select("id, cs_number, version, pdf_sha256, pdf_storage_path")
+      .select("id, cs_number, version, status, pdf_sha256, pdf_storage_path, pdf_storage_key, pdf_hash")
       .in("id", ids);
     const signed = await Promise.all((rows ?? []).map(async (r) => {
       let url: string | null = null;
-      if ((r as any).pdf_storage_path) {
+      // Prefer two-doc contract-documents bucket; fall back to legacy contract-pdfs.
+      const twoDocPath = (r as any).pdf_storage_path as string | null;
+      const legacyKey = (r as any).pdf_storage_key as string | null;
+      let bucket: string | null = null;
+      let key: string | null = null;
+      if (twoDocPath) { bucket = "contract-documents"; key = twoDocPath; }
+      else if (legacyKey) { bucket = "contract-pdfs"; key = legacyKey; }
+      if (bucket && key) {
         const { data: sig } = await supabase.storage
-          .from("contract-documents")
-          .createSignedUrl((r as any).pdf_storage_path, 3600);
+          .from(bucket)
+          .createSignedUrl(key, 3600);
         url = sig?.signedUrl ?? null;
       }
       return {
         id: (r as any).id,
         cs_number: (r as any).cs_number,
         version: (r as any).version,
-        pdf_sha256: (r as any).pdf_sha256,
-        pdf_storage_path: (r as any).pdf_storage_path,
+        status: (r as any).status,
+        pdf_sha256: (r as any).pdf_sha256 ?? (r as any).pdf_hash ?? null,
+        pdf_storage_path: key,
+        pdf_bucket: bucket,
         pdf_signed_url_1h: url,
       };
     }));
     return jsonResponse({ ok: true, signed });
+  }
+  // Bootstrap-only side action: render the standalone Contract Summary PDF for
+  // one or more CS ids by calling the legacy generate-contract-summary-pdf
+  // function in internal mode. First-time render only — never overwrites.
+  if (isBootstrap && body.action === "render_cs") {
+    const ids = Array.isArray(body.contract_summary_ids)
+      ? (body.contract_summary_ids as string[])
+      : [];
+    if (!ids.length) return jsonResponse({ error: "contract_summary_ids_required" }, 400);
+    const projectUrl = Deno.env.get("SUPABASE_URL")!;
+    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const out: Array<Record<string, unknown>> = [];
+    for (const id of ids) {
+      const r = await fetch(`${projectUrl}/functions/v1/generate-contract-summary-pdf`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-service": "1",
+          "Authorization": `Bearer ${svcKey}`,
+        },
+        body: JSON.stringify({ internal: true, contract_summary_id: id, actor_id: null }),
+      });
+      const j = await r.json().catch(() => ({}));
+      out.push({
+        contract_summary_id: id,
+        status: r.status,
+        reused: j?.reused ?? false,
+        pdf_storage_key: j?.pdf_storage_key ?? null,
+        pdf_sha256: j?.pdf_sha256 ?? null,
+        signed_url: j?.signed_url ?? null,
+        error: j?.error ?? null,
+      });
+    }
+    return jsonResponse({ ok: true, rendered: out });
   }
   const scenarios = body.scenarios as Record<ScenarioKey, string> | undefined;
   if (!scenarios || typeof scenarios !== "object") {

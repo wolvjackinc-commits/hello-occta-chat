@@ -162,7 +162,7 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
     heading: "19. Complaints, ADR & how to escalate",
     paragraphs: [
       "If something goes wrong, please raise a complaint in your dashboard, email complaints@occta.co.uk or write to the registered office. Our Complaints Code (www.occta.co.uk/legal/complaints-code) sets out our internal escalation, target response times and senior-management review steps.",
-      "If we have not resolved your complaint within 8 weeks, or if we issue a deadlock letter sooner, you have the right — free of charge — to refer your complaint to our Alternative Dispute Resolution (ADR) provider: Ombudsman Services: Communications, P.O. Box 730, Warrington, WA4 6WU; phone 0330 440 1614; www.ombudsman-services.org/sectors/communications. The ADR decision is binding on OCCTA but not on you.",
+      "If we have not resolved your complaint within 6 weeks, or if we issue a deadlock letter sooner, you have the right — free of charge — to refer your complaint to our Alternative Dispute Resolution (ADR) provider: Ombudsman Services: Communications, P.O. Box 730, Warrington, WA4 6WU; phone 0330 440 1614; www.ombudsman-services.org/sectors/communications. The ADR decision is binding on OCCTA but not on you.",
       "You can also contact Ofcom (the industry regulator) at www.ofcom.org.uk for general information about your rights as a communications customer, though Ofcom does not handle individual disputes.",
     ],
   },

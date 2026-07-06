@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { assertServiceLive } from "../_shared/billingGate.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -97,6 +98,32 @@ serve(async (req) => {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
+        }
+
+        // Defence-in-depth billing gate. Blocks HPP session creation when the
+        // service backing this invoice is no longer eligible for charge (e.g.
+        // retroactively blocked for DV vulnerability review). No-op when the
+        // two-doc flag is off — legacy invoices continue to be payable.
+        {
+          const { data: invSrv } = await supabase
+            .from('invoices')
+            .select('order_id, service_id')
+            .eq('id', invoiceId)
+            .maybeSingle();
+          if (invSrv?.order_id) {
+            const gate = await assertServiceLive({
+              orderId: invSrv.order_id,
+              serviceId: invSrv.service_id ?? undefined,
+              supabaseUrl,
+              serviceRoleKey: supabaseKey,
+            });
+            if (!gate.allowed) {
+              return new Response(JSON.stringify({ success: false, error: `payment_blocked:${gate.reason}` }), {
+                status: 409,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+          }
         }
 
         const amount = Number(invoiceRow.total);

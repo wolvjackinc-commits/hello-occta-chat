@@ -1849,6 +1849,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_document_artifacts: {
+        Row: {
+          artifact_type: string
+          created_at_utc: string
+          created_by: string | null
+          document_id: string
+          document_number: string | null
+          document_type: string
+          document_version: number | null
+          id: string
+          is_customer_visible: boolean
+          metadata: Json
+          sha256_hash: string
+          storage_bucket: string
+          storage_path: string
+        }
+        Insert: {
+          artifact_type?: string
+          created_at_utc?: string
+          created_by?: string | null
+          document_id: string
+          document_number?: string | null
+          document_type: string
+          document_version?: number | null
+          id?: string
+          is_customer_visible?: boolean
+          metadata?: Json
+          sha256_hash: string
+          storage_bucket: string
+          storage_path: string
+        }
+        Update: {
+          artifact_type?: string
+          created_at_utc?: string
+          created_by?: string | null
+          document_id?: string
+          document_number?: string | null
+          document_type?: string
+          document_version?: number | null
+          id?: string
+          is_customer_visible?: boolean
+          metadata?: Json
+          sha256_hash?: string
+          storage_bucket?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
       contract_information_packs: {
         Row: {
           accepted_at_utc: string | null

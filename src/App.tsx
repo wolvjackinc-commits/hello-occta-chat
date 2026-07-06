@@ -102,6 +102,7 @@ import QuoteThankYou from "./pages/quote/QuoteThankYou";
 import UnifiedJourney from "./pages/quote/UnifiedJourney";
 import ContractSummaryView from "./pages/quote/ContractSummaryView";
 import QuotePayment from "./pages/quote/QuotePayment";
+const TwoDocAcceptance = lazy(() => import("./pages/quote/TwoDocAcceptance"));
 import ContractSummaryAuthedView from "./pages/dashboard/ContractSummaryAuthedView";
 import ReceiptView from "./pages/ReceiptView";
 const AdminQuoteRequests = lazy(() => import("./pages/admin/QuoteRequests").then(m => ({ default: m.AdminQuoteRequests })));
@@ -216,6 +217,7 @@ const AnimatedRoutes = () => {
         <Route path="/quote/start" element={<QuoteStart />} />
         <Route path="/quote/thank-you" element={<QuoteThankYou />} />
         <Route path="/quote/contract-summary/:token" element={<ContractSummaryView />} />
+        <Route path="/quote/two-doc/:token" element={<Suspense fallback={<div className="p-12 text-center">Loading…</div>}><TwoDocAcceptance /></Suspense>} />
         <Route path="/dashboard/contract/:csId" element={<ContractSummaryAuthedView />} />
         <Route path="/dashboard/receipt/:id" element={<ReceiptView mode="auth" />} />
         <Route path="/receipt/:token" element={<ReceiptView mode="token" />} />

@@ -1465,6 +1465,7 @@ serve(async (req) => {
             setupLink,
             expiresAt,
           });
+          const htmlWithHelp = await withHelpfulLinks(supabase, email.html, 'dd_setup');
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
@@ -1472,7 +1473,7 @@ serve(async (req) => {
               from: 'OCCTA <billing@occta.co.uk>',
               to: [customer_email],
               subject: 'Set up your OCCTA Direct Debit',
-              html: email.html,
+              html: htmlWithHelp,
               text: email.text,
             }),
           }).then(undefined, (e) => console.error('DD email send failed', e));

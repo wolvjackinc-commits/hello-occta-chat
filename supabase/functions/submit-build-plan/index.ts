@@ -133,6 +133,13 @@ Deno.serve(async (req) => {
   }).select("id, reference").single();
   if (qrErr || !qr) return jsonResponse({ error: "create_failed" }, 500);
 
+  // If a signed-in customer supplied their DOB, persist to their profile (fail-soft).
+  if (customer_id && i.date_of_birth) {
+    try {
+      await supabase.from("profiles").update({ date_of_birth: i.date_of_birth }).eq("id", customer_id).is("date_of_birth", null);
+    } catch (_e) { /* non-fatal */ }
+  }
+
   // ── Re-resolve server-side ──
   const { data: settings } = await supabase
     .from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();

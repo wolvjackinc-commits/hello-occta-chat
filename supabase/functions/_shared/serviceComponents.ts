@@ -26,6 +26,14 @@ interface QuoteLike {
 
 function twoDocOverrides(q: QuoteLike): {
   broadband_etf?: import("./twoDocValidators.ts").EtfSnapshot;
+  broadband?: {
+    contract_kind?: "fixed_term" | "flex_30_rolling";
+    minimum_term_months?: number;
+    notice_period_days?: number;
+    cancellation_wording?: string;
+    label?: string;
+    monthly_price_incl_vat?: number;
+  };
   digital_voice?: { monthly_price_incl_vat?: number };
   sim_plan_snapshot?: any;
   price_change?: PriceChangeSnapshot;
@@ -35,13 +43,28 @@ function twoDocOverrides(q: QuoteLike): {
   return {};
 }
 
+function isFixedPlan(q: QuoteLike): boolean {
+  const ov = twoDocOverrides(q);
+  if (ov.broadband?.contract_kind === "fixed_term") return true;
+  if (ov.broadband?.contract_kind === "flex_30_rolling") return false;
+  if (ov.broadband_etf && (q.contract_length_months ?? 0) > 0) return true;
+  const pt = String(q.plan_type ?? "").toLowerCase();
+  if (pt === "fixed" || pt === "contract_saver" || pt === "price_lock") return true;
+  if (q.plan_term === "price_lock_24") return true;
+  return false;
+}
+
 function parseTermMonths(q: QuoteLike): number {
+  const ov = twoDocOverrides(q);
+  if (typeof ov.broadband?.minimum_term_months === "number") return ov.broadband.minimum_term_months;
   if (q.plan_term === "price_lock_24") return 24;
-  if (q.plan_type === "fixed") return q.contract_length_months ?? 12;
+  if (isFixedPlan(q)) return q.contract_length_months ?? 12;
   return 0;
 }
 
 function parseNoticeDays(q: QuoteLike): number {
+  const ov = twoDocOverrides(q);
+  if (typeof ov.broadband?.notice_period_days === "number") return ov.broadband.notice_period_days;
   const s = String(q.notice_period ?? "30 days").toLowerCase();
   const m = s.match(/(\d+)/);
   return m ? parseInt(m[1], 10) : 30;
@@ -52,20 +75,21 @@ function defaultPriceChange(): PriceChangeSnapshot {
 }
 
 function broadbandComponent(q: QuoteLike): ServiceComponent {
-  const isFixed = q.plan_type === "fixed" || q.plan_term === "price_lock_24";
   const ov = twoDocOverrides(q);
+  const isFixed = isFixedPlan(q);
+  const cancelDefault = isFixed
+    ? "Cancel by giving notice — an early termination charge applies during the minimum term. See the Contract Information Pack for the exact ETF calculation."
+    : "Cancel with 30 days' notice at any time. No early termination charge.";
   return {
     id: `broadband-${q.id}`,
     kind: "broadband",
-    label: q.plan_name ?? "Broadband",
-    monthly_price_incl_vat: Number(q.monthly_gross ?? 0),
+    label: ov.broadband?.label ?? q.plan_name ?? "Broadband",
+    monthly_price_incl_vat: Number(ov.broadband?.monthly_price_incl_vat ?? q.monthly_gross ?? 0),
     contract_kind: isFixed ? "fixed_term" : "flex_30_rolling",
     minimum_term_months: parseTermMonths(q),
     notice_period_days: parseNoticeDays(q),
     price_change: ov.price_change ?? defaultPriceChange(),
-    cancellation_wording: isFixed
-      ? "Cancel by giving notice — an early termination charge applies during the minimum term. See the Contract Information Pack for the exact ETF calculation."
-      : "Cancel with 30 days' notice at any time. No early termination charge.",
+    cancellation_wording: ov.broadband?.cancellation_wording ?? cancelDefault,
     etf: isFixed ? ov.broadband_etf : undefined,
   };
 }

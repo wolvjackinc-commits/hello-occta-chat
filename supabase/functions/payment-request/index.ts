@@ -1,5 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+
+// Append helpful KB links to an email HTML string (fail-soft).
+async function withHelpfulLinks(supabase: any, html: string, key: string): Promise<string> {
+  try {
+    const block = await fetchHelpfulLinksHtml(supabase, key);
+    if (!block) return html;
+    return html.includes('</body>') ? html.replace('</body>', `${block}</body>`) : `${html}${block}`;
+  } catch {
+    return html;
+  }
+}
 
 // CORS: must allow all headers used by the web client / SDK
 const corsHeaders = {

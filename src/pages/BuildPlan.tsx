@@ -154,6 +154,34 @@ function BuildPlanInner() {
   const [submitting, setSubmitting] = useState(false);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
+  // Prefill contact fields (incl. DOB) from the signed-in customer's profile
+  // so their existing details stay in sync across sessions.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("full_name, email, phone, date_of_birth, address_line1, address_line2, city, postcode")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!p || cancelled) return;
+      setContact((c) => ({
+        ...c,
+        full_name: c.full_name || p.full_name || "",
+        email: c.email || p.email || "",
+        phone: c.phone || p.phone || "",
+        date_of_birth: c.date_of_birth || p.date_of_birth || "",
+        address_line_1: c.address_line_1 || p.address_line1 || "",
+        address_line_2: c.address_line_2 || p.address_line2 || "",
+        town: c.town || p.city || "",
+        postcode: c.postcode || p.postcode || "",
+      }));
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // First screen opens at the page top; later steps start at the selector box.
   useEffect(() => {
     const t = setTimeout(() => {

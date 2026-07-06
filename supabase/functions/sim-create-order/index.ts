@@ -12,6 +12,60 @@ function json(status: number, body: unknown) {
   });
 }
 
+async function sha256Hex(s: string) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const clean = hex.replace(/[^0-9a-f]/gi, "");
+  const out = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.substr(i * 2, 2), 16);
+  return out;
+}
+
+async function encryptBankDetails(plain: Record<string, unknown>) {
+  // Match journey-payment-method key handling exactly (any of: hex, base64,
+  // raw 32-byte, else SHA-256 of raw secret).
+  let rawKey = (Deno.env.get("DD_FIELD_ENC_KEY") ?? "").trim();
+  if (!rawKey) throw new Error("DD_FIELD_ENC_KEY_missing");
+  if ((rawKey.startsWith('"') && rawKey.endsWith('"')) || (rawKey.startsWith("'") && rawKey.endsWith("'"))) rawKey = rawKey.slice(1, -1);
+  const noWs = rawKey.replace(/\s+/g, "");
+  let keyBytes: Uint8Array | null = null;
+  if (/^[0-9a-f]{64}$/i.test(noWs)) keyBytes = hexToBytes(noWs);
+  if (!keyBytes) {
+    const hexOnly = noWs.replace(/^0x/i, "").replace(/[^0-9a-f]/gi, "");
+    if (hexOnly.length === 64) keyBytes = hexToBytes(hexOnly);
+  }
+  if (!keyBytes) {
+    let b64 = noWs.replace(/-/g, "+").replace(/_/g, "/").replace(/[^A-Za-z0-9+/=]/g, "").replace(/=+$/, "");
+    const pad = b64.length % 4;
+    if (pad === 2) b64 += "=="; else if (pad === 3) b64 += "=";
+    if (b64.length % 4 === 0) {
+      try {
+        const bin = atob(b64);
+        const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+        if (bytes.length === 32) keyBytes = bytes;
+      } catch { /* fallthrough */ }
+    }
+  }
+  if (!keyBytes && noWs.length === 32) keyBytes = new TextEncoder().encode(noWs);
+  if (!keyBytes) {
+    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawKey));
+    keyBytes = new Uint8Array(hash);
+  }
+  if (keyBytes.length !== 32) throw new Error(`DD_FIELD_ENC_KEY_bad_length:${keyBytes.length}`);
+  const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, ["encrypt"]);
+  const nonce = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder().encode(JSON.stringify(plain));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, key, enc));
+  return {
+    ciphertext_hex: "\\x" + Array.from(ct).map((b) => b.toString(16).padStart(2, "0")).join(""),
+    nonce_hex: "\\x" + Array.from(nonce).map((b) => b.toString(16).padStart(2, "0")).join(""),
+    key_id: "DD_FIELD_ENC_KEY_v1",
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
@@ -20,13 +74,16 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Require authenticated user (SIM orders need a real customer account).
+    // Auth optional for card checkout (guest allowed). DD path requires auth
+    // because bank details, mandate consent, and future collection are tied
+    // to a real customer account.
     const authHeader = req.headers.get("Authorization") || "";
     const jwt = authHeader.replace(/^Bearer\s+/i, "");
-    if (!jwt) return json(401, { error: "Unauthorized" });
-    const { data: userData, error: userErr } = await supabase.auth.getUser(jwt);
-    if (userErr || !userData?.user) return json(401, { error: "Unauthorized" });
-    const userId = userData.user.id;
+    let userId: string | null = null;
+    if (jwt) {
+      const { data: userData } = await supabase.auth.getUser(jwt);
+      if (userData?.user) userId = userData.user.id;
+    }
 
     const body = await req.json();
     const {
@@ -49,6 +106,7 @@ Deno.serve(async (req) => {
       billing_address,
       payment_method,
       consent,
+      dd_details,
     } = body ?? {};
 
     if (!plan_id || !sim_type || !number_choice || !full_name || !email || !payment_method) {
@@ -58,6 +116,21 @@ Deno.serve(async (req) => {
     if (!["card", "direct_debit"].includes(payment_method)) return json(400, { error: "Invalid payment_method" });
     if (!["keep", "new", "new_with_stac", "provide_later"].includes(number_choice)) return json(400, { error: "Invalid number_choice" });
     if (sim_type === "physical" && !delivery_address) return json(400, { error: "Delivery address required for physical SIM" });
+
+    if (payment_method === "direct_debit") {
+      if (!userId) return json(401, { error: "auth_required_for_dd" });
+      if (!dd_details) return json(400, { error: "dd_details required" });
+      const dd = dd_details as Record<string, string | boolean | undefined>;
+      if (
+        typeof dd.account_holder_name !== "string" || !dd.account_holder_name ||
+        typeof dd.sort_code !== "string" || !/^\d{6}$/.test(dd.sort_code) ||
+        typeof dd.account_number !== "string" || !/^\d{8}$/.test(dd.account_number) ||
+        typeof dd.bank_name !== "string" || !dd.bank_name ||
+        !dd.uk_account_confirmed || !dd.payer_authorised_confirmed || !dd.guarantee_acknowledged
+      ) {
+        return json(400, { error: "dd_details_invalid" });
+      }
+    }
 
     // Confirm settings + plan are actively purchasable — never trust client price.
     const { data: settings } = await supabase.from("sim_settings").select("*").eq("singleton", true).maybeSingle();
@@ -87,11 +160,29 @@ Deno.serve(async (req) => {
     if (payment_method === "card") initialStatus = "awaiting_payment";
     if (payment_method === "direct_debit") initialStatus = "dd_mandate_pending";
 
+    // Generate order-success token (customer receives raw token, DB stores SHA-256).
+    const orderToken = crypto.randomUUID() + "-" + crypto.randomUUID();
+    const orderTokenHash = await sha256Hex(orderToken);
+
+    // DD masking (safe to expose)
+    let ddMaskedLast4: string | null = null;
+    let ddMaskedSort: string | null = null;
+    let ddBankName: string | null = null;
+    let ddAccountHolder: string | null = null;
+    if (payment_method === "direct_debit" && dd_details) {
+      ddMaskedLast4 = String(dd_details.account_number).slice(-4);
+      ddMaskedSort = String(dd_details.sort_code).slice(-2);
+      ddBankName = String(dd_details.bank_name);
+      ddAccountHolder = String(dd_details.account_holder_name);
+    }
+
     // Insert SIM order (snapshot pricing)
     const { data: orderIns, error: orderErr } = await supabase
       .from("sim_orders")
       .insert({
         customer_id: userId,
+        is_guest: !userId,
+        order_token_hash: orderTokenHash,
         plan_id: plan.id,
         plan_slug_snapshot: plan.slug,
         plan_name_snapshot: plan.name,
@@ -120,12 +211,65 @@ Deno.serve(async (req) => {
         payment_method,
         status: initialStatus,
         consent: consent ?? {},
+        dd_masked_last4: ddMaskedLast4,
+        dd_masked_sort_last2: ddMaskedSort,
+        dd_bank_name: ddBankName,
+        dd_account_holder: ddAccountHolder,
       })
       .select("*")
       .single();
     if (orderErr || !orderIns) return json(500, { error: orderErr?.message ?? "Failed to create order" });
 
     let invoiceId: string | null = null;
+
+    // DD path — encrypt + persist bank details into dd_intake_requests, then
+    // create an admin task to activate the mandate.
+    if (payment_method === "direct_debit" && dd_details) {
+      try {
+        const enc = await encryptBankDetails({
+          account_holder_name: dd_details.account_holder_name,
+          sort_code: dd_details.sort_code,
+          account_number: dd_details.account_number,
+          bank_name: dd_details.bank_name,
+          billing_address: billing_address ?? {},
+          postcode: (billing_address?.postcode ?? null),
+        });
+        const { data: intakeIns, error: intakeErr } = await supabase
+          .from("dd_intake_requests")
+          .insert({
+            journey_id: null,
+            payment_method_id: null,
+            bank_details_ciphertext: enc.ciphertext_hex,
+            enc_key_id: enc.key_id,
+            enc_alg: "AES-256-GCM",
+            nonce: enc.nonce_hex,
+            masked_account_last4: ddMaskedLast4!,
+            masked_sort_last2: ddMaskedSort!,
+            bank_name: ddBankName,
+            uk_account_confirmed: !!dd_details.uk_account_confirmed,
+            payer_authorised_confirmed: !!dd_details.payer_authorised_confirmed,
+          })
+          .select("id")
+          .single();
+        if (intakeErr) throw intakeErr;
+        await supabase.from("sim_orders").update({ dd_intake_id: intakeIns.id }).eq("id", orderIns.id);
+        await supabase.from("admin_tasks").insert({
+          title: `SIM DD activation — ${orderIns.order_number}`,
+          description: `New SIM Direct Debit mandate captured for ${full_name} (${email}). Bank: ${ddBankName}, sort ****${ddMaskedSort}, acc ****${ddMaskedLast4}. Activate mandate with DD provider before service goes live.`,
+          priority: "high",
+          status: "open",
+          created_by: userId,
+          related_customer_id: userId,
+        });
+      } catch (e) {
+        console.error("SIM DD encryption failed", e);
+        // Roll the order back to admin_review with a note so admin can follow up manually.
+        await supabase.from("sim_orders").update({
+          status: "admin_review",
+          admin_notes: `DD encryption failed: ${String((e as Error).message).slice(0, 300)}`,
+        }).eq("id", orderIns.id);
+      }
+    }
 
     if (payment_method === "card" && firstPaymentMinor > 0) {
       // Create first-payment invoice (paid on Worldpay success by existing webhook)
@@ -136,6 +280,7 @@ Deno.serve(async (req) => {
         .from("invoices")
         .insert({
           user_id: userId,
+          sim_order_id: orderIns.id,
           invoice_number: invoiceNumber,
           invoice_type: "sim_first_payment",
           subtotal: totalMajor,
@@ -175,6 +320,27 @@ Deno.serve(async (req) => {
       await supabase.from("sim_orders").update({ first_payment_invoice_id: invoiceId }).eq("id", orderIns.id);
     }
 
+    // Fire-and-forget order confirmation email via existing send-email pipeline.
+    supabase.functions.invoke("send-email", {
+      body: {
+        type: "order_confirmation",
+        to: email,
+        userId: userId,
+        orderNumber: orderIns.order_number,
+        logToCommunications: true,
+        data: {
+          customer_name: full_name,
+          order_number: orderIns.order_number,
+          plan_name: plan.name,
+          sim_type,
+          payment_method,
+          first_payment_amount: firstPaymentMinor > 0 ? (firstPaymentMinor / 100).toFixed(2) : "0.00",
+          order_success_url: `${Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk"}/sim/order-success/${orderIns.id}?t=${orderToken}`,
+        },
+      },
+      headers: { "idempotency-key": `sim-order-created:${orderIns.id}` } as any,
+    }).catch(() => null);
+
     // Log order creation to audit trail (admin sees new DD orders in SIM orders list with status=dd_mandate_pending).
     await supabase.from("audit_logs").insert({
       actor_user_id: userId,
@@ -190,6 +356,7 @@ Deno.serve(async (req) => {
       status: orderIns.status,
       payment_method,
       invoice_id: invoiceId,
+      order_token: orderToken,
     });
   } catch (e) {
     console.error("sim-create-order error", e);

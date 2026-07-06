@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { nextAnchorBillingDate } from "../_shared/billingHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,19 +90,18 @@ Deno.serve(async (req) => {
         // Billing gate: service goes live on service_live_date; first payment already
         // taken (card) is treated as a credit for the first period.
         const liveDate = payload?.service_live_date ?? new Date().toISOString().slice(0, 10);
-        const anchorDay = payload?.billing_anchor_day ?? new Date(liveDate).getUTCDate();
+        const anchorDay = payload?.billing_anchor_day ?? new Date(liveDate + "T00:00:00Z").getUTCDate();
+        const anchor = Math.max(1, Math.min(28, Number(anchorDay)));
         update.status = "live";
         update.service_live_date = liveDate;
-        update.billing_anchor_day = Math.max(1, Math.min(28, Number(anchorDay)));
-        // No new invoice is created here — recurring billing takes over from the
-        // anchor day. Any excess first payment stays parked in
-        // first_payment_credit_minor (applied by billing worker on next invoice).
-        if (order.payment_method === "card" && order.first_payment_paid_minor > 0) {
-          const expected = order.monthly_price_minor_snapshot; // pro-rata computed by recurring worker
-          const excess = Math.max(0, order.first_payment_paid_minor - expected);
-          update.first_payment_credit_minor = excess;
+        update.billing_anchor_day = anchor;
+        // Next billing date = first anchor strictly after service_live_date.
+        update.next_billing_date = nextAnchorBillingDate(liveDate, anchor);
+        // Card: first_payment_paid_minor becomes credit against first month.
+        if (order.payment_method === "card" && (order.first_payment_paid_minor ?? 0) > 0) {
+          update.first_payment_credit_minor = order.first_payment_paid_minor;
         }
-        auditMeta = { ...auditMeta, live_date: liveDate };
+        auditMeta = { ...auditMeta, live_date: liveDate, next_billing_date: update.next_billing_date, anchor };
         break;
       }
       case "fail": update.status = "failed"; break;

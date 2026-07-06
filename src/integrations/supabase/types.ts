@@ -3355,6 +3355,7 @@ export type Database = {
           pro_rata: Json | null
           reminder_count: number
           service_id: string | null
+          sim_order_id: string | null
           status: string
           subtotal: number
           tax: number | null
@@ -3396,6 +3397,7 @@ export type Database = {
           pro_rata?: Json | null
           reminder_count?: number
           service_id?: string | null
+          sim_order_id?: string | null
           status?: string
           subtotal?: number
           tax?: number | null
@@ -3437,6 +3439,7 @@ export type Database = {
           pro_rata?: Json | null
           reminder_count?: number
           service_id?: string | null
+          sim_order_id?: string | null
           status?: string
           subtotal?: number
           tax?: number | null
@@ -3467,6 +3470,27 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_sim_order_id_fkey"
+            columns: ["sim_order_id"]
+            isOneToOne: false
+            referencedRelation: "sim_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_sim_order_id_fkey"
+            columns: ["sim_order_id"]
+            isOneToOne: false
+            referencedRelation: "sim_orders_by_token"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_sim_order_id_fkey"
+            columns: ["sim_order_id"]
+            isOneToOne: false
+            referencedRelation: "sim_orders_customer"
             referencedColumns: ["id"]
           },
         ]
@@ -6729,6 +6753,13 @@ export type Database = {
             foreignKeyName: "sim_esim_deliveries_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "sim_orders_by_token"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sim_esim_deliveries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "sim_orders_customer"
             referencedColumns: ["id"]
           },
@@ -6739,11 +6770,17 @@ export type Database = {
           admin_notes: string | null
           billing_address: Json
           billing_anchor_day: number | null
+          card_paid_at: string | null
           consent: Json
           created_at: string
           current_msisdn: string | null
           current_provider: string | null
           customer_id: string | null
+          dd_account_holder: string | null
+          dd_bank_name: string | null
+          dd_intake_id: string | null
+          dd_masked_last4: string | null
+          dd_masked_sort_last2: string | null
           delivery_address: Json | null
           delivery_fee_minor_snapshot: number
           dispatch_tracking: string | null
@@ -6759,10 +6796,14 @@ export type Database = {
           full_name: string
           iccid: string | null
           id: string
+          is_guest: boolean
+          last_billed_period_end: string | null
           min_term_months_snapshot: number
           monthly_price_minor_snapshot: number
+          next_billing_date: string | null
           number_choice: string
           order_number: string
+          order_token_hash: string | null
           pac_code: string | null
           pac_expiry: string | null
           payment_method: string
@@ -6789,11 +6830,17 @@ export type Database = {
           admin_notes?: string | null
           billing_address?: Json
           billing_anchor_day?: number | null
+          card_paid_at?: string | null
           consent?: Json
           created_at?: string
           current_msisdn?: string | null
           current_provider?: string | null
           customer_id?: string | null
+          dd_account_holder?: string | null
+          dd_bank_name?: string | null
+          dd_intake_id?: string | null
+          dd_masked_last4?: string | null
+          dd_masked_sort_last2?: string | null
           delivery_address?: Json | null
           delivery_fee_minor_snapshot?: number
           dispatch_tracking?: string | null
@@ -6809,10 +6856,14 @@ export type Database = {
           full_name: string
           iccid?: string | null
           id?: string
+          is_guest?: boolean
+          last_billed_period_end?: string | null
           min_term_months_snapshot?: number
           monthly_price_minor_snapshot: number
+          next_billing_date?: string | null
           number_choice: string
           order_number?: string
+          order_token_hash?: string | null
           pac_code?: string | null
           pac_expiry?: string | null
           payment_method: string
@@ -6839,11 +6890,17 @@ export type Database = {
           admin_notes?: string | null
           billing_address?: Json
           billing_anchor_day?: number | null
+          card_paid_at?: string | null
           consent?: Json
           created_at?: string
           current_msisdn?: string | null
           current_provider?: string | null
           customer_id?: string | null
+          dd_account_holder?: string | null
+          dd_bank_name?: string | null
+          dd_intake_id?: string | null
+          dd_masked_last4?: string | null
+          dd_masked_sort_last2?: string | null
           delivery_address?: Json | null
           delivery_fee_minor_snapshot?: number
           dispatch_tracking?: string | null
@@ -6859,10 +6916,14 @@ export type Database = {
           full_name?: string
           iccid?: string | null
           id?: string
+          is_guest?: boolean
+          last_billed_period_end?: string | null
           min_term_months_snapshot?: number
           monthly_price_minor_snapshot?: number
+          next_billing_date?: string | null
           number_choice?: string
           order_number?: string
+          order_token_hash?: string | null
           pac_code?: string | null
           pac_expiry?: string | null
           payment_method?: string
@@ -6886,6 +6947,13 @@ export type Database = {
           vat_rate_snapshot?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "sim_orders_dd_intake_id_fkey"
+            columns: ["dd_intake_id"]
+            isOneToOne: false
+            referencedRelation: "dd_intake_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sim_orders_first_payment_invoice_id_fkey"
             columns: ["first_payment_invoice_id"]
@@ -8918,6 +8986,48 @@ export type Database = {
           starts_at?: string | null
           terms_text?: string | null
           value_label?: string | null
+        }
+        Relationships: []
+      }
+      sim_orders_by_token: {
+        Row: {
+          created_at: string | null
+          first_payment_minor_snapshot: number | null
+          id: string | null
+          monthly_price_minor_snapshot: number | null
+          order_number: string | null
+          order_token_hash: string | null
+          payment_method: string | null
+          plan_name_snapshot: string | null
+          service_live_date: string | null
+          sim_type: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          first_payment_minor_snapshot?: number | null
+          id?: string | null
+          monthly_price_minor_snapshot?: number | null
+          order_number?: string | null
+          order_token_hash?: string | null
+          payment_method?: string | null
+          plan_name_snapshot?: string | null
+          service_live_date?: string | null
+          sim_type?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          first_payment_minor_snapshot?: number | null
+          id?: string | null
+          monthly_price_minor_snapshot?: number | null
+          order_number?: string | null
+          order_token_hash?: string | null
+          payment_method?: string | null
+          plan_name_snapshot?: string | null
+          service_live_date?: string | null
+          sim_type?: string | null
+          status?: string | null
         }
         Relationships: []
       }

@@ -485,6 +485,11 @@ function BuildPlanInner() {
                       <Input value={contact.phone} onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))} className="mt-1" />
                     </div>
                   </div>
+                  <div>
+                    <Label className="text-sm">Date of birth *</Label>
+                    <Input type="date" value={contact.date_of_birth} onChange={(e) => setContact((c) => ({ ...c, date_of_birth: e.target.value }))} className="mt-1" max={new Date().toISOString().split("T")[0]} />
+                    <p className="text-xs text-muted-foreground mt-1">Used to verify your account and required for credit/DD checks.</p>
+                  </div>
                   <div className="border-t-2 border-foreground/10 pt-4">
                     <p className="font-display uppercase text-xs tracking-wider text-muted-foreground mb-3">Installation address</p>
                     <div className="mb-4">

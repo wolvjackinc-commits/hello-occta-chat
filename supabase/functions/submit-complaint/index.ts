@@ -1,4 +1,6 @@
 import { corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { sendResendEmail, brutalistEmailShell, escapeHtml, recordEmailCommunication } from "../_shared/quoteHelpers.ts";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -81,6 +83,49 @@ Deno.serve(async (req) => {
     _source_module: "complaints",
     _details: { complaint_id: complaint.id, reference: complaint.complaint_reference, category },
   });
+
+  // Send customer acknowledgement email (fail-soft).
+  if (email) {
+    try {
+      let helpfulHtml = "";
+      try {
+        helpfulHtml = await fetchHelpfulLinksHtml(svc, "complaint_ack", { max: 3 });
+      } catch (_e) {
+        helpfulHtml = "";
+      }
+      const ref = escapeHtml(complaint.complaint_reference);
+      const body = `
+        <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">Thanks for getting in touch — we've received your complaint and it's now logged with our team.</p>
+        <div style="margin:16px 0;padding:14px 16px;border:2px solid #000;background:#fafafa;">
+          <div style="font:700 10px/1 Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;color:#666;margin:0 0 6px 0;">Reference</div>
+          <div style="font:900 18px/1.2 Arial,Helvetica,sans-serif;color:#111;letter-spacing:0.04em;">${ref}</div>
+        </div>
+        <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">A member of the team will review and get back to you within <strong>2 working days</strong>. Please keep this reference handy for any follow-up.</p>
+        <p style="margin:0 0 12px 0;font-size:13px;line-height:1.6;color:#444;">If we can't resolve things within 6 weeks — or if we issue a deadlock letter sooner — you'll be able to refer your complaint to our Alternative Dispute Resolution (ADR) scheme, free of charge.</p>
+        ${helpfulHtml}
+      `;
+      const html = brutalistEmailShell(
+        `We've received your complaint`,
+        body,
+        { label: "View your dashboard", url: "https://www.occta.co.uk/dashboard" },
+      );
+      const sendResult = await sendResendEmail({
+        to: email,
+        subject: `We've received your complaint (${complaint.complaint_reference})`,
+        html,
+        replyTo: "hello@occta.co.uk",
+      });
+      await recordEmailCommunication(svc, {
+        template_name: "complaint_ack",
+        recipient_email: email,
+        sendResult,
+        user_id: userId,
+        metadata: { complaint_id: complaint.id, reference: complaint.complaint_reference },
+      });
+    } catch (e) {
+      console.error("[submit-complaint] ack email failed", (e as Error)?.message);
+    }
+  }
 
   return jsonResponse({
     ok: true,

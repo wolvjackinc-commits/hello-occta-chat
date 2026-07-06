@@ -65,7 +65,7 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
   {
     heading: "7. Price rises (OCCTA's no-CPI promise)",
     paragraphs: [
-      "OCCTA does not apply automatic CPI, RPI or annual inflation-linked price rises to residential telecom services. This is a fundamental promise of our brand: \"No contracts. No pressure. No mid-contract price hikes.\"",
+      "OCCTA does not apply automatic CPI, RPI or annual inflation-linked price rises to residential telecom services. This is a fundamental promise of our brand: simple telecom, clear terms, no mid-contract price hikes.",
       "If we ever need to change the recurring price you pay, we will tell you in writing at least 30 days in advance, explaining what is changing and why. You will then have the right to leave the affected service, without penalty and without any early-termination charge, at any time within that 30-day notice window. This right is consistent with Ofcom General Condition C1.6.",
       "Pass-through of changes that are entirely outside our control (for example, a statutory change in VAT) is not a price rise initiated by OCCTA and may apply to your next bill without the 30-day notice. Any such change will be itemised on the invoice and explained on your dashboard.",
     ],

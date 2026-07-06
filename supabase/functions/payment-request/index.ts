@@ -1562,6 +1562,8 @@ serve(async (req) => {
                 expiresAt: newExpiry,
               });
           const subject = pr.type === 'card_payment' ? 'Your OCCTA payment link (resent)' : 'Set up your OCCTA Direct Debit (resent)';
+          const helpKey = pr.type === 'card_payment' ? 'payment_reminder' : 'dd_setup';
+          const htmlWithHelp = await withHelpfulLinks(supabase, email.html, helpKey);
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
@@ -1569,7 +1571,7 @@ serve(async (req) => {
               from: 'OCCTA <billing@occta.co.uk>',
               to: [pr.customer_email],
               subject,
-              html: email.html,
+              html: htmlWithHelp,
               text: email.text,
             }),
           }).then(undefined, (e) => console.error('Resend email failed', e));

@@ -122,6 +122,9 @@ Deno.serve(async (req) => {
         version: csJson?.version ?? null,
         body_snapshot: csJson?.body_snapshot ?? null,
         error: csJson?.error ?? null,
+        // Only returned to the bootstrap caller; used to complete a pilot
+        // acceptance for a single sample. Not stored anywhere.
+        public_token: isBootstrap ? (csJson?.public_token ?? null) : undefined,
       },
       contract_information_pack: {
         id: packJson?.pack_id ?? null,

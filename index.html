@@ -36,18 +36,11 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-T5376TR31J"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-T5376TR31J');
-      gtag('config', 'AW-18222446720');
-    </script>
-
-    <!-- Google Ads (AW-18222446720) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18222446720"></script>
+    <!--
+      Google Analytics + Google Ads are loaded at runtime by
+      src/lib/consent.ts ONLY after the visitor grants analytics
+      consent via the cookie banner. Do not re-add inline gtag here.
+    -->
 
     <!-- Preconnect for Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

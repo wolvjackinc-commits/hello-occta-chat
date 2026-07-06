@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { StructuredData } from "@/components/seo";
+import { CookieConsent } from "@/components/legal/CookieConsent";
 import PrivateRouteNoIndex from "@/components/seo/PrivateRouteNoIndex";
 import { captureReferralFromUrl } from "@/lib/referral";
 import Index from "./pages/Index";
@@ -362,6 +363,7 @@ const App = () => (
         <StructuredData type="all" />
         <BrowserRouter>
           <AnimatedRoutes />
+          <CookieConsent />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

@@ -90,12 +90,26 @@ Deno.serve(async (req) => {
     });
     const packJson = await packRes.json().catch(() => ({}));
 
-    // Signed URLs for review.
+    // The generator response may not include the storage path when it hits
+    // the idempotent-reuse branch. Look it up from the DB and mint a
+    // signed URL for review.
+    let storagePath: string | null = packJson?.pdf_storage_path ?? null;
+    if (!storagePath && (packJson?.pack_id || packJson?.reused)) {
+      const { data: row } = await supabase
+        .from("contract_information_packs")
+        .select("pdf_storage_path")
+        .eq("quote_id", quoteId)
+        .eq("document_status", "issued")
+        .order("version", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      storagePath = (row as any)?.pdf_storage_path ?? null;
+    }
     let packSignedUrl: string | null = null;
-    if (packJson?.pdf_storage_path) {
+    if (storagePath) {
       const { data: sig } = await supabase.storage
         .from("contract-documents")
-        .createSignedUrl(packJson.pdf_storage_path, 3600);
+        .createSignedUrl(storagePath, 3600);
       packSignedUrl = sig?.signedUrl ?? null;
     }
 
@@ -114,7 +128,7 @@ Deno.serve(async (req) => {
         cip_number: packJson?.cip_number ?? null,
         version: packJson?.version ?? null,
         pdf_hash: packJson?.pdf_hash ?? null,
-        pdf_storage_path: packJson?.pdf_storage_path ?? null,
+        pdf_storage_path: storagePath,
         pdf_signed_url_1h: packSignedUrl,
         error: packJson?.error ?? null,
       },

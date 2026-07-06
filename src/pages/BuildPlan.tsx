@@ -144,7 +144,7 @@ function BuildPlanInner() {
   const [resolving, setResolving] = useState(false);
   const initialPostcode = searchParams.get("postcode") || "";
   const [contact, setContact] = useState({
-    full_name: "", email: "", phone: "",
+    full_name: "", email: "", phone: "", date_of_birth: "",
     address_line_1: "", address_line_2: "", town: "", county: "",
     postcode: initialPostcode,
     in_contract: "" as "" | "yes" | "no" | "unsure",
@@ -237,6 +237,7 @@ function BuildPlanInner() {
       const baseOk = contact.full_name.length >= 2
         && /^[^@]+@[^@]+\.[^@]+$/.test(contact.email)
         && contact.phone.length >= 7
+        && !!contact.date_of_birth
         && contact.address_line_1.trim().length >= 3
         && contact.town.trim().length >= 2
         && contact.postcode.length >= 5
@@ -269,6 +270,7 @@ function BuildPlanInner() {
           full_name: contact.full_name,
           email: contact.email,
           phone: contact.phone,
+          date_of_birth: contact.date_of_birth || null,
           postcode: contact.postcode || (addr.postcode as string) || "",
           address_line_1: contact.address_line_1.trim()
             || [addr.sub_premises, addr.premises_name, addr.thoroughfare_number, addr.thoroughfare_name].filter(Boolean).join(" ")
@@ -482,6 +484,11 @@ function BuildPlanInner() {
                       <Label className="text-sm">Phone *</Label>
                       <Input value={contact.phone} onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))} className="mt-1" />
                     </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Date of birth *</Label>
+                    <Input type="date" value={contact.date_of_birth} onChange={(e) => setContact((c) => ({ ...c, date_of_birth: e.target.value }))} className="mt-1" max={new Date().toISOString().split("T")[0]} />
+                    <p className="text-xs text-muted-foreground mt-1">Used to verify your account and required for credit/DD checks.</p>
                   </div>
                   <div className="border-t-2 border-foreground/10 pt-4">
                     <p className="font-display uppercase text-xs tracking-wider text-muted-foreground mb-3">Installation address</p>

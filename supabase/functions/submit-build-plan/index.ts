@@ -41,6 +41,7 @@ const Schema = z.object({
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email().max(180),
   phone: z.string().trim().min(7).max(30),
+  date_of_birth: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   postcode: z.string().trim().min(5).max(10),
   address_line_1: z.string().trim().max(160).optional().nullable(),
   address_line_2: z.string().trim().max(160).optional().nullable(),
@@ -117,7 +118,7 @@ Deno.serve(async (req) => {
     plan_preference: i.plan_term === "flex_30" ? "flex" : "contract_saver",
     customer_type: i.customer_type,
     preferred_contact_method: i.preferred_contact_method,
-    message: `${inTestMode ? "[TEST] " : ""}${isFallback ? "[FALLBACK — availability unconfirmed] " : ""}Build Plan: ${speedBucketLabel(i.speed_bucket)} · ${planTermLabel(i.plan_term)} · router=${i.router_option}/${i.router_payment_type} · setup=${i.setup_option} · addons=${(i.addons ?? []).join(",") || "none"}${i.in_contract ? ` · in_contract=${i.in_contract}` : ""}${i.current_provider ? ` · current_provider=${i.current_provider}` : ""}`,
+    message: `${inTestMode ? "[TEST] " : ""}${isFallback ? "[FALLBACK — availability unconfirmed] " : ""}Build Plan: ${speedBucketLabel(i.speed_bucket)} · ${planTermLabel(i.plan_term)} · router=${i.router_option}/${i.router_payment_type} · setup=${i.setup_option} · addons=${(i.addons ?? []).join(",") || "none"}${i.in_contract ? ` · in_contract=${i.in_contract}` : ""}${i.current_provider ? ` · current_provider=${i.current_provider}` : ""}${i.date_of_birth ? ` · dob=${i.date_of_birth}` : ""}`,
     marketing_consent: i.marketing_consent,
     source: inTestMode ? "build_plan_test" : (isFallback ? "build_plan_fallback" : "build_plan"),
     ip,
@@ -131,6 +132,13 @@ Deno.serve(async (req) => {
     conversion_page: i.conversion_page ?? null,
   }).select("id, reference").single();
   if (qrErr || !qr) return jsonResponse({ error: "create_failed" }, 500);
+
+  // If a signed-in customer supplied their DOB, persist to their profile (fail-soft).
+  if (customer_id && i.date_of_birth) {
+    try {
+      await supabase.from("profiles").update({ date_of_birth: i.date_of_birth }).eq("id", customer_id).is("date_of_birth", null);
+    } catch (_e) { /* non-fatal */ }
+  }
 
   // ── Re-resolve server-side ──
   const { data: settings } = await supabase

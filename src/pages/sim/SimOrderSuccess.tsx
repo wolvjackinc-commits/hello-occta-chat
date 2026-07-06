@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,21 +8,40 @@ import { CheckCircle2 } from "lucide-react";
 
 const SimOrderSuccess = () => {
   const { orderId } = useParams();
+  const [params] = useSearchParams();
+  const token = params.get("t");
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!orderId) return;
-    (supabase as any)
-      .from("sim_orders_customer")
-      .select("*")
-      .eq("id", orderId)
-      .maybeSingle()
-      .then(({ data }: any) => {
+    (async () => {
+      // Try signed-in customer view first (RLS enforces ownership).
+      const { data: sess } = await supabase.auth.getSession();
+      if (sess.session) {
+        const { data } = await (supabase as any)
+          .from("sim_orders_customer")
+          .select("*")
+          .eq("id", orderId)
+          .maybeSingle();
+        if (data) { setOrder(data); setLoading(false); return; }
+      }
+      // Fall back to token-based lookup (guest checkout / just-completed order).
+      if (token) {
+        const enc = new TextEncoder().encode(token);
+        const buf = await crypto.subtle.digest("SHA-256", enc);
+        const tokenHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+        const { data } = await (supabase as any)
+          .from("sim_orders_by_token")
+          .select("id, order_number, plan_name_snapshot, sim_type, payment_method, status, monthly_price_minor_snapshot")
+          .eq("id", orderId)
+          .eq("order_token_hash", tokenHash)
+          .maybeSingle();
         setOrder(data);
-        setLoading(false);
-      });
-  }, [orderId]);
+      }
+      setLoading(false);
+    })();
+  }, [orderId, token]);
 
   return (
     <Layout>

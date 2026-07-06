@@ -68,7 +68,10 @@ export const companyConfig = {
   },
   
   // Legal/Compliance
-  tagline: "Proper British telecom. No robots, no rubbish, no regrets.",
+  // Global tagline. OCCTA now offers both Flex (rolling) and Fixed/Price Lock
+  // contracts, so global copy must not claim "No contracts" or "Cancel anytime".
+  // Flex-specific pages may use "Flexible monthly options available" / "No minimum term".
+  tagline: "Simple telecom. Clear terms.",
   compliance: "OCCTA Limited complies with UK telecommunications regulations and GDPR requirements.",
 } as const;
 

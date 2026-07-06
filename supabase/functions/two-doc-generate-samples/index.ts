@@ -49,6 +49,15 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
+  // Bootstrap-only side action: mint a 1h signed URL for the certificate bucket.
+  if (isBootstrap && body.action === "sign_certificate") {
+    const key = String(body.storage_key ?? "");
+    if (!key) return jsonResponse({ error: "storage_key_required" }, 400);
+    const { data: sig } = await supabase.storage
+      .from("acceptance-certificates")
+      .createSignedUrl(key, 3600);
+    return jsonResponse({ ok: true, signed_url: sig?.signedUrl ?? null });
+  }
   const scenarios = body.scenarios as Record<ScenarioKey, string> | undefined;
   if (!scenarios || typeof scenarios !== "object") {
     return jsonResponse({

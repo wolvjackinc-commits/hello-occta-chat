@@ -108,7 +108,21 @@ Deno.serve(async (req) => {
   // one or more CS ids by calling the legacy generate-contract-summary-pdf
   // function in internal mode. First-time render only — never overwrites.
   if (isBootstrap && body.action === "render_cs") {
-    // Bootstrap-only, no-op here; real handler below.
+    const ids = Array.isArray(body.contract_summary_ids) ? (body.contract_summary_ids as string[]) : [];
+    if (!ids.length) return jsonResponse({ error: "contract_summary_ids_required" }, 400);
+    const projectUrl = Deno.env.get("SUPABASE_URL")!;
+    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const out: Array<Record<string, unknown>> = [];
+    for (const id of ids) {
+      const r = await fetch(`${projectUrl}/functions/v1/generate-contract-summary-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-internal-service": "1", "Authorization": `Bearer ${svcKey}` },
+        body: JSON.stringify({ internal: true, contract_summary_id: id, actor_id: null }),
+      });
+      const j = await r.json().catch(() => ({}));
+      out.push({ contract_summary_id: id, status: r.status, reused: j?.reused ?? false, pdf_storage_key: j?.pdf_storage_key ?? null, pdf_sha256: j?.pdf_sha256 ?? null, signed_url: j?.signed_url ?? null, error: j?.error ?? null });
+    }
+    return jsonResponse({ ok: true, rendered: out });
   }
   // Bootstrap-only: mint a fresh short-lived public_token for issued CSs so the
   // evidence run can call accept-service-aware-cs. Refuses accepted/superseded
@@ -143,37 +157,6 @@ Deno.serve(async (req) => {
       });
     }
     return jsonResponse({ ok: true, minted: out });
-  }
-  if (isBootstrap && body.action === "render_cs_orig_marker") {
-    const ids = Array.isArray(body.contract_summary_ids)
-      ? (body.contract_summary_ids as string[])
-      : [];
-    if (!ids.length) return jsonResponse({ error: "contract_summary_ids_required" }, 400);
-    const projectUrl = Deno.env.get("SUPABASE_URL")!;
-    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const out: Array<Record<string, unknown>> = [];
-    for (const id of ids) {
-      const r = await fetch(`${projectUrl}/functions/v1/generate-contract-summary-pdf`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-internal-service": "1",
-          "Authorization": `Bearer ${svcKey}`,
-        },
-        body: JSON.stringify({ internal: true, contract_summary_id: id, actor_id: null }),
-      });
-      const j = await r.json().catch(() => ({}));
-      out.push({
-        contract_summary_id: id,
-        status: r.status,
-        reused: j?.reused ?? false,
-        pdf_storage_key: j?.pdf_storage_key ?? null,
-        pdf_sha256: j?.pdf_sha256 ?? null,
-        signed_url: j?.signed_url ?? null,
-        error: j?.error ?? null,
-      });
-    }
-    return jsonResponse({ ok: true, rendered: out });
   }
   const scenarios = body.scenarios as Record<ScenarioKey, string> | undefined;
   if (!scenarios || typeof scenarios !== "object") {

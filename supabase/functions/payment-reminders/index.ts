@@ -408,8 +408,8 @@ serve(async (req) => {
         // Append 2-4 helpful KB links (fails soft; empty string when no mapping)
         const helpKey = template.startsWith('overdue_') ? 'overdue_reminder' : 'payment_reminder';
         const helpfulHtml = await fetchHelpfulLinksHtml(supabase, helpKey);
-        const htmlWithHelp = helpfulHtml
-          ? html.replace('${getStandardFooter', '${getStandardFooter').replace(/(<div[^>]*background:\s*#0d0d0d;\s*padding:\s*32px)/i, `${helpfulHtml}$1`) || html
+        const htmlWithHelp = helpfulHtml && html.includes('</body>')
+          ? html.replace('</body>', `${helpfulHtml}</body>`)
           : html;
 
         try {

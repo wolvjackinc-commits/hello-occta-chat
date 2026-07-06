@@ -21,6 +21,18 @@ interface QuoteLike {
   router_option?: unknown;
   setup_option?: unknown;
   sim_plan_snapshot?: unknown;          // future-proof: injected by SIM checkout
+  final_snapshot?: unknown;             // may contain { two_doc: { broadband_etf?, digital_voice?, sim_plan_snapshot?, price_change? } }
+}
+
+function twoDocOverrides(q: QuoteLike): {
+  broadband_etf?: import("./twoDocValidators.ts").EtfSnapshot;
+  digital_voice?: { monthly_price_incl_vat?: number };
+  sim_plan_snapshot?: any;
+  price_change?: PriceChangeSnapshot;
+} {
+  const fs = q.final_snapshot as any;
+  if (fs && typeof fs === "object" && fs.two_doc && typeof fs.two_doc === "object") return fs.two_doc;
+  return {};
 }
 
 function parseTermMonths(q: QuoteLike): number {
@@ -41,6 +53,7 @@ function defaultPriceChange(): PriceChangeSnapshot {
 
 function broadbandComponent(q: QuoteLike): ServiceComponent {
   const isFixed = q.plan_type === "fixed" || q.plan_term === "price_lock_24";
+  const ov = twoDocOverrides(q);
   return {
     id: `broadband-${q.id}`,
     kind: "broadband",
@@ -49,21 +62,21 @@ function broadbandComponent(q: QuoteLike): ServiceComponent {
     contract_kind: isFixed ? "fixed_term" : "flex_30_rolling",
     minimum_term_months: parseTermMonths(q),
     notice_period_days: parseNoticeDays(q),
-    price_change: defaultPriceChange(),
+    price_change: ov.price_change ?? defaultPriceChange(),
     cancellation_wording: isFixed
       ? "Cancel by giving notice — an early termination charge applies during the minimum term. See the Contract Information Pack for the exact ETF calculation."
       : "Cancel with 30 days' notice at any time. No early termination charge.",
-    // etf: intentionally undefined for fixed — must be populated by admin before
-    //      the generator runs. Validators will hard-block otherwise.
+    etf: isFixed ? ov.broadband_etf : undefined,
   };
 }
 
 function digitalVoiceComponent(q: QuoteLike): ServiceComponent {
+  const ov = twoDocOverrides(q);
   return {
     id: `digital-voice-${q.id}`,
     kind: "digital_voice",
     label: "Digital Voice / Home Phone",
-    monthly_price_incl_vat: 0, // usually bundled — override where itemised
+    monthly_price_incl_vat: Number(ov.digital_voice?.monthly_price_incl_vat ?? 0),
     contract_kind: "flex_30_rolling",
     minimum_term_months: 0,
     notice_period_days: 30,
@@ -74,7 +87,8 @@ function digitalVoiceComponent(q: QuoteLike): ServiceComponent {
 }
 
 function simComponent(q: QuoteLike): ServiceComponent | null {
-  const s = q.sim_plan_snapshot as
+  const ov = twoDocOverrides(q);
+  const s = (q.sim_plan_snapshot ?? ov.sim_plan_snapshot) as
     | { id?: string; label?: string; monthly_price_incl_vat?: number; contract_kind?: string; minimum_term_months?: number; notice_period_days?: number; etf?: any; price_change?: PriceChangeSnapshot }
     | undefined;
   if (!s || typeof s !== "object") return null;
@@ -121,14 +135,11 @@ export function buildServiceComponentsSnapshot(q: QuoteLike): ServiceComponent[]
     return out; // SIM-only: NO broadband/DV
   }
 
-  if (st === "digital_voice" || st === "broadband") {
+  if (st === "digital_voice" || st === "broadband" || st === "bundle") {
     out.push(broadbandComponent(q));
-    if (st === "digital_voice") out.push(digitalVoiceComponent(q));
-  } else if (st === "bundle") {
-    out.push(broadbandComponent(q));
-    // bundle may or may not include DV — detect via selected_addons
     const addons = Array.isArray(q.selected_addons) ? (q.selected_addons as any[]) : [];
-    if (addons.some((a) => a?.kind === "digital_voice" || /digital[- ]?voice/i.test(a?.label ?? ""))) {
+    const hasDvAddon = addons.some((a) => a?.kind === "digital_voice" || /digital[- ]?voice/i.test(a?.label ?? ""));
+    if (st === "digital_voice" || hasDvAddon) {
       out.push(digitalVoiceComponent(q));
     }
     const sim = simComponent(q);

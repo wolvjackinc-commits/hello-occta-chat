@@ -1172,6 +1172,9 @@ serve(async (req) => {
           ? 'Your OCCTA payment link'
           : 'Set up your OCCTA Direct Debit';
 
+        const helpKey = request.type === 'card_payment' ? 'payment_reminder' : 'dd_setup';
+        const htmlWithHelp = await withHelpfulLinks(supabase, emailContent.html, helpKey);
+
         const emailResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -1182,7 +1185,7 @@ serve(async (req) => {
             from: 'OCCTA <billing@occta.co.uk>',
             to: [request.customer_email],
             subject,
-            html: emailContent.html,
+            html: htmlWithHelp,
             text: emailContent.text,
           }),
         });

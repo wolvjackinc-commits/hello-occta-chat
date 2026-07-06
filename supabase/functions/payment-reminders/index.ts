@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const resend = new Resend(resendApiKey);
@@ -404,13 +405,20 @@ serve(async (req) => {
         const config = getTemplateConfig(template);
         const subject = `${config.subject} - Invoice ${invoice.invoice_number} (£${invoice.total.toFixed(2)})`;
 
+        // Append 2-4 helpful KB links (fails soft; empty string when no mapping)
+        const helpKey = template.startsWith('overdue_') ? 'overdue_reminder' : 'payment_reminder';
+        const helpfulHtml = await fetchHelpfulLinksHtml(supabase, helpKey);
+        const htmlWithHelp = helpfulHtml
+          ? html.replace('${getStandardFooter', '${getStandardFooter').replace(/(<div[^>]*background:\s*#0d0d0d;\s*padding:\s*32px)/i, `${helpfulHtml}$1`) || html
+          : html;
+
         try {
           const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "billing@occta.co.uk";
           const emailResponse = await resend.emails.send({
             from: `OCCTA <${fromEmail}>`,
             to: [profile.email],
             subject,
-            html,
+            html: htmlWithHelp,
           });
 
           // Log to communications_log

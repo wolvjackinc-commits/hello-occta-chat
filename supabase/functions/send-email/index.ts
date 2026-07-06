@@ -1390,6 +1390,12 @@ const handler = async (req: Request): Promise<Response> => {
         html = getCustomAdminHtml(data);
         subject = data.subject as string || "Message from OCCTA";
         break;
+      case "sim_lifecycle": {
+        const rendered = getSimLifecycleHtml(data);
+        html = rendered.html;
+        subject = rendered.subject;
+        break;
+      }
       default:
         return new Response(
           JSON.stringify({ error: "Unknown email type" }),

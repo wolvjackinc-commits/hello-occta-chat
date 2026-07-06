@@ -51,7 +51,7 @@ const businessInfo = {
   email: "hello@occta.co.uk",
   services: ["Broadband", "SIM/Mobile Plans", "Landline"],
   features: [
-    "No contracts - cancel anytime",
+    "Flexible monthly options available - flexible monthly options available",
     "24/7 UK-based support",
     "Free installation",
     "Competitive pricing (£1-2 cheaper than market average)",
@@ -1856,8 +1856,8 @@ OCCTA operates across the entire United Kingdom.
 Do NOT mention Huddersfield or Yorkshire unless referring strictly to registered office (privacy policy / legal context only).
 
 OCCTA Philosophy:
-- Cheapest possible plans compared to major UK telecoms (BT, Sky, Virgin, EE, O2)
-- No contracts
+- Competitively priced against major UK telecoms (BT, Sky, Virgin, EE, O2)
+- Flexible monthly options available
 - No lock-ins
 - No hidden price hikes
 - Simple monthly pricing
@@ -1934,11 +1934,11 @@ Quick router admin reference (use only when asked):
 - Ask what the user needs (SIM / Broadband / Both)
 - Ask usage questions (light / medium / heavy)
 - Explain benefits without pushing
-- Always mention: No contracts, Easy switching, No mid-contract hikes
+- Always mention: Flexible monthly options available, Easy switching, No mid-contract hikes
 
 ### 2️⃣ Switching to OCCTA
 - Explain switching in simple steps
-- Reassure: No downtime (where applicable), Keep number if possible, No pressure
+- Reassure: No downtime (where applicable), Keep number if possible, Simple terms
 
 ### 3️⃣ My OCCTA Account (Logged Out)
 - Ask user to log in

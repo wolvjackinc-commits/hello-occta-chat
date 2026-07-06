@@ -118,7 +118,7 @@ const Business = () => {
 
   const businessServiceSchema = createServiceSchema({
     name: 'OCCTA Business Broadband',
-    description: 'Business fibre broadband with priority support, static IPs, and no contracts.',
+    description: 'Business fibre broadband with priority support, static IPs, and flexible monthly options available.',
     url: '/business',
     price: '24',
   });
@@ -126,10 +126,10 @@ const Business = () => {
   return (
     <LayoutComponent>
       <SEO 
-        title="Business Broadband UK - No Contract"
-        description="Cheap business broadband UK from £24/mo. Static IP, priority support, no contracts. Trusted by 5,000+ UK businesses. WiFi 6 routers included."
+        title="Business Broadband UK - Flexible Monthly"
+        description="Affordable business broadband UK from £24/mo. Static IP, priority support, flexible monthly options available. Trusted by 5,000+ UK businesses. WiFi 6 routers included."
         canonical="/business"
-        keywords="business broadband UK, cheap business internet, no contract business broadband, static IP broadband, SME broadband, business fibre UK, affordable business internet"
+        keywords="business broadband UK, affordable business internet, flexible business broadband, static IP broadband, SME broadband, business fibre UK, affordable business internet"
         price="24"
       />
       <StructuredData customSchema={businessServiceSchema} type="localBusiness" />

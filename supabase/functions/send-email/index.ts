@@ -286,7 +286,7 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
       <div class="content">
         <p class="greeting">Hi ${escapeHtml(data.full_name) || "there"},</p>
         <p class="text">You're officially part of the OCCTA family! Your account is all set up and ready to go.</p>
-        <p class="text">No contracts, no hidden fees, no nonsense — just proper British broadband that works.</p>
+        <p class="text">Flexible monthly options available, no hidden fees, no nonsense — just proper British broadband that works.</p>
         
         <div class="features">
           <div class="feature">

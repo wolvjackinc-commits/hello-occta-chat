@@ -126,7 +126,7 @@ const BroadbandInner = () => {
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
     name: `OCCTA ${plan.name}`,
-    description: `Fibre broadband up to ${plan.speed}Mbps. No contract, 30-day rolling options available where eligible. ${plan.features.slice(0, 3).join(', ')}.`,
+    description: `Fibre broadband up to ${plan.speed}Mbps. Flexible monthly, 30-day rolling options available where eligible. ${plan.features.slice(0, 3).join(', ')}.`,
     price: plan.price.toString(),
     url: `/pre-checkout?plans=${plan.id}`,
     sku: plan.id,
@@ -141,10 +141,10 @@ const BroadbandInner = () => {
   return (
     <LayoutComponent>
       <SEO 
-        title="Cheap Broadband UK - No Contract Fibre"
-        description={`Cheap UK fibre broadband from £${getFromPrices().broadband}/mo. Speeds to 900Mbps, no contracts, no price rises, no hidden fees.`}
+        title="Affordable Broadband UK - Flexible Fibre"
+        description={`Affordable UK fibre broadband from £${getFromPrices().broadband}/mo. Speeds to 900Mbps, flexible monthly options available, no price rises, no hidden fees.`}
         canonical="/broadband"
-        keywords="cheap broadband UK, no contract broadband, flexible broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
+        keywords="affordable broadband UK, flexible monthly broadband, flexible broadband, fibre broadband flexible monthly, budget broadband, affordable fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
         price={getFromPrices().broadband}
       />
       <StructuredData customSchema={combinedSchemas} />
@@ -250,7 +250,7 @@ const BroadbandInner = () => {
               </h1>
               <p className="text-sm sm:text-lg text-muted-foreground mb-4 sm:mb-6 max-w-lg">
                 Fast, reliable internet without the corporate nonsense. 
-                From £{getFromPrices().broadband}/month with no price rises mid-contract — cheap broadband UK
+                From £{getFromPrices().broadband}/month with no price rises mid-contract — affordable broadband UK
                 that stays flexible with 30-day rolling options available where eligible.
               </p>
               <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
@@ -673,8 +673,8 @@ const BroadbandInner = () => {
           <h2 className="text-xl font-display uppercase mb-4">Broadband Guides</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { title: "No Contract Broadband UK", desc: "How rolling monthly broadband works and who it suits.", path: "/guides/no-contract-broadband-uk" },
-              { title: "Cheap Broadband UK", desc: "How to find affordable internet and avoid hidden costs.", path: "/guides/cheap-broadband-uk" },
+              { title: "Flexible Broadband UK", desc: "How rolling monthly broadband works and who it suits.", path: "/guides/no-contract-broadband-uk" },
+              { title: "Affordable Broadband UK", desc: "How to find affordable internet and avoid hidden costs.", path: "/guides/cheap-broadband-uk" },
               { title: "How to Switch Broadband", desc: "Step-by-step guide to switching provider.", path: "/guides/how-to-switch-broadband" },
             ].map((g) => (
               <Link key={g.path} to={g.path} className="card-brutal bg-card p-4 hover:bg-secondary transition-colors group">

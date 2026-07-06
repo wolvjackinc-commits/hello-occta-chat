@@ -95,7 +95,7 @@ export const BrandLayout: React.FC<BrandLayoutProps> = ({
         {/* Footer — three columns + legal */}
         <Section style={footer}>
           <Text style={footerBrand}>OCCTA</Text>
-          <Text style={tagline}>Brilliant Made Simple — no contracts, no price-rise nonsense, just proper British telecom.</Text>
+          <Text style={tagline}>Brilliant Made Simple — flexible monthly options available, no mid-contract price hikes.</Text>
 
           <Row style={{ marginTop: '20px' }}>
             <Column style={footerCol}>

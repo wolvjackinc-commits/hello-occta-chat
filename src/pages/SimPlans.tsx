@@ -44,7 +44,7 @@ const SimPlans = () => {
   const features = [
     { icon: Signal, text: "Full 5G Network" },
     { icon: Globe, text: "EU Roaming" },
-    { icon: X, text: "No Contracts" },
+    { icon: X, text: "Flexible Monthlys" },
   ];
 
   const LayoutComponent = isAppMode ? AppLayout : Layout;
@@ -60,7 +60,7 @@ const SimPlans = () => {
   // Service schema for the overall SIM service
   const simServiceSchema = createServiceSchema({
     name: 'OCCTA SIM Plans',
-    description: 'UK SIM-only mobile plans with 5G, EU roaming, and no contracts.',
+    description: 'UK SIM-only mobile plans with 5G, EU roaming, and flexible monthly options available.',
     url: '/sim-plans',
     price: '7.99',
   });
@@ -68,7 +68,7 @@ const SimPlans = () => {
   // Offer schemas for each SIM plan
   const planOfferSchemas = simPlans.map(plan => createOfferSchema({
     name: `OCCTA ${plan.name}`,
-    description: `${plan.data} data with 5G, unlimited calls & texts, EU roaming included. No contract, no credit check.`,
+    description: `${plan.data} data with 5G, unlimited calls & texts, EU roaming included. Flexible monthly, no credit check.`,
     price: plan.price.toString(),
     url: `/pre-checkout?plans=${plan.id}`,
     sku: plan.id,
@@ -87,10 +87,10 @@ const SimPlans = () => {
   return (
     <LayoutComponent>
       <SEO 
-        title="Cheap SIM Only Deals UK - 5G No Contract"
-        description={`Cheap SIM deals UK from £${getFromPrices().sim}/mo. 5G SIM no credit check, no contracts, EU roaming included. Best budget SIM plans 2025. Unlimited calls & texts.`}
+        title="Affordable SIM Only Deals UK - 5G Flexible Monthly"
+        description={`Affordable SIM deals UK from £${getFromPrices().sim}/mo. 5G SIM no credit check, flexible monthly options available, EU roaming included. Best budget SIM plans 2025. Unlimited calls & texts.`}
         canonical="/sim-plans"
-        keywords="cheap SIM deals UK, 5G SIM no credit check, no contract SIM, cheap mobile plans UK, SIM only deals, budget SIM UK, unlimited SIM UK, PAYG SIM cheap, best SIM deals 2025"
+        keywords="affordable SIM deals UK, 5G SIM no credit check, flexible monthly SIM, affordable mobile plans UK, SIM only deals, budget SIM UK, unlimited SIM UK, PAYG SIM cheap, best SIM deals 2025"
         price={getFromPrices().sim}
       />
       <StructuredData customSchema={combinedSchemas} />
@@ -272,7 +272,7 @@ const SimPlans = () => {
           <h2 className="text-xl font-display uppercase mb-4">SIM Guides</h2>
           <div className="grid sm:grid-cols-1 max-w-md gap-4">
             <Link to="/guides/cheap-sim-only-deals" className="card-brutal bg-card p-4 hover:bg-secondary transition-colors group">
-              <h3 className="font-display text-base mb-1 group-hover:text-primary transition-colors">Cheap SIM Only Deals UK</h3>
+              <h3 className="font-display text-base mb-1 group-hover:text-primary transition-colors">Affordable SIM Only Deals UK</h3>
               <p className="text-sm text-muted-foreground">How to find genuine value and avoid overpaying for mobile.</p>
             </Link>
           </div>

@@ -24,7 +24,7 @@ function buildHtml(kind: string, c: any, dashboardUrl: string) {
     <div style="max-width:600px;margin:0 auto;padding:24px;border:4px solid #111">
       <h1 style="font-size:22px;margin:0 0 12px">${title}</h1>${body}
       <p style="margin-top:24px"><a href="${dashboardUrl}" style="display:inline-block;background:#111;color:#fff;padding:12px 18px;text-decoration:none;border:2px solid #111;font-weight:bold">Open dashboard</a></p>
-      <p style="font-size:12px;color:#666;margin-top:24px">No contracts. No pressure.</p>
+      <p style="font-size:12px;color:#666;margin-top:24px">Simple telecom. Clear terms.</p>
     </div></body></html>`;
   if (kind === "acknowledgement") {
     return head("Your cancellation request has been received",

@@ -79,7 +79,7 @@ const Landline = () => {
         title="Digital Home Phone UK - Add to Broadband"
         description={`Add Digital Home Phone from £${getFromPrices().landline}/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. 30-day rolling options where eligible.`}
         canonical="/landline"
-        keywords="digital home phone, digital voice UK, VoIP home phone, home phone broadband, cheap home phone UK, no contract home phone"
+        keywords="digital home phone, digital voice UK, VoIP home phone, home phone broadband, affordable home phone UK, flexible monthly home phone"
         price={getFromPrices().landline}
       />
       <StructuredData customSchema={combinedSchemas} />
@@ -167,7 +167,7 @@ const Landline = () => {
                 {[
                   { icon: Phone, text: "HD Voice" },
                   { icon: Router, text: "Plug into Router" },
-                  { icon: Zap, text: "No Contracts" },
+                  { icon: Zap, text: "Flexible Monthlys" },
                 ].map((feature) => (
                   <div
                     key={feature.text}

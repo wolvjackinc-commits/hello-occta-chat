@@ -15,7 +15,7 @@ export const SignupEmail = ({ recipient, confirmationUrl }: Props) => (
   <BrandLayout
     preview="Welcome to OCCTA — confirm your email to activate your account"
     heading="Welcome to OCCTA"
-    intro="Thanks for joining — proper British telecom, no contracts, no nonsense."
+    intro="Thanks for joining — proper British telecom, flexible monthly options available."
     primaryCta={{ label: 'Confirm email & open dashboard', href: confirmationUrl }}
     footnote={`One last step: confirm ${recipient} so we know it's really you. Didn't sign up? Just ignore this email — no account is created until you click the button.`}
     bodyChildren={

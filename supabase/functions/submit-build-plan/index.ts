@@ -41,6 +41,7 @@ const Schema = z.object({
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email().max(180),
   phone: z.string().trim().min(7).max(30),
+  date_of_birth: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   postcode: z.string().trim().min(5).max(10),
   address_line_1: z.string().trim().max(160).optional().nullable(),
   address_line_2: z.string().trim().max(160).optional().nullable(),

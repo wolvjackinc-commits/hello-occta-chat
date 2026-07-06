@@ -1,6 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+
+// Maps send-email `type` values to the template_key used in
+// email_template_help_links so the correct KB articles are appended.
+const HELP_LINK_KEY_BY_TYPE: Record<string, string> = {
+  invoice_sent: "invoice_sent",
+  invoice_paid: "payment_received",
+  payment_link: "payment_reminder",
+  invoice_external_payment: "overdue_reminder",
+  ticket_reply: "ticket_update",
+};
 
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const resend = new Resend(resendApiKey);
@@ -1295,7 +1306,19 @@ const handler = async (req: Request): Promise<Response> => {
       to: [to],
       bcc: bccList,
       subject,
-      html,
+      html: await (async () => {
+        try {
+          const key = HELP_LINK_KEY_BY_TYPE[type];
+          if (!key) return html;
+          const block = await fetchHelpfulLinksHtml(supabaseAdmin, key);
+          if (!block) return html;
+          return html.includes("</body>")
+            ? html.replace("</body>", `${block}</body>`)
+            : `${html}${block}`;
+        } catch (_e) {
+          return html;
+        }
+      })(),
     });
 
     const resendResult = emailResponse as {

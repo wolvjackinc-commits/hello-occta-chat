@@ -234,6 +234,32 @@ serve(async (req) => {
           });
         }
 
+        // Defence-in-depth billing gate — see billingGate.ts. No-op when the
+        // two-doc flag is off; blocks payment-link creation when the underlying
+        // service is no longer chargeable.
+        try {
+          const { assertServiceLive } = await import('../_shared/billingGate.ts');
+          const { data: invSrv } = await supabase
+            .from('invoices')
+            .select('order_id, service_id')
+            .eq('id', invoiceId)
+            .maybeSingle();
+          if (invSrv?.order_id) {
+            const gate = await assertServiceLive({
+              orderId: invSrv.order_id,
+              serviceId: invSrv.service_id ?? undefined,
+              supabaseUrl: Deno.env.get('SUPABASE_URL')!,
+              serviceRoleKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+            });
+            if (!gate.allowed) {
+              return new Response(JSON.stringify({ success: false, error: `payment_blocked:${gate.reason}` }), {
+                status: 409,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+          }
+        } catch (_e) { /* fail-open only when import unavailable — deployment safety */ }
+
         const amount = Number(invoice.total || 0);
         if (!isFinite(amount) || amount <= 0) {
           return new Response(JSON.stringify({ success: false, error: 'This invoice has no outstanding balance' }), {

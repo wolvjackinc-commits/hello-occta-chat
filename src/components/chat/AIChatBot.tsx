@@ -578,7 +578,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                             {isAdmin 
                               ? "I'm IRA, ready to help with customers, services, or tickets."
                               : user ? "You're signed in, so I can check your linked orders, invoices, services and tickets without asking you to verify again."
-                              : "Ask about plans, switching, setup or support. No pressure, no contracts — just straight answers."}
+                              : "Ask about plans, switching, setup or support. Simple telecom, clear terms — just straight answers."}
                           </p>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -789,7 +789,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
               <p className="text-sm text-muted-foreground">
                 {isAdmin 
                   ? "I'm IRA, ready to help with customers, services, or tickets."
-                  : "I'm IRA — ask about plans, switching, or your account. No pressure! 🙂"}
+                  : "I'm IRA — ask about plans, switching, or your account. Happy to help 🙂"}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">

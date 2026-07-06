@@ -14,42 +14,139 @@ export type Database = {
   }
   public: {
     Tables: {
+      acceptance_audit_records: {
+        Row: {
+          acceptance_certificate_id: string | null
+          acceptance_route: string | null
+          auth_user_id: string | null
+          contract_acceptance_id: string | null
+          created_at_utc: string
+          id: string
+          ip_address: unknown
+          metadata: Json
+          request_id: string | null
+          security_event_id: string | null
+          session_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          acceptance_certificate_id?: string | null
+          acceptance_route?: string | null
+          auth_user_id?: string | null
+          contract_acceptance_id?: string | null
+          created_at_utc?: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          request_id?: string | null
+          security_event_id?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          acceptance_certificate_id?: string | null
+          acceptance_route?: string | null
+          auth_user_id?: string | null
+          contract_acceptance_id?: string | null
+          created_at_utc?: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          request_id?: string | null
+          security_event_id?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acceptance_audit_records_acceptance_certificate_id_fkey"
+            columns: ["acceptance_certificate_id"]
+            isOneToOne: false
+            referencedRelation: "acceptance_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceptance_audit_records_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceptance_audit_records_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_acceptances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       acceptance_certificates: {
         Row: {
+          accepted_at_utc: string | null
           certificate_number: string
           contract_acceptance_id: string
+          contract_information_pack_id: string | null
+          contract_information_pack_pdf_hash: string | null
+          contract_information_pack_template_version: string | null
+          contract_information_pack_version: number | null
           contract_summary_id: string
+          contract_summary_template_version: string | null
           created_at: string
           customer_id: string | null
           generated_at: string
           id: string
           journey_id: string | null
+          legacy_compliance_status:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
+          policy_versions: Json | null
           quote_id: string
           sha256: string
           storage_key: string
         }
         Insert: {
+          accepted_at_utc?: string | null
           certificate_number: string
           contract_acceptance_id: string
+          contract_information_pack_id?: string | null
+          contract_information_pack_pdf_hash?: string | null
+          contract_information_pack_template_version?: string | null
+          contract_information_pack_version?: number | null
           contract_summary_id: string
+          contract_summary_template_version?: string | null
           created_at?: string
           customer_id?: string | null
           generated_at?: string
           id?: string
           journey_id?: string | null
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
+          policy_versions?: Json | null
           quote_id: string
           sha256: string
           storage_key: string
         }
         Update: {
+          accepted_at_utc?: string | null
           certificate_number?: string
           contract_acceptance_id?: string
+          contract_information_pack_id?: string | null
+          contract_information_pack_pdf_hash?: string | null
+          contract_information_pack_template_version?: string | null
+          contract_information_pack_version?: number | null
           contract_summary_id?: string
+          contract_summary_template_version?: string | null
           created_at?: string
           customer_id?: string | null
           generated_at?: string
           id?: string
           journey_id?: string | null
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
+          policy_versions?: Json | null
           quote_id?: string
           sha256?: string
           storage_key?: string
@@ -1457,109 +1554,187 @@ export type Database = {
       }
       contract_acceptances: {
         Row: {
+          acceptable_use_policy_version: string | null
           acceptance_text: string
           acceptance_text_hash: string | null
           acceptance_text_version: string | null
           accepted_at: string
           accepted_at_europe_london: string | null
+          accepted_at_utc: string | null
           accepted_by_email: string
           accepted_by_name: string
           accepted_by_user: string | null
           account_number: string | null
           address_confirmed: boolean
+          billing_policy_version: string | null
+          broadband_terms_version: string | null
+          bundle_terms_version: string | null
+          cancellation_policy_version: string | null
           checkbox_confirmed: boolean
           checkbox_consent: boolean
           checkbox_details_correct: boolean
           checkbox_received_read: boolean
           checkbox_understand_charges: boolean
+          complaints_code_version: string | null
+          contract_information_pack_id: string | null
+          contract_information_pack_pdf_hash: string | null
+          contract_information_pack_template_version: string | null
+          contract_information_pack_version: number | null
           contract_summary_id: string
+          contract_summary_template_version: string | null
+          cookie_policy_version: string | null
           created_at: string
           cs_version: number | null
           customer_id: string | null
           date_of_birth: string | null
+          digital_voice_policy_version: string | null
+          digital_voice_terms_version: string | null
+          equipment_terms_version: string | null
           id: string
           ip: string | null
           journey_id: string | null
+          legacy_compliance_status:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
+          mobile_fair_usage_policy_version: string | null
+          mobile_roaming_policy_version: string | null
           mobile_snapshot: string | null
+          number_porting_policy_version: string | null
           pdf_sha256: string | null
           pdf_storage_key: string | null
+          price_guide_version: string | null
           privacy_version: string | null
           quote_id: string
           quote_request_id: string | null
+          service_components_snapshot: Json | null
           session_id: string | null
+          sim_only_terms_version: string | null
           source_route: string | null
           terms_version: string | null
           user_agent: string | null
+          vulnerable_customers_policy_version: string | null
         }
         Insert: {
+          acceptable_use_policy_version?: string | null
           acceptance_text: string
           acceptance_text_hash?: string | null
           acceptance_text_version?: string | null
           accepted_at?: string
           accepted_at_europe_london?: string | null
+          accepted_at_utc?: string | null
           accepted_by_email: string
           accepted_by_name: string
           accepted_by_user?: string | null
           account_number?: string | null
           address_confirmed?: boolean
+          billing_policy_version?: string | null
+          broadband_terms_version?: string | null
+          bundle_terms_version?: string | null
+          cancellation_policy_version?: string | null
           checkbox_confirmed: boolean
           checkbox_consent?: boolean
           checkbox_details_correct?: boolean
           checkbox_received_read?: boolean
           checkbox_understand_charges?: boolean
+          complaints_code_version?: string | null
+          contract_information_pack_id?: string | null
+          contract_information_pack_pdf_hash?: string | null
+          contract_information_pack_template_version?: string | null
+          contract_information_pack_version?: number | null
           contract_summary_id: string
+          contract_summary_template_version?: string | null
+          cookie_policy_version?: string | null
           created_at?: string
           cs_version?: number | null
           customer_id?: string | null
           date_of_birth?: string | null
+          digital_voice_policy_version?: string | null
+          digital_voice_terms_version?: string | null
+          equipment_terms_version?: string | null
           id?: string
           ip?: string | null
           journey_id?: string | null
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
+          mobile_fair_usage_policy_version?: string | null
+          mobile_roaming_policy_version?: string | null
           mobile_snapshot?: string | null
+          number_porting_policy_version?: string | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
+          price_guide_version?: string | null
           privacy_version?: string | null
           quote_id: string
           quote_request_id?: string | null
+          service_components_snapshot?: Json | null
           session_id?: string | null
+          sim_only_terms_version?: string | null
           source_route?: string | null
           terms_version?: string | null
           user_agent?: string | null
+          vulnerable_customers_policy_version?: string | null
         }
         Update: {
+          acceptable_use_policy_version?: string | null
           acceptance_text?: string
           acceptance_text_hash?: string | null
           acceptance_text_version?: string | null
           accepted_at?: string
           accepted_at_europe_london?: string | null
+          accepted_at_utc?: string | null
           accepted_by_email?: string
           accepted_by_name?: string
           accepted_by_user?: string | null
           account_number?: string | null
           address_confirmed?: boolean
+          billing_policy_version?: string | null
+          broadband_terms_version?: string | null
+          bundle_terms_version?: string | null
+          cancellation_policy_version?: string | null
           checkbox_confirmed?: boolean
           checkbox_consent?: boolean
           checkbox_details_correct?: boolean
           checkbox_received_read?: boolean
           checkbox_understand_charges?: boolean
+          complaints_code_version?: string | null
+          contract_information_pack_id?: string | null
+          contract_information_pack_pdf_hash?: string | null
+          contract_information_pack_template_version?: string | null
+          contract_information_pack_version?: number | null
           contract_summary_id?: string
+          contract_summary_template_version?: string | null
+          cookie_policy_version?: string | null
           created_at?: string
           cs_version?: number | null
           customer_id?: string | null
           date_of_birth?: string | null
+          digital_voice_policy_version?: string | null
+          digital_voice_terms_version?: string | null
+          equipment_terms_version?: string | null
           id?: string
           ip?: string | null
           journey_id?: string | null
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
+          mobile_fair_usage_policy_version?: string | null
+          mobile_roaming_policy_version?: string | null
           mobile_snapshot?: string | null
+          number_porting_policy_version?: string | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
+          price_guide_version?: string | null
           privacy_version?: string | null
           quote_id?: string
           quote_request_id?: string | null
+          service_components_snapshot?: Json | null
           session_id?: string | null
+          sim_only_terms_version?: string | null
           source_route?: string | null
           terms_version?: string | null
           user_agent?: string | null
+          vulnerable_customers_policy_version?: string | null
         }
         Relationships: [
           {
@@ -1674,181 +1849,393 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_information_packs: {
+        Row: {
+          accepted_at_utc: string | null
+          body_snapshot: Json
+          cancelled_at_utc: string | null
+          cip_number: string
+          contract_summary_id: string | null
+          created_at: string
+          created_at_utc: string
+          customer_id: string | null
+          display_timezone: string
+          document_status: Database["public"]["Enums"]["document_status_enum"]
+          id: string
+          issued_at_utc: string | null
+          legacy_compliance_status: Database["public"]["Enums"]["legacy_compliance_status_enum"]
+          pdf_hash: string | null
+          pdf_storage_path: string | null
+          quote_id: string
+          quote_request_id: string | null
+          superseded_at_utc: string | null
+          supersedes_id: string | null
+          template_version: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          accepted_at_utc?: string | null
+          body_snapshot: Json
+          cancelled_at_utc?: string | null
+          cip_number?: string
+          contract_summary_id?: string | null
+          created_at?: string
+          created_at_utc?: string
+          customer_id?: string | null
+          display_timezone?: string
+          document_status?: Database["public"]["Enums"]["document_status_enum"]
+          id?: string
+          issued_at_utc?: string | null
+          legacy_compliance_status?: Database["public"]["Enums"]["legacy_compliance_status_enum"]
+          pdf_hash?: string | null
+          pdf_storage_path?: string | null
+          quote_id: string
+          quote_request_id?: string | null
+          superseded_at_utc?: string | null
+          supersedes_id?: string | null
+          template_version: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          accepted_at_utc?: string | null
+          body_snapshot?: Json
+          cancelled_at_utc?: string | null
+          cip_number?: string
+          contract_summary_id?: string | null
+          created_at?: string
+          created_at_utc?: string
+          customer_id?: string | null
+          display_timezone?: string
+          document_status?: Database["public"]["Enums"]["document_status_enum"]
+          id?: string
+          issued_at_utc?: string | null
+          legacy_compliance_status?: Database["public"]["Enums"]["legacy_compliance_status_enum"]
+          pdf_hash?: string | null
+          pdf_storage_path?: string | null
+          quote_id?: string
+          quote_request_id?: string | null
+          superseded_at_utc?: string | null
+          supersedes_id?: string | null
+          template_version?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_information_packs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_information_packs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_information_packs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_information_packs_supersedes_id_fkey"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "contract_information_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_summaries: {
         Row: {
           accepted_at: string | null
+          accepted_at_utc: string | null
           accepted_ip: string | null
           accepted_user_agent: string | null
           account_number: string | null
+          activation_fee_snapshot: Json | null
           archived_at: string | null
           archived_reason: string | null
+          billing_start_rule: string | null
           business_monthly_ex_vat: number | null
           business_monthly_incl_vat: number | null
+          cancelled_at_utc: string | null
           cease_cancellation_charges: string | null
           complaints_adr_info: string
           contract_length: string
+          contract_type:
+            | Database["public"]["Enums"]["contract_type_enum"]
+            | null
           created_at: string
+          created_at_utc: string | null
           cs_number: string
           customer_email_snapshot: string
           customer_id: string | null
           customer_name_snapshot: string
           customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          customer_type_v2:
+            | Database["public"]["Enums"]["customer_type_enum"]
+            | null
           delivery_charge: number
+          digital_voice_addon_snapshot: Json | null
           digital_voice_warning: string | null
+          display_timezone: string | null
+          document_status:
+            | Database["public"]["Enums"]["document_status_enum"]
+            | null
           emailed_at: string | null
           estimated_download_speed: number | null
           estimated_upload_speed: number | null
+          etf_policy_snapshot: Json | null
           id: string
           installation_charge: number
           issued_at: string | null
+          issued_at_utc: string | null
+          legacy_compliance_status:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
+          minimum_term_months: number | null
           monthly_price_incl_vat: number
           notice_period: string
+          notice_period_days: number | null
           one_off_charges_json: Json
+          one_off_charges_snapshot: Json | null
+          payment_method_snapshot:
+            | Database["public"]["Enums"]["payment_method_snapshot_enum"]
+            | null
           payment_schedule: string
           pdf_generated_at: string | null
           pdf_generated_by: string | null
+          pdf_hash: string | null
           pdf_sha256: string | null
           pdf_storage_key: string | null
+          pdf_storage_path: string | null
           pdf_url: string | null
           plan_name: string
           plan_term: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
+          price_change_snapshot: Json | null
           price_rise_policy: string
           privacy_version: string
           public_token_hash: string | null
           quote_id: string
           quote_request_id: string
+          router_addon_snapshot: Json | null
           router_charge: number
           router_option: Json | null
           selected_addons: Json | null
           service_address: string
+          service_components_snapshot: Json | null
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_charge: number
           setup_option: Json | null
           speed_bucket: string | null
+          speed_estimate_snapshot: Json | null
           speed_notes: string | null
           status: Database["public"]["Enums"]["contract_summary_status_kind"]
+          superseded_at_utc: string | null
+          supersedes_id: string | null
           terms_version: string
           token_expires_at: string | null
           updated_at: string
+          vat_snapshot: Json | null
           version: number
           vulnerable_customer_note: string | null
         }
         Insert: {
           accepted_at?: string | null
+          accepted_at_utc?: string | null
           accepted_ip?: string | null
           accepted_user_agent?: string | null
           account_number?: string | null
+          activation_fee_snapshot?: Json | null
           archived_at?: string | null
           archived_reason?: string | null
+          billing_start_rule?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null
+          cancelled_at_utc?: string | null
           cease_cancellation_charges?: string | null
           complaints_adr_info: string
           contract_length: string
+          contract_type?:
+            | Database["public"]["Enums"]["contract_type_enum"]
+            | null
           created_at?: string
+          created_at_utc?: string | null
           cs_number?: string
           customer_email_snapshot: string
           customer_id?: string | null
           customer_name_snapshot: string
           customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          customer_type_v2?:
+            | Database["public"]["Enums"]["customer_type_enum"]
+            | null
           delivery_charge?: number
+          digital_voice_addon_snapshot?: Json | null
           digital_voice_warning?: string | null
+          display_timezone?: string | null
+          document_status?:
+            | Database["public"]["Enums"]["document_status_enum"]
+            | null
           emailed_at?: string | null
           estimated_download_speed?: number | null
           estimated_upload_speed?: number | null
+          etf_policy_snapshot?: Json | null
           id?: string
           installation_charge?: number
           issued_at?: string | null
+          issued_at_utc?: string | null
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
+          minimum_term_months?: number | null
           monthly_price_incl_vat: number
           notice_period: string
+          notice_period_days?: number | null
           one_off_charges_json?: Json
+          one_off_charges_snapshot?: Json | null
+          payment_method_snapshot?:
+            | Database["public"]["Enums"]["payment_method_snapshot_enum"]
+            | null
           payment_schedule: string
           pdf_generated_at?: string | null
           pdf_generated_by?: string | null
+          pdf_hash?: string | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
+          pdf_storage_path?: string | null
           pdf_url?: string | null
           plan_name: string
           plan_term?: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
+          price_change_snapshot?: Json | null
           price_rise_policy: string
           privacy_version?: string
           public_token_hash?: string | null
           quote_id: string
           quote_request_id: string
+          router_addon_snapshot?: Json | null
           router_charge?: number
           router_option?: Json | null
           selected_addons?: Json | null
           service_address: string
+          service_components_snapshot?: Json | null
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_charge?: number
           setup_option?: Json | null
           speed_bucket?: string | null
+          speed_estimate_snapshot?: Json | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["contract_summary_status_kind"]
+          superseded_at_utc?: string | null
+          supersedes_id?: string | null
           terms_version?: string
           token_expires_at?: string | null
           updated_at?: string
+          vat_snapshot?: Json | null
           version?: number
           vulnerable_customer_note?: string | null
         }
         Update: {
           accepted_at?: string | null
+          accepted_at_utc?: string | null
           accepted_ip?: string | null
           accepted_user_agent?: string | null
           account_number?: string | null
+          activation_fee_snapshot?: Json | null
           archived_at?: string | null
           archived_reason?: string | null
+          billing_start_rule?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null
+          cancelled_at_utc?: string | null
           cease_cancellation_charges?: string | null
           complaints_adr_info?: string
           contract_length?: string
+          contract_type?:
+            | Database["public"]["Enums"]["contract_type_enum"]
+            | null
           created_at?: string
+          created_at_utc?: string | null
           cs_number?: string
           customer_email_snapshot?: string
           customer_id?: string | null
           customer_name_snapshot?: string
           customer_type?: Database["public"]["Enums"]["customer_type_kind"]
+          customer_type_v2?:
+            | Database["public"]["Enums"]["customer_type_enum"]
+            | null
           delivery_charge?: number
+          digital_voice_addon_snapshot?: Json | null
           digital_voice_warning?: string | null
+          display_timezone?: string | null
+          document_status?:
+            | Database["public"]["Enums"]["document_status_enum"]
+            | null
           emailed_at?: string | null
           estimated_download_speed?: number | null
           estimated_upload_speed?: number | null
+          etf_policy_snapshot?: Json | null
           id?: string
           installation_charge?: number
           issued_at?: string | null
+          issued_at_utc?: string | null
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
+          minimum_term_months?: number | null
           monthly_price_incl_vat?: number
           notice_period?: string
+          notice_period_days?: number | null
           one_off_charges_json?: Json
+          one_off_charges_snapshot?: Json | null
+          payment_method_snapshot?:
+            | Database["public"]["Enums"]["payment_method_snapshot_enum"]
+            | null
           payment_schedule?: string
           pdf_generated_at?: string | null
           pdf_generated_by?: string | null
+          pdf_hash?: string | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
+          pdf_storage_path?: string | null
           pdf_url?: string | null
           plan_name?: string
           plan_term?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type_kind"]
+          price_change_snapshot?: Json | null
           price_rise_policy?: string
           privacy_version?: string
           public_token_hash?: string | null
           quote_id?: string
           quote_request_id?: string
+          router_addon_snapshot?: Json | null
           router_charge?: number
           router_option?: Json | null
           selected_addons?: Json | null
           service_address?: string
+          service_components_snapshot?: Json | null
           service_type?: Database["public"]["Enums"]["service_interest_kind"]
           setup_charge?: number
           setup_option?: Json | null
           speed_bucket?: string | null
+          speed_estimate_snapshot?: Json | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["contract_summary_status_kind"]
+          superseded_at_utc?: string | null
+          supersedes_id?: string | null
           terms_version?: string
           token_expires_at?: string | null
           updated_at?: string
+          vat_snapshot?: Json | null
           version?: number
           vulnerable_customer_note?: string | null
         }
@@ -3883,19 +4270,27 @@ export type Database = {
       orders: {
         Row: {
           actual_activation_date: string | null
+          actual_service_live_at_utc: string | null
           address_line1: string | null
           address_line2: string | null
           admin_notes: string | null
           billing_anchor_day: number | null
+          billing_start_rule: string | null
           cancellation_preview: Json | null
           cancellation_requested_at: string | null
           cease_date: string | null
           city: string | null
           contract_acceptance_id: string | null
           contract_summary_id: string | null
+          contract_type:
+            | Database["public"]["Enums"]["contract_type_enum"]
+            | null
           cooling_off_ends_at: string | null
           created_at: string
           customer_id: string | null
+          customer_type_v2:
+            | Database["public"]["Enums"]["customer_type_enum"]
+            | null
           entered_in_giacom_at: string | null
           etf_policy_snapshot: Json | null
           expected_activation_date: string | null
@@ -3906,18 +4301,25 @@ export type Database = {
           installation_date: string | null
           internal_notes: string | null
           journey_id: string | null
+          legacy_compliance_status:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
           lifecycle_status: string | null
           minimum_term_end_date: string | null
           notes: string | null
           occta_order_number: string | null
           payment_method: string | null
           payment_method_id: string | null
+          payment_method_snapshot:
+            | Database["public"]["Enums"]["payment_method_snapshot_enum"]
+            | null
           plan_name: string
           plan_price: number
           postcode: string
           preferred_start_date: string | null
           quote_id: string | null
           router_reference: string | null
+          service_components_snapshot: Json | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["order_status"]
           updated_at: string
@@ -3925,19 +4327,27 @@ export type Database = {
         }
         Insert: {
           actual_activation_date?: string | null
+          actual_service_live_at_utc?: string | null
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
           billing_anchor_day?: number | null
+          billing_start_rule?: string | null
           cancellation_preview?: Json | null
           cancellation_requested_at?: string | null
           cease_date?: string | null
           city?: string | null
           contract_acceptance_id?: string | null
           contract_summary_id?: string | null
+          contract_type?:
+            | Database["public"]["Enums"]["contract_type_enum"]
+            | null
           cooling_off_ends_at?: string | null
           created_at?: string
           customer_id?: string | null
+          customer_type_v2?:
+            | Database["public"]["Enums"]["customer_type_enum"]
+            | null
           entered_in_giacom_at?: string | null
           etf_policy_snapshot?: Json | null
           expected_activation_date?: string | null
@@ -3948,18 +4358,25 @@ export type Database = {
           installation_date?: string | null
           internal_notes?: string | null
           journey_id?: string | null
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
           lifecycle_status?: string | null
           minimum_term_end_date?: string | null
           notes?: string | null
           occta_order_number?: string | null
           payment_method?: string | null
           payment_method_id?: string | null
+          payment_method_snapshot?:
+            | Database["public"]["Enums"]["payment_method_snapshot_enum"]
+            | null
           plan_name: string
           plan_price: number
           postcode: string
           preferred_start_date?: string | null
           quote_id?: string | null
           router_reference?: string | null
+          service_components_snapshot?: Json | null
           service_type: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
@@ -3967,19 +4384,27 @@ export type Database = {
         }
         Update: {
           actual_activation_date?: string | null
+          actual_service_live_at_utc?: string | null
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
           billing_anchor_day?: number | null
+          billing_start_rule?: string | null
           cancellation_preview?: Json | null
           cancellation_requested_at?: string | null
           cease_date?: string | null
           city?: string | null
           contract_acceptance_id?: string | null
           contract_summary_id?: string | null
+          contract_type?:
+            | Database["public"]["Enums"]["contract_type_enum"]
+            | null
           cooling_off_ends_at?: string | null
           created_at?: string
           customer_id?: string | null
+          customer_type_v2?:
+            | Database["public"]["Enums"]["customer_type_enum"]
+            | null
           entered_in_giacom_at?: string | null
           etf_policy_snapshot?: Json | null
           expected_activation_date?: string | null
@@ -3990,18 +4415,25 @@ export type Database = {
           installation_date?: string | null
           internal_notes?: string | null
           journey_id?: string | null
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
           lifecycle_status?: string | null
           minimum_term_end_date?: string | null
           notes?: string | null
           occta_order_number?: string | null
           payment_method?: string | null
           payment_method_id?: string | null
+          payment_method_snapshot?:
+            | Database["public"]["Enums"]["payment_method_snapshot_enum"]
+            | null
           plan_name?: string
           plan_price?: number
           postcode?: string
           preferred_start_date?: string | null
           quote_id?: string | null
           router_reference?: string | null
+          service_components_snapshot?: Json | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
@@ -5094,13 +5526,18 @@ export type Database = {
       }
       quotes: {
         Row: {
+          activation_fee_snapshot: Json | null
           admin_notes: string | null
           approved_at: string | null
           approved_by: string | null
+          billing_start_rule: string | null
           bucket_override_reason: string | null
           cease_fee_gross: number | null
           completed_at: string | null
           contract_length_months: number | null
+          contract_type:
+            | Database["public"]["Enums"]["contract_type_enum"]
+            | null
           created_at: string
           created_by: string | null
           customer_id: string | null
@@ -5109,11 +5546,16 @@ export type Database = {
           customer_intent_ua: string | null
           customer_notes: string | null
           customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          customer_type_v2:
+            | Database["public"]["Enums"]["customer_type_enum"]
+            | null
           delivery_gross: number
           delivery_net: number
           delivery_vat_amount: number
+          digital_voice_addon_snapshot: Json | null
           estimated_download_speed: number | null
           estimated_upload_speed: number | null
+          etf_policy_snapshot: Json | null
           expires_at: string
           extra_line_items: Json
           final_snapshot: Json | null
@@ -5121,31 +5563,43 @@ export type Database = {
           installation_gross: number
           installation_net: number
           installation_vat_amount: number
+          legacy_compliance_status:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
           locked_at: string | null
           margin_amount: number | null
           margin_status: Database["public"]["Enums"]["margin_status_kind"]
+          minimum_term_months: number | null
           monthly_gross: number
           monthly_net: number
           monthly_vat_amount: number
           monthly_vat_rate: number
           notice_period: string
+          notice_period_days: number | null
+          one_off_charges_snapshot: Json | null
           opened_at: string | null
           parent_quote_id: string | null
+          payment_method_snapshot:
+            | Database["public"]["Enums"]["payment_method_snapshot_enum"]
+            | null
           plan_name: string
           plan_term: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
+          price_change_snapshot: Json | null
           price_rise_policy: string
           public_token_hash: string | null
           quote_number: string
           quote_request_id: string
           revision_of_quote_id: string | null
           reward_eligibility: string | null
+          router_addon_snapshot: Json | null
           router_gross: number
           router_net: number
           router_option: Json | null
           router_vat_amount: number
           selected_addons: Json | null
           sent_at: string | null
+          service_components_snapshot: Json | null
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_gross: number
           setup_net: number
@@ -5153,6 +5607,7 @@ export type Database = {
           setup_vat_amount: number
           speed_bucket: string | null
           speed_disclaimer: string | null
+          speed_estimate_snapshot: Json | null
           speed_notes: string | null
           status: Database["public"]["Enums"]["quote_status_kind"]
           supplier_name: string | null
@@ -5162,15 +5617,21 @@ export type Database = {
           total_due_today_gross: number
           unified_journey_opt_in: boolean
           updated_at: string
+          vat_snapshot: Json | null
         }
         Insert: {
+          activation_fee_snapshot?: Json | null
           admin_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          billing_start_rule?: string | null
           bucket_override_reason?: string | null
           cease_fee_gross?: number | null
           completed_at?: string | null
           contract_length_months?: number | null
+          contract_type?:
+            | Database["public"]["Enums"]["contract_type_enum"]
+            | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -5179,11 +5640,16 @@ export type Database = {
           customer_intent_ua?: string | null
           customer_notes?: string | null
           customer_type: Database["public"]["Enums"]["customer_type_kind"]
+          customer_type_v2?:
+            | Database["public"]["Enums"]["customer_type_enum"]
+            | null
           delivery_gross?: number
           delivery_net?: number
           delivery_vat_amount?: number
+          digital_voice_addon_snapshot?: Json | null
           estimated_download_speed?: number | null
           estimated_upload_speed?: number | null
+          etf_policy_snapshot?: Json | null
           expires_at?: string
           extra_line_items?: Json
           final_snapshot?: Json | null
@@ -5191,31 +5657,43 @@ export type Database = {
           installation_gross?: number
           installation_net?: number
           installation_vat_amount?: number
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
           locked_at?: string | null
           margin_amount?: number | null
           margin_status?: Database["public"]["Enums"]["margin_status_kind"]
+          minimum_term_months?: number | null
           monthly_gross?: number
           monthly_net?: number
           monthly_vat_amount?: number
           monthly_vat_rate?: number
           notice_period?: string
+          notice_period_days?: number | null
+          one_off_charges_snapshot?: Json | null
           opened_at?: string | null
           parent_quote_id?: string | null
+          payment_method_snapshot?:
+            | Database["public"]["Enums"]["payment_method_snapshot_enum"]
+            | null
           plan_name: string
           plan_term?: string | null
           plan_type: Database["public"]["Enums"]["plan_type_kind"]
+          price_change_snapshot?: Json | null
           price_rise_policy?: string
           public_token_hash?: string | null
           quote_number?: string
           quote_request_id: string
           revision_of_quote_id?: string | null
           reward_eligibility?: string | null
+          router_addon_snapshot?: Json | null
           router_gross?: number
           router_net?: number
           router_option?: Json | null
           router_vat_amount?: number
           selected_addons?: Json | null
           sent_at?: string | null
+          service_components_snapshot?: Json | null
           service_type: Database["public"]["Enums"]["service_interest_kind"]
           setup_gross?: number
           setup_net?: number
@@ -5223,6 +5701,7 @@ export type Database = {
           setup_vat_amount?: number
           speed_bucket?: string | null
           speed_disclaimer?: string | null
+          speed_estimate_snapshot?: Json | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["quote_status_kind"]
           supplier_name?: string | null
@@ -5232,15 +5711,21 @@ export type Database = {
           total_due_today_gross?: number
           unified_journey_opt_in?: boolean
           updated_at?: string
+          vat_snapshot?: Json | null
         }
         Update: {
+          activation_fee_snapshot?: Json | null
           admin_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          billing_start_rule?: string | null
           bucket_override_reason?: string | null
           cease_fee_gross?: number | null
           completed_at?: string | null
           contract_length_months?: number | null
+          contract_type?:
+            | Database["public"]["Enums"]["contract_type_enum"]
+            | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -5249,11 +5734,16 @@ export type Database = {
           customer_intent_ua?: string | null
           customer_notes?: string | null
           customer_type?: Database["public"]["Enums"]["customer_type_kind"]
+          customer_type_v2?:
+            | Database["public"]["Enums"]["customer_type_enum"]
+            | null
           delivery_gross?: number
           delivery_net?: number
           delivery_vat_amount?: number
+          digital_voice_addon_snapshot?: Json | null
           estimated_download_speed?: number | null
           estimated_upload_speed?: number | null
+          etf_policy_snapshot?: Json | null
           expires_at?: string
           extra_line_items?: Json
           final_snapshot?: Json | null
@@ -5261,31 +5751,43 @@ export type Database = {
           installation_gross?: number
           installation_net?: number
           installation_vat_amount?: number
+          legacy_compliance_status?:
+            | Database["public"]["Enums"]["legacy_compliance_status_enum"]
+            | null
           locked_at?: string | null
           margin_amount?: number | null
           margin_status?: Database["public"]["Enums"]["margin_status_kind"]
+          minimum_term_months?: number | null
           monthly_gross?: number
           monthly_net?: number
           monthly_vat_amount?: number
           monthly_vat_rate?: number
           notice_period?: string
+          notice_period_days?: number | null
+          one_off_charges_snapshot?: Json | null
           opened_at?: string | null
           parent_quote_id?: string | null
+          payment_method_snapshot?:
+            | Database["public"]["Enums"]["payment_method_snapshot_enum"]
+            | null
           plan_name?: string
           plan_term?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type_kind"]
+          price_change_snapshot?: Json | null
           price_rise_policy?: string
           public_token_hash?: string | null
           quote_number?: string
           quote_request_id?: string
           revision_of_quote_id?: string | null
           reward_eligibility?: string | null
+          router_addon_snapshot?: Json | null
           router_gross?: number
           router_net?: number
           router_option?: Json | null
           router_vat_amount?: number
           selected_addons?: Json | null
           sent_at?: string | null
+          service_components_snapshot?: Json | null
           service_type?: Database["public"]["Enums"]["service_interest_kind"]
           setup_gross?: number
           setup_net?: number
@@ -5293,6 +5795,7 @@ export type Database = {
           setup_vat_amount?: number
           speed_bucket?: string | null
           speed_disclaimer?: string | null
+          speed_estimate_snapshot?: Json | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["quote_status_kind"]
           supplier_name?: string | null
@@ -5302,6 +5805,7 @@ export type Database = {
           total_due_today_gross?: number
           unified_journey_opt_in?: boolean
           updated_at?: string
+          vat_snapshot?: Json | null
         }
         Relationships: [
           {
@@ -8674,7 +9178,20 @@ export type Database = {
         | "accepted"
         | "superseded"
         | "expired"
+      contract_type_enum: "flex_30_rolling" | "fixed_term"
+      customer_type_enum:
+        | "residential_consumer"
+        | "business"
+        | "microenterprise_or_small_business"
+        | "not_for_profit"
       customer_type_kind: "residential" | "business"
+      document_status_enum:
+        | "draft"
+        | "issued"
+        | "accepted"
+        | "superseded"
+        | "cancelled"
+        | "void_manual_review"
       fraud_flag_severity: "low" | "medium" | "high"
       fraud_flag_status: "open" | "reviewed" | "dismissed" | "confirmed"
       fraud_flag_type:
@@ -8689,6 +9206,10 @@ export type Database = {
         | "manual_review"
       kb_status: "draft" | "approved" | "archived"
       kb_visibility: "public" | "internal" | "support_only"
+      legacy_compliance_status_enum:
+        | "ok"
+        | "manual_review_required"
+        | "resolved"
       manual_fulfilment_status:
         | "ready_for_manual_order"
         | "order_entered_in_supplier_portal"
@@ -8698,6 +9219,9 @@ export type Database = {
         | "cancelled"
       margin_status_kind: "unknown" | "green" | "amber" | "red"
       order_status: "pending" | "confirmed" | "active" | "cancelled"
+      payment_method_snapshot_enum:
+        | "manual_invoice_card_worldpay"
+        | "direct_debit_setup_request"
       plan_preference_kind: "flex" | "contract_saver" | "not_sure"
       plan_type_kind: "flex" | "contract_saver"
       points_ledger_source:
@@ -8990,7 +9514,22 @@ export const Constants = {
         "superseded",
         "expired",
       ],
+      contract_type_enum: ["flex_30_rolling", "fixed_term"],
+      customer_type_enum: [
+        "residential_consumer",
+        "business",
+        "microenterprise_or_small_business",
+        "not_for_profit",
+      ],
       customer_type_kind: ["residential", "business"],
+      document_status_enum: [
+        "draft",
+        "issued",
+        "accepted",
+        "superseded",
+        "cancelled",
+        "void_manual_review",
+      ],
       fraud_flag_severity: ["low", "medium", "high"],
       fraud_flag_status: ["open", "reviewed", "dismissed", "confirmed"],
       fraud_flag_type: [
@@ -9006,6 +9545,11 @@ export const Constants = {
       ],
       kb_status: ["draft", "approved", "archived"],
       kb_visibility: ["public", "internal", "support_only"],
+      legacy_compliance_status_enum: [
+        "ok",
+        "manual_review_required",
+        "resolved",
+      ],
       manual_fulfilment_status: [
         "ready_for_manual_order",
         "order_entered_in_supplier_portal",
@@ -9016,6 +9560,10 @@ export const Constants = {
       ],
       margin_status_kind: ["unknown", "green", "amber", "red"],
       order_status: ["pending", "confirmed", "active", "cancelled"],
+      payment_method_snapshot_enum: [
+        "manual_invoice_card_worldpay",
+        "direct_debit_setup_request",
+      ],
       plan_preference_kind: ["flex", "contract_saver", "not_sure"],
       plan_type_kind: ["flex", "contract_saver"],
       points_ledger_source: [

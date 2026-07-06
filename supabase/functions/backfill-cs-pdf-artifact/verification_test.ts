@@ -72,13 +72,14 @@ Deno.test("5. Forbidden phrase scan (customer-facing surfaces)", async () => {
 });
 
 Deno.test("6. Artifact immutability: anon UPDATE/DELETE cannot mutate", async () => {
-  // Anon has no policy for update/delete → PostgREST silently applies to 0 rows or denies.
-  // In either case, count MUST remain the same after the attempted mutation.
   const before = await pgrest("contract_document_artifacts?select=id", { headers: { Prefer: "count=exact" } });
   const beforeCount = before.headers.get("content-range")?.split("/")[1] ?? "?";
-  await pgrest("contract_document_artifacts", { method: "DELETE" });
+  await before.body?.cancel();
+  const del = await pgrest("contract_document_artifacts", { method: "DELETE" });
+  await del.body?.cancel();
   const after = await pgrest("contract_document_artifacts?select=id", { headers: { Prefer: "count=exact" } });
   const afterCount = after.headers.get("content-range")?.split("/")[1] ?? "?";
+  await after.body?.cancel();
   assert(beforeCount === afterCount, `row count changed via anon DELETE: ${beforeCount} → ${afterCount}`);
 });
 

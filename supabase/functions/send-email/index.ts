@@ -1210,7 +1210,7 @@ const handler = async (req: Request): Promise<Response> => {
         // arbitrary authenticated users to arbitrary recipients, otherwise
         // any signed-up customer can send legitimate-looking OCCTA-branded
         // emails from a verified domain to any external address.
-        const internalOnlyTypes = ["welcome", "password_reset", "status_update"];
+        const internalOnlyTypes = ["welcome", "password_reset", "status_update", "sim_lifecycle"];
         if (internalOnlyTypes.includes(type)) {
           const userIsAdmin = await isAdmin(supabaseAdmin, user.id);
           if (!userIsAdmin) {

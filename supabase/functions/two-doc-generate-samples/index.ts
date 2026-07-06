@@ -108,6 +108,43 @@ Deno.serve(async (req) => {
   // one or more CS ids by calling the legacy generate-contract-summary-pdf
   // function in internal mode. First-time render only — never overwrites.
   if (isBootstrap && body.action === "render_cs") {
+    // Bootstrap-only, no-op here; real handler below.
+  }
+  // Bootstrap-only: mint a fresh short-lived public_token for issued CSs so the
+  // evidence run can call accept-service-aware-cs. Refuses accepted/superseded
+  // CSs. Pilot user only (via bootstrap gate).
+  if (isBootstrap && body.action === "mint_token") {
+    const ids = Array.isArray(body.contract_summary_ids) ? (body.contract_summary_ids as string[]) : [];
+    if (!ids.length) return jsonResponse({ error: "contract_summary_ids_required" }, 400);
+    const enc = new TextEncoder();
+    const out: Array<Record<string, unknown>> = [];
+    for (const id of ids) {
+      const { data: cs } = await supabase
+        .from("contract_summaries")
+        .select("id, status, cs_number, version, customer_email_snapshot")
+        .eq("id", id).maybeSingle();
+      if (!cs) { out.push({ id, error: "not_found" }); continue; }
+      if (!["issued", "viewed", "draft"].includes(cs.status as string)) {
+        out.push({ id, error: "not_mintable", status: cs.status }); continue;
+      }
+      const rand = crypto.getRandomValues(new Uint8Array(32));
+      const token = Array.from(rand).map(b => b.toString(16).padStart(2, "0")).join("");
+      const digest = await crypto.subtle.digest("SHA-256", enc.encode(token));
+      const hash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+      const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const upd = await supabase.from("contract_summaries")
+        .update({ public_token_hash: hash, token_expires_at: expires })
+        .eq("id", id);
+      out.push({
+        id, cs_number: cs.cs_number, version: cs.version,
+        email: cs.customer_email_snapshot,
+        public_token: upd.error ? null : token,
+        error: upd.error?.message ?? null,
+      });
+    }
+    return jsonResponse({ ok: true, minted: out });
+  }
+  if (isBootstrap && body.action === "render_cs_orig_marker") {
     const ids = Array.isArray(body.contract_summary_ids)
       ? (body.contract_summary_ids as string[])
       : [];

@@ -182,7 +182,7 @@ export function brutalistEmailShell(title: string, body: string, cta?: { label: 
           <tr>
             <td style="padding:18px 0 10px 0;font-family:Arial,sans-serif;">
               <p style="margin:0 0 4px 0;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#111;">OCCTA Limited</p>
-              <p style="margin:0 0 12px 0;font-size:11px;color:#555;font-style:italic;">No contracts. No price-rise nonsense. Just proper British telecom.</p>
+              <p style="margin:0 0 12px 0;font-size:11px;color:#555;font-style:italic;">Flexible monthly options available. No price-rise nonsense. Just proper British telecom.</p>
               <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:11px;color:#444;line-height:1.55;">
                 <tr>
                   <td style="padding-right:18px;vertical-align:top;">

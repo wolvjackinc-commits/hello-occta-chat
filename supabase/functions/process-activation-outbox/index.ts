@@ -45,7 +45,7 @@ function buildEmailHtml(p: any, dashboardUrl: string, helpfulLinksHtml = "") {
   const whyGoodHtml = `
     <p style="margin:0 0 8px 0">A few things you've quietly signed up to <em>not</em> deal with:</p>
     <ul style="margin:0;padding-left:18px">
-      <li><strong>No contracts.</strong> Rolling monthly. Leave with 30 days' notice, no exit fee.</li>
+      <li><strong>Flexible monthly options available.</strong> Rolling monthly. Leave with 30 days' notice, no exit fee.</li>
       <li><strong>No mid-contract price hikes.</strong> The price you saw is the price you pay.</li>
       <li><strong>UK humans on support.</strong> No offshore phone trees, no scripts.</li>
       <li><strong>VAT included.</strong> The total you see is the total you pay.</li>

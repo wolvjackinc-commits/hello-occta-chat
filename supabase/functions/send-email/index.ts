@@ -33,7 +33,8 @@ interface EmailRequest {
     | "invoice_paid"
     | "payment_link"
     | "invoice_external_payment"
-    | "custom_admin";
+    | "custom_admin"
+    | "sim_lifecycle";
   to: string;
   data: Record<string, unknown>;
   orderNumber?: string;
@@ -1102,6 +1103,108 @@ const isValidEmail = (email: string): boolean => {
   return emailRegex.test(email) && email.length <= 254;
 };
 
+// ============ SIM lifecycle emails ============
+// Customer-safe subjects + copy for every essential SIM lifecycle event.
+// No supplier/network claims, no internal notes, no cost/margin/DD raw data.
+const SIM_TEMPLATES: Record<string, { subject: string; heading: string; body: (d: Record<string, unknown>) => string; cta?: (d: Record<string, unknown>) => { label: string; url: string } | null }> = {
+  "sim-dd-received": {
+    subject: "We've received your Direct Debit details",
+    heading: "Direct Debit received",
+    body: (d) => `<p>Thanks ${escapeHtml(d.customer_name || "there")}, we've received your Direct Debit instruction for order <b>#${escapeHtml(d.order_number)}</b>. We'll set up your mandate and confirm before any collection.</p><p>You'll receive an advance notice at least 3 working days before any payment is taken. Your rights are protected by the Direct Debit Guarantee.</p>`,
+    cta: (d) => ({ label: "View order", url: String(d.dashboard_url || "") }),
+  },
+  "sim-esim-ready": {
+    subject: "Your eSIM is ready",
+    heading: "eSIM ready to activate",
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, your eSIM for order <b>#${escapeHtml(d.order_number)}</b> is ready. Sign in to your dashboard to view your activation QR code and step-by-step instructions.</p>`,
+    cta: (d) => ({ label: "Open dashboard", url: String(d.dashboard_url || "") }),
+  },
+  "sim-physical-dispatched": {
+    subject: "Your SIM is on its way",
+    heading: "SIM dispatched",
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, your SIM for order <b>#${escapeHtml(d.order_number)}</b> was dispatched on ${escapeHtml(d.dispatched_at || "")}. It should arrive within a few working days.</p>${d.tracking ? `<p>Tracking reference: <b>${escapeHtml(d.tracking)}</b></p>` : ""}`,
+    cta: (d) => ({ label: "View order", url: String(d.dashboard_url || "") }),
+  },
+  "sim-pac-required": {
+    subject: "We need your PAC code to switch your number",
+    heading: "PAC code needed",
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, to move your existing number to OCCTA (order <b>#${escapeHtml(d.order_number)}</b>), please text <b>PAC</b> to <b>65075</b> from your current phone. Reply to this email with your PAC code and expiry date once you have it.</p>`,
+    cta: (d) => ({ label: "Reply with PAC", url: String(d.support_url || "") }),
+  },
+  "sim-stac-required": {
+    subject: "We need your STAC code to switch your service",
+    heading: "STAC code needed",
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, to close your existing service and start with OCCTA (order <b>#${escapeHtml(d.order_number)}</b>), please text <b>STAC</b> to <b>75075</b> from your current phone. Reply to this email with your STAC code once you have it.</p>`,
+    cta: (d) => ({ label: "Reply with STAC", url: String(d.support_url || "") }),
+  },
+  "sim-port-scheduled": {
+    subject: "Your number switch is scheduled",
+    heading: "Number switch scheduled",
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, your number switch for order <b>#${escapeHtml(d.order_number)}</b> is scheduled for <b>${escapeHtml(d.scheduled_date || "")}</b>. You may experience a short interruption on the switch day.</p>`,
+    cta: (d) => ({ label: "View order", url: String(d.dashboard_url || "") }),
+  },
+  "sim-port-completed": {
+    subject: "Your number has switched to OCCTA",
+    heading: "Number switch complete",
+    body: (d) => `<p>Great news ${escapeHtml(d.customer_name || "there")} — your number is now live on OCCTA (order <b>#${escapeHtml(d.order_number)}</b>). If any calls or texts don't come through as expected, please contact support.</p>`,
+    cta: (d) => ({ label: "Open dashboard", url: String(d.dashboard_url || "") }),
+  },
+  "sim-service-live": {
+    subject: "Your OCCTA SIM service is live",
+    heading: "Service is live",
+    body: (d) => {
+      const balance = String(d.balance_due_amount || "0.00");
+      const credit = String(d.credit_applied_amount || "0.00");
+      const carry = String(d.credit_carry_amount || "0.00");
+      return `<p>Hi ${escapeHtml(d.customer_name || "there")}, your service for order <b>#${escapeHtml(d.order_number)}</b> went live on <b>${escapeHtml(d.service_live_date || "")}</b>.</p>
+      <p>First service period: <b>${escapeHtml(d.first_period_start || "")}</b> → <b>${escapeHtml(d.first_period_end || "")}</b>. Pro-rata charge: <b>£${escapeHtml(d.pro_rata_amount || "0.00")}</b>. Credit applied from your checkout payment: <b>£${escapeHtml(credit)}</b>.</p>
+      ${Number(balance) > 0 ? `<p>Balance due: <b>£${escapeHtml(balance)}</b>. Please settle it using the button below.</p>` : `<p>Your first live period is fully covered. Nothing further to pay right now.</p>`}
+      ${Number(carry) > 0 ? `<p>Remaining credit of <b>£${escapeHtml(carry)}</b> will be applied to your next invoice on <b>${escapeHtml(d.next_billing_date || "")}</b>.</p>` : `<p>Your next invoice will be issued on <b>${escapeHtml(d.next_billing_date || "")}</b>.</p>`}`;
+    },
+    cta: (d) => Number(String(d.balance_due_amount || "0")) > 0 && d.balance_pay_now_url
+      ? { label: "Pay balance", url: String(d.balance_pay_now_url) }
+      : { label: "Open dashboard", url: String(d.dashboard_url || "") },
+  },
+  "sim-payment-failed": {
+    subject: "Payment attempt was unsuccessful",
+    heading: "Payment unsuccessful",
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, we couldn't take payment against invoice <b>${escapeHtml(d.invoice_number || "")}</b> for order <b>#${escapeHtml(d.order_number)}</b>. This is usually a temporary issue with the card or bank.</p><p>Please try again from your dashboard, or reply to this email if you'd like a hand.</p>`,
+    cta: (d) => ({ label: "Try again", url: String(d.pay_now_url || d.dashboard_url || "") }),
+  },
+  "sim-payment-reminder": {
+    subject: "Reminder: SIM invoice payment due",
+    heading: "Payment reminder",
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, this is a friendly reminder that invoice <b>${escapeHtml(d.invoice_number || "")}</b> for order <b>#${escapeHtml(d.order_number)}</b> is due on <b>${escapeHtml(d.due_date || "")}</b>. Amount due: <b>£${escapeHtml(d.amount_due || "0.00")}</b>.</p>`,
+    cta: (d) => ({ label: "Pay now", url: String(d.pay_now_url || d.dashboard_url || "") }),
+  },
+  "sim-overdue-reminder": {
+    subject: "Your SIM invoice is overdue",
+    heading: "Invoice overdue",
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, invoice <b>${escapeHtml(d.invoice_number || "")}</b> for order <b>#${escapeHtml(d.order_number)}</b> is now overdue. Amount due: <b>£${escapeHtml(d.amount_due || "0.00")}</b>. Please settle it as soon as possible to keep your service active.</p>`,
+    cta: (d) => ({ label: "Pay now", url: String(d.pay_now_url || d.dashboard_url || "") }),
+  },
+  "sim-invoice": {
+    subject: "Your OCCTA SIM invoice",
+    heading: "New SIM invoice",
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, a new invoice <b>${escapeHtml(d.invoice_number || "")}</b> is ready for order <b>#${escapeHtml(d.order_number)}</b>. Amount due: <b>£${escapeHtml(d.amount_due || "0.00")}</b> by <b>${escapeHtml(d.due_date || "")}</b>.</p>`,
+    cta: (d) => ({ label: "View invoice", url: String(d.pay_now_url || d.dashboard_url || "") }),
+  },
+};
+
+const getSimLifecycleHtml = (data: Record<string, unknown>): { html: string; subject: string } => {
+  const key = String(data.template || "");
+  const t = SIM_TEMPLATES[key];
+  if (!t) {
+    return {
+      html: `<!doctype html><html><body><p>${escapeHtml(String(data.body || "Update from OCCTA."))}</p></body></html>`,
+      subject: String(data.subject || "Update from OCCTA"),
+    };
+  }
+  const cta = t.cta ? t.cta(data) : null;
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${getCommonStyles()}</style></head><body><div class="wrapper"><div class="container"><div class="header"><div class="logo">OCCTA</div><div class="tagline">TELECOM</div></div><div class="content"><h1 class="greeting">${escapeHtml(t.heading)}</h1><div class="text">${t.body(data)}</div>${cta && cta.url ? `<div class="cta-wrap"><a class="cta" href="${escapeHtml(cta.url)}">${escapeHtml(cta.label)}</a></div>` : ""}</div>${getStandardFooter({ showUnsubscribe: false })}</div></div></body></html>`;
+  return { html, subject: t.subject };
+};
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("Email function called");
   
@@ -1209,7 +1312,7 @@ const handler = async (req: Request): Promise<Response> => {
         // arbitrary authenticated users to arbitrary recipients, otherwise
         // any signed-up customer can send legitimate-looking OCCTA-branded
         // emails from a verified domain to any external address.
-        const internalOnlyTypes = ["welcome", "password_reset", "status_update"];
+        const internalOnlyTypes = ["welcome", "password_reset", "status_update", "sim_lifecycle"];
         if (internalOnlyTypes.includes(type)) {
           const userIsAdmin = await isAdmin(supabaseAdmin, user.id);
           if (!userIsAdmin) {
@@ -1287,6 +1390,12 @@ const handler = async (req: Request): Promise<Response> => {
         html = getCustomAdminHtml(data);
         subject = data.subject as string || "Message from OCCTA";
         break;
+      case "sim_lifecycle": {
+        const rendered = getSimLifecycleHtml(data);
+        html = rendered.html;
+        subject = rendered.subject;
+        break;
+      }
       default:
         return new Response(
           JSON.stringify({ error: "Unknown email type" }),

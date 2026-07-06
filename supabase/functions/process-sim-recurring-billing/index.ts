@@ -261,7 +261,57 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(JSON.stringify({ processed: results.length, results }), {
+  // ============ Overdue / reminder scan ============
+  // Sends sim-payment-reminder at 3 days before due, and sim-overdue-reminder
+  // at 3 and 10 days past due. Idempotency via idempotency-key on the send.
+  const reminders: unknown[] = [];
+  try {
+    const { data: openInvs } = await supabase
+      .from("invoices")
+      .select("id, invoice_number, total, due_date, status, user_id, sim_order_id, sim_orders:sim_order_id(order_number, email, full_name)")
+      .not("sim_order_id", "is", null)
+      .in("status", ["sent", "awaiting_dd_collection"])
+      .limit(200);
+    const todayD = new Date(today + "T00:00:00Z").getTime();
+    for (const inv of openInvs ?? []) {
+      const so = (inv as any).sim_orders;
+      if (!so?.email) continue;
+      if (!inv.due_date) continue;
+      const dueD = new Date(inv.due_date + "T00:00:00Z").getTime();
+      const daysUntilDue = Math.round((dueD - todayD) / 86400000);
+      let template: string | null = null;
+      let key: string | null = null;
+      if (daysUntilDue === 3) { template = "sim-payment-reminder"; key = `sim-reminder-pre:${inv.id}`; }
+      else if (daysUntilDue === -3) { template = "sim-overdue-reminder"; key = `sim-overdue-3:${inv.id}`; }
+      else if (daysUntilDue === -10) { template = "sim-overdue-reminder"; key = `sim-overdue-10:${inv.id}`; }
+      if (!template) continue;
+      const payNowUrl = `${appOrigin}/pay-invoice?id=${inv.id}`;
+      await supabase.functions.invoke("send-email", {
+        body: {
+          type: "sim_lifecycle",
+          to: so.email,
+          userId: inv.user_id,
+          logToCommunications: true,
+          data: {
+            template,
+            customer_name: so.full_name,
+            order_number: so.order_number,
+            invoice_number: inv.invoice_number,
+            due_date: inv.due_date,
+            amount_due: Number(inv.total ?? 0).toFixed(2),
+            pay_now_url: payNowUrl,
+            dashboard_url: `${appOrigin}/dashboard`,
+          },
+        },
+        headers: { "idempotency-key": key } as any,
+      }).catch(() => null);
+      reminders.push({ invoice_id: inv.id, template });
+    }
+  } catch (e) {
+    console.error("sim reminder scan failed", e);
+  }
+
+  return new Response(JSON.stringify({ processed: results.length, results, reminders }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });

@@ -341,6 +341,26 @@ Deno.serve(async (req) => {
       headers: { "idempotency-key": `sim-order-created:${orderIns.id}` } as any,
     }).catch(() => null);
 
+    // DD-received acknowledgement for Direct Debit orders.
+    if (payment_method === "direct_debit") {
+      supabase.functions.invoke("send-email", {
+        body: {
+          type: "sim_lifecycle",
+          to: email,
+          userId,
+          logToCommunications: true,
+          data: {
+            template: "sim-dd-received",
+            customer_name: full_name,
+            order_number: orderIns.order_number,
+            plan_name: plan.name,
+            dashboard_url: `${Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk"}/dashboard`,
+          },
+        },
+        headers: { "idempotency-key": `sim-dd-received:${orderIns.id}` } as any,
+      }).catch(() => null);
+    }
+
     // Log order creation to audit trail (admin sees new DD orders in SIM orders list with status=dd_mandate_pending).
     await supabase.from("audit_logs").insert({
       actor_user_id: userId,

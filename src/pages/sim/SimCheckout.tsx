@@ -348,7 +348,7 @@ const SimCheckout = () => {
           )}
 
           <div className="flex justify-between pt-4 border-t-2 border-foreground/20">
-            <Button variant="outline" onClick={() => setStep((s) => Math.max(1, (s - 1) as Step))} disabled={step === 1 || submitting}>Back</Button>
+            <Button variant="outline" onClick={() => setStep((s) => (Math.max(1, s - 1) as Step))} disabled={step === 1 || submitting}>Back</Button>
             {step < 6 && (
               <Button variant="hero" onClick={() => setStep((s) => (s + 1) as Step)} disabled={!canContinue()}>Continue</Button>
             )}

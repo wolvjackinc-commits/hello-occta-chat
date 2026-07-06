@@ -44,15 +44,23 @@ const SimCheckout = () => {
   const [consentDetails, setConsentDetails] = useState(false);
   const [consentTerms, setConsentTerms] = useState(false);
   const [consentDd, setConsentDd] = useState(false);
+  const [ddHolder, setDdHolder] = useState("");
+  const [ddSort, setDdSort] = useState("");
+  const [ddAccount, setDdAccount] = useState("");
+  const [ddBank, setDdBank] = useState("");
+  const [ddUkAccount, setDdUkAccount] = useState(false);
+  const [ddPayerAuth, setDdPayerAuth] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        navigate(`/auth?redirect=/sim/checkout?plan_id=${planId}`);
-        return;
+      // Guest allowed for card checkout; DD requires sign-in (enforced at
+      // step 5).
+      if (data.session) {
+        setEmail(data.session.user.email ?? "");
+        setIsSignedIn(true);
       }
-      setEmail(data.session.user.email ?? "");
       setAuthChecked(true);
       const cat = await loadSimCatalogue();
       setSettings(cat.settings);
@@ -61,7 +69,7 @@ const SimCheckout = () => {
       if (p && !p.physical_sim_available) setSimType("esim");
       if (p && !p.esim_available) setSimType("physical");
     })();
-  }, [planId, navigate]);
+  }, [planId]);
 
   const firstPayment = useMemo(() => {
     if (!plan) return 0;
@@ -96,7 +104,13 @@ const SimCheckout = () => {
       return true;
     }
     if (step === 4) return !!(fullName && email && billingAddress.line1 && billingAddress.postcode);
-    if (step === 5) return true;
+    if (step === 5) {
+      if (paymentMethod === "direct_debit") {
+        if (!isSignedIn) return false;
+        return !!(ddHolder && /^\d{6}$/.test(ddSort) && /^\d{8}$/.test(ddAccount) && ddBank && ddUkAccount && ddPayerAuth);
+      }
+      return true;
+    }
     if (step === 6) {
       const dd = paymentMethod === "direct_debit" ? consentDd : true;
       return consentDetails && consentTerms && dd;
@@ -127,6 +141,15 @@ const SimCheckout = () => {
           phone,
           billing_address: billingAddress,
           payment_method: paymentMethod,
+          dd_details: paymentMethod === "direct_debit" ? {
+            account_holder_name: ddHolder,
+            sort_code: ddSort,
+            account_number: ddAccount,
+            bank_name: ddBank,
+            uk_account_confirmed: ddUkAccount,
+            payer_authorised_confirmed: ddPayerAuth,
+            guarantee_acknowledged: consentDd,
+          } : undefined,
           consent: {
             details_confirmed: consentDetails,
             terms_accepted: consentTerms,
@@ -141,10 +164,12 @@ const SimCheckout = () => {
 
       const orderId = (data as any).order_id as string;
       const invoiceId = (data as any).invoice_id as string | null;
+      const orderToken = (data as any).order_token as string | undefined;
+      const successPath = `/sim/order-success/${orderId}${orderToken ? `?t=${orderToken}` : ""}`;
 
       // Card: start Worldpay HPP now
       if (paymentMethod === "card" && invoiceId) {
-        const returnUrl = `${window.location.origin}/pay?invoiceId=${invoiceId}&sim_order_id=${orderId}`;
+        const returnUrl = `${window.location.origin}/pay?invoiceId=${invoiceId}&sim_order_id=${orderId}${orderToken ? `&t=${orderToken}` : ""}`;
         const wp = await supabase.functions.invoke("worldpay-payment", {
           body: {
             action: "create-payment-session",
@@ -164,7 +189,7 @@ const SimCheckout = () => {
       }
 
       // DD path: go to order success (admin picks up)
-      navigate(`/sim/order-success/${orderId}`);
+      navigate(successPath);
     } catch (e) {
       console.error(e);
       toast({ title: "Could not place order", description: (e as Error).message, variant: "destructive" });
@@ -319,11 +344,34 @@ const SimCheckout = () => {
                     <RadioGroupItem value="direct_debit" />
                     <div>
                       <p className="font-display">Direct Debit</p>
-                      <p className="text-xs text-muted-foreground">Nothing charged now. Our team will contact you to set up the mandate securely. Billing starts once your service goes live.</p>
+                      <p className="text-xs text-muted-foreground">Nothing charged now. Bank details are encrypted and reviewed by our team. Requires a signed-in account.</p>
                     </div>
                   </label>
                 )}
               </RadioGroup>
+
+              {paymentMethod === "direct_debit" && !isSignedIn && (
+                <div className="mt-4 border-2 border-foreground p-3 text-sm">
+                  <p className="font-display uppercase mb-2">Sign in required</p>
+                  <p className="text-muted-foreground mb-3">Direct Debit is tied to your OCCTA account. Please sign in or create one to continue.</p>
+                  <Button variant="hero" onClick={() => navigate(`/auth?redirect=/sim/checkout?plan_id=${planId}`)}>Sign in / create account</Button>
+                </div>
+              )}
+
+              {paymentMethod === "direct_debit" && isSignedIn && (
+                <div className="mt-4 space-y-3">
+                  <p className="font-display uppercase text-sm">Direct Debit details</p>
+                  <div><Label>Account holder name *</Label><Input value={ddHolder} onChange={(e) => setDdHolder(e.target.value)} /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Sort code * (6 digits)</Label><Input value={ddSort} inputMode="numeric" maxLength={6} onChange={(e) => setDdSort(e.target.value.replace(/\D/g, ""))} /></div>
+                    <div><Label>Account number * (8 digits)</Label><Input value={ddAccount} inputMode="numeric" maxLength={8} onChange={(e) => setDdAccount(e.target.value.replace(/\D/g, ""))} /></div>
+                  </div>
+                  <div><Label>Bank name *</Label><Input value={ddBank} onChange={(e) => setDdBank(e.target.value)} /></div>
+                  <label className="flex items-start gap-2 text-xs"><Checkbox checked={ddUkAccount} onCheckedChange={(v) => setDdUkAccount(!!v)} /> This is a UK bank account eligible for Direct Debit.</label>
+                  <label className="flex items-start gap-2 text-xs"><Checkbox checked={ddPayerAuth} onCheckedChange={(v) => setDdPayerAuth(!!v)} /> I am the account holder or authorised to set up Direct Debits on this account.</label>
+                  <p className="text-xs text-muted-foreground">Your bank details are AES-256 encrypted at rest. We only display the last 4 digits of your account and last 2 of your sort code.</p>
+                </div>
+              )}
             </div>
           )}
 

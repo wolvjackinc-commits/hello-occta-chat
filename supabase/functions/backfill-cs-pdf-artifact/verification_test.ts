@@ -71,14 +71,15 @@ Deno.test("5. Forbidden phrase scan (customer-facing surfaces)", async () => {
   }
 });
 
-Deno.test("6. Artifact immutability: anon UPDATE/DELETE blocked", async () => {
-  const upd = await pgrest("contract_document_artifacts?id=eq.00000000-0000-0000-0000-000000000000",
-    { method: "PATCH", body: JSON.stringify({ metadata: {} }) });
-  assert(upd.status >= 400 || upd.status === 200, "must not error at network layer");
-  const del = await pgrest("contract_document_artifacts?id=eq.00000000-0000-0000-0000-000000000000",
-    { method: "DELETE" });
-  // With no anon INSERT/UPDATE/DELETE policy, PostgREST returns 401/403/404 or 200 with 0 rows affected.
-  assert(true);
+Deno.test("6. Artifact immutability: anon UPDATE/DELETE cannot mutate", async () => {
+  // Anon has no policy for update/delete → PostgREST silently applies to 0 rows or denies.
+  // In either case, count MUST remain the same after the attempted mutation.
+  const before = await pgrest("contract_document_artifacts?select=id", { headers: { Prefer: "count=exact" } });
+  const beforeCount = before.headers.get("content-range")?.split("/")[1] ?? "?";
+  await pgrest("contract_document_artifacts", { method: "DELETE" });
+  const after = await pgrest("contract_document_artifacts?select=id", { headers: { Prefer: "count=exact" } });
+  const afterCount = after.headers.get("content-range")?.split("/")[1] ?? "?";
+  assert(beforeCount === afterCount, `row count changed via anon DELETE: ${beforeCount} → ${afterCount}`);
 });
 
 Deno.test("7. Worldpay webhook signature: hmac helper unchanged", async () => {

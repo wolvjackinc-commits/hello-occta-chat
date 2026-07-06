@@ -1407,6 +1407,54 @@ export type Database = {
           },
         ]
       }
+      compliance_upgrade_runs: {
+        Row: {
+          completed_at_utc: string | null
+          created_at: string
+          dry_run_result: Json | null
+          id: string
+          migration_version: string | null
+          notes: Json
+          operator_label: string | null
+          operator_user_id: string | null
+          phase: string
+          rollback_script_path: string | null
+          started_at_utc: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at_utc?: string | null
+          created_at?: string
+          dry_run_result?: Json | null
+          id?: string
+          migration_version?: string | null
+          notes?: Json
+          operator_label?: string | null
+          operator_user_id?: string | null
+          phase: string
+          rollback_script_path?: string | null
+          started_at_utc?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at_utc?: string | null
+          created_at?: string
+          dry_run_result?: Json | null
+          id?: string
+          migration_version?: string | null
+          notes?: Json
+          operator_label?: string | null
+          operator_user_id?: string | null
+          phase?: string
+          rollback_script_path?: string | null
+          started_at_utc?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contract_acceptances: {
         Row: {
           acceptance_text: string

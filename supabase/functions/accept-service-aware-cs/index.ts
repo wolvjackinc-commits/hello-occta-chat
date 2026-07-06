@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
       const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const r = await fetch(`${projectUrl}/functions/v1/dv-vulnerability-review`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${svcKey}`, "Content-Type": "application/json" },
+        headers: { "Authorization": `Bearer ${svcKey}`, "Content-Type": "application/json", "x-internal-service": "1" },
         body: JSON.stringify({
           quote_id: cs.quote_id,
           contract_summary_id: cs.id,

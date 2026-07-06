@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { jsPDF } from "npm:jspdf@2.5.1";
 import { DD_GUARANTEE_TEXT } from "../_shared/directDebitGuarantee.ts";
+import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 // Build a branded OCCTA Direct Debit Guarantee PDF and return base64
 function buildDDGuaranteePdf(opts: {
@@ -401,6 +402,12 @@ serve(async (req) => {
       mandate.account_holder
     );
 
+    // Fail-soft helpful links block for DD setup flow.
+    const helpfulHtml = await fetchHelpfulLinksHtml(supabase, "dd_setup");
+    const emailHtmlFinal = helpfulHtml && emailHtml.includes("</body>")
+      ? emailHtml.replace("</body>", `${helpfulHtml}</body>`)
+      : emailHtml;
+
     // Send email via Resend
     let emailStatus = "pending";
     let providerMessageId: string | null = null;
@@ -411,7 +418,7 @@ serve(async (req) => {
         from: fromEmail,
         to: [profile.email],
         subject: config.subject,
-        html: emailHtml,
+        html: emailHtmlFinal,
         attachments: (newStatus === "active" || newStatus === "verified") ? [
           {
             filename: "OCCTA-Direct-Debit-Guarantee.pdf",

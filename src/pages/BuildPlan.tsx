@@ -144,7 +144,7 @@ function BuildPlanInner() {
   const [resolving, setResolving] = useState(false);
   const initialPostcode = searchParams.get("postcode") || "";
   const [contact, setContact] = useState({
-    full_name: "", email: "", phone: "",
+    full_name: "", email: "", phone: "", date_of_birth: "",
     address_line_1: "", address_line_2: "", town: "", county: "",
     postcode: initialPostcode,
     in_contract: "" as "" | "yes" | "no" | "unsure",
@@ -237,6 +237,7 @@ function BuildPlanInner() {
       const baseOk = contact.full_name.length >= 2
         && /^[^@]+@[^@]+\.[^@]+$/.test(contact.email)
         && contact.phone.length >= 7
+        && !!contact.date_of_birth
         && contact.address_line_1.trim().length >= 3
         && contact.town.trim().length >= 2
         && contact.postcode.length >= 5
@@ -269,6 +270,7 @@ function BuildPlanInner() {
           full_name: contact.full_name,
           email: contact.email,
           phone: contact.phone,
+          date_of_birth: contact.date_of_birth || null,
           postcode: contact.postcode || (addr.postcode as string) || "",
           address_line_1: contact.address_line_1.trim()
             || [addr.sub_premises, addr.premises_name, addr.thoroughfare_number, addr.thoroughfare_name].filter(Boolean).join(" ")

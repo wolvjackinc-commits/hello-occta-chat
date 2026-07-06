@@ -4894,6 +4894,7 @@ export type Database = {
           sim_checkout_mode: string
           singleton: boolean
           start_date_max_days: number
+          two_document_contract_flow_enabled: boolean
           unified_journey_enabled: boolean
           updated_at: string
           updated_by: string | null
@@ -4920,6 +4921,7 @@ export type Database = {
           sim_checkout_mode?: string
           singleton?: boolean
           start_date_max_days?: number
+          two_document_contract_flow_enabled?: boolean
           unified_journey_enabled?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -4946,6 +4948,7 @@ export type Database = {
           sim_checkout_mode?: string
           singleton?: boolean
           start_date_max_days?: number
+          two_document_contract_flow_enabled?: boolean
           unified_journey_enabled?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -8951,6 +8954,7 @@ export type Database = {
           sim_checkout_mode: string
           singleton: boolean
           start_date_max_days: number
+          two_document_contract_flow_enabled: boolean
           unified_journey_enabled: boolean
           updated_at: string
           updated_by: string | null

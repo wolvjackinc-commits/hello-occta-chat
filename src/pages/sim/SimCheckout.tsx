@@ -324,13 +324,20 @@ const SimCheckout = () => {
 
           {step === 4 && (
             <div>
-              <h2 className="font-display text-xl uppercase mb-3">Your details</h2>
+              <h2 className="font-display text-xl uppercase mb-3">{isBusiness ? "Business details" : "Your details"}</h2>
+              {isBusiness && (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="col-span-2"><Label>Business name *</Label><Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} /></div>
+                  <div><Label>Company number (optional)</Label><Input value={companyNumber} onChange={(e) => setCompanyNumber(e.target.value)} /></div>
+                  <div><Label>VAT number (optional)</Label><Input value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} /></div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2"><Label>Full name *</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
+                <div className="col-span-2"><Label>{isBusiness ? "Contact person *" : "Full name *"}</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
                 <div><Label>Email *</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-                <div><Label>Mobile</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                <div><Label>{isBusiness ? "Business phone" : "Mobile"}</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
                 <div className="col-span-2 pt-3 border-t-2 border-foreground/20">
-                  <p className="font-display uppercase text-sm mb-2">Billing address</p>
+                  <p className="font-display uppercase text-sm mb-2">{isBusiness ? "Business address" : "Billing address"}</p>
                 </div>
                 <div className="col-span-2"><Label>Line 1 *</Label><Input value={billingAddress.line1} onChange={(e) => setBillingAddress({ ...billingAddress, line1: e.target.value })} /></div>
                 <div className="col-span-2"><Label>Line 2</Label><Input value={billingAddress.line2} onChange={(e) => setBillingAddress({ ...billingAddress, line2: e.target.value })} /></div>

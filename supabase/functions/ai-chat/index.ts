@@ -62,12 +62,11 @@ const businessInfo = {
     { name: "ULTRAFAST", speed: "500Mbps", price: "£38.99/mo", description: "For gamers, streamers, WFH" },
     { name: "GIGABIT", speed: "900Mbps", price: "£52.99/mo", description: "The fastest internet" },
   ],
-  simPlans: [
-    { name: "Starter", data: "5GB", price: "£7.99/mo", description: "For light users" },
-    { name: "Essential", data: "15GB", price: "£11.99/mo", description: "Perfect for everyday use" },
-    { name: "Plus", data: "50GB", price: "£17.99/mo", description: "For social media enthusiasts", popular: true },
-    { name: "Unlimited", data: "Unlimited", price: "£27.99/mo", description: "Never worry about data again" },
-  ],
+  // SIM plans are catalogue-driven — Ira must not invent them. See the SIM
+  // PLANS section of the system prompt and the SIM-only guardrail. She should
+  // direct customers to /sim (live consumer + business catalogue) rather than
+  // quote from a static list.
+  simPlans: [] as Array<{ name: string; data: string; price: string; description: string; popular?: boolean }>,
   landlinePlans: [
     { name: "Pay As You Go", price: "£7.99/mo", callRate: "8p/min" },
     { name: "Evening & Weekend", price: "£12.99/mo", callRate: "Free evenings" },
@@ -1079,14 +1078,8 @@ async function executeTool(
           }
           break;
         case "sim":
-          plans = businessInfo.simPlans;
-          if (usage_needs?.toLowerCase().includes("social") || usage_needs?.toLowerCase().includes("video")) {
-            recommendation = "Plus (50GB) is ideal for social media and video streaming - our most popular SIM plan.";
-          } else if (usage_needs?.toLowerCase().includes("light") || usage_needs?.toLowerCase().includes("basic")) {
-            recommendation = "Starter (5GB) or Essential (15GB) would suit light usage perfectly.";
-          } else {
-            recommendation = "Plus (50GB) offers great value for most users.";
-          }
+          plans = [];
+          recommendation = "SIM plans are live for consumer and business at https://www.occta.co.uk/sim — filter by network (O2/Vodafone/EE), 30-day or 24-month, and data allowance. I don't quote SIM prices directly to avoid getting them wrong.";
           break;
         case "landline":
           plans = businessInfo.landlinePlans;
@@ -1885,7 +1878,15 @@ ${businessInfo.features.map(f => `- ${f}`).join("\n")}
 ${businessInfo.broadbandPlans.map(p => `- ${p.name}: ${p.speed} @ ${p.price} - ${p.description}${p.popular ? " (POPULAR)" : ""}`).join("\n")}
 
 ## SIM PLANS
-${businessInfo.simPlans.map(p => `- ${p.name}: ${p.data} data @ ${p.price} - ${p.description}${p.popular ? " (POPULAR)" : ""}`).join("\n")}
+SIM plans are live and orderable at https://www.occta.co.uk/sim.
+- Both **consumer** (personal) and **business** SIM plans are available.
+- Networks: O2, Vodafone and EE (subject to availability).
+- Term options: 30-day rolling and 24-month.
+- Categories: voice+data single-user SIMs and mobile broadband (data-only) SIMs.
+- **Consumer prices are shown incl. VAT; business prices are shown ex VAT (with incl. VAT alongside).**
+- Never invent SIM plan names, prices, data allowances, network wording, port dates or handset compatibility.
+- If the customer wants a specific quote, direct them to /sim so they can filter by segment, network, term and data.
+- Fair usage, annual price adjustments, and (for 24-month plans) potential early termination charges apply.
 
 ## LANDLINE PLANS
 ${businessInfo.landlinePlans.map(p => `- ${p.name}: ${p.price} - ${p.callRate}${p.popular ? " (POPULAR)" : ""}`).join("\n")}

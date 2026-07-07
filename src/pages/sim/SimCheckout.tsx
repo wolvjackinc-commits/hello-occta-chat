@@ -40,6 +40,9 @@ const SimCheckout = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [billingAddress, setBillingAddress] = useState({ line1: "", line2: "", city: "", postcode: "" });
+  const [businessName, setBusinessName] = useState("");
+  const [companyNumber, setCompanyNumber] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"card" | "direct_debit">("card");
   const [consentDetails, setConsentDetails] = useState(false);
   const [consentTerms, setConsentTerms] = useState(false);
@@ -78,6 +81,8 @@ const SimCheckout = () => {
     return (plan.first_payment_minor || plan.monthly_price_minor) + delivery;
   }, [plan, paymentMethod, simType]);
 
+  const isBusiness = plan?.customer_segment === "business";
+
   if (!authChecked || !plan || !settings) {
     return <Layout><div className="container mx-auto px-4 py-16">Loading checkout…</div></Layout>;
   }
@@ -103,7 +108,10 @@ const SimCheckout = () => {
       if (numberChoice === "keep") return !!currentMsisdn;
       return true;
     }
-    if (step === 4) return !!(fullName && email && billingAddress.line1 && billingAddress.postcode);
+    if (step === 4) {
+      if (isBusiness && !businessName) return false;
+      return !!(fullName && email && billingAddress.line1 && billingAddress.postcode);
+    }
     if (step === 5) {
       if (paymentMethod === "direct_debit") {
         if (!isSignedIn) return false;
@@ -126,6 +134,10 @@ const SimCheckout = () => {
       const { data, error } = await supabase.functions.invoke("sim-create-order", {
         body: {
           plan_id: plan.id,
+          customer_segment: plan.customer_segment,
+          business_name: isBusiness ? businessName : null,
+          company_number: isBusiness ? (companyNumber || null) : null,
+          vat_number: isBusiness ? (vatNumber || null) : null,
           sim_type: simType,
           esim_device_brand: simType === "esim" ? esimBrand : null,
           esim_device_model: simType === "esim" ? esimModel : null,
@@ -312,13 +324,20 @@ const SimCheckout = () => {
 
           {step === 4 && (
             <div>
-              <h2 className="font-display text-xl uppercase mb-3">Your details</h2>
+              <h2 className="font-display text-xl uppercase mb-3">{isBusiness ? "Business details" : "Your details"}</h2>
+              {isBusiness && (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="col-span-2"><Label>Business name *</Label><Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} /></div>
+                  <div><Label>Company number (optional)</Label><Input value={companyNumber} onChange={(e) => setCompanyNumber(e.target.value)} /></div>
+                  <div><Label>VAT number (optional)</Label><Input value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} /></div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2"><Label>Full name *</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
+                <div className="col-span-2"><Label>{isBusiness ? "Contact person *" : "Full name *"}</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
                 <div><Label>Email *</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-                <div><Label>Mobile</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                <div><Label>{isBusiness ? "Business phone" : "Mobile"}</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
                 <div className="col-span-2 pt-3 border-t-2 border-foreground/20">
-                  <p className="font-display uppercase text-sm mb-2">Billing address</p>
+                  <p className="font-display uppercase text-sm mb-2">{isBusiness ? "Business address" : "Billing address"}</p>
                 </div>
                 <div className="col-span-2"><Label>Line 1 *</Label><Input value={billingAddress.line1} onChange={(e) => setBillingAddress({ ...billingAddress, line1: e.target.value })} /></div>
                 <div className="col-span-2"><Label>Line 2</Label><Input value={billingAddress.line2} onChange={(e) => setBillingAddress({ ...billingAddress, line2: e.target.value })} /></div>

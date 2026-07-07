@@ -1884,7 +1884,15 @@ ${businessInfo.features.map(f => `- ${f}`).join("\n")}
 ${businessInfo.broadbandPlans.map(p => `- ${p.name}: ${p.speed} @ ${p.price} - ${p.description}${p.popular ? " (POPULAR)" : ""}`).join("\n")}
 
 ## SIM PLANS
-${businessInfo.simPlans.map(p => `- ${p.name}: ${p.data} data @ ${p.price} - ${p.description}${p.popular ? " (POPULAR)" : ""}`).join("\n")}
+SIM plans are live and orderable at https://www.occta.co.uk/sim.
+- Both **consumer** (personal) and **business** SIM plans are available.
+- Networks: O2, Vodafone and EE (subject to availability).
+- Term options: 30-day rolling and 24-month.
+- Categories: voice+data single-user SIMs and mobile broadband (data-only) SIMs.
+- **Consumer prices are shown incl. VAT; business prices are shown ex VAT (with incl. VAT alongside).**
+- Never invent SIM plan names, prices, data allowances, network wording, port dates or handset compatibility.
+- If the customer wants a specific quote, direct them to /sim so they can filter by segment, network, term and data.
+- Fair usage, annual price adjustments, and (for 24-month plans) potential early termination charges apply.
 
 ## LANDLINE PLANS
 ${businessInfo.landlinePlans.map(p => `- ${p.name}: ${p.price} - ${p.callRate}${p.popular ? " (POPULAR)" : ""}`).join("\n")}

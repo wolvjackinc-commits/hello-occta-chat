@@ -62,12 +62,11 @@ const businessInfo = {
     { name: "ULTRAFAST", speed: "500Mbps", price: "£38.99/mo", description: "For gamers, streamers, WFH" },
     { name: "GIGABIT", speed: "900Mbps", price: "£52.99/mo", description: "The fastest internet" },
   ],
-  simPlans: [
-    { name: "Starter", data: "5GB", price: "£7.99/mo", description: "For light users" },
-    { name: "Essential", data: "15GB", price: "£11.99/mo", description: "Perfect for everyday use" },
-    { name: "Plus", data: "50GB", price: "£17.99/mo", description: "For social media enthusiasts", popular: true },
-    { name: "Unlimited", data: "Unlimited", price: "£27.99/mo", description: "Never worry about data again" },
-  ],
+  // SIM plans are catalogue-driven — Ira must not invent them. See the SIM
+  // PLANS section of the system prompt and the SIM-only guardrail. She should
+  // direct customers to /sim (live consumer + business catalogue) rather than
+  // quote from a static list.
+  simPlans: [] as Array<{ name: string; data: string; price: string; description: string; popular?: boolean }>,
   landlinePlans: [
     { name: "Pay As You Go", price: "£7.99/mo", callRate: "8p/min" },
     { name: "Evening & Weekend", price: "£12.99/mo", callRate: "Free evenings" },

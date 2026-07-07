@@ -22,6 +22,16 @@ export interface SimPlanPublic {
   vat_rate: number;
   sort_order: number;
   terms_url: string | null;
+  customer_segment: "consumer" | "business";
+  source_network: string | null;
+  term_type: "30_day" | "24_month" | null;
+  plan_category: "single_user" | "mobile_broadband" | "promo_unlimited" | null;
+  retail_price_ex_vat_minor: number | null;
+  retail_price_inc_vat_minor: number | null;
+  fair_usage_applies: boolean;
+  annual_price_adjustment_applies: boolean;
+  early_termination_fee_applies: boolean;
+  cease_fee_note: string | null;
 }
 
 export interface SimSettingsPublic {

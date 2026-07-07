@@ -1078,14 +1078,8 @@ async function executeTool(
           }
           break;
         case "sim":
-          plans = businessInfo.simPlans;
-          if (usage_needs?.toLowerCase().includes("social") || usage_needs?.toLowerCase().includes("video")) {
-            recommendation = "Plus (50GB) is ideal for social media and video streaming - our most popular SIM plan.";
-          } else if (usage_needs?.toLowerCase().includes("light") || usage_needs?.toLowerCase().includes("basic")) {
-            recommendation = "Starter (5GB) or Essential (15GB) would suit light usage perfectly.";
-          } else {
-            recommendation = "Plus (50GB) offers great value for most users.";
-          }
+          plans = [];
+          recommendation = "SIM plans are live for consumer and business at https://www.occta.co.uk/sim — filter by network (O2/Vodafone/EE), 30-day or 24-month, and data allowance. I don't quote SIM prices directly to avoid getting them wrong.";
           break;
         case "landline":
           plans = businessInfo.landlinePlans;

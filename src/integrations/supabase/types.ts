@@ -6770,12 +6770,15 @@ export type Database = {
           admin_notes: string | null
           billing_address: Json
           billing_anchor_day: number | null
+          business_name: string | null
           card_paid_at: string | null
+          company_number: string | null
           consent: Json
           created_at: string
           current_msisdn: string | null
           current_provider: string | null
           customer_id: string | null
+          customer_segment: string
           dd_account_holder: string | null
           dd_bank_name: string | null
           dd_intake_id: string | null
@@ -6824,18 +6827,22 @@ export type Database = {
           supplier_ref: string | null
           updated_at: string
           vat_mode_snapshot: string
+          vat_number: string | null
           vat_rate_snapshot: number
         }
         Insert: {
           admin_notes?: string | null
           billing_address?: Json
           billing_anchor_day?: number | null
+          business_name?: string | null
           card_paid_at?: string | null
+          company_number?: string | null
           consent?: Json
           created_at?: string
           current_msisdn?: string | null
           current_provider?: string | null
           customer_id?: string | null
+          customer_segment?: string
           dd_account_holder?: string | null
           dd_bank_name?: string | null
           dd_intake_id?: string | null
@@ -6884,18 +6891,22 @@ export type Database = {
           supplier_ref?: string | null
           updated_at?: string
           vat_mode_snapshot?: string
+          vat_number?: string | null
           vat_rate_snapshot?: number
         }
         Update: {
           admin_notes?: string | null
           billing_address?: Json
           billing_anchor_day?: number | null
+          business_name?: string | null
           card_paid_at?: string | null
+          company_number?: string | null
           consent?: Json
           created_at?: string
           current_msisdn?: string | null
           current_provider?: string | null
           customer_id?: string | null
+          customer_segment?: string
           dd_account_holder?: string | null
           dd_bank_name?: string | null
           dd_intake_id?: string | null
@@ -6944,6 +6955,7 @@ export type Database = {
           supplier_ref?: string | null
           updated_at?: string
           vat_mode_snapshot?: string
+          vat_number?: string | null
           vat_rate_snapshot?: number
         }
         Relationships: [
@@ -6979,12 +6991,17 @@ export type Database = {
       }
       sim_plans: {
         Row: {
+          annual_price_adjustment_applies: boolean
           calls_label: string
+          cease_fee_note: string | null
           checkout_visible: boolean
           created_at: string
+          customer_segment: string
           data_label: string
           delivery_fee_minor: number
+          early_termination_fee_applies: boolean
           esim_available: boolean
+          fair_usage_applies: boolean
           features: Json
           first_payment_minor: number
           id: string
@@ -6995,11 +7012,21 @@ export type Database = {
           monthly_price_minor: number
           name: string
           network_display_name: string | null
+          occta_margin_ex_vat_minor: number | null
           physical_sim_available: boolean
+          plan_category: string | null
           plan_type: string
+          retail_price_ex_vat_minor: number | null
+          retail_price_inc_vat_minor: number | null
           setup_fee_minor: number
           slug: string
           sort_order: number
+          source_network: string | null
+          source_product: string | null
+          source_tariff_code: string | null
+          supplier_cost_ex_vat_minor: number | null
+          supplier_name: string | null
+          term_type: string | null
           terms_url: string | null
           texts_label: string
           updated_at: string
@@ -7007,12 +7034,17 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
+          annual_price_adjustment_applies?: boolean
           calls_label?: string
+          cease_fee_note?: string | null
           checkout_visible?: boolean
           created_at?: string
+          customer_segment?: string
           data_label: string
           delivery_fee_minor?: number
+          early_termination_fee_applies?: boolean
           esim_available?: boolean
+          fair_usage_applies?: boolean
           features?: Json
           first_payment_minor?: number
           id?: string
@@ -7023,11 +7055,21 @@ export type Database = {
           monthly_price_minor: number
           name: string
           network_display_name?: string | null
+          occta_margin_ex_vat_minor?: number | null
           physical_sim_available?: boolean
+          plan_category?: string | null
           plan_type?: string
+          retail_price_ex_vat_minor?: number | null
+          retail_price_inc_vat_minor?: number | null
           setup_fee_minor?: number
           slug: string
           sort_order?: number
+          source_network?: string | null
+          source_product?: string | null
+          source_tariff_code?: string | null
+          supplier_cost_ex_vat_minor?: number | null
+          supplier_name?: string | null
+          term_type?: string | null
           terms_url?: string | null
           texts_label?: string
           updated_at?: string
@@ -7035,12 +7077,17 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          annual_price_adjustment_applies?: boolean
           calls_label?: string
+          cease_fee_note?: string | null
           checkout_visible?: boolean
           created_at?: string
+          customer_segment?: string
           data_label?: string
           delivery_fee_minor?: number
+          early_termination_fee_applies?: boolean
           esim_available?: boolean
+          fair_usage_applies?: boolean
           features?: Json
           first_payment_minor?: number
           id?: string
@@ -7051,11 +7098,21 @@ export type Database = {
           monthly_price_minor?: number
           name?: string
           network_display_name?: string | null
+          occta_margin_ex_vat_minor?: number | null
           physical_sim_available?: boolean
+          plan_category?: string | null
           plan_type?: string
+          retail_price_ex_vat_minor?: number | null
+          retail_price_inc_vat_minor?: number | null
           setup_fee_minor?: number
           slug?: string
           sort_order?: number
+          source_network?: string | null
+          source_product?: string | null
+          source_tariff_code?: string | null
+          supplier_cost_ex_vat_minor?: number | null
+          supplier_name?: string | null
+          term_type?: string | null
           terms_url?: string | null
           texts_label?: string
           updated_at?: string
@@ -9161,10 +9218,15 @@ export type Database = {
       }
       sim_plans_public: {
         Row: {
+          annual_price_adjustment_applies: boolean | null
           calls_label: string | null
+          cease_fee_note: string | null
+          customer_segment: string | null
           data_label: string | null
           delivery_fee_minor: number | null
+          early_termination_fee_applies: boolean | null
           esim_available: boolean | null
+          fair_usage_applies: boolean | null
           features: Json | null
           first_payment_minor: number | null
           id: string | null
@@ -9174,20 +9236,30 @@ export type Database = {
           name: string | null
           network_display_name: string | null
           physical_sim_available: boolean | null
+          plan_category: string | null
           plan_type: string | null
+          retail_price_ex_vat_minor: number | null
+          retail_price_inc_vat_minor: number | null
           setup_fee_minor: number | null
           slug: string | null
           sort_order: number | null
+          source_network: string | null
+          term_type: string | null
           terms_url: string | null
           texts_label: string | null
           vat_mode: string | null
           vat_rate: number | null
         }
         Insert: {
+          annual_price_adjustment_applies?: boolean | null
           calls_label?: string | null
+          cease_fee_note?: string | null
+          customer_segment?: string | null
           data_label?: string | null
           delivery_fee_minor?: number | null
+          early_termination_fee_applies?: boolean | null
           esim_available?: boolean | null
+          fair_usage_applies?: boolean | null
           features?: Json | null
           first_payment_minor?: number | null
           id?: string | null
@@ -9197,20 +9269,30 @@ export type Database = {
           name?: string | null
           network_display_name?: string | null
           physical_sim_available?: boolean | null
+          plan_category?: string | null
           plan_type?: string | null
+          retail_price_ex_vat_minor?: number | null
+          retail_price_inc_vat_minor?: number | null
           setup_fee_minor?: number | null
           slug?: string | null
           sort_order?: number | null
+          source_network?: string | null
+          term_type?: string | null
           terms_url?: string | null
           texts_label?: string | null
           vat_mode?: string | null
           vat_rate?: number | null
         }
         Update: {
+          annual_price_adjustment_applies?: boolean | null
           calls_label?: string | null
+          cease_fee_note?: string | null
+          customer_segment?: string | null
           data_label?: string | null
           delivery_fee_minor?: number | null
+          early_termination_fee_applies?: boolean | null
           esim_available?: boolean | null
+          fair_usage_applies?: boolean | null
           features?: Json | null
           first_payment_minor?: number | null
           id?: string | null
@@ -9220,10 +9302,15 @@ export type Database = {
           name?: string | null
           network_display_name?: string | null
           physical_sim_available?: boolean | null
+          plan_category?: string | null
           plan_type?: string | null
+          retail_price_ex_vat_minor?: number | null
+          retail_price_inc_vat_minor?: number | null
           setup_fee_minor?: number | null
           slug?: string | null
           sort_order?: number | null
+          source_network?: string | null
+          term_type?: string | null
           terms_url?: string | null
           texts_label?: string | null
           vat_mode?: string | null

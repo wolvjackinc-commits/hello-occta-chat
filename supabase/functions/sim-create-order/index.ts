@@ -88,6 +88,10 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       plan_id,
+      customer_segment: submittedSegment,
+      business_name,
+      company_number,
+      vat_number,
       sim_type,
       esim_device_brand,
       esim_device_model,
@@ -147,6 +151,12 @@ Deno.serve(async (req) => {
       .eq("checkout_visible", true)
       .maybeSingle();
     if (planErr || !plan) return json(400, { error: "Plan not available" });
+    // Enforce business-details on business plans.
+    if (plan.customer_segment === "business" && !business_name) {
+      return json(400, { error: "business_name_required" });
+    }
+    // Ignore any spoofed segment from client; source of truth = plan row.
+    const customerSegment = plan.customer_segment ?? submittedSegment ?? "consumer";
     if (sim_type === "esim" && !plan.esim_available) return json(400, { error: "This plan is not available as eSIM" });
     if (sim_type === "physical" && !plan.physical_sim_available) return json(400, { error: "This plan is not available as physical SIM" });
 
@@ -186,6 +196,10 @@ Deno.serve(async (req) => {
         plan_id: plan.id,
         plan_slug_snapshot: plan.slug,
         plan_name_snapshot: plan.name,
+        customer_segment: customerSegment,
+        business_name: customerSegment === "business" ? (business_name ?? null) : null,
+        company_number: customerSegment === "business" ? (company_number ?? null) : null,
+        vat_number: customerSegment === "business" ? (vat_number ?? null) : null,
         monthly_price_minor_snapshot: plan.monthly_price_minor,
         first_payment_minor_snapshot: firstPaymentMinor,
         delivery_fee_minor_snapshot: deliveryFeeMinor,

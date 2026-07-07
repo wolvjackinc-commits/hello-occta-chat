@@ -60,11 +60,17 @@ export default function PaymentResult() {
     if (status === 'cancelled') {
       setResult({ success: false, message: 'Payment cancelled', status: 'cancelled' });
       setVerifying(false);
+      supabase.functions.invoke('sim-payment-failed-notify', {
+        body: { invoiceId, status: 'cancelled' },
+      }).catch(() => {});
       return;
     }
     if (status === 'failed') {
       setResult({ success: false, message: 'Payment failed', status: 'failed' });
       setVerifying(false);
+      supabase.functions.invoke('sim-payment-failed-notify', {
+        body: { invoiceId, status: 'failed' },
+      }).catch(() => {});
       return;
     }
 

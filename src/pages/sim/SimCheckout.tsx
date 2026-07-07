@@ -108,9 +108,10 @@ const SimCheckout = () => {
       if (numberChoice === "keep") return !!currentMsisdn;
       return true;
     }
-    if (step === 4) return !!(fullName && email && billingAddress.line1 && billingAddress.postcode);
-    // For business plans, business name is also required.
-    if (step === 4 && isBusiness && !businessName) return false;
+    if (step === 4) {
+      if (isBusiness && !businessName) return false;
+      return !!(fullName && email && billingAddress.line1 && billingAddress.postcode);
+    }
     if (step === 5) {
       if (paymentMethod === "direct_debit") {
         if (!isSignedIn) return false;

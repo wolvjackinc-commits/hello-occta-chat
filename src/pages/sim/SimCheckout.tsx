@@ -40,6 +40,9 @@ const SimCheckout = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [billingAddress, setBillingAddress] = useState({ line1: "", line2: "", city: "", postcode: "" });
+  const [businessName, setBusinessName] = useState("");
+  const [companyNumber, setCompanyNumber] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"card" | "direct_debit">("card");
   const [consentDetails, setConsentDetails] = useState(false);
   const [consentTerms, setConsentTerms] = useState(false);
@@ -78,6 +81,8 @@ const SimCheckout = () => {
     return (plan.first_payment_minor || plan.monthly_price_minor) + delivery;
   }, [plan, paymentMethod, simType]);
 
+  const isBusiness = plan?.customer_segment === "business";
+
   if (!authChecked || !plan || !settings) {
     return <Layout><div className="container mx-auto px-4 py-16">Loading checkout…</div></Layout>;
   }
@@ -104,6 +109,8 @@ const SimCheckout = () => {
       return true;
     }
     if (step === 4) return !!(fullName && email && billingAddress.line1 && billingAddress.postcode);
+    // For business plans, business name is also required.
+    if (step === 4 && isBusiness && !businessName) return false;
     if (step === 5) {
       if (paymentMethod === "direct_debit") {
         if (!isSignedIn) return false;
@@ -126,6 +133,10 @@ const SimCheckout = () => {
       const { data, error } = await supabase.functions.invoke("sim-create-order", {
         body: {
           plan_id: plan.id,
+          customer_segment: plan.customer_segment,
+          business_name: isBusiness ? businessName : null,
+          company_number: isBusiness ? (companyNumber || null) : null,
+          vat_number: isBusiness ? (vatNumber || null) : null,
           sim_type: simType,
           esim_device_brand: simType === "esim" ? esimBrand : null,
           esim_device_model: simType === "esim" ? esimModel : null,

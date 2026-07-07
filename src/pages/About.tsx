@@ -41,9 +41,9 @@ const About = () => {
               transition={{ duration: 0.4 }}
             >
               <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-                WE'RE OCCTA.
+                ABOUT OCCTA —
                 <br />
-                <span className="text-gradient">NICE TO MEET YOU.</span>
+                <span className="text-gradient">UK BROADBAND & TELECOM</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-lg">
                 We built OCCTA to be the cheaper, simpler alternative to the big brands.

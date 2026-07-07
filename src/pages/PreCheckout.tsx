@@ -661,7 +661,7 @@ const PreCheckout = () => {
               <p className="text-sm text-muted-foreground flex-grow">
                 Add Digital Home Phone from £{getFromPrices().landline}/mo.{' '}
                 <Link to="/landline" className="text-accent underline underline-offset-2 hover:text-foreground transition-colors">
-                  Learn more →
+                  Learn more about Digital Home Phone →
                 </Link>
               </p>
             </motion.div>

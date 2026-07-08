@@ -166,15 +166,29 @@ serve(async (req) => {
               currency: currency || 'GBP',
               amount: Math.round(amount * 100), // Convert to minor units (pence)
             },
-            resultURLs: {
-              successURL: `${returnUrl}?status=success&invoiceId=${invoiceId}`,
-              failureURL: `${returnUrl}?status=failed&invoiceId=${invoiceId}`,
-              cancelURL: `${returnUrl}?status=cancelled&invoiceId=${invoiceId}`,
-              // Optional extras to avoid user dead-ends (Worldpay may ignore if not supported on account)
-              errorURL: `${returnUrl}?status=failed&invoiceId=${invoiceId}`,
-              pendingURL: `${returnUrl}?status=pending&invoiceId=${invoiceId}`,
-              expiryURL: `${returnUrl}?status=failed&invoiceId=${invoiceId}`,
-            },
+            resultURLs: (() => {
+              // Safely append status + invoiceId to returnUrl, preserving any
+              // pre-existing query params (e.g. sim_order_id, t=<token>).
+              const build = (status: string) => {
+                try {
+                  const u = new URL(returnUrl);
+                  u.searchParams.set("status", status);
+                  u.searchParams.set("invoiceId", String(invoiceId));
+                  return u.toString();
+                } catch {
+                  const sep = returnUrl.includes("?") ? "&" : "?";
+                  return `${returnUrl}${sep}status=${status}&invoiceId=${invoiceId}`;
+                }
+              };
+              return {
+                successURL: build("success"),
+                failureURL: build("failed"),
+                cancelURL: build("cancelled"),
+                errorURL: build("failed"),
+                pendingURL: build("pending"),
+                expiryURL: build("failed"),
+              };
+            })(),
             // HPP schema does not allow billingAddress.email; email belongs in riskData
             ...(customerEmail
               ? {

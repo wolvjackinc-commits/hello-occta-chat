@@ -282,6 +282,12 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
         <Field label="Router / tracking" value={order.router_reference} />
       </div>
 
+      {csBlocked && (
+        <div className="border-2 border-destructive bg-destructive/10 text-destructive px-3 py-2 text-sm font-semibold">
+          Contract Summary not accepted — order/service cannot proceed.
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2">
         {ACTIONS.map((a) => (
           <Button

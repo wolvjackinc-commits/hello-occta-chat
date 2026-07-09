@@ -34,6 +34,7 @@ interface EmailRequest {
     | "payment_link"
     | "invoice_external_payment"
     | "custom_admin"
+    | "service_live_welcome"
     | "sim_lifecycle";
   to: string;
   data: Record<string, unknown>;

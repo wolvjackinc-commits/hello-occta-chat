@@ -1391,6 +1391,14 @@ const handler = async (req: Request): Promise<Response> => {
         html = getCustomAdminHtml(data);
         subject = data.subject as string || "Message from OCCTA";
         break;
+      case "service_live_welcome":
+        // Dedicated identifier for the "your service is live" welcome email.
+        // Renders through the same admin-branded shell but is logged in
+        // communications_log with template_name = "service_live_welcome"
+        // so future audits can distinguish it from custom_admin messages.
+        html = getCustomAdminHtml(data);
+        subject = data.subject as string || "Your OCCTA service is live";
+        break;
       case "sim_lifecycle": {
         const rendered = getSimLifecycleHtml(data);
         html = rendered.html;

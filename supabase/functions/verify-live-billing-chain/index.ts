@@ -273,6 +273,12 @@ Deno.serve(async (req) => {
     if (!row.actual_activation_date) {
       row.classifications.push("missing_service_live_timestamp");
     }
+    // Priority 1 guard visibility: any live/suspended service without an
+    // accepted Contract Summary is invalid and must not auto-fix or bill.
+    if (!row.contract_summary_accepted) {
+      row.classifications.push("contract_summary_not_accepted");
+      row.recommended.push("Contract Summary not accepted — order/service cannot proceed. Manual review required.");
+    }
     if (!row.order_live_at && row.actual_activation_date) {
       row.classifications.push("missing_order_live_timestamp");
       row.recommended.push("Backfill orders.actual_service_live_at_utc from service activation date.");

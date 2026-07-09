@@ -96,13 +96,34 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, occta_order_number, lifecycle_status, status, giacom_reference, giacom_product_ref, entered_in_giacom_at, expected_activation_date, router_reference, internal_notes, service_type, plan_name, plan_price, preferred_start_date, cooling_off_ends_at, payment_method, address_line1, address_line2, city, postcode")
+        .select("id, occta_order_number, lifecycle_status, status, giacom_reference, giacom_product_ref, entered_in_giacom_at, expected_activation_date, router_reference, internal_notes, service_type, plan_name, plan_price, preferred_start_date, cooling_off_ends_at, payment_method, address_line1, address_line2, city, postcode, contract_summary_id")
         .eq("id", orderId)
         .maybeSingle();
       if (error) throw error;
       return data as unknown as Order;
     },
   });
+
+  // Priority 1 admin guard: fetch the Contract Summary status linked to this
+  // order. If it hasn't been accepted, the confirm-service-live action is
+  // disabled and a blocker banner is shown.
+  const contractSummaryId = (orderQuery.data as any)?.contract_summary_id ?? null;
+  const csQuery = useQuery({
+    queryKey: ["order-cs-status", orderId, contractSummaryId],
+    enabled: !!contractSummaryId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contract_summaries")
+        .select("id, status, accepted_at")
+        .eq("id", contractSummaryId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const csAccepted =
+    !!csQuery.data && (csQuery.data as any).status === "accepted" && !!(csQuery.data as any).accepted_at;
+  const csBlocked = !contractSummaryId || !csAccepted;
 
   const historyQuery = useQuery({
     queryKey: ["order-history", orderId],
@@ -224,7 +245,7 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
 
   const isActive = (a: typeof ACTIONS[number]) => {
     if (a.key === "note") return true;
-    if (a.key === "confirm_live") return lifecycle === "committed";
+    if (a.key === "confirm_live") return lifecycle === "committed" && !csBlocked;
     if (a.key === "record_giacom") return lifecycle === "order_received";
     if (a.key === "resume") return lifecycle === "on_hold";
     if (a.key === "failed") return ["ordered","processing","committed"].includes(lifecycle);
@@ -260,6 +281,12 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
         <Field label="Expected activation" value={fmtDay(order.expected_activation_date)} />
         <Field label="Router / tracking" value={order.router_reference} />
       </div>
+
+      {csBlocked && (
+        <div className="border-2 border-destructive bg-destructive/10 text-destructive px-3 py-2 text-sm font-semibold">
+          Contract Summary not accepted — order/service cannot proceed.
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {ACTIONS.map((a) => (

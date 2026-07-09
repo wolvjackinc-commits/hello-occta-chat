@@ -5187,6 +5187,42 @@ export type Database = {
           },
         ]
       }
+      production_cleanup_batches: {
+        Row: {
+          actor: string | null
+          affected_profile_ids: string[]
+          batch_name: string
+          counts: Json
+          created_at: string
+          id: string
+          notes: string | null
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          actor?: string | null
+          affected_profile_ids?: string[]
+          batch_name: string
+          counts?: Json
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reason: string
+          updated_at?: string
+        }
+        Update: {
+          actor?: string | null
+          affected_profile_ids?: string[]
+          batch_name?: string
+          counts?: Json
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_number: string | null

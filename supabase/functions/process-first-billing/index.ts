@@ -82,10 +82,23 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
     try {
       const { data: ord } = await supabase
         .from("orders")
-        .select("id, lifecycle_status, payment_method_id, customer_id, occta_order_number")
+        .select("id, lifecycle_status, payment_method_id, customer_id, occta_order_number, contract_summary_id")
         .eq("id", job.order_id).maybeSingle();
       if (!ord || ord.lifecycle_status !== "live")
         throw new Error("order_not_live");
+
+      // HARD GUARD (Priority 1): never bill an order whose Contract Summary
+      // is not accepted. Server-side, no exceptions.
+      if (!ord.contract_summary_id) throw new Error("contract_summary_missing");
+      {
+        const { data: cs } = await supabase
+          .from("contract_summaries")
+          .select("status, accepted_at")
+          .eq("id", ord.contract_summary_id).maybeSingle();
+        if (!cs || cs.status !== "accepted" || !cs.accepted_at) {
+          throw new Error("contract_summary_not_accepted");
+        }
+      }
 
       const { data: svc } = await supabase.from("services")
         .select("id, status, plan_name, service_type, price_monthly, user_id")

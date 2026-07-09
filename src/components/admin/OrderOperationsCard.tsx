@@ -245,7 +245,7 @@ export function OrderOperationsCard({ orderId }: { orderId: string }) {
 
   const isActive = (a: typeof ACTIONS[number]) => {
     if (a.key === "note") return true;
-    if (a.key === "confirm_live") return lifecycle === "committed";
+    if (a.key === "confirm_live") return lifecycle === "committed" && !csBlocked;
     if (a.key === "record_giacom") return lifecycle === "order_received";
     if (a.key === "resume") return lifecycle === "on_hold";
     if (a.key === "failed") return ["ordered","processing","committed"].includes(lifecycle);

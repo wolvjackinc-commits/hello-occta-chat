@@ -46,7 +46,7 @@ export async function assertServiceLive(
 
   const { data: order, error } = await supabase
     .from("orders")
-    .select("id, actual_service_live_at_utc, status, activation_blocked_pending_review, contract_summary_pdf_hash, contract_information_pack_pdf_hash")
+    .select("id, actual_service_live_at_utc, status, activation_blocked_pending_review, contract_summary_id")
     .eq("id", input.orderId)
     .maybeSingle();
 
@@ -66,9 +66,22 @@ export async function assertServiceLive(
     };
   }
 
-  // Two-doc flow requires both accepted document hashes recorded on the order.
-  if (!(order as any).contract_summary_pdf_hash || !(order as any).contract_information_pack_pdf_hash) {
-    return { allowed: false, reason: "missing-accepted-document-hashes" };
+  // Two-doc flow requires an accepted Contract Summary. The signed PDF/hash
+  // live on the contract_summaries row (source of truth), not on orders.
+  if (!(order as any).contract_summary_id) {
+    return { allowed: false, reason: "missing-contract-summary" };
+  }
+  const { data: cs } = await supabase
+    .from("contract_summaries")
+    .select("id, status, accepted_at, pdf_hash, pdf_storage_key, pdf_url, monthly_price_incl_vat")
+    .eq("id", (order as any).contract_summary_id)
+    .maybeSingle();
+  if (!cs) return { allowed: false, reason: "contract-summary-not-found" };
+  if (cs.status !== "accepted" || !cs.accepted_at) {
+    return { allowed: false, reason: "contract-summary-not-accepted" };
+  }
+  if (!cs.monthly_price_incl_vat) {
+    return { allowed: false, reason: "missing-monthly-price" };
   }
 
   if (input.serviceId) {

@@ -140,12 +140,29 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
 
   const { data: cs } = await supabase
     .from("contract_summaries")
-    .select("id, cs_number, version, public_token_hash, pdf_storage_key, customer_id, contract_length, notice_period")
+    .select("id, cs_number, version, public_token_hash, pdf_storage_key, customer_id, contract_length, notice_period, status, accepted_at")
     .eq("quote_id", quote.id)
     .neq("status", "superseded")
     .order("version", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  // HARD SERVER-SIDE GUARD (Priority 1): a real order cannot be submitted
+  // unless the Contract Summary for this quote has been *accepted* by the
+  // customer. Quote requests, quotes and draft journeys may exist without
+  // signing — but order submission must be gated.
+  if (!cs?.id) {
+    return jsonResponse({
+      error: "contract_summary_missing",
+      message: "Contract Summary not accepted — order cannot proceed.",
+    }, 409);
+  }
+  if (cs.status !== "accepted" || !cs.accepted_at) {
+    return jsonResponse({
+      error: "contract_summary_not_accepted",
+      message: "Contract Summary not accepted — order cannot proceed.",
+    }, 409);
+  }
 
   // Phase 2 — make absolutely sure the customer exists before we create the
   // canonical order. ensureCustomerFromAcceptedContract is idempotent.

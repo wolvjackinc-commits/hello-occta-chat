@@ -1296,7 +1296,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         // For admin-only actions like ticket_reply, order_message, invoice_sent/paid, payment_link, verify admin role
-        const adminOnlyTypes = ["ticket_reply", "order_message", "invoice_sent", "invoice_paid", "payment_link", "invoice_external_payment", "custom_admin"];
+        const adminOnlyTypes = ["ticket_reply", "order_message", "invoice_sent", "invoice_paid", "payment_link", "invoice_external_payment", "custom_admin", "service_live_welcome"];
         if (adminOnlyTypes.includes(type)) {
           const userIsAdmin = await isAdmin(supabaseAdmin, user.id);
           if (!userIsAdmin) {

@@ -138,14 +138,19 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
             : `${fmtInclusivePeriod(job.period_start, job.period_end)}`,
         });
       }
-      if (Number(job.activation_fee_minor) > 0) {
+      // One-off charges: prefer the itemised `one_off_lines` snapshot when
+      // present, otherwise fall back to a single `activation_fee_minor` line.
+      // Historically both were populated with the same setup amount, causing
+      // the setup fee to be double-charged. This dedupe is the fix.
+      const oneOffLines = Array.isArray(job.one_off_lines) ? job.one_off_lines : [];
+      const hasOneOffLines = oneOffLines.some((l: any) => Number(l?.amount_minor ?? 0) > 0);
+      if (!hasOneOffLines && Number(job.activation_fee_minor) > 0) {
         rawLines.push({
           description: "Activation / setup fee",
           amount_minor: Number(job.activation_fee_minor),
           period_label: "One-off (per accepted Contract Summary)",
         });
       }
-      const oneOffLines = Array.isArray(job.one_off_lines) ? job.one_off_lines : [];
       for (const l of oneOffLines) {
         const amt = Number(l?.amount_minor ?? 0);
         if (amt > 0) {

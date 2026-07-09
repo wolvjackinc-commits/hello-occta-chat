@@ -15,6 +15,11 @@ project_id = "oexgjmuvgdndizsufipe"
   name = "daily-invoice-generation"
   schedule = "0 6 * * *"
 
+[[cron_jobs]]
+  command = "curl -X POST -H 'x-cron-secret: ${CRON_JOB_SECRET}' https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/verify-live-billing-chain -d '{\"mode\":\"fix\",\"lookback_days\":120}'"
+  name = "daily-billing-chain-verify"
+  schedule = "30 3 * * *"
+
 [functions]
   [functions.admin-send-email]
     verify_jwt = false
@@ -55,6 +60,8 @@ project_id = "oexgjmuvgdndizsufipe"
   [functions.worldpay-payment]
     verify_jwt = false
   [functions.worldpay-webhook]
+    verify_jwt = false
+  [functions.verify-live-billing-chain]
     verify_jwt = false
   [functions.check-address]
     verify_jwt = false

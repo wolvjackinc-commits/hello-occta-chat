@@ -142,6 +142,26 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Post-activation safety net: verify the full welcome/first-invoice/
+  // payment-link/next-billing chain and auto-fix or file an admin task.
+  // Fire-and-forget — never blocks activation response.
+  if (serviceId && !alreadyLive) {
+    try {
+      const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
+      const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/verify-live-billing-chain`;
+      await fetch(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-internal-kickoff": cronSecret,
+        },
+        body: JSON.stringify({ mode: "single", service_id: serviceId }),
+      }).catch((e) => console.error("verify-live-billing-chain kickoff failed", e));
+    } catch (e) {
+      console.error("verify-live-billing-chain kickoff exception", e);
+    }
+  }
+
   // NOTE: service-activation-email outbox and first-billing-job rows are
   // written atomically inside `confirm_service_live_tx`. Do not insert
   // them here — that would double-write or hide rollback failures.

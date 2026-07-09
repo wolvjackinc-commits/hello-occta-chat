@@ -88,6 +88,8 @@ const navSections: NavSection[] = [
       { label: "Invoices",      to: "/admin/billing" },
       { label: "Payment Links", to: "/admin/payment-requests" },
       { label: "Direct Debit",  to: "/admin/payments-dd" },
+      { label: "Reconciliation", to: "/admin/billing/reconciliation" },
+      { label: "Live Chain Check", to: "/admin/billing/chain-check" },
     ],
   },
   {

@@ -34,6 +34,7 @@ interface EmailRequest {
     | "payment_link"
     | "invoice_external_payment"
     | "custom_admin"
+    | "service_live_welcome"
     | "sim_lifecycle";
   to: string;
   data: Record<string, unknown>;
@@ -1295,7 +1296,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         // For admin-only actions like ticket_reply, order_message, invoice_sent/paid, payment_link, verify admin role
-        const adminOnlyTypes = ["ticket_reply", "order_message", "invoice_sent", "invoice_paid", "payment_link", "invoice_external_payment", "custom_admin"];
+        const adminOnlyTypes = ["ticket_reply", "order_message", "invoice_sent", "invoice_paid", "payment_link", "invoice_external_payment", "custom_admin", "service_live_welcome"];
         if (adminOnlyTypes.includes(type)) {
           const userIsAdmin = await isAdmin(supabaseAdmin, user.id);
           if (!userIsAdmin) {
@@ -1389,6 +1390,14 @@ const handler = async (req: Request): Promise<Response> => {
       case "custom_admin":
         html = getCustomAdminHtml(data);
         subject = data.subject as string || "Message from OCCTA";
+        break;
+      case "service_live_welcome":
+        // Dedicated identifier for the "your service is live" welcome email.
+        // Renders through the same admin-branded shell but is logged in
+        // communications_log with template_name = "service_live_welcome"
+        // so future audits can distinguish it from custom_admin messages.
+        html = getCustomAdminHtml(data);
+        subject = data.subject as string || "Your OCCTA service is live";
         break;
       case "sim_lifecycle": {
         const rendered = getSimLifecycleHtml(data);

@@ -69,7 +69,9 @@ function buildEmailHtml(p: any, dashboardUrl: string, helpfulLinksHtml = "") {
       <li>Payment method on file: <strong>${escapeHtml(p.payment_method_label || "")}</strong>. ${isDirectDebit ? "We collect automatically — nothing for you to do. Fully protected by the Direct Debit Guarantee." : "Each invoice comes with a one-tap secure Worldpay link."}</li>
       <li>VAT is already included in your monthly price.</li>
       <li>Questions about a bill? See the <a href="${billingHelpUrl}" style="color:#111">billing guide</a> or email <a href="mailto:${supportEmail}" style="color:#111">${supportEmail}</a>.</li>
-    </ul>`;
+    </ul>
+    <p style="margin:12px 0 8px 0;color:#333">Billing starts only once your service is confirmed live. Your first invoice may include your activation fee and a pro-rata charge from your live date to your chosen billing date. After that, your monthly service is billed in advance on your selected billing date.</p>
+    ${isDirectDebit ? "" : `<p style="margin:0;color:#333">You are not automatically charged. We send you an invoice with a secure payment link, and you pay manually.</p>`}`;
 
   const gettingStartedSection = `
     <ol style="margin:0;padding-left:20px">
@@ -199,7 +201,7 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
       const subjectLine = `Your OCCTA service is live${payload.occta_order_number ? " — " + payload.occta_order_number : ""}`.trim();
       const sendResp = await supabase.functions.invoke("send-email", {
         body: {
-          type: "custom_admin",
+          type: "service_live_welcome",
           to: payload.recipient_email,
           userId: payload.user_id ?? undefined,
           logToCommunications: true,

@@ -117,7 +117,19 @@ export function AdminLegacyRemediation() {
       const { data, error } = await supabase.functions.invoke("admin-legacy-remediation", {
         body: { action: "send", customer_id: CUSTOMER_ID, confirm: true },
       });
-      if (error) throw error;
+      if (error) {
+        // FunctionsHttpError doesn't expose the response body by default.
+        // Try to read it so we can show the real server-side reason.
+        let detail: string | null = null;
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === "function") {
+            const body = await ctx.json();
+            detail = body?.details || body?.message || body?.error || null;
+          }
+        } catch { /* ignore */ }
+        throw new Error(detail || error.message || "Send failed");
+      }
       if (!data?.ok) throw new Error(data?.message || data?.error || "Send failed");
       setSent(data as SendResult);
       toast.success(`Agreement sent — ${data.quote_number}`);

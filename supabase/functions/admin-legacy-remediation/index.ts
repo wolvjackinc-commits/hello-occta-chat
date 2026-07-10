@@ -51,6 +51,48 @@ const USAGE_WORDING =
   "but OCCTA will explain any confirmed changes to you before applying them.";
 const REMEDIATION_TAG = "legacy_remediation_v1";
 
+// --- Final legacy quarterly invoice (May–Jul 2026) ---------------------------
+// This is the final legacy landline bill before the new Contract Saver 24
+// starts on 01 Aug 2026. Mixed VAT treatment because OCCTA VAT registration
+// is effective 01 Jul 2026 — May + June are outside registration (no VAT),
+// July is inside registration (VAT @ 20%). Recomposed to preserve the same
+// £70.25 quarterly total the customer was paying under the legacy plan.
+const LEGACY_INV_PERIOD_START = "2026-05-01";
+const LEGACY_INV_PERIOD_END = "2026-07-31";
+const LEGACY_INV_TOTAL = 70.25;
+const LEGACY_INV_SUBTOTAL = 66.35; // 23.42 + 23.42 + 19.51
+const LEGACY_INV_VAT_TOTAL = 3.90; // July line only, 20% of 19.51 rounded
+const LEGACY_INV_LINES = [
+  {
+    description:
+      "OCCTA Talk — Final legacy quarterly landline service (May 2026). " +
+      "Includes share of 200 UK landline minutes and 50 UK mobile minutes. " +
+      "Outside OCCTA VAT registration period (registration effective 01 Jul 2026) — no VAT applied.",
+    net: 23.42,
+    vat_rate: 0,
+  },
+  {
+    description:
+      "OCCTA Talk — Final legacy quarterly landline service (June 2026). " +
+      "Outside OCCTA VAT registration period (registration effective 01 Jul 2026) — no VAT applied.",
+    net: 23.42,
+    vat_rate: 0,
+  },
+  {
+    description:
+      "OCCTA Talk — Final legacy quarterly landline service (July 2026). " +
+      "VAT applied at 20% (OCCTA VAT registration effective 01 Jul 2026).",
+    net: 19.51,
+    vat_rate: 20,
+  },
+];
+const LEGACY_INV_NOTES =
+  "OCCTA Talk — Final legacy quarterly landline service (May 2026 – July 2026). " +
+  "Includes 200 UK landline minutes and 50 UK mobile minutes. " +
+  "From 01 Aug 2026, the account is being moved to the new OCCTA Unlimited UK Calls — Contract Saver 24 " +
+  "plan subject to customer acceptance. Mixed VAT: May+June outside VAT registration, July at 20% " +
+  "(OCCTA VAT registration effective 01 Jul 2026).";
+
 const Schema = z.object({
   action: z.enum(["preview", "send"]),
   customer_id: z.string().uuid(),
@@ -93,6 +135,31 @@ Deno.serve(async (req) => {
   if (!services || services.length === 0) return jsonResponse({ error: "no_service" }, 409);
   if (services.length > 1) return jsonResponse({ error: "ambiguous_service", details: "Multiple active services on this customer — resolve manually." }, 409);
   const service = services[0];
+
+  // Look up any existing final legacy invoice for the May–Jul 2026 period
+  // (idempotency guard — we never issue two).
+  const { data: existingLegacyInvoices } = await supabase
+    .from("invoices")
+    .select("id, invoice_number, status, issue_date, due_date, total, subtotal, vat_total, billing_period_start, billing_period_end")
+    .eq("user_id", customer_id)
+    .eq("billing_period_start", LEGACY_INV_PERIOD_START)
+    .eq("billing_period_end", LEGACY_INV_PERIOD_END)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const existingLegacyInvoice = existingLegacyInvoices?.[0] ?? null;
+
+  // Look up any existing card_payment payment_request linked to that invoice.
+  let existingLegacyPr: { id: string; payment_request_number: string | null; status: string } | null = null;
+  if (existingLegacyInvoice) {
+    const { data: prs } = await supabase
+      .from("payment_requests")
+      .select("id, payment_request_number, status")
+      .eq("invoice_id", existingLegacyInvoice.id)
+      .eq("type", "card_payment")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    existingLegacyPr = prs?.[0] ?? null;
+  }
 
   // Idempotency: refuse if a non-superseded remediation quote already exists.
   const { data: prior } = await supabase
@@ -153,10 +220,34 @@ Deno.serve(async (req) => {
           created_at: existingRemediation.created_at,
         }
       : null,
+    legacy_invoice: {
+      period_start: LEGACY_INV_PERIOD_START,
+      period_end: LEGACY_INV_PERIOD_END,
+      subtotal: LEGACY_INV_SUBTOTAL,
+      vat_total: LEGACY_INV_VAT_TOTAL,
+      total: LEGACY_INV_TOTAL,
+      vat_treatment: "Mixed: May+June no VAT (pre-registration), July VAT @ 20% (from 01 Jul 2026).",
+      lines: LEGACY_INV_LINES,
+      already_created: existingLegacyInvoice
+        ? {
+            id: existingLegacyInvoice.id,
+            invoice_number: existingLegacyInvoice.invoice_number,
+            status: existingLegacyInvoice.status,
+            issue_date: existingLegacyInvoice.issue_date,
+            due_date: existingLegacyInvoice.due_date,
+            total: existingLegacyInvoice.total,
+            payment_request_number: existingLegacyPr?.payment_request_number ?? null,
+            payment_request_status: existingLegacyPr?.status ?? null,
+          }
+        : null,
+    },
     email_subject: emailSubject,
     email_html_preview: buildEmailHtml({
       firstName: recipientFirstName(profile.full_name),
       journeyUrl: "https://www.occta.co.uk/quote/{TOKEN}",
+      legacyInvoiceUrl: "https://www.occta.co.uk/pay?token={LEGACY_TOKEN}",
+      legacyInvoiceNumber: existingLegacyInvoice?.invoice_number ?? "INV-<pending>",
+      legacyInvoiceTotal: LEGACY_INV_TOTAL,
     }),
   };
 
@@ -173,6 +264,87 @@ Deno.serve(async (req) => {
       existing: existingRemediation,
     }, 409);
   }
+
+  // 0. Create (or reuse) the final legacy invoice + payment_request BEFORE
+  //    we create the Contract Saver 24 quote — so the daughter email carries
+  //    both links in a single message. Idempotent on (user_id, period).
+  let legacyInvoiceId = existingLegacyInvoice?.id ?? null;
+  let legacyInvoiceNumber = existingLegacyInvoice?.invoice_number ?? null;
+  let legacyPayToken: string | null = null;
+  let legacyPrId: string | null = existingLegacyPr?.id ?? null;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const dueIso = new Date(Date.now() + 14 * 86400_000).toISOString().slice(0, 10);
+  if (!legacyInvoiceId) {
+    const { data: newInv, error: invErr } = await supabase
+      .from("invoices")
+      .insert({
+        user_id: customer_id,
+        service_id: service.id,
+        status: "issued",
+        issue_date: todayIso,
+        due_date: dueIso,
+        currency: "GBP",
+        subtotal: LEGACY_INV_SUBTOTAL,
+        vat_total: LEGACY_INV_VAT_TOTAL,
+        total: LEGACY_INV_TOTAL,
+        vat_enabled: true,
+        vat_rate: 20,
+        billing_period_start: LEGACY_INV_PERIOD_START,
+        billing_period_end: LEGACY_INV_PERIOD_END,
+        invoice_type: "legacy_final_landline_quarter",
+        notes: LEGACY_INV_NOTES,
+      })
+      .select("id, invoice_number")
+      .single();
+    if (invErr || !newInv) return jsonResponse({ error: "legacy_invoice_create_failed", details: invErr?.message }, 500);
+    legacyInvoiceId = newInv.id;
+    legacyInvoiceNumber = newInv.invoice_number;
+    const lineRows = LEGACY_INV_LINES.map((l) => ({
+      invoice_id: newInv.id,
+      description: l.description,
+      qty: 1,
+      unit_price: l.net,
+      vat_rate: l.vat_rate,
+      line_total: l.net,
+      metadata: { source: REMEDIATION_TAG },
+    }));
+    const { error: linesErr } = await supabase.from("invoice_lines").insert(lineRows);
+    if (linesErr) {
+      await supabase.from("invoices").delete().eq("id", newInv.id);
+      return jsonResponse({ error: "legacy_invoice_lines_failed", details: linesErr.message }, 500);
+    }
+  }
+  if (!legacyPrId) {
+    const { raw: rawPayToken, hash: payTokenHash } = await generateTokenPair();
+    const prExpires = new Date(Date.now() + 30 * 86400_000).toISOString();
+    const { data: newPr, error: prErr } = await supabase
+      .from("payment_requests")
+      .insert({
+        user_id: customer_id,
+        account_number: profile.account_number,
+        type: "card_payment",
+        status: "sent",
+        amount: LEGACY_INV_TOTAL,
+        currency: "GBP",
+        invoice_id: legacyInvoiceId,
+        due_date: dueIso,
+        customer_email: RECIPIENT_EMAIL,
+        customer_name: profile.full_name ?? "Dullabhbhai Mistry",
+        notes: `Final legacy landline invoice ${legacyInvoiceNumber} — May–Jul 2026.`,
+        token_hash: payTokenHash,
+        expires_at: prExpires,
+        created_by: auth.userId,
+        metadata: { source: REMEDIATION_TAG, legacy_final_quarter: true },
+      })
+      .select("id")
+      .single();
+    if (prErr || !newPr) return jsonResponse({ error: "legacy_payment_request_failed", details: prErr?.message }, 500);
+    legacyPrId = newPr.id;
+    legacyPayToken = rawPayToken;
+  }
+  const legacyInvoicePayUrl = legacyPayToken
+    ? `https://www.occta.co.uk/pay?token=${legacyPayToken}`
+    : null; // pre-existing PR: we don't have the raw token, admin must re-mint if needed
 
   // 1. Create the quote_request (source = 'admin_legacy_remediation').
   const { data: qr, error: qrErr } = await supabase
@@ -259,6 +431,9 @@ Deno.serve(async (req) => {
   const html = buildEmailHtml({
     firstName: recipientFirstName(profile.full_name),
     journeyUrl,
+    legacyInvoiceUrl: legacyInvoicePayUrl,
+    legacyInvoiceNumber: legacyInvoiceNumber ?? "",
+    legacyInvoiceTotal: LEGACY_INV_TOTAL,
   });
   const sendRes = await sendResendEmail({
     to: RECIPIENT_EMAIL,
@@ -296,6 +471,9 @@ Deno.serve(async (req) => {
       recipient_email: RECIPIENT_EMAIL,
       billing_blocked: true,
       effective_start: EFFECTIVE_START_ISO,
+      legacy_invoice_id: legacyInvoiceId,
+      legacy_invoice_number: legacyInvoiceNumber,
+      legacy_payment_request_id: legacyPrId,
     },
   });
   await supabase.rpc("log_event", {
@@ -326,6 +504,9 @@ Deno.serve(async (req) => {
     journey_url: journeyUrl,
     service_id: service.id,
     billing_blocked: true,
+    legacy_invoice_id: legacyInvoiceId,
+    legacy_invoice_number: legacyInvoiceNumber,
+    legacy_invoice_pay_url: legacyInvoicePayUrl,
   });
 });
 
@@ -334,10 +515,30 @@ function recipientFirstName(fullName: string | null | undefined): string {
   return fullName.split(" ")[0] || "there";
 }
 
-function buildEmailHtml(opts: { firstName: string; journeyUrl: string }): string {
+function buildEmailHtml(opts: {
+  firstName: string;
+  journeyUrl: string;
+  legacyInvoiceUrl: string | null;
+  legacyInvoiceNumber: string;
+  legacyInvoiceTotal: number;
+}): string {
+  const legacyBlock = `
+    <h2 style="font-size:15px;text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px 0;">Final legacy bill (May 2026 – July 2026)</h2>
+    <p>Our records show the last confirmed paid invoice is <strong>INV-2605-0001</strong>, covering <strong>February 2026 to April 2026</strong>. That invoice was for <strong>£70.25</strong> and is marked as paid.</p>
+    <p>We have now prepared the final legacy bill for the next period, <strong>1 May 2026 to 31 July 2026</strong>, to keep the account up to date before the new agreement starts.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:8px 0 12px 0;font-size:13px;">
+      <tr><td style="padding:4px 12px 4px 0;">Invoice</td><td style="padding:4px 0;"><strong>${escapeHtml(opts.legacyInvoiceNumber)}</strong></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;">Period</td><td style="padding:4px 0;">01 May 2026 – 31 July 2026</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;">Amount due</td><td style="padding:4px 0;"><strong>£${opts.legacyInvoiceTotal.toFixed(2)}</strong></td></tr>
+    </table>
+    <p style="font-size:12px;color:#555;">VAT is applied only to the July 2026 portion of this invoice, because OCCTA's VAT registration is effective from 01 July 2026. May and June are outside VAT registration and are shown without VAT.</p>
+    ${opts.legacyInvoiceUrl ? `<p><a href="${opts.legacyInvoiceUrl}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;text-decoration:none;font-weight:600;border:2px solid #111;">Pay the final legacy bill</a></p>` : ""}
+  `;
   const body = `
     <p>Hello,</p>
     <p>We're writing about the OCCTA landline service for <strong>${escapeHtml(opts.firstName)}</strong> (account <strong>${TARGET_ACCOUNT_NUMBER}</strong>).</p>
+
+    ${legacyBlock}
 
     <h2 style="font-size:15px;text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px 0;">Why we're writing</h2>
     <p>Openreach is switching off the old copper phone network as part of the UK-wide <strong>Great Switch Off</strong>. Traditional landlines are being replaced with a <strong>Digital Voice / Home Phone</strong> service that runs over broadband. We need to move ${escapeHtml(opts.firstName)}'s service onto the new digital landline platform and put an up-to-date agreement in place.</p>

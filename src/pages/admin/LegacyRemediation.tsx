@@ -40,6 +40,25 @@ type PreviewPayload = {
   already_remediated:
     | { quote_id: string; quote_number: string; status: string; created_at: string }
     | null;
+  legacy_invoice: {
+    period_start: string;
+    period_end: string;
+    subtotal: number;
+    vat_total: number;
+    total: number;
+    vat_treatment: string;
+    lines: Array<{ description: string; net: number; vat_rate: number }>;
+    already_created: {
+      id: string;
+      invoice_number: string;
+      status: string;
+      issue_date: string;
+      due_date: string | null;
+      total: number;
+      payment_request_number: string | null;
+      payment_request_status: string | null;
+    } | null;
+  };
   email_subject: string;
   email_html_preview: string;
 };
@@ -52,6 +71,9 @@ type SendResult = {
   journey_url: string;
   service_id: string;
   billing_blocked: boolean;
+  legacy_invoice_id: string | null;
+  legacy_invoice_number: string | null;
+  legacy_invoice_pay_url: string | null;
 };
 
 export function AdminLegacyRemediation() {
@@ -179,6 +201,38 @@ export function AdminLegacyRemediation() {
           </Card>
 
           <Card className="p-6 border-2 border-foreground space-y-3">
+            <h2 className="text-lg font-semibold uppercase tracking-wide">Final legacy invoice (May – July 2026)</h2>
+            {preview.legacy_invoice.already_created ? (
+              <div className="text-sm space-y-1">
+                <Row label="Existing invoice" value={preview.legacy_invoice.already_created.invoice_number} highlight />
+                <Row label="Status" value={preview.legacy_invoice.already_created.status} />
+                <Row label="Issued" value={preview.legacy_invoice.already_created.issue_date} />
+                <Row label="Due" value={preview.legacy_invoice.already_created.due_date} />
+                <Row label="Total" value={fmt(preview.legacy_invoice.already_created.total)} />
+                <Row label="Payment request" value={preview.legacy_invoice.already_created.payment_request_number} />
+                <p className="text-xs text-muted-foreground pt-2">Invoice already exists — will be reused (no duplicate).</p>
+              </div>
+            ) : (
+              <div className="text-sm space-y-1">
+                <Row label="Period" value={`${preview.legacy_invoice.period_start} – ${preview.legacy_invoice.period_end}`} />
+                <Row label="Subtotal" value={fmt(preview.legacy_invoice.subtotal)} />
+                <Row label="VAT" value={fmt(preview.legacy_invoice.vat_total)} />
+                <Row label="Total" value={fmt(preview.legacy_invoice.total)} highlight />
+                <Row label="VAT treatment" value={preview.legacy_invoice.vat_treatment} />
+                <div className="border-t border-muted mt-2 pt-2 space-y-2">
+                  {preview.legacy_invoice.lines.map((l, i) => (
+                    <div key={i} className="text-xs">
+                      <div className="font-mono">£{l.net.toFixed(2)} · VAT {l.vat_rate}%</div>
+                      <div className="text-muted-foreground">{l.description}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground pt-2">Invoice + card payment link will be created when you click Send.</p>
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-6 border-2 border-foreground space-y-3">
             <h2 className="text-lg font-semibold uppercase tracking-wide">Billing</h2>
             <Row label="Anchor day" value={String(preview.billing.anchor_day)} />
             <Row label="Effective start" value={preview.billing.effective_start_date} highlight />
@@ -241,6 +295,8 @@ export function AdminLegacyRemediation() {
               <Row label="Journey URL" value={sent.journey_url} mono />
               <Row label="Service ID" value={sent.service_id} mono />
               <Row label="Billing blocked" value={String(sent.billing_blocked)} />
+              <Row label="Legacy invoice" value={sent.legacy_invoice_number} highlight />
+              <Row label="Legacy pay URL" value={sent.legacy_invoice_pay_url} mono />
               <p className="text-sm text-muted-foreground pt-2">The recipient will now review the Contract Summary, e-sign, and enter Direct Debit bank details in the unified journey. Recurring billing stays off until the DD mandate is active.</p>
             </Card>
           )}

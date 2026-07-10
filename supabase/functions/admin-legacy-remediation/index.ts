@@ -31,7 +31,7 @@ import { z } from "https://esm.sh/zod@3.23.8";
 
 // --- Locked configuration for this remediation --------------------------------
 const TARGET_ACCOUNT_NUMBER = "OCC70547490";
-const PLAN_NAME = "OCCTA Unlimited UK Calls";
+const PLAN_NAME = "OCCTA Unlimited UK Calls — Contract Saver 24";
 const SERVICE_WORDING = "Digital Voice / Home Phone / Landline replacement";
 const MONTHLY_NET = 33.33;
 const MONTHLY_VAT = 6.67;
@@ -40,10 +40,15 @@ const VAT_RATE = 20;
 const BILLING_ANCHOR_DAY = 1;
 const EFFECTIVE_START_ISO = "2026-08-01";
 const RECIPIENT_EMAIL = "previnamistry67@gmail.com";
+const CONTRACT_LENGTH_MONTHS = 24;
+const PLAN_TYPE = "contract_saver";
+const EMAIL_SUBJECT = "New 24-month Contract Saver home phone agreement — Dullabhbhai Mistry";
 const USAGE_WORDING =
   "Unlimited UK calls are for normal residential use to standard UK numbers. " +
   "International, premium-rate, special-rate, non-geographic chargeable numbers, " +
-  "directory enquiry services and any out-of-bundle usage may be charged separately where applicable.";
+  "directory enquiry services and any out-of-bundle usage may be charged separately where applicable. " +
+  "Future network/supplier changes linked to the UK digital phone switchover may affect services or charges, " +
+  "but OCCTA will explain any confirmed changes to you before applying them.";
 const REMEDIATION_TAG = "legacy_remediation_v1";
 
 const Schema = z.object({
@@ -101,7 +106,7 @@ Deno.serve(async (req) => {
   const existingRemediation = prior?.[0] ?? null;
 
   // Build the recipient/email preview payload.
-  const emailSubject = "Important: your OCCTA landline service — updated agreement & Direct Debit setup";
+  const emailSubject = EMAIL_SUBJECT;
   const preview = {
     customer: {
       id: profile.id,
@@ -125,9 +130,9 @@ Deno.serve(async (req) => {
       monthly_vat: MONTHLY_VAT,
       monthly_gross: MONTHLY_GROSS,
       vat_rate: VAT_RATE,
-      plan_type: "flex",
+      plan_type: PLAN_TYPE,
       customer_type: "residential",
-      contract_length_months: null,
+      contract_length_months: CONTRACT_LENGTH_MONTHS,
       usage_wording: USAGE_WORDING,
     },
     billing: {
@@ -181,7 +186,7 @@ Deno.serve(async (req) => {
       address_line_1: "14 Manor Road",
       town: "Rugby",
       service_interest: "digital_voice",
-      plan_preference: "flex",
+      plan_preference: "contract_saver",
       customer_type: "residential",
       preferred_contact_method: "email",
       marketing_consent: false,
@@ -203,9 +208,9 @@ Deno.serve(async (req) => {
       customer_id: customer_id,
       plan_name: PLAN_NAME,
       service_type: "digital_voice",
-      plan_type: "flex",
+      plan_type: PLAN_TYPE,
       customer_type: "residential",
-      contract_length_months: null,
+      contract_length_months: CONTRACT_LENGTH_MONTHS,
       monthly_net: MONTHLY_NET,
       monthly_vat_rate: VAT_RATE,
       monthly_vat_amount: MONTHLY_VAT,
@@ -224,7 +229,7 @@ Deno.serve(async (req) => {
       sent_at: new Date().toISOString(),
       locked_at: new Date().toISOString(),
       unified_journey_opt_in: true,
-      admin_notes: `[${REMEDIATION_TAG}] Legacy remediation — existing service ${service.id}. Billing anchor day 1, effective start ${EFFECTIVE_START_ISO}. Do not create invoice until CS accepted + DD mandate active.`,
+      admin_notes: `[${REMEDIATION_TAG}] Legacy remediation — Contract Saver 24 (24-month minimum term). Existing service ${service.id}. Billing anchor day 1, effective start ${EFFECTIVE_START_ISO}. Early termination charges may apply. Do not create invoice until CS accepted + DD mandate active.`,
       customer_notes: null,
       created_by: auth.userId,
     })
@@ -257,7 +262,7 @@ Deno.serve(async (req) => {
   });
   const sendRes = await sendResendEmail({
     to: RECIPIENT_EMAIL,
-    subject: "Important: your OCCTA landline service — updated agreement & Direct Debit setup",
+    subject: EMAIL_SUBJECT,
     html,
   });
   await recordEmailCommunication(supabase, {
@@ -338,19 +343,21 @@ function buildEmailHtml(opts: { firstName: string; journeyUrl: string }): string
     <p>Openreach is switching off the old copper phone network as part of the UK-wide <strong>Great Switch Off</strong>. Traditional landlines are being replaced with a <strong>Digital Voice / Home Phone</strong> service that runs over broadband. We need to move ${escapeHtml(opts.firstName)}'s service onto the new digital landline platform and put an up-to-date agreement in place.</p>
 
     <h2 style="font-size:15px;text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px 0;">Your new plan</h2>
-    <p style="margin:0 0 6px 0;"><strong>OCCTA Unlimited UK Calls</strong> — Digital Voice / Home Phone / Landline replacement</p>
+    <p style="margin:0 0 6px 0;"><strong>OCCTA Unlimited UK Calls — Contract Saver 24</strong> — Digital Voice / Home Phone / Landline replacement</p>
+    <p>We are offering a new <strong>OCCTA Unlimited UK Calls — Contract Saver 24</strong> plan at <strong>£40.00 per month including VAT</strong>. This is a <strong>24-month agreement</strong> designed to give a clear fixed monthly price for the service during the contract term, subject to the terms of the agreement, fair usage and any applicable regulatory/network changes.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:8px 0 12px 0;font-size:13px;">
       <tr><td style="padding:4px 12px 4px 0;">Monthly price</td><td style="padding:4px 0;"><strong>£40.00 inc VAT</strong></td></tr>
       <tr><td style="padding:4px 12px 4px 0;">Net</td><td style="padding:4px 0;">£33.33</td></tr>
       <tr><td style="padding:4px 12px 4px 0;">VAT @ 20%</td><td style="padding:4px 0;">£6.67</td></tr>
-      <tr><td style="padding:4px 12px 4px 0;">Contract</td><td style="padding:4px 0;">Flexible monthly — no minimum term</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;">Contract</td><td style="padding:4px 0;"><strong>Contract Saver 24 — 24-month minimum term</strong></td></tr>
       <tr><td style="padding:4px 12px 4px 0;">Billing date</td><td style="padding:4px 0;">1st of each month</td></tr>
       <tr><td style="padding:4px 12px 4px 0;">Starts</td><td style="padding:4px 0;">1 August 2026 (no back-billing)</td></tr>
     </table>
     <p style="font-size:12px;color:#555;">${escapeHtml(USAGE_WORDING)}</p>
+    <p style="font-size:12px;color:#555;"><strong>Because this is a 24-month Contract Saver plan, early termination charges may apply if the service is cancelled before the end of the minimum term.</strong></p>
 
     <h2 style="font-size:15px;text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px 0;">Future network migration</h2>
-    <p>If Openreach or our upstream supplier changes wholesale costs for the digital landline platform in the future, we will always tell you in writing before any price change. You would have the right to leave penalty-free. There are <strong>no automatic annual or CPI price rises</strong>.</p>
+    <p>Future network/supplier changes linked to the UK digital phone switchover may affect services or charges. OCCTA will always explain any confirmed changes to you in writing before applying them, and there are <strong>no automatic annual or CPI price rises</strong>.</p>
 
     <h2 style="font-size:15px;text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px 0;">What to do next</h2>
     <ol style="padding-left:18px;">

@@ -14,7 +14,7 @@
 //   * Do not create invoices, payment_requests, or receipts.
 //   * Do not touch signed Contract Summary PDFs/hashes.
 //   * Do not send anything on preview.
-//   * Refuse if a non-superseded remediation quote already exists.
+//   * Refuse if an active remediation quote already exists.
 
 import {
   corsHeaders,
@@ -161,13 +161,13 @@ Deno.serve(async (req) => {
     existingLegacyPr = prs?.[0] ?? null;
   }
 
-  // Idempotency: refuse if a non-superseded remediation quote already exists.
+  // Idempotency: refuse if an active remediation quote already exists.
   const { data: prior } = await supabase
     .from("quotes")
     .select("id, quote_number, status, admin_notes, created_at")
     .eq("customer_id", customer_id)
     .ilike("admin_notes", `%${REMEDIATION_TAG}%`)
-    .neq("status", "superseded")
+    .not("status", "in", "(rejected,expired)")
     .order("created_at", { ascending: false })
     .limit(1);
   const existingRemediation = prior?.[0] ?? null;

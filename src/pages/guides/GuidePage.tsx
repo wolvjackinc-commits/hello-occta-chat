@@ -48,6 +48,22 @@ const GuidePage = () => {
       },
       faqSchema,
       breadcrumbSchema,
+      ...(guide.howTo
+        ? [
+            {
+              "@type": "HowTo",
+              name: guide.howTo.name,
+              description: guide.howTo.description,
+              ...(guide.howTo.totalTime ? { totalTime: guide.howTo.totalTime } : {}),
+              step: guide.howTo.steps.map((s, idx) => ({
+                "@type": "HowToStep",
+                position: idx + 1,
+                name: s.name,
+                text: s.text,
+              })),
+            },
+          ]
+        : []),
     ],
   };
 

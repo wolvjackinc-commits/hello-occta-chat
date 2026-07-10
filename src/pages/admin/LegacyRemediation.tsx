@@ -103,19 +103,18 @@ export function AdminLegacyRemediation() {
 
   async function confirmSend() {
     if (!preview) return;
-    if (preview.already_remediated) {
-      toast.error("Already remediated — refusing to duplicate");
-      return;
-    }
+    const isResend = !!preview.already_remediated;
     const proceed = window.confirm(
-      `FINAL CONFIRMATION\n\nThis will:\n• Create quote for ${preview.customer.full_name} (${preview.customer.account_number})\n• Block billing on existing service ${preview.existing_service.id}\n• Email ${preview.recipient_email} with the secure agreement + DD link\n\nContinue?`,
+      isResend
+        ? `RESEND EMAIL\n\nThis will:\n• Reuse existing quote ${preview.already_remediated!.quote_number}\n• Mint fresh journey + payment tokens (old links will stop working)\n• Re-email ${preview.recipient_email}\n\nNo new quote, invoice, or payment request will be created.\n\nContinue?`
+        : `FINAL CONFIRMATION\n\nThis will:\n• Create quote for ${preview.customer.full_name} (${preview.customer.account_number})\n• Block billing on existing service ${preview.existing_service.id}\n• Email ${preview.recipient_email} with the secure agreement + DD link\n\nContinue?`,
     );
     if (!proceed) return;
     setSending(true);
     setError(null);
     try {
       const { data, error } = await supabase.functions.invoke("admin-legacy-remediation", {
-        body: { action: "send", customer_id: CUSTOMER_ID, confirm: true },
+        body: { action: isResend ? "resend_email" : "send", customer_id: CUSTOMER_ID, confirm: true },
       });
       if (error) {
         // FunctionsHttpError doesn't expose the response body by default.
@@ -132,7 +131,7 @@ export function AdminLegacyRemediation() {
       }
       if (!data?.ok) throw new Error(data?.message || data?.error || "Send failed");
       setSent(data as SendResult);
-      toast.success(`Agreement sent — ${data.quote_number}`);
+      toast.success(isResend ? `Email resent — ${data.quote_number}` : `Agreement sent — ${data.quote_number}`);
     } catch (e: any) {
       setError(e?.message || "Send failed");
       toast.error(e?.message || "Send failed");
@@ -178,7 +177,7 @@ export function AdminLegacyRemediation() {
         <>
           {preview.already_remediated && (
             <Card className="p-4 border-2 border-yellow-600 bg-yellow-50 text-sm">
-              <strong>Already remediated:</strong> quote {preview.already_remediated.quote_number} (status {preview.already_remediated.status}, created {new Date(preview.already_remediated.created_at).toLocaleString()}). Send is disabled.
+              <strong>Already remediated:</strong> quote {preview.already_remediated.quote_number} (status {preview.already_remediated.status}, created {new Date(preview.already_remediated.created_at).toLocaleString()}). Use <em>Resend email</em> below to email fresh links — no duplicates will be created.
             </Card>
           )}
 
@@ -288,10 +287,16 @@ export function AdminLegacyRemediation() {
               </Button>
               <Button
                 onClick={confirmSend}
-                disabled={sending || !!preview.already_remediated || !!sent}
+                disabled={sending || !!sent}
                 className="border-2 border-foreground bg-foreground text-background hover:bg-foreground/90"
               >
-                {sending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending…</> : <><Mail className="w-4 h-4 mr-2" />Send agreement + DD setup</>}
+                {sending ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending…</>
+                ) : preview.already_remediated ? (
+                  <><Mail className="w-4 h-4 mr-2" />Resend email (fresh links)</>
+                ) : (
+                  <><Mail className="w-4 h-4 mr-2" />Send agreement + DD setup</>
+                )}
               </Button>
             </div>
           </Card>

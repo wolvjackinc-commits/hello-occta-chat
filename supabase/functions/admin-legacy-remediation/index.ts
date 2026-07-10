@@ -31,7 +31,7 @@ import { z } from "https://esm.sh/zod@3.23.8";
 
 // --- Locked configuration for this remediation --------------------------------
 const TARGET_ACCOUNT_NUMBER = "OCC70547490";
-const PLAN_NAME = "OCCTA Unlimited UK Calls";
+const PLAN_NAME = "OCCTA Unlimited UK Calls — Contract Saver 24";
 const SERVICE_WORDING = "Digital Voice / Home Phone / Landline replacement";
 const MONTHLY_NET = 33.33;
 const MONTHLY_VAT = 6.67;
@@ -40,10 +40,15 @@ const VAT_RATE = 20;
 const BILLING_ANCHOR_DAY = 1;
 const EFFECTIVE_START_ISO = "2026-08-01";
 const RECIPIENT_EMAIL = "previnamistry67@gmail.com";
+const CONTRACT_LENGTH_MONTHS = 24;
+const PLAN_TYPE = "contract_saver";
+const EMAIL_SUBJECT = "New 24-month Contract Saver home phone agreement — Dullabhbhai Mistry";
 const USAGE_WORDING =
   "Unlimited UK calls are for normal residential use to standard UK numbers. " +
   "International, premium-rate, special-rate, non-geographic chargeable numbers, " +
-  "directory enquiry services and any out-of-bundle usage may be charged separately where applicable.";
+  "directory enquiry services and any out-of-bundle usage may be charged separately where applicable. " +
+  "Future network/supplier changes linked to the UK digital phone switchover may affect services or charges, " +
+  "but OCCTA will explain any confirmed changes to you before applying them.";
 const REMEDIATION_TAG = "legacy_remediation_v1";
 
 const Schema = z.object({

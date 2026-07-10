@@ -94,7 +94,7 @@ export function renderBrandedEmail(opts: ShellOptions): string {
     </td></tr>
     <!-- Footer -->
     <tr><td style="border-top:${BRAND.borderThin};padding:18px 4px;font:11px/1.6 Arial,Helvetica,sans-serif;color:${BRAND.muted}">
-      <strong style="color:${BRAND.ink}">OCCTA LIMITED</strong> · Company No. 13828933<br>
+      <strong style="color:${BRAND.ink}">OCCTA LIMITED</strong> · Company No. 13828933 · VAT No. 520 6072 30<br>
       22 Pavilion View, Huddersfield, HD3 3WU, United Kingdom<br>
       Support: <a href="mailto:hello@occta.co.uk" style="color:${BRAND.ink}">hello@occta.co.uk</a> · Help centre: <a href="https://www.occta.co.uk/help" style="color:${BRAND.ink}">occta.co.uk/help</a><br>
       You're receiving this because you have an active service with OCCTA. Regulated by Ofcom · ADR scheme: CISAS.

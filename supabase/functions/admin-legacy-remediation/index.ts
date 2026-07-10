@@ -275,16 +275,9 @@ Deno.serve(async (req) => {
   const todayIso = new Date().toISOString().slice(0, 10);
   const dueIso = new Date(Date.now() + 14 * 86400_000).toISOString().slice(0, 10);
   if (!legacyInvoiceId) {
-    const { data: generatedInvoiceNumber, error: invNumErr } = await supabase.rpc("generate_invoice_number");
-    const invoiceNumber = typeof generatedInvoiceNumber === "string" ? generatedInvoiceNumber : null;
-    if (invNumErr || !invoiceNumber) {
-      return jsonResponse({ error: "legacy_invoice_number_failed", details: invNumErr?.message ?? "No invoice number generated" }, 500);
-    }
-
     const { data: newInv, error: invErr } = await supabase
       .from("invoices")
       .insert({
-        invoice_number: invoiceNumber,
         user_id: customer_id,
         service_id: service.id,
         status: "issued",

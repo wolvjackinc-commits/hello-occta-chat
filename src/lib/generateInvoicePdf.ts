@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { companyConfig, isVatApplicableFor } from "@/lib/companyConfig";
 
 interface InvoiceLineData {
   description: string;
@@ -44,6 +45,7 @@ function escapeHtml(unsafe: string): string {
 export function generateInvoicePdf(invoice: InvoiceData): void {
   const vatEnabled = invoice.vatEnabled !== false; // Default true for backward compat
   const vatRate = invoice.vatRate ?? 20;
+  const showVatNumber = isVatApplicableFor(invoice.issueDate);
   
   const safeInvoice = {
     invoiceNumber: escapeHtml(invoice.invoiceNumber),
@@ -422,8 +424,8 @@ export function generateInvoicePdf(invoice: InvoiceData): void {
       <p><strong>OCCTA Telecom</strong></p>
       <p>Keeping the UK connected</p>
       <p style="margin-top: 10px;">Call us: ${CONTACT_PHONE_DISPLAY} | Email: billing@occta.co.uk</p>
-      <p style="margin-top: 10px;">OCCTA Limited | Company No. 13828933 | Registered in England & Wales</p>
-      <p>22 Pavilion View, Huddersfield, HD3 3WU</p>
+      <p style="margin-top: 10px;">${companyConfig.name} | Company No. ${companyConfig.companyNumber}${showVatNumber ? ` | VAT No. ${companyConfig.vatNumber}` : ""} | Registered in England &amp; Wales</p>
+      <p>${companyConfig.address.oneLine}</p>
     </div>
   </div>
   

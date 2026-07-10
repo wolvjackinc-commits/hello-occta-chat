@@ -94,7 +94,7 @@ const LEGACY_INV_NOTES =
   "(OCCTA VAT registration effective 01 Jul 2026).";
 
 const Schema = z.object({
-  action: z.enum(["preview", "send"]),
+  action: z.enum(["preview", "send", "resend_email"]),
   customer_id: z.string().uuid(),
   confirm: z.boolean().optional(),
 });
@@ -253,6 +253,88 @@ Deno.serve(async (req) => {
 
   if (action === "preview") {
     return jsonResponse({ ok: true, action: "preview", preview });
+  }
+
+  // ---- RESEND EMAIL path ---------------------------------------------------
+  // Reuses the existing remediation quote + legacy invoice/PR. Mints fresh
+  // journey + pay tokens (old hashes are replaced), then re-sends the email.
+  // No new quote, no new invoice, no new PR.
+  if (action === "resend_email") {
+    if (!confirm) return jsonResponse({ error: "confirmation_required" }, 400);
+    if (!existingRemediation) {
+      return jsonResponse({ error: "no_existing_quote", message: "No remediation quote to resend. Use action=send." }, 409);
+    }
+    const { raw: token, hash: tokenHash } = await generateTokenPair();
+    const expiresAt = new Date(Date.now() + 30 * 86400_000).toISOString();
+    const { error: qUpdErr } = await supabase
+      .from("quotes")
+      .update({
+        public_token_hash: tokenHash,
+        token_expires_at: expiresAt,
+        expires_at: expiresAt,
+      })
+      .eq("id", existingRemediation.id);
+    if (qUpdErr) return jsonResponse({ error: "quote_token_update_failed", details: qUpdErr.message }, 500);
+
+    let legacyPayUrl: string | null = null;
+    if (existingLegacyPr && existingLegacyPr.status !== "paid") {
+      const { raw: payToken, hash: payHash } = await generateTokenPair();
+      const prExp = new Date(Date.now() + 30 * 86400_000).toISOString();
+      await supabase
+        .from("payment_requests")
+        .update({ token_hash: payHash, expires_at: prExp, status: "sent" })
+        .eq("id", existingLegacyPr.id);
+      legacyPayUrl = `https://www.occta.co.uk/pay?token=${payToken}`;
+    }
+
+    const journeyUrl = `https://www.occta.co.uk/quote/${token}`;
+    const html = buildEmailHtml({
+      firstName: recipientFirstName(profile.full_name),
+      journeyUrl,
+      legacyInvoiceUrl: legacyPayUrl,
+      legacyInvoiceNumber: existingLegacyInvoice?.invoice_number ?? "",
+      legacyInvoiceTotal: LEGACY_INV_TOTAL,
+    });
+    const sendRes = await sendResendEmail({ to: RECIPIENT_EMAIL, subject: EMAIL_SUBJECT, html });
+    await recordEmailCommunication(supabase, {
+      template_name: "legacy_remediation_agreement_resend",
+      recipient_email: RECIPIENT_EMAIL,
+      sendResult: sendRes,
+      metadata: {
+        quote_id: existingRemediation.id,
+        customer_id,
+        service_id: service.id,
+        tag: REMEDIATION_TAG,
+        resend: true,
+      },
+      user_id: customer_id,
+    });
+    if (!sendRes.ok) {
+      return jsonResponse({ error: "email_send_failed", details: sendRes.error }, 502);
+    }
+    try {
+      await supabase.rpc("log_event", {
+        _actor_type: "admin",
+        _event_type: "legacy_remediation_resent",
+        _title: `Legacy remediation email resent (${existingRemediation.quote_number})`,
+        _details: { customer_id, service_id: service.id, recipient: RECIPIENT_EMAIL },
+        _source_module: "quote",
+        _quote_id: existingRemediation.id,
+        _severity: "info",
+      });
+    } catch { /* ignore */ }
+    return jsonResponse({
+      ok: true,
+      action: "resend_email",
+      quote_id: existingRemediation.id,
+      quote_number: existingRemediation.quote_number,
+      journey_url: journeyUrl,
+      service_id: service.id,
+      billing_blocked: true,
+      legacy_invoice_id: existingLegacyInvoice?.id ?? null,
+      legacy_invoice_number: existingLegacyInvoice?.invoice_number ?? null,
+      legacy_invoice_pay_url: legacyPayUrl,
+    });
   }
 
   // ---- SEND path -----------------------------------------------------------

@@ -177,7 +177,7 @@ export function AdminLegacyRemediation() {
         <>
           {preview.already_remediated && (
             <Card className="p-4 border-2 border-yellow-600 bg-yellow-50 text-sm">
-              <strong>Already remediated:</strong> quote {preview.already_remediated.quote_number} (status {preview.already_remediated.status}, created {new Date(preview.already_remediated.created_at).toLocaleString()}). Send is disabled.
+              <strong>Already remediated:</strong> quote {preview.already_remediated.quote_number} (status {preview.already_remediated.status}, created {new Date(preview.already_remediated.created_at).toLocaleString()}). Use <em>Resend email</em> below to email fresh links — no duplicates will be created.
             </Card>
           )}
 
@@ -287,10 +287,16 @@ export function AdminLegacyRemediation() {
               </Button>
               <Button
                 onClick={confirmSend}
-                disabled={sending || !!preview.already_remediated || !!sent}
+                disabled={sending || !!sent}
                 className="border-2 border-foreground bg-foreground text-background hover:bg-foreground/90"
               >
-                {sending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending…</> : <><Mail className="w-4 h-4 mr-2" />Send agreement + DD setup</>}
+                {sending ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending…</>
+                ) : preview.already_remediated ? (
+                  <><Mail className="w-4 h-4 mr-2" />Resend email (fresh links)</>
+                ) : (
+                  <><Mail className="w-4 h-4 mr-2" />Send agreement + DD setup</>
+                )}
               </Button>
             </div>
           </Card>

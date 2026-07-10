@@ -9,6 +9,18 @@ export interface GuideFAQ {
   answer: string;
 }
 
+export interface GuideHowToStep {
+  name: string;
+  text: string;
+}
+
+export interface GuideHowTo {
+  name: string;
+  description: string;
+  totalTime?: string; // ISO 8601 duration, e.g. "PT15M"
+  steps: GuideHowToStep[];
+}
+
 export interface Guide {
   slug: string;
   title: string;
@@ -20,6 +32,7 @@ export interface Guide {
   intro: string;
   sections: GuideSection[];
   faqs: GuideFAQ[];
+  howTo?: GuideHowTo;
   ctaText: string;
   ctaLink: string;
   relatedSlugs: string[];

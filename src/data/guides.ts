@@ -33,6 +33,9 @@ export interface Guide {
   sections: GuideSection[];
   faqs: GuideFAQ[];
   howTo?: GuideHowTo;
+  /** ISO date (YYYY-MM-DD). Used for Article datePublished/dateModified in JSON-LD. */
+  datePublished?: string;
+  dateModified?: string;
   ctaText: string;
   ctaLink: string;
   relatedSlugs: string[];

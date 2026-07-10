@@ -328,6 +328,9 @@ export function buildInvoiceEmailHtml(args: {
     </p>
     <p style="font-size:12px;color:#666;margin-top:24px">${escapeHtml(note)}</p>
     <p style="font-size:12px;color:#666">Need help? Reply to this email or visit our Support page.</p>
+    <p style="font-size:11px;color:#888;margin-top:16px;border-top:1px solid #eee;padding-top:12px">
+      OCCTA Limited · Company No. 13828933 · VAT No. 520 6072 30 · 22 Pavilion View, Huddersfield, HD3 3WU
+    </p>
   </div></body></html>`;
 }
 

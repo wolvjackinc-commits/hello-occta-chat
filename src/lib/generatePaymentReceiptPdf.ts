@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { companyConfig, isVatApplicableFor } from "@/lib/companyConfig";
 
 export type PaymentReceiptData = {
   receipt_ref: string;
@@ -28,6 +29,7 @@ function escapeHtml(unsafe: string | null | undefined): string {
 
 /** Open a print-ready branded payment receipt in a new tab. */
 export function generatePaymentReceiptPdf(r: PaymentReceiptData): void {
+  const showVatNumber = isVatApplicableFor(r.paid_at);
   const safe = {
     receipt_ref: escapeHtml(r.receipt_ref),
     prn: escapeHtml(r.payment_request_number),
@@ -101,7 +103,7 @@ export function generatePaymentReceiptPdf(r: PaymentReceiptData): void {
   <div class="footer">
     <strong>OCCTA Telecom</strong> · Keeping the UK connected.<br/>
     ${CONTACT_PHONE_DISPLAY} · hello@occta.co.uk<br/>
-    Company No. 13828933 · Registered: 22 Pavilion View, Huddersfield, HD3 3WU
+    Company No. ${companyConfig.companyNumber}${showVatNumber ? ` · VAT No. ${companyConfig.vatNumber}` : ""} · Registered: ${companyConfig.address.oneLine}
   </div>
 </div>
 <script>window.onload=function(){window.print()}</script>

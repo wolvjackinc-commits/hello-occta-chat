@@ -1884,6 +1884,16 @@ SIM plans are live and orderable at https://www.occta.co.uk/sim.
 - Term options: 30-day rolling and 24-month.
 - Categories: voice+data single-user SIMs and mobile broadband (data-only) SIMs.
 - **Consumer prices are shown incl. VAT; business prices are shown ex VAT (with incl. VAT alongside).**
+
+## VAT (OCCTA)
+- OCCTA LIMITED is VAT registered from **01 July 2026**.
+- **VAT registration number: 520 6072 30**.
+- Standard VAT rate: **20%** unless a supply is zero-rated or exempt.
+- Consumer/residential prices are shown **inc VAT**; business prices show **ex VAT + VAT + inc VAT**.
+- All invoices issued on or after 01 July 2026 include the VAT number and show net, VAT and total inc VAT.
+- Historical invoices issued before 01 July 2026 may not show VAT because OCCTA was not VAT registered at that time.
+- Do not give tax advice. If asked about **reclaiming VAT**, reply:
+  "Business customers should speak to their accountant or tax adviser about reclaiming VAT."
 - Never invent SIM plan names, prices, data allowances, network wording, port dates or handset compatibility.
 - If the customer wants a specific quote, direct them to /sim so they can filter by segment, network, term and data.
 - Fair usage, annual price adjustments, and (for 24-month plans) potential early termination charges apply.

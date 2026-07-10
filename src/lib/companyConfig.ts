@@ -14,7 +14,17 @@ export const companyConfig = {
   name: "OCCTA LIMITED",
   tradingName: "OCCTA LIMITED",
   companyNumber: "13828933",
-  vatNumber: null, // Add when registered for VAT
+  // VAT registration — OCCTA is VAT registered from 01 July 2026.
+  // Use `isVatApplicableFor(dateIso)` for date-gated display on historical
+  // documents so invoices/receipts dated before the effective date do not
+  // display the VAT number retroactively.
+  vatNumber: "520 6072 30",
+  vatRegistered: true,
+  vatEffectiveDate: "2026-07-01",
+  defaultVatRate: 20,
+  vatScheme: "Standard VAT accounting",
+  vatDisplayModeConsumer: "inc VAT first" as const,
+  vatDisplayModeBusiness: "ex VAT + inc VAT" as const,
   
   // Contact Information
   phone: {
@@ -86,10 +96,25 @@ Phone: ${companyConfig.phone.display}
 Email: ${companyConfig.email.support}
 Web: ${companyConfig.website.url}
 Company No. ${companyConfig.companyNumber}
+VAT No. ${companyConfig.vatNumber}
 `.trim();
 
 // Helper for PDF footers
 export const getPdfFooterText = () => 
-  `${companyConfig.name} | Company No. ${companyConfig.companyNumber} | ${companyConfig.address.oneLine}`;
+  `${companyConfig.name} | Company No. ${companyConfig.companyNumber} | VAT No. ${companyConfig.vatNumber} | ${companyConfig.address.oneLine}`;
+
+/**
+ * Whether VAT registration applies to a document with the given ISO date.
+ * Returns false for undated documents (safe default: do not show VAT number).
+ * Used to gate VAT-number rendering on historical invoices/receipts issued
+ * before the effective date.
+ */
+export function isVatApplicableFor(isoDate?: string | Date | null): boolean {
+  if (!companyConfig.vatRegistered) return false;
+  if (!isoDate) return false;
+  const d = typeof isoDate === "string" ? new Date(isoDate) : isoDate;
+  if (!(d instanceof Date) || isNaN(d.getTime())) return false;
+  return d.getTime() >= new Date(companyConfig.vatEffectiveDate + "T00:00:00Z").getTime();
+}
 
 export default companyConfig;

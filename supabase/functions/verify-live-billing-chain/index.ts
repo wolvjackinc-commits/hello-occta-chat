@@ -30,6 +30,7 @@ interface Body {
   mode?: Mode;
   service_id?: string;
   lookback_days?: number;
+  include_archived?: boolean;
 }
 
 type Classification =
@@ -45,7 +46,10 @@ type Classification =
   | "dd_mandate_not_active"
   | "missing_next_billing_date"
   | "recurring_not_ready"
-  | "manual_review_required";
+  | "manual_review_required"
+  | "manual_review_missing_order_link"
+  | "contract_summary_not_accepted"
+  | "profile_archived";
 
 interface Row {
   service_id: string;
@@ -116,24 +120,40 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { /* default */ }
   const mode: Mode = body.mode === "fix" ? "fix" : body.mode === "single" ? "single" : "report";
   const lookbackDays = Math.max(1, Math.min(365, body.lookback_days ?? 120));
+  const includeArchived = !!body.include_archived;
 
   // Load target service set.
   let servicesQ = svc.from("services")
-    .select("id, user_id, order_id, status, actual_activation_date, activation_confirmed_at, billing_enabled, billing_anchor_day, next_billing_date, contract_summary_id, service_type, archived_at")
+    .select("id, user_id, order_id, status, actual_activation_date, activation_confirmed_at, billing_enabled, billing_anchor_day, next_billing_date, contract_summary_id, service_type, archived_at, created_at")
     .is("archived_at", null);
 
   if (mode === "single") {
     if (!body.service_id) return jsonResponse({ error: "missing_service_id" }, 400);
     servicesQ = servicesQ.eq("id", body.service_id);
   } else {
-    const since = new Date(Date.now() - lookbackDays * 86400_000).toISOString();
-    servicesQ = servicesQ
-      .or("service_type.eq.broadband,service_type.is.null")
-      .or(`actual_activation_date.gte.${since.slice(0, 10)},status.eq.active,status.eq.suspended`);
+    // Canonical Live Chain Check target: real, non-archived, currently-billable
+    // customer services. We deliberately DO NOT restrict by service_type — any
+    // real billable service (broadband, landline, etc.) belongs in production
+    // readiness. Archived/test profiles are filtered post-query.
+    servicesQ = servicesQ.in("status", ["active", "suspended"]);
   }
 
   const { data: services, error: svcErr } = await servicesQ;
   if (svcErr) return jsonResponse({ error: "services_query_failed", message: svcErr.message }, 500);
+
+  // Filter out services belonging to archived profiles (test/archived customers)
+  // unless the caller explicitly asked to include them.
+  let scopedServices = services ?? [];
+  if (scopedServices.length && !includeArchived && mode !== "single") {
+    const userIds = Array.from(new Set(scopedServices.map((s: any) => s.user_id).filter(Boolean)));
+    if (userIds.length) {
+      const { data: profs } = await svc.from("profiles")
+        .select("id, archived_at")
+        .in("id", userIds);
+      const archived = new Set((profs ?? []).filter((p: any) => p.archived_at).map((p: any) => p.id));
+      scopedServices = scopedServices.filter((s: any) => !archived.has(s.user_id));
+    }
+  }
 
   const rows: Row[] = [];
   const summary = {
@@ -149,7 +169,7 @@ Deno.serve(async (req) => {
     recurring_not_ready: 0,
   };
 
-  for (const s of services ?? []) {
+  for (const s of scopedServices) {
     summary.total++;
 
     const row: Row = {
@@ -196,6 +216,29 @@ Deno.serve(async (req) => {
       row.customer_id = order?.customer_id ?? row.customer_id;
       row.payment_method = order?.payment_method ?? null;
       row.order_live_at = order?.actual_service_live_at_utc ?? null;
+    } else if (row.customer_id) {
+      // Fallback: look for a single deterministic order for this customer with
+      // an accepted Contract Summary. If exactly one match, we can safely link
+      // it in fix mode. Otherwise classify manual_review_missing_order_link.
+      const { data: candidates } = await svc.from("orders")
+        .select("id, occta_order_number, payment_method, actual_service_live_at_utc, contract_summary_id, status")
+        .eq("customer_id", row.customer_id)
+        .not("contract_summary_id", "is", null);
+      const withCs = candidates ?? [];
+      if (withCs.length === 1) {
+        order = withCs[0];
+        row.order_id = order.id;
+        row.order_number = order.occta_order_number ?? null;
+        row.payment_method = order.payment_method ?? null;
+        row.order_live_at = order.actual_service_live_at_utc ?? null;
+        if (mode === "fix" || mode === "single") {
+          const { error } = await svc.from("services")
+            .update({ order_id: order.id })
+            .eq("id", s.id)
+            .is("order_id", null);
+          if (!error) row.applied.push("service_order_link_repaired");
+        }
+      }
     }
 
     // Profile
@@ -272,6 +315,12 @@ Deno.serve(async (req) => {
     // Any service in this scope must be live/suspended and have activation date.
     if (!row.actual_activation_date) {
       row.classifications.push("missing_service_live_timestamp");
+    }
+    // No order linked (and no deterministic single-order candidate found).
+    // Classify as manual review rather than generic recurring_not_ready.
+    if (!row.order_id) {
+      row.classifications.push("manual_review_missing_order_link");
+      row.recommended.push("Service has no linked order. Manual reconciliation required.");
     }
     // Priority 1 guard visibility: any live/suspended service without an
     // accepted Contract Summary is invalid and must not auto-fix or bill.

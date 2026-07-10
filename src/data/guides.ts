@@ -33,6 +33,9 @@ export interface Guide {
   sections: GuideSection[];
   faqs: GuideFAQ[];
   howTo?: GuideHowTo;
+  /** ISO date (YYYY-MM-DD). Used for Article datePublished/dateModified in JSON-LD. */
+  datePublished?: string;
+  dateModified?: string;
   ctaText: string;
   ctaLink: string;
   relatedSlugs: string[];
@@ -193,6 +196,18 @@ export const guides: Guide[] = [
       { question: 'How long does switching take?', answer: 'Typically 10–14 working days from placing your order.' },
       { question: 'What if I am still in contract?', answer: 'You can still switch, but your old provider may charge an early termination fee. Check your contract terms.' },
     ],
+    howTo: {
+      name: 'How to Switch Broadband Provider in the UK',
+      description: 'Use the Ofcom One Touch Switch process to move UK broadband providers with minimal downtime.',
+      totalTime: 'PT14D',
+      steps: [
+        { name: 'Check your current contract', text: 'Look up your existing broadband contract end date and any early termination charges before you commit to a switch.' },
+        { name: 'Choose your new provider and plan', text: 'Enter your postcode with the new provider, pick a speed tier and confirm the plan you want.' },
+        { name: 'Place your order', text: 'Complete signup with the new provider. Under One Touch Switch, they contact your old provider to arrange the switch on your behalf.' },
+        { name: 'Wait for your activation date', text: 'You will receive a confirmed switch date, usually 10 to 14 working days after ordering.' },
+        { name: 'Go live on switch day', text: 'On the agreed date your new service activates and the old one ends the same day, keeping downtime to a few hours or less.' },
+      ],
+    },
     ctaText: 'Switch to OCCTA',
     ctaLink: '/broadband',
     relatedSlugs: ['no-contract-broadband-uk', 'cheap-broadband-uk'],
@@ -686,6 +701,16 @@ export const guides: Guide[] = [
       { question: 'What if I\u2019m still in contract?', answer: 'Your old provider may charge an exit fee — your new provider will tell you the figure before you commit.' },
       { question: 'Can I keep my landline number?', answer: 'Yes, it\u2019s included in the One Touch Switch process.' },
     ],
+    howTo: {
+      name: 'Switch UK Broadband in 3 Steps (One Touch Switch)',
+      description: 'Move UK broadband providers using Ofcom One Touch Switch in three simple steps.',
+      totalTime: 'PT14D',
+      steps: [
+        { name: 'Pick your new provider', text: 'Check your postcode, choose a plan and place the order. Tell them you are switching from another provider.' },
+        { name: 'Let your new provider handle the rest', text: 'Under One Touch Switch, they contact your existing provider, agree a switch date and confirm it back to you.' },
+        { name: 'Plug in on switch day', text: 'On the agreed day, plug in the new router. The old service ends at midnight the same day, so there is no overlap or double billing.' },
+      ],
+    },
     ctaText: 'Start your switch',
     ctaLink: '/broadband',
     relatedSlugs: ['no-contract-broadband-uk'],
@@ -712,6 +737,19 @@ export const guides: Guide[] = [
     faqs: [
       { question: 'Will a Wi-Fi extender help?', answer: 'Sometimes, but they often halve the speed they extend. A proper mesh system is better value long-term.' },
     ],
+    howTo: {
+      name: 'Fix Slow Wi-Fi at Home',
+      description: 'Six practical steps to improve slow home Wi-Fi, in order from free to most expensive.',
+      totalTime: 'PT30M',
+      steps: [
+        { name: 'Reposition the router', text: 'Move the router up high, central in the home and away from walls, cupboards and large metal objects.' },
+        { name: 'Use the 5GHz band', text: 'Connect nearby devices to the 5GHz Wi-Fi network for higher speeds. Keep 2.4GHz for far rooms and smart-home devices.' },
+        { name: 'Reboot the router', text: 'Power the router off at the socket for 60 seconds so it picks a quieter Wi-Fi channel on restart.' },
+        { name: 'Update device firmware', text: 'Update the operating system and Wi-Fi drivers on your phone and laptop so they support modern Wi-Fi standards properly.' },
+        { name: 'Add a mesh node', text: 'For larger homes or thick walls, add a mesh Wi-Fi node in a central room to extend coverage without halving speed.' },
+        { name: 'Use Ethernet for the big stuff', text: 'Plug TVs, consoles and desktop PCs into the router with an Ethernet cable to free up Wi-Fi bandwidth for mobile devices.' },
+      ],
+    },
     ctaText: 'Read the full help guide',
     ctaLink: '/help/slow-wifi-fix',
     relatedSlugs: ['what-broadband-speed-do-i-need'],

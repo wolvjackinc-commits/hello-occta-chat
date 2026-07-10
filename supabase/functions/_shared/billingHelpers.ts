@@ -255,7 +255,7 @@ export function buildInvoicePdfBytes(args: {
     : "Monthly service is billed in advance on your selected billing date.";
   doc.text(doc.splitTextToSize(note, w - 28), 14, 270);
   doc.text(
-    "OCCTA Limited · Company No. 13828933 · 22 Pavilion View, Huddersfield, HD3 3WU",
+    "OCCTA Limited · Company No. 13828933 · VAT No. 520 6072 30 · 22 Pavilion View, Huddersfield, HD3 3WU",
     w / 2,
     288,
     { align: "center" },

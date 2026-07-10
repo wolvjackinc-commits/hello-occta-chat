@@ -17,12 +17,17 @@ const GuidePage = () => {
 
   const related = getRelatedGuides(guide);
   const showEmergencyNote = guide.category === "home-phone";
-  const faqSchema = createFAQSchema(guide.faqs);
+  const faqSchema = guide.faqs.length > 0 ? createFAQSchema(guide.faqs) : null;
   const breadcrumbSchema = createBreadcrumbSchema([
     { name: "Home", url: "/" },
     { name: "Guides", url: "/guides" },
     { name: guide.title, url: `/guides/${guide.slug}` },
   ]);
+
+  const SITE = "https://www.occta.co.uk";
+  const OG_IMAGE = `${SITE}/og-image.png`;
+  const datePublished = guide.datePublished ?? "2025-01-15";
+  const dateModified = guide.dateModified ?? guide.datePublished ?? "2026-07-10";
 
   const combinedSchema = {
     "@context": "https://schema.org",
@@ -31,22 +36,25 @@ const GuidePage = () => {
         "@type": "Article",
         headline: guide.title,
         description: guide.description,
+        image: [OG_IMAGE],
+        datePublished,
+        dateModified,
         author: { "@type": "Organization", name: "OCCTA" },
         publisher: {
           "@type": "Organization",
           name: "OCCTA",
           logo: {
             "@type": "ImageObject",
-            url: "https://www.occta.co.uk/og-image.png",
+            url: `${SITE}/pwa-512x512.png`,
           },
         },
         mainEntityOfPage: {
           "@type": "WebPage",
-          "@id": `https://www.occta.co.uk/guides/${guide.slug}`,
+          "@id": `${SITE}/guides/${guide.slug}`,
         },
         inLanguage: "en-GB",
       },
-      faqSchema,
+      ...(faqSchema ? [faqSchema] : []),
       breadcrumbSchema,
       ...(guide.howTo
         ? [
@@ -54,6 +62,7 @@ const GuidePage = () => {
               "@type": "HowTo",
               name: guide.howTo.name,
               description: guide.howTo.description,
+              image: [OG_IMAGE],
               ...(guide.howTo.totalTime ? { totalTime: guide.howTo.totalTime } : {}),
               step: guide.howTo.steps.map((s, idx) => ({
                 "@type": "HowToStep",

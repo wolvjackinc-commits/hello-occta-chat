@@ -201,7 +201,8 @@ export function brutalistEmailShell(title: string, body: string, cta?: { label: 
                     <strong style="color:#111;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;">Registered office</strong><br/>
                     22 Pavilion View<br/>
                     Huddersfield, HD3 3WU<br/>
-                    Company No. 13828933
+                    Company No. 13828933<br/>
+                    VAT No. 520 6072 30
                   </td>
                 </tr>
               </table>

@@ -103,19 +103,18 @@ export function AdminLegacyRemediation() {
 
   async function confirmSend() {
     if (!preview) return;
-    if (preview.already_remediated) {
-      toast.error("Already remediated — refusing to duplicate");
-      return;
-    }
+    const isResend = !!preview.already_remediated;
     const proceed = window.confirm(
-      `FINAL CONFIRMATION\n\nThis will:\n• Create quote for ${preview.customer.full_name} (${preview.customer.account_number})\n• Block billing on existing service ${preview.existing_service.id}\n• Email ${preview.recipient_email} with the secure agreement + DD link\n\nContinue?`,
+      isResend
+        ? `RESEND EMAIL\n\nThis will:\n• Reuse existing quote ${preview.already_remediated!.quote_number}\n• Mint fresh journey + payment tokens (old links will stop working)\n• Re-email ${preview.recipient_email}\n\nNo new quote, invoice, or payment request will be created.\n\nContinue?`
+        : `FINAL CONFIRMATION\n\nThis will:\n• Create quote for ${preview.customer.full_name} (${preview.customer.account_number})\n• Block billing on existing service ${preview.existing_service.id}\n• Email ${preview.recipient_email} with the secure agreement + DD link\n\nContinue?`,
     );
     if (!proceed) return;
     setSending(true);
     setError(null);
     try {
       const { data, error } = await supabase.functions.invoke("admin-legacy-remediation", {
-        body: { action: "send", customer_id: CUSTOMER_ID, confirm: true },
+        body: { action: isResend ? "resend_email" : "send", customer_id: CUSTOMER_ID, confirm: true },
       });
       if (error) {
         // FunctionsHttpError doesn't expose the response body by default.
@@ -132,7 +131,7 @@ export function AdminLegacyRemediation() {
       }
       if (!data?.ok) throw new Error(data?.message || data?.error || "Send failed");
       setSent(data as SendResult);
-      toast.success(`Agreement sent — ${data.quote_number}`);
+      toast.success(isResend ? `Email resent — ${data.quote_number}` : `Agreement sent — ${data.quote_number}`);
     } catch (e: any) {
       setError(e?.message || "Send failed");
       toast.error(e?.message || "Send failed");

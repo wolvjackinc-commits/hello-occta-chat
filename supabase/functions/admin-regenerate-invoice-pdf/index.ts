@@ -120,5 +120,14 @@ Deno.serve(async (req) => {
     },
   });
 
-  return json({ ok: true, invoice_number: inv.invoice_number, pdf_hash: pdfHash, storage_key: inv.pdf_storage_key });
+  const { data: signed } = await supabase.storage
+    .from("invoice-pdfs").createSignedUrl(inv.pdf_storage_key, 60 * 60 * 24 * 14);
+
+  return json({
+    ok: true,
+    invoice_number: inv.invoice_number,
+    pdf_hash: pdfHash,
+    storage_key: inv.pdf_storage_key,
+    signed_url: signed?.signedUrl ?? null,
+  });
 });

@@ -235,6 +235,8 @@ const Footer = () => {
             <div className="flex items-center gap-6 text-sm text-background/70">
               <span>Company No. {companyConfig.companyNumber}</span>
               <span>•</span>
+              <span>VAT No. {companyConfig.vatNumber}</span>
+              <span>•</span>
               <span>UK Registered</span>
             </div>
           </div>

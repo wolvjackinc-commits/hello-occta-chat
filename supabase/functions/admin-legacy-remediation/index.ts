@@ -102,7 +102,7 @@ const Schema = z.object({
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
-
+  try {
   const auth = await requireStaff(req, ["admin", "super_admin"]);
   if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
 
@@ -508,6 +508,14 @@ Deno.serve(async (req) => {
     legacy_invoice_number: legacyInvoiceNumber,
     legacy_invoice_pay_url: legacyInvoicePayUrl,
   });
+  } catch (err) {
+    console.error("[admin-legacy-remediation] uncaught", err);
+    return jsonResponse({
+      error: "uncaught",
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    }, 500);
+  }
 });
 
 function recipientFirstName(fullName: string | null | undefined): string {

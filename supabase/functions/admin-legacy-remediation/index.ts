@@ -31,7 +31,7 @@ import { z } from "https://esm.sh/zod@3.23.8";
 
 // --- Locked configuration for this remediation --------------------------------
 const TARGET_ACCOUNT_NUMBER = "OCC70547490";
-const PLAN_NAME = "OCCTA Unlimited UK Calls — Contract Saver 24";
+const PLAN_NAME = "OCCTA Unlimited UK Calls — Contract Saver 12";
 const SERVICE_WORDING = "Digital Voice / Home Phone / Landline replacement";
 const MONTHLY_NET = 33.33;
 const MONTHLY_VAT = 6.67;
@@ -40,9 +40,9 @@ const VAT_RATE = 20;
 const BILLING_ANCHOR_DAY = 1;
 const EFFECTIVE_START_ISO = "2026-08-01";
 const RECIPIENT_EMAIL = "previnamistry67@gmail.com";
-const CONTRACT_LENGTH_MONTHS = 24;
+const CONTRACT_LENGTH_MONTHS = 12;
 const PLAN_TYPE = "contract_saver";
-const EMAIL_SUBJECT = "New 24-month Contract Saver home phone agreement — Dullabhbhai Mistry";
+const EMAIL_SUBJECT = "New 12-month Contract Saver home phone agreement — Dullabhbhai Mistry";
 const USAGE_WORDING =
   "Unlimited UK calls are for normal residential use to standard UK numbers. " +
   "International, premium-rate, special-rate, non-geographic chargeable numbers, " +
@@ -52,7 +52,7 @@ const USAGE_WORDING =
 const REMEDIATION_TAG = "legacy_remediation_v1";
 
 // --- Final legacy quarterly invoice (May–Jul 2026) ---------------------------
-// This is the final legacy landline bill before the new Contract Saver 24
+// This is the final legacy landline bill before the new Contract Saver 12
 // starts on 01 Aug 2026. Mixed VAT treatment because OCCTA VAT registration
 // is effective 01 Jul 2026 — May + June are outside registration (no VAT),
 // July is inside registration (VAT @ 20%). Recomposed to preserve the same
@@ -89,7 +89,7 @@ const LEGACY_INV_LINES = [
 const LEGACY_INV_NOTES =
   "OCCTA Talk — Final legacy quarterly landline service (May 2026 – July 2026). " +
   "Includes 200 UK landline minutes and 50 UK mobile minutes. " +
-  "From 01 Aug 2026, the account is being moved to the new OCCTA Unlimited UK Calls — Contract Saver 24 " +
+  "From 01 Aug 2026, the account is being moved to the new OCCTA Unlimited UK Calls — Contract Saver 12 " +
   "plan subject to customer acceptance. Mixed VAT: May+June outside VAT registration, July at 20% " +
   "(OCCTA VAT registration effective 01 Jul 2026).";
 
@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
   }
 
   // 0. Create (or reuse) the final legacy invoice + payment_request BEFORE
-  //    we create the Contract Saver 24 quote — so the daughter email carries
+  //    we create the Contract Saver 12 quote — so the daughter email carries
   //    both links in a single message. Idempotent on (user_id, period).
   let legacyInvoiceId = existingLegacyInvoice?.id ?? null;
   let legacyInvoiceNumber = existingLegacyInvoice?.invoice_number ?? null;
@@ -401,7 +401,7 @@ Deno.serve(async (req) => {
       sent_at: new Date().toISOString(),
       locked_at: new Date().toISOString(),
       unified_journey_opt_in: true,
-      admin_notes: `[${REMEDIATION_TAG}] Legacy remediation — Contract Saver 24 (24-month minimum term). Existing service ${service.id}. Billing anchor day 1, effective start ${EFFECTIVE_START_ISO}. Early termination charges may apply. Do not create invoice until CS accepted + DD mandate active.`,
+      admin_notes: `[${REMEDIATION_TAG}] Legacy remediation — Contract Saver 12 (12-month minimum term). Existing service ${service.id}. Billing anchor day 1, effective start ${EFFECTIVE_START_ISO}. Early termination charges may apply. Do not create invoice until CS accepted + DD mandate active.`,
       customer_notes: null,
       created_by: auth.userId,
     })
@@ -554,18 +554,18 @@ function buildEmailHtml(opts: {
     <p>Openreach is switching off the old copper phone network as part of the UK-wide <strong>Great Switch Off</strong>. Traditional landlines are being replaced with a <strong>Digital Voice / Home Phone</strong> service that runs over broadband. We need to move ${escapeHtml(opts.firstName)}'s service onto the new digital landline platform and put an up-to-date agreement in place.</p>
 
     <h2 style="font-size:15px;text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px 0;">Your new plan</h2>
-    <p style="margin:0 0 6px 0;"><strong>OCCTA Unlimited UK Calls — Contract Saver 24</strong> — Digital Voice / Home Phone / Landline replacement</p>
-    <p>We are offering a new <strong>OCCTA Unlimited UK Calls — Contract Saver 24</strong> plan at <strong>£40.00 per month including VAT</strong>. This is a <strong>24-month agreement</strong> designed to give a clear fixed monthly price for the service during the contract term, subject to the terms of the agreement, fair usage and any applicable regulatory/network changes.</p>
+    <p style="margin:0 0 6px 0;"><strong>OCCTA Unlimited UK Calls — Contract Saver 12</strong> — Digital Voice / Home Phone / Landline replacement</p>
+    <p>We are offering a new <strong>OCCTA Unlimited UK Calls — Contract Saver 12</strong> plan at <strong>£40.00 per month including VAT</strong>. This is a <strong>12-month agreement</strong> designed to give a clear fixed monthly price for the service during the contract term, subject to the terms of the agreement, fair usage and any applicable regulatory/network changes.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:8px 0 12px 0;font-size:13px;">
       <tr><td style="padding:4px 12px 4px 0;">Monthly price</td><td style="padding:4px 0;"><strong>£40.00 inc VAT</strong></td></tr>
       <tr><td style="padding:4px 12px 4px 0;">Net</td><td style="padding:4px 0;">£33.33</td></tr>
       <tr><td style="padding:4px 12px 4px 0;">VAT @ 20%</td><td style="padding:4px 0;">£6.67</td></tr>
-      <tr><td style="padding:4px 12px 4px 0;">Contract</td><td style="padding:4px 0;"><strong>Contract Saver 24 — 24-month minimum term</strong></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;">Contract</td><td style="padding:4px 0;"><strong>Contract Saver 12 — 12-month minimum term</strong></td></tr>
       <tr><td style="padding:4px 12px 4px 0;">Billing date</td><td style="padding:4px 0;">1st of each month</td></tr>
       <tr><td style="padding:4px 12px 4px 0;">Starts</td><td style="padding:4px 0;">1 August 2026 (no back-billing)</td></tr>
     </table>
     <p style="font-size:12px;color:#555;">${escapeHtml(USAGE_WORDING)}</p>
-    <p style="font-size:12px;color:#555;"><strong>Because this is a 24-month Contract Saver plan, early termination charges may apply if the service is cancelled before the end of the minimum term.</strong></p>
+    <p style="font-size:12px;color:#555;"><strong>Because this is a 12-month Contract Saver plan, early termination charges may apply if the service is cancelled before the end of the minimum term.</strong></p>
 
     <h2 style="font-size:15px;text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px 0;">Future network migration</h2>
     <p>Future network/supplier changes linked to the UK digital phone switchover may affect services or charges. OCCTA will always explain any confirmed changes to you in writing before applying them, and there are <strong>no automatic annual or CPI price rises</strong>.</p>

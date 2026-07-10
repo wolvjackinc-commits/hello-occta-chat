@@ -476,15 +476,17 @@ Deno.serve(async (req) => {
       legacy_payment_request_id: legacyPrId,
     },
   });
-  await supabase.rpc("log_event", {
-    _actor_type: "admin",
-    _event_type: "legacy_remediation_sent",
-    _title: `Legacy remediation sent (${quote.quote_number})`,
-    _details: { customer_id, service_id: service.id, recipient: RECIPIENT_EMAIL },
-    _source_module: "quote",
-    _quote_id: quote.id,
-    _severity: "info",
-  }).catch(() => {});
+  try {
+    await supabase.rpc("log_event", {
+      _actor_type: "admin",
+      _event_type: "legacy_remediation_sent",
+      _title: `Legacy remediation sent (${quote.quote_number})`,
+      _details: { customer_id, service_id: service.id, recipient: RECIPIENT_EMAIL },
+      _source_module: "quote",
+      _quote_id: quote.id,
+      _severity: "info",
+    });
+  } catch { /* ignore */ }
   await supabase.from("admin_tasks").insert({
     title: `Legacy remediation awaiting acceptance — ${profile.full_name ?? profile.account_number}`,
     description: `New agreement (${quote.quote_number}) sent to ${RECIPIENT_EMAIL}. Billing on service ${service.id} is paused until CS accepted + DD mandate active.`,

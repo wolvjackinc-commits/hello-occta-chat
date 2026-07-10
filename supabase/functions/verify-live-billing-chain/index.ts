@@ -45,7 +45,10 @@ type Classification =
   | "dd_mandate_not_active"
   | "missing_next_billing_date"
   | "recurring_not_ready"
-  | "manual_review_required";
+  | "manual_review_required"
+  | "manual_review_missing_order_link"
+  | "contract_summary_not_accepted"
+  | "profile_archived";
 
 interface Row {
   service_id: string;

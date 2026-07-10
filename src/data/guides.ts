@@ -196,6 +196,18 @@ export const guides: Guide[] = [
       { question: 'How long does switching take?', answer: 'Typically 10–14 working days from placing your order.' },
       { question: 'What if I am still in contract?', answer: 'You can still switch, but your old provider may charge an early termination fee. Check your contract terms.' },
     ],
+    howTo: {
+      name: 'How to Switch Broadband Provider in the UK',
+      description: 'Use the Ofcom One Touch Switch process to move UK broadband providers with minimal downtime.',
+      totalTime: 'PT14D',
+      steps: [
+        { name: 'Check your current contract', text: 'Look up your existing broadband contract end date and any early termination charges before you commit to a switch.' },
+        { name: 'Choose your new provider and plan', text: 'Enter your postcode with the new provider, pick a speed tier and confirm the plan you want.' },
+        { name: 'Place your order', text: 'Complete signup with the new provider. Under One Touch Switch, they contact your old provider to arrange the switch on your behalf.' },
+        { name: 'Wait for your activation date', text: 'You will receive a confirmed switch date, usually 10 to 14 working days after ordering.' },
+        { name: 'Go live on switch day', text: 'On the agreed date your new service activates and the old one ends the same day, keeping downtime to a few hours or less.' },
+      ],
+    },
     ctaText: 'Switch to OCCTA',
     ctaLink: '/broadband',
     relatedSlugs: ['no-contract-broadband-uk', 'cheap-broadband-uk'],

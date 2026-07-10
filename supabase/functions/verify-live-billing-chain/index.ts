@@ -316,6 +316,12 @@ Deno.serve(async (req) => {
     if (!row.actual_activation_date) {
       row.classifications.push("missing_service_live_timestamp");
     }
+    // No order linked (and no deterministic single-order candidate found).
+    // Classify as manual review rather than generic recurring_not_ready.
+    if (!row.order_id) {
+      row.classifications.push("manual_review_missing_order_link");
+      row.recommended.push("Service has no linked order. Manual reconciliation required.");
+    }
     // Priority 1 guard visibility: any live/suspended service without an
     // accepted Contract Summary is invalid and must not auto-fix or bill.
     if (!row.contract_summary_accepted) {

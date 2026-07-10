@@ -125,6 +125,7 @@ export const BrandLayout: React.FC<BrandLayoutProps> = ({
               <Text style={colMuted}>22 Pavilion View</Text>
               <Text style={colMuted}>Huddersfield, HD3 3WU</Text>
               <Text style={colMuted}>Company No. 13828933</Text>
+              <Text style={colMuted}>VAT No. 520 6072 30</Text>
             </Column>
           </Row>
 

@@ -30,6 +30,7 @@ interface Body {
   mode?: Mode;
   service_id?: string;
   lookback_days?: number;
+  include_archived?: boolean;
 }
 
 type Classification =

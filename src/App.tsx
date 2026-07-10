@@ -28,6 +28,7 @@ const AdminTickets = lazy(() => import("./pages/admin/Tickets").then(m => ({ def
 const AdminBilling = lazy(() => import("./pages/admin/Billing").then(m => ({ default: m.AdminBilling })));
 const AdminBillingReconciliation = lazy(() => import("./pages/admin/BillingReconciliation").then(m => ({ default: m.AdminBillingReconciliation })));
 const AdminBillingChainCheck = lazy(() => import("./pages/admin/BillingChainCheck").then(m => ({ default: m.AdminBillingChainCheck })));
+const AdminLegacyRemediation = lazy(() => import("./pages/admin/LegacyRemediation").then(m => ({ default: m.AdminLegacyRemediation })));
 const AdminServices = lazy(() => import("./pages/admin/Services").then(m => ({ default: m.AdminServices })));
 const AdminPaymentsDD = lazy(() => import("./pages/admin/PaymentsDD").then(m => ({ default: m.AdminPaymentsDD })));
 const AdminInstallations = lazy(() => import("./pages/admin/Installations").then(m => ({ default: m.AdminInstallations })));

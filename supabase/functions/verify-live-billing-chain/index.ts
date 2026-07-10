@@ -216,6 +216,29 @@ Deno.serve(async (req) => {
       row.customer_id = order?.customer_id ?? row.customer_id;
       row.payment_method = order?.payment_method ?? null;
       row.order_live_at = order?.actual_service_live_at_utc ?? null;
+    } else if (row.customer_id) {
+      // Fallback: look for a single deterministic order for this customer with
+      // an accepted Contract Summary. If exactly one match, we can safely link
+      // it in fix mode. Otherwise classify manual_review_missing_order_link.
+      const { data: candidates } = await svc.from("orders")
+        .select("id, occta_order_number, payment_method, actual_service_live_at_utc, contract_summary_id, status")
+        .eq("customer_id", row.customer_id)
+        .not("contract_summary_id", "is", null);
+      const withCs = candidates ?? [];
+      if (withCs.length === 1) {
+        order = withCs[0];
+        row.order_id = order.id;
+        row.order_number = order.occta_order_number ?? null;
+        row.payment_method = order.payment_method ?? null;
+        row.order_live_at = order.actual_service_live_at_utc ?? null;
+        if (mode === "fix" || mode === "single") {
+          const { error } = await svc.from("services")
+            .update({ order_id: order.id })
+            .eq("id", s.id)
+            .is("order_id", null);
+          if (!error) row.applied.push("service_order_link_repaired");
+        }
+      }
     }
 
     // Profile

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { companyConfig } from "@/lib/companyConfig";
 import { getPaymentReturnOrigin } from "@/lib/appOrigin";
 import { redirectToExternal } from "@/lib/externalRedirect";
 import { generateReceiptPdf } from "@/lib/generateReceiptPdf";
@@ -655,6 +656,10 @@ export default function Pay() {
           <div className="mt-6 text-center text-xs text-muted-foreground">
             <p>Questions? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>
             <p>Lines open Mon–Fri 9am–6pm, Sat 9am–1pm</p>
+            <p className="mt-2">
+              Amount shown is the total payable (VAT included at {companyConfig.defaultVatRate}% where applicable).
+              {companyConfig.vatRegistered && <> VAT No. {companyConfig.vatNumber}.</>}
+            </p>
           </div>
         </CardContent>
       </Card>

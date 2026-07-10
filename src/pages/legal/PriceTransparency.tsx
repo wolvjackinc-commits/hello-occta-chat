@@ -19,7 +19,7 @@ export default function PriceTransparency() {
         <li>Early termination charges (where applicable to Contract Saver plans) are shown in your Contract Summary.</li>
       </ul>
       <h2>VAT</h2>
-      <p>Residential prices include VAT where chargeable. Business prices are shown ex-VAT with VAT applied at checkout and on the invoice. See our <a href="/legal/code-of-practice">Code of Practice</a> for more.</p>
+      <p>OCCTA Limited is VAT registered (VAT No. 520 6072 30) with effect from 1 July 2026. Residential prices include VAT at the standard rate (currently 20%). Business prices are shown ex-VAT with VAT applied at checkout and on the invoice. Your invoice will show the net amount, VAT amount and gross total. See our <a href="/legal/code-of-practice">Code of Practice</a> for more.</p>
     </LegalPage>
   );
 }

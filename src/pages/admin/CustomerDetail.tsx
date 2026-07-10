@@ -350,6 +350,15 @@ export const AdminCustomerDetail = () => {
             <RouteIcon className="w-4 h-4 mr-2" />
             Journey
           </Button>
+          {overview.account_number === "OCC70547490" && (
+            <Button
+              variant="outline"
+              className="border-2 border-foreground"
+              onClick={() => navigate("/admin/legacy-remediation")}
+            >
+              Legacy remediation
+            </Button>
+          )}
           <Button
             variant="outline"
             className="border-2 border-foreground"

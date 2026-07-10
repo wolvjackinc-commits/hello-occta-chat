@@ -19,19 +19,27 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
-  const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (!jwt) return json({ error: "missing_jwt" }, 401);
-
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const { data: userData, error: userErr } = await supabase.auth.getUser(jwt);
-  if (userErr || !userData?.user) return json({ error: "invalid_jwt" }, 401);
-  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userData.user.id, _role: "admin" });
-  const { data: isSuper } = await supabase.rpc("has_role", { _user_id: userData.user.id, _role: "super_admin" });
-  if (!isAdmin && !isSuper) return json({ error: "forbidden" }, 403);
+  const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const cronSecret = req.headers.get("x-cron-secret");
+  const expectedCron = Deno.env.get("CRON_JOB_SECRET");
+  let actorUserId: string | null = null;
+  if (cronSecret && expectedCron && cronSecret === expectedCron) {
+    actorUserId = null; // admin task via cron secret
+  } else if (jwt) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser(jwt);
+    if (userErr || !userData?.user) return json({ error: "invalid_jwt" }, 401);
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userData.user.id, _role: "admin" });
+    const { data: isSuper } = await supabase.rpc("has_role", { _user_id: userData.user.id, _role: "super_admin" });
+    if (!isAdmin && !isSuper) return json({ error: "forbidden" }, 403);
+    actorUserId = userData.user.id;
+  } else {
+    return json({ error: "missing_auth" }, 401);
+  }
 
   const body = await req.json().catch(() => ({}));
   const invoiceId: string | undefined = body?.invoice_id;
@@ -102,7 +110,7 @@ Deno.serve(async (req) => {
     action: "update",
     entity: "invoice",
     entity_id: invoiceId,
-    actor_user_id: userData.user.id,
+    actor_user_id: actorUserId,
     metadata: {
       invoice_number: inv.invoice_number,
       reason,

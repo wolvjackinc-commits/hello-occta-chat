@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
     action: "update",
     entity: "invoice",
     entity_id: invoiceId,
-    actor_id: userData.user.id,
+    actor_user_id: userData.user.id,
     metadata: {
       invoice_number: inv.invoice_number,
       reason,

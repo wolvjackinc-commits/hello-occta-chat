@@ -737,6 +737,19 @@ export const guides: Guide[] = [
     faqs: [
       { question: 'Will a Wi-Fi extender help?', answer: 'Sometimes, but they often halve the speed they extend. A proper mesh system is better value long-term.' },
     ],
+    howTo: {
+      name: 'Fix Slow Wi-Fi at Home',
+      description: 'Six practical steps to improve slow home Wi-Fi, in order from free to most expensive.',
+      totalTime: 'PT30M',
+      steps: [
+        { name: 'Reposition the router', text: 'Move the router up high, central in the home and away from walls, cupboards and large metal objects.' },
+        { name: 'Use the 5GHz band', text: 'Connect nearby devices to the 5GHz Wi-Fi network for higher speeds. Keep 2.4GHz for far rooms and smart-home devices.' },
+        { name: 'Reboot the router', text: 'Power the router off at the socket for 60 seconds so it picks a quieter Wi-Fi channel on restart.' },
+        { name: 'Update device firmware', text: 'Update the operating system and Wi-Fi drivers on your phone and laptop so they support modern Wi-Fi standards properly.' },
+        { name: 'Add a mesh node', text: 'For larger homes or thick walls, add a mesh Wi-Fi node in a central room to extend coverage without halving speed.' },
+        { name: 'Use Ethernet for the big stuff', text: 'Plug TVs, consoles and desktop PCs into the router with an Ethernet cable to free up Wi-Fi bandwidth for mobile devices.' },
+      ],
+    },
     ctaText: 'Read the full help guide',
     ctaLink: '/help/slow-wifi-fix',
     relatedSlugs: ['what-broadband-speed-do-i-need'],

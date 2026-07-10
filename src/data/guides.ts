@@ -701,6 +701,16 @@ export const guides: Guide[] = [
       { question: 'What if I\u2019m still in contract?', answer: 'Your old provider may charge an exit fee — your new provider will tell you the figure before you commit.' },
       { question: 'Can I keep my landline number?', answer: 'Yes, it\u2019s included in the One Touch Switch process.' },
     ],
+    howTo: {
+      name: 'Switch UK Broadband in 3 Steps (One Touch Switch)',
+      description: 'Move UK broadband providers using Ofcom One Touch Switch in three simple steps.',
+      totalTime: 'PT14D',
+      steps: [
+        { name: 'Pick your new provider', text: 'Check your postcode, choose a plan and place the order. Tell them you are switching from another provider.' },
+        { name: 'Let your new provider handle the rest', text: 'Under One Touch Switch, they contact your existing provider, agree a switch date and confirm it back to you.' },
+        { name: 'Plug in on switch day', text: 'On the agreed day, plug in the new router. The old service ends at midnight the same day, so there is no overlap or double billing.' },
+      ],
+    },
     ctaText: 'Start your switch',
     ctaLink: '/broadband',
     relatedSlugs: ['no-contract-broadband-uk'],

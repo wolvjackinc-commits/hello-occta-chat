@@ -824,6 +824,101 @@ export const guides: Guide[] = [
     ctaLink: '/broadband',
     relatedSlugs: ['no-contract-broadband-uk', 'how-to-get-broadband-with-bad-credit', 'cheap-broadband-uk'],
   },
+  {
+    slug: 'router-lights-and-broadband-troubleshooting',
+    title: 'Router Lights & Broadband Troubleshooting: The Complete UK Guide',
+    metaTitle: 'Router Red Light Fix & Broadband Troubleshooting Guide | OCCTA',
+    description:
+      'What do router lights mean and how do you fix a slow or dropped broadband connection? A plain-English guide to router LEDs, Wi-Fi optimisation and speed troubleshooting for UK homes.',
+    keywords:
+      'router red light fix, router lights meaning, broadband troubleshooting guide, slow broadband fix, wifi troubleshooting UK, 2.4ghz vs 5ghz, ONT light meaning, router blinking light',
+    category: 'broadband',
+    categoryLabel: 'Broadband',
+    intro:
+      'Router acting up? Before you call support, most broadband problems can be spotted from the lights on the front of your router or ONT — and a surprising number of "slow Wi-Fi" complaints are actually fixable in under five minutes. Here is a plain-English walk-through you can use on any standard UK router.',
+    sections: [
+      {
+        heading: 'What Do Router Lights Mean?',
+        paragraphs: [
+          'Router LEDs are the fastest way to diagnose a broadband issue. The exact labels vary between makes (Zyxel, TP-Link, Fritz!Box, eero, ISP-branded hubs), but the colours follow a very consistent pattern across UK Full Fibre (FTTP) and FTTC connections.',
+        ],
+        bullets: [
+          'Solid green or white — normal. Router is powered on and connected.',
+          'Solid blue — often used for a successful internet/PPPoE connection.',
+          'Blinking green or white — activity, data is flowing. This is fine.',
+          'Solid red — no internet. The router cannot reach the network. Almost always a line issue, a config problem, or an outage.',
+          'Blinking red — line detected but authentication or sync is failing. Often fixed by a full 60-second power-off.',
+          'Solid orange or amber — connected at a reduced state (e.g. WAN link but no PPPoE, or firmware updating). Wait 5 minutes before power-cycling.',
+          'No lights at all — power fault. Check the PSU, socket, and the barrel plug at the router end.',
+        ],
+      },
+      {
+        heading: 'ONT Lights (Full Fibre Only)',
+        paragraphs: [
+          'On Full Fibre (FTTP), you have a second box on the wall called the ONT — Optical Network Terminal. Its lights are separate from your router and matter just as much.',
+        ],
+        bullets: [
+          'PON light solid green — fibre signal is healthy.',
+          'PON light off or red — fibre link is down. This is an Openreach/network fault, not your router. Report it.',
+          'LOS light red or blinking red — Loss of Signal on the fibre. Do not unplug the fibre cable; raise a fault.',
+          'LAN light — should be on when your router is plugged into the ONT.',
+        ],
+      },
+      {
+        heading: 'Router Red Light Fix — Step by Step',
+        paragraphs: [
+          'If your router is showing a solid or blinking red light, try these steps in order before assuming a fault.',
+        ],
+        bullets: [
+          'Power the router off at the socket for a full 60 seconds. Anything shorter and the DSL/PPPoE session may not reset.',
+          'Check every cable is firmly seated: power, WAN/DSL, and the cable to your ONT if you are on FTTP.',
+          'On FTTC (copper), plug the router directly into the master socket and remove any extension leads or splitters.',
+          'Check for a known outage — your provider should have a status page.',
+          'If still red after 15 minutes, contact your provider. Do not factory-reset unless asked; you may lose custom Wi-Fi settings.',
+        ],
+      },
+      {
+        heading: 'Slow Broadband Fix: Wi-Fi vs Line Speed',
+        paragraphs: [
+          'Most "slow broadband" complaints are actually Wi-Fi problems, not line problems. To tell them apart, run a speed test on a device plugged into the router with an Ethernet cable. If that speed is close to your plan, the line is fine and the fix is inside your home.',
+        ],
+        bullets: [
+          'Move the router into the open — not in a cupboard, behind the TV, or on the floor.',
+          'Keep it at least 1m away from cordless phone bases, baby monitors, and microwaves.',
+          'Split 2.4GHz and 5GHz networks if your router allows: use 5GHz for devices in the same room (faster, shorter range) and 2.4GHz for far rooms (slower, longer range, better through walls).',
+          'Reboot the router weekly if you notice it slows over time — cheap routers leak memory.',
+          'For larger homes, a mesh system or a wired access point in a second room fixes 90% of dead spots.',
+        ],
+      },
+      {
+        heading: '2.4GHz vs 5GHz — Which Should You Use?',
+        paragraphs: [
+          'Modern routers broadcast on two Wi-Fi bands. Understanding the difference is the single biggest DIY improvement most households can make.',
+        ],
+        bullets: [
+          '5GHz — faster (often 3–5× the throughput of 2.4GHz), less crowded, but shorter range and weaker through walls. Best for streaming, video calls, gaming, and any device in the same room as the router.',
+          '2.4GHz — slower, but reaches further and passes through walls more easily. Best for smart plugs, doorbells, thermostats, and anything at the far end of the house.',
+          'If your router uses one combined name for both bands ("Smart Connect" or "Band Steering"), you usually do not need to change anything. If you keep dropping to slow speeds, splitting the two networks manually gives you control.',
+        ],
+      },
+      {
+        heading: 'When to Contact Support',
+        paragraphs: [
+          'Contact your provider when: the router shows a persistent red light after a full power-cycle, the ONT LOS light is red, wired speed is well below your plan for more than a day, or the connection drops repeatedly at the same time each day. Have your account reference and the current LED pattern to hand — it will save you 10 minutes.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Why is my router light red?', answer: 'A red router light almost always means the router cannot reach the broadband network. Power it off at the socket for 60 seconds, check the cables, and check for a provider outage. If it is still red after 15 minutes, contact your provider.' },
+      { question: 'What does a blinking green light on my router mean?', answer: 'Blinking green (or white) is normal — it shows data is flowing. You only need to worry when a light is red, off, or a colour the manual says is a fault.' },
+      { question: 'Should I use 2.4GHz or 5GHz Wi-Fi?', answer: '5GHz is faster but shorter range — use it for devices in the same room as your router. 2.4GHz is slower but reaches further — use it for far rooms and smart-home devices.' },
+      { question: 'Does OCCTA support my own router?', answer: 'Yes. OCCTA broadband works with any standard router — bring your own or use the one we supply. We can help configure PPPoE credentials if needed.' },
+      { question: 'How do I test if my slow broadband is Wi-Fi or the line?', answer: 'Plug a laptop into the router with an Ethernet cable and run a speed test. If wired speed is close to your plan, the line is fine and the problem is your Wi-Fi setup.' },
+    ],
+    ctaText: 'Check broadband at my address',
+    ctaLink: '/broadband',
+    relatedSlugs: ['no-contract-broadband-uk', 'how-to-switch-broadband', 'digital-voice-uk'],
+  },
 ];
 
 export const getGuideBySlug = (slug: string): Guide | undefined =>

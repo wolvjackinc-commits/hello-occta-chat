@@ -333,6 +333,16 @@ const routes: RouteSEO[] = [
     keywords: "broadband no credit check, broadband with bad credit UK, bad credit broadband, no credit check broadband",
     jsonLd: [localBusinessSchema],
   },
+  {
+    path: "/guides/router-lights-and-broadband-troubleshooting",
+    title: "Router Red Light Fix & Broadband Troubleshooting Guide | OCCTA",
+    description:
+      "What do router lights mean and how do you fix slow or dropped broadband? Plain-English guide to router LEDs, ONT lights, Wi-Fi optimisation and 2.4GHz vs 5GHz for UK homes.",
+    canonical: "/guides/router-lights-and-broadband-troubleshooting",
+    keywords:
+      "router red light fix, router lights meaning, broadband troubleshooting guide, slow broadband fix, wifi troubleshooting UK, 2.4ghz vs 5ghz, ONT light meaning",
+    jsonLd: [localBusinessSchema],
+  },
   /* ─── Location broadband pages ─── */
   ...([
     { slug: "london", city: "London", region: "Greater London" },

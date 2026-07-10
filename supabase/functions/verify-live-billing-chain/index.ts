@@ -120,24 +120,40 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { /* default */ }
   const mode: Mode = body.mode === "fix" ? "fix" : body.mode === "single" ? "single" : "report";
   const lookbackDays = Math.max(1, Math.min(365, body.lookback_days ?? 120));
+  const includeArchived = !!body.include_archived;
 
   // Load target service set.
   let servicesQ = svc.from("services")
-    .select("id, user_id, order_id, status, actual_activation_date, activation_confirmed_at, billing_enabled, billing_anchor_day, next_billing_date, contract_summary_id, service_type, archived_at")
+    .select("id, user_id, order_id, status, actual_activation_date, activation_confirmed_at, billing_enabled, billing_anchor_day, next_billing_date, contract_summary_id, service_type, archived_at, created_at")
     .is("archived_at", null);
 
   if (mode === "single") {
     if (!body.service_id) return jsonResponse({ error: "missing_service_id" }, 400);
     servicesQ = servicesQ.eq("id", body.service_id);
   } else {
-    const since = new Date(Date.now() - lookbackDays * 86400_000).toISOString();
-    servicesQ = servicesQ
-      .or("service_type.eq.broadband,service_type.is.null")
-      .or(`actual_activation_date.gte.${since.slice(0, 10)},status.eq.active,status.eq.suspended`);
+    // Canonical Live Chain Check target: real, non-archived, currently-billable
+    // customer services. We deliberately DO NOT restrict by service_type — any
+    // real billable service (broadband, landline, etc.) belongs in production
+    // readiness. Archived/test profiles are filtered post-query.
+    servicesQ = servicesQ.in("status", ["active", "suspended"]);
   }
 
   const { data: services, error: svcErr } = await servicesQ;
   if (svcErr) return jsonResponse({ error: "services_query_failed", message: svcErr.message }, 500);
+
+  // Filter out services belonging to archived profiles (test/archived customers)
+  // unless the caller explicitly asked to include them.
+  let scopedServices = services ?? [];
+  if (scopedServices.length && !includeArchived && mode !== "single") {
+    const userIds = Array.from(new Set(scopedServices.map((s: any) => s.user_id).filter(Boolean)));
+    if (userIds.length) {
+      const { data: profs } = await svc.from("profiles")
+        .select("id, archived_at")
+        .in("id", userIds);
+      const archived = new Set((profs ?? []).filter((p: any) => p.archived_at).map((p: any) => p.id));
+      scopedServices = scopedServices.filter((s: any) => !archived.has(s.user_id));
+    }
+  }
 
   const rows: Row[] = [];
   const summary = {

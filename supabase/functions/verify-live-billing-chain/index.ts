@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
     recurring_not_ready: 0,
   };
 
-  for (const s of services ?? []) {
+  for (const s of scopedServices) {
     summary.total++;
 
     const row: Row = {

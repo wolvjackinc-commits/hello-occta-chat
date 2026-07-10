@@ -190,6 +190,7 @@ const AnimatedRoutes = () => {
             <Route path="billing" element={<Suspense fallback={<AdminRouteFallback />}><AdminBilling /></Suspense>} />
             <Route path="billing/reconciliation" element={<Suspense fallback={<AdminRouteFallback />}><AdminBillingReconciliation /></Suspense>} />
             <Route path="billing/chain-check" element={<Suspense fallback={<AdminRouteFallback />}><AdminBillingChainCheck /></Suspense>} />
+            <Route path="legacy-remediation" element={<Suspense fallback={<AdminRouteFallback />}><AdminLegacyRemediation /></Suspense>} />
             <Route path="services" element={<Suspense fallback={<AdminRouteFallback />}><AdminServices /></Suspense>} />
             <Route path="payments-dd" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentsDD /></Suspense>} />
             <Route path="installations" element={<Suspense fallback={<AdminRouteFallback />}><AdminInstallations /></Suspense>} />

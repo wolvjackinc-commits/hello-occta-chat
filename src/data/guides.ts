@@ -9,6 +9,18 @@ export interface GuideFAQ {
   answer: string;
 }
 
+export interface GuideHowToStep {
+  name: string;
+  text: string;
+}
+
+export interface GuideHowTo {
+  name: string;
+  description: string;
+  totalTime?: string; // ISO 8601 duration, e.g. "PT15M"
+  steps: GuideHowToStep[];
+}
+
 export interface Guide {
   slug: string;
   title: string;
@@ -20,6 +32,7 @@ export interface Guide {
   intro: string;
   sections: GuideSection[];
   faqs: GuideFAQ[];
+  howTo?: GuideHowTo;
   ctaText: string;
   ctaLink: string;
   relatedSlugs: string[];
@@ -915,6 +928,18 @@ export const guides: Guide[] = [
       { question: 'Does OCCTA support my own router?', answer: 'Yes. OCCTA broadband works with any standard router — bring your own or use the one we supply. We can help configure PPPoE credentials if needed.' },
       { question: 'How do I test if my slow broadband is Wi-Fi or the line?', answer: 'Plug a laptop into the router with an Ethernet cable and run a speed test. If wired speed is close to your plan, the line is fine and the problem is your Wi-Fi setup.' },
     ],
+    howTo: {
+      name: 'Fix a Router Red Light',
+      description: 'Step-by-step method to clear a solid or blinking red light on a UK broadband router before contacting your provider.',
+      totalTime: 'PT15M',
+      steps: [
+        { name: 'Power off for 60 seconds', text: 'Switch the router off at the wall socket and leave it off for a full 60 seconds so the DSL or PPPoE session fully resets.' },
+        { name: 'Reseat every cable', text: 'Firmly reconnect the power, WAN or DSL cable, and — on Full Fibre — the cable running to the ONT.' },
+        { name: 'Remove extensions (FTTC only)', text: 'On copper FTTC lines, plug the router directly into the master telephone socket and remove any extension leads or splitters.' },
+        { name: 'Check for an outage', text: 'Open your provider\'s service status page from a mobile connection to rule out a known network outage in your area.' },
+        { name: 'Contact your provider', text: 'If the light is still red after 15 minutes, contact your provider. Do not factory-reset the router unless asked — you may lose your custom Wi-Fi settings.' },
+      ],
+    },
     ctaText: 'Check broadband at my address',
     ctaLink: '/broadband',
     relatedSlugs: ['no-contract-broadband-uk', 'how-to-switch-broadband', 'digital-voice-uk'],

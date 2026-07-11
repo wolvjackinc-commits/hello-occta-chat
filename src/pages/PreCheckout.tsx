@@ -1476,7 +1476,7 @@ const PreCheckout = () => {
                     <Shield className="w-3 h-3" />
                     <span>Secure</span>
                   </div>
-                  <span className="text-foreground/10">·</span>
+                  <span className="text-foreground/40" aria-hidden="true">·</span>
                   <div className="flex items-center gap-1">
                     <Check className="w-3 h-3" />
                     <span>Ofcom regulated</span>

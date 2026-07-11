@@ -2,7 +2,21 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, PlayCircle, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Loader2, PlayCircle, ShieldCheck, AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { invokeFn } from "@/lib/invokeFn";
 import { toast } from "@/hooks/use-toast";
 
@@ -41,11 +55,34 @@ const badgeFor = (c: string) => {
   return "bg-destructive/15 border-destructive";
 };
 
+type PrimaryStatus = "ok" | "action_required" | "review";
+
+const primaryStatusOf = (r: Row): { status: PrimaryStatus; label: string; hint: string } => {
+  if (r.admin_task_created) return { status: "review", label: "Manual review", hint: "Admin task filed for follow-up." };
+  const c = r.classifications;
+  if (c.length === 0 || (c.length === 1 && c[0] === "ok")) {
+    return { status: "ok", label: "OK", hint: "Welcome, first invoice, pay link and next billing date all in place." };
+  }
+  if (c.includes("recurring_not_ready") || c.includes("missing_next_billing_date") || c.includes("dd_mandate_not_active")) {
+    return { status: "action_required", label: "Action required", hint: "Recurring billing not fully ready yet." };
+  }
+  return { status: "action_required", label: "Action required", hint: c.join(", ") };
+};
+
+const primaryBadgeCls = (s: PrimaryStatus) =>
+  s === "ok"
+    ? "bg-success/15 border-success text-success-foreground"
+    : s === "review"
+      ? "bg-destructive/15 border-destructive"
+      : "bg-warning/15 border-warning";
+
 export function AdminBillingChainCheck() {
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [mode, setMode] = useState<"report" | "fix" | null>(null);
+  const [filter, setFilter] = useState<"attention" | "all" | "ok">("attention");
+  const [detailRow, setDetailRow] = useState<Row | null>(null);
 
   const run = async (m: "report" | "fix") => {
     setLoading(true); setMode(m);
@@ -68,22 +105,29 @@ export function AdminBillingChainCheck() {
 
   useEffect(() => { run("report"); /* eslint-disable-next-line */ }, []);
 
+  const filteredRows = rows.filter(r => {
+    const s = primaryStatusOf(r).status;
+    if (filter === "all") return true;
+    if (filter === "ok") return s === "ok";
+    return s !== "ok"; // attention (default)
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl">LIVE BILLING CHAIN CHECK</h1>
-          <p className="text-sm text-muted-foreground">
-            Verifies every live broadband service has welcome email, first invoice/payment link,
-            next billing date and recurring-billing readiness. Runs daily; safe fixes only.
+          <h1 className="font-display text-2xl">Live Billing Chain Check</h1>
+          <p className="text-sm text-muted-foreground max-w-2xl">
+            Confirms every live customer has been welcomed, first-billed, and is set up for recurring billing.
+            Runs daily. Safe fixes only — no invoices, emails or payment links are created from this page.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => run("report")} disabled={loading}>
+          <Button size="sm" variant="outline" onClick={() => run("report")} disabled={loading}>
             {loading && mode === "report" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PlayCircle className="w-4 h-4 mr-2" />}
-            Re-run report
+            Re-run
           </Button>
-          <Button variant="hero" onClick={() => run("fix")} disabled={loading}>
+          <Button size="sm" variant="hero" onClick={() => run("fix")} disabled={loading}>
             {loading && mode === "fix" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
             Apply safe fixes
           </Button>
@@ -91,67 +135,137 @@ export function AdminBillingChainCheck() {
       </div>
 
       {summary && (
-        <Card className="border-2 border-foreground p-4 grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
-          <Stat label="Total" value={summary.total} />
-          <Stat label="OK" value={summary.ok} tone="success" />
-          <Stat label="Auto-fixed" value={summary.auto_fixed} />
-          <Stat label="Manual review" value={summary.manual_review} tone="destructive" />
-          <Stat label="Recurring ready" value={summary.recurring_ready} tone="success" />
-          <Stat label="Recurring NOT ready" value={summary.recurring_not_ready} tone="warning" />
-        </Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="border-2 border-foreground p-3">
+            <Stat label="Live services" value={summary.total} />
+          </Card>
+          <Card className="border-2 border-success p-3 bg-success/5">
+            <Stat label="OK" value={summary.ok} tone="success" />
+          </Card>
+          <Card className="border-2 border-warning p-3 bg-warning/5">
+            <Stat label="Need attention" value={summary.manual_review + summary.recurring_not_ready} tone="warning" />
+          </Card>
+          <Card className="border-2 border-foreground p-3">
+            <Stat label="Auto-fixed this run" value={summary.auto_fixed} />
+          </Card>
+        </div>
       )}
+
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground uppercase">Show</span>
+        <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+          <SelectTrigger className="w-56 h-9 border-2 border-foreground"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="attention">Need attention</SelectItem>
+            <SelectItem value="ok">OK only</SelectItem>
+            <SelectItem value="all">All services</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground ml-auto">{filteredRows.length} of {rows.length}</span>
+      </div>
 
       <Card className="border-2 border-foreground overflow-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 border-b-2 border-foreground">
-            <tr className="text-left">
+            <tr className="text-left text-xs uppercase tracking-wide">
               <th className="p-2">Customer</th>
-              <th className="p-2">Order</th>
-              <th className="p-2">Status</th>
               <th className="p-2">Activated</th>
               <th className="p-2">Method</th>
-              <th className="p-2">Welcome</th>
-              <th className="p-2">First invoice</th>
-              <th className="p-2">Pay link</th>
-              <th className="p-2">DD</th>
               <th className="p-2">Next bill</th>
-              <th className="p-2">Classifications</th>
-              <th className="p-2">Applied / Task</th>
+              <th className="p-2">Status</th>
+              <th className="p-2 text-right">Details</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map(r => (
-              <tr key={r.service_id} className="border-b border-foreground/10 align-top">
-                <td className="p-2">{r.customer_name ?? "—"}<div className="text-xs text-muted-foreground">{r.account_number} · {r.email}</div></td>
-                <td className="p-2 font-mono text-xs">{r.order_number ?? "—"}</td>
-                <td className="p-2">{r.service_status}</td>
-                <td className="p-2">{r.actual_activation_date ?? "—"}</td>
-                <td className="p-2">{r.payment_method ?? "—"}</td>
-                <td className="p-2">{r.welcome_email_status ?? <span className="text-destructive">missing</span>}</td>
-                <td className="p-2">{r.first_invoice_status ?? <span className="text-muted-foreground">—</span>}</td>
-                <td className="p-2">{r.payment_request_status ?? "—"}</td>
-                <td className="p-2">{r.dd_mandate_status ?? "—"}</td>
-                <td className="p-2">{r.next_billing_date ?? "—"}</td>
-                <td className="p-2">
-                  <div className="flex flex-wrap gap-1">
-                    {r.classifications.map(c => (
-                      <Badge key={c} variant="outline" className={`border-2 ${badgeFor(c)} text-xs`}>{c}</Badge>
-                    ))}
-                  </div>
-                </td>
-                <td className="p-2 text-xs">
-                  {r.applied.length > 0 && <div className="text-success">✓ {r.applied.join(", ")}</div>}
-                  {r.admin_task_created && <div className="flex items-center gap-1 text-destructive"><AlertTriangle className="w-3 h-3" /> Task filed</div>}
-                  {r.applied.length === 0 && !r.admin_task_created && <span className="text-muted-foreground">—</span>}
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && !loading && (
-              <tr><td colSpan={12} className="p-6 text-center text-muted-foreground">No services in scope.</td></tr>
+            {filteredRows.map(r => {
+              const p = primaryStatusOf(r);
+              return (
+                <tr key={r.service_id} className="border-b border-foreground/10 hover:bg-muted/30">
+                  <td className="p-2">
+                    <div className="font-medium">{r.customer_name ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground">{r.account_number ?? "—"} · {r.order_number ?? "—"}</div>
+                  </td>
+                  <td className="p-2 text-xs">{r.actual_activation_date ?? "—"}</td>
+                  <td className="p-2 text-xs capitalize">{r.payment_method ?? "—"}</td>
+                  <td className="p-2 text-xs">{r.next_billing_date ?? <span className="text-warning">not set</span>}</td>
+                  <td className="p-2">
+                    <Badge variant="outline" className={`border-2 ${primaryBadgeCls(p.status)} text-xs`}>
+                      {p.status === "ok" ? <CheckCircle2 className="w-3 h-3 mr-1" /> : p.status === "review" ? <AlertTriangle className="w-3 h-3 mr-1" /> : <Info className="w-3 h-3 mr-1" />}
+                      {p.label}
+                    </Badge>
+                    {r.applied.length > 0 && <div className="text-xs text-success mt-1">✓ {r.applied.join(", ")}</div>}
+                  </td>
+                  <td className="p-2 text-right">
+                    <Button size="sm" variant="ghost" onClick={() => setDetailRow(r)}>View</Button>
+                  </td>
+                </tr>
+              );
+            })}
+            {filteredRows.length === 0 && !loading && (
+              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground text-sm">
+                {filter === "attention" ? "Nothing needs attention — all live services are OK." : "No services in scope."}
+              </td></tr>
             )}
           </tbody>
         </table>
       </Card>
+
+      <Sheet open={!!detailRow} onOpenChange={(o) => !o && setDetailRow(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          {detailRow && (
+            <>
+              <SheetHeader>
+                <SheetTitle>{detailRow.customer_name ?? "Service"}</SheetTitle>
+                <SheetDescription>
+                  {detailRow.account_number} · {detailRow.email}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-4 space-y-3 text-sm">
+                <DetailRow label="Order" value={detailRow.order_number} />
+                <DetailRow label="Service status" value={detailRow.service_status} />
+                <DetailRow label="Activated" value={detailRow.actual_activation_date} />
+                <DetailRow label="Payment method" value={detailRow.payment_method} />
+                <DetailRow label="Next billing date" value={detailRow.next_billing_date} />
+                <DetailRow label="Welcome email" value={detailRow.welcome_email_status} />
+                <DetailRow label="First invoice" value={detailRow.first_invoice_status} />
+                <DetailRow label="Payment request" value={detailRow.payment_request_status} />
+                <DetailRow label="DD mandate" value={detailRow.dd_mandate_status} />
+                <DetailRow label="First billing job" value={detailRow.first_billing_job_status} />
+                {detailRow.first_billing_job_blocker && (
+                  <DetailRow label="Blocker" value={detailRow.first_billing_job_blocker} />
+                )}
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground mb-1">Classifications</div>
+                  <div className="flex flex-wrap gap-1">
+                    {detailRow.classifications.length === 0
+                      ? <span className="text-muted-foreground text-xs">—</span>
+                      : detailRow.classifications.map(c => (
+                          <Badge key={c} variant="outline" className={`border-2 ${badgeFor(c)} text-xs`}>{c}</Badge>
+                        ))}
+                  </div>
+                </div>
+                {detailRow.applied.length > 0 && (
+                  <div className="text-success text-xs">✓ Applied: {detailRow.applied.join(", ")}</div>
+                )}
+                {detailRow.admin_task_created && (
+                  <div className="flex items-center gap-1 text-destructive text-xs">
+                    <AlertTriangle className="w-3 h-3" /> Admin task filed for manual review
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div className="flex justify-between gap-3 border-b border-foreground/10 pb-1">
+      <span className="text-xs uppercase text-muted-foreground">{label}</span>
+      <span className="text-sm text-right">{value ?? "—"}</span>
     </div>
   );
 }

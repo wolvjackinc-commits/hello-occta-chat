@@ -640,7 +640,8 @@ export const AdminPaymentRequests = () => {
                 })}
               </TableBody>
             </Table>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
 

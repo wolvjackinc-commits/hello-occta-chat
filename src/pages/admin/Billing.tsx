@@ -41,6 +41,7 @@ import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
 import { hashToken } from "@/lib/tokenHash";
 import { format } from "date-fns";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
+import { IncludeArchivedToggle } from "@/components/admin/primitives";
 import { 
   FileText, 
   Plus, 
@@ -119,6 +120,7 @@ export const AdminBilling = () => {
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [includeArchived, setIncludeArchived] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
   const [invoiceLines, setInvoiceLines] = useState<InvoiceLine[]>([]);
@@ -178,6 +180,7 @@ export const AdminBilling = () => {
     const search = searchText.trim().toLowerCase();
     return (data?.invoices || []).filter((inv) => {
       if (statusFilter !== "all" && inv.status !== statusFilter) return false;
+      if (!includeArchived && statusFilter === "all" && (inv.status === "cancelled" || inv.status === "void")) return false;
       if (!search) return true;
       
       const profile = profileMap.get(inv.user_id);
@@ -191,7 +194,7 @@ export const AdminBilling = () => {
         name.includes(search)
       );
     });
-  }, [data?.invoices, statusFilter, searchText, profileMap]);
+  }, [data?.invoices, statusFilter, searchText, profileMap, includeArchived]);
 
   const handleCreateInvoice = async () => {
     if (!selectedCustomer) {
@@ -606,6 +609,14 @@ export const AdminBilling = () => {
               </SelectContent>
             </Select>
           </div>
+        </div>
+        <div className="mt-3">
+          <IncludeArchivedToggle
+            checked={includeArchived}
+            onCheckedChange={setIncludeArchived}
+            id="invoices-include-archived"
+            label="Include cancelled/void invoices"
+          />
         </div>
       </Card>
 

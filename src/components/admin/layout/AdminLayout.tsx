@@ -30,6 +30,9 @@ import {
   ShieldCheck,
   ShieldAlert,
   PackageCheck,
+  ChevronDown,
+  Plus,
+  FileCog,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,6 +47,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { GlobalSearch, useGlobalSearch } from "@/components/admin/GlobalSearch";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 const AIChatBot = lazy(() => import("@/components/chat/AIChatBot"));
 

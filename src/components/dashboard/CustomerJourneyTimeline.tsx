@@ -135,7 +135,7 @@ export function CustomerJourneyTimeline({ userId, userEmail }: { userId: string;
               <p className={`font-medium ${m.state === "upcoming" ? "text-muted-foreground" : ""}`}>
                 {m.label}
               </p>
-              <p className={`text-xs ${m.state === "upcoming" ? "text-muted-foreground/70" : "text-muted-foreground"}`}>
+              <p className={`text-xs ${m.state === "upcoming" ? "text-muted-foreground" : "text-muted-foreground"}`}>
                 {m.description}
               </p>
               {m.at && m.state === "done" && (

@@ -138,7 +138,7 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
 
       {mandates.length === 0 ? (
         <div className="py-6 text-center">
-          <Building2 className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
+          <Building2 className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
           <p className="text-muted-foreground mb-2">No Direct Debit set up</p>
           <p className="text-xs text-muted-foreground">
             Contact us to set up automatic payments via Direct Debit

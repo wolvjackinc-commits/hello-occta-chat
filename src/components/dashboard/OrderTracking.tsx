@@ -193,7 +193,7 @@ export const OrderTracking = ({ order, onContactSupport }: OrderTrackingProps) =
                 </div>
                 <p className={cn(
                   "text-sm",
-                  isUpcoming || isCancelledStep ? "text-muted-foreground/60" : "text-muted-foreground"
+                  isUpcoming || isCancelledStep ? "text-muted-foreground" : "text-muted-foreground"
                 )}>
                   {step.description}
                 </p>

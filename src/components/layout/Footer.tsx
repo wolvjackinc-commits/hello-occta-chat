@@ -62,12 +62,12 @@ const Footer = () => {
                 <Bot className="w-4 h-4" />
                 Get instant help with our AI assistant
               </Link>
-              <span className="hidden sm:inline text-background/40">•</span>
+              <span className="hidden sm:inline text-background/70">•</span>
               <Link to="/dashboard" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
                 <LayoutDashboard className="w-4 h-4" />
                 Manage your account
               </Link>
-              <span className="hidden sm:inline text-background/40">•</span>
+              <span className="hidden sm:inline text-background/70">•</span>
               <Link to="/support#tickets" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
                 <Ticket className="w-4 h-4" />
                 Raise a ticket
@@ -80,7 +80,7 @@ const Footer = () => {
       {/* Trust Bar */}
       <div className="border-b border-background/10">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-background/60">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-background/85">
             <span className="flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5" /> Ofcom regulated UK telecom provider
             </span>
@@ -129,7 +129,7 @@ const Footer = () => {
                 </div>
                 <span>{companyConfig.email.general}</span>
               </a>
-              <div className="flex items-center gap-3 text-background/60 text-sm">
+              <div className="flex items-center gap-3 text-background/85 text-sm">
                 <div className="p-2 bg-background/10">
                   <Phone className="w-4 h-4" />
                 </div>
@@ -240,10 +240,10 @@ const Footer = () => {
               <span>UK Registered</span>
             </div>
           </div>
-          <div className="mt-2 text-xs text-background/60 text-center md:text-left">
+          <div className="mt-2 text-xs text-background/85 text-center md:text-left">
             Registered address: {companyConfig.address.full}.
           </div>
-          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-background/60">
+          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-background/85">
             <Shield className="w-4 h-4" />
             <p>
               {companyConfig.compliance} Self-service support ensures faster resolution and data protection.

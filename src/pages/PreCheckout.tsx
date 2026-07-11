@@ -1391,7 +1391,7 @@ const PreCheckout = () => {
                       <span>-£{bundleCalc.savings.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-[11px] text-muted-foreground/70 pt-1.5 border-t border-foreground/5">
+                  <div className="flex justify-between text-[11px] text-muted-foreground pt-1.5 border-t border-foreground/5">
                     <span>Subtotal (ex VAT)</span>
                     <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                   </div>
@@ -1428,7 +1428,7 @@ const PreCheckout = () => {
                   })}
                   {oneOffSubtotalExVat > 0 && (
                     <>
-                      <div className="flex justify-between text-[11px] text-muted-foreground/70 pt-1.5 border-t border-foreground/5">
+                      <div className="flex justify-between text-[11px] text-muted-foreground pt-1.5 border-t border-foreground/5">
                         <span>Subtotal (ex VAT)</span>
                         <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
                       </div>
@@ -1443,7 +1443,7 @@ const PreCheckout = () => {
                     <span className="font-display text-sm uppercase tracking-wider">Due today</span>
                     <div>
                       <span className="font-display text-2xl">£{totalDueToday.toFixed(2)}</span>
-                      <span className="text-background/60 text-xs ml-1">incl. VAT</span>
+                      <span className="text-background/85 text-xs ml-1">incl. VAT</span>
                     </div>
                   </div>
 
@@ -1476,7 +1476,7 @@ const PreCheckout = () => {
                     <Shield className="w-3 h-3" />
                     <span>Secure</span>
                   </div>
-                  <span className="text-foreground/10">·</span>
+                  <span className="text-foreground/40" aria-hidden="true">·</span>
                   <div className="flex items-center gap-1">
                     <Check className="w-3 h-3" />
                     <span>Ofcom regulated</span>

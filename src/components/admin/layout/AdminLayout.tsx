@@ -439,26 +439,26 @@ export const AdminLayout = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Persistent Admin Top Bar */}
-      <div className="border-b-4 border-foreground bg-muted/50 px-4 py-2">
+      <div className="border-b-2 border-foreground bg-muted/40 px-4 py-1.5">
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between">
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Admin Console
           </span>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" asChild className="h-8">
               <Link to="/dashboard">
-                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
                 Dashboard
               </Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild className="h-8">
               <Link to="/">
-                <ExternalLink className="mr-2 h-4 w-4" />
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 Website
               </Link>
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="h-8">
+              <LogOut className="mr-1.5 h-3.5 w-3.5" />
               Log out
             </Button>
           </div>
@@ -466,12 +466,12 @@ export const AdminLayout = () => {
       </div>
 
       <div className="flex">
-        <aside className="min-h-[calc(100vh-49px)] w-64 border-r border-border bg-muted/20 p-6">
-          <div className="mb-8 flex items-center gap-2">
-            <Badge className="rounded-full px-3 py-1 text-xs uppercase">Admin</Badge>
-            <span className="font-display text-lg">Operations Console</span>
+        <aside className="min-h-[calc(100vh-42px)] w-56 border-r border-border bg-muted/20 p-3">
+          <div className="mb-4 flex items-center gap-2 px-1">
+            <Badge className="rounded px-2 py-0.5 text-[10px] uppercase">Admin</Badge>
+            <span className="font-display text-sm">Ops Console</span>
           </div>
-          <nav className="space-y-2">
+          <nav className="space-y-0.5">
             {navSections.map((section) => {
               const Icon = section.icon;
               if (section.to) {
@@ -480,40 +480,20 @@ export const AdminLayout = () => {
                     key={section.label}
                     to={section.to}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm transition ${
+                      `flex items-center gap-2 rounded border border-transparent px-2 py-1.5 text-sm transition ${
                         isActive
                           ? "border-foreground bg-secondary text-foreground"
                           : "text-muted-foreground hover:border-foreground/40 hover:bg-secondary/60"
                       }`
                     }
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-3.5 w-3.5" />
                     {section.label}
                   </NavLink>
                 );
               }
               return (
-                <div key={section.label} className="space-y-1">
-                  <div className="flex items-center gap-3 px-3 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-                    <Icon className="h-4 w-4" />
-                    {section.label}
-                  </div>
-                  {(section.children ?? []).map((child) => (
-                    <NavLink
-                      key={child.to}
-                      to={child.to}
-                      className={({ isActive }) =>
-                        `block rounded-lg border border-transparent pl-10 pr-3 py-1.5 text-sm transition ${
-                          isActive
-                            ? "border-foreground bg-secondary text-foreground"
-                            : "text-muted-foreground hover:border-foreground/40 hover:bg-secondary/60"
-                        }`
-                      }
-                    >
-                      {child.label}
-                    </NavLink>
-                  ))}
-                </div>
+                <CollapsibleGroup key={section.label} label={section.label} Icon={Icon} children={section.children ?? []} />
               );
             })}
           </nav>
@@ -521,14 +501,15 @@ export const AdminLayout = () => {
 
         <div className="flex-1">
           <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur">
-            <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="relative w-full max-w-xl">
+            <div className="flex items-center gap-3 px-4 py-2">
+              <div className="relative flex-1 max-w-xl">
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setGlobalSearchOpen(true)}
-                  className="w-full justify-start gap-2 border-2 border-foreground text-muted-foreground"
+                  className="w-full justify-start gap-2 border border-foreground text-muted-foreground h-9"
                 >
-                  <Search className="h-4 w-4" />
+                  <Search className="h-3.5 w-3.5" />
                   <span className="flex-1 text-left">Search customers, orders...</span>
                   <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
                     <span className="text-xs">⌘</span>K
@@ -536,21 +517,48 @@ export const AdminLayout = () => {
                 </Button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" onClick={() => setActiveAction("ticket")}>
-                  Create ticket
-                </Button>
-                <Button variant="outline" onClick={() => setActiveAction("installation")}>
-                  Book installation
-                </Button>
-                <Button variant="outline" onClick={() => setActiveAction("email")}>
-                  Send email
-                </Button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="h-9 gap-1 border border-foreground">
+                    <Plus className="h-3.5 w-3.5" /> Quick actions <ChevronDown className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 border-2 border-foreground">
+                  <DropdownMenuLabel>Create</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setActiveAction("ticket")}>
+                    <Ticket className="mr-2 h-3.5 w-3.5" /> Create ticket
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveAction("email")}>
+                    <Mail className="mr-2 h-3.5 w-3.5" /> Send email
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveAction("installation")}>
+                    <CalendarDays className="mr-2 h-3.5 w-3.5" /> Book installation
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Navigate</DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/payment-requests"><Receipt className="mr-2 h-3.5 w-3.5" /> Create payment link</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/billing"><BadgeDollarSign className="mr-2 h-3.5 w-3.5" /> Create invoice</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/customers"><Users className="mr-2 h-3.5 w-3.5" /> Create customer</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Advanced</DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/legacy-remediation"><FileCog className="mr-2 h-3.5 w-3.5" /> Legacy remediation</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/audit-log"><ScrollText className="mr-2 h-3.5 w-3.5" /> Audit log</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 
-          <main className="p-6">
+          <main className="p-4">
             <Outlet />
           </main>
         </div>

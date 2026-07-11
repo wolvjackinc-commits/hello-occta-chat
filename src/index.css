@@ -344,3 +344,24 @@
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
 }
+
+/* -----------------------------------------------------------
+   Admin console density (Phase 5 UX cleanup)
+   Scope: any content under <main class="admin-dense">.
+   Only tightens spacing/font-size; never changes colours,
+   borders, or business logic.
+   ----------------------------------------------------------- */
+.admin-dense h1 { font-size: 1.5rem; line-height: 2rem; }
+.admin-dense h2 { font-size: 1.125rem; line-height: 1.5rem; }
+.admin-dense table { font-size: 0.8125rem; }
+.admin-dense table th,
+.admin-dense table td { padding: 0.4rem 0.5rem; }
+.admin-dense table th {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.admin-dense table tbody tr { transition: background-color 120ms; }
+.admin-dense table tbody tr:hover { background-color: hsl(var(--muted) / 0.4); }
+.admin-dense [data-slot="card"] { padding-top: 0.75rem; padding-bottom: 0.75rem; }

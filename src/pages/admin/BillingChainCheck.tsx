@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { invokeFn } from "@/lib/invokeFn";
 import { toast } from "@/hooks/use-toast";
+import { IncludeArchivedToggle, isArchivedLike } from "@/components/admin/primitives";
 
 type Row = {
   service_id: string;
@@ -83,6 +84,7 @@ export function AdminBillingChainCheck() {
   const [mode, setMode] = useState<"report" | "fix" | null>(null);
   const [filter, setFilter] = useState<"attention" | "all" | "ok">("attention");
   const [detailRow, setDetailRow] = useState<Row | null>(null);
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   const run = async (m: "report" | "fix") => {
     setLoading(true); setMode(m);
@@ -106,6 +108,7 @@ export function AdminBillingChainCheck() {
   useEffect(() => { run("report"); /* eslint-disable-next-line */ }, []);
 
   const filteredRows = rows.filter(r => {
+    if (!includeArchived && isArchivedLike(r.service_status)) return false;
     const s = primaryStatusOf(r).status;
     if (filter === "all") return true;
     if (filter === "ok") return s === "ok";
@@ -162,6 +165,14 @@ export function AdminBillingChainCheck() {
           </SelectContent>
         </Select>
         <span className="text-xs text-muted-foreground ml-auto">{filteredRows.length} of {rows.length}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <IncludeArchivedToggle
+          checked={includeArchived}
+          onCheckedChange={setIncludeArchived}
+          id="chain-include-archived"
+          label="Include archived/test/cancelled services"
+        />
       </div>
 
       <Card className="border-2 border-foreground overflow-auto">

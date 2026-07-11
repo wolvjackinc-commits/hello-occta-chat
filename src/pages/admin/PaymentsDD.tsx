@@ -43,6 +43,12 @@ import {
 } from "lucide-react";
 import { DDMandateDetailDialog } from "@/components/admin/DDMandateDetailDialog";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
+import {
+  AdminPageHeader,
+  AdminEmptyState,
+  IncludeArchivedToggle,
+  SafetyLabel,
+} from "@/components/admin/primitives";
 
 type DDMandate = {
   id: string;
@@ -70,6 +76,14 @@ type PaymentAttempt = {
   provider_ref: string | null;
   reason: string | null;
   attempted_at: string;
+};
+
+type SetupLink = {
+  id: string;
+  user_id: string | null;
+  status: string;
+  created_at: string;
+  intake_status?: string | null;
 };
 
 type Profile = {
@@ -110,6 +124,7 @@ export const AdminPaymentsDD = () => {
     bankLast4: "",
     mandateReference: "",
   });
+  const [includeCancelled, setIncludeCancelled] = useState(false);
 
   // Fetch DD Mandates using the dd_mandates_list view (includes masked fields)
   const { data: mandatesData, isLoading: mandatesLoading, refetch: refetchMandates } = useQuery({
@@ -181,6 +196,7 @@ export const AdminPaymentsDD = () => {
   const filteredMandates = useMemo(() => {
     const search = searchText.trim().toLowerCase();
     return (mandatesData?.mandates || []).filter((m) => {
+      if (!includeCancelled && m.status === "cancelled") return false;
       if (!search) return true;
       const profile = mandateProfileMap.get(m.user_id);
       return (
@@ -189,7 +205,45 @@ export const AdminPaymentsDD = () => {
         m.mandate_reference?.toLowerCase().includes(search)
       );
     });
-  }, [mandatesData?.mandates, searchText, mandateProfileMap]);
+  }, [mandatesData?.mandates, searchText, mandateProfileMap, includeCancelled]);
+
+  // Failed Collections = payment_attempts with failed/declined status
+  const failedPayments = useMemo(() => {
+    const search = searchText.trim().toLowerCase();
+    return (paymentsData?.payments || []).filter((p) => {
+      const isFailed = ["failed", "declined", "error"].includes((p.status || "").toLowerCase());
+      if (!isFailed) return false;
+      if (!search) return true;
+      const profile = paymentProfileMap.get(p.user_id);
+      return (
+        profile?.account_number?.toLowerCase().includes(search) ||
+        profile?.full_name?.toLowerCase().includes(search) ||
+        p.provider_ref?.toLowerCase().includes(search)
+      );
+    });
+  }, [paymentsData?.payments, searchText, paymentProfileMap]);
+
+  // Setup Links — pulled from dd_intake_requests (best-effort; may be empty if RLS blocks)
+  const { data: setupLinks = [] } = useQuery({
+    queryKey: ["admin-dd-setup-links"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("dd_intake_requests")
+        .select("id, user_id, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) return [];
+      return (data || []) as SetupLink[];
+    },
+  });
+
+  const filteredSetupLinks = useMemo(() => {
+    const search = searchText.trim().toLowerCase();
+    return (setupLinks || []).filter((s) => {
+      if (!search) return true;
+      return (s.status || "").toLowerCase().includes(search);
+    });
+  }, [setupLinks, searchText]);
 
   const filteredPayments = useMemo(() => {
     const search = searchText.trim().toLowerCase();
@@ -343,19 +397,28 @@ export const AdminPaymentsDD = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-display">Payments & Direct Debit</h1>
-          <p className="text-muted-foreground">Manage DD mandates and track payment attempts.</p>
-        </div>
-        <Button 
-          className="border-2 border-foreground gap-2"
-          onClick={() => setShowCreateDialog(true)}
-        >
-          <Plus className="h-4 w-4" />
-          Create DD Mandate
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Payments & Direct Debit"
+        description="Manage DD mandates, setup links, and collection attempts."
+        actions={
+          <>
+            <IncludeArchivedToggle
+              checked={includeCancelled}
+              onCheckedChange={setIncludeCancelled}
+              label="Include cancelled mandates"
+            />
+            <Button
+              size="sm"
+              className="border-2 border-foreground gap-2"
+              onClick={() => setShowCreateDialog(true)}
+              title="Manually create a DD mandate record (does not send an email)"
+            >
+              <Plus className="h-4 w-4" />
+              Create DD Mandate
+            </Button>
+          </>
+        }
+      />
 
       {/* Search */}
       <Card className="border-2 border-foreground p-4">
@@ -373,7 +436,11 @@ export const AdminPaymentsDD = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="border-2 border-foreground">
           <TabsTrigger value="mandates">DD Mandates ({mandatesData?.mandates?.length || 0})</TabsTrigger>
+          <TabsTrigger value="setup">Setup Links ({setupLinks.length})</TabsTrigger>
           <TabsTrigger value="payments">Payment Attempts ({paymentsData?.payments?.length || 0})</TabsTrigger>
+          <TabsTrigger value="failed">
+            Failed Collections ({failedPayments.length})
+          </TabsTrigger>
         </TabsList>
 
         {/* DD Mandates Tab */}
@@ -458,10 +525,57 @@ export const AdminPaymentsDD = () => {
               </Table>
             )}
             {!mandatesLoading && filteredMandates.length === 0 && (
-              <div className="py-8 text-center">
-                <Building className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No DD mandates found</p>
+              <div className="py-4">
+                <AdminEmptyState
+                  icon={<Building className="h-6 w-6" />}
+                  title="No DD mandates found"
+                  message={
+                    includeCancelled
+                      ? "No mandates match your search."
+                      : "Cancelled mandates are hidden. Toggle above to include them."
+                  }
+                />
               </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        {/* Setup Links Tab */}
+        <TabsContent value="setup" className="mt-4">
+          <Card className="border-2 border-foreground p-4">
+            {filteredSetupLinks.length === 0 ? (
+              <AdminEmptyState
+                icon={<Building className="h-6 w-6" />}
+                title="No DD setup links found"
+                message="Setup links sent to customers will appear here once used."
+              />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b-4 border-foreground">
+                    <TableHead className="font-display uppercase">Customer</TableHead>
+                    <TableHead className="font-display uppercase">Status</TableHead>
+                    <TableHead className="font-display uppercase">Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredSetupLinks.map((link) => (
+                    <TableRow key={link.id} className="border-b border-foreground/10">
+                      <TableCell className="font-mono text-xs">
+                        {link.user_id?.slice(0, 8) || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize text-xs">
+                          {link.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {format(new Date(link.created_at), "dd MMM yyyy HH:mm")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </Card>
         </TabsContent>
@@ -517,10 +631,70 @@ export const AdminPaymentsDD = () => {
               </Table>
             )}
             {!paymentsLoading && filteredPayments.length === 0 && (
-              <div className="py-8 text-center">
-                <CreditCard className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No payment attempts found</p>
+              <div className="py-4">
+                <AdminEmptyState
+                  icon={<CreditCard className="h-6 w-6" />}
+                  title="No payment attempts found"
+                />
               </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        {/* Failed Collections Tab */}
+        <TabsContent value="failed" className="mt-4">
+          <Card className="border-2 border-foreground p-4">
+            {failedPayments.length === 0 ? (
+              <AdminEmptyState
+                icon={<XCircle className="h-6 w-6" />}
+                title="No failed collections"
+                message="Failed or declined payment attempts will appear here."
+              />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b-4 border-foreground">
+                    <TableHead className="font-display uppercase">Customer</TableHead>
+                    <TableHead className="font-display uppercase">Amount</TableHead>
+                    <TableHead className="font-display uppercase">Status</TableHead>
+                    <TableHead className="font-display uppercase">Reason</TableHead>
+                    <TableHead className="font-display uppercase">Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {failedPayments.map((payment) => {
+                    const profile = paymentProfileMap.get(payment.user_id);
+                    return (
+                      <TableRow key={payment.id} className="border-b border-foreground/10">
+                        <TableCell>
+                          <div className="font-medium text-sm">
+                            {formatAccountNumber(profile?.account_number)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {profile?.full_name || "Unknown"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-bold">£{payment.amount?.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge className={`${getStatusColor(payment.status)} border gap-1 text-xs`}>
+                            {getStatusIcon(payment.status)}
+                            {payment.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell
+                          className="max-w-[240px] truncate text-xs"
+                          title={payment.reason || ""}
+                        >
+                          {payment.reason || "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {format(new Date(payment.attempted_at), "dd MMM yyyy HH:mm")}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             )}
           </Card>
         </TabsContent>
@@ -539,6 +713,9 @@ export const AdminPaymentsDD = () => {
             <DialogTitle className="font-display">Create DD Mandate</DialogTitle>
             <DialogDescription>Set up a new Direct Debit mandate for a customer.</DialogDescription>
           </DialogHeader>
+          <div className="mb-2">
+            <SafetyLabel kind="info">Manual record only — no customer email sent</SafetyLabel>
+          </div>
           <div className="space-y-4">
             <div>
               <Label className="font-display uppercase text-sm">Customer</Label>

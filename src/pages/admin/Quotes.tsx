@@ -18,6 +18,13 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
 import { CreateCSPaymentDialog } from "@/components/admin/CreateCSPaymentDialog";
+import {
+  AdminPageHeader,
+  AdminEmptyState,
+  AdminActionMenu,
+  IncludeArchivedToggle,
+  SafetyLabel,
+} from "@/components/admin/primitives";
 
 const STATUS_OPTIONS = ["all", "draft", "sent", "viewed", "accepted", "rejected", "expired", "converted"];
 
@@ -31,6 +38,7 @@ export const AdminQuotes = () => {
   const [overrideDialog, setOverrideDialog] = useState<{ open: boolean; quoteId?: string; quoteNumber?: string }>({ open: false });
   const [overrideReason, setOverrideReason] = useState("");
   const [payDialog, setPayDialog] = useState<{ open: boolean; csId?: string | null }>({ open: false, csId: null });
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   const { data: vatActive } = useQuery({
     queryKey: ["is-vat-active"],
@@ -123,14 +131,19 @@ export const AdminQuotes = () => {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return data ?? [];
-    return (data ?? []).filter((r: any) =>
+    const base = includeArchived
+      ? (data ?? [])
+      : (data ?? []).filter((r: any) =>
+          !["expired", "rejected"].includes((r.status ?? "").toLowerCase()),
+        );
+    if (!term) return base;
+    return base.filter((r: any) =>
       r.quote_number?.toLowerCase().includes(term) ||
       r.request?.email?.toLowerCase().includes(term) ||
       r.request?.full_name?.toLowerCase().includes(term) ||
       r.plan_name?.toLowerCase().includes(term)
     );
-  }, [data, search]);
+  }, [data, search, includeArchived]);
 
   const sendQuote = async (id: string, quoteNumber: string) => {
     setBusyId(id);
@@ -230,15 +243,28 @@ export const AdminQuotes = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-display">Quotes</h1>
-          <p className="text-muted-foreground">Draft, send and convert quotes to Contract Summaries.</p>
-        </div>
-        <Button variant="outline" onClick={() => refetch()} disabled={isFetching} className="border-2 border-foreground">
-          <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} /> Refresh
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Quotes"
+        description="Draft, send and convert quotes to Contract Summaries."
+        actions={
+          <>
+            <IncludeArchivedToggle
+              checked={includeArchived}
+              onCheckedChange={setIncludeArchived}
+              label="Include expired/rejected"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="border-2 border-foreground"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+          </>
+        }
+      />
 
       {vatActive === false && (
         <Card className="border-2 border-warning bg-warning/10 p-4 flex items-start gap-3">
@@ -285,7 +311,18 @@ export const AdminQuotes = () => {
             {isLoading ? (
               <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No quotes.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={9} className="py-4">
+                  <AdminEmptyState
+                    title="No quotes"
+                    message={
+                      includeArchived
+                        ? "No quotes match your search."
+                        : "No live quotes. Enable ‘Include expired/rejected’ to see the full list."
+                    }
+                  />
+                </TableCell>
+              </TableRow>
             ) : (
               filtered.map((r: any) => (
                 <TableRow
@@ -334,69 +371,44 @@ export const AdminQuotes = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex flex-wrap gap-1 justify-end">
-                      <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => runMarginCheck(r.id)} title="Run margin check">
-                        <ShieldCheck className="w-3 h-3" />
-                      </Button>
                       {!r.locked_at && (r.status === "draft" || r.status === "approved") && (
-                        <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => sendQuote(r.id, r.quote_number)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId === r.id}
+                          onClick={() => sendQuote(r.id, r.quote_number)}
+                          title="This will send an email to the customer and lock the quote"
+                          className="h-7 text-xs"
+                        >
                           {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send & lock"}
                         </Button>
                       )}
-                      {r.locked_at && (
-                        <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={async () => {
-                          setBusyId(r.id);
-                          try {
-                            const { data, error } = await supabase.functions.invoke("edit-and-resend-quote", { body: { source_quote_id: r.id } });
-                            const err = (data as any)?.error || error?.message;
-                            if (err) throw new Error(err);
-                            toast({ title: `Revision ${(data as any).quote_number} created` });
-                            qc.invalidateQueries({ queryKey: ["admin-quotes"] });
-                          } catch (e: any) {
-                            toast({ title: "Revision failed", description: e?.message, variant: "destructive" });
-                          } finally { setBusyId(null); }
-                        }}>
-                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Edit & Resend"}
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" onClick={() => setOverrideDialog({ open: true, quoteId: r.id, quoteNumber: r.quote_number })} title="Override red margin (admin)">
-                        Override
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={r.unified_journey_opt_in ? "default" : "outline"}
-                        disabled={busyId === r.id}
-                        onClick={async () => {
-                          setBusyId(r.id);
-                          try {
-                            const next = !r.unified_journey_opt_in;
-                            const { error } = await (supabase as any).rpc("admin_set_quote_unified_opt_in", {
-                              _quote_id: r.id, _enabled: next,
-                            });
-                            if (error) throw error;
-                            toast({ title: next ? "Unified journey enabled for this quote" : "Unified journey disabled for this quote" });
-                            await qc.invalidateQueries({ queryKey: ["admin-quotes"] });
-                          } catch (e: any) {
-                            toast({ title: "Toggle failed", description: e?.message, variant: "destructive" });
-                          } finally {
-                            setBusyId(null);
-                          }
-                        }}
-                        title="Per-quote opt-in to the unified /quote/:token journey"
-                      >
-                        {r.unified_journey_opt_in ? "Unified: ON" : "Unified: off"}
-                      </Button>
                       {!r.cs && (
-                        <Button size="sm" variant="hero" disabled={!vatActive || busyId === r.id} onClick={() => generateCS(r.id, r.quote_number)}
-                          title={!vatActive ? "VAT settings incomplete" : "Generate Contract Summary"}>
+                        <Button
+                          size="sm"
+                          variant="hero"
+                          disabled={!vatActive || busyId === r.id}
+                          onClick={() => generateCS(r.id, r.quote_number)}
+                          title={!vatActive ? "VAT settings incomplete" : "Generate Contract Summary"}
+                          className="h-7 text-xs"
+                        >
                           {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate CS"}
                         </Button>
                       )}
                       {r.cs && (
-                        <Button size="sm" variant="outline" onClick={() => openPdf(r.id)}>View CS</Button>
+                        <Button size="sm" variant="outline" onClick={() => openPdf(r.id)} className="h-7 text-xs">
+                          View CS
+                        </Button>
                       )}
                       {r.cs && r.cs.status === "accepted" && !r.activePr && (
-                        <Button size="sm" variant="hero" onClick={() => setPayDialog({ open: true, csId: r.cs.id })}>
-                          Create payment request
+                        <Button
+                          size="sm"
+                          variant="hero"
+                          onClick={() => setPayDialog({ open: true, csId: r.cs.id })}
+                          title="This will create a payment link for the customer"
+                          className="h-7 text-xs"
+                        >
+                          Create payment link
                         </Button>
                       )}
                       {r.cs && r.cs.status === "accepted" && r.activePr && (
@@ -404,6 +416,88 @@ export const AdminQuotes = () => {
                           PR: {r.activePr.status}
                         </Badge>
                       )}
+                      <AdminActionMenu
+                        items={[
+                          {
+                            label: "Run margin check",
+                            icon: <ShieldCheck className="h-4 w-4" />,
+                            onSelect: () => runMarginCheck(r.id),
+                            disabled: busyId === r.id,
+                          },
+                          {
+                            label: "Override red margin",
+                            onSelect: () =>
+                              setOverrideDialog({
+                                open: true,
+                                quoteId: r.id,
+                                quoteNumber: r.quote_number,
+                              }),
+                          },
+                          ...(r.locked_at
+                            ? [
+                                {
+                                  label: "Edit & Resend (new revision)",
+                                  disabled: busyId === r.id,
+                                  onSelect: async () => {
+                                    setBusyId(r.id);
+                                    try {
+                                      const { data, error } = await supabase.functions.invoke(
+                                        "edit-and-resend-quote",
+                                        { body: { source_quote_id: r.id } },
+                                      );
+                                      const err = (data as any)?.error || error?.message;
+                                      if (err) throw new Error(err);
+                                      toast({
+                                        title: `Revision ${(data as any).quote_number} created`,
+                                      });
+                                      qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+                                    } catch (e: any) {
+                                      toast({
+                                        title: "Revision failed",
+                                        description: e?.message,
+                                        variant: "destructive",
+                                      });
+                                    } finally {
+                                      setBusyId(null);
+                                    }
+                                  },
+                                },
+                              ]
+                            : []),
+                          { type: "separator" as const },
+                          {
+                            label: r.unified_journey_opt_in
+                              ? "Disable unified journey"
+                              : "Enable unified journey",
+                            disabled: busyId === r.id,
+                            onSelect: async () => {
+                              setBusyId(r.id);
+                              try {
+                                const next = !r.unified_journey_opt_in;
+                                const { error } = await (supabase as any).rpc(
+                                  "admin_set_quote_unified_opt_in",
+                                  { _quote_id: r.id, _enabled: next },
+                                );
+                                if (error) throw error;
+                                toast({
+                                  title: next
+                                    ? "Unified journey enabled"
+                                    : "Unified journey disabled",
+                                });
+                                await qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+                              } catch (e: any) {
+                                toast({
+                                  title: "Toggle failed",
+                                  description: e?.message,
+                                  variant: "destructive",
+                                });
+                              } finally {
+                                setBusyId(null);
+                              }
+                            },
+                          },
+                        ]}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

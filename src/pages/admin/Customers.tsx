@@ -23,6 +23,7 @@ import CustomerAdvancedSearch, {
 import CustomerQuickActions from "@/components/admin/CustomerQuickActions";
 import { AdminDataHealthBanner } from "@/components/admin/AdminDataHealthBanner";
 import { CreateCustomerDialog } from "@/components/admin/CreateCustomerDialog";
+import { AdminEmptyState } from "@/components/admin/primitives";
 
 const PAGE_SIZE = 10;
 
@@ -404,17 +405,15 @@ export const AdminCustomers = () => {
         )}
 
         {!isFetching && !error && data?.customers?.length === 0 && (
-          <Card className="border-2 border-dashed border-foreground/40 p-8">
-            <div className="text-center">
-              <User className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 font-display text-lg">No customers found</h3>
-              <p className="text-sm text-muted-foreground">
-                {quickSearch.trim() || hasAdvancedFilters
-                  ? "Try adjusting your search terms."
-                  : "Customers will appear here once they sign up."}
-              </p>
-            </div>
-          </Card>
+          <AdminEmptyState
+            icon={<User className="h-8 w-8" />}
+            title="No customers found"
+            message={
+              quickSearch.trim() || hasAdvancedFilters
+                ? "Try adjusting your search terms."
+                : "Customers will appear here once they sign up."
+            }
+          />
         )}
       </div>
 

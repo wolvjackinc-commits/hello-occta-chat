@@ -63,6 +63,7 @@ import { hashToken } from "@/lib/tokenHash";
 import { DDMandateDetailDialog } from "@/components/admin/DDMandateDetailDialog";
 import { RecordPhonePaymentDialog } from "@/components/admin/RecordPhonePaymentDialog";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
+import { IncludeArchivedToggle, isArchivedLike } from "@/components/admin/primitives";
 
 type Customer = {
   id: string;
@@ -123,6 +124,7 @@ export const AdminPaymentRequests = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   // Create dialog state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -150,7 +152,7 @@ export const AdminPaymentRequests = () => {
 
   // Fetch payment requests
   const { data: requests = [], isLoading, refetch } = useQuery({
-    queryKey: ["payment-requests", statusFilter, typeFilter, searchTerm],
+    queryKey: ["payment-requests", statusFilter, typeFilter, searchTerm, "v2"],
     queryFn: async () => {
       let query = supabase
         .from("payment_requests")
@@ -456,6 +458,12 @@ export const AdminPaymentRequests = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[280px]"
             />
+            <IncludeArchivedToggle
+              checked={includeArchived}
+              onCheckedChange={setIncludeArchived}
+              id="pr-include-archived"
+              label="Include cancelled/expired"
+            />
           </div>
         </CardContent>
       </Card>
@@ -469,15 +477,24 @@ export const AdminPaymentRequests = () => {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : requests.length === 0 ? (
+          ) : (() => {
+            const visibleRequests = requests.filter(
+              (r) => statusFilter !== "all" || includeArchived || !isArchivedLike(r.status),
+            );
+            if (visibleRequests.length === 0) {
+              return (
             <div className="p-12 text-center">
               <CreditCard className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="font-display text-xl mb-2">No payment requests</h3>
               <p className="text-muted-foreground">
-                Create a new request to send a secure payment link to a customer.
+                {requests.length === 0
+                  ? "Create a new request to send a secure payment link to a customer."
+                  : "All requests are cancelled/expired. Toggle above to include them."}
               </p>
             </div>
-          ) : (
+              );
+            }
+            return (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -492,7 +509,7 @@ export const AdminPaymentRequests = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requests.map((request) => {
+                {visibleRequests.map((request) => {
                   const statusConfig = STATUS_CONFIG[request.status] || STATUS_CONFIG.draft;
                   return (
                     <TableRow key={request.id}>
@@ -623,7 +640,8 @@ export const AdminPaymentRequests = () => {
                 })}
               </TableBody>
             </Table>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
 

@@ -5,11 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { AdminEmptyState, AdminStatusBadge, IncludeArchivedToggle, SafetyLabel, isArchivedLike } from "@/components/admin/primitives";
+import { Inbox } from "lucide-react";
 
 export function AdminSimOrders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
   const [busy, setBusy] = useState(false);
+  const [includeArchived, setIncludeArchived] = useState(false);
   const [iccid, setIccid] = useState("");
   const [msisdn, setMsisdn] = useState("");
   const [tracking, setTracking] = useState("");
@@ -24,6 +27,8 @@ export function AdminSimOrders() {
     setOrders(data ?? []);
   };
   useEffect(() => { load(); }, []);
+
+  const visibleOrders = orders.filter((o) => includeArchived || !isArchivedLike(o.status));
 
   const invoke = async (action: string, payload: Record<string, unknown> = {}) => {
     if (!selected) return;
@@ -43,7 +48,15 @@ export function AdminSimOrders() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-display uppercase">SIM orders</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-display uppercase">SIM orders</h1>
+        <IncludeArchivedToggle
+          checked={includeArchived}
+          onCheckedChange={setIncludeArchived}
+          id="sim-orders-include-archived"
+          label="Include cancelled/test orders"
+        />
+      </div>
       <div className="card-brutal bg-card p-3">
         <table className="w-full text-sm">
           <thead className="text-xs uppercase font-display">
@@ -54,18 +67,26 @@ export function AdminSimOrders() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
+            {visibleOrders.map((o) => (
               <tr key={o.id} className="border-b border-foreground/20">
                 <td className="p-2 font-mono text-xs">{o.order_number}</td>
                 <td className="p-2">{o.full_name}<br /><span className="text-xs text-muted-foreground">{o.email}</span></td>
                 <td className="p-2">{o.plan_name_snapshot}</td>
                 <td className="p-2">{o.payment_method}</td>
-                <td className="p-2 uppercase text-xs">{o.status}</td>
+                <td className="p-2"><AdminStatusBadge status={o.status || "unknown"} /></td>
                 <td className="p-2 text-xs">{o.service_live_date ?? "—"}</td>
                 <td className="p-2 text-right"><Button size="sm" variant="outline" onClick={() => setSelected(o)}>Manage</Button></td>
               </tr>
             ))}
-            {orders.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No SIM orders yet.</td></tr>}
+            {visibleOrders.length === 0 && (
+              <tr><td colSpan={7} className="p-4">
+                <AdminEmptyState
+                  icon={<Inbox className="h-8 w-8" />}
+                  title="No SIM orders"
+                  message={orders.length === 0 ? "SIM orders will appear here once customers order." : "All orders are cancelled/test. Toggle above to include them."}
+                />
+              </td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -90,8 +111,8 @@ export function AdminSimOrders() {
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" disabled={busy} onClick={() => invoke("approve")}>Approve</Button>
                 <Button variant="outline" disabled={busy} onClick={() => invoke("on_hold", { reason: "Manual hold" })}>On hold</Button>
-                <Button variant="outline" disabled={busy} onClick={() => invoke("cancel", { reason: "Admin cancel" })}>Cancel</Button>
-                <Button variant="outline" disabled={busy} onClick={() => invoke("fail")}>Mark failed</Button>
+                <Button variant="outline" disabled={busy} onClick={() => invoke("cancel", { reason: "Admin cancel" })} title="Cancels this SIM order — cannot be undone">Cancel</Button>
+                <Button variant="outline" disabled={busy} onClick={() => invoke("fail")} title="Marks the order as failed">Mark failed</Button>
                 <Button variant="outline" disabled={busy} onClick={() => invoke("pac_required")}>Ask for PAC</Button>
                 <Button variant="outline" disabled={busy} onClick={() => invoke("stac_required")}>Ask for STAC</Button>
                 <Button variant="outline" disabled={busy} onClick={() => invoke("port_requested")}>Port requested</Button>
@@ -107,9 +128,12 @@ export function AdminSimOrders() {
 
               {selected.sim_type === "physical" && (
                 <div className="border-t-2 border-foreground/20 pt-3">
-                  <Label>Tracking</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label>Tracking</Label>
+                    <SafetyLabel kind="warning">Notifies customer</SafetyLabel>
+                  </div>
                   <Input value={tracking} onChange={(e) => setTracking(e.target.value)} />
-                  <Button className="mt-2" variant="hero" size="sm" disabled={busy} onClick={() => invoke("mark_dispatched", { tracking })}>Mark dispatched</Button>
+                  <Button className="mt-2" variant="hero" size="sm" disabled={busy} onClick={() => invoke("mark_dispatched", { tracking })} title="Marks order dispatched and sends dispatch notification">Mark dispatched</Button>
                 </div>
               )}
 
@@ -117,7 +141,10 @@ export function AdminSimOrders() {
                 <div className="border-t-2 border-foreground/20 pt-3 grid grid-cols-2 gap-2">
                   <div><Label>SM-DP+ address</Label><Input value={smdp} onChange={(e) => setSmdp(e.target.value)} /></div>
                   <div><Label>Activation code</Label><Input value={activationCode} onChange={(e) => setActivationCode(e.target.value)} /></div>
-                  <div className="col-span-2"><Button variant="hero" size="sm" disabled={busy} onClick={() => invoke("esim_sent", { smdp_address: smdp, activation_code: activationCode })}>Send eSIM details</Button></div>
+                  <div className="col-span-2 flex items-center gap-2">
+                    <Button variant="hero" size="sm" disabled={busy} onClick={() => invoke("esim_sent", { smdp_address: smdp, activation_code: activationCode })} title="Sends eSIM activation details to the customer">Send eSIM details</Button>
+                    <SafetyLabel kind="warning">Sends email</SafetyLabel>
+                  </div>
                 </div>
               )}
 

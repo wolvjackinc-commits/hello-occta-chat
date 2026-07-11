@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { AdminEmptyState, IncludeArchivedToggle } from "@/components/admin/primitives";
+import { Package } from "lucide-react";
 
 type SimSettings = { standalone_enabled: boolean; esim_enabled: boolean; physical_sim_enabled: boolean; direct_debit_enabled: boolean; dispatch_lead_time_days: number };
 type SimPlan = {
@@ -43,6 +45,7 @@ export function AdminSimPlans() {
   const [plans, setPlans] = useState<SimPlan[]>([]);
   const [editing, setEditing] = useState<SimPlan | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
   const { toast } = useToast();
 
   const load = async () => {
@@ -103,20 +106,41 @@ export function AdminSimPlans() {
       <div className="card-brutal bg-card p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display uppercase">Plans</h2>
-          <Button variant="hero" onClick={() => setEditing({ ...emptyPlan })}>+ New plan</Button>
+          <div className="flex items-center gap-3">
+            <IncludeArchivedToggle
+              checked={showInactive}
+              onCheckedChange={setShowInactive}
+              id="sim-plans-show-inactive"
+              label="Show inactive plans"
+            />
+            <Button variant="hero" onClick={() => setEditing({ ...emptyPlan })}>+ New plan</Button>
+          </div>
         </div>
-        {plans.length === 0 && <p className="text-sm text-muted-foreground">No SIM plans yet. Add one to enable checkout.</p>}
-        <div className="grid gap-2">
-          {plans.map((p) => (
-            <div key={p.id} className="flex items-center justify-between border-2 border-foreground p-3 text-sm">
-              <div>
-                <p className="font-display uppercase">{p.name} <span className="text-xs text-muted-foreground">({p.slug})</span></p>
-                <p className="text-xs text-muted-foreground">{p.data_label} · £{(p.monthly_price_minor / 100).toFixed(2)}/mo · {p.is_active ? "active" : "inactive"} · {p.checkout_visible ? "visible" : "hidden"}</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setEditing(p)}>Edit</Button>
+        {(() => {
+          const visible = plans.filter((p) => showInactive || p.is_active);
+          if (visible.length === 0) {
+            return (
+              <AdminEmptyState
+                icon={<Package className="h-8 w-8" />}
+                title={plans.length === 0 ? "No SIM plans yet" : "No active plans"}
+                message={plans.length === 0 ? "Add one to enable checkout." : "Toggle above to show inactive plans."}
+              />
+            );
+          }
+          return (
+            <div className="grid gap-2">
+              {visible.map((p) => (
+                <div key={p.id} className="flex items-center justify-between border-2 border-foreground p-3 text-sm">
+                  <div>
+                    <p className="font-display uppercase">{p.name} <span className="text-xs text-muted-foreground">({p.slug})</span></p>
+                    <p className="text-xs text-muted-foreground">{p.data_label} · £{(p.monthly_price_minor / 100).toFixed(2)}/mo · {p.is_active ? "active" : "inactive"} · {p.checkout_visible ? "visible" : "hidden"}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setEditing(p)}>Edit</Button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
       </div>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { TicketReplyDialog } from "@/components/admin/TicketReplyDialog";
 import { logAudit } from "@/lib/audit";
 import { useToast } from "@/hooks/use-toast";
-import { UserCircle, AlertTriangle, Shield, Lock, FileWarning } from "lucide-react";
+import { UserCircle, AlertTriangle, Shield, Lock, FileWarning, Inbox, Reply } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -19,6 +19,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AdminPageHeader,
+  AdminEmptyState,
+  AdminActionMenu,
+  IncludeArchivedToggle,
+} from "@/components/admin/primitives";
 
 const statusOptions = ["open", "in_progress", "resolved", "closed"] as const;
 type TicketStatus = typeof statusOptions[number];
@@ -51,6 +65,7 @@ export const AdminTickets = () => {
   const [complaintSummary, setComplaintSummary] = useState("");
   const [complaintCategory, setComplaintCategory] = useState("service");
   const [busy, setBusy] = useState(false);
+  const [includeClosed, setIncludeClosed] = useState(false);
 
   const { data, refetch } = useQuery({
     queryKey: ["admin-tickets"],
@@ -197,6 +212,7 @@ export const AdminTickets = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (data?.tickets ?? []).filter(t => {
+      if (!includeClosed && (t.status === "closed" || t.status === "resolved")) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterCategory !== "all" && t.category !== filterCategory) return false;
       if (filterPriority !== "all" && t.priority !== filterPriority) return false;
@@ -210,14 +226,21 @@ export const AdminTickets = () => {
       }
       return true;
     });
-  }, [data?.tickets, filterStatus, filterCategory, filterPriority, filterVulnerable, filterAssignee, search, profileMap]);
+  }, [data?.tickets, filterStatus, filterCategory, filterPriority, filterVulnerable, filterAssignee, search, profileMap, includeClosed]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display">Support inbox</h1>
-        <p className="text-muted-foreground">Respond quickly to issues and manage replies.</p>
-      </div>
+      <AdminPageHeader
+        title="Support inbox"
+        description="Respond quickly to issues and manage replies."
+        actions={
+          <IncludeArchivedToggle
+            checked={includeClosed}
+            onCheckedChange={setIncludeClosed}
+            label="Include closed/resolved"
+          />
+        }
+      />
 
       <Card className="border-2 border-foreground p-3 flex flex-wrap items-center gap-2">
         <Input placeholder="Search subject, customer…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-56 border-2 border-foreground" />
@@ -257,96 +280,148 @@ export const AdminTickets = () => {
         </Button>
       </Card>
 
-      <div className="grid gap-4">
-        {filtered.map((ticket) => (
-          <Card key={ticket.id} className="border-2 border-foreground p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <div className="font-medium flex items-center gap-2 flex-wrap">
-                  {ticket.subject}
-                  {ticket.vulnerable_customer_flag && (
-                    <Badge className="bg-warning text-warning-foreground border-2 border-foreground">
-                      <AlertTriangle className="w-3 h-3 mr-1" /> Vulnerable
-                    </Badge>
-                  )}
-                  {slaBadge(ticket as any)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {profileMap.get(ticket.user_id)?.full_name || "Customer"}
-                  {profileMap.get(ticket.user_id)?.email ? ` · ${profileMap.get(ticket.user_id)?.email}` : ""}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Created: {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
-                  {ticket.category && ` · ${ticket.category.replace(/_/g," ")}`}
-                </div>
-                {(ticket.related_order_id || ticket.related_invoice_id || ticket.related_quote_id || ticket.related_service_id) && (
-                  <div className="text-[11px] text-muted-foreground mt-1 flex gap-2 flex-wrap">
-                    {ticket.related_order_id && <span>Order {String(ticket.related_order_id).slice(0,8)}</span>}
-                    {ticket.related_invoice_id && <span>Invoice {String(ticket.related_invoice_id).slice(0,8)}</span>}
-                    {ticket.related_quote_id && <span>Quote {String(ticket.related_quote_id).slice(0,8)}</span>}
-                    {ticket.related_service_id && <span>Service {String(ticket.related_service_id).slice(0,8)}</span>}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">{ticket.priority}</Badge>
-                <Select 
-                  value={ticket.status} 
-                  onValueChange={(value: TicketStatus) => handleStatusChange(ticket.id, value, ticket.subject)}
-                >
-                  <SelectTrigger className="w-36">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status.replace('_', ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select 
-                  value={ticket.assigned_to || "unassigned"} 
-                  onValueChange={(value) => handleAssign(ticket.id, value === "unassigned" ? null : value)}
-                >
-                  <SelectTrigger className="w-40">
-                    <UserCircle className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Assign" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {data?.adminProfiles?.map((admin) => (
-                      <SelectItem key={admin.id} value={admin.id}>
-                        {admin.full_name || admin.email?.split("@")[0] || "Admin"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={() => {
-                    setSelectedTicket(ticket);
-                    setSelectedProfile(profileMap.get(ticket.user_id));
-                    setDialogOpen(true);
-                  }}
-                >
-                  Reply
-                </Button>
-                <Button variant="outline" size="sm" className="border-2 border-foreground" onClick={() => { setNoteTicket(ticket); setNoteBody(""); }}>
-                  <Lock className="w-3 h-3 mr-1" /> Internal note
-                </Button>
-                <Button variant="outline" size="sm" className="border-2 border-foreground" onClick={() => { setComplaintTicket(ticket); setComplaintSummary(`Escalated from ticket: ${ticket.subject}`); setComplaintCategory(ticket.category || "service"); }}>
-                  <FileWarning className="w-3 h-3 mr-1" /> Create complaint
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
-        {filtered.length === 0 && (
-          <Card className="border-2 border-foreground p-8 text-center">
-            <p className="text-muted-foreground">No tickets match these filters.</p>
-          </Card>
-        )}
-      </div>
+      {filtered.length === 0 ? (
+        <AdminEmptyState
+          icon={<Inbox className="h-6 w-6" />}
+          title="No tickets match these filters"
+          message={
+            !includeClosed
+              ? "Closed/resolved tickets are hidden. Toggle above to include them."
+              : "Try clearing filters or search."
+          }
+        />
+      ) : (
+        <Card className="border-2 border-foreground p-0 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b-4 border-foreground">
+                <TableHead className="font-display uppercase">Subject</TableHead>
+                <TableHead className="font-display uppercase">Customer</TableHead>
+                <TableHead className="font-display uppercase">Priority</TableHead>
+                <TableHead className="font-display uppercase">Status</TableHead>
+                <TableHead className="font-display uppercase">Age</TableHead>
+                <TableHead className="font-display uppercase">Assigned</TableHead>
+                <TableHead className="font-display uppercase text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((ticket) => {
+                const p = profileMap.get(ticket.user_id);
+                return (
+                  <TableRow key={ticket.id} className="border-b border-foreground/10">
+                    <TableCell className="max-w-[280px]">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium truncate">{ticket.subject}</span>
+                        {ticket.vulnerable_customer_flag && (
+                          <Badge className="bg-warning text-warning-foreground border-2 border-foreground text-[10px] px-1">
+                            <AlertTriangle className="w-3 h-3 mr-0.5" /> Vulnerable
+                          </Badge>
+                        )}
+                        {slaBadge(ticket as any)}
+                      </div>
+                      {ticket.category && (
+                        <div className="text-[11px] text-muted-foreground capitalize">
+                          {ticket.category.replace(/_/g, " ")}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <div className="truncate max-w-[160px]">{p?.full_name || "Customer"}</div>
+                      <div className="text-muted-foreground truncate max-w-[160px]">{p?.email || ""}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {ticket.priority}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={ticket.status}
+                        onValueChange={(value: TicketStatus) =>
+                          handleStatusChange(ticket.id, value, ticket.subject)
+                        }
+                      >
+                        <SelectTrigger className="h-7 w-32 text-xs">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status.replace("_", " ")}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={ticket.assigned_to || "unassigned"}
+                        onValueChange={(value) =>
+                          handleAssign(ticket.id, value === "unassigned" ? null : value)
+                        }
+                      >
+                        <SelectTrigger className="h-7 w-36 text-xs">
+                          <UserCircle className="w-3 h-3 mr-1" />
+                          <SelectValue placeholder="Assign" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          {data?.adminProfiles?.map((admin) => (
+                            <SelectItem key={admin.id} value={admin.id}>
+                              {admin.full_name || admin.email?.split("@")[0] || "Admin"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1"
+                          onClick={() => {
+                            setSelectedTicket(ticket);
+                            setSelectedProfile(profileMap.get(ticket.user_id));
+                            setDialogOpen(true);
+                          }}
+                          title="Reply — this will send an email to the customer"
+                        >
+                          <Reply className="w-3.5 h-3.5" /> Reply
+                        </Button>
+                        <AdminActionMenu
+                          items={[
+                            {
+                              label: "Internal note",
+                              icon: <Lock className="h-4 w-4" />,
+                              onSelect: () => {
+                                setNoteTicket(ticket);
+                                setNoteBody("");
+                              },
+                            },
+                            {
+                              label: "Create complaint",
+                              icon: <FileWarning className="h-4 w-4" />,
+                              onSelect: () => {
+                                setComplaintTicket(ticket);
+                                setComplaintSummary(`Escalated from ticket: ${ticket.subject}`);
+                                setComplaintCategory(ticket.category || "service");
+                              },
+                            },
+                          ]}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
 
       <TicketReplyDialog
         ticket={selectedTicket}

@@ -35,8 +35,21 @@ export const AdminQuotes = () => {
   const { data: vatActive } = useQuery({
     queryKey: ["is-vat-active"],
     queryFn: async () => {
-      const { data } = await (supabase as any).rpc("is_vat_active");
-      return data === true;
+      // Primary: RPC (server-side authoritative check).
+      const { data: rpcResult, error: rpcError } = await (supabase as any).rpc("is_vat_active");
+      if (!rpcError && typeof rpcResult === "boolean") return rpcResult;
+      // Fallback: read platform_settings directly so a missing RPC grant
+      // does not force a false "VAT inactive" banner when VAT is configured.
+      const { data: settings } = await (supabase as any)
+        .from("platform_settings")
+        .select("vat_number, vat_effective_date")
+        .eq("singleton", true)
+        .maybeSingle();
+      if (!settings) return null; // unknown → suppress banner
+      const hasNumber = typeof settings.vat_number === "string" && settings.vat_number.trim().length > 0;
+      const effective = settings.vat_effective_date ? new Date(settings.vat_effective_date) : null;
+      const active = hasNumber && !!effective && effective.getTime() <= Date.now();
+      return active;
     },
   });
 

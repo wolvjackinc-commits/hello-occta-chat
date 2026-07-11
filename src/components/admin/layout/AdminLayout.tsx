@@ -603,7 +603,7 @@ export const AdminLayout = () => {
             </div>
           </header>
 
-          <main className="p-4">
+          <main className="p-4 admin-dense">
             <Outlet />
           </main>
         </div>

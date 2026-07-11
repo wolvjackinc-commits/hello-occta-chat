@@ -3,6 +3,7 @@
 // two_doc_pilot_allowlist, and returns the UUID. Requires a caller with
 // admin or super_admin role. Global flag is NOT touched.
 import { corsHeaders, jsonResponse, getServiceClient } from "../_shared/quoteHelpers.ts";
+import { callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 
 // GoTrue rejects non-routable TLDs like .internal, so we register the pilot
 // under a routable but non-deliverable subdomain we control. The intended
@@ -14,10 +15,23 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
+  // Require an authenticated admin or super_admin caller. This function
+  // creates a real auth user and allowlist entry, so it must never be
+  // reachable by anonymous callers — even on first bootstrap.
+  const supabase = getServiceClient();
+  const callerId = callerUserIdFromRequest(req);
+  if (!callerId) return jsonResponse({ error: "unauthorized" }, 401);
+  const { data: isAdmin } = await supabase.rpc("has_role", {
+    _user_id: callerId, _role: "admin",
+  });
+  const { data: isSuper } = await supabase.rpc("has_role", {
+    _user_id: callerId, _role: "super_admin",
+  });
+  if (!isAdmin && !isSuper) return jsonResponse({ error: "forbidden" }, 403);
+
   // Self-disabling one-shot bootstrap.
   // Refuses to run once the pilot user is already on the allowlist,
   // so it cannot be used to create arbitrary accounts later.
-  const supabase = getServiceClient();
   const { data: existingAllow } = await supabase
     .from("two_doc_pilot_allowlist")
     .select("id, user_id, active")

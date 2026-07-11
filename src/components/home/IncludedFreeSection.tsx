@@ -18,7 +18,7 @@ export default function IncludedFreeSection() {
   return (
     <section className="bg-foreground text-background py-14 md:py-16">
       <div className="container mx-auto px-4">
-        <p className="font-display text-xs uppercase tracking-[0.2em] text-background/60 mb-3">
+        <p className="font-display text-xs uppercase tracking-[0.2em] text-background/80 mb-3">
           Always with OCCTA
         </p>
         <h2 className="font-display text-2xl md:text-4xl uppercase mb-8">

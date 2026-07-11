@@ -14,11 +14,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
 import { logAudit } from "@/lib/audit";
-import { CheckSquare, Square, Loader2, UserPlus, ExternalLink } from "lucide-react";
+import { CheckSquare, Square, Loader2, UserPlus, ExternalLink, StickyNote, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import {
+  AdminPageHeader,
+  AdminStatusBadge,
+  AdminEmptyState,
+  AdminDrawer,
+  IncludeArchivedToggle,
+  isArchivedLike,
+} from "@/components/admin/primitives";
 
 const orderStatuses = ["pending", "confirmed", "active", "cancelled"] as const;
 type OrderStatus = (typeof orderStatuses)[number];
@@ -50,6 +67,8 @@ export const AdminOrders = () => {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [selectedGuestOrders, setSelectedGuestOrders] = useState<Set<string>>(new Set());
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [includeArchived, setIncludeArchived] = useState(false);
+  const [noteOrder, setNoteOrder] = useState<Order | null>(null);
 
   const { data, refetch } = useQuery({
     queryKey: ["admin-orders"],
@@ -227,13 +246,27 @@ export const AdminOrders = () => {
 
   const orders = useMemo(() => data?.orders ?? [], [data?.orders]);
   const guestOrders = useMemo(() => data?.guestOrders ?? [], [data?.guestOrders]);
+  const visibleOrders = useMemo(
+    () => (includeArchived ? orders : orders.filter((o) => !isArchivedLike(o.status))),
+    [orders, includeArchived],
+  );
+  const visibleGuestOrders = useMemo(
+    () => (includeArchived ? guestOrders : guestOrders.filter((o: any) => !isArchivedLike(o?.status))),
+    [guestOrders, includeArchived],
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display">Orders</h1>
-        <p className="text-muted-foreground">Manage orders, transitions, and admin notes.</p>
-      </div>
+      <AdminPageHeader
+        title="Orders"
+        description="Manage orders, transitions, and admin notes."
+        actions={
+          <IncludeArchivedToggle
+            checked={includeArchived}
+            onCheckedChange={setIncludeArchived}
+          />
+        }
+      />
 
       <Tabs defaultValue="orders">
         <TabsList>
@@ -243,7 +276,7 @@ export const AdminOrders = () => {
 
         <TabsContent value="orders" className="space-y-4">
           {/* Bulk Actions Bar */}
-          {orders.length > 0 && (
+          {visibleOrders.length > 0 && (
             <Card className="border-2 border-foreground p-4">
               <div className="flex flex-wrap items-center gap-4">
                 <Button
@@ -286,55 +319,90 @@ export const AdminOrders = () => {
             </Card>
           )}
 
-          {orders.map((order) => (
-            <Card key={order.id} className="border-2 border-foreground p-4">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    checked={selectedOrders.has(order.id)}
-                    onCheckedChange={() => toggleOrderSelection(order.id)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <div className="font-medium">{order.service_type} · {order.plan_name}</div>
-                    <div className="text-xs text-muted-foreground">{order.id}</div>
-                  </div>
-                </div>
-                <Select value={order.status} onValueChange={(value: OrderStatus) => handleStatusChange(order.id, value)}>
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {orderStatuses.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="mt-3 space-y-2 pl-7">
-                <Textarea
-                  placeholder="Admin note"
-                  value={notes[order.id] ?? order.admin_notes ?? ""}
-                  onChange={(event) =>
-                    setNotes((prev) => ({ ...prev, [order.id]: event.target.value }))
-                  }
-                />
-                <Button onClick={() => handleSaveNote(order.id)}>Save note</Button>
-              </div>
-            </Card>
-          ))}
-          {orders.length === 0 && (
-            <Card className="border-2 border-foreground p-8 text-center">
-              <p className="text-muted-foreground">No orders found.</p>
+          {visibleOrders.length === 0 ? (
+            <AdminEmptyState
+              icon={<Package className="h-6 w-6" />}
+              title="No orders found"
+              message={
+                includeArchived
+                  ? "There are no orders in the system yet."
+                  : "No active orders. Enable ‘Include archived/test’ to see cancelled orders."
+              }
+            />
+          ) : (
+            <Card className="border-2 border-foreground p-0 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b-4 border-foreground">
+                    <TableHead className="w-8"></TableHead>
+                    <TableHead className="font-display uppercase">Order</TableHead>
+                    <TableHead className="font-display uppercase">Plan</TableHead>
+                    <TableHead className="font-display uppercase">Status</TableHead>
+                    <TableHead className="font-display uppercase">Created</TableHead>
+                    <TableHead className="font-display uppercase text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleOrders.map((order) => (
+                    <TableRow key={order.id} className="border-b border-foreground/10">
+                      <TableCell className="w-8">
+                        <Checkbox
+                          checked={selectedOrders.has(order.id)}
+                          onCheckedChange={() => toggleOrderSelection(order.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium capitalize">{order.service_type}</div>
+                        <div className="text-[11px] text-muted-foreground font-mono">
+                          {order.id.slice(0, 8)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{order.plan_name}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={order.status}
+                          onValueChange={(value: OrderStatus) => handleStatusChange(order.id, value)}
+                        >
+                          <SelectTrigger className="h-7 w-32 text-xs">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {orderStatuses.map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {status}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {format(new Date(order.created_at), "dd MMM yyyy")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1"
+                          onClick={() => setNoteOrder(order)}
+                        >
+                          <StickyNote className="h-3.5 w-3.5" />
+                          Note
+                          {order.admin_notes && (
+                            <span className="ml-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="guest" className="space-y-4">
           {/* Bulk Actions Bar for Guest Orders */}
-          {guestOrders.length > 0 && (
+          {visibleGuestOrders.length > 0 && (
             <Card className="border-2 border-foreground p-4">
               <div className="flex flex-wrap items-center gap-4">
                 <Button
@@ -377,7 +445,7 @@ export const AdminOrders = () => {
             </Card>
           )}
 
-          {guestOrders.map((order) => (
+          {visibleGuestOrders.map((order) => (
             <Card key={order.id} className="border-2 border-foreground p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-start gap-3">
@@ -418,6 +486,7 @@ export const AdminOrders = () => {
                       onClick={() => handlePromoteToCustomer(order)}
                       disabled={promotingId === order.id}
                       className="gap-2"
+                      title="Activates customer account and sends welcome email"
                     >
                       {promotingId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                       Activate customer
@@ -447,13 +516,50 @@ export const AdminOrders = () => {
               </div>
             </Card>
           ))}
-          {guestOrders.length === 0 && (
-            <Card className="border-2 border-foreground p-8 text-center">
-              <p className="text-muted-foreground">No guest orders found.</p>
-            </Card>
+          {visibleGuestOrders.length === 0 && (
+            <AdminEmptyState
+              icon={<Package className="h-6 w-6" />}
+              title="No guest orders found"
+              message={
+                includeArchived
+                  ? "There are no guest orders yet."
+                  : "No active guest orders. Enable ‘Include archived/test’ to see cancelled orders."
+              }
+            />
           )}
         </TabsContent>
       </Tabs>
+
+      <AdminDrawer
+        open={!!noteOrder}
+        onOpenChange={(o) => !o && setNoteOrder(null)}
+        title="Admin note"
+        description={
+          noteOrder ? `${noteOrder.service_type} · ${noteOrder.plan_name}` : ""
+        }
+      >
+        {noteOrder && (
+          <div className="space-y-3">
+            <Textarea
+              placeholder="Admin note (internal only)"
+              value={notes[noteOrder.id] ?? noteOrder.admin_notes ?? ""}
+              onChange={(event) =>
+                setNotes((prev) => ({ ...prev, [noteOrder.id]: event.target.value }))
+              }
+              className="min-h-[160px] border-2 border-foreground"
+            />
+            <Button
+              className="border-2 border-foreground"
+              onClick={async () => {
+                await handleSaveNote(noteOrder.id);
+                setNoteOrder(null);
+              }}
+            >
+              Save note
+            </Button>
+          </div>
+        )}
+      </AdminDrawer>
 
       <OrderDetailDialog
         order={selectedGuestOrder}

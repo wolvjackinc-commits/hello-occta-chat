@@ -25,10 +25,19 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
-import { PauseCircle, PlayCircle, Plus } from "lucide-react";
+import { PauseCircle, PlayCircle, Plus, Eye, Wifi } from "lucide-react";
 import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
+import {
+  AdminPageHeader,
+  AdminStatusBadge,
+  AdminEmptyState,
+  AdminActionMenu,
+  AdminDrawer,
+  IncludeArchivedToggle,
+  isArchivedLike,
+} from "@/components/admin/primitives";
 
 type Service = {
   id: string;
@@ -86,6 +95,8 @@ export const AdminServices = () => {
   const [suspendService, setSuspendService] = useState<Service | null>(null);
   const [resumeService, setResumeService] = useState<Service | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
+  const [detailService, setDetailService] = useState<Service | null>(null);
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-services"],
@@ -139,6 +150,7 @@ export const AdminServices = () => {
   const filteredServices = useMemo(() => {
     const search = searchText.trim().toLowerCase();
     return services.filter((service) => {
+      if (!includeArchived && isArchivedLike(service.status)) return false;
       if (serviceTypeFilter !== "all" && service.service_type !== serviceTypeFilter) return false;
       if (statusFilter !== "all" && service.status !== statusFilter) return false;
 
@@ -158,7 +170,7 @@ export const AdminServices = () => {
         email.includes(search)
       );
     });
-  }, [services, serviceTypeFilter, statusFilter, searchText, profileMap]);
+  }, [services, serviceTypeFilter, statusFilter, searchText, profileMap, includeArchived]);
 
   const handleSuspend = async () => {
     if (!suspendService) return;
@@ -232,21 +244,27 @@ export const AdminServices = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-display">Services</h1>
-          <p className="text-muted-foreground">Track provisioned services and supplier references.</p>
-        </div>
-        <AddServiceDialog
+      <AdminPageHeader
+        title="Services"
+        description="Track provisioned services and supplier references."
+        actions={
+          <>
+            <IncludeArchivedToggle
+              checked={includeArchived}
+              onCheckedChange={setIncludeArchived}
+            />
+            <AddServiceDialog
           trigger={(
-            <Button className="border-2 border-foreground gap-2">
+            <Button size="sm" className="border-2 border-foreground gap-2">
               <Plus className="h-4 w-4" />
               Add service
             </Button>
           )}
           onSaved={refetch}
-        />
-      </div>
+            />
+          </>
+        }
+      />
 
       <Card className="border-2 border-foreground p-4">
         <div className="grid gap-4 md:grid-cols-3">
@@ -302,7 +320,7 @@ export const AdminServices = () => {
                 <TableHead className="font-display uppercase">Customer</TableHead>
                 <TableHead className="font-display uppercase">Type</TableHead>
                 <TableHead className="font-display uppercase">Status</TableHead>
-                <TableHead className="font-display uppercase">Identifier</TableHead>
+                <TableHead className="font-display uppercase">Plan / Service</TableHead>
                 <TableHead className="font-display uppercase">Supplier ref</TableHead>
                 <TableHead className="font-display uppercase">Activation date</TableHead>
                 <TableHead className="font-display uppercase">Updated</TableHead>
@@ -329,47 +347,61 @@ export const AdminServices = () => {
                     </TableCell>
                     <TableCell className="capitalize">{service.service_type}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="border-2 border-foreground capitalize"
+                      <AdminStatusBadge
+                        status={service.status}
                         title={service.suspension_reason || undefined}
-                      >
-                        {service.status}
-                      </Badge>
+                      />
                     </TableCell>
-                    <TableCell className="max-w-[160px] truncate" title={identifier}>
-                      {identifier}
+                    <TableCell className="max-w-[200px]">
+                      <div className="truncate text-sm" title={identifier}>
+                        {service.service_type}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate" title={identifier}>
+                        {identifier.length > 40 ? `${identifier.slice(0, 40)}…` : identifier}
+                      </div>
                     </TableCell>
                     <TableCell>{service.supplier_reference || "—"}</TableCell>
                     <TableCell>{formatDate(service.activation_date)}</TableCell>
                     <TableCell>{formatDate(service.updated_at)}</TableCell>
                     <TableCell className="text-right">
-                      {service.status === "suspended" ? (
+                      <div className="flex items-center justify-end gap-1">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => setResumeService(service)}
-                          disabled={updatingId === service.id}
-                          className="border-2 border-foreground gap-2"
+                          className="h-7 gap-1"
+                          onClick={() => setDetailService(service)}
                         >
-                          <PlayCircle className="h-4 w-4" />
-                          Resume
+                          <Eye className="h-3.5 w-3.5" /> Details
                         </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSuspendService(service);
-                            setSuspendReason("");
-                          }}
-                          disabled={updatingId === service.id}
-                          className="border-2 border-foreground gap-2"
-                        >
-                          <PauseCircle className="h-4 w-4" />
-                          Suspend
-                        </Button>
-                      )}
+                        <AdminActionMenu
+                          items={[
+                            service.status === "suspended"
+                              ? {
+                                  label: "Resume service",
+                                  icon: <PlayCircle className="h-4 w-4" />,
+                                  onSelect: () => setResumeService(service),
+                                  disabled: updatingId === service.id,
+                                }
+                              : {
+                                  label: "Suspend service",
+                                  icon: <PauseCircle className="h-4 w-4" />,
+                                  onSelect: () => {
+                                    setSuspendService(service);
+                                    setSuspendReason("");
+                                  },
+                                  disabled: updatingId === service.id,
+                                },
+                            { type: "separator" },
+                            {
+                              label: "Open customer",
+                              onSelect: () =>
+                                profile?.account_number &&
+                                navigate(`/admin/customers/${profile.account_number}`),
+                              disabled: !profile?.account_number,
+                            },
+                          ]}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -378,9 +410,61 @@ export const AdminServices = () => {
           </Table>
         )}
         {!isLoading && filteredServices.length === 0 && (
-          <div className="py-8 text-center text-sm text-muted-foreground">No services found.</div>
+          <div className="py-4">
+            <AdminEmptyState
+              icon={<Wifi className="h-6 w-6" />}
+              title="No services found"
+              message={
+                includeArchived
+                  ? "No services match your filters."
+                  : "No active services match your filters. Enable ‘Include archived/test’ to see cancelled entries."
+              }
+            />
+          </div>
         )}
       </Card>
+
+      {/* Details drawer — moves raw identifier JSON out of the table */}
+      <AdminDrawer
+        open={!!detailService}
+        onOpenChange={(o) => !o && setDetailService(null)}
+        title="Service details"
+        description={detailService ? `${detailService.service_type} · ${detailService.status}` : ""}
+      >
+        {detailService && (
+          <div className="space-y-4 text-sm">
+            <div>
+              <div className="text-xs uppercase font-display text-muted-foreground">Customer</div>
+              <div>{profileMap.get(detailService.user_id)?.full_name || "—"}</div>
+              <div className="text-xs text-muted-foreground">
+                {profileMap.get(detailService.user_id)?.email || ""}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs uppercase font-display text-muted-foreground">Supplier reference</div>
+              <div className="font-mono">{detailService.supplier_reference || "—"}</div>
+            </div>
+            <div>
+              <div className="text-xs uppercase font-display text-muted-foreground">Activation</div>
+              <div>{formatDate(detailService.activation_date)}</div>
+            </div>
+            {detailService.suspension_reason && (
+              <div>
+                <div className="text-xs uppercase font-display text-muted-foreground">Suspension reason</div>
+                <div>{detailService.suspension_reason}</div>
+              </div>
+            )}
+            <div>
+              <div className="text-xs uppercase font-display text-muted-foreground mb-1">
+                Identifiers (raw)
+              </div>
+              <pre className="border-2 border-foreground/20 bg-muted/40 p-2 text-[11px] overflow-x-auto">
+                {JSON.stringify(detailService.identifiers ?? {}, null, 2)}
+              </pre>
+            </div>
+          </div>
+        )}
+      </AdminDrawer>
 
       <Dialog
         open={!!suspendService}

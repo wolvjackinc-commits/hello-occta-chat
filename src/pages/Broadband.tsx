@@ -583,7 +583,7 @@ const BroadbandInner = () => {
           <p className="text-center text-xs text-muted-foreground mt-6">
             ✔ Setup usually within 7 days · ✔ We notify your current provider · ✔ No downtime during switch
           </p>
-          <p className="text-center text-xs text-muted-foreground/70 mt-2">
+          <p className="text-center text-xs text-muted-foreground mt-2">
             Price Lock 24 or Flex 30 where available. Final price confirmed before order.
           </p>
         </div>

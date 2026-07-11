@@ -486,7 +486,7 @@ const BroadbandInner = () => {
                 : "Choose your speed — we'll handle the rest"}
             </p>
             {isFttcOnly && (
-              <p className="text-sm text-muted-foreground/70 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Full Fibre isn't currently available at this address
               </p>
             )}

@@ -686,11 +686,11 @@ const Checkout = () => {
                             <span>+£{careUplift.toFixed(2)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1 border-t border-foreground/5">
+                        <div className="flex justify-between text-[11px] text-muted-foreground py-1 border-t border-foreground/5">
                           <span>Subtotal (ex VAT)</span>
                           <span>£{monthlySubtotalExVat.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1">
+                        <div className="flex justify-between text-[11px] text-muted-foreground py-1">
                           <span>VAT (20%)</span>
                           <span>£{monthlyVat.toFixed(2)}</span>
                         </div>
@@ -710,11 +710,11 @@ const Checkout = () => {
                         </div>
                         {oneOffSubtotalExVat > 0 && (
                           <>
-                            <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1 border-t border-foreground/5">
+                            <div className="flex justify-between text-[11px] text-muted-foreground py-1 border-t border-foreground/5">
                               <span>Subtotal (ex VAT)</span>
                               <span>£{oneOffSubtotalExVat.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between text-[11px] text-muted-foreground/70 py-1">
+                            <div className="flex justify-between text-[11px] text-muted-foreground py-1">
                               <span>VAT (20%)</span>
                               <span>£{oneOffVat.toFixed(2)}</span>
                             </div>
@@ -724,7 +724,7 @@ const Checkout = () => {
                           <span className="font-display text-sm uppercase tracking-wider">Due today</span>
                           <div>
                             <span className="font-display text-2xl">£{totalDueToday.toFixed(2)}</span>
-                            <span className="text-background/60 text-xs ml-1">incl. VAT</span>
+                            <span className="text-background/85 text-xs ml-1">incl. VAT</span>
                           </div>
                         </div>
                         <p className="text-muted-foreground text-xs mt-3 text-center">

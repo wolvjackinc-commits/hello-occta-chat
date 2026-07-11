@@ -45,9 +45,13 @@
     <!-- Preconnect for Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Preload display font stylesheet so the LCP H1 paints without waiting on CSS import -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" />
+    <!-- Preload display font stylesheet so the LCP H1 paints without waiting on CSS import.
+         Split into two requests so the critical LCP font (Bebas Neue + Inter 400/700) loads
+         with high priority, and the remaining Inter weights load async without blocking. -->
+    <link rel="preload" as="style" fetchpriority="high" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700&display=swap" />
+    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;800;900&display=swap" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;800;900&display=swap" /></noscript>
     <link rel="dns-prefetch" href="https://oexgjmuvgdndizsufipe.supabase.co" />
 
     <!-- Open Graph / Facebook (static fallback for non-JS crawlers; per-route SEO component overrides for Googlebot) -->

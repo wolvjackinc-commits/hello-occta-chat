@@ -151,6 +151,51 @@ type QuickActionType =
 
 const accountNumberPattern = /^OCC\d{8}$/;
 
+function CollapsibleGroup({
+  label,
+  Icon,
+  children,
+}: {
+  label: string;
+  Icon: typeof LayoutGrid;
+  children: NavChild[];
+}) {
+  // Determine if any child route is active for default-open behaviour.
+  const isChildActive =
+    typeof window !== "undefined" &&
+    children.some((c) => window.location.pathname.startsWith(c.to));
+  const [open, setOpen] = useState<boolean>(isChildActive);
+  return (
+    <div className="space-y-0.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+      >
+        <Icon className="h-3.5 w-3.5" />
+        <span className="flex-1 text-left">{label}</span>
+        <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open &&
+        children.map((child) => (
+          <NavLink
+            key={child.to}
+            to={child.to}
+            className={({ isActive }) =>
+              `block rounded border border-transparent pl-8 pr-2 py-1 text-sm transition ${
+                isActive
+                  ? "border-foreground bg-secondary text-foreground"
+                  : "text-muted-foreground hover:border-foreground/40 hover:bg-secondary/60"
+              }`
+            }
+          >
+            {child.label}
+          </NavLink>
+        ))}
+    </div>
+  );
+}
+
 export const AdminLayout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();

@@ -159,9 +159,6 @@ export const AdminPaymentRequests = () => {
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter);
-      } else {
-        // Hide cancelled/expired by default unless explicitly filtered
-        query = query.not("status", "in", "(cancelled,expired)");
       }
       if (typeFilter !== "all") {
         query = query.eq("type", typeFilter);

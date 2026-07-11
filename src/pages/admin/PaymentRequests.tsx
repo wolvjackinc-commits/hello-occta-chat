@@ -150,7 +150,7 @@ export const AdminPaymentRequests = () => {
 
   // Fetch payment requests
   const { data: requests = [], isLoading, refetch } = useQuery({
-    queryKey: ["payment-requests", statusFilter, typeFilter, searchTerm],
+    queryKey: ["payment-requests", statusFilter, typeFilter, searchTerm, "v2"],
     queryFn: async () => {
       let query = supabase
         .from("payment_requests")
@@ -159,6 +159,9 @@ export const AdminPaymentRequests = () => {
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter);
+      } else {
+        // Hide cancelled/expired by default unless explicitly filtered
+        query = query.not("status", "in", "(cancelled,expired)");
       }
       if (typeFilter !== "all") {
         query = query.eq("type", typeFilter);

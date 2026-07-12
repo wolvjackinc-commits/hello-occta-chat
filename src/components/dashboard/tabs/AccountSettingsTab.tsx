@@ -402,6 +402,77 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
                 >
                   <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-2 border-foreground"
+                  onClick={() => {
+                    const filtered = history.filter((h) => {
+                      if (historyTypeFilter !== "all" && h.consent_type !== historyTypeFilter) return false;
+                      if (historyDirectionFilter === "in" && !h.new_value) return false;
+                      if (historyDirectionFilter === "out" && h.new_value) return false;
+                      return true;
+                    });
+                    if (filtered.length === 0) {
+                      toast({ title: "Nothing to export", description: "Adjust filters to include some entries first." });
+                      return;
+                    }
+                    const esc = (s: string) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" } as any)[c]);
+                    const generatedAt = format(new Date(), "dd MMM yyyy 'at' HH:mm");
+                    const filterSummary = [
+                      historyTypeFilter === "all" ? "All preferences" : (CONSENT_LABELS[historyTypeFilter]?.title ?? historyTypeFilter),
+                      historyDirectionFilter === "all" ? "All changes" : historyDirectionFilter === "in" ? "Opt-in only" : "Opt-out only",
+                    ].join(" · ");
+                    const rowsHtml = filtered.map((h) => `
+                      <tr>
+                        <td>${esc(format(new Date(h.created_at), "dd MMM yyyy HH:mm"))}</td>
+                        <td>${esc(CONSENT_LABELS[h.consent_type]?.title ?? h.consent_type)}</td>
+                        <td class="${h.new_value ? "in" : "out"}">${h.new_value ? "Opt-in" : "Opt-out"}</td>
+                        <td>${h.previous_value === null ? "—" : h.previous_value ? "Yes" : "No"}</td>
+                        <td>${h.new_value ? "Yes" : "No"}</td>
+                        <td>${esc(h.source.replace(/_/g, " "))}</td>
+                      </tr>
+                    `).join("");
+                    const html = `<!doctype html><html><head><meta charset="utf-8"><title>OCCTA consent history</title>
+                      <style>
+                        body { font-family: -apple-system, Inter, sans-serif; color: #111; margin: 32px; }
+                        h1 { font-size: 20px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px; }
+                        .meta { font-size: 11px; color: #555; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                        th, td { border: 1px solid #111; padding: 6px 8px; text-align: left; vertical-align: top; }
+                        th { background: #111; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; }
+                        td.in { color: #0a7a34; font-weight: 600; }
+                        td.out { color: #b21e1e; font-weight: 600; }
+                        .footer { margin-top: 16px; font-size: 10px; color: #666; }
+                        @media print { body { margin: 16mm; } }
+                      </style></head><body>
+                      <h1>Consent history · OCCTA</h1>
+                      <div class="meta">
+                        Generated ${esc(generatedAt)} · Filters: ${esc(filterSummary)} · ${filtered.length} entr${filtered.length === 1 ? "y" : "ies"}
+                      </div>
+                      <table>
+                        <thead><tr>
+                          <th>Timestamp</th><th>Preference</th><th>Change</th><th>Previous</th><th>New</th><th>Source</th>
+                        </tr></thead>
+                        <tbody>${rowsHtml}</tbody>
+                      </table>
+                      <p class="footer">This document reflects consent changes recorded in your OCCTA account and is provided for your GDPR records.</p>
+                      <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 200); }<\/script>
+                      </body></html>`;
+                    const w = window.open("", "_blank");
+                    if (!w) {
+                      toast({ title: "Pop-up blocked", description: "Allow pop-ups to export as PDF, or use CSV.", variant: "destructive" });
+                      return;
+                    }
+                    w.document.open();
+                    w.document.write(html);
+                    w.document.close();
+                    toast({ title: "PDF ready", description: `Use your browser's Print dialog and choose 'Save as PDF'.` });
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5 mr-1" /> Export PDF
+                </Button>
               </div>
             </div>
             {historyLoading ? (

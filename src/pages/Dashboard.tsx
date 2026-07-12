@@ -34,6 +34,7 @@ import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsT
 import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
 import { PaidStateBanner } from "@/components/dashboard/PaidStateBanner";
 import { logClientEvent } from "@/lib/activityLog";
+import { getReadMap, isTicketUnread, TICKETS_READ_EVENT } from "@/lib/ticketRead";
 import { 
   Wifi, 
   Smartphone, 
@@ -395,7 +396,14 @@ const Dashboard = () => {
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
   const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
   const awaitingTickets = tickets.filter(t => t.status === 'waiting_customer');
-  const ticketBadgeCount = openTickets.length + awaitingTickets.length;
+  // Read-state-aware badge: count tickets that are open/awaiting AND unread.
+  const readMap = useMemo(() => (user?.id ? getReadMap(user.id) : {}), [user?.id, tickets, readVersion]);
+  const badgeTickets = tickets.filter(
+    (t) => (t.status === 'open' || t.status === 'in_progress' || t.status === 'waiting_customer')
+  );
+  const ticketBadgeCount = user?.id
+    ? badgeTickets.filter((t) => isTicketUnread(user.id, t as any, readMap)).length
+    : badgeTickets.length;
   // Phase 7: do NOT override a guest order's status to "pending". When a
   // canonical order exists the canonical lifecycle status is authoritative.
   // Otherwise preserve whatever status the guest order already carries.

@@ -7,6 +7,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { LifeBuoy, MessageCircle, Plus, Search } from "lucide-react";
 import { EmptyState } from "./EmptyState";
 import { logClientEvent } from "@/lib/activityLog";
+import { RaiseTicketDialog } from "@/components/app/RaiseTicketDialog";
 
 type Ticket = { id: string; subject: string; status: string; priority: string; created_at: string };
 
@@ -20,6 +21,7 @@ const priorityStyles: Record<string, string> = {
 
 export function SupportTab({ tickets }: { tickets: Ticket[] }) {
   const [search, setSearch] = useState("");
+  const [raiseOpen, setRaiseOpen] = useState(false);
   const q = search.trim().toLowerCase();
 
   const { open, closed } = useMemo(() => {
@@ -54,12 +56,21 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Link to="/support" onClick={() => logClientEvent({ event_type: "support_cta_click", title: "create_ticket", source_module: "dashboard" })}>
-          <Button variant="hero"><Plus className="w-4 h-4 mr-1" /> Create support ticket</Button>
-        </Link>
+        <Button
+          variant="hero"
+          onClick={() => {
+            logClientEvent({ event_type: "support_cta_click", title: "raise_ticket_inline", source_module: "dashboard" });
+            setRaiseOpen(true);
+          }}
+        >
+          <Plus className="w-4 h-4 mr-1" /> Raise a ticket
+        </Button>
         <Button variant="outline" className="border-4 border-foreground" onClick={onChat}>
           <MessageCircle className="w-4 h-4 mr-1" /> Chat with OCCTA AI
         </Button>
+        <Link to="/support">
+          <Button variant="outline" className="border-2 border-foreground">Full support centre</Button>
+        </Link>
       </div>
       <p className="text-xs text-muted-foreground">Need a human? Mention "agent" in chat and we'll escalate.</p>
 
@@ -121,6 +132,15 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
           </div>
         </section>
       )}
+
+      <RaiseTicketDialog
+        open={raiseOpen}
+        onOpenChange={setRaiseOpen}
+        onSubmitted={() => {
+          // Give the dashboard a nudge to refresh its ticket list on next mount.
+          window.dispatchEvent(new Event("dashboard-refresh-tickets"));
+        }}
+      />
     </div>
   );
 }

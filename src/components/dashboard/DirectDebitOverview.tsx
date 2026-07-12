@@ -216,11 +216,46 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
             <h3 className="font-display uppercase flex items-center gap-2">
               <History className="w-4 h-4" /> Last payment attempts
             </h3>
-            {mostRecentFailed && (
-              <Badge className="border-2 border-destructive bg-destructive/10 text-destructive">
-                Action needed
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {mostRecentFailed && (
+                <Badge className="border-2 border-destructive bg-destructive/10 text-destructive">
+                  Action needed
+                </Badge>
+              )}
+              {recent.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-2 border-foreground"
+                  onClick={() => {
+                    const rows = [
+                      ["Attempted (ISO)", "Status", "Amount (GBP)", "Reason", "Attempt ref", "Invoice ref"],
+                      ...recent.map((a) => [
+                        new Date(a.attempted_at).toISOString(),
+                        a.status,
+                        Number(a.amount).toFixed(2),
+                        a.reason ?? "",
+                        a.id,
+                        a.invoice_id ?? "",
+                      ]),
+                    ];
+                    const csv = rows
+                      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+                      .join("\n");
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `occta-dd-attempts-${format(new Date(), "yyyy-MM-dd")}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
+                </Button>
+              )}
+            </div>
           </div>
           {loading ? (
             <div className="p-4 border-2 border-dashed border-foreground/30 text-sm text-muted-foreground">Loading…</div>

@@ -16,6 +16,7 @@ import {
   Mail,
   MessageSquare,
   BellRing,
+  Download,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -84,8 +85,20 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
   const [history, setHistory] = useState<ConsentHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyTypeFilter, setHistoryTypeFilter] = useState<string>("all");
-  const [historyDirectionFilter, setHistoryDirectionFilter] = useState<string>("all");
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<string>(() => {
+    if (typeof window === "undefined") return "all";
+    return window.localStorage.getItem("occta:consent:type-filter") || "all";
+  });
+  const [historyDirectionFilter, setHistoryDirectionFilter] = useState<string>(() => {
+    if (typeof window === "undefined") return "all";
+    return window.localStorage.getItem("occta:consent:direction-filter") || "all";
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("occta:consent:type-filter", historyTypeFilter); } catch {}
+  }, [historyTypeFilter]);
+  useEffect(() => {
+    try { window.localStorage.setItem("occta:consent:direction-filter", historyDirectionFilter); } catch {}
+  }, [historyDirectionFilter]);
   const [confirmOpen, setConfirmOpen] = useState<null | { text: string; onConfirm: () => void }>(null);
   const initialConsent = {
     marketing_email_consent: profile?.marketing_email_consent ?? false,

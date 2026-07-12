@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,28 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
       } as Profile)
   );
   const [saving, setSaving] = useState(false);
+
+  // Consent columns are not exposed on the customer_profile view, so fetch them
+  // directly from profiles (RLS restricts to the caller's own row).
+  useEffect(() => {
+    if (!profile?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("marketing_email_consent, marketing_sms_consent, service_updates_consent, consent_updated_at")
+        .eq("id", profile.id)
+        .maybeSingle();
+      if (data) {
+        setForm((f) => ({
+          ...f,
+          marketing_email_consent: (data as any).marketing_email_consent ?? false,
+          marketing_sms_consent: (data as any).marketing_sms_consent ?? false,
+          service_updates_consent: (data as any).service_updates_consent ?? true,
+          consent_updated_at: (data as any).consent_updated_at ?? null,
+        }));
+      }
+    })();
+  }, [profile?.id]);
 
   const save = async () => {
     if (!form.id) return;

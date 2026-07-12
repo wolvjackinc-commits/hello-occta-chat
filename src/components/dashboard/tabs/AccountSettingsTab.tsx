@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,20 +86,35 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
   const [history, setHistory] = useState<ConsentHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyTypeFilter, setHistoryTypeFilter] = useState<string>(() => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const VALID_TYPES = ["all", "marketing_email", "marketing_sms", "service_updates"];
+  const VALID_DIRS = ["all", "in", "out"];
+  const historyTypeFilter = (() => {
+    const url = searchParams.get("consentType");
+    if (url && VALID_TYPES.includes(url)) return url;
     if (typeof window === "undefined") return "all";
-    return window.localStorage.getItem("occta:consent:type-filter") || "all";
-  });
-  const [historyDirectionFilter, setHistoryDirectionFilter] = useState<string>(() => {
+    const stored = window.localStorage.getItem("occta:consent:type-filter");
+    return stored && VALID_TYPES.includes(stored) ? stored : "all";
+  })();
+  const historyDirectionFilter = (() => {
+    const url = searchParams.get("consentDir");
+    if (url && VALID_DIRS.includes(url)) return url;
     if (typeof window === "undefined") return "all";
-    return window.localStorage.getItem("occta:consent:direction-filter") || "all";
-  });
-  useEffect(() => {
-    try { window.localStorage.setItem("occta:consent:type-filter", historyTypeFilter); } catch {}
-  }, [historyTypeFilter]);
-  useEffect(() => {
-    try { window.localStorage.setItem("occta:consent:direction-filter", historyDirectionFilter); } catch {}
-  }, [historyDirectionFilter]);
+    const stored = window.localStorage.getItem("occta:consent:direction-filter");
+    return stored && VALID_DIRS.includes(stored) ? stored : "all";
+  })();
+  const setHistoryTypeFilter = (v: string) => {
+    try { window.localStorage.setItem("occta:consent:type-filter", v); } catch {}
+    const next = new URLSearchParams(searchParams);
+    if (v === "all") next.delete("consentType"); else next.set("consentType", v);
+    setSearchParams(next, { replace: true });
+  };
+  const setHistoryDirectionFilter = (v: string) => {
+    try { window.localStorage.setItem("occta:consent:direction-filter", v); } catch {}
+    const next = new URLSearchParams(searchParams);
+    if (v === "all") next.delete("consentDir"); else next.set("consentDir", v);
+    setSearchParams(next, { replace: true });
+  };
   const [confirmOpen, setConfirmOpen] = useState<null | { text: string; onConfirm: () => void }>(null);
   const initialConsent = {
     marketing_email_consent: profile?.marketing_email_consent ?? false,

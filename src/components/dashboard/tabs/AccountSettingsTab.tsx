@@ -16,6 +16,7 @@ import {
   Mail,
   MessageSquare,
   BellRing,
+  Download,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -84,8 +85,20 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
   const [history, setHistory] = useState<ConsentHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyTypeFilter, setHistoryTypeFilter] = useState<string>("all");
-  const [historyDirectionFilter, setHistoryDirectionFilter] = useState<string>("all");
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<string>(() => {
+    if (typeof window === "undefined") return "all";
+    return window.localStorage.getItem("occta:consent:type-filter") || "all";
+  });
+  const [historyDirectionFilter, setHistoryDirectionFilter] = useState<string>(() => {
+    if (typeof window === "undefined") return "all";
+    return window.localStorage.getItem("occta:consent:direction-filter") || "all";
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("occta:consent:type-filter", historyTypeFilter); } catch {}
+  }, [historyTypeFilter]);
+  useEffect(() => {
+    try { window.localStorage.setItem("occta:consent:direction-filter", historyDirectionFilter); } catch {}
+  }, [historyDirectionFilter]);
   const [confirmOpen, setConfirmOpen] = useState<null | { text: string; onConfirm: () => void }>(null);
   const initialConsent = {
     marketing_email_consent: profile?.marketing_email_consent ?? false,
@@ -331,6 +344,48 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
                     <SelectItem value="out">Opt-out only</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-2 border-foreground"
+                  onClick={() => {
+                    const filtered = history.filter((h) => {
+                      if (historyTypeFilter !== "all" && h.consent_type !== historyTypeFilter) return false;
+                      if (historyDirectionFilter === "in" && !h.new_value) return false;
+                      if (historyDirectionFilter === "out" && h.new_value) return false;
+                      return true;
+                    });
+                    if (filtered.length === 0) {
+                      toast({ title: "Nothing to export", description: "Adjust filters to include some entries first." });
+                      return;
+                    }
+                    const rows = [
+                      ["Timestamp (ISO)", "Preference", "Change", "Previous", "New", "Source"],
+                      ...filtered.map((h) => [
+                        new Date(h.created_at).toISOString(),
+                        CONSENT_LABELS[h.consent_type]?.title ?? h.consent_type,
+                        h.new_value ? "Opt-in" : "Opt-out",
+                        h.previous_value === null ? "" : h.previous_value ? "Yes" : "No",
+                        h.new_value ? "Yes" : "No",
+                        h.source,
+                      ]),
+                    ];
+                    const csv = rows
+                      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+                      .join("\n");
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `occta-consent-history-${format(new Date(), "yyyy-MM-dd")}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast({ title: "Consent history exported", description: `${filtered.length} entr${filtered.length === 1 ? "y" : "ies"} downloaded as CSV.` });
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
+                </Button>
               </div>
             </div>
             {historyLoading ? (

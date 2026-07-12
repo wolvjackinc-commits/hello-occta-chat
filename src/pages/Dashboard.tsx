@@ -34,6 +34,7 @@ import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsT
 import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
 import { PaidStateBanner } from "@/components/dashboard/PaidStateBanner";
 import { logClientEvent } from "@/lib/activityLog";
+import { getReadMap, isTicketUnread, TICKETS_READ_EVENT } from "@/lib/ticketRead";
 import { 
   Wifi, 
   Smartphone, 
@@ -207,6 +208,12 @@ const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | GuestOrder | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
+  const [readVersion, setReadVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setReadVersion((v) => v + 1);
+    window.addEventListener(TICKETS_READ_EVENT, bump);
+    return () => window.removeEventListener(TICKETS_READ_EVENT, bump);
+  }, []);
   // Phase 7 (corrected): the canonical RPC is the principal source of truth
   // for account number, lifecycle status, service, invoices, payment
   // requests, receipts, documents and timeline. Local tab queries remain
@@ -395,7 +402,14 @@ const Dashboard = () => {
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
   const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
   const awaitingTickets = tickets.filter(t => t.status === 'waiting_customer');
-  const ticketBadgeCount = openTickets.length + awaitingTickets.length;
+  // Read-state-aware badge: count tickets that are open/awaiting AND unread.
+  const readMap = useMemo(() => (user?.id ? getReadMap(user.id) : {}), [user?.id, tickets, readVersion]);
+  const badgeTickets = tickets.filter(
+    (t) => (t.status === 'open' || t.status === 'in_progress' || t.status === 'waiting_customer')
+  );
+  const ticketBadgeCount = user?.id
+    ? badgeTickets.filter((t) => isTicketUnread(user.id, t as any, readMap)).length
+    : badgeTickets.length;
   // Phase 7: do NOT override a guest order's status to "pending". When a
   // canonical order exists the canonical lifecycle status is authoritative.
   // Otherwise preserve whatever status the guest order already carries.
@@ -658,7 +672,7 @@ const Dashboard = () => {
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
                   ))}
                 </TabsList>
-                <TabsContent value="tickets"><SupportTab tickets={tickets} /></TabsContent>
+                <TabsContent value="tickets"><SupportTab tickets={tickets} userId={user.id} /></TabsContent>
                 <TabsContent value="chat"><ChatHistoryTab userId={user.id} /></TabsContent>
                 <TabsContent value="complaints"><ComplaintsTab /></TabsContent>
                 <TabsContent value="vuln"><VulnerableSupportTab userId={user.id} /></TabsContent>

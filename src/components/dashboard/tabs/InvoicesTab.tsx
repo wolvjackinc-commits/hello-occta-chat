@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { CreditCard, Download, Loader2, Receipt } from "lucide-react";
+import { CreditCard, Download, Loader2, Receipt, Search, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { PaymentHistory } from "@/components/dashboard/PaymentHistory";
 import { EmptyState } from "./EmptyState";
 import { logClientEvent } from "@/lib/activityLog";
@@ -20,6 +21,7 @@ export function InvoicesTab({ userId }: { userId: string }) {
   const [paid, setPaid] = useState<Invoice[]>([]);
   const [credits, setCredits] = useState<CreditNote[]>([]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const handleDownload = async (invoiceId: string, invoiceNumber: string) => {
     setDownloadingId(invoiceId);
@@ -80,8 +82,63 @@ export function InvoicesTab({ userId }: { userId: string }) {
     })();
   }, [userId]);
 
+  const outstandingTotal = useMemo(() => unpaid.reduce((s, i) => s + Number(i.total), 0), [unpaid]);
+  const paidTotal = useMemo(() => paid.reduce((s, i) => s + Number(i.total), 0), [paid]);
+  const earliestDue = useMemo(() => {
+    const withDue = unpaid.filter((i) => i.due_date).sort((a, b) => (a.due_date! < b.due_date! ? -1 : 1));
+    return withDue[0]?.due_date ?? null;
+  }, [unpaid]);
+
+  const q = search.trim().toLowerCase();
+  const filterFn = (i: Invoice) => !q || i.invoice_number.toLowerCase().includes(q);
+  const unpaidFiltered = unpaid.filter(filterFn);
+  const paidFiltered = paid.filter(filterFn);
+
   return (
     <div className="space-y-6">
+      {/* Summary strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className={`p-4 border-4 ${unpaid.length ? "border-destructive bg-destructive/10" : "border-foreground bg-background"}`}>
+          <div className="flex items-center gap-2 text-xs font-display uppercase tracking-wider">
+            <AlertCircle className="w-4 h-4" /> Outstanding
+          </div>
+          <p className="font-display text-2xl mt-1">£{outstandingTotal.toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground">
+            {unpaid.length} invoice{unpaid.length === 1 ? "" : "s"}
+            {earliestDue ? ` · next due ${format(new Date(earliestDue), "dd MMM yyyy")}` : ""}
+          </p>
+        </div>
+        <div className="p-4 border-4 border-foreground bg-background">
+          <div className="flex items-center gap-2 text-xs font-display uppercase tracking-wider">
+            <CheckCircle2 className="w-4 h-4" /> Paid (last 20)
+          </div>
+          <p className="font-display text-2xl mt-1">£{paidTotal.toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground">{paid.length} invoice{paid.length === 1 ? "" : "s"}</p>
+        </div>
+        <div className="p-4 border-4 border-foreground bg-background">
+          <div className="flex items-center gap-2 text-xs font-display uppercase tracking-wider">
+            <Receipt className="w-4 h-4" /> Credits
+          </div>
+          <p className="font-display text-2xl mt-1">
+            £{credits.reduce((s, c) => s + Number(c.amount), 0).toFixed(2)}
+          </p>
+          <p className="text-xs text-muted-foreground">{credits.length} note{credits.length === 1 ? "" : "s"}</p>
+        </div>
+      </div>
+
+      {/* Search */}
+      {(unpaid.length + paid.length) > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search invoice number…"
+            className="pl-9 border-2 border-foreground"
+          />
+        </div>
+      )}
+
       <div className="border-4 border-foreground bg-muted/40 p-4 text-sm">
         <p className="font-display uppercase text-xs mb-1">How your billing works</p>
         <p className="text-muted-foreground">
@@ -96,11 +153,14 @@ export function InvoicesTab({ userId }: { userId: string }) {
       </div>
       <section>
         <h3 className="font-display uppercase mb-3">Unpaid invoices</h3>
-        {unpaid.length === 0 ? (
-          <EmptyState title="No unpaid invoices" message="You're all caught up — nothing to pay right now." />
+        {unpaidFiltered.length === 0 ? (
+          <EmptyState
+            title={q ? "No matches" : "No unpaid invoices"}
+            message={q ? "Try a different search term." : "You're all caught up — nothing to pay right now."}
+          />
         ) : (
           <div className="space-y-2">
-            {unpaid.map((inv) => {
+            {unpaidFiltered.map((inv) => {
               const overdue = inv.due_date && new Date(inv.due_date) < new Date();
               return (
                 <div key={inv.id} className={`flex items-center justify-between p-4 border-4 bg-background ${overdue ? "border-destructive" : "border-foreground"}`}>
@@ -136,11 +196,11 @@ export function InvoicesTab({ userId }: { userId: string }) {
 
       <section>
         <h3 className="font-display uppercase mb-3">Paid invoices</h3>
-        {paid.length === 0 ? (
-          <EmptyState title="No paid invoices yet" />
+        {paidFiltered.length === 0 ? (
+          <EmptyState title={q ? "No matches" : "No paid invoices yet"} />
         ) : (
           <div className="space-y-2">
-            {paid.map((inv) => (
+            {paidFiltered.map((inv) => (
               <div key={inv.id} className="flex items-center justify-between gap-3 p-3 border-2 border-foreground bg-background">
                 <div className="min-w-0">
                   <p className="font-display text-sm truncate">{inv.invoice_number}</p>

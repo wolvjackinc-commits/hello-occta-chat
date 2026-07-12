@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -38,16 +38,25 @@ const priorityStyles: Record<string, string> = {
 };
 
 const STATUS_FILTER_KEY = "occta:tickets:status-filter";
+const VALID_TICKET_STATUS = new Set(["all", "open", "awaiting", "in_progress"]);
 
 export function SupportTab({ tickets, userId }: { tickets: Ticket[]; userId?: string }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>(() => {
+  const statusFilter = (() => {
+    const url = searchParams.get("ticketStatus");
+    if (url && VALID_TICKET_STATUS.has(url)) return url;
     if (typeof window === "undefined") return "all";
-    return window.localStorage.getItem(STATUS_FILTER_KEY) || "all";
-  });
-  useEffect(() => {
-    try { window.localStorage.setItem(STATUS_FILTER_KEY, statusFilter); } catch {}
-  }, [statusFilter]);
+    const stored = window.localStorage.getItem(STATUS_FILTER_KEY);
+    return stored && VALID_TICKET_STATUS.has(stored) ? stored : "all";
+  })();
+  const setStatusFilter = (v: string) => {
+    try { window.localStorage.setItem(STATUS_FILTER_KEY, v); } catch {}
+    const next = new URLSearchParams(searchParams);
+    if (v === "all") next.delete("ticketStatus");
+    else next.set("ticketStatus", v);
+    setSearchParams(next, { replace: true });
+  };
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);

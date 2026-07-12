@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star, ChevronRight, Loader2 } from "lucide-react";
 import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
-import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
+import { SEO, StructuredData, createServiceSchema, createOfferSchema, createBreadcrumbSchema, createFAQSchema } from "@/components/seo";
 import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import { getFromPrices } from "@/lib/pricing/engine";
 import { AvailabilityProvider, useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
@@ -135,7 +135,20 @@ const BroadbandInner = () => {
 
   const combinedSchemas = {
     '@context': 'https://schema.org',
-    '@graph': [broadbandServiceSchema, ...planOfferSchemas],
+    '@graph': [
+      broadbandServiceSchema,
+      ...planOfferSchemas,
+      createBreadcrumbSchema([
+        { name: 'Home', url: '/' },
+        { name: 'Broadband', url: '/broadband' },
+      ]),
+      createFAQSchema([
+        { question: 'How fast is OCCTA broadband?', answer: 'OCCTA offers full-fibre and FTTC broadband with speeds up to 900Mbps, depending on line availability at your address.' },
+        { question: 'Is there a contract?', answer: 'OCCTA supports both Flex 30 (rolling monthly) and Price Lock 24 (fixed-term with price lock) where eligible. Your accepted agreement is the binding source of truth.' },
+        { question: 'When does billing start?', answer: 'Billing starts only after your service is activated. The first invoice may include pro-rata charges for the partial month.' },
+        { question: 'Do I need a phone line?', answer: 'No. OCCTA broadband is delivered over fibre. If you want a home phone, add OCCTA Digital Voice which runs over your broadband.' },
+      ]),
+    ],
   };
 
   return (

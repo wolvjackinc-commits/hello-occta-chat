@@ -178,6 +178,81 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
 
       {/* Failed collections */}
       <section>
+        {/* Last payment attempts */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-display uppercase flex items-center gap-2">
+              <History className="w-4 h-4" /> Last payment attempts
+            </h3>
+            {mostRecentFailed && (
+              <Badge className="border-2 border-destructive bg-destructive/10 text-destructive">
+                Action needed
+              </Badge>
+            )}
+          </div>
+          {loading ? (
+            <div className="p-4 border-2 border-dashed border-foreground/30 text-sm text-muted-foreground">Loading…</div>
+          ) : recent.length === 0 ? (
+            <EmptyState
+              icon={<Clock className="w-8 h-8" />}
+              title="No recent attempts"
+              message="We haven't tried to take a payment yet."
+            />
+          ) : (
+            <>
+              {mostRecentFailed && (
+                <div className="mb-2 p-3 border-2 border-destructive bg-destructive/5 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs">
+                    <strong>Most recent failed attempt:</strong>{" "}
+                    £{Number(mostRecentFailed.amount).toFixed(2)} on{" "}
+                    {format(new Date(mostRecentFailed.attempted_at), "dd MMM yyyy")} ·{" "}
+                    {mostRecentFailed.reason || mostRecentFailed.status}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {mostRecentFailed.invoice_id && (
+                      <Link to={`/pay-invoice?id=${mostRecentFailed.invoice_id}`}>
+                        <Button size="sm" variant="hero">Retry now</Button>
+                      </Link>
+                    )}
+                    <Link to="/dd-setup">
+                      <Button size="sm" variant="outline" className="border-2 border-foreground">
+                        Update details
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+              <ul className="border-2 border-foreground/20 divide-y-2 divide-foreground/10 bg-background">
+                {recent.map((a) => {
+                  const failed = isFailedStatus(a.status);
+                  const ok = isSuccessStatus(a.status);
+                  return (
+                    <li key={a.id} className="p-2 flex items-center gap-2 text-xs">
+                      {failed ? (
+                        <CircleAlert className="w-4 h-4 text-destructive flex-shrink-0" />
+                      ) : ok ? (
+                        <CircleCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                      ) : (
+                        <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate">
+                          <span className="font-display uppercase mr-2">{a.status.replace(/_/g, " ")}</span>
+                          <span className="text-muted-foreground">
+                            {format(new Date(a.attempted_at), "dd MMM yyyy 'at' HH:mm")}
+                            {a.reason ? ` · ${a.reason}` : ""}
+                          </span>
+                        </p>
+                      </div>
+                      <p className="font-display">£{Number(a.amount).toFixed(2)}</p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+        </div>
+
         <h3 className="font-display uppercase mb-3 flex items-center gap-2">
           <XCircle className="w-4 h-4" /> Failed collections
         </h3>

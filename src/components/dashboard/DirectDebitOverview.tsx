@@ -16,6 +16,7 @@ import {
   History,
   CircleCheck,
   CircleAlert,
+  Download,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

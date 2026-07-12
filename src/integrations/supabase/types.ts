@@ -1552,6 +1552,39 @@ export type Database = {
         }
         Relationships: []
       }
+      consent_history: {
+        Row: {
+          consent_type: string
+          created_at: string
+          id: string
+          new_value: boolean
+          note: string | null
+          previous_value: boolean | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          consent_type: string
+          created_at?: string
+          id?: string
+          new_value: boolean
+          note?: string | null
+          previous_value?: boolean | null
+          source?: string
+          user_id: string
+        }
+        Update: {
+          consent_type?: string
+          created_at?: string
+          id?: string
+          new_value?: boolean
+          note?: string | null
+          previous_value?: boolean | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contract_acceptances: {
         Row: {
           acceptable_use_policy_version: string | null

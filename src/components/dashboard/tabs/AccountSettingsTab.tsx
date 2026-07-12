@@ -6,8 +6,42 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
-import { ShieldCheck } from "lucide-react";
+import {
+  ShieldCheck,
+  History,
+  Info,
+  Check,
+  X,
+  Mail,
+  MessageSquare,
+  BellRing,
+} from "lucide-react";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+type ConsentHistoryEntry = {
+  id: string;
+  consent_type: "marketing_email" | "marketing_sms" | "service_updates";
+  previous_value: boolean | null;
+  new_value: boolean;
+  source: string;
+  created_at: string;
+};
+
+const CONSENT_LABELS: Record<string, { title: string; icon: any; short: string }> = {
+  marketing_email: { title: "Marketing emails", icon: Mail, short: "Emails" },
+  marketing_sms: { title: "Marketing text messages", icon: MessageSquare, short: "SMS" },
+  service_updates: { title: "Service updates & notices", icon: BellRing, short: "Service" },
+};
 
 type Profile = {
   id: string;
@@ -46,6 +80,16 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
       } as Profile)
   );
   const [saving, setSaving] = useState(false);
+  const [history, setHistory] = useState<ConsentHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState<null | { text: string; onConfirm: () => void }>(null);
+  const initialConsent = {
+    marketing_email_consent: profile?.marketing_email_consent ?? false,
+    marketing_sms_consent: profile?.marketing_sms_consent ?? false,
+    service_updates_consent: profile?.service_updates_consent ?? true,
+  };
+  const [baseline, setBaseline] = useState(initialConsent);
 
   // Consent columns are not exposed on the customer_profile view, so fetch them
   // directly from profiles (RLS restricts to the caller's own row).
@@ -58,18 +102,39 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
         .eq("id", profile.id)
         .maybeSingle();
       if (data) {
-        setForm((f) => ({
-          ...f,
+        const c = {
           marketing_email_consent: (data as any).marketing_email_consent ?? false,
           marketing_sms_consent: (data as any).marketing_sms_consent ?? false,
           service_updates_consent: (data as any).service_updates_consent ?? true,
+        };
+        setForm((f) => ({
+          ...f,
+          ...c,
           consent_updated_at: (data as any).consent_updated_at ?? null,
         }));
+        setBaseline(c);
       }
     })();
   }, [profile?.id]);
 
-  const save = async () => {
+  const loadHistory = async () => {
+    if (!profile?.id) return;
+    setHistoryLoading(true);
+    const { data } = await supabase
+      .from("consent_history" as any)
+      .select("id, consent_type, previous_value, new_value, source, created_at")
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setHistory(((data as unknown) as ConsentHistoryEntry[]) || []);
+    setHistoryLoading(false);
+  };
+
+  useEffect(() => {
+    if (historyOpen) loadHistory();
+  }, [historyOpen, profile?.id]);
+
+  const performSave = async () => {
     if (!form.id) return;
     // Light client-side validation — server still enforces RLS scoped to auth.uid().
     if (form.phone && !/^[+\d\s()-]{7,20}$/.test(form.phone)) {
@@ -100,8 +165,44 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
     }
+    setBaseline({
+      marketing_email_consent: payload.marketing_email_consent,
+      marketing_sms_consent: payload.marketing_sms_consent,
+      service_updates_consent: payload.service_updates_consent,
+    });
+    setForm((f) => ({ ...f, consent_updated_at: payload.consent_updated_at }));
     await logAudit({ action: "update", entity: "profile", entityId: form.id, metadata: { source: "customer_self_serve", updatedFields: Object.keys(payload) } }).catch(() => {});
     toast({ title: "Saved", description: "Your details are updated — our team sees the same info." });
+    if (historyOpen) loadHistory();
+  };
+
+  const save = async () => {
+    // Detect consent changes that require an explicit confirmation.
+    const changes: string[] = [];
+    if (form.marketing_email_consent !== baseline.marketing_email_consent) {
+      changes.push(form.marketing_email_consent ? "opt IN to marketing emails" : "opt OUT of marketing emails");
+    }
+    if (form.marketing_sms_consent !== baseline.marketing_sms_consent) {
+      changes.push(form.marketing_sms_consent ? "opt IN to marketing SMS" : "opt OUT of marketing SMS");
+    }
+    if (form.service_updates_consent !== baseline.service_updates_consent) {
+      changes.push(
+        form.service_updates_consent
+          ? "opt IN to service updates"
+          : "opt OUT of service updates (you may miss important notices)"
+      );
+    }
+    if (changes.length === 0) {
+      performSave();
+      return;
+    }
+    setConfirmOpen({
+      text: `You're about to ${changes.join(" and ")}. Do you want to continue?`,
+      onConfirm: () => {
+        setConfirmOpen(null);
+        performSave();
+      },
+    });
   };
 
   const field = (label: string, key: keyof Profile, type = "text") => (
@@ -145,39 +246,120 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
           <ShieldCheck className="w-5 h-5" />
           <h3 className="font-display uppercase">Communication preferences</h3>
         </div>
-        <p className="text-xs text-muted-foreground">
-          We only use your details to run your services. You can change these at any time — we honour your choices under UK GDPR.
-        </p>
+        <div className="p-3 border-2 border-foreground/30 bg-muted/40 text-xs space-y-1">
+          <p className="flex items-center gap-1 font-display uppercase">
+            <Info className="w-3 h-3" /> Your data, your choice
+          </p>
+          <p className="text-muted-foreground">
+            Under UK GDPR, you decide how we contact you. We only use your details for the services you've asked for.
+            You can change these at any time and every marketing message includes a one-tap unsubscribe.
+          </p>
+          <p className="text-muted-foreground">
+            We never sell or share your details for marketing. See our{" "}
+            <a href="/privacy-policy" className="underline">privacy policy</a> for full details.
+          </p>
+        </div>
 
         <div className="divide-y-2 divide-foreground/10 border-2 border-foreground/20">
           <ConsentRow
             title="Service updates & notices"
-            description="Outages, planned maintenance, billing changes, and other operational messages. Required to keep your service running smoothly."
+            description="Outage alerts, planned maintenance, engineer visits, billing changes, price notices. Turning this off means you may miss important messages about your service — we'll still contact you for anything legally required."
+            required
             checked={!!form.service_updates_consent}
             onChange={(v) => setForm({ ...form, service_updates_consent: v })}
           />
           <ConsentRow
             title="Marketing emails"
-            description="Occasional offers, product news and tips. No spam — one-click unsubscribe on every email."
+            description="Occasional offers, product news and tips from OCCTA only. Roughly once a month. One-tap unsubscribe on every email."
             checked={!!form.marketing_email_consent}
             onChange={(v) => setForm({ ...form, marketing_email_consent: v })}
           />
           <ConsentRow
             title="Marketing text messages"
-            description="Time-limited deals sent to your mobile. We'll only use the number on your account."
+            description="Time-limited offers to the mobile number on your account. Reply STOP at any time. Standard network rates never apply — we cover the cost."
             checked={!!form.marketing_sms_consent}
             onChange={(v) => setForm({ ...form, marketing_sms_consent: v })}
           />
         </div>
 
-        {form.consent_updated_at && (
-          <p className="text-xs text-muted-foreground">
-            Preferences last updated {format(new Date(form.consent_updated_at), "dd MMM yyyy 'at' HH:mm")}.
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          {form.consent_updated_at ? (
+            <p className="text-xs text-muted-foreground">
+              Preferences last updated {format(new Date(form.consent_updated_at), "dd MMM yyyy 'at' HH:mm")}.
+            </p>
+          ) : (
+            <span className="text-xs text-muted-foreground">No changes recorded yet.</span>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-2 border-foreground"
+            onClick={() => setHistoryOpen((v) => !v)}
+          >
+            <History className="w-4 h-4 mr-1" />
+            {historyOpen ? "Hide history" : "View consent history"}
+          </Button>
+        </div>
+
+        {historyOpen && (
+          <div className="mt-2 border-2 border-foreground/30 bg-muted/20 p-3">
+            <p className="font-display uppercase text-xs mb-2">Consent history</p>
+            {historyLoading ? (
+              <p className="text-xs text-muted-foreground">Loading…</p>
+            ) : history.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No consent changes recorded yet. When you update a preference, it will appear here.
+              </p>
+            ) : (
+              <ul className="space-y-1.5 max-h-64 overflow-y-auto">
+                {history.map((h) => {
+                  const meta = CONSENT_LABELS[h.consent_type];
+                  const Icon = meta?.icon ?? History;
+                  return (
+                    <li key={h.id} className="flex items-start gap-2 text-xs">
+                      <Icon className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p>
+                          <span className="font-display uppercase">{meta?.short ?? h.consent_type}</span>{" "}
+                          {h.new_value ? (
+                            <span className="inline-flex items-center gap-1 text-primary">
+                              <Check className="w-3 h-3" /> opted in
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-destructive">
+                              <X className="w-3 h-3" /> opted out
+                            </span>
+                          )}
+                          <span className="text-muted-foreground"> · {h.source.replace(/_/g, " ")}</span>
+                        </p>
+                        <p className="text-muted-foreground">
+                          {format(new Date(h.created_at), "dd MMM yyyy 'at' HH:mm")}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         )}
       </div>
 
       <Button variant="hero" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
+
+      <AlertDialog open={!!confirmOpen} onOpenChange={(v) => { if (!v) setConfirmOpen(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm consent changes</AlertDialogTitle>
+            <AlertDialogDescription>{confirmOpen?.text}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep current settings</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmOpen?.onConfirm()}>Yes, update</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -187,16 +369,25 @@ function ConsentRow({
   description,
   checked,
   onChange,
+  required,
 }: {
   title: string;
   description: string;
   checked: boolean;
   onChange: (v: boolean) => void;
+  required?: boolean;
 }) {
   return (
     <label className="flex items-start justify-between gap-4 p-3 cursor-pointer">
       <div className="min-w-0">
-        <p className="font-display uppercase text-sm">{title}</p>
+        <p className="font-display uppercase text-sm flex items-center gap-2">
+          {title}
+          {required && (
+            <span className="text-[10px] px-1.5 py-0.5 border border-foreground/50 uppercase tracking-wider">
+              Recommended
+            </span>
+          )}
+        </p>
         <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
       </div>
       <Switch checked={checked} onCheckedChange={onChange} className="mt-1" />

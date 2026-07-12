@@ -9,12 +9,16 @@ import {
   CheckCircle,
   Clock,
   LifeBuoy,
+  Landmark,
+  RefreshCw,
+  Phone,
   XCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/dashboard/tabs/EmptyState";
 import { DirectDebitStatus } from "@/components/dashboard/DirectDebitStatus";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 
 type UpcomingInvoice = {
   id: string;
@@ -71,6 +75,34 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-6">
+      {/* Global next-step actions */}
+      <div className="border-4 border-foreground bg-background p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Landmark className="w-5 h-5" />
+          <h3 className="font-display uppercase text-sm">Manage your Direct Debit</h3>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Something changed with your bank? Update your details or talk to us — most fixes take under 5 minutes.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/dd-setup">
+            <Button variant="hero" size="sm">
+              <RefreshCw className="w-4 h-4 mr-1" /> Update payment details
+            </Button>
+          </Link>
+          <Link to="/support">
+            <Button variant="outline" size="sm" className="border-2 border-foreground">
+              <LifeBuoy className="w-4 h-4 mr-1" /> Contact support
+            </Button>
+          </Link>
+          <a href={CONTACT_PHONE_TEL}>
+            <Button variant="outline" size="sm" className="border-2 border-foreground">
+              <Phone className="w-4 h-4 mr-1" /> Call {CONTACT_PHONE_DISPLAY}
+            </Button>
+          </a>
+        </div>
+      </div>
+
       {/* Mandate section (existing safe component) */}
       <DirectDebitStatus userId={userId} />
 
@@ -161,6 +193,11 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
                       <Button size="sm" variant="hero">Retry payment</Button>
                     </Link>
                   )}
+                  <Link to="/dd-setup">
+                    <Button size="sm" variant="outline" className="border-2 border-foreground">
+                      <RefreshCw className="w-4 h-4 mr-1" /> Update details
+                    </Button>
+                  </Link>
                   <Link to="/support">
                     <Button size="sm" variant="outline" className="border-2 border-foreground">
                       <LifeBuoy className="w-4 h-4 mr-1" /> Contact support

@@ -4,12 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { format, formatDistanceToNow } from "date-fns";
-import { LifeBuoy, MessageCircle, Plus, Search } from "lucide-react";
+import { LifeBuoy, MessageCircle, Plus, Search, ChevronRight, Bell } from "lucide-react";
 import { EmptyState } from "./EmptyState";
 import { logClientEvent } from "@/lib/activityLog";
 import { RaiseTicketDialog } from "@/components/app/RaiseTicketDialog";
+import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
 
-type Ticket = { id: string; subject: string; status: string; priority: string; created_at: string };
+type Ticket = {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  updated_at?: string | null;
+  description?: string | null;
+  category?: string | null;
+};
 
 const priorityStyles: Record<string, string> = {
   urgent: "bg-destructive text-destructive-foreground border-foreground",
@@ -22,13 +32,24 @@ const priorityStyles: Record<string, string> = {
 export function SupportTab({ tickets }: { tickets: Ticket[] }) {
   const [search, setSearch] = useState("");
   const [raiseOpen, setRaiseOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const q = search.trim().toLowerCase();
 
   const { open, closed } = useMemo(() => {
     const filt = (t: Ticket) => !q || t.subject.toLowerCase().includes(q);
+    const sortByActivity = (a: Ticket, b: Ticket) => {
+      const ta = new Date(a.updated_at || a.created_at).getTime();
+      const tb = new Date(b.updated_at || b.created_at).getTime();
+      return tb - ta;
+    };
     return {
-      open: tickets.filter(t => (t.status === "open" || t.status === "in_progress") && filt(t)),
-      closed: tickets.filter(t => (t.status === "resolved" || t.status === "closed") && filt(t)),
+      open: tickets
+        .filter(t => (t.status === "open" || t.status === "in_progress" || t.status === "waiting_customer" || t.status === "waiting_occta") && filt(t))
+        .sort(sortByActivity),
+      closed: tickets
+        .filter(t => (t.status === "resolved" || t.status === "closed") && filt(t))
+        .sort(sortByActivity),
     };
   }, [tickets, q]);
 
@@ -36,6 +57,14 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
     logClientEvent({ event_type: "support_cta_click", title: "open_ai_chat", source_module: "dashboard" });
     window.dispatchEvent(new Event("open-ai-chat"));
   };
+
+  const openTicket = (t: Ticket) => {
+    logClientEvent({ event_type: "support_cta_click", title: "ticket.open", source_module: "dashboard" });
+    setSelectedTicket(t);
+    setDetailOpen(true);
+  };
+
+  const awaitingReplyCount = tickets.filter(t => t.status === "waiting_customer").length;
 
   return (
     <div className="space-y-6">
@@ -54,6 +83,15 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
           <p className="font-display text-2xl">{tickets.length}</p>
         </div>
       </div>
+
+      {awaitingReplyCount > 0 && (
+        <div className="p-3 border-4 border-warning bg-warning/10 flex items-center gap-2">
+          <Bell className="w-5 h-5" />
+          <p className="text-sm">
+            <strong>{awaitingReplyCount}</strong> ticket{awaitingReplyCount === 1 ? " needs" : "s need"} your reply — tap to open and respond.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <Button
@@ -87,47 +125,68 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
       )}
 
       <section>
-        <h3 className="font-display uppercase mb-3">Open tickets</h3>
+        <h3 className="font-display uppercase mb-3">My open tickets</h3>
         {open.length === 0 ? <EmptyState icon={<LifeBuoy className="w-8 h-8" />} title="No open tickets" /> : (
           <div className="space-y-2">
-            {open.map(t => (
-              <Link
-                key={t.id}
-                to="/support"
-                className="p-3 border-4 border-foreground bg-background flex items-center justify-between gap-3 transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_hsl(var(--foreground))]"
-              >
-                <div className="min-w-0">
-                  <p className="font-display text-sm truncate">{t.subject}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(t.created_at), "dd MMM yyyy")} · {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
-                  </p>
-                </div>
-                <div className="flex flex-shrink-0 items-center gap-2">
-                  {t.priority && (
-                    <Badge className={`border-2 capitalize text-xs ${priorityStyles[t.priority] || priorityStyles.normal}`}>
-                      {t.priority}
-                    </Badge>
-                  )}
-                  <Badge className="border-2 border-foreground capitalize">{t.status.replace("_", " ")}</Badge>
-                </div>
-              </Link>
-            ))}
+            {open.map(t => {
+              const lastActivity = t.updated_at || t.created_at;
+              const needsReply = t.status === "waiting_customer";
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => openTicket(t)}
+                  className={`w-full text-left p-3 border-4 bg-background flex items-center justify-between gap-3 transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_hsl(var(--foreground))] ${
+                    needsReply ? "border-warning" : "border-foreground"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-display text-sm truncate">{t.subject}</p>
+                      {needsReply && (
+                        <Badge className="border-2 border-foreground bg-warning text-foreground text-[10px]">Awaiting you</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Updated {formatDistanceToNow(new Date(lastActivity), { addSuffix: true })} · opened {format(new Date(t.created_at), "dd MMM yyyy")}
+                    </p>
+                  </div>
+                  <div className="flex flex-shrink-0 items-center gap-2">
+                    {t.priority && (
+                      <Badge className={`border-2 capitalize text-xs ${priorityStyles[t.priority] || priorityStyles.normal}`}>
+                        {t.priority}
+                      </Badge>
+                    )}
+                    <Badge className="border-2 border-foreground capitalize">{t.status.replace(/_/g, " ")}</Badge>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </section>
 
       {closed.length > 0 && (
         <section>
-          <h3 className="font-display uppercase mb-3">Closed tickets</h3>
+          <h3 className="font-display uppercase mb-3">Recently closed</h3>
           <div className="space-y-2">
             {closed.map(t => (
-              <div key={t.id} className="p-3 border-2 border-foreground bg-background flex items-center justify-between gap-3">
-                <div className="min-w-0">
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => openTicket(t)}
+                className="w-full text-left p-3 border-2 border-foreground bg-background flex items-center justify-between gap-3 hover:bg-muted/40"
+              >
+                <div className="min-w-0 flex-1">
                   <p className="text-sm truncate">{t.subject}</p>
                   <p className="text-xs text-muted-foreground">{format(new Date(t.created_at), "dd MMM yyyy")}</p>
                 </div>
-                <Badge variant="outline" className="capitalize">{t.status}</Badge>
-              </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="capitalize">{t.status}</Badge>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </button>
             ))}
           </div>
         </section>
@@ -139,6 +198,18 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
         onSubmitted={() => {
           // Give the dashboard a nudge to refresh its ticket list on next mount.
           window.dispatchEvent(new Event("dashboard-refresh-tickets"));
+        }}
+      />
+
+      <TicketDetailDialog
+        ticket={selectedTicket as any}
+        open={detailOpen}
+        onOpenChange={(v) => {
+          setDetailOpen(v);
+          if (!v) {
+            // Refresh tickets when the detail dialog closes so status/last-reply times reflect any activity.
+            window.dispatchEvent(new Event("dashboard-refresh-tickets"));
+          }
         }}
       />
     </div>

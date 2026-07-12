@@ -208,6 +208,12 @@ const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | GuestOrder | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
+  const [readVersion, setReadVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setReadVersion((v) => v + 1);
+    window.addEventListener(TICKETS_READ_EVENT, bump);
+    return () => window.removeEventListener(TICKETS_READ_EVENT, bump);
+  }, []);
   // Phase 7 (corrected): the canonical RPC is the principal source of truth
   // for account number, lifecycle status, service, invoices, payment
   // requests, receipts, documents and timeline. Local tab queries remain

@@ -14,7 +14,7 @@ export const organizationSchema = {
   url: `${BASE_URL}/`,
   logo: `${BASE_URL}/pwa-512x512.png`,
   image: `${BASE_URL}/og-image.png`,
-  description: `Cheap UK broadband, SIM plans, and digital home phone services with no contracts. Affordable internet from £${getFromPrices().broadband}/month.`,
+  description: `UK fibre broadband, 5G SIM plans, and digital home phone services. Price Lock 24 or Flex 30 where eligible. Affordable internet from £${getFromPrices().broadband}/month with clear terms.`,
   ...(companyConfig.foundingYear ? { foundingDate: String(companyConfig.foundingYear) } : {}),
   address: {
     '@type': 'PostalAddress',
@@ -72,7 +72,7 @@ const websiteSchema = {
   name: companyConfig.tradingName,
   alternateName: companyConfig.name,
   url: BASE_URL,
-  description: 'Cheap UK broadband, SIM plans, and digital home phone services with no contracts.',
+  description: 'UK fibre broadband, 5G SIM plans, and digital home phone services. Price Lock 24 or Flex 30 where eligible — simple telecom, clear terms.',
   publisher: {
     '@type': 'Organization',
     name: companyConfig.tradingName,

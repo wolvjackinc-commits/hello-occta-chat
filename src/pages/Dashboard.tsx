@@ -587,7 +587,17 @@ const Dashboard = () => {
                   value={v}
                   className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-display uppercase text-xs px-3 py-2"
                 >
-                  {l}
+                  <span className="inline-flex items-center gap-1.5">
+                    {l}
+                    {v === "support" && ticketBadgeCount > 0 && (
+                      <span
+                        className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[10px] font-display border-2 border-foreground bg-destructive text-destructive-foreground"
+                        aria-label={`${ticketBadgeCount} open or awaiting ticket${ticketBadgeCount === 1 ? "" : "s"}`}
+                      >
+                        {ticketBadgeCount > 99 ? "99+" : ticketBadgeCount}
+                      </span>
+                    )}
+                  </span>
                 </TabsTrigger>
               ))}
             </TabsList>

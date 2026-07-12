@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, ShieldX, Home, LayoutDashboard } from "lucide-react";
@@ -43,20 +43,25 @@ const AdminAccessDenied = () => {
 };
 
 export const ProtectedAdminRoute = () => {
+  const location = useLocation();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-access"],
     queryFn: async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
+      // Re-validate with the Auth server rather than trusting a cached session token.
+      const { data: userData, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !userData?.user) {
         return { status: "no-session" } as const;
       }
-      const { data: hasAdminRole } = await supabase.rpc("has_role", {
-        _user_id: sessionData.session.user.id,
+      const { data: hasAdminRole, error: roleErr } = await supabase.rpc("has_role", {
+        _user_id: userData.user.id,
         _role: "admin",
       });
+      if (roleErr) return { status: "denied" } as const;
       return { status: hasAdminRole ? "admin" : "denied" } as const;
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    retry: false,
   });
 
   if (isLoading) {
@@ -67,9 +72,12 @@ export const ProtectedAdminRoute = () => {
     );
   }
 
-  // Redirect to auth with ?next= for returning after login
+  // Redirect to auth with ?next= preserving the deep-linked admin path so
+  // the user returns exactly where they tried to go after signing in.
   if (data?.status === "no-session") {
-    return <Navigate to="/auth?next=/admin/overview" replace />;
+    const target = `${location.pathname}${location.search}${location.hash}` || "/admin/overview";
+    const next = target.startsWith("/admin") ? target : "/admin/overview";
+    return <Navigate to={`/auth?next=${encodeURIComponent(next)}`} replace />;
   }
 
   // Show access denied page instead of silent redirect

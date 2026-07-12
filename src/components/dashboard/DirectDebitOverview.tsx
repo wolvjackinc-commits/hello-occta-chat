@@ -13,6 +13,9 @@ import {
   RefreshCw,
   Phone,
   XCircle,
+  History,
+  CircleCheck,
+  CircleAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +31,7 @@ type UpcomingInvoice = {
   status: string;
 };
 
-type FailedAttempt = {
+type PaymentAttempt = {
   id: string;
   status: string;
   amount: number;
@@ -39,13 +42,14 @@ type FailedAttempt = {
 
 export function DirectDebitOverview({ userId }: { userId: string }) {
   const [upcoming, setUpcoming] = useState<UpcomingInvoice[]>([]);
-  const [failed, setFailed] = useState<FailedAttempt[]>([]);
+  const [failed, setFailed] = useState<PaymentAttempt[]>([]);
+  const [recent, setRecent] = useState<PaymentAttempt[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [u, f] = await Promise.all([
+      const [u, f, r] = await Promise.all([
         supabase
           .from("invoices")
           .select("id, invoice_number, total, due_date, status")
@@ -60,10 +64,17 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
           .in("status", ["failed", "declined", "reversed", "returned"])
           .order("attempted_at", { ascending: false })
           .limit(5),
+        supabase
+          .from("payment_attempts")
+          .select("id, status, amount, reason, attempted_at, invoice_id")
+          .eq("user_id", userId)
+          .order("attempted_at", { ascending: false })
+          .limit(10),
       ]);
       if (cancelled) return;
       setUpcoming((u.data as UpcomingInvoice[]) || []);
-      setFailed((f.data as FailedAttempt[]) || []);
+      setFailed((f.data as PaymentAttempt[]) || []);
+      setRecent((r.data as PaymentAttempt[]) || []);
       setLoading(false);
     })();
     return () => {
@@ -72,6 +83,12 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
   }, [userId]);
 
   const upcomingTotal = upcoming.reduce((s, i) => s + Number(i.total), 0);
+
+  const isFailedStatus = (s: string) =>
+    ["failed", "declined", "reversed", "returned"].includes(s.toLowerCase());
+  const isSuccessStatus = (s: string) =>
+    ["succeeded", "success", "paid", "captured", "cleared"].includes(s.toLowerCase());
+  const mostRecentFailed = recent.find((a) => isFailedStatus(a.status));
 
   return (
     <div className="space-y-6">

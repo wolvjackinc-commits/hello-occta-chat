@@ -59,7 +59,7 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
   };
 
   const openTicket = (t: Ticket) => {
-    logClientEvent({ event_type: "ticket_view_from_dashboard", title: "ticket.open", source_module: "dashboard" });
+    logClientEvent({ event_type: "support_cta_click", title: "ticket.open", source_module: "dashboard" });
     setSelectedTicket(t);
     setDetailOpen(true);
   };

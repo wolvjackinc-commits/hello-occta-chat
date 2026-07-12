@@ -13,7 +13,7 @@ import { Check, PhoneCall, ArrowRight, AlertTriangle, Wifi, Router, Phone, Zap }
 import { landlinePlans } from "@/lib/plans";
 import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import { useAppMode } from "@/hooks/useAppMode";
-import { SEO, StructuredData, createServiceSchema, createOfferSchema } from "@/components/seo";
+import { SEO, StructuredData, createServiceSchema, createOfferSchema, createBreadcrumbSchema, createFAQSchema } from "@/components/seo";
 import { getFromPrices } from "@/lib/pricing/engine";
 
 const Landline = () => {
@@ -70,7 +70,19 @@ const Landline = () => {
 
   const combinedSchemas = {
     '@context': 'https://schema.org',
-    '@graph': [landlineServiceSchema, planOfferSchema],
+    '@graph': [
+      landlineServiceSchema,
+      planOfferSchema,
+      createBreadcrumbSchema([
+        { name: 'Home', url: '/' },
+        { name: 'Digital Home Phone', url: '/landline' },
+      ]),
+      createFAQSchema([
+        { question: 'Do I need OCCTA broadband for Digital Home Phone?', answer: 'Yes. Digital Voice runs over your broadband connection, so an active OCCTA broadband line is required.' },
+        { question: 'Can I keep my current phone number?', answer: 'Usually yes. We start the number port during onboarding once your broadband is live.' },
+        { question: 'What happens during a power cut?', answer: 'Because Digital Voice runs over broadband, the phone will not work during a power or internet outage. Plan back-up options if anyone in your home relies on the line for healthcare or telecare.' },
+      ]),
+    ],
   };
 
   return (

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { SEO } from "@/components/seo";
+import { SEO, StructuredData, createServiceSchema, createBreadcrumbSchema, createFAQSchema } from "@/components/seo";
 import { loadSimCatalogue, formatGbp, type SimPlanPublic, type SimSettingsPublic } from "@/lib/sim/catalogue";
 import { Check, Signal, Smartphone, ArrowRight } from "lucide-react";
 
@@ -42,9 +42,32 @@ const SimIndex = () => {
   return (
     <Layout>
       <SEO
-        title="SIM Only Plans — OCCTA"
-        description="Simple SIM-only plans from OCCTA. eSIM or physical SIM, keep your number with a PAC, or start fresh. Clear terms, honest pricing."
+        title="5G SIM Only Deals UK — Cheap SIM Plans"
+        description="Affordable UK SIM only plans from OCCTA on O2, Vodafone and EE networks. eSIM or physical SIM. Keep your number with a PAC, or start fresh. Clear terms, honest pricing."
         canonical="/sim"
+        keywords="SIM only deals UK, 5G SIM UK, cheap SIM only, eSIM UK, O2 SIM, Vodafone SIM, EE SIM, 30 day SIM plans UK, OCCTA SIM"
+      />
+      <StructuredData
+        customSchema={{
+          '@context': 'https://schema.org',
+          '@graph': [
+            createServiceSchema({
+              name: 'OCCTA 5G SIM Plans',
+              description: 'UK SIM only plans on O2, Vodafone and EE networks. 30-day rolling and 24-month options where eligible. eSIM or physical SIM.',
+              url: '/sim',
+            }),
+            createBreadcrumbSchema([
+              { name: 'Home', url: '/' },
+              { name: 'SIM Plans', url: '/sim' },
+            ]),
+            createFAQSchema([
+              { question: 'Which networks do OCCTA SIMs use?', answer: 'OCCTA SIM plans are available on O2, Vodafone and EE — pick the coverage that works best at your address.' },
+              { question: 'Can I keep my mobile number?', answer: 'Yes. Request a PAC code from your current provider and enter it during checkout to transfer your number.' },
+              { question: 'Do you offer eSIM?', answer: 'Yes. Select eSIM at checkout on compatible devices and get connected without waiting for a physical SIM.' },
+              { question: 'Is there a minimum term?', answer: '30-day rolling SIM plans are available alongside 24-month plans on eligible tariffs.' },
+            ]),
+          ],
+        }}
       />
       <section className="min-h-[60vh] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">

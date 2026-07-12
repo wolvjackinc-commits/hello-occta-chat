@@ -672,7 +672,7 @@ const Dashboard = () => {
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
                   ))}
                 </TabsList>
-                <TabsContent value="tickets"><SupportTab tickets={tickets} /></TabsContent>
+                <TabsContent value="tickets"><SupportTab tickets={tickets} userId={user.id} /></TabsContent>
                 <TabsContent value="chat"><ChatHistoryTab userId={user.id} /></TabsContent>
                 <TabsContent value="complaints"><ComplaintsTab /></TabsContent>
                 <TabsContent value="vuln"><VulnerableSupportTab userId={user.id} /></TabsContent>

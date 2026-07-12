@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, formatDistanceToNow } from "date-fns";
 import { LifeBuoy, MessageCircle, Plus, Search, ChevronRight, Bell } from "lucide-react";
 import { EmptyState } from "./EmptyState";
@@ -31,13 +32,20 @@ const priorityStyles: Record<string, string> = {
 
 export function SupportTab({ tickets }: { tickets: Ticket[] }) {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const q = search.trim().toLowerCase();
 
   const { open, closed } = useMemo(() => {
-    const filt = (t: Ticket) => !q || t.subject.toLowerCase().includes(q);
+    const filt = (t: Ticket) => {
+      if (q && !t.subject.toLowerCase().includes(q)) return false;
+      if (statusFilter === "awaiting" && t.status !== "waiting_customer") return false;
+      if (statusFilter === "in_progress" && t.status !== "in_progress") return false;
+      if (statusFilter === "open" && !(t.status === "open" || t.status === "in_progress" || t.status === "waiting_customer" || t.status === "waiting_occta")) return false;
+      return true;
+    };
     const sortByActivity = (a: Ticket, b: Ticket) => {
       const ta = new Date(a.updated_at || a.created_at).getTime();
       const tb = new Date(b.updated_at || b.created_at).getTime();
@@ -48,10 +56,10 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
         .filter(t => (t.status === "open" || t.status === "in_progress" || t.status === "waiting_customer" || t.status === "waiting_occta") && filt(t))
         .sort(sortByActivity),
       closed: tickets
-        .filter(t => (t.status === "resolved" || t.status === "closed") && filt(t))
+        .filter(t => (t.status === "resolved" || t.status === "closed") && filt(t) && statusFilter !== "awaiting" && statusFilter !== "open" && statusFilter !== "in_progress")
         .sort(sortByActivity),
     };
-  }, [tickets, q]);
+  }, [tickets, q, statusFilter]);
 
   const onChat = () => {
     logClientEvent({ event_type: "support_cta_click", title: "open_ai_chat", source_module: "dashboard" });

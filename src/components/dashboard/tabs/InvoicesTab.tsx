@@ -364,9 +364,64 @@ export function InvoicesTab({ userId }: { userId: string }) {
                 </Button>
                 <Button variant="hero" size="sm" onClick={handleBulkDownload} disabled={bulkBusy}>
                   {bulkBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
-                  Download selected
+                  {bulkBusy && bulkProgress ? `Downloading ${bulkProgress.done}/${bulkProgress.total}…` : "Download selected"}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {bulkBusy && bulkProgress && (
+            <div className="p-3 border-2 border-foreground bg-background space-y-2">
+              <div className="flex items-center justify-between text-xs font-display uppercase tracking-wider">
+                <span>Downloading invoices…</span>
+                <span>{bulkProgress.done} / {bulkProgress.total}</span>
+              </div>
+              <div className="w-full h-2 border-2 border-foreground bg-muted">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${(bulkProgress.done / Math.max(1, bulkProgress.total)) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {bulkResults && bulkResults.length > 0 && (
+            <div className="p-3 border-2 border-foreground bg-background space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-display uppercase tracking-wider">
+                  Bulk download report · {bulkResults.filter(r => r.ok).length} ok / {bulkResults.filter(r => !r.ok).length} failed
+                </p>
+                <div className="flex gap-2">
+                  {bulkResults.some(r => !r.ok) && (
+                    <Button size="sm" variant="hero" onClick={retryBulkFailed} disabled={bulkBusy}>
+                      {bulkBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
+                      Retry failed
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" className="border-2 border-foreground" onClick={() => setBulkResults(null)}>
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+              <ul className="max-h-56 overflow-y-auto divide-y-2 divide-foreground/10 border-2 border-foreground/20">
+                {bulkResults.map((r) => (
+                  <li key={r.id} className="flex items-start gap-2 p-2 text-xs">
+                    {r.ok ? (
+                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display">{r.invoice_number}</p>
+                      {r.ok ? (
+                        <p className="text-muted-foreground">Downloaded successfully.</p>
+                      ) : (
+                        <p className="text-destructive break-words">Failed: {r.error || "Unknown error"}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

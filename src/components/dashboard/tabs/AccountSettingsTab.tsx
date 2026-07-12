@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
 import {
@@ -83,6 +84,8 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
   const [history, setHistory] = useState<ConsentHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<string>("all");
+  const [historyDirectionFilter, setHistoryDirectionFilter] = useState<string>("all");
   const [confirmOpen, setConfirmOpen] = useState<null | { text: string; onConfirm: () => void }>(null);
   const initialConsent = {
     marketing_email_consent: profile?.marketing_email_consent ?? false,

@@ -307,16 +307,58 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
 
         {historyOpen && (
           <div className="mt-2 border-2 border-foreground/30 bg-muted/20 p-3">
-            <p className="font-display uppercase text-xs mb-2">Consent history</p>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <p className="font-display uppercase text-xs">Consent history</p>
+              <div className="flex flex-wrap gap-2">
+                <Select value={historyTypeFilter} onValueChange={setHistoryTypeFilter}>
+                  <SelectTrigger className="h-8 text-xs border-2 border-foreground min-w-[9rem]">
+                    <SelectValue placeholder="Preference" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All preferences</SelectItem>
+                    <SelectItem value="marketing_email">Marketing emails</SelectItem>
+                    <SelectItem value="marketing_sms">Marketing SMS</SelectItem>
+                    <SelectItem value="service_updates">Service updates</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={historyDirectionFilter} onValueChange={setHistoryDirectionFilter}>
+                  <SelectTrigger className="h-8 text-xs border-2 border-foreground min-w-[8rem]">
+                    <SelectValue placeholder="Change" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All changes</SelectItem>
+                    <SelectItem value="in">Opt-in only</SelectItem>
+                    <SelectItem value="out">Opt-out only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             {historyLoading ? (
               <p className="text-xs text-muted-foreground">Loading…</p>
-            ) : history.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No consent changes recorded yet. When you update a preference, it will appear here.
-              </p>
-            ) : (
+            ) : (() => {
+              const filtered = history.filter((h) => {
+                if (historyTypeFilter !== "all" && h.consent_type !== historyTypeFilter) return false;
+                if (historyDirectionFilter === "in" && !h.new_value) return false;
+                if (historyDirectionFilter === "out" && h.new_value) return false;
+                return true;
+              });
+              if (history.length === 0) {
+                return (
+                  <p className="text-xs text-muted-foreground">
+                    No consent changes recorded yet. When you update a preference, it will appear here.
+                  </p>
+                );
+              }
+              if (filtered.length === 0) {
+                return (
+                  <p className="text-xs text-muted-foreground">
+                    No entries match these filters. Try widening your selection.
+                  </p>
+                );
+              }
+              return (
               <ul className="space-y-1.5 max-h-64 overflow-y-auto">
-                {history.map((h) => {
+                {filtered.map((h) => {
                   const meta = CONSENT_LABELS[h.consent_type];
                   const Icon = meta?.icon ?? History;
                   return (
@@ -344,7 +386,8 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
                   );
                 })}
               </ul>
-            )}
+              );
+            })()}
           </div>
         )}
       </div>

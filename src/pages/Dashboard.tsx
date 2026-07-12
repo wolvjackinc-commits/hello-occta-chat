@@ -590,6 +590,8 @@ const Dashboard = () => {
                 unpaidInvoices={outstandingInvoices.length}
                 unpaidTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
                 openTickets={openTickets.length}
+                nextDueDate={outstandingInvoices[0]?.due_date ?? null}
+                nextDueInvoiceId={outstandingInvoices[0]?.id ?? null}
               />
             </TabsContent>
 

@@ -31,7 +31,7 @@ export const SEO = ({
 }: SEOProps) => {
   const fullTitle = title
     ? `${title} | ${SITE_NAME}`
-    : `${SITE_NAME} — UK Broadband & SIM, No Contracts`;
+    : `${SITE_NAME} — UK Broadband, 5G SIM & Digital Home Phone`;
   const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : undefined;
 
   return (

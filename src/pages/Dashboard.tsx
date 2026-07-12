@@ -17,12 +17,14 @@ import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { OverviewTab } from "@/components/dashboard/tabs/OverviewTab";
 import { ServicesTab } from "@/components/dashboard/tabs/ServicesTab";
+import { PackagesTab } from "@/components/dashboard/tabs/PackagesTab";
 import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab";
 import { QuotesTab } from "@/components/dashboard/tabs/QuotesTab";
 import { QuoteRequestsTab } from "@/components/dashboard/tabs/QuoteRequestsTab";
 import { ContractSummariesTab } from "@/components/dashboard/tabs/ContractSummariesTab";
 import { InvoicesTab } from "@/components/dashboard/tabs/InvoicesTab";
 import { PaymentsTab } from "@/components/dashboard/tabs/PaymentsTab";
+import { DirectDebitOverview } from "@/components/dashboard/DirectDebitOverview";
 import { SupportTab } from "@/components/dashboard/tabs/SupportTab";
 import { ChatHistoryTab } from "@/components/dashboard/tabs/ChatHistoryTab";
 import { ComplaintsTab } from "@/components/dashboard/tabs/ComplaintsTab";
@@ -153,12 +155,14 @@ const Dashboard = () => {
     "order-service": { outer: "order-service" },
     orders: { outer: "order-service", inner: "orders" },
     services: { outer: "order-service", inner: "services" },
+    packages: { outer: "order-service", inner: "packages" },
     quotes: { outer: "order-service", inner: "quotes" },
     quoteRequests: { outer: "order-service", inner: "quoteRequests" },
     cs: { outer: "order-service", inner: "cs" },
     billing: { outer: "billing" },
     invoices: { outer: "billing", inner: "invoices" },
     payments: { outer: "billing", inner: "payments" },
+    dd: { outer: "billing", inner: "dd" },
     documents: { outer: "documents" },
     support: { outer: "support" },
     tickets: { outer: "support", inner: "tickets" },
@@ -212,6 +216,15 @@ const Dashboard = () => {
   useEffect(() => {
     logClientEvent({ event_type: "dashboard_view", title: "dashboard.opened", source_module: "dashboard" });
   }, []);
+
+  // Allow child components (e.g. RaiseTicketDialog) to trigger a refetch of tickets.
+  useEffect(() => {
+    const handler = () => {
+      if (user?.id) fetchUserData(user.id);
+    };
+    window.addEventListener("dashboard-refresh-tickets", handler);
+    return () => window.removeEventListener("dashboard-refresh-tickets", handler);
+  }, [user?.id]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -598,12 +611,13 @@ const Dashboard = () => {
             <TabsContent value="order-service">
               <Tabs value={osTab} onValueChange={(v) => { setOsTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
                 <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
-                  {[["orders","Orders"],["services","Services"],["quotes","Quotes"],["quoteRequests","Quote Requests"],["cs","Contract Summaries"]].map(([v,l]) => (
+                  {[["orders","Orders"],["services","Services"],["packages","Packages"],["quotes","Quotes"],["quoteRequests","Quote Requests"],["cs","Contract Summaries"]].map(([v,l]) => (
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
                   ))}
                 </TabsList>
                 <TabsContent value="orders"><OrdersTimelineTab userId={user.id} userEmail={user.email ?? null} /></TabsContent>
                 <TabsContent value="services"><ServicesTab userId={user.id} /></TabsContent>
+                <TabsContent value="packages"><PackagesTab userId={user.id} /></TabsContent>
                 <TabsContent value="quotes"><QuotesTab userId={user.id} /></TabsContent>
                 <TabsContent value="quoteRequests"><QuoteRequestsTab userId={user.id} /></TabsContent>
                 <TabsContent value="cs"><ContractSummariesTab userId={user.id} /></TabsContent>
@@ -613,12 +627,13 @@ const Dashboard = () => {
             <TabsContent value="billing">
               <Tabs value={billingTab} onValueChange={(v) => { setBillingTab(v); const next = new URLSearchParams(searchParams); next.set("tab", v); setSearchParams(next, { replace: true }); }} className="w-full">
                 <TabsList className="bg-transparent border-b-2 border-foreground/30 rounded-none p-0 mb-4 gap-1">
-                  {[["invoices","Invoices"],["payments","Payments & Receipts"]].map(([v,l]) => (
+                  {[["invoices","Invoices"],["payments","Payments & Receipts"],["dd","Direct Debit"]].map(([v,l]) => (
                     <TabsTrigger key={v} value={v} className="rounded-none border-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-secondary font-display uppercase text-xs px-3 py-2">{l}</TabsTrigger>
                   ))}
                 </TabsList>
                 <TabsContent value="invoices"><InvoicesTab userId={user.id} /></TabsContent>
                 <TabsContent value="payments"><PaymentsTab userId={user.id} /></TabsContent>
+                <TabsContent value="dd"><DirectDebitOverview userId={user.id} /></TabsContent>
               </Tabs>
             </TabsContent>
 

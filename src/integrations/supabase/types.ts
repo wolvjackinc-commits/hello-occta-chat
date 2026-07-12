@@ -5233,13 +5233,17 @@ export type Database = {
           archived_by: string | null
           archived_reason: string | null
           city: string | null
+          consent_updated_at: string | null
           created_at: string
           date_of_birth: string | null
           email: string | null
           full_name: string | null
           id: string
+          marketing_email_consent: boolean
+          marketing_sms_consent: boolean
           phone: string | null
           postcode: string | null
+          service_updates_consent: boolean
           suspended_at: string | null
           updated_at: string
         }
@@ -5252,13 +5256,17 @@ export type Database = {
           archived_by?: string | null
           archived_reason?: string | null
           city?: string | null
+          consent_updated_at?: string | null
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          marketing_email_consent?: boolean
+          marketing_sms_consent?: boolean
           phone?: string | null
           postcode?: string | null
+          service_updates_consent?: boolean
           suspended_at?: string | null
           updated_at?: string
         }
@@ -5271,13 +5279,17 @@ export type Database = {
           archived_by?: string | null
           archived_reason?: string | null
           city?: string | null
+          consent_updated_at?: string | null
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          marketing_email_consent?: boolean
+          marketing_sms_consent?: boolean
           phone?: string | null
           postcode?: string | null
+          service_updates_consent?: boolean
           suspended_at?: string | null
           updated_at?: string
         }

@@ -1,15 +1,22 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, formatDistanceToNow } from "date-fns";
-import { LifeBuoy, MessageCircle, Plus, Search, ChevronRight, Bell } from "lucide-react";
+import { LifeBuoy, MessageCircle, Plus, Search, ChevronRight, Bell, CheckCheck } from "lucide-react";
 import { EmptyState } from "./EmptyState";
 import { logClientEvent } from "@/lib/activityLog";
 import { RaiseTicketDialog } from "@/components/app/RaiseTicketDialog";
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog";
+import {
+  getReadMap,
+  isTicketUnread,
+  markAllTicketsRead,
+  markTicketRead,
+  TICKETS_READ_EVENT,
+} from "@/lib/ticketRead";
 
 type Ticket = {
   id: string;
@@ -30,12 +37,32 @@ const priorityStyles: Record<string, string> = {
   low: "bg-muted text-muted-foreground border-foreground",
 };
 
-export function SupportTab({ tickets }: { tickets: Ticket[] }) {
+const STATUS_FILTER_KEY = "occta:tickets:status-filter";
+
+export function SupportTab({ tickets, userId }: { tickets: Ticket[]; userId?: string }) {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    if (typeof window === "undefined") return "all";
+    return window.localStorage.getItem(STATUS_FILTER_KEY) || "all";
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(STATUS_FILTER_KEY, statusFilter); } catch {}
+  }, [statusFilter]);
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [readVersion, setReadVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setReadVersion((v) => v + 1);
+    window.addEventListener(TICKETS_READ_EVENT, bump);
+    return () => window.removeEventListener(TICKETS_READ_EVENT, bump);
+  }, []);
+  const readMap = useMemo(() => (userId ? getReadMap(userId) : {}), [userId, readVersion, tickets]);
+  const isUnread = (t: Ticket) => (userId ? isTicketUnread(userId, t, readMap) : false);
+  const unreadCount = useMemo(
+    () => (userId ? tickets.filter((t) => isTicketUnread(userId, t, readMap)).length : 0),
+    [tickets, readMap, userId]
+  );
   const q = search.trim().toLowerCase();
 
   const { open, closed } = useMemo(() => {
@@ -68,8 +95,14 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
 
   const openTicket = (t: Ticket) => {
     logClientEvent({ event_type: "support_cta_click", title: "ticket.open", source_module: "dashboard" });
+    if (userId) markTicketRead(userId, t);
     setSelectedTicket(t);
     setDetailOpen(true);
+  };
+
+  const markAllRead = () => {
+    if (!userId) return;
+    markAllTicketsRead(userId, tickets);
   };
 
   const awaitingReplyCount = tickets.filter(t => t.status === "waiting_customer").length;
@@ -117,6 +150,11 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
         <Link to="/support">
           <Button variant="outline" className="border-2 border-foreground">Full support centre</Button>
         </Link>
+        {unreadCount > 0 && (
+          <Button variant="outline" className="border-2 border-foreground" onClick={markAllRead}>
+            <CheckCheck className="w-4 h-4 mr-1" /> Mark all as read ({unreadCount})
+          </Button>
+        )}
       </div>
       <p className="text-xs text-muted-foreground">Need a human? Mention "agent" in chat and we'll escalate.</p>
 
@@ -166,6 +204,9 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
                       <p className="font-display text-sm truncate">{t.subject}</p>
                       {needsReply && (
                         <Badge className="border-2 border-foreground bg-warning text-foreground text-[10px]">Awaiting you</Badge>
+                      )}
+                      {isUnread(t) && (
+                        <Badge className="border-2 border-foreground bg-primary text-primary-foreground text-[10px]">New</Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">

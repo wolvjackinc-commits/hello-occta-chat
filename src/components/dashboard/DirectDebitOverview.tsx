@@ -95,7 +95,7 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
               <LifeBuoy className="w-4 h-4 mr-1" /> Contact support
             </Button>
           </Link>
-          <a href={`tel:${CONTACT_PHONE_TEL}`}>
+          <a href={CONTACT_PHONE_TEL}>
             <Button variant="outline" size="sm" className="border-2 border-foreground">
               <Phone className="w-4 h-4 mr-1" /> Call {CONTACT_PHONE_DISPLAY}
             </Button>

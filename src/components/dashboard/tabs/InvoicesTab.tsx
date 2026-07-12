@@ -28,6 +28,13 @@ import { logError } from "@/lib/logger";
 type Invoice = { id: string; invoice_number: string; total: number; status: string; due_date: string | null; issue_date: string };
 type CreditNote = { id: string; invoice_id: string; amount: number; reason: string | null; created_at: string };
 
+type BulkResult = {
+  id: string;
+  invoice_number: string;
+  ok: boolean;
+  error?: string;
+};
+
 export function InvoicesTab({ userId }: { userId: string }) {
   const [unpaid, setUnpaid] = useState<Invoice[]>([]);
   const [paid, setPaid] = useState<Invoice[]>([]);
@@ -39,6 +46,8 @@ export function InvoicesTab({ userId }: { userId: string }) {
   const [dateTo, setDateTo] = useState<string>("");
   const [selected, setSelected] = useState<Record<string, Invoice>>({});
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [bulkResults, setBulkResults] = useState<BulkResult[] | null>(null);
 
   const buildAndDownload = async (invoiceId: string) => {
       const [invRes, linesRes, profileRes] = await Promise.all([
@@ -93,25 +102,69 @@ export function InvoicesTab({ userId }: { userId: string }) {
     const list = Object.values(selected);
     if (list.length === 0) return;
     setBulkBusy(true);
-    let ok = 0;
-    for (const inv of list) {
+    setBulkResults(null);
+    setBulkProgress({ done: 0, total: list.length });
+    const results: BulkResult[] = [];
+    for (let i = 0; i < list.length; i++) {
+      const inv = list[i];
       try {
         // Space out slightly so the browser doesn't drop simultaneous downloads.
         await buildAndDownload(inv.id);
-        ok += 1;
+        results.push({ id: inv.id, invoice_number: inv.invoice_number, ok: true });
         await new Promise((r) => setTimeout(r, 250));
       } catch (err) {
         logError("InvoicesTab.handleBulkDownload", err);
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        results.push({ id: inv.id, invoice_number: inv.invoice_number, ok: false, error: msg });
       }
+      setBulkProgress({ done: i + 1, total: list.length });
     }
     setBulkBusy(false);
+    setBulkProgress(null);
+    setBulkResults(results);
+    const ok = results.filter((r) => r.ok).length;
     if (ok === list.length) {
       toast.success(`Downloaded ${ok} invoice${ok === 1 ? "" : "s"}`);
+      setTimeout(() => setBulkResults(null), 4000);
     } else {
-      toast.error(`Downloaded ${ok} of ${list.length}. Some invoices failed — please retry.`);
+      toast.error(`Downloaded ${ok} of ${list.length}. See details below to retry.`);
     }
     setSelected({});
     logClientEvent({ event_type: "invoice_view_from_dashboard", title: "invoice.bulk_download", source_module: "dashboard" });
+  };
+
+  const retryBulkFailed = async () => {
+    if (!bulkResults) return;
+    const failed = bulkResults.filter((r) => !r.ok);
+    if (failed.length === 0) return;
+    setBulkBusy(true);
+    setBulkProgress({ done: 0, total: failed.length });
+    const updated = [...bulkResults];
+    for (let i = 0; i < failed.length; i++) {
+      const f = failed[i];
+      try {
+        await buildAndDownload(f.id);
+        const idx = updated.findIndex((r) => r.id === f.id);
+        if (idx >= 0) updated[idx] = { ...f, ok: true, error: undefined };
+        await new Promise((r) => setTimeout(r, 250));
+      } catch (err) {
+        logError("InvoicesTab.retryBulkFailed", err);
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        const idx = updated.findIndex((r) => r.id === f.id);
+        if (idx >= 0) updated[idx] = { ...f, ok: false, error: msg };
+      }
+      setBulkProgress({ done: i + 1, total: failed.length });
+    }
+    setBulkBusy(false);
+    setBulkProgress(null);
+    setBulkResults(updated);
+    const remaining = updated.filter((r) => !r.ok).length;
+    if (remaining === 0) {
+      toast.success("All retried invoices downloaded");
+      setTimeout(() => setBulkResults(null), 4000);
+    } else {
+      toast.error(`${remaining} invoice${remaining === 1 ? "" : "s"} still failed`);
+    }
   };
 
   const toggleSelected = (inv: Invoice) => {
@@ -311,9 +364,64 @@ export function InvoicesTab({ userId }: { userId: string }) {
                 </Button>
                 <Button variant="hero" size="sm" onClick={handleBulkDownload} disabled={bulkBusy}>
                   {bulkBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
-                  Download selected
+                  {bulkBusy && bulkProgress ? `Downloading ${bulkProgress.done}/${bulkProgress.total}…` : "Download selected"}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {bulkBusy && bulkProgress && (
+            <div className="p-3 border-2 border-foreground bg-background space-y-2">
+              <div className="flex items-center justify-between text-xs font-display uppercase tracking-wider">
+                <span>Downloading invoices…</span>
+                <span>{bulkProgress.done} / {bulkProgress.total}</span>
+              </div>
+              <div className="w-full h-2 border-2 border-foreground bg-muted">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${(bulkProgress.done / Math.max(1, bulkProgress.total)) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {bulkResults && bulkResults.length > 0 && (
+            <div className="p-3 border-2 border-foreground bg-background space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-display uppercase tracking-wider">
+                  Bulk download report · {bulkResults.filter(r => r.ok).length} ok / {bulkResults.filter(r => !r.ok).length} failed
+                </p>
+                <div className="flex gap-2">
+                  {bulkResults.some(r => !r.ok) && (
+                    <Button size="sm" variant="hero" onClick={retryBulkFailed} disabled={bulkBusy}>
+                      {bulkBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
+                      Retry failed
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" className="border-2 border-foreground" onClick={() => setBulkResults(null)}>
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+              <ul className="max-h-56 overflow-y-auto divide-y-2 divide-foreground/10 border-2 border-foreground/20">
+                {bulkResults.map((r) => (
+                  <li key={r.id} className="flex items-start gap-2 p-2 text-xs">
+                    {r.ok ? (
+                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display">{r.invoice_number}</p>
+                      {r.ok ? (
+                        <p className="text-muted-foreground">Downloaded successfully.</p>
+                      ) : (
+                        <p className="text-destructive break-words">Failed: {r.error || "Unknown error"}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

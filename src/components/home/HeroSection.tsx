@@ -89,11 +89,12 @@ const HeroSection = () => {
               Price Lock 24 • Flex 30 • Clear Estimated Price • UK-based Support
             </motion.p>
 
-            <motion.h1 variants={itemVariants} className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-foreground">
+            {/* H1 renders without motion opacity fade so it paints immediately as the LCP element */}
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-foreground">
               Finally.
               <br />
               <span className="text-gradient">Broadband without the price-rise nonsense.</span>
-            </motion.h1>
+            </h1>
 
             <motion.p variants={itemVariants} className="text-base text-muted-foreground max-w-[580px]">
               Choose Price Lock 24 for a fixed monthly broadband price for the agreed term, or Flex 30 where available. See your first bill before you order.

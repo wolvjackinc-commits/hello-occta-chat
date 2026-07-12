@@ -121,14 +121,27 @@ export function SupportTab({ tickets }: { tickets: Ticket[] }) {
       <p className="text-xs text-muted-foreground">Need a human? Mention "agent" in chat and we'll escalate.</p>
 
       {tickets.length > 0 && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tickets by subject…"
-            className="pl-9 border-2 border-foreground"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_12rem] gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tickets by subject…"
+              className="pl-9 border-2 border-foreground"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="border-2 border-foreground">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All tickets</SelectItem>
+              <SelectItem value="open">Open only</SelectItem>
+              <SelectItem value="awaiting">Awaiting my reply</SelectItem>
+              <SelectItem value="in_progress">In progress</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
 

@@ -394,6 +394,8 @@ const Dashboard = () => {
   const userFullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer";
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
   const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
+  const awaitingTickets = tickets.filter(t => t.status === 'waiting_customer');
+  const ticketBadgeCount = openTickets.length + awaitingTickets.length;
   // Phase 7: do NOT override a guest order's status to "pending". When a
   // canonical order exists the canonical lifecycle status is authoritative.
   // Otherwise preserve whatever status the guest order already carries.

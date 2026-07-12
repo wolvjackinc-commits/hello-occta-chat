@@ -7,8 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lock } from "lucide-react";
+import { Lock, Inbox as InboxIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { AdminStatusBadge, AdminEmptyState } from "@/components/admin/primitives";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Thread = {
   id: string;
@@ -118,25 +127,70 @@ export function InboxTab() {
       </Card>
 
       <div className="space-y-2">
-        {filtered.map(t => (
-          <button key={t.id} onClick={() => setOpenThread(t)} className="w-full text-left p-3 border-4 border-foreground bg-background hover:bg-muted/30">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-display">{t.subject}</p>
-                <Badge variant="outline" className="border-2 border-foreground">{t.channel}</Badge>
-                <Badge variant="outline" className="border-2 border-foreground">{t.status}</Badge>
-                {t.related_ticket_id && <Badge variant="outline">ticket</Badge>}
-                {t.related_complaint_id && <Badge variant="outline">complaint</Badge>}
-                {t.related_order_id && <Badge variant="outline">order</Badge>}
-                {t.related_invoice_id && <Badge variant="outline">invoice</Badge>}
-              </div>
-              <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(t.updated_at), { addSuffix: true })}</p>
-            </div>
-          </button>
-        ))}
-        {filtered.length === 0 && (
-          <Card className="border-2 border-foreground p-8 text-center">
-            <p className="text-muted-foreground">No threads match.</p>
+        {filtered.length === 0 ? (
+          <AdminEmptyState
+            icon={<InboxIcon className="h-8 w-8" />}
+            title="No threads match"
+            message="Try clearing filters or searching a different subject. Threads appear here when customers reply to tickets, complaints, or invoices."
+          />
+        ) : (
+          <Card className="border-2 border-foreground overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b-2 border-foreground bg-muted/40">
+                  <TableHead className="w-[45%]">Subject</TableHead>
+                  <TableHead>Channel</TableHead>
+                  <TableHead>Linked to</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Updated</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((t) => {
+                  const links: string[] = [];
+                  if (t.related_ticket_id) links.push("ticket");
+                  if (t.related_complaint_id) links.push("complaint");
+                  if (t.related_order_id) links.push("order");
+                  if (t.related_invoice_id) links.push("invoice");
+                  if (t.related_quote_id) links.push("quote");
+                  return (
+                    <TableRow
+                      key={t.id}
+                      onClick={() => setOpenThread(t)}
+                      className="cursor-pointer hover:bg-muted/30 border-b border-foreground/10"
+                    >
+                      <TableCell className="font-medium truncate max-w-[420px]">
+                        {t.subject || <span className="text-muted-foreground italic">(no subject)</span>}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="border-2 border-foreground capitalize">
+                          {t.channel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {links.length === 0 ? (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {links.map((l) => (
+                              <Badge key={l} variant="outline" className="text-[10px] capitalize">
+                                {l}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <AdminStatusBadge status={t.status} />
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(new Date(t.updated_at), { addSuffix: true })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </Card>
         )}
       </div>

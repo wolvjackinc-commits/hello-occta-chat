@@ -139,12 +139,11 @@ Deno.serve(async (req) => {
     // Audit — record who revealed which intake row and why.
     try {
       await supabase.from("audit_logs").insert({
-        actor_id: adminId,
-        actor_type: "admin",
+        actor_user_id: adminId,
         action: "dd_bank_details_revealed",
-        resource_type: "dd_intake_request",
-        resource_id: intake.id,
-        details: {
+        entity: "dd_intake_request",
+        entity_id: intake.id,
+        metadata: {
           reason: reason ?? null,
           user_id: resolvedUserId,
           mandate_id: mandate_id ?? null,

@@ -59,6 +59,26 @@ export function RecordPhonePaymentDialog({
     if (open) {
       if (preSelectedInvoiceId) {
         setSelectedInvoiceId(preSelectedInvoiceId);
+        setAmount("");
+        setReference("");
+        setNotes("");
+        // Load the pre-selected invoice so the dropdown has a label and amount auto-fills
+        (async () => {
+          setIsLoadingInvoices(true);
+          try {
+            const { data } = await supabase
+              .from("invoices")
+              .select("id, invoice_number, total, status")
+              .eq("id", preSelectedInvoiceId)
+              .maybeSingle();
+            if (data) {
+              setInvoices([data as Invoice]);
+              setAmount(Number(data.total).toString());
+            }
+          } finally {
+            setIsLoadingInvoices(false);
+          }
+        })();
       } else {
         setSelectedCustomer(null);
         setInvoices([]);

@@ -42,6 +42,7 @@ import { hashToken } from "@/lib/tokenHash";
 import { format } from "date-fns";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
 import { IncludeArchivedToggle } from "@/components/admin/primitives";
+import { RecordPhonePaymentDialog } from "@/components/admin/RecordPhonePaymentDialog";
 import { 
   FileText, 
   Plus, 
@@ -133,6 +134,7 @@ export const AdminBilling = () => {
   const [isSendingPaymentLink, setIsSendingPaymentLink] = useState(false);
   const [communicationsLog, setCommunicationsLog] = useState<CommunicationLog[]>([]);
   const [isLoadingComms, setIsLoadingComms] = useState(false);
+  const [reconcileInvoice, setReconcileInvoice] = useState<Invoice | null>(null);
 
   // New invoice form state
   const [newInvoice, setNewInvoice] = useState({
@@ -702,9 +704,8 @@ export const AdminBilling = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleMarkPaid(invoice)}
-                              disabled={isMarkingPaid}
-                              title="Mark as paid"
+                              onClick={() => setReconcileInvoice(invoice)}
+                              title="Mark as paid / reconcile"
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -997,6 +998,16 @@ export const AdminBilling = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RecordPhonePaymentDialog
+        open={!!reconcileInvoice}
+        onOpenChange={(open) => !open && setReconcileInvoice(null)}
+        onSuccess={() => {
+          setReconcileInvoice(null);
+          refetch();
+        }}
+        preSelectedInvoiceId={reconcileInvoice?.id}
+      />
 
       {/* Create Invoice Dialog */}
       <Dialog open={!!selectedInvoice && !selectedInvoice.id} onOpenChange={(open) => !open && setSelectedInvoice(null)}>

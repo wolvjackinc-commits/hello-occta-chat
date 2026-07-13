@@ -20,7 +20,18 @@ import { DDMandateDetailDialog } from "./DDMandateDetailDialog";
 import { DDWorkflowDialog } from "./DDWorkflowDialog";
 import { generateDDMandatePdf } from "@/lib/generateDDMandatePdf";
 import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
-import { FileText, ShieldCheck } from "lucide-react";
+import { FileText, ShieldCheck, Unlock, Copy } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 
 type DDMandateView = {
   id: string;
@@ -49,6 +60,68 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
   const [selectedMandate, setSelectedMandate] = useState<DDMandateView | null>(null);
   const [workflowAction, setWorkflowAction] = useState<{ mandate: DDMandateView; action: WorkflowAction } | null>(null);
   const [showGuarantee, setShowGuarantee] = useState(false);
+  const [revealFor, setRevealFor] = useState<DDMandateView | null>(null);
+  const [revealReason, setRevealReason] = useState("");
+  const [revealing, setRevealing] = useState(false);
+  const [revealed, setRevealed] = useState<{
+    account_holder_name: string | null;
+    sort_code: string | null;
+    account_number: string | null;
+    bank_name: string | null;
+    billing_address: string | null;
+    postcode: string | null;
+  } | null>(null);
+
+  const formatSort = (s: string | null) =>
+    s && /^\d{6}$/.test(s) ? `${s.slice(0, 2)}-${s.slice(2, 4)}-${s.slice(4, 6)}` : (s ?? "—");
+
+  const copy = async (label: string, val: string | null) => {
+    if (!val) return;
+    try {
+      await navigator.clipboard.writeText(val);
+      toast({ title: "Copied", description: `${label} copied to clipboard.` });
+    } catch {
+      toast({ title: "Copy failed", description: "Clipboard unavailable.", variant: "destructive" });
+    }
+  };
+
+  const runReveal = async () => {
+    if (!revealFor) return;
+    setRevealing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-dd-reveal-bank", {
+        body: {
+          user_id: revealFor.user_id,
+          mandate_id: revealFor.id,
+          reason: revealReason || null,
+        },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error((data as { error?: string })?.error || "reveal_failed");
+      setRevealed({
+        account_holder_name: data.account_holder_name ?? null,
+        sort_code: data.sort_code ?? null,
+        account_number: data.account_number ?? null,
+        bank_name: data.bank_name ?? null,
+        billing_address: data.billing_address ?? null,
+        postcode: data.postcode ?? null,
+      });
+    } catch (e) {
+      toast({
+        title: "Could not reveal bank details",
+        description: (e as Error).message,
+        variant: "destructive",
+      });
+    } finally {
+      setRevealing(false);
+    }
+  };
+
+  const closeReveal = () => {
+    setRevealFor(null);
+    setRevealReason("");
+    setRevealed(null);
+  };
 
   const { data: mandates, isLoading, refetch } = useQuery({
     queryKey: ["customer-dd-mandates", userId],
@@ -235,6 +308,15 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
                       <FileText className="w-3 h-3" />
                       Mandate PDF
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setRevealFor(mandate); setRevealed(null); setRevealReason(""); }}
+                      className="gap-1 border-2 border-foreground"
+                    >
+                      <Unlock className="w-3 h-3" />
+                      Reveal bank
+                    </Button>
                   </div>
                 </div>
 
@@ -408,6 +490,106 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
           onSuccess={() => refetch()}
         />
       )}
+
+      {/* Reveal full bank details dialog (admin-only, audit-logged) */}
+      <Dialog open={!!revealFor} onOpenChange={(o) => { if (!o) closeReveal(); }}>
+        <DialogContent className="max-w-lg border-2 border-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase flex items-center gap-2">
+              <Unlock className="w-4 h-4" />
+              Reveal full bank details
+            </DialogTitle>
+            <DialogDescription>
+              This action is admin-only and audit-logged. Only reveal to complete a
+              legitimate operational task (e.g. Bacs submission, complaint handling).
+            </DialogDescription>
+          </DialogHeader>
+
+          {!revealed ? (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground">
+                Mandate: <span className="font-mono">{revealFor?.mandate_reference || "—"}</span>
+                <br />
+                Masked: {revealFor?.sort_code_masked || "—"} / {revealFor?.account_number_masked || "—"}
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="reveal-reason" className="text-xs uppercase tracking-widest">
+                  Reason (recorded in audit log)
+                </Label>
+                <Input
+                  id="reveal-reason"
+                  value={revealReason}
+                  onChange={(e) => setRevealReason(e.target.value)}
+                  placeholder="e.g. Bacs submission for first collection"
+                  className="border-2 border-foreground"
+                />
+              </div>
+              <DialogFooter className="gap-2">
+                <Button variant="ghost" onClick={closeReveal} disabled={revealing}>Cancel</Button>
+                <Button
+                  onClick={runReveal}
+                  disabled={revealing || revealReason.trim().length < 4}
+                  className="border-2 border-foreground"
+                >
+                  {revealing ? "Revealing…" : "Reveal"}
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="border-2 border-foreground p-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs uppercase text-muted-foreground">Account holder</span>
+                  <span className="font-medium">{revealed.account_holder_name || "—"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs uppercase text-muted-foreground">Bank</span>
+                  <span className="font-medium">{revealed.bank_name || "—"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs uppercase text-muted-foreground">Sort code</span>
+                  <span className="font-mono flex items-center gap-2">
+                    {formatSort(revealed.sort_code)}
+                    <Button size="sm" variant="ghost" className="h-6 px-2"
+                      onClick={() => copy("Sort code", revealed.sort_code)}>
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs uppercase text-muted-foreground">Account number</span>
+                  <span className="font-mono flex items-center gap-2">
+                    {revealed.account_number || "—"}
+                    <Button size="sm" variant="ghost" className="h-6 px-2"
+                      onClick={() => copy("Account number", revealed.account_number)}>
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </span>
+                </div>
+                {revealed.billing_address && (
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs uppercase text-muted-foreground">Billing address</span>
+                    <span className="text-right">{revealed.billing_address}</span>
+                  </div>
+                )}
+                {revealed.postcode && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs uppercase text-muted-foreground">Postcode</span>
+                    <span className="font-mono">{revealed.postcode}</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Reveal recorded in audit log with your admin ID and reason. Close this
+                dialog once you have finished using the details.
+              </p>
+              <DialogFooter>
+                <Button onClick={closeReveal} className="border-2 border-foreground">Close</Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

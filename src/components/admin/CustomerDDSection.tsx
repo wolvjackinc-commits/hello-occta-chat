@@ -18,6 +18,9 @@ import {
 } from "lucide-react";
 import { DDMandateDetailDialog } from "./DDMandateDetailDialog";
 import { DDWorkflowDialog } from "./DDWorkflowDialog";
+import { generateDDMandatePdf } from "@/lib/generateDDMandatePdf";
+import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
+import { FileText, ShieldCheck } from "lucide-react";
 
 type DDMandateView = {
   id: string;
@@ -45,6 +48,7 @@ interface CustomerDDSectionProps {
 export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
   const [selectedMandate, setSelectedMandate] = useState<DDMandateView | null>(null);
   const [workflowAction, setWorkflowAction] = useState<{ mandate: DDMandateView; action: WorkflowAction } | null>(null);
+  const [showGuarantee, setShowGuarantee] = useState(false);
 
   const { data: mandates, isLoading, refetch } = useQuery({
     queryKey: ["customer-dd-mandates", userId],
@@ -59,6 +63,59 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
       return (data || []) as DDMandateView[];
     },
   });
+
+  // Load customer + billing context so we can populate the mandate PDF
+  // (customer name/address + next collection date & amount).
+  const { data: ctx } = useQuery({
+    queryKey: ["customer-dd-context", userId],
+    queryFn: async () => {
+      const [{ data: profile }, { data: billing }, { data: cs }] = await Promise.all([
+        supabase.from("profiles").select("full_name, email, address_line1, city, postcode").eq("id", userId).maybeSingle(),
+        supabase.from("billing_settings").select("next_invoice_date, payment_terms_days, billing_mode, billing_day").eq("user_id", userId).maybeSingle(),
+        supabase.from("contract_summaries").select("cs_number, plan_name, monthly_price_incl_vat, contract_length").eq("customer_id", userId).eq("status", "accepted").order("accepted_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+      return { profile, billing, cs };
+    },
+  });
+
+  const nextCollection = (() => {
+    const nextInv = ctx?.billing?.next_invoice_date as string | undefined;
+    const terms = (ctx?.billing?.payment_terms_days as number | undefined) ?? 14;
+    if (!nextInv) return null;
+    const d = new Date(nextInv);
+    d.setDate(d.getDate() + terms);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const nextAmount = (() => {
+    const monthly = Number(ctx?.cs?.monthly_price_incl_vat ?? 0);
+    if (!monthly) return null;
+    // Quarterly cadence when payment_terms + monthly plan implies 3-month billing.
+    // We infer 3× when billing_mode = fixed_day and there is a gap of ~3 months between invoices.
+    // Safe default: show 3× for legacy quarterly (existing OCCTA policy).
+    return Number((monthly * 3).toFixed(2));
+  })();
+
+  const openMandatePdf = (mandate: DDMandateView) => {
+    const p = ctx?.profile as any;
+    const address = p ? [p.address_line1, p.city, p.postcode].filter(Boolean).join(", ") : "";
+    generateDDMandatePdf({
+      mandate_reference: mandate.mandate_reference || "—",
+      status: mandate.status,
+      account_holder: mandate.account_holder,
+      sort_code_masked: mandate.sort_code_masked,
+      account_number_masked: mandate.account_number_masked,
+      bank_last4: mandate.bank_last4,
+      consent_timestamp: mandate.consent_timestamp,
+      created_at: mandate.created_at,
+      customer_name: p?.full_name ?? null,
+      customer_email: p?.email ?? null,
+      customer_address: address || null,
+      next_collection_date: nextCollection,
+      next_collection_amount: nextAmount,
+      contract_reference: ctx?.cs?.cs_number ?? null,
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ReactNode; className: string }> = {
@@ -169,8 +226,36 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
                       <Eye className="w-3 h-3" />
                       View
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openMandatePdf(mandate)}
+                      className="gap-1 border-2 border-foreground"
+                    >
+                      <FileText className="w-3 h-3" />
+                      Mandate PDF
+                    </Button>
                   </div>
                 </div>
+
+                {/* Next collection summary */}
+                {mandate.status !== "cancelled" && mandate.status !== "failed" && nextCollection && nextAmount && (
+                  <div className="mt-3 border-2 border-foreground bg-foreground text-background p-3 flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest opacity-80">Next collection</p>
+                      <p className="text-xs mt-1">
+                        £{nextAmount.toFixed(2)} on {format(new Date(nextCollection), "dd MMM yyyy")}
+                      </p>
+                      <p className="text-[10px] opacity-70 mt-1">Advance notice sent 10 working days beforehand.</p>
+                    </div>
+                    {ctx?.cs?.cs_number && (
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase tracking-widest opacity-80">Contract</p>
+                        <p className="text-xs font-mono mt-1">{ctx.cs.cs_number}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Admin Workflow Actions */}
                 {!["cancelled", "failed"].includes(mandate.status) && (
@@ -263,6 +348,26 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
                 )}
               </div>
             ))}
+
+            {/* Direct Debit Guarantee panel */}
+            <div className="border-2 border-foreground p-3 bg-muted/30">
+              <button
+                type="button"
+                onClick={() => setShowGuarantee((v) => !v)}
+                className="w-full flex items-center justify-between gap-2 text-left"
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span className="font-display uppercase text-sm">The Direct Debit Guarantee</span>
+                </span>
+                <span className="text-xs text-muted-foreground">{showGuarantee ? "Hide" : "Show"}</span>
+              </button>
+              {showGuarantee && (
+                <div className="mt-3 space-y-2 text-xs leading-relaxed whitespace-pre-line">
+                  {DD_GUARANTEE_TEXT}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Card>

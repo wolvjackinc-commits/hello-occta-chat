@@ -20,7 +20,18 @@ import { DDMandateDetailDialog } from "./DDMandateDetailDialog";
 import { DDWorkflowDialog } from "./DDWorkflowDialog";
 import { generateDDMandatePdf } from "@/lib/generateDDMandatePdf";
 import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
-import { FileText, ShieldCheck } from "lucide-react";
+import { FileText, ShieldCheck, Unlock, Copy } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 
 type DDMandateView = {
   id: string;
@@ -49,6 +60,68 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
   const [selectedMandate, setSelectedMandate] = useState<DDMandateView | null>(null);
   const [workflowAction, setWorkflowAction] = useState<{ mandate: DDMandateView; action: WorkflowAction } | null>(null);
   const [showGuarantee, setShowGuarantee] = useState(false);
+  const [revealFor, setRevealFor] = useState<DDMandateView | null>(null);
+  const [revealReason, setRevealReason] = useState("");
+  const [revealing, setRevealing] = useState(false);
+  const [revealed, setRevealed] = useState<{
+    account_holder_name: string | null;
+    sort_code: string | null;
+    account_number: string | null;
+    bank_name: string | null;
+    billing_address: string | null;
+    postcode: string | null;
+  } | null>(null);
+
+  const formatSort = (s: string | null) =>
+    s && /^\d{6}$/.test(s) ? `${s.slice(0, 2)}-${s.slice(2, 4)}-${s.slice(4, 6)}` : (s ?? "—");
+
+  const copy = async (label: string, val: string | null) => {
+    if (!val) return;
+    try {
+      await navigator.clipboard.writeText(val);
+      toast({ title: "Copied", description: `${label} copied to clipboard.` });
+    } catch {
+      toast({ title: "Copy failed", description: "Clipboard unavailable.", variant: "destructive" });
+    }
+  };
+
+  const runReveal = async () => {
+    if (!revealFor) return;
+    setRevealing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-dd-reveal-bank", {
+        body: {
+          user_id: revealFor.user_id,
+          mandate_id: revealFor.id,
+          reason: revealReason || null,
+        },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error((data as { error?: string })?.error || "reveal_failed");
+      setRevealed({
+        account_holder_name: data.account_holder_name ?? null,
+        sort_code: data.sort_code ?? null,
+        account_number: data.account_number ?? null,
+        bank_name: data.bank_name ?? null,
+        billing_address: data.billing_address ?? null,
+        postcode: data.postcode ?? null,
+      });
+    } catch (e) {
+      toast({
+        title: "Could not reveal bank details",
+        description: (e as Error).message,
+        variant: "destructive",
+      });
+    } finally {
+      setRevealing(false);
+    }
+  };
+
+  const closeReveal = () => {
+    setRevealFor(null);
+    setRevealReason("");
+    setRevealed(null);
+  };
 
   const { data: mandates, isLoading, refetch } = useQuery({
     queryKey: ["customer-dd-mandates", userId],
@@ -234,6 +307,15 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
                     >
                       <FileText className="w-3 h-3" />
                       Mandate PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setRevealFor(mandate); setRevealed(null); setRevealReason(""); }}
+                      className="gap-1 border-2 border-foreground"
+                    >
+                      <Unlock className="w-3 h-3" />
+                      Reveal bank
                     </Button>
                   </div>
                 </div>

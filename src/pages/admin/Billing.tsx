@@ -999,6 +999,16 @@ export const AdminBilling = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      <RecordPhonePaymentDialog
+        open={!!reconcileInvoice}
+        onOpenChange={(open) => !open && setReconcileInvoice(null)}
+        onSuccess={() => {
+          setReconcileInvoice(null);
+          refetch();
+        }}
+        preSelectedInvoiceId={reconcileInvoice?.id}
+      />
+
       {/* Create Invoice Dialog */}
       <Dialog open={!!selectedInvoice && !selectedInvoice.id} onOpenChange={(open) => !open && setSelectedInvoice(null)}>
         <DialogContent className="border-4 border-foreground max-w-2xl max-h-[90vh] overflow-y-auto">

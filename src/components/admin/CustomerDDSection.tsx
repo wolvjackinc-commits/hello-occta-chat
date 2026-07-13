@@ -490,6 +490,106 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
           onSuccess={() => refetch()}
         />
       )}
+
+      {/* Reveal full bank details dialog (admin-only, audit-logged) */}
+      <Dialog open={!!revealFor} onOpenChange={(o) => { if (!o) closeReveal(); }}>
+        <DialogContent className="max-w-lg border-2 border-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase flex items-center gap-2">
+              <Unlock className="w-4 h-4" />
+              Reveal full bank details
+            </DialogTitle>
+            <DialogDescription>
+              This action is admin-only and audit-logged. Only reveal to complete a
+              legitimate operational task (e.g. Bacs submission, complaint handling).
+            </DialogDescription>
+          </DialogHeader>
+
+          {!revealed ? (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground">
+                Mandate: <span className="font-mono">{revealFor?.mandate_reference || "—"}</span>
+                <br />
+                Masked: {revealFor?.sort_code_masked || "—"} / {revealFor?.account_number_masked || "—"}
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="reveal-reason" className="text-xs uppercase tracking-widest">
+                  Reason (recorded in audit log)
+                </Label>
+                <Input
+                  id="reveal-reason"
+                  value={revealReason}
+                  onChange={(e) => setRevealReason(e.target.value)}
+                  placeholder="e.g. Bacs submission for first collection"
+                  className="border-2 border-foreground"
+                />
+              </div>
+              <DialogFooter className="gap-2">
+                <Button variant="ghost" onClick={closeReveal} disabled={revealing}>Cancel</Button>
+                <Button
+                  onClick={runReveal}
+                  disabled={revealing || revealReason.trim().length < 4}
+                  className="border-2 border-foreground"
+                >
+                  {revealing ? "Revealing…" : "Reveal"}
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="border-2 border-foreground p-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs uppercase text-muted-foreground">Account holder</span>
+                  <span className="font-medium">{revealed.account_holder_name || "—"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs uppercase text-muted-foreground">Bank</span>
+                  <span className="font-medium">{revealed.bank_name || "—"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs uppercase text-muted-foreground">Sort code</span>
+                  <span className="font-mono flex items-center gap-2">
+                    {formatSort(revealed.sort_code)}
+                    <Button size="sm" variant="ghost" className="h-6 px-2"
+                      onClick={() => copy("Sort code", revealed.sort_code)}>
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs uppercase text-muted-foreground">Account number</span>
+                  <span className="font-mono flex items-center gap-2">
+                    {revealed.account_number || "—"}
+                    <Button size="sm" variant="ghost" className="h-6 px-2"
+                      onClick={() => copy("Account number", revealed.account_number)}>
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </span>
+                </div>
+                {revealed.billing_address && (
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs uppercase text-muted-foreground">Billing address</span>
+                    <span className="text-right">{revealed.billing_address}</span>
+                  </div>
+                )}
+                {revealed.postcode && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs uppercase text-muted-foreground">Postcode</span>
+                    <span className="font-mono">{revealed.postcode}</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Reveal recorded in audit log with your admin ID and reason. Close this
+                dialog once you have finished using the details.
+              </p>
+              <DialogFooter>
+                <Button onClick={closeReveal} className="border-2 border-foreground">Close</Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

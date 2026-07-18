@@ -963,6 +963,11 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
             </motion.div>
           )}
         </AnimatePresence>
+        <RaiseTicketDialog
+          open={ticketOpen}
+          onOpenChange={setTicketOpen}
+          prefill={ticketPrefill}
+        />
       </>
     );
   }

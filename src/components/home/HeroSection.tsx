@@ -90,10 +90,8 @@ const HeroSection = () => {
             </motion.p>
 
             {/* H1 renders without motion opacity fade so it paints immediately as the LCP element */}
-            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-foreground">
-              Finally.
-              <br />
-              <span className="text-gradient">Broadband without the price-rise nonsense.</span>
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-gradient">
+              Finally. Broadband without the price-rise nonsense.
             </h1>
 
             <motion.p variants={itemVariants} className="text-base text-muted-foreground max-w-[580px]">
@@ -190,6 +188,7 @@ const HeroSection = () => {
                     <button
                       key={idx}
                       onClick={() => selectAddress(addr)}
+                      aria-label={`Select address ${getAddressLabel(addr)}`}
                       className="w-full text-left px-4 py-3.5 hover:bg-primary/10 transition-colors border-b-2 border-foreground/10 last:border-b-0 flex items-center justify-between gap-3 group"
                     >
                       <span className="text-sm sm:text-base font-medium leading-snug text-foreground">{getAddressLabel(addr)}</span>

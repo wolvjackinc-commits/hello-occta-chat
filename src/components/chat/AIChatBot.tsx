@@ -479,6 +479,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   // their own record without waiting on an advisor.
   const handleDownloadTranscript = useCallback(() => {
     if (messages.length === 0) return;
+    setStatusAnnouncement("Preparing transcript…");
     const header = `OCCTA chat transcript\nGenerated: ${new Date().toLocaleString("en-GB")}\n${user?.email ? `Account: ${user.email}\n` : ""}\n`;
     const body = messages
       .map((m) => `[${new Date(m.createdAt).toLocaleString("en-GB")}] ${m.role === "user" ? "You" : "IRA"}: ${m.content}`)
@@ -492,7 +493,63 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+    setStatusAnnouncement(`Transcript downloaded (${messages.length} messages).`);
+    toast({
+      title: "Transcript downloaded",
+      description: `${messages.length} message${messages.length === 1 ? "" : "s"} saved to your device.`,
+    });
   }, [messages, user?.email]);
+
+  // Build a compact conversation summary for pre-filling a support ticket.
+  const buildConversationSummary = useCallback(() => {
+    const recent = messages.slice(-12).filter((m) => m.id !== "welcome");
+    if (recent.length === 0) return "";
+    const body = recent
+      .map((m) => `${m.role === "user" ? "Me" : "IRA"}: ${m.content.replace(/\s+/g, " ").trim()}`)
+      .join("\n\n");
+    return `Conversation summary from chat on ${new Date().toLocaleString("en-GB")}:\n\n${body}`.slice(0, 1800);
+  }, [messages]);
+
+  // Guess category + priority from the last few user messages so the ticket
+  // form arrives pre-filled but still editable.
+  const guessTicketPrefill = useCallback((): TicketPrefill => {
+    const text = messages
+      .filter((m) => m.role === "user")
+      .map((m) => m.content)
+      .join(" ")
+      .toLowerCase();
+    const category =
+      /broadband|internet|wi-?fi|fibre|router/.test(text) ? "broadband"
+        : /sim|mobile|roaming|esim/.test(text) ? "mobile"
+        : /landline|home phone|voice/.test(text) ? "landline"
+        : /invoice|billing|refund|charge/.test(text) ? "billing"
+        : /payment|direct debit|worldpay|card/.test(text) ? "payments"
+        : /account|login|password|profile/.test(text) ? "account"
+        : "other";
+    const priority: TicketPrefill["priority"] =
+      /(urgent|emergency|asap|no internet|not working|line down|outage)/.test(text) ? "high"
+        : /nuisance|slow|intermittent/.test(text) ? "normal"
+        : "normal";
+    const firstUser = messages.find((m) => m.role === "user")?.content ?? "";
+    const subject = firstUser.replace(/\s+/g, " ").slice(0, 80) || "Follow-up from chat with IRA";
+    return {
+      category,
+      priority,
+      subject,
+      message: buildConversationSummary(),
+    };
+  }, [messages, buildConversationSummary]);
+
+  const handleOpenTicket = useCallback(() => {
+    setTicketPrefill(guessTicketPrefill());
+    setTicketOpen(true);
+    setHelpOpen(false);
+  }, [guessTicketPrefill]);
+
+  const handleEscalateToHuman = useCallback(() => {
+    setHelpOpen(false);
+    sendMessage("I'd like to speak to a human support advisor please.");
+  }, [sendMessage]);
 
   // Escape closes the floating chat for keyboard accessibility.
   useEffect(() => {

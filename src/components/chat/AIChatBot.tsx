@@ -958,6 +958,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     )}
                   </form>
                 </>
+                )
               )}
             </motion.div>
           )}

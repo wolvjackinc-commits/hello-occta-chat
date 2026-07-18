@@ -1113,6 +1113,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
           open={ticketOpen}
           onOpenChange={setTicketOpen}
           prefill={ticketPrefill}
+          onSubmitted={handleTicketSubmitted}
         />
       </>
     );

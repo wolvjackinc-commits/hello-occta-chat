@@ -100,8 +100,11 @@ import {
   Download,
   BookOpen,
   LifeBuoy,
-  HelpCircle
+  HelpCircle,
+  TicketPlus
 } from "lucide-react";
+import ChatHelpPanel from "./ChatHelpPanel";
+import { RaiseTicketDialog, type TicketPrefill } from "@/components/app/RaiseTicketDialog";
 
 type AttachmentMeta = {
   id: string;

@@ -875,6 +875,36 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                           </div>
                         )}
                         <div ref={messagesEndRef} />
+                        {!isAdmin && messages.length >= 3 && !isLoading && (
+                          <div className="mt-4 border-2 border-foreground/40 bg-muted/30 p-3">
+                            <p className="text-[10px] font-display uppercase tracking-wider text-muted-foreground mb-2">
+                              Need more than a chat answer?
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setHelpOpen(true)}
+                                className="text-xs font-display uppercase border-2 border-foreground px-2.5 py-1.5 bg-background hover:bg-foreground hover:text-background transition-colors"
+                              >
+                                Browse Help Centre
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleEscalateToHuman}
+                                className="text-xs font-display uppercase border-2 border-foreground px-2.5 py-1.5 bg-background hover:bg-foreground hover:text-background transition-colors"
+                              >
+                                Talk to a human
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleOpenTicket}
+                                className="text-xs font-display uppercase border-2 border-foreground px-2.5 py-1.5 bg-foreground text-background hover:bg-foreground/90 transition-colors"
+                              >
+                                Create a ticket
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </ScrollArea>

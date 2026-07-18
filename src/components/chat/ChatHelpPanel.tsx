@@ -37,8 +37,24 @@ function scoreAgainst(query: Set<string>, haystack: string): number {
   return hits;
 }
 
+function buildSnippet(text: string, terms: string[], length = 160): string {
+  if (!text) return "";
+  const lower = text.toLowerCase();
+  let idx = -1;
+  for (const t of terms) {
+    const found = lower.indexOf(t);
+    if (found !== -1 && (idx === -1 || found < idx)) idx = found;
+  }
+  if (idx <= 0) return text.slice(0, length);
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(text.length, start + length);
+  return `${start > 0 ? "…" : ""}${text.slice(start, end)}${end < text.length ? "…" : ""}`;
+}
+
 function buildResults(queryTokens: Set<string>, freeText: string): Result[] {
   const q = freeText.trim().toLowerCase();
+  const terms = Array.from(queryTokens);
+  if (q) terms.push(q);
   const results: Result[] = [];
 
   for (const f of faqs) {
@@ -49,7 +65,7 @@ function buildResults(queryTokens: Set<string>, freeText: string): Result[] {
       results.push({
         kind: "faq",
         title: f.question,
-        snippet: f.answer.slice(0, 140),
+        snippet: buildSnippet(f.answer, terms),
         href: `/faq#${encodeURIComponent(f.question).slice(0, 60)}`,
         score,
       });
@@ -64,7 +80,7 @@ function buildResults(queryTokens: Set<string>, freeText: string): Result[] {
       results.push({
         kind: "article",
         title: a.title,
-        snippet: a.description.slice(0, 140),
+        snippet: buildSnippet(a.description, terms),
         href: `/help/${a.slug}`,
         score: score + 1, // slight boost so long-form beats a single FAQ tie
       });
@@ -72,6 +88,30 @@ function buildResults(queryTokens: Set<string>, freeText: string): Result[] {
   }
 
   return results.sort((a, b) => b.score - a.score);
+}
+
+// Split a snippet or title into <mark> tags around any matched term so the
+// user can see why a result was returned. Case-insensitive.
+export function highlightTerms(text: string, terms: string[]): (string | JSX.Element)[] {
+  const clean = terms
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2)
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (clean.length === 0) return [text];
+  const re = new RegExp(`(${clean.join("|")})`, "gi");
+  const parts = text.split(re);
+  return parts.map((part, i) =>
+    re.test(part) ? (
+      <mark
+        key={i}
+        className="bg-primary/25 text-foreground px-0.5 rounded-sm"
+      >
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
 }
 
 interface Props {
@@ -100,6 +140,20 @@ export default function ChatHelpPanel({ messages, onClose, onEscalate, onCreateT
     if (!query.trim()) return [] as Result[];
     return buildResults(queryTokens, query).slice(0, 8);
   }, [query, queryTokens]);
+
+  // Terms we highlight in each result: raw query first (whole phrase), then
+  // the individual tokens so partial word matches still light up.
+  const highlightList = useMemo(() => {
+    const list = new Set<string>();
+    const q = query.trim();
+    if (q) list.add(q);
+    queryTokens.forEach((t) => list.add(t));
+    return Array.from(list);
+  }, [query, queryTokens]);
+  const sourceHighlight = useMemo(
+    () => Array.from(conversationTokens),
+    [conversationTokens]
+  );
 
   return (
     <div
@@ -154,7 +208,7 @@ export default function ChatHelpPanel({ messages, onClose, onEscalate, onCreateT
             ) : (
               <ul className="space-y-2">
                 {searchResults.map((r, i) => (
-                  <ResultCard key={i} result={r} />
+                  <ResultCard key={i} result={r} terms={highlightList} rank={i + 1} />
                 ))}
               </ul>
             )}
@@ -168,7 +222,7 @@ export default function ChatHelpPanel({ messages, onClose, onEscalate, onCreateT
                 </h4>
                 <ul className="space-y-2">
                   {topSources.map((r, i) => (
-                    <ResultCard key={i} result={r} />
+                    <ResultCard key={i} result={r} terms={sourceHighlight} rank={i + 1} />
                   ))}
                 </ul>
               </section>
@@ -216,7 +270,15 @@ export default function ChatHelpPanel({ messages, onClose, onEscalate, onCreateT
   );
 }
 
-function ResultCard({ result }: { result: Result }) {
+function ResultCard({
+  result,
+  terms,
+  rank,
+}: {
+  result: Result;
+  terms: string[];
+  rank?: number;
+}) {
   return (
     <li>
       <a
@@ -226,10 +288,19 @@ function ResultCard({ result }: { result: Result }) {
         className="block border-2 border-foreground/40 hover:border-foreground p-3 bg-card transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold line-clamp-2">{result.title}</p>
+          <p className="text-sm font-semibold line-clamp-2">
+            {rank === 1 && (
+              <span className="mr-1.5 inline-block text-[9px] font-display uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 align-middle">
+                Top match
+              </span>
+            )}
+            {highlightTerms(result.title, terms)}
+          </p>
           <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" aria-hidden />
         </div>
-        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{result.snippet}</p>
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+          {highlightTerms(result.snippet, terms)}
+        </p>
         <span className="mt-1 inline-block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
           {result.kind === "faq" ? "FAQ" : "Guide"}
         </span>

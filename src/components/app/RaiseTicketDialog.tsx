@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import SuggestedArticles from "@/components/kb/SuggestedArticles";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { logError } from "@/lib/logger";
@@ -40,12 +41,13 @@ export type TicketPrefill = {
   subject?: string;
   message?: string;
   priority?: "low" | "normal" | "high" | "urgent";
+  transcript?: string;
 };
 
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onSubmitted?: () => void;
+  onSubmitted?: (info: { ticketId?: string; ref?: string }) => void;
   prefill?: TicketPrefill;
 };
 
@@ -54,13 +56,17 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted, prefill }: 
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
+  const [attachTranscript, setAttachTranscript] = useState(false);
+  const [transcript, setTranscript] = useState<string>("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  const [ticketId, setTicketId] = useState<string | null>(null);
 
   const reset = () => {
     setCategory(""); setSubject(""); setMessage("");
     setPriority("normal"); setErrors({}); setSuccess(null);
+    setTranscript(""); setAttachTranscript(false); setTicketId(null);
   };
 
   // Seed values from prefill each time the dialog opens with new prefill data.
@@ -70,6 +76,13 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted, prefill }: 
     if (prefill.subject) setSubject(prefill.subject.slice(0, 120));
     if (prefill.message) setMessage(prefill.message.slice(0, 2000));
     if (prefill.priority) setPriority(prefill.priority);
+    if (prefill.transcript) {
+      setTranscript(prefill.transcript);
+      setAttachTranscript(true); // default on when supplied from chat
+    } else {
+      setTranscript("");
+      setAttachTranscript(false);
+    }
   }, [open, prefill]);
 
   const submit = async () => {
@@ -96,6 +109,15 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted, prefill }: 
         .maybeSingle();
       const profile = (profileData as any) ?? {};
 
+      // If the user opted in and we have a transcript from chat, append it to
+      // the message body. Backend only accepts message text, so we stitch it
+      // inline with a clear separator. Truncate to keep well under 8000 chars.
+      let finalMessage = message.trim();
+      if (attachTranscript && transcript.trim()) {
+        const tail = `\n\n----- CHAT TRANSCRIPT (attached by customer) -----\n${transcript.trim()}`;
+        finalMessage = `${finalMessage}${tail}`.slice(0, 8000);
+      }
+
       const { data, error } = await supabase.functions.invoke("submit-support-ticket", {
         body: {
           name: profile.full_name || user.email,
@@ -104,15 +126,17 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted, prefill }: 
           category,
           priority,
           subject: subject.trim(),
-          message: message.trim(),
+          message: finalMessage,
         },
       });
       const payload = data as { ok?: boolean; ticket_id?: string; error?: string } | null;
       if (error || !payload?.ok) throw new Error(payload?.error || error?.message || "submit_failed");
 
-      setSuccess(payload.ticket_id ? payload.ticket_id.slice(0, 8).toUpperCase() : "sent");
+      const ref = payload.ticket_id ? payload.ticket_id.slice(0, 8).toUpperCase() : "sent";
+      setSuccess(ref);
+      setTicketId(payload.ticket_id ?? null);
       toast.success("Ticket raised — we'll reply within 24 hours");
-      onSubmitted?.();
+      onSubmitted?.({ ticketId: payload.ticket_id, ref });
     } catch (err) {
       logError("RaiseTicketDialog.submit", err);
       toast.error("Couldn't raise ticket. Please try again.");
@@ -184,6 +208,34 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted, prefill }: 
               <p className="text-xs text-muted-foreground text-right">{message.length}/2000</p>
               {errors.message && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.message}</p>}
             </div>
+
+            {transcript && (
+              <div className="rounded-md border-2 border-foreground/30 bg-muted/40 p-3">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <Checkbox
+                    id="ticket-attach-transcript"
+                    checked={attachTranscript}
+                    onCheckedChange={(v) => setAttachTranscript(v === true)}
+                    aria-describedby="ticket-attach-transcript-desc"
+                  />
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium leading-none block">
+                      Attach my chat transcript
+                    </span>
+                    <span
+                      id="ticket-attach-transcript-desc"
+                      className="text-xs text-muted-foreground block"
+                    >
+                      We'll include the recent conversation with IRA so the
+                      support team has full context.
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      {transcript.length.toLocaleString()} characters
+                    </span>
+                  </div>
+                </label>
+              </div>
+            )}
 
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>

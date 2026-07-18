@@ -137,6 +137,14 @@ const defaultQuickActions = [
   { label: "Speak to support", message: "I need to speak to human support" },
 ];
 
+// Self-service links (never routed through the LLM — they take users straight
+// to the answer so they can resolve queries themselves).
+const selfServiceLinks: { label: string; href: string; icon: typeof BookOpen }[] = [
+  { label: "Help Centre", href: "/help", icon: LifeBuoy },
+  { label: "FAQ", href: "/faq", icon: HelpCircle },
+  { label: "Guides", href: "/guides", icon: BookOpen },
+];
+
 const signedInQuickActions = [
   { label: "View invoices", message: "View my invoices" },
   { label: "Track order", message: "Track my order" },

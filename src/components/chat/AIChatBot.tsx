@@ -642,14 +642,19 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
           },
           (payload) => {
             const row = (payload.new ?? {}) as {
-              from_role?: string;
-              body?: string;
+              sender_role?: string;
+              is_staff_reply?: boolean;
+              message?: string;
             };
-            if (row.from_role === "customer") return;
-            const preview = (row.body ?? "").replace(/\s+/g, " ").slice(0, 180);
+            // Only announce staff replies — skip echoes of the customer's own posts.
+            const isStaff =
+              row.is_staff_reply === true ||
+              (row.sender_role && row.sender_role !== "customer");
+            if (!isStaff) return;
+            const preview = (row.message ?? "").replace(/\s+/g, " ").slice(0, 180);
             pushSystemMessage(
               `💬 **Reply on ticket #${t.ref}:** ${preview}${
-                (row.body?.length ?? 0) > 180 ? "…" : ""
+                (row.message?.length ?? 0) > 180 ? "…" : ""
               }\n\n[Open ticket](/dashboard?tab=support&ticket=${t.id})`
             );
           }

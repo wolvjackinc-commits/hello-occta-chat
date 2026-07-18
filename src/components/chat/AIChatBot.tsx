@@ -558,11 +558,42 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       if (e.key === "Escape") {
         setIsOpen(false);
         onClose?.();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const container = chatWindowRef.current;
+      if (!container) return;
+      const focusable = container.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        last.focus();
+        e.preventDefault();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        first.focus();
+        e.preventDefault();
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [embedded, isOpen, onClose]);
+
+  // Restore focus to the trigger button when the floating chat closes.
+  useEffect(() => {
+    if (embedded) return;
+    if (!isOpen) triggerButtonRef.current?.focus();
+  }, [embedded, isOpen]);
+
+  // Announce loading + errors to screen readers via the live region.
+  useEffect(() => {
+    if (isLoading) setStatusAnnouncement("Assistant is thinking…");
+  }, [isLoading]);
+  useEffect(() => {
+    if (lastFailedMessage) setStatusAnnouncement("The last message failed to send.");
+  }, [lastFailedMessage]);
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });

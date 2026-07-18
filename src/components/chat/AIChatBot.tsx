@@ -191,9 +191,16 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   const [isAdmin, setIsAdmin] = useState(false);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentMeta[]>([]);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [ticketOpen, setTicketOpen] = useState(false);
+  const [ticketPrefill, setTicketPrefill] = useState<TicketPrefill | undefined>(undefined);
+  const [statusAnnouncement, setStatusAnnouncement] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatWindowRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const pendingMessageRef = useRef<string | null>(null);
   const sessionId = useRef(getSessionId());
   const isFreshChat = messages.length <= 1 && messages[0]?.role === "assistant";

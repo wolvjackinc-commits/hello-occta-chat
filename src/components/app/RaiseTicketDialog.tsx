@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -28,19 +28,49 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
-type Props = { open: boolean; onOpenChange: (v: boolean) => void; onSubmitted?: () => void };
+const PRIORITIES = [
+  { value: "low", label: "Low — question, no rush" },
+  { value: "normal", label: "Normal — reply within 24h" },
+  { value: "high", label: "High — service impacted" },
+  { value: "urgent", label: "Urgent — total outage" },
+];
 
-export function RaiseTicketDialog({ open, onOpenChange, onSubmitted }: Props) {
+export type TicketPrefill = {
+  category?: string;
+  subject?: string;
+  message?: string;
+  priority?: "low" | "normal" | "high" | "urgent";
+};
+
+type Props = {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSubmitted?: () => void;
+  prefill?: TicketPrefill;
+};
+
+export function RaiseTicketDialog({ open, onOpenChange, onSubmitted, prefill }: Props) {
   const [category, setCategory] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
 
   const reset = () => {
-    setCategory(""); setSubject(""); setMessage(""); setErrors({}); setSuccess(null);
+    setCategory(""); setSubject(""); setMessage("");
+    setPriority("normal"); setErrors({}); setSuccess(null);
   };
+
+  // Seed values from prefill each time the dialog opens with new prefill data.
+  useEffect(() => {
+    if (!open || !prefill) return;
+    if (prefill.category) setCategory(prefill.category);
+    if (prefill.subject) setSubject(prefill.subject.slice(0, 120));
+    if (prefill.message) setMessage(prefill.message.slice(0, 2000));
+    if (prefill.priority) setPriority(prefill.priority);
+  }, [open, prefill]);
 
   const submit = async () => {
     const parsed = schema.safeParse({ category, subject, message });
@@ -72,7 +102,7 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted }: Props) {
           email: profile.email || user.email,
           phone: profile.phone || null,
           category,
-          priority: "normal",
+          priority,
           subject: subject.trim(),
           message: message.trim(),
         },
@@ -124,6 +154,20 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted }: Props) {
                 </SelectContent>
               </Select>
               {errors.category && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.category}</p>}
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="ticket-priority">Urgency</Label>
+              <Select value={priority} onValueChange={(v) => setPriority(v as typeof priority)}>
+                <SelectTrigger id="ticket-priority">
+                  <SelectValue placeholder="Select urgency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITIES.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1">

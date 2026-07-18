@@ -100,8 +100,11 @@ import {
   Download,
   BookOpen,
   LifeBuoy,
-  HelpCircle
+  HelpCircle,
+  TicketPlus
 } from "lucide-react";
+import ChatHelpPanel from "./ChatHelpPanel";
+import { RaiseTicketDialog, type TicketPrefill } from "@/components/app/RaiseTicketDialog";
 
 type AttachmentMeta = {
   id: string;
@@ -188,9 +191,16 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   const [isAdmin, setIsAdmin] = useState(false);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentMeta[]>([]);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [ticketOpen, setTicketOpen] = useState(false);
+  const [ticketPrefill, setTicketPrefill] = useState<TicketPrefill | undefined>(undefined);
+  const [statusAnnouncement, setStatusAnnouncement] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatWindowRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const pendingMessageRef = useRef<string | null>(null);
   const sessionId = useRef(getSessionId());
   const isFreshChat = messages.length <= 1 && messages[0]?.role === "assistant";
@@ -469,6 +479,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   // their own record without waiting on an advisor.
   const handleDownloadTranscript = useCallback(() => {
     if (messages.length === 0) return;
+    setStatusAnnouncement("Preparing transcript…");
     const header = `OCCTA chat transcript\nGenerated: ${new Date().toLocaleString("en-GB")}\n${user?.email ? `Account: ${user.email}\n` : ""}\n`;
     const body = messages
       .map((m) => `[${new Date(m.createdAt).toLocaleString("en-GB")}] ${m.role === "user" ? "You" : "IRA"}: ${m.content}`)
@@ -482,7 +493,63 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+    setStatusAnnouncement(`Transcript downloaded (${messages.length} messages).`);
+    toast({
+      title: "Transcript downloaded",
+      description: `${messages.length} message${messages.length === 1 ? "" : "s"} saved to your device.`,
+    });
   }, [messages, user?.email]);
+
+  // Build a compact conversation summary for pre-filling a support ticket.
+  const buildConversationSummary = useCallback(() => {
+    const recent = messages.slice(-12).filter((m) => m.id !== "welcome");
+    if (recent.length === 0) return "";
+    const body = recent
+      .map((m) => `${m.role === "user" ? "Me" : "IRA"}: ${m.content.replace(/\s+/g, " ").trim()}`)
+      .join("\n\n");
+    return `Conversation summary from chat on ${new Date().toLocaleString("en-GB")}:\n\n${body}`.slice(0, 1800);
+  }, [messages]);
+
+  // Guess category + priority from the last few user messages so the ticket
+  // form arrives pre-filled but still editable.
+  const guessTicketPrefill = useCallback((): TicketPrefill => {
+    const text = messages
+      .filter((m) => m.role === "user")
+      .map((m) => m.content)
+      .join(" ")
+      .toLowerCase();
+    const category =
+      /broadband|internet|wi-?fi|fibre|router/.test(text) ? "broadband"
+        : /sim|mobile|roaming|esim/.test(text) ? "mobile"
+        : /landline|home phone|voice/.test(text) ? "landline"
+        : /invoice|billing|refund|charge/.test(text) ? "billing"
+        : /payment|direct debit|worldpay|card/.test(text) ? "payments"
+        : /account|login|password|profile/.test(text) ? "account"
+        : "other";
+    const priority: TicketPrefill["priority"] =
+      /(urgent|emergency|asap|no internet|not working|line down|outage)/.test(text) ? "high"
+        : /nuisance|slow|intermittent/.test(text) ? "normal"
+        : "normal";
+    const firstUser = messages.find((m) => m.role === "user")?.content ?? "";
+    const subject = firstUser.replace(/\s+/g, " ").slice(0, 80) || "Follow-up from chat with IRA";
+    return {
+      category,
+      priority,
+      subject,
+      message: buildConversationSummary(),
+    };
+  }, [messages, buildConversationSummary]);
+
+  const handleOpenTicket = useCallback(() => {
+    setTicketPrefill(guessTicketPrefill());
+    setTicketOpen(true);
+    setHelpOpen(false);
+  }, [guessTicketPrefill]);
+
+  const handleEscalateToHuman = useCallback(() => {
+    setHelpOpen(false);
+    sendMessage("I'd like to speak to a human support advisor please.");
+  }, [sendMessage]);
 
   // Escape closes the floating chat for keyboard accessibility.
   useEffect(() => {
@@ -491,11 +558,42 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       if (e.key === "Escape") {
         setIsOpen(false);
         onClose?.();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const container = chatWindowRef.current;
+      if (!container) return;
+      const focusable = container.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        last.focus();
+        e.preventDefault();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        first.focus();
+        e.preventDefault();
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [embedded, isOpen, onClose]);
+
+  // Restore focus to the trigger button when the floating chat closes.
+  useEffect(() => {
+    if (embedded) return;
+    if (!isOpen) triggerButtonRef.current?.focus();
+  }, [embedded, isOpen]);
+
+  // Announce loading + errors to screen readers via the live region.
+  useEffect(() => {
+    if (isLoading) setStatusAnnouncement("Assistant is thinking…");
+  }, [isLoading]);
+  useEffect(() => {
+    if (lastFailedMessage) setStatusAnnouncement("The last message failed to send.");
+  }, [lastFailedMessage]);
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -529,6 +627,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
         <AnimatePresence>
           {!isOpen && (
             <motion.button
+              ref={triggerButtonRef}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
@@ -537,7 +636,9 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 setIsOpen(true);
               }}
               className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all"
-              aria-label="Open chat"
+              aria-label="Open chat with IRA support assistant"
+              aria-haspopup="dialog"
+              aria-expanded={isOpen}
             >
               <MessageCircle className="w-7 h-7 text-primary-foreground" />
             </motion.button>
@@ -548,6 +649,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
         <AnimatePresence>
           {isOpen && (
             <motion.div
+              ref={chatWindowRef}
+              role="dialog"
+              aria-modal="false"
+              aria-labelledby="ira-chat-heading"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ 
                 opacity: 1, 
@@ -558,6 +663,14 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className={`fixed z-50 bg-card border-4 border-foreground shadow-[10px_10px_0_hsl(var(--foreground))] flex flex-col overflow-hidden inset-x-2 bottom-2 top-2 sm:inset-auto sm:bottom-6 sm:right-6 sm:top-auto sm:w-[420px] sm:h-[min(680px,calc(100dvh-3rem))] ${className}`}
             >
+              {/* Live region for screen-reader status updates */}
+              <div
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+              >
+                {statusAnnouncement}
+              </div>
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">
                 <div className="flex items-center gap-3 min-w-0">
@@ -565,7 +678,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     <Bot className="w-5 h-5 text-foreground" />
                   </div>
                   <div className="min-w-0">
-                    <span className="block font-display text-primary-foreground uppercase text-sm leading-none">
+                    <span
+                      id="ira-chat-heading"
+                      className="block font-display text-primary-foreground uppercase text-sm leading-none"
+                    >
                       {isAdmin ? "IRA Admin" : "IRA"}
                     </span>
                     <span className="block text-[10px] uppercase text-primary-foreground/80 mt-1 truncate">
@@ -577,9 +693,29 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                   <button
                     onClick={handleClearChat}
                     className="px-2 py-1 text-xs font-display uppercase text-primary-foreground/80 hover:text-primary-foreground"
+                    aria-label="Start a new chat"
                   >
                     New chat
                   </button>
+                  <button
+                    onClick={() => setHelpOpen((v) => !v)}
+                    className="p-1.5 hover:bg-primary-foreground/10 transition-colors"
+                    aria-label={helpOpen ? "Close Help Centre" : "Open Help Centre search"}
+                    aria-pressed={helpOpen}
+                    title="Help Centre"
+                  >
+                    <LifeBuoy className="w-4 h-4 text-primary-foreground" />
+                  </button>
+                  {!isAdmin && (
+                    <button
+                      onClick={handleOpenTicket}
+                      className="p-1.5 hover:bg-primary-foreground/10 transition-colors"
+                      aria-label="Create a support ticket from this conversation"
+                      title="Create a ticket"
+                    >
+                      <TicketPlus className="w-4 h-4 text-primary-foreground" />
+                    </button>
+                  )}
                   <button
                     onClick={handleDownloadTranscript}
                     disabled={messages.length === 0}
@@ -601,6 +737,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     )}
                   </button>
                   <button
+                    ref={closeButtonRef}
                     onClick={() => {
                       setIsOpen(false);
                       onClose?.();
@@ -615,6 +752,14 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
 
               {/* Body */}
               {!isMinimized && (
+                helpOpen ? (
+                  <ChatHelpPanel
+                    messages={messages.map((m) => ({ role: m.role, content: m.content }))}
+                    onClose={() => setHelpOpen(false)}
+                    onEscalate={handleEscalateToHuman}
+                    onCreateTicket={handleOpenTicket}
+                  />
+                ) : (
                 <>
                   {/* Messages */}
                   <ScrollArea className="flex-1 p-5 bg-background">
@@ -730,6 +875,36 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                           </div>
                         )}
                         <div ref={messagesEndRef} />
+                        {!isAdmin && messages.length >= 3 && !isLoading && (
+                          <div className="mt-4 border-2 border-foreground/40 bg-muted/30 p-3">
+                            <p className="text-[10px] font-display uppercase tracking-wider text-muted-foreground mb-2">
+                              Need more than a chat answer?
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setHelpOpen(true)}
+                                className="text-xs font-display uppercase border-2 border-foreground px-2.5 py-1.5 bg-background hover:bg-foreground hover:text-background transition-colors"
+                              >
+                                Browse Help Centre
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleEscalateToHuman}
+                                className="text-xs font-display uppercase border-2 border-foreground px-2.5 py-1.5 bg-background hover:bg-foreground hover:text-background transition-colors"
+                              >
+                                Talk to a human
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleOpenTicket}
+                                className="text-xs font-display uppercase border-2 border-foreground px-2.5 py-1.5 bg-foreground text-background hover:bg-foreground/90 transition-colors"
+                              >
+                                Create a ticket
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </ScrollArea>
@@ -813,10 +988,16 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     )}
                   </form>
                 </>
+                )
               )}
             </motion.div>
           )}
         </AnimatePresence>
+        <RaiseTicketDialog
+          open={ticketOpen}
+          onOpenChange={setTicketOpen}
+          prefill={ticketPrefill}
+        />
       </>
     );
   }

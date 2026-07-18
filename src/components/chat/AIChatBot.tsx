@@ -875,6 +875,25 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 </button>
               ))}
             </div>
+            {!isAdmin && (
+              <div className="border-2 border-foreground/30 p-3">
+                <p className="text-[10px] font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Self-service
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selfServiceLinks.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs border-2 border-foreground/40 hover:border-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <link.icon className="w-3.5 h-3.5" />
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-3">

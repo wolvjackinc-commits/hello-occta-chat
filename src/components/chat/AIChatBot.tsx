@@ -96,7 +96,11 @@ import {
   Loader2,
   Minimize2,
   Maximize2,
-  Paperclip
+  Paperclip,
+  Download,
+  BookOpen,
+  LifeBuoy,
+  HelpCircle
 } from "lucide-react";
 
 type AttachmentMeta = {

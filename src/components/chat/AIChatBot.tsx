@@ -195,6 +195,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   const [ticketOpen, setTicketOpen] = useState(false);
   const [ticketPrefill, setTicketPrefill] = useState<TicketPrefill | undefined>(undefined);
   const [statusAnnouncement, setStatusAnnouncement] = useState("");
+  // Tickets the user has raised from this chat that we now watch for updates.
+  const [trackedTickets, setTrackedTickets] = useState<
+    { id: string; ref: string; lastStatus?: string }[]
+  >([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -510,6 +514,20 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     return `Conversation summary from chat on ${new Date().toLocaleString("en-GB")}:\n\n${body}`.slice(0, 1800);
   }, [messages]);
 
+  // Full plain-text transcript for optional ticket attachment.
+  const buildFullTranscript = useCallback(() => {
+    const rows = messages.filter((m) => m.id !== "welcome");
+    if (rows.length === 0) return "";
+    return rows
+      .map(
+        (m) =>
+          `[${new Date(m.createdAt).toLocaleString("en-GB")}] ${
+            m.role === "user" ? "Me" : "IRA"
+          }: ${m.content.trim()}`
+      )
+      .join("\n\n");
+  }, [messages]);
+
   // Guess category + priority from the last few user messages so the ticket
   // form arrives pre-filled but still editable.
   const guessTicketPrefill = useCallback((): TicketPrefill => {
@@ -537,14 +555,112 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       priority,
       subject,
       message: buildConversationSummary(),
+      transcript: buildFullTranscript(),
     };
-  }, [messages, buildConversationSummary]);
+  }, [messages, buildConversationSummary, buildFullTranscript]);
 
   const handleOpenTicket = useCallback(() => {
     setTicketPrefill(guessTicketPrefill());
     setTicketOpen(true);
     setHelpOpen(false);
   }, [guessTicketPrefill]);
+
+  // Push a system-style assistant message into the chat (used for ticket
+  // status updates so the user gets them where they already are).
+  const pushSystemMessage = useCallback((content: string) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+  }, []);
+
+  const handleTicketSubmitted = useCallback(
+    ({ ticketId, ref }: { ticketId?: string; ref?: string }) => {
+      if (!ticketId || !ref) return;
+      setTrackedTickets((prev) =>
+        prev.some((t) => t.id === ticketId) ? prev : [...prev, { id: ticketId, ref }]
+      );
+      pushSystemMessage(
+        `✅ **Ticket #${ref} created.** I'll post updates from our team here as they come in.\n\n[Open ticket details](/dashboard?tab=support&ticket=${ticketId})`
+      );
+      setStatusAnnouncement(`Ticket ${ref} created.`);
+    },
+    [pushSystemMessage]
+  );
+
+  // Subscribe to each tracked ticket's row + messages so the user sees status
+  // and reply updates inside the chat without leaving the page.
+  useEffect(() => {
+    if (trackedTickets.length === 0) return;
+    const channels = trackedTickets.map((t) => {
+      const ch = supabase
+        .channel(`chat-ticket-${t.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "support_tickets",
+            filter: `id=eq.${t.id}`,
+          },
+          (payload) => {
+            const row = (payload.new ?? {}) as { status?: string };
+            const nextStatus = row.status;
+            if (!nextStatus) return;
+            setTrackedTickets((prev) =>
+              prev.map((x) =>
+                x.id === t.id ? { ...x, lastStatus: nextStatus } : x
+              )
+            );
+            const label =
+              nextStatus === "resolved"
+                ? "resolved ✅"
+                : nextStatus === "in_progress"
+                ? "in progress 🛠️"
+                : nextStatus === "waiting_customer"
+                ? "waiting on you ✋"
+                : nextStatus === "closed"
+                ? "closed"
+                : nextStatus;
+            pushSystemMessage(
+              `🔔 **Ticket #${t.ref} update:** status is now **${label}**.\n\n[Open ticket](/dashboard?tab=support&ticket=${t.id})`
+            );
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "ticket_messages",
+            filter: `ticket_id=eq.${t.id}`,
+          },
+          (payload) => {
+            const row = (payload.new ?? {}) as {
+              from_role?: string;
+              body?: string;
+            };
+            if (row.from_role === "customer") return;
+            const preview = (row.body ?? "").replace(/\s+/g, " ").slice(0, 180);
+            pushSystemMessage(
+              `💬 **Reply on ticket #${t.ref}:** ${preview}${
+                (row.body?.length ?? 0) > 180 ? "…" : ""
+              }\n\n[Open ticket](/dashboard?tab=support&ticket=${t.id})`
+            );
+          }
+        )
+        .subscribe();
+      return ch;
+    });
+    return () => {
+      channels.forEach((ch) => supabase.removeChannel(ch));
+    };
+  }, [trackedTickets, pushSystemMessage]);
 
   const handleEscalateToHuman = useCallback(() => {
     setHelpOpen(false);

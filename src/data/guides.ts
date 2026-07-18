@@ -984,6 +984,85 @@ export const guides: Guide[] = [
   },
 ];
 
+guides.push({
+  slug: 'avoiding-broadband-price-rises',
+  title: 'How to Avoid Broadband Price Rises (UK 2026 Guide)',
+  metaTitle: 'Avoid Broadband Price Rises UK — Price Lock Explained',
+  description: 'UK broadband bills keep going up mid-contract. Learn how annual CPI+ price rises work, which providers apply them, and how a Price Lock protects you.',
+  keywords: 'broadband price lock, no price rise broadband, avoid broadband price rise, broadband price increase UK, CPI broadband, fixed price broadband UK',
+  category: 'broadband',
+  categoryLabel: 'Broadband',
+  intro: 'Most big UK broadband providers raise their prices every April — often by CPI + 3.9% — even if you signed a two-year contract. Here is exactly how these price rises work, why they happen, and how to avoid them entirely with a genuine Price Lock plan.',
+  sections: [
+    {
+      heading: 'How UK broadband price rises actually work',
+      paragraphs: [
+        'Most big providers — BT, EE, Sky, TalkTalk, Vodafone, Virgin Media — bake an annual price rise into the contract you sign. Historically this was linked to CPI or RPI inflation plus a fixed uplift (commonly 3.9%). From 2025 Ofcom rules require the rise to be shown in pounds and pence up front, but the rise still lands every year.',
+        'That means the "£29.99 a month" headline you signed up for can climb by £3–£5 every April, and you cannot leave penalty-free — the rise is contractual, so it is not treated as a "material change".',
+      ],
+    },
+    {
+      heading: 'Which providers still apply annual price rises?',
+      paragraphs: [
+        'As of 2026, annual in-contract price rises are standard at:',
+      ],
+      bullets: [
+        'BT and EE — fixed £3/month uplift each April on most home broadband plans.',
+        'Sky and NOW Broadband — pounds-and-pence rises confirmed at sign-up.',
+        'TalkTalk — annual CPI-linked adjustments on legacy plans.',
+        'Vodafone — fixed £2/month uplift on Pro II plans.',
+        'Virgin Media — RPI + 3.9% historically; now shown as a fixed pound amount.',
+      ],
+    },
+    {
+      heading: 'How OCCTA Price Lock 24 protects you',
+      paragraphs: [
+        'OCCTA Price Lock 24 is exactly what it sounds like: the monthly price you sign up for is the price you pay for the full 24-month term. No CPI clause, no April uplift, no small-print inflation adjustment.',
+        'If you prefer no minimum term, Flex 30 gives you a 30-day rolling option (where eligible) — you can leave any month without an exit fee. Either way, we will not push a mid-contract price rise onto you.',
+      ],
+    },
+    {
+      heading: 'Practical steps to avoid a price rise this year',
+      paragraphs: [
+        'You do not have to accept the annual hike. Here is what actually works:',
+      ],
+      bullets: [
+        'Check your contract end date — if you are out of your minimum term you can switch penalty-free.',
+        'Move to a Price Lock provider before the April uplift lands to bank the saving for a full year.',
+        'Use the One Touch Switch process — your new provider handles the switch and cancels the old service for you.',
+        'Keep the router you paid for; most providers do not require you to return it after 24 months.',
+      ],
+    },
+  ],
+  faqs: [
+    {
+      question: 'Can broadband providers raise my price during a contract?',
+      answer: 'Yes — most large UK providers include an annual price rise clause in the contract. Because you agreed to it at sign-up, Ofcom does not treat it as a material change, so you cannot exit penalty-free when it lands.',
+    },
+    {
+      question: 'What is a Price Lock broadband plan?',
+      answer: 'A Price Lock plan fixes your monthly broadband price for the entire contract term. OCCTA Price Lock 24 fixes the price for 24 months — no inflation clause, no April uplift.',
+    },
+    {
+      question: 'Is no-contract broadband cheaper than fixed price broadband?',
+      answer: 'Rolling monthly plans usually cost slightly more per month than a 24-month fixed price plan, but you keep the flexibility to leave any month. If price stability matters more than flexibility, a Price Lock 24 plan is normally the cheaper long-term choice.',
+    },
+    {
+      question: 'When do UK broadband price rises usually happen?',
+      answer: 'Most major providers apply their annual price rise in April, aligned to their published pricing calendar. The exact date is disclosed in your contract summary.',
+    },
+    {
+      question: 'Can I leave my provider if they raise the price?',
+      answer: 'Only if the rise was not disclosed at sign-up. If it was written into your contract in pounds and pence (as Ofcom now requires), you cannot leave penalty-free — but you can switch the day your minimum term ends.',
+    },
+  ],
+  datePublished: '2026-07-18',
+  dateModified: '2026-07-18',
+  ctaText: 'See Price Lock 24 plans at my address',
+  ctaLink: '/broadband',
+  relatedSlugs: ['no-contract-broadband-uk', 'cheap-broadband-uk', 'how-to-switch-broadband-uk'],
+});
+
 export const getGuideBySlug = (slug: string): Guide | undefined =>
   guides.find((g) => g.slug === slug);
 

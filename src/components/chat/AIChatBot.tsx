@@ -627,6 +627,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
         <AnimatePresence>
           {!isOpen && (
             <motion.button
+              ref={triggerButtonRef}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
@@ -635,7 +636,9 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 setIsOpen(true);
               }}
               className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all"
-              aria-label="Open chat"
+              aria-label="Open chat with IRA support assistant"
+              aria-haspopup="dialog"
+              aria-expanded={isOpen}
             >
               <MessageCircle className="w-7 h-7 text-primary-foreground" />
             </motion.button>
@@ -646,6 +649,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
         <AnimatePresence>
           {isOpen && (
             <motion.div
+              ref={chatWindowRef}
+              role="dialog"
+              aria-modal="false"
+              aria-labelledby="ira-chat-heading"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ 
                 opacity: 1, 
@@ -656,6 +663,14 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className={`fixed z-50 bg-card border-4 border-foreground shadow-[10px_10px_0_hsl(var(--foreground))] flex flex-col overflow-hidden inset-x-2 bottom-2 top-2 sm:inset-auto sm:bottom-6 sm:right-6 sm:top-auto sm:w-[420px] sm:h-[min(680px,calc(100dvh-3rem))] ${className}`}
             >
+              {/* Live region for screen-reader status updates */}
+              <div
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+              >
+                {statusAnnouncement}
+              </div>
               {/* Header */}
               <div className="bg-primary px-4 py-3 flex items-center justify-between border-b-4 border-foreground">
                 <div className="flex items-center gap-3 min-w-0">
@@ -663,7 +678,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     <Bot className="w-5 h-5 text-foreground" />
                   </div>
                   <div className="min-w-0">
-                    <span className="block font-display text-primary-foreground uppercase text-sm leading-none">
+                    <span
+                      id="ira-chat-heading"
+                      className="block font-display text-primary-foreground uppercase text-sm leading-none"
+                    >
                       {isAdmin ? "IRA Admin" : "IRA"}
                     </span>
                     <span className="block text-[10px] uppercase text-primary-foreground/80 mt-1 truncate">
@@ -675,9 +693,29 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                   <button
                     onClick={handleClearChat}
                     className="px-2 py-1 text-xs font-display uppercase text-primary-foreground/80 hover:text-primary-foreground"
+                    aria-label="Start a new chat"
                   >
                     New chat
                   </button>
+                  <button
+                    onClick={() => setHelpOpen((v) => !v)}
+                    className="p-1.5 hover:bg-primary-foreground/10 transition-colors"
+                    aria-label={helpOpen ? "Close Help Centre" : "Open Help Centre search"}
+                    aria-pressed={helpOpen}
+                    title="Help Centre"
+                  >
+                    <LifeBuoy className="w-4 h-4 text-primary-foreground" />
+                  </button>
+                  {!isAdmin && (
+                    <button
+                      onClick={handleOpenTicket}
+                      className="p-1.5 hover:bg-primary-foreground/10 transition-colors"
+                      aria-label="Create a support ticket from this conversation"
+                      title="Create a ticket"
+                    >
+                      <TicketPlus className="w-4 h-4 text-primary-foreground" />
+                    </button>
+                  )}
                   <button
                     onClick={handleDownloadTranscript}
                     disabled={messages.length === 0}
@@ -699,6 +737,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     )}
                   </button>
                   <button
+                    ref={closeButtonRef}
                     onClick={() => {
                       setIsOpen(false);
                       onClose?.();
@@ -713,6 +752,14 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
 
               {/* Body */}
               {!isMinimized && (
+                helpOpen ? (
+                  <ChatHelpPanel
+                    messages={messages.map((m) => ({ role: m.role, content: m.content }))}
+                    onClose={() => setHelpOpen(false)}
+                    onEscalate={handleEscalateToHuman}
+                    onCreateTicket={handleOpenTicket}
+                  />
+                ) : (
                 <>
                   {/* Messages */}
                   <ScrollArea className="flex-1 p-5 bg-background">

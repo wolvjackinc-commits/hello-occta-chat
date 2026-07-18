@@ -157,6 +157,20 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted, prefill }: 
             </div>
 
             <div className="space-y-1">
+              <Label htmlFor="ticket-priority">Urgency</Label>
+              <Select value={priority} onValueChange={(v) => setPriority(v as typeof priority)}>
+                <SelectTrigger id="ticket-priority">
+                  <SelectValue placeholder="Select urgency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITIES.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
               <Label htmlFor="ticket-subject">Subject</Label>
               <Input id="ticket-subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Short summary" maxLength={120} aria-invalid={!!errors.subject} />
               {errors.subject && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.subject}</p>}

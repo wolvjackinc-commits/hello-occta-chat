@@ -104,6 +104,7 @@ import {
   TicketPlus
 } from "lucide-react";
 import ChatHelpPanel from "./ChatHelpPanel";
+import { useFocusTrap } from "./useFocusTrap";
 import { RaiseTicketDialog, type TicketPrefill } from "@/components/app/RaiseTicketDialog";
 
 type AttachmentMeta = {
@@ -672,35 +673,15 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     sendMessage("I'd like to speak to a human support advisor please.");
   }, [sendMessage]);
 
-  // Escape closes the floating chat for keyboard accessibility.
-  useEffect(() => {
-    if (embedded || !isOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsOpen(false);
-        onClose?.();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const container = chatWindowRef.current;
-      if (!container) return;
-      const focusable = container.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        last.focus();
-        e.preventDefault();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        first.focus();
-        e.preventDefault();
-      }
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [embedded, isOpen, onClose]);
+  // Escape closes the floating chat + Tab/Shift+Tab stays inside it.
+  useFocusTrap({
+    active: !embedded && isOpen,
+    container: chatWindowRef,
+    onEscape: useCallback(() => {
+      setIsOpen(false);
+      onClose?.();
+    }, [onClose]),
+  });
 
   // Restore focus to the trigger button when the floating chat closes.
   useEffect(() => {

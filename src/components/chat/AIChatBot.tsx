@@ -581,6 +581,15 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     New chat
                   </button>
                   <button
+                    onClick={handleDownloadTranscript}
+                    disabled={messages.length === 0}
+                    className="p-1.5 hover:bg-primary-foreground/10 transition-colors disabled:opacity-40"
+                    aria-label="Download chat transcript"
+                    title="Download transcript"
+                  >
+                    <Download className="w-4 h-4 text-primary-foreground" />
+                  </button>
+                  <button
                     onClick={() => setIsMinimized(!isMinimized)}
                     className="p-1.5 hover:bg-primary-foreground/10 transition-colors"
                     aria-label={isMinimized ? "Maximize" : "Minimize"}

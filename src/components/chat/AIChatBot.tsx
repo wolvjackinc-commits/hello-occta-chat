@@ -96,7 +96,11 @@ import {
   Loader2,
   Minimize2,
   Maximize2,
-  Paperclip
+  Paperclip,
+  Download,
+  BookOpen,
+  LifeBuoy,
+  HelpCircle
 } from "lucide-react";
 
 type AttachmentMeta = {
@@ -131,6 +135,14 @@ const defaultQuickActions = [
   { label: "SIM only", message: "What SIM-only plans do you offer?" },
   { label: "Switch to OCCTA", message: "How do I switch to OCCTA from my current provider?" },
   { label: "Speak to support", message: "I need to speak to human support" },
+];
+
+// Self-service links (never routed through the LLM — they take users straight
+// to the answer so they can resolve queries themselves).
+const selfServiceLinks: { label: string; href: string; icon: typeof BookOpen }[] = [
+  { label: "Help Centre", href: "/help", icon: LifeBuoy },
+  { label: "FAQ", href: "/faq", icon: HelpCircle },
+  { label: "Guides", href: "/guides", icon: BookOpen },
 ];
 
 const signedInQuickActions = [
@@ -453,6 +465,38 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     setLastFailedMessage(null);
   };
 
+  // Download the current chat transcript as a .txt file so customers can keep
+  // their own record without waiting on an advisor.
+  const handleDownloadTranscript = useCallback(() => {
+    if (messages.length === 0) return;
+    const header = `OCCTA chat transcript\nGenerated: ${new Date().toLocaleString("en-GB")}\n${user?.email ? `Account: ${user.email}\n` : ""}\n`;
+    const body = messages
+      .map((m) => `[${new Date(m.createdAt).toLocaleString("en-GB")}] ${m.role === "user" ? "You" : "IRA"}: ${m.content}`)
+      .join("\n\n");
+    const blob = new Blob([header + body], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `occta-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [messages, user?.email]);
+
+  // Escape closes the floating chat for keyboard accessibility.
+  useEffect(() => {
+    if (embedded || !isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+        onClose?.();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [embedded, isOpen, onClose]);
+
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -537,6 +581,15 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                     New chat
                   </button>
                   <button
+                    onClick={handleDownloadTranscript}
+                    disabled={messages.length === 0}
+                    className="p-1.5 hover:bg-primary-foreground/10 transition-colors disabled:opacity-40"
+                    aria-label="Download chat transcript"
+                    title="Download transcript"
+                  >
+                    <Download className="w-4 h-4 text-primary-foreground" />
+                  </button>
+                  <button
                     onClick={() => setIsMinimized(!isMinimized)}
                     className="p-1.5 hover:bg-primary-foreground/10 transition-colors"
                     aria-label={isMinimized ? "Maximize" : "Minimize"}
@@ -592,6 +645,25 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                             </button>
                           ))}
                         </div>
+                        {!isAdmin && (
+                          <div className="border-2 border-foreground/60 bg-muted/30 p-3">
+                            <p className="text-[10px] font-display uppercase tracking-wider text-muted-foreground mb-2">
+                              Self-service — get answers instantly
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {selfServiceLinks.map((link) => (
+                                <a
+                                  key={link.href}
+                                  href={link.href}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-display uppercase border-2 border-foreground bg-background hover:bg-foreground hover:text-background transition-colors"
+                                >
+                                  <link.icon className="w-3.5 h-3.5" />
+                                  {link.label}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -803,6 +875,25 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 </button>
               ))}
             </div>
+            {!isAdmin && (
+              <div className="border-2 border-foreground/30 p-3">
+                <p className="text-[10px] font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Self-service
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selfServiceLinks.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs border-2 border-foreground/40 hover:border-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <link.icon className="w-3.5 h-3.5" />
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-3">

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,9 @@ type SessionSummary = {
 
 export function AdminChatTranscripts() {
   const [search, setSearch] = useState("");
+  const [range, setRange] = useState<"24h" | "7d" | "30d" | "all">("7d");
+  const [audience, setAudience] = useState<"all" | "guest" | "customer">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | "download" | "email" | "escalate">(null);
 
@@ -125,11 +129,27 @@ export function AdminChatTranscripts() {
     return Array.from(map.values()).sort((a, b) => b.last_at.localeCompare(a.last_at));
   }, [rows, profileMap]);
 
+  const allCategories = useMemo(() => {
+    const s = new Set<string>();
+    sessions.forEach((sess) => sess.categories.forEach((c) => s.add(c)));
+    return Array.from(s).sort();
+  }, [sessions]);
+
+  const cutoffMs = useMemo(() => {
+    if (range === "all") return 0;
+    const map = { "24h": 24, "7d": 24 * 7, "30d": 24 * 30 } as const;
+    return Date.now() - map[range] * 60 * 60 * 1000;
+  }, [range]);
+
   const filteredSessions = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return sessions;
-    return sessions.filter((s) =>
-      [
+    return sessions.filter((s) => {
+      if (cutoffMs && new Date(s.last_at).getTime() < cutoffMs) return false;
+      if (audience === "guest" && s.user_id) return false;
+      if (audience === "customer" && !s.user_id) return false;
+      if (categoryFilter !== "all" && !s.categories.includes(categoryFilter)) return false;
+      if (!q) return true;
+      return [
         s.session_id,
         s.user_email ?? "",
         s.last_user_message,
@@ -138,9 +158,9 @@ export function AdminChatTranscripts() {
       ]
         .join(" ")
         .toLowerCase()
-        .includes(q)
-    );
-  }, [sessions, search]);
+        .includes(q);
+    });
+  }, [sessions, search, cutoffMs, audience, categoryFilter]);
 
   // Always fetch the FULL session (not just what's in the capped recent rows),
   // so admins can see and download every message even on long conversations.
@@ -229,14 +249,47 @@ export function AdminChatTranscripts() {
 
       <Card className="rounded-none border-2 border-foreground">
         <CardHeader className="border-b-2 border-foreground bg-muted/30 py-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search transcripts by message, email, category, intent…"
-              className="pl-9 rounded-none border-2"
-            />
+          <div className="space-y-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search transcripts by message, email, category, intent…"
+                className="pl-9 rounded-none border-2"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Select value={range} onValueChange={(v) => setRange(v as typeof range)}>
+                <SelectTrigger className="rounded-none border-2 h-9 w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="24h">Last 24 hours</SelectItem>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="all">All time</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={audience} onValueChange={(v) => setAudience(v as typeof audience)}>
+                <SelectTrigger className="rounded-none border-2 h-9 w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sessions</SelectItem>
+                  <SelectItem value="customer">Signed-in only</SelectItem>
+                  <SelectItem value="guest">Guests only</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="rounded-none border-2 h-9 w-[160px]"><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {allCategories.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-muted-foreground ml-auto">
+                {filteredSessions.length} of {sessions.length} sessions
+              </span>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

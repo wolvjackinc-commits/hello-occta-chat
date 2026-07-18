@@ -465,6 +465,38 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     setLastFailedMessage(null);
   };
 
+  // Download the current chat transcript as a .txt file so customers can keep
+  // their own record without waiting on an advisor.
+  const handleDownloadTranscript = useCallback(() => {
+    if (messages.length === 0) return;
+    const header = `OCCTA chat transcript\nGenerated: ${new Date().toLocaleString("en-GB")}\n${user?.email ? `Account: ${user.email}\n` : ""}\n`;
+    const body = messages
+      .map((m) => `[${new Date(m.createdAt).toLocaleString("en-GB")}] ${m.role === "user" ? "You" : "IRA"}: ${m.content}`)
+      .join("\n\n");
+    const blob = new Blob([header + body], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `occta-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [messages, user?.email]);
+
+  // Escape closes the floating chat for keyboard accessibility.
+  useEffect(() => {
+    if (embedded || !isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+        onClose?.();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [embedded, isOpen, onClose]);
+
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 

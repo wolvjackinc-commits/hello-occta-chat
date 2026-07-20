@@ -64,7 +64,7 @@ const BusinessSupport = () => {
       .select("*")
       .eq("ticket_id", t.id)
       .order("created_at", { ascending: false });
-    setActivity((data ?? []) as Activity[]);
+    setActivity(((data ?? []) as unknown) as Activity[]);
     setActivityLoading(false);
   };
 

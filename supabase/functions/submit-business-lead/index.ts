@@ -18,6 +18,18 @@ const BodySchema = z.object({
   message: z.string().max(2000).optional().nullable(),
   source: z.string().max(100).optional().nullable(),
   consent: z.boolean().optional(),
+  // Extended fields
+  sla_preference: z.enum(["standard", "priority", "enhanced"]).optional(),
+  secondary_contact_name: z.string().max(200).optional().nullable(),
+  secondary_contact_email: z.string().email().max(200).optional().nullable().or(z.literal("")),
+  secondary_contact_phone: z.string().max(50).optional().nullable(),
+  billing_contact_name: z.string().max(200).optional().nullable(),
+  billing_contact_email: z.string().email().max(200).optional().nullable().or(z.literal("")),
+  billing_contact_phone: z.string().max(50).optional().nullable(),
+  site_address_line1: z.string().max(200).optional().nullable(),
+  site_address_line2: z.string().max(200).optional().nullable(),
+  site_city: z.string().max(100).optional().nullable(),
+  site_postcode: z.string().max(20).optional().nullable(),
 });
 
 function escapeHtml(s: string) {
@@ -37,6 +49,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: parsed.error.flatten().fieldErrors }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const { consent: _c, ...lead } = parsed.data;
+    // Normalise empty strings to null so validation/CHECK constraints stay happy.
+    const cleaned = Object.fromEntries(
+      Object.entries(lead).map(([k, v]) => [k, v === "" ? null : v]),
+    ) as typeof lead;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -45,7 +61,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from("business_leads")
-      .insert({ ...lead, status: "new" })
+      .insert({ ...cleaned, status: "new" })
       .select("id")
       .single();
 
@@ -65,6 +81,10 @@ Deno.serve(async (req) => {
             <p><strong>Company:</strong> ${escapeHtml(lead.company_name)}</p>
             <p><strong>Contact:</strong> ${escapeHtml(lead.contact_name)} — ${escapeHtml(lead.email)}${lead.phone ? " · " + escapeHtml(lead.phone) : ""}</p>
             <p><strong>Postcode:</strong> ${escapeHtml(lead.postcode ?? "—")} · <strong>Team:</strong> ${escapeHtml(lead.team_size ?? "—")} · <strong>Interest:</strong> ${escapeHtml(lead.interest ?? "—")}</p>
+            <p><strong>SLA preference:</strong> ${escapeHtml(lead.sla_preference ?? "standard")}</p>
+            ${lead.billing_contact_name || lead.billing_contact_email ? `<p><strong>Billing contact:</strong> ${escapeHtml(lead.billing_contact_name ?? "")} — ${escapeHtml(lead.billing_contact_email ?? "")}</p>` : ""}
+            ${lead.secondary_contact_name ? `<p><strong>Secondary contact:</strong> ${escapeHtml(lead.secondary_contact_name)} — ${escapeHtml(lead.secondary_contact_email ?? "")}</p>` : ""}
+            ${lead.site_address_line1 ? `<p><strong>Site:</strong> ${escapeHtml(lead.site_address_line1)}${lead.site_address_line2 ? ", " + escapeHtml(lead.site_address_line2) : ""}, ${escapeHtml(lead.site_city ?? "")} ${escapeHtml(lead.site_postcode ?? "")}</p>` : ""}
             <p><strong>Message:</strong><br/>${escapeHtml(lead.message ?? "—").replace(/\n/g, "<br/>")}</p>
             <p><strong>Source:</strong> ${escapeHtml(lead.source ?? "—")}</p>`,
         },

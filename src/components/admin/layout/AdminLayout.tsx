@@ -81,6 +81,7 @@ const navSections: NavSection[] = [
     label: "Sales", icon: Inbox, children: [
       { label: "Quote Requests", to: "/admin/quote-requests" },
       { label: "Quotes",         to: "/admin/quotes" },
+      { label: "Business Leads", to: "/admin/business-leads" },
       ...(FEATURE_CAMPAIGNS ? [{ label: "Campaigns", to: "/admin/campaigns" }] : []),
     ],
   },

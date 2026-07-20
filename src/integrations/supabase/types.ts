@@ -647,6 +647,115 @@ export type Database = {
         }
         Relationships: []
       }
+      business_leads: {
+        Row: {
+          assigned_to: string | null
+          company_name: string
+          company_size: string | null
+          contact_name: string
+          created_at: string
+          email: string
+          id: string
+          internal_notes: string | null
+          message: string | null
+          phone: string | null
+          services: string[]
+          site_count: number
+          source: string | null
+          status: string
+          updated_at: string
+          utm: Json | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          company_name: string
+          company_size?: string | null
+          contact_name: string
+          created_at?: string
+          email: string
+          id?: string
+          internal_notes?: string | null
+          message?: string | null
+          phone?: string | null
+          services?: string[]
+          site_count?: number
+          source?: string | null
+          status?: string
+          updated_at?: string
+          utm?: Json | null
+        }
+        Update: {
+          assigned_to?: string | null
+          company_name?: string
+          company_size?: string | null
+          contact_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          internal_notes?: string | null
+          message?: string | null
+          phone?: string | null
+          services?: string[]
+          site_count?: number
+          source?: string | null
+          status?: string
+          updated_at?: string
+          utm?: Json | null
+        }
+        Relationships: []
+      }
+      business_users: {
+        Row: {
+          business_profile_id: string
+          created_at: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["business_user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_profile_id: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["business_user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_profile_id?: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["business_user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_users_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_users_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_users_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_drafts: {
         Row: {
           active: boolean
@@ -4388,6 +4497,9 @@ export type Database = {
           admin_notes: string | null
           billing_anchor_day: number | null
           billing_start_rule: string | null
+          business_billing_contact: string | null
+          business_po_number: string | null
+          business_tech_contact: string | null
           cancellation_preview: Json | null
           cancellation_requested_at: string | null
           cease_date: string | null
@@ -4431,6 +4543,7 @@ export type Database = {
           preferred_start_date: string | null
           quote_id: string | null
           router_reference: string | null
+          seats: number | null
           service_components_snapshot: Json | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["order_status"]
@@ -4446,6 +4559,9 @@ export type Database = {
           admin_notes?: string | null
           billing_anchor_day?: number | null
           billing_start_rule?: string | null
+          business_billing_contact?: string | null
+          business_po_number?: string | null
+          business_tech_contact?: string | null
           cancellation_preview?: Json | null
           cancellation_requested_at?: string | null
           cease_date?: string | null
@@ -4489,6 +4605,7 @@ export type Database = {
           preferred_start_date?: string | null
           quote_id?: string | null
           router_reference?: string | null
+          seats?: number | null
           service_components_snapshot?: Json | null
           service_type: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
@@ -4504,6 +4621,9 @@ export type Database = {
           admin_notes?: string | null
           billing_anchor_day?: number | null
           billing_start_rule?: string | null
+          business_billing_contact?: string | null
+          business_po_number?: string | null
+          business_tech_contact?: string | null
           cancellation_preview?: Json | null
           cancellation_requested_at?: string | null
           cease_date?: string | null
@@ -4547,6 +4667,7 @@ export type Database = {
           preferred_start_date?: string | null
           quote_id?: string | null
           router_reference?: string | null
+          seats?: number | null
           service_components_snapshot?: Json | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
@@ -5265,12 +5386,17 @@ export type Database = {
       profiles: {
         Row: {
           account_number: string | null
+          account_type: string
           address_line1: string | null
           address_line2: string | null
           admin_notes: string | null
           archived_at: string | null
           archived_by: string | null
           archived_reason: string | null
+          business_company_name: string | null
+          business_company_number: string | null
+          business_trading_name: string | null
+          business_vat_number: string | null
           city: string | null
           consent_updated_at: string | null
           created_at: string
@@ -5288,12 +5414,17 @@ export type Database = {
         }
         Insert: {
           account_number?: string | null
+          account_type?: string
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
           archived_at?: string | null
           archived_by?: string | null
           archived_reason?: string | null
+          business_company_name?: string | null
+          business_company_number?: string | null
+          business_trading_name?: string | null
+          business_vat_number?: string | null
           city?: string | null
           consent_updated_at?: string | null
           created_at?: string
@@ -5311,12 +5442,17 @@ export type Database = {
         }
         Update: {
           account_number?: string | null
+          account_type?: string
           address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
           archived_at?: string | null
           archived_by?: string | null
           archived_reason?: string | null
+          business_company_name?: string | null
+          business_company_number?: string | null
+          business_trading_name?: string | null
+          business_vat_number?: string | null
           city?: string | null
           consent_updated_at?: string | null
           created_at?: string
@@ -9985,6 +10121,14 @@ export type Database = {
         Returns: boolean
       }
       has_billing_access: { Args: never; Returns: boolean }
+      has_business_role: {
+        Args: {
+          _business_profile_id: string
+          _role: Database["public"]["Enums"]["business_user_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_compliance_access: { Args: { _user_id: string }; Returns: boolean }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_marketing_access: { Args: { _user_id: string }; Returns: boolean }
@@ -10118,6 +10262,7 @@ export type Database = {
         | "auditor"
       benefit_customer_type: "residential" | "business" | "both"
       benefit_plan_type: "flex" | "contract_saver" | "both"
+      business_user_role: "owner" | "billing" | "tech" | "viewer"
       campaign_approval_status:
         | "draft"
         | "margin_check"
@@ -10448,6 +10593,7 @@ export const Constants = {
       ],
       benefit_customer_type: ["residential", "business", "both"],
       benefit_plan_type: ["flex", "contract_saver", "both"],
+      business_user_role: ["owner", "billing", "tech", "viewer"],
       campaign_approval_status: [
         "draft",
         "margin_check",

@@ -83,6 +83,17 @@
   <url><loc>https://www.occta.co.uk/legal/price-transparency</loc><lastmod>2026-07-11</lastmod><changefreq>yearly</changefreq><priority>0.50</priority></url>
   <url><loc>https://www.occta.co.uk/legal/switching-policy</loc><lastmod>2026-07-11</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
   <url><loc>https://www.occta.co.uk/legal/network-management</loc><lastmod>2026-07-11</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.occta.co.uk/business</loc><lastmod>2026-07-20</lastmod><changefreq>weekly</changefreq><priority>0.90</priority></url>
+  <url><loc>https://www.occta.co.uk/business/broadband</loc><lastmod>2026-07-20</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://www.occta.co.uk/business/voice</loc><lastmod>2026-07-20</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://www.occta.co.uk/business/sim</loc><lastmod>2026-07-20</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://www.occta.co.uk/business/bundles</loc><lastmod>2026-07-20</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://www.occta.co.uk/business/contact-sales</loc><lastmod>2026-07-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/business/industries/cafes</loc><lastmod>2026-07-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/business/industries/salons</loc><lastmod>2026-07-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/business/industries/offices</loc><lastmod>2026-07-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/business/industries/studios</loc><lastmod>2026-07-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://www.occta.co.uk/business/industries/retail</loc><lastmod>2026-07-20</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
   
   <!-- SEO Landing Pages -->
   <url>

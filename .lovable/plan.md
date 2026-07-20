@@ -1,66 +1,61 @@
-# Business Operations v2
+# Business Operations v3 Plan
 
-Extend the newly launched B2B section so business customers can transact, get support, and request quotes — and staff can manage the pipeline.
+Five deliverables, all scoped to the B2B surface. Residential flows untouched.
 
-## 1. Enrich lead intake
+## 1. Business support tickets — CSV export + admin activity log
 
-**DB (migration):** add columns to `business_leads`:
-- `sla_preference` (text: standard | priority | enhanced)
-- `billing_contact_name`, `billing_contact_email`, `billing_contact_phone`
-- `site_address_line1`, `site_address_line2`, `site_city`, `site_postcode`
-- `secondary_contact_name`, `secondary_contact_email`, `secondary_contact_phone`
-- `assigned_rep_id` (uuid, references auth.users)
-- `internal_notes` (text)
-- `status` already exists — extend allowed values via CHECK: new, contacted, qualified, quoted, won, lost
+- New table `business_ticket_activity` (ticket_id, actor_id, actor_type, event_type, from_value, to_value, metadata, created_at) with RLS: owners read own, admins read all, service_role writes.
+- Triggers on `support_tickets` where `category` is business-scoped: log status changes and assignment changes.
+- Attachments recorded via edge function that inserts activity rows when a file is added to a business ticket.
+- Admin ticket detail (`src/pages/admin/Tickets.tsx` / business filter) gets a timeline panel.
+- `/business/support`: "Export CSV" button — id, subject, status, priority, created_at, last_update, attachment_count.
 
-**Frontend:** upgrade `LeadForm.tsx` with a stepped layout (Company → Contacts → Site → SLA & requirements). Reuse in `BusinessHub`, `BusinessContactSales`, industry pages.
+## 2. Multiple named business contacts
 
-## 2. Business support tickets
+- New table `business_contacts` (business_user_id, name, role: primary|billing|technical|other, email, phone, receives_invoices bool, receives_updates bool, is_default_billing bool).
+- Migration seeds from existing `business_users` / `profiles` billing fields.
+- New page `src/pages/business/BusinessContacts.tsx`: list, add, edit, delete; toggles for who receives invoices and service updates.
+- Enforced via edge function `manage-business-contact` (validated writes, audit log).
 
-Reuse existing `support_tickets` table (adds a `business_account` boolean via migration) so residential ticket UI and admin can share code.
+## 3. Business quote PDF
 
-**New page:** `src/pages/business/BusinessSupport.tsx` — list existing tickets, "Raise a ticket" (subject, category, priority, description) with attachment upload to a `business-ticket-attachments` storage bucket. Show status timeline.
+- New `src/lib/generateBusinessQuotePdf.ts` using existing jsPDF pattern (matches invoice PDF style).
+- Customer-facing download button on quote confirmation and `/business/quote` success screen.
+- `submit-business-quote` edge function: renders PDF server-side (or generates data payload, PDF built client-side on confirmation email) and attaches PDF to the business contact's confirmation email via `send-email` with `attachment_base64`.
 
-**Admin:** existing Tickets page filters gain a "Business only" toggle.
+## 4. Ticket notifications (email + in-app)
 
-## 3. Business invoices & billing history
+- DB trigger on `support_tickets` status changes and on `ticket_messages` inserts for business-owned tickets → enqueue via `pg_net` to `notify-business-ticket` edge function.
+- Edge function sends email to receiving business contacts (branded, brutalist template, secure `/business/support` link) + inserts row into existing in-app notifications feed.
+- In-app: dashboard bell/badge already exists on business support tab; wire new events into `ticket_read` map so unread counts include status/attachment events.
 
-Reuse `invoices` + `communications_log`. Add a business dashboard tab:
-- `src/pages/business/BusinessBilling.tsx` — invoice list, filters, download PDF, view payment status.
-- Automatic invoice emails: reuse existing daily billing cron; add branded business template `business-invoice.tsx` under `_shared/transactional-email-templates/`, and pick it in `send-transactional-email` when `profiles.business_account = true`.
+## 5. Automatic invoice emailing to business billing contact
 
-Migration: `profiles.business_account boolean default false`; backfill from `orders.is_business` where present.
+- `invoices` INSERT/UPDATE trigger where profile.account_type = 'business' and status = 'issued': enqueue `send-business-invoice-email` edge function.
+- Function: generates invoice PDF (reuse `generateInvoicePdf` server variant / existing `send-invoice-email` pattern), sends to all `business_contacts` where `receives_invoices = true`, falls back to primary billing contact. Body includes secure magic dashboard link (short-lived signed token → `/business/billing`).
+- Logged to `communications_log` with `body_html` so admin timeline "View email" works.
 
-## 4. Admin CRM for leads
+## Technical Notes
 
-Rebuild `src/pages/admin/BusinessLeads.tsx`:
-- Columns: company, contact, SLA, status, assigned rep, updated
-- Row actions: assign rep (dropdown of admin users via `user_roles`), change status, add internal note
-- Detail dialog with full record, notes timeline (new table `business_lead_notes`: id, lead_id, author_id, body, created_at)
-- CSV export button (client-side generation from filtered rows)
-- Filter: status, rep, date range, search
+- All new tables: `GRANT SELECT/INSERT/UPDATE/DELETE ... TO authenticated; GRANT ALL ... TO service_role;` + RLS scoped by `auth.uid()` via `business_users` join.
+- New edge functions: `manage-business-contact`, `notify-business-ticket`, `send-business-invoice-email`. All use `verify_jwt = false` with in-code JWT validation, CORS headers, Zod input validation.
+- PDFs use existing brutalist jsPDF style (mono headings, sharp borders, VAT lines ex-VAT for B2B).
+- All secure links use SHA-256 hashed tokens per project token standard.
+- Admin routes get audit_log entries for contact edits and manual invoice resends.
 
-## 5. Business quote request flow
+## Files to add
+- `supabase/migrations/*` — 3 migrations (activity, contacts, invoice trigger)
+- `src/pages/business/BusinessContacts.tsx`
+- `src/lib/generateBusinessQuotePdf.ts`
+- `src/components/business/BusinessTicketTimeline.tsx`
+- `supabase/functions/{manage-business-contact,notify-business-ticket,send-business-invoice-email}/index.ts`
 
-New page: `src/pages/business/BusinessQuote.tsx` — multi-step:
-1. Pick services (checkboxes: Broadband, Voice, SIM, Bundle, Leased Line)
-2. Per-service requirements (seats, speed, sites)
-3. Contact + SLA + notes
+## Files to edit
+- `src/pages/business/BusinessSupport.tsx` — CSV export button
+- `src/pages/business/BusinessQuote.tsx` — PDF download on success
+- `src/pages/admin/Tickets.tsx` — timeline for business tickets
+- `supabase/functions/submit-business-quote/index.ts` — attach PDF to confirmation email
+- `src/App.tsx` + `Header.tsx` — `/business/contacts` route
+- `src/components/app/AppHeader.tsx` — in-app notification counter includes ticket events
 
-Submits into new `business_quote_requests` table (id, company, contact, email, phone, services jsonb, requirements jsonb, sla, status, assigned_rep_id, created_at). Triggers internal alert via `submit-business-lead` extended, or new `submit-business-quote` edge function (reuse send-email).
-
-Admin page: `src/pages/admin/BusinessQuotes.tsx` — list, detail, mark "Quoted", link to convert into a customer.
-
-## Technical details
-
-- All new tables: GRANT authenticated + service_role, RLS: user-owned (business_account users see their own tickets/invoices via existing policies); admins via `has_role`.
-- Storage bucket `business-ticket-attachments` (private, RLS by owner).
-- Routes wired in `App.tsx`: `/business/support`, `/business/billing`, `/business/quote`; admin routes for BusinessQuotes.
-- Nav: add "Support", "Billing", "Get a quote" under Business in header/footer, sitemap.
-- Type regeneration happens after migration approval.
-
-## Out of scope
-
-- No card checkout for business (still lead → sales → manual quote).
-- No SSO / multi-user business accounts (single primary contact drives the account).
-- Ticket SLA timers / auto-escalation.
+Approve to build.

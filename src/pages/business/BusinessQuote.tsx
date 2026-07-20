@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Wifi, PhoneCall, Smartphone, Building2, Cable } from "lucide-react";
+import { Download } from "lucide-react";
+import { generateBusinessQuotePdf } from "@/lib/generateBusinessQuotePdf";
 
 type ServiceKey = "broadband" | "voice" | "sim" | "bundle" | "leased_line";
 
@@ -26,6 +28,7 @@ const BusinessQuote = () => {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [quoteRef, setQuoteRef] = useState<string>("");
   const [services, setServices] = useState<Set<ServiceKey>>(new Set());
   const [reqs, setReqs] = useState<Record<string, string>>({});
   const [contact, setContact] = useState({
@@ -53,7 +56,23 @@ const BusinessQuote = () => {
     });
     setSubmitting(false);
     if (error) { toast({ title: "Something went wrong", description: error.message, variant: "destructive" }); return; }
+    setQuoteRef(`BQ-${Date.now().toString(36).toUpperCase()}`);
     setDone(true);
+  };
+
+  const downloadPdf = () => {
+    generateBusinessQuotePdf({
+      companyName: contact.company_name,
+      contactName: contact.contact_name,
+      email: contact.email,
+      phone: contact.phone,
+      siteCount: contact.site_count,
+      slaPreference: contact.sla_preference,
+      services: Array.from(services),
+      requirements: reqs,
+      message: contact.message,
+      reference: quoteRef,
+    });
   };
 
   if (done) {
@@ -65,6 +84,10 @@ const BusinessQuote = () => {
             <CheckCircle2 className="w-14 h-14 mx-auto mb-4 text-primary" />
             <h1 className="font-display text-4xl mb-3">Got it — thanks!</h1>
             <p className="text-muted-foreground mb-6">A UK-based specialist will send you a tailored quote within 1 working day.</p>
+            <div className="mb-6">
+              <Button variant="hero" onClick={downloadPdf}><Download className="w-4 h-4 mr-2" /> Download quote PDF</Button>
+              <p className="text-xs text-muted-foreground mt-2">Reference: {quoteRef}</p>
+            </div>
             <div className="text-sm">
               While you wait, <a href="/business" className="underline">explore our bundles</a> or <a href="/business/support" className="underline">check support</a>.
             </div>

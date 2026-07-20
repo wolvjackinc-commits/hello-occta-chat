@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
-import { Loader2, Paperclip, PlusCircle, Ticket, X } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import { Loader2, Paperclip, PlusCircle, Ticket, X, Download, Clock } from "lucide-react";
 
 type BizTicket = {
   id: string;
@@ -23,6 +23,17 @@ type BizTicket = {
   category: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type Activity = {
+  id: string;
+  ticket_id: string;
+  event_type: string;
+  from_value: string | null;
+  to_value: string | null;
+  actor_type: string;
+  created_at: string;
+  metadata: any;
 };
 
 const BUCKET = "business-ticket-attachments";
@@ -41,6 +52,36 @@ const BusinessSupport = () => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ subject: "", category: "broadband", priority: "medium", description: "" });
+  const [activityFor, setActivityFor] = useState<BizTicket | null>(null);
+  const [activity, setActivity] = useState<Activity[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+
+  const openActivity = async (t: BizTicket) => {
+    setActivityFor(t);
+    setActivityLoading(true);
+    const { data } = await supabase
+      .from("business_ticket_activity" as any)
+      .select("*")
+      .eq("ticket_id", t.id)
+      .order("created_at", { ascending: false });
+    setActivity(((data ?? []) as unknown) as Activity[]);
+    setActivityLoading(false);
+  };
+
+  const exportCsv = () => {
+    const rows = [
+      ["Ticket ID", "Subject", "Status", "Priority", "Category", "Created", "Last update"],
+      ...tickets.map((t) => [t.id, t.subject, t.status, t.priority, t.category ?? "", t.created_at, t.updated_at]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `business-tickets-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -122,6 +163,14 @@ const BusinessSupport = () => {
           </Button>
         </div>
 
+        {user && tickets.length > 0 && (
+          <div className="flex justify-end mb-4">
+            <Button variant="outline" size="sm" onClick={exportCsv}>
+              <Download className="w-4 h-4 mr-2" /> Export CSV ({tickets.length})
+            </Button>
+          </div>
+        )}
+
         {!user && !loading && (
           <div className="border-4 border-foreground bg-secondary p-6 shadow-brutal text-center">
             <p className="mb-4">Sign in to view and raise business tickets.</p>
@@ -153,9 +202,12 @@ const BusinessSupport = () => {
                   <div className="font-display text-lg truncate">{t.subject}</div>
                   <p className="text-sm text-muted-foreground line-clamp-2">{t.description}</p>
                 </div>
-                <div className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                <div className="text-right text-xs text-muted-foreground whitespace-nowrap space-y-1">
                   <div>Raised {format(new Date(t.created_at), "dd MMM")}</div>
                   <div>Updated {format(new Date(t.updated_at), "dd MMM HH:mm")}</div>
+                  <Button size="sm" variant="outline" onClick={() => openActivity(t)}>
+                    <Clock className="w-3 h-3 mr-1" /> Activity
+                  </Button>
                 </div>
               </div>
             ))}
@@ -227,6 +279,36 @@ const BusinessSupport = () => {
                 {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</> : "Submit ticket"}
               </Button>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!activityFor} onOpenChange={(v) => { if (!v) setActivityFor(null); }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Ticket activity</DialogTitle></DialogHeader>
+            {activityFor && <p className="text-sm text-muted-foreground -mt-2 mb-2">{activityFor.subject}</p>}
+            {activityLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
+            ) : activity.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No activity logged yet.</p>
+            ) : (
+              <ol className="space-y-3 max-h-[60vh] overflow-y-auto">
+                {activity.map((a) => (
+                  <li key={a.id} className="border-l-4 border-primary pl-3 py-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-display text-sm capitalize">{a.event_type.replace(/_/g, " ")}</span>
+                      <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}</span>
+                    </div>
+                    {(a.from_value || a.to_value) && (
+                      <p className="text-sm">
+                        {a.from_value ? <span className="text-muted-foreground line-through mr-2">{a.from_value.replace(/_/g," ")}</span> : null}
+                        {a.to_value ? <span>{a.to_value.replace(/_/g," ")}</span> : null}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground capitalize">by {a.actor_type}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
           </DialogContent>
         </Dialog>
       </section>

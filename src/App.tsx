@@ -139,6 +139,7 @@ const BusinessContactSalesPage = lazy(() => import("./pages/business/BusinessCon
 const BusinessSupportPage = lazy(() => import("./pages/business/BusinessSupport"));
 const BusinessBillingPage = lazy(() => import("./pages/business/BusinessBilling"));
 const BusinessQuotePage = lazy(() => import("./pages/business/BusinessQuote"));
+const BusinessContactsPage = lazy(() => import("./pages/business/BusinessContacts"));
 const SimIndex = lazy(() => import("./pages/sim/SimIndex"));
 const SimCheckout = lazy(() => import("./pages/sim/SimCheckout"));
 const SimOrderSuccess = lazy(() => import("./pages/sim/SimOrderSuccess"));
@@ -290,6 +291,7 @@ const AnimatedRoutes = () => {
         <Route path="/business/support" element={<Suspense fallback={<AdminRouteFallback />}><BusinessSupportPage /></Suspense>} />
         <Route path="/business/billing" element={<Suspense fallback={<AdminRouteFallback />}><BusinessBillingPage /></Suspense>} />
         <Route path="/business/quote" element={<Suspense fallback={<AdminRouteFallback />}><BusinessQuotePage /></Suspense>} />
+        <Route path="/business/contacts" element={<Suspense fallback={<AdminRouteFallback />}><BusinessContactsPage /></Suspense>} />
         <Route path="/business-legacy" element={<Business />} />
         <Route path="/business-offers" element={<BusinessOffers />} />
         <Route path="/business-checkout" element={<BusinessCheckout />} />

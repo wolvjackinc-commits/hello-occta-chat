@@ -1,0 +1,1 @@
+ALTER TABLE public.communications_log ADD COLUMN IF NOT EXISTS body_html TEXT; ALTER TABLE public.communications_log ADD COLUMN IF NOT EXISTS subject TEXT;

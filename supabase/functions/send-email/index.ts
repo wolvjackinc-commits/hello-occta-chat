@@ -1477,6 +1477,8 @@ const handler = async (req: Request): Promise<Response> => {
           provider_message_id: resendResult.data?.id || resendResult.id || null,
           sent_at: new Date().toISOString(),
           metadata: { subject },
+          subject,
+          body_html: html,
         });
         console.log("Logged to communications_log");
       } catch (logErr) {

@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import {
   Mail,
@@ -14,6 +17,7 @@ import {
   Building2,
   FileText,
   Bell,
+  Eye,
 } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -36,6 +40,8 @@ type CommunicationLog = {
   created_at: string;
   invoice_id: string | null;
   payment_request_id: string | null;
+  subject: string | null;
+  body_html: string | null;
 };
 
 const TEMPLATE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -65,6 +71,7 @@ const TEMPLATE_CONFIG: Record<string, { label: string; icon: React.ReactNode; co
 };
 
 export function CustomerCommunicationsTimeline({ userId }: CustomerCommunicationsTimelineProps) {
+  const [previewComm, setPreviewComm] = useState<CommunicationLog | null>(null);
   const { data: communications, isLoading } = useQuery({
     queryKey: ["customer-communications", userId],
     queryFn: async () => {
@@ -76,7 +83,7 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
         .limit(50);
 
       if (error) throw error;
-      return (data || []) as CommunicationLog[];
+      return (data || []) as unknown as CommunicationLog[];
     },
   });
 
@@ -161,9 +168,22 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
                     </Badge>
                     {getStatusBadge(comm.status)}
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {format(new Date(comm.created_at), "dd MMM HH:mm")}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {format(new Date(comm.created_at), "dd MMM HH:mm")}
+                    </span>
+                    {comm.body_html && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 border-2 border-foreground"
+                        onClick={() => setPreviewComm(comm)}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        View
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-2 text-xs text-muted-foreground">
@@ -172,6 +192,12 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
                     <span className="ml-3">Sent: {format(new Date(comm.sent_at), "HH:mm:ss")}</span>
                   )}
                 </div>
+
+                {comm.subject && (
+                  <div className="mt-1 text-xs font-medium truncate">
+                    Subject: {comm.subject}
+                  </div>
+                )}
 
                 {comm.error_message && (
                   <div className="mt-2 text-xs text-destructive bg-destructive/10 p-2 rounded">
@@ -203,6 +229,36 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
           })}
         </div>
       )}
+
+      <Dialog open={!!previewComm} onOpenChange={(o) => !o && setPreviewComm(null)}>
+        <DialogContent className="border-2 border-foreground max-w-3xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-3 border-b-2 border-foreground/10">
+            <DialogTitle className="font-display uppercase">
+              {previewComm?.subject || previewComm?.template_name || "Email preview"}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              To <span className="font-mono">{previewComm?.recipient_email}</span>
+              {previewComm?.sent_at && (
+                <> · sent {format(new Date(previewComm.sent_at), "dd MMM yyyy HH:mm:ss")}</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4 bg-muted/20">
+            {previewComm?.body_html ? (
+              <iframe
+                title="Email preview"
+                sandbox=""
+                srcDoc={`<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f5f0;color:#0d0d0d;padding:24px}</style></head><body>${previewComm.body_html}</body></html>`}
+                className="w-full h-[600px] bg-background border-2 border-foreground"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-12">
+                No HTML body stored for this email.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

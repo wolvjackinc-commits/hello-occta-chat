@@ -1204,6 +1204,7 @@ export type Database = {
       }
       communications_log: {
         Row: {
+          body_html: string | null
           created_at: string
           delivered_at: string | null
           error_message: string | null
@@ -1216,11 +1217,13 @@ export type Database = {
           recipient_email: string
           sent_at: string | null
           status: string
+          subject: string | null
           template_name: string
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          body_html?: string | null
           created_at?: string
           delivered_at?: string | null
           error_message?: string | null
@@ -1233,11 +1236,13 @@ export type Database = {
           recipient_email: string
           sent_at?: string | null
           status?: string
+          subject?: string | null
           template_name: string
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          body_html?: string | null
           created_at?: string
           delivered_at?: string | null
           error_message?: string | null
@@ -1250,6 +1255,7 @@ export type Database = {
           recipient_email?: string
           sent_at?: string | null
           status?: string
+          subject?: string | null
           template_name?: string
           updated_at?: string
           user_id?: string | null

@@ -74,19 +74,27 @@ export default function DDSetup() {
           },
         });
 
-        if (fnError) throw fnError;
-        if (!data?.success) {
-          setError(data?.error || "Invalid or expired link");
+        // Supabase returns fnError on non-2xx but data still contains a helpful `error` field
+        const payload = (data ?? (fnError as any)?.context?.body) as
+          | { success?: boolean; error?: string; request?: DDRequestData }
+          | undefined;
+
+        if (!payload?.success) {
+          setError(
+            payload?.error ||
+              "This Direct Debit setup link is invalid or has expired. Please contact support for a fresh link."
+          );
           return;
         }
 
-        setRequestData(data.request);
+        setRequestData(payload.request!);
         setForm((prev) => ({
           ...prev,
-          accountHolderName: data.request.customer_name || "",
+          accountHolderName: payload.request!.customer_name || "",
         }));
       } catch (err) {
-        setError("Failed to validate link. Please contact support.");
+        console.error("DD validate-token failed", err);
+        setError("We couldn't validate this link. Please contact support so we can send a fresh one.");
       } finally {
         setIsLoading(false);
       }

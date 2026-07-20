@@ -1018,7 +1018,7 @@ const getInvoicePaidHtml = (data: Record<string, unknown>) => {
 };
 // Custom admin email template - allows sending fully custom HTML content with OCCTA branding
 const getCustomAdminHtml = (data: Record<string, unknown>) => {
-  const safeBody = data.html_body as string || escapeHtml(data.body as string || '');
+  const safeBody = (data.html_body as string) || (data.message_html as string) || escapeHtml(data.body as string || '');
   const safeGreeting = escapeHtml(data.greeting as string || 'Dear Customer');
 
   if (data.use_raw_html === true && safeBody.trim().toLowerCase().startsWith('<!doctype html')) {

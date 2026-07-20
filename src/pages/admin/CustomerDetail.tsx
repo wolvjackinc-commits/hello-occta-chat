@@ -143,10 +143,14 @@ export const AdminCustomerDetail = () => {
 
       const prIds = (paymentRequests ?? []).map((r: any) => r.id);
       const csIds = (contractSummaries ?? []).map((c: any) => c.id);
+      const commFilters = [`user_id.eq.${userId}`];
+      if (profileData.email) commFilters.push(`recipient_email.eq.${profileData.email}`);
+      if (prIds.length) commFilters.push(`payment_request_id.in.(${prIds.join(",")})`);
+
       const { data: allComms } = await (supabase as any)
         .from("communications_log")
-        .select("id, payment_request_id, invoice_id, user_id, template_name, recipient_email, status, sent_at, error_message, created_at, subject, body_html")
-        .or(`user_id.eq.${userId}${prIds.length ? `,payment_request_id.in.(${prIds.join(",")})` : ""}`)
+        .select("id, payment_request_id, invoice_id, user_id, template_name, recipient_email, status, sent_at, error_message, created_at, subject, body_html, metadata")
+        .or(commFilters.join(","))
         .order("created_at", { ascending: false })
         .limit(200);
       const prComms = (allComms ?? []).filter((c: any) => c.payment_request_id);
@@ -588,7 +592,7 @@ export const AdminCustomerDetail = () => {
                 recipient: c.recipient_email,
                 status: c.status,
                 related: c.payment_request_id ? "Payment request" : c.invoice_id ? "Invoice" : "—",
-                subject: c.subject,
+                subject: c.subject || (c.metadata as any)?.subject || null,
                 body_html: c.body_html,
               }));
               const seenMsg = new Set<string>();
@@ -607,6 +611,7 @@ export const AdminCustomerDetail = () => {
                   recipient: r.recipient_email,
                   status: r.status,
                   related: (r.metadata as any)?.subject ?? "—",
+                  subject: (r.metadata as any)?.subject ?? null,
                 }));
               const merged = [...fromLog, ...fromLegacy].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
               if (merged.length === 0) {
@@ -637,18 +642,16 @@ export const AdminCustomerDetail = () => {
                       <TableCell className="text-xs">
                         <div className="flex items-center justify-between gap-2">
                           <span>{c.subject || c.related}</span>
-                          {c.body_html && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              className="h-7 border-2 border-foreground"
-                              onClick={() => setPreviewEmail(c)}
-                            >
-                              <Eye className="h-3 w-3 mr-1" />
-                              View
-                            </Button>
-                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 border-2 border-foreground whitespace-nowrap"
+                            onClick={() => setPreviewEmail(c)}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            View email
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -678,7 +681,16 @@ export const AdminCustomerDetail = () => {
                     className="w-full h-[600px] bg-background border-2 border-foreground"
                   />
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-12">No full email body is stored for this row.</p>
+                  <div className="border-2 border-foreground bg-background p-4 space-y-3 text-sm">
+                    <div>
+                      <p className="font-display text-xs uppercase text-muted-foreground">Subject</p>
+                      <p className="font-medium">{previewEmail?.subject || previewEmail?.related || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="font-display text-xs uppercase text-muted-foreground">Stored body</p>
+                      <p className="text-muted-foreground">This older log entry did not store the full rendered email body. New emails will show the complete sent email here.</p>
+                    </div>
+                  </div>
                 )}
               </div>
             </DialogContent>

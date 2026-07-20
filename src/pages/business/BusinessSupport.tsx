@@ -316,6 +316,18 @@ const BusinessSupport = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        <Dialog open={!!attachmentsFor} onOpenChange={(v) => { if (!v) setAttachmentsFor(null); }}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader><DialogTitle>Ticket attachments</DialogTitle></DialogHeader>
+            {attachmentsFor && user && (
+              <>
+                <p className="text-sm text-muted-foreground -mt-2 mb-3">{attachmentsFor.subject}</p>
+                <TicketAttachmentList ticketId={attachmentsFor.id} ticketOwnerId={user.id} />
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </section>
     </Layout>
   );

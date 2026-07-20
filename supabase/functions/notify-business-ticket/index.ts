@@ -42,8 +42,27 @@ serve(async (req) => {
       .eq("id", ticket.user_id)
       .maybeSingle();
 
+    // Honor per-user notification preferences for the ticket owner.
+    // event: status_change -> email_status_changes ; attachment_uploaded -> email_attachments
+    // message / priority_change / assignment always allowed (transactional replies).
+    const emailPrefKey =
+      event === "status_change" ? "email_status_changes" :
+      event === "attachment_uploaded" ? "email_attachments" : null;
+
+    let ownerAllowed = true;
+    if (emailPrefKey) {
+      const { data: prefs } = await supabase
+        .from("notification_preferences")
+        .select(emailPrefKey)
+        .eq("user_id", ticket.user_id)
+        .maybeSingle();
+      // Default: status=on, attachments=off (matches table defaults).
+      const defaultVal = emailPrefKey === "email_status_changes";
+      ownerAllowed = prefs ? Boolean((prefs as any)[emailPrefKey]) : defaultVal;
+    }
+
     const recipients = new Set<string>();
-    if (profile?.email) recipients.add(profile.email);
+    if (ownerAllowed && profile?.email) recipients.add(profile.email);
 
     if (profile?.business_profile_id) {
       const { data: contacts } = await supabase
@@ -52,6 +71,29 @@ serve(async (req) => {
         .eq("business_profile_id", profile.business_profile_id)
         .eq("receives_updates", true);
       for (const c of contacts ?? []) if ((c as any).email) recipients.add((c as any).email);
+    }
+
+    // In-app notification for ticket owner (respect in-app prefs)
+    const inAppPrefKey =
+      event === "status_change" ? "in_app_status_changes" :
+      event === "attachment_uploaded" ? "in_app_attachments" : null;
+    let inAppAllowed = true;
+    if (inAppPrefKey) {
+      const { data: prefs2 } = await supabase
+        .from("notification_preferences")
+        .select(inAppPrefKey)
+        .eq("user_id", ticket.user_id)
+        .maybeSingle();
+      inAppAllowed = prefs2 ? Boolean((prefs2 as any)[inAppPrefKey]) : true;
+    }
+    if (inAppAllowed) {
+      await supabase.from("notifications").insert({
+        user_id: ticket.user_id,
+        type: `ticket.${event}`,
+        title: `Ticket update: ${ticket.subject}`,
+        body: message ? String(message).slice(0, 240) : `Status: ${ticket.status}`,
+        link: `/business/support?ticket=${ticket.id}`,
+      } as any);
     }
 
     const subject = `[Ticket ${ticket.id.slice(0, 8)}] ${ticket.subject}`;

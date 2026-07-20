@@ -68,13 +68,8 @@ export const AdminRolesPermissions = () => {
     );
   }, [rows, search]);
 
-  const audit = async (action: string, detail: Record<string, unknown>) => {
-    await supabase.from("audit_logs" as any).insert({
-      action,
-      resource_type: "user_roles",
-      details: detail,
-    });
-  };
+  // Audit is written automatically by DB trigger on user_roles (grant/revoke).
+  const audit = async (_action: string, _detail: Record<string, unknown>) => {};
 
   const removeRole = async (userId: string, role: Role) => {
     if (!confirm(`Remove role "${role}"?`)) return;

@@ -143,10 +143,14 @@ export const AdminCustomerDetail = () => {
 
       const prIds = (paymentRequests ?? []).map((r: any) => r.id);
       const csIds = (contractSummaries ?? []).map((c: any) => c.id);
+      const commFilters = [`user_id.eq.${userId}`];
+      if (profileData.email) commFilters.push(`recipient_email.eq.${profileData.email}`);
+      if (prIds.length) commFilters.push(`payment_request_id.in.(${prIds.join(",")})`);
+
       const { data: allComms } = await (supabase as any)
         .from("communications_log")
         .select("id, payment_request_id, invoice_id, user_id, template_name, recipient_email, status, sent_at, error_message, created_at, subject, body_html, metadata")
-        .or(`user_id.eq.${userId}${prIds.length ? `,payment_request_id.in.(${prIds.join(",")})` : ""}`)
+        .or(commFilters.join(","))
         .order("created_at", { ascending: false })
         .limit(200);
       const prComms = (allComms ?? []).filter((c: any) => c.payment_request_id);

@@ -10528,6 +10528,9 @@ export type Database = {
         | "compliance_admin"
         | "marketing_admin"
         | "auditor"
+        | "business_admin"
+        | "ticket_admin"
+        | "sales_admin"
       benefit_customer_type: "residential" | "business" | "both"
       benefit_plan_type: "flex" | "contract_saver" | "both"
       business_user_role: "owner" | "billing" | "tech" | "viewer"
@@ -10858,6 +10861,9 @@ export const Constants = {
         "compliance_admin",
         "marketing_admin",
         "auditor",
+        "business_admin",
+        "ticket_admin",
+        "sales_admin",
       ],
       benefit_customer_type: ["residential", "business", "both"],
       benefit_plan_type: ["flex", "contract_saver", "both"],

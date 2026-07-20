@@ -12,6 +12,14 @@ const Footer = () => {
       { name: "Digital Voice (Home Phone)", path: "/landline" },
       { name: "Business", path: "/business" },
     ],
+    business: [
+      { name: "Business Overview", path: "/business" },
+      { name: "Business Broadband", path: "/business/broadband" },
+      { name: "Hosted VoIP & SIP", path: "/business/voice" },
+      { name: "Business SIMs", path: "/business/sim" },
+      { name: "Bundles", path: "/business/bundles" },
+      { name: "Talk to Sales", path: "/business/contact-sales" },
+    ],
     support: [
       { name: "Help & Support Hub", path: "/support" },
       { name: "AI Assistant", path: "/support#ai-help" },

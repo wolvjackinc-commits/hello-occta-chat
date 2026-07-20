@@ -647,6 +647,73 @@ export type Database = {
         }
         Relationships: []
       }
+      business_contacts: {
+        Row: {
+          business_profile_id: string
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string | null
+          receives_invoices: boolean
+          receives_updates: boolean
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          business_profile_id: string
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone?: string | null
+          receives_invoices?: boolean
+          receives_updates?: boolean
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          business_profile_id?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string | null
+          receives_invoices?: boolean
+          receives_updates?: boolean
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_contacts_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_contacts_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_contacts_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_lead_notes: {
         Row: {
           author_id: string | null
@@ -860,6 +927,50 @@ export type Database = {
           utm?: Json | null
         }
         Relationships: []
+      }
+      business_ticket_activity: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          created_at: string
+          event_type: string
+          from_value: string | null
+          id: string
+          metadata: Json
+          ticket_id: string
+          to_value: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string
+          event_type: string
+          from_value?: string | null
+          id?: string
+          metadata?: Json
+          ticket_id: string
+          to_value?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string
+          event_type?: string
+          from_value?: string | null
+          id?: string
+          metadata?: Json
+          ticket_id?: string
+          to_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_ticket_activity_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       business_users: {
         Row: {

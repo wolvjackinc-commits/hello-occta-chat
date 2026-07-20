@@ -127,6 +127,7 @@ const AdminCustomerJourney = lazy(() => import("./pages/admin/CustomerJourney"))
 const AdminSimPlans = lazy(() => import("./pages/admin/SimPlansAdmin").then(m => ({ default: m.AdminSimPlans })));
 const AdminSimOrders = lazy(() => import("./pages/admin/SimOrders").then(m => ({ default: m.AdminSimOrders })));
 const AdminBusinessLeads = lazy(() => import("./pages/admin/BusinessLeads"));
+const AdminBusinessQuoteRequests = lazy(() => import("./pages/admin/BusinessQuoteRequests"));
 // New business hub (replaces legacy /business page)
 const BusinessHub = lazy(() => import("./pages/business/BusinessHub"));
 const BusinessBroadbandPage = lazy(() => import("./pages/business/BusinessBroadband"));
@@ -135,6 +136,9 @@ const BusinessSimPage = lazy(() => import("./pages/business/BusinessSim"));
 const BusinessBundlesPage = lazy(() => import("./pages/business/BusinessBundles"));
 const BusinessIndustryPage = lazy(() => import("./pages/business/BusinessIndustry"));
 const BusinessContactSalesPage = lazy(() => import("./pages/business/BusinessContactSales"));
+const BusinessSupportPage = lazy(() => import("./pages/business/BusinessSupport"));
+const BusinessBillingPage = lazy(() => import("./pages/business/BusinessBilling"));
+const BusinessQuotePage = lazy(() => import("./pages/business/BusinessQuote"));
 const SimIndex = lazy(() => import("./pages/sim/SimIndex"));
 const SimCheckout = lazy(() => import("./pages/sim/SimCheckout"));
 const SimOrderSuccess = lazy(() => import("./pages/sim/SimOrderSuccess"));
@@ -230,6 +234,7 @@ const AnimatedRoutes = () => {
             <Route path="sim-plans" element={<Suspense fallback={<AdminRouteFallback />}><AdminSimPlans /></Suspense>} />
             <Route path="sim-orders" element={<Suspense fallback={<AdminRouteFallback />}><AdminSimOrders /></Suspense>} />
             <Route path="business-leads" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessLeads /></Suspense>} />
+            <Route path="business-quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessQuoteRequests /></Suspense>} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />
@@ -282,6 +287,9 @@ const AnimatedRoutes = () => {
         <Route path="/business/bundles" element={<Suspense fallback={<AdminRouteFallback />}><BusinessBundlesPage /></Suspense>} />
         <Route path="/business/industries/:slug" element={<Suspense fallback={<AdminRouteFallback />}><BusinessIndustryPage /></Suspense>} />
         <Route path="/business/contact-sales" element={<Suspense fallback={<AdminRouteFallback />}><BusinessContactSalesPage /></Suspense>} />
+        <Route path="/business/support" element={<Suspense fallback={<AdminRouteFallback />}><BusinessSupportPage /></Suspense>} />
+        <Route path="/business/billing" element={<Suspense fallback={<AdminRouteFallback />}><BusinessBillingPage /></Suspense>} />
+        <Route path="/business/quote" element={<Suspense fallback={<AdminRouteFallback />}><BusinessQuotePage /></Suspense>} />
         <Route path="/business-legacy" element={<Business />} />
         <Route path="/business-offers" element={<BusinessOffers />} />
         <Route path="/business-checkout" element={<BusinessCheckout />} />

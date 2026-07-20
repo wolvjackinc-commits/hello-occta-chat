@@ -647,9 +647,44 @@ export type Database = {
         }
         Relationships: []
       }
+      business_lead_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          lead_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          lead_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_lead_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "business_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_leads: {
         Row: {
           assigned_to: string | null
+          billing_contact_email: string | null
+          billing_contact_name: string | null
+          billing_contact_phone: string | null
           company_name: string
           company_size: string | null
           contact_name: string
@@ -659,8 +694,16 @@ export type Database = {
           internal_notes: string | null
           message: string | null
           phone: string | null
+          secondary_contact_email: string | null
+          secondary_contact_name: string | null
+          secondary_contact_phone: string | null
           services: string[]
+          site_address_line1: string | null
+          site_address_line2: string | null
+          site_city: string | null
           site_count: number
+          site_postcode: string | null
+          sla_preference: string | null
           source: string | null
           status: string
           updated_at: string
@@ -668,6 +711,9 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          billing_contact_email?: string | null
+          billing_contact_name?: string | null
+          billing_contact_phone?: string | null
           company_name: string
           company_size?: string | null
           contact_name: string
@@ -677,8 +723,16 @@ export type Database = {
           internal_notes?: string | null
           message?: string | null
           phone?: string | null
+          secondary_contact_email?: string | null
+          secondary_contact_name?: string | null
+          secondary_contact_phone?: string | null
           services?: string[]
+          site_address_line1?: string | null
+          site_address_line2?: string | null
+          site_city?: string | null
           site_count?: number
+          site_postcode?: string | null
+          sla_preference?: string | null
           source?: string | null
           status?: string
           updated_at?: string
@@ -686,6 +740,9 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          billing_contact_email?: string | null
+          billing_contact_name?: string | null
+          billing_contact_phone?: string | null
           company_name?: string
           company_size?: string | null
           contact_name?: string
@@ -695,8 +752,108 @@ export type Database = {
           internal_notes?: string | null
           message?: string | null
           phone?: string | null
+          secondary_contact_email?: string | null
+          secondary_contact_name?: string | null
+          secondary_contact_phone?: string | null
+          services?: string[]
+          site_address_line1?: string | null
+          site_address_line2?: string | null
+          site_city?: string | null
+          site_count?: number
+          site_postcode?: string | null
+          sla_preference?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+          utm?: Json | null
+        }
+        Relationships: []
+      }
+      business_quote_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          quote_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          quote_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          quote_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_quote_notes_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "business_quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_quote_requests: {
+        Row: {
+          assigned_to: string | null
+          company_name: string
+          contact_name: string
+          created_at: string
+          email: string
+          id: string
+          internal_notes: string | null
+          message: string | null
+          phone: string | null
+          requirements: Json
+          services: string[]
+          site_count: number
+          sla_preference: string | null
+          source: string | null
+          status: string
+          updated_at: string
+          utm: Json | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          company_name: string
+          contact_name: string
+          created_at?: string
+          email: string
+          id?: string
+          internal_notes?: string | null
+          message?: string | null
+          phone?: string | null
+          requirements?: Json
           services?: string[]
           site_count?: number
+          sla_preference?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+          utm?: Json | null
+        }
+        Update: {
+          assigned_to?: string | null
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          internal_notes?: string | null
+          message?: string | null
+          phone?: string | null
+          requirements?: Json
+          services?: string[]
+          site_count?: number
+          sla_preference?: string | null
           source?: string | null
           status?: string
           updated_at?: string

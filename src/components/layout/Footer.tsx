@@ -18,6 +18,9 @@ const Footer = () => {
       { name: "Hosted VoIP & SIP", path: "/business/voice" },
       { name: "Business SIMs", path: "/business/sim" },
       { name: "Bundles", path: "/business/bundles" },
+      { name: "Get a Quote", path: "/business/quote" },
+      { name: "Business Billing", path: "/business/billing" },
+      { name: "Business Support", path: "/business/support" },
       { name: "Talk to Sales", path: "/business/contact-sales" },
     ],
     support: [

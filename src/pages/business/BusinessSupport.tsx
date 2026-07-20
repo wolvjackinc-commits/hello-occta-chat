@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
-import { Loader2, Paperclip, PlusCircle, Ticket, X, Download, Clock } from "lucide-react";
+import { Loader2, Paperclip, PlusCircle, Ticket, X, Download, Clock, Files } from "lucide-react";
+import { TicketAttachmentList } from "@/components/business/TicketAttachmentList";
 
 type BizTicket = {
   id: string;
@@ -55,6 +56,7 @@ const BusinessSupport = () => {
   const [activityFor, setActivityFor] = useState<BizTicket | null>(null);
   const [activity, setActivity] = useState<Activity[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
+  const [attachmentsFor, setAttachmentsFor] = useState<BizTicket | null>(null);
 
   const openActivity = async (t: BizTicket) => {
     setActivityFor(t);
@@ -207,6 +209,9 @@ const BusinessSupport = () => {
                   <div>Updated {format(new Date(t.updated_at), "dd MMM HH:mm")}</div>
                   <Button size="sm" variant="outline" onClick={() => openActivity(t)}>
                     <Clock className="w-3 h-3 mr-1" /> Activity
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setAttachmentsFor(t)}>
+                    <Files className="w-3 h-3 mr-1" /> Files
                   </Button>
                 </div>
               </div>

@@ -16,12 +16,12 @@ import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
 type Invoice = {
   id: string;
   invoice_number: string | null;
-  amount: number | null;
-  amount_due: number | null;
+  total: number | null;
+  subtotal: number | null;
+  vat_total: number | null;
   status: string | null;
   issue_date: string | null;
   due_date: string | null;
-  paid_at: string | null;
   billing_period_start: string | null;
   billing_period_end: string | null;
   created_at: string;
@@ -52,11 +52,11 @@ const BusinessBilling = () => {
       if (!u) { setLoading(false); return; }
       const { data: rows } = await supabase
         .from("invoices")
-        .select("id,invoice_number,amount,amount_due,status,issue_date,due_date,paid_at,billing_period_start,billing_period_end,created_at")
+        .select("id,invoice_number,total,subtotal,vat_total,status,issue_date,due_date,billing_period_start,billing_period_end,created_at")
         .eq("user_id", u.id)
         .order("issue_date", { ascending: false, nullsFirst: false })
         .limit(200);
-      setInvoices((rows ?? []) as Invoice[]);
+      setInvoices((rows ?? []) as unknown as Invoice[]);
       setLoading(false);
     });
   }, []);
@@ -71,17 +71,49 @@ const BusinessBilling = () => {
   const totals = useMemo(() => {
     const outstanding = invoices
       .filter((i) => (i.status ?? "").toLowerCase() !== "paid")
-      .reduce((sum, i) => sum + Number(i.amount_due ?? i.amount ?? 0), 0);
+      .reduce((sum, i) => sum + Number(i.total ?? 0), 0);
     const paidYtd = invoices
-      .filter((i) => (i.status ?? "").toLowerCase() === "paid" && i.paid_at && new Date(i.paid_at).getFullYear() === new Date().getFullYear())
-      .reduce((sum, i) => sum + Number(i.amount ?? 0), 0);
+      .filter((i) => (i.status ?? "").toLowerCase() === "paid" && i.issue_date && new Date(i.issue_date).getFullYear() === new Date().getFullYear())
+      .reduce((sum, i) => sum + Number(i.total ?? 0), 0);
     return { outstanding, paidYtd, count: invoices.length };
   }, [invoices]);
 
   const download = async (invoice: Invoice) => {
     setDownloading(invoice.id);
     try {
-      await generateInvoicePdf(invoice.id);
+      // Fetch full invoice + lines + profile, then generate PDF via existing helper.
+      const [invRes, linesRes, profileRes] = await Promise.all([
+        supabase.from("invoices").select("*").eq("id", invoice.id).maybeSingle(),
+        supabase.from("invoice_lines").select("*").eq("invoice_id", invoice.id).order("created_at", { ascending: true }),
+        user ? supabase.from("profiles").select("*").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null }),
+      ]);
+      if (invRes.error || !invRes.data) throw invRes.error ?? new Error("invoice_missing");
+      const inv: any = invRes.data;
+      const profile: any = profileRes.data ?? {};
+      const lines = (linesRes.data as any[]) ?? [];
+      generateInvoicePdf({
+        invoiceNumber: inv.invoice_number,
+        customerName: profile.full_name || profile.business_company_name || "Customer",
+        customerEmail: profile.email || "",
+        accountNumber: profile.account_number || "",
+        postcode: profile.postcode || "",
+        issueDate: inv.issue_date,
+        dueDate: inv.due_date ?? undefined,
+        status: inv.status,
+        lines: lines.map((l) => ({
+          description: l.description ?? "",
+          qty: Number(l.qty ?? 1),
+          unit_price: Number(l.unit_price ?? 0),
+          line_total: Number(l.line_total ?? 0),
+          vat_rate: l.vat_rate != null ? Number(l.vat_rate) : undefined,
+        })),
+        subtotal: Number(inv.subtotal ?? 0),
+        vatTotal: Number(inv.vat_total ?? 0),
+        total: Number(inv.total ?? 0),
+        notes: inv.notes ?? undefined,
+        vatEnabled: inv.vat_enabled !== false,
+        vatRate: inv.vat_rate != null ? Number(inv.vat_rate) : 20,
+      });
     } catch (e: any) {
       toast({ title: "Download failed", description: e?.message, variant: "destructive" });
     }
@@ -170,7 +202,7 @@ const BusinessBilling = () => {
                       </TableCell>
                       <TableCell className="text-xs">{inv.issue_date ? format(new Date(inv.issue_date), "dd MMM yyyy") : "—"}</TableCell>
                       <TableCell className="text-xs">{inv.due_date ? format(new Date(inv.due_date), "dd MMM yyyy") : "—"}</TableCell>
-                      <TableCell className="text-right font-semibold">£{Number(inv.amount ?? 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-semibold">£{Number(inv.total ?? 0).toFixed(2)}</TableCell>
                       <TableCell><Badge className={statusVariant(inv.status)}>{inv.status ?? "—"}</Badge></TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-end">

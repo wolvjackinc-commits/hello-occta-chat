@@ -154,6 +154,7 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
           {communications.map((comm) => {
             const templateInfo = getTemplateInfo(comm.template_name);
             const metadata = comm.metadata as Record<string, unknown> | null;
+            const subject = comm.subject || (metadata?.subject ? String(metadata.subject) : null);
             
             return (
               <div
@@ -172,17 +173,15 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {format(new Date(comm.created_at), "dd MMM HH:mm")}
                     </span>
-                    {comm.body_html && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 border-2 border-foreground"
-                        onClick={() => setPreviewComm(comm)}
-                      >
-                        <Eye className="h-3 w-3 mr-1" />
-                        View
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 border-2 border-foreground whitespace-nowrap"
+                      onClick={() => setPreviewComm({ ...comm, subject })}
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View email
+                    </Button>
                   </div>
                 </div>
 
@@ -193,9 +192,9 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
                   )}
                 </div>
 
-                {comm.subject && (
+                {subject && (
                   <div className="mt-1 text-xs font-medium truncate">
-                    Subject: {comm.subject}
+                    Subject: {subject}
                   </div>
                 )}
 
@@ -252,9 +251,16 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
                 className="w-full h-[600px] bg-background border-2 border-foreground"
               />
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-12">
-                No HTML body stored for this email.
-              </p>
+              <div className="border-2 border-foreground bg-background p-4 space-y-3 text-sm">
+                <div>
+                  <p className="font-display text-xs uppercase text-muted-foreground">Subject</p>
+                  <p className="font-medium">{previewComm?.subject || previewComm?.template_name || "—"}</p>
+                </div>
+                <div>
+                  <p className="font-display text-xs uppercase text-muted-foreground">Stored body</p>
+                  <p className="text-muted-foreground">This older log entry did not store the full rendered email body. New emails will show the complete sent email here.</p>
+                </div>
+              </div>
             )}
           </div>
         </DialogContent>

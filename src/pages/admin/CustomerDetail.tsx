@@ -4,13 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Json } from "@/integrations/supabase/types";
-import { Copy, ArrowLeft, Pencil, StickyNote, Route as RouteIcon, AlertTriangle, ExternalLink, Send, Lock as LockIcon } from "lucide-react";
+import { Copy, ArrowLeft, Pencil, StickyNote, Route as RouteIcon, AlertTriangle, ExternalLink, Send, Lock as LockIcon, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { AddServiceDialog } from "@/components/admin/AddServiceDialog";
 import { CustomerEditDialog } from "@/components/admin/CustomerEditDialog";
@@ -38,6 +39,7 @@ export const AdminCustomerDetail = () => {
   const accountNumber = rawAccountNumber ? normalizeAccountNumber(rawAccountNumber) : null;
   const { toast } = useToast();
   const [updatingServiceId, setUpdatingServiceId] = useState<string | null>(null);
+  const [previewEmail, setPreviewEmail] = useState<any | null>(null);
 
   // Legacy bookmarks may still be UUID-based. Detect that and either
   // redirect to the canonical account-number route, or surface the
@@ -143,7 +145,7 @@ export const AdminCustomerDetail = () => {
       const csIds = (contractSummaries ?? []).map((c: any) => c.id);
       const { data: allComms } = await (supabase as any)
         .from("communications_log")
-        .select("id, payment_request_id, invoice_id, user_id, template_name, recipient_email, status, sent_at, error_message, created_at")
+        .select("id, payment_request_id, invoice_id, user_id, template_name, recipient_email, status, sent_at, error_message, created_at, subject, body_html")
         .or(`user_id.eq.${userId}${prIds.length ? `,payment_request_id.in.(${prIds.join(",")})` : ""}`)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -586,6 +588,8 @@ export const AdminCustomerDetail = () => {
                 recipient: c.recipient_email,
                 status: c.status,
                 related: c.payment_request_id ? "Payment request" : c.invoice_id ? "Invoice" : "—",
+                subject: c.subject,
+                body_html: c.body_html,
               }));
               const seenMsg = new Set<string>();
               const fromLog = (data?.emailLog ?? [])
@@ -630,7 +634,23 @@ export const AdminCustomerDetail = () => {
                           {c.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs">{c.related}</TableCell>
+                      <TableCell className="text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{c.subject || c.related}</span>
+                          {c.body_html && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 border-2 border-foreground"
+                              onClick={() => setPreviewEmail(c)}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -638,6 +658,31 @@ export const AdminCustomerDetail = () => {
               );
             })()}
           </Card>
+          <Dialog open={!!previewEmail} onOpenChange={(open) => !open && setPreviewEmail(null)}>
+            <DialogContent className="border-2 border-foreground max-w-3xl max-h-[90vh] flex flex-col p-0">
+              <DialogHeader className="p-6 pb-3 border-b-2 border-foreground/10">
+                <DialogTitle className="font-display uppercase">
+                  {previewEmail?.subject || previewEmail?.template || "Email preview"}
+                </DialogTitle>
+                <DialogDescription className="text-xs">
+                  To <span className="font-mono">{previewEmail?.recipient}</span>
+                  {previewEmail?.when && <> · sent {format(new Date(previewEmail.when), "dd MMM yyyy HH:mm:ss")}</>}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto p-4 bg-muted/20">
+                {previewEmail?.body_html ? (
+                  <iframe
+                    title="Sent email preview"
+                    sandbox=""
+                    srcDoc={`<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f5f0;color:#0d0d0d;padding:24px}</style></head><body>${previewEmail.body_html}</body></html>`}
+                    className="w-full h-[600px] bg-background border-2 border-foreground"
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-12">No full email body is stored for this row.</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
           <Card className="border-2 border-foreground p-4">
             <h3 className="font-display text-lg mb-3">Support tickets</h3>
             {(!data?.tickets || data.tickets.length === 0) ? (

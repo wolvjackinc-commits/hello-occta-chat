@@ -142,6 +142,7 @@ const BusinessSupportPage = lazy(() => import("./pages/business/BusinessSupport"
 const BusinessBillingPage = lazy(() => import("./pages/business/BusinessBilling"));
 const BusinessQuotePage = lazy(() => import("./pages/business/BusinessQuote"));
 const BusinessContactsPage = lazy(() => import("./pages/business/BusinessContacts"));
+const BusinessNotificationPreferencesPage = lazy(() => import("./pages/business/NotificationPreferences"));
 const SimIndex = lazy(() => import("./pages/sim/SimIndex"));
 const SimCheckout = lazy(() => import("./pages/sim/SimCheckout"));
 const SimOrderSuccess = lazy(() => import("./pages/sim/SimOrderSuccess"));
@@ -236,10 +237,16 @@ const AnimatedRoutes = () => {
             <Route path="suppliers/giacom-import" element={<Suspense fallback={<AdminRouteFallback />}><AdminSuppliersGiacomImport /></Suspense>} />
             <Route path="sim-plans" element={<Suspense fallback={<AdminRouteFallback />}><AdminSimPlans /></Suspense>} />
             <Route path="sim-orders" element={<Suspense fallback={<AdminRouteFallback />}><AdminSimOrders /></Suspense>} />
-            <Route path="business-leads" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessLeads /></Suspense>} />
-            <Route path="business-quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessQuoteRequests /></Suspense>} />
-            <Route path="business-activity" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessActivityLog /></Suspense>} />
-            <Route path="roles" element={<Suspense fallback={<AdminRouteFallback />}><AdminRolesPermissions /></Suspense>} />
+            {/* Business-admin gated section */}
+            <Route element={<ProtectedAdminRoute requiredRoles={["business_admin", "ticket_admin", "super_admin", "admin"]} />}>
+              <Route path="business-leads" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessLeads /></Suspense>} />
+              <Route path="business-quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessQuoteRequests /></Suspense>} />
+              <Route path="business-activity" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessActivityLog /></Suspense>} />
+            </Route>
+            {/* Super-admin only: role management */}
+            <Route element={<ProtectedAdminRoute requiredRoles={["super_admin", "admin"]} />}>
+              <Route path="roles" element={<Suspense fallback={<AdminRouteFallback />}><AdminRolesPermissions /></Suspense>} />
+            </Route>
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />
@@ -296,6 +303,7 @@ const AnimatedRoutes = () => {
         <Route path="/business/billing" element={<Suspense fallback={<AdminRouteFallback />}><BusinessBillingPage /></Suspense>} />
         <Route path="/business/quote" element={<Suspense fallback={<AdminRouteFallback />}><BusinessQuotePage /></Suspense>} />
         <Route path="/business/contacts" element={<Suspense fallback={<AdminRouteFallback />}><BusinessContactsPage /></Suspense>} />
+        <Route path="/business/notifications" element={<Suspense fallback={<AdminRouteFallback />}><BusinessNotificationPreferencesPage /></Suspense>} />
         <Route path="/business-legacy" element={<Business />} />
         <Route path="/business-offers" element={<BusinessOffers />} />
         <Route path="/business-checkout" element={<BusinessCheckout />} />

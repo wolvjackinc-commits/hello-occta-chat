@@ -5,6 +5,7 @@ import { Menu, X, Phone, Wifi, Smartphone, PhoneCall, ShieldCheck, User, LogOut,
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -128,12 +129,15 @@ const Header = () => {
               {CONTACT_PHONE_DISPLAY}
             </a>
             {user ? (
-              <Link to="/dashboard">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <User className="w-4 h-4" />
-                  Dashboard
-                </Button>
-              </Link>
+              <>
+                <NotificationBell />
+                <Link to="/dashboard">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <User className="w-4 h-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+              </>
             ) : (
               <>
                 <Link to="/track-order">

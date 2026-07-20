@@ -1,61 +1,58 @@
-# Business Operations v3 Plan
+# Business Operations v4
 
-Five deliverables, all scoped to the B2B surface. Residential flows untouched.
+Five deliverables, one coordinated build. All new tables get GRANTs + RLS in the same migration.
 
-## 1. Business support tickets — CSV export + admin activity log
+## 1. Admin roles & permissions page
 
-- New table `business_ticket_activity` (ticket_id, actor_id, actor_type, event_type, from_value, to_value, metadata, created_at) with RLS: owners read own, admins read all, service_role writes.
-- Triggers on `support_tickets` where `category` is business-scoped: log status changes and assignment changes.
-- Attachments recorded via edge function that inserts activity rows when a file is added to a business ticket.
-- Admin ticket detail (`src/pages/admin/Tickets.tsx` / business filter) gets a timeline panel.
-- `/business/support`: "Export CSV" button — id, subject, status, priority, created_at, last_update, attachment_count.
+**DB**
+- Extend `app_role` enum with `business_admin`, `ticket_admin`, `sales_admin` (keep existing `admin`, `moderator`, `user`).
+- Reuse `user_roles` + `has_role()`; add helper `has_any_admin_role(uid)` for guard checks.
 
-## 2. Multiple named business contacts
+**Frontend**
+- New `/admin/roles` page (super-admin only): list staff, assign/revoke roles via `user_roles`, audit each change into `audit_logs`.
+- Update `ProtectedAdminRoute.tsx` to accept a `requiredRole` prop; gate `BusinessLeads`, `BusinessQuoteRequests`, business ticket admin pages by matching role.
 
-- New table `business_contacts` (business_user_id, name, role: primary|billing|technical|other, email, phone, receives_invoices bool, receives_updates bool, is_default_billing bool).
-- Migration seeds from existing `business_users` / `profiles` billing fields.
-- New page `src/pages/business/BusinessContacts.tsx`: list, add, edit, delete; toggles for who receives invoices and service updates.
-- Enforced via edge function `manage-business-contact` (validated writes, audit log).
+## 2. Business ticket activity log — filter, search, export
 
-## 3. Business quote PDF
+**Frontend**
+- New admin view `/admin/business/activity` reading `business_ticket_activity` joined with `support_tickets` and profiles.
+- Filters: ticket ID/subject search, assignee dropdown, event type multiselect (status_change, priority_change, assignment, message, attachment, access), date range.
+- Filters persisted in URL, CSV export of filtered rows.
 
-- New `src/lib/generateBusinessQuotePdf.ts` using existing jsPDF pattern (matches invoice PDF style).
-- Customer-facing download button on quote confirmation and `/business/quote` success screen.
-- `submit-business-quote` edge function: renders PDF server-side (or generates data payload, PDF built client-side on confirmation email) and attaches PDF to the business contact's confirmation email via `send-email` with `attachment_base64`.
+## 3. Attachment preview / download / access log
 
-## 4. Ticket notifications (email + in-app)
+**Storage**
+- Signed URLs from existing `business-ticket-attachments` bucket (60s).
 
-- DB trigger on `support_tickets` status changes and on `ticket_messages` inserts for business-owned tickets → enqueue via `pg_net` to `notify-business-ticket` edge function.
-- Edge function sends email to receiving business contacts (branded, brutalist template, secure `/business/support` link) + inserts row into existing in-app notifications feed.
-- In-app: dashboard bell/badge already exists on business support tab; wire new events into `ticket_read` map so unread counts include status/attachment events.
+**Frontend**
+- In `BusinessSupport.tsx` ticket detail: list attachments with preview (image/PDF inline in dialog) and download buttons.
+- Every preview/download inserts a `business_ticket_activity` row with `event_type = 'attachment_access'` and file name via a new `log-ticket-attachment-access` Edge Function (uses `getClaims` for auth).
 
-## 5. Automatic invoice emailing to business billing contact
+## 4. Auto invoice emailing to business billing contact
 
-- `invoices` INSERT/UPDATE trigger where profile.account_type = 'business' and status = 'issued': enqueue `send-business-invoice-email` edge function.
-- Function: generates invoice PDF (reuse `generateInvoicePdf` server variant / existing `send-invoice-email` pattern), sends to all `business_contacts` where `receives_invoices = true`, falls back to primary billing contact. Body includes secure magic dashboard link (short-lived signed token → `/business/billing`).
-- Logged to `communications_log` with `body_html` so admin timeline "View email" works.
+**Edge Function** `send-business-invoice-email`:
+- Trigger: DB trigger on `invoices` insert where `business_profile_id is not null` fires `pg_net` POST.
+- Function fetches invoice, generates PDF server-side (reuse jsPDF pattern), resolves recipient = first `business_contacts` row with `receives_invoices=true`, falls back to profile billing_email.
+- Sends via `send-transactional-email` with new template `business-invoice-ready` (PDF as link, not attachment — per rules, use signed dashboard link + hosted PDF URL).
+- Log to `communications_log` with `body_html`.
 
-## Technical Notes
+## 5. Ticket notifications (email + in-app)
 
-- All new tables: `GRANT SELECT/INSERT/UPDATE/DELETE ... TO authenticated; GRANT ALL ... TO service_role;` + RLS scoped by `auth.uid()` via `business_users` join.
-- New edge functions: `manage-business-contact`, `notify-business-ticket`, `send-business-invoice-email`. All use `verify_jwt = false` with in-code JWT validation, CORS headers, Zod input validation.
-- PDFs use existing brutalist jsPDF style (mono headings, sharp borders, VAT lines ex-VAT for B2B).
-- All secure links use SHA-256 hashed tokens per project token standard.
-- Admin routes get audit_log entries for contact edits and manual invoice resends.
+**DB**
+- New `notifications` table (user_id, type, title, body, link, read_at, created_at) with RLS.
+- Trigger on `business_ticket_activity`: for events `status_change`, `message`, `attachment_uploaded`, insert notification row and fire `pg_net` to `notify-business-ticket` edge function.
 
-## Files to add
-- `supabase/migrations/*` — 3 migrations (activity, contacts, invoice trigger)
-- `src/pages/business/BusinessContacts.tsx`
-- `src/lib/generateBusinessQuotePdf.ts`
-- `src/components/business/BusinessTicketTimeline.tsx`
-- `supabase/functions/{manage-business-contact,notify-business-ticket,send-business-invoice-email}/index.ts`
+**Edge Function** `notify-business-ticket`:
+- Resolves ticket owner + assignee, sends via `send-transactional-email` (new template `business-ticket-update`).
 
-## Files to edit
-- `src/pages/business/BusinessSupport.tsx` — CSV export button
-- `src/pages/business/BusinessQuote.tsx` — PDF download on success
-- `src/pages/admin/Tickets.tsx` — timeline for business tickets
-- `supabase/functions/submit-business-quote/index.ts` — attach PDF to confirmation email
-- `src/App.tsx` + `Header.tsx` — `/business/contacts` route
-- `src/components/app/AppHeader.tsx` — in-app notification counter includes ticket events
+**Frontend**
+- Bell icon in header (business + admin) reading `notifications` with realtime subscription; mark-as-read on click.
 
-Approve to build.
+## Technical notes
+
+- New tables: `notifications`. New enum values on `app_role`. New templates: `business-invoice-ready`, `business-ticket-update`.
+- New pages: `src/pages/admin/RolesPermissions.tsx`, `src/pages/admin/BusinessActivityLog.tsx`.
+- New components: `src/components/NotificationBell.tsx`, `src/components/business/TicketAttachmentList.tsx`.
+- New edge functions: `send-business-invoice-email`, `notify-business-ticket`, `log-ticket-attachment-access`.
+- All migrations follow CREATE → GRANT → RLS → POLICY order.
+- Realtime enabled on `notifications`.

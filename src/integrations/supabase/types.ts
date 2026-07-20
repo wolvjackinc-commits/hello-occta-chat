@@ -4410,6 +4410,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          metadata: Json | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_billing_snapshots: {
         Row: {
           created_at: string
@@ -10388,6 +10424,7 @@ export type Database = {
         Args: { _quote_id: string }
         Returns: boolean
       }
+      has_any_admin_role: { Args: { _user_id: string }; Returns: boolean }
       has_billing_access: { Args: never; Returns: boolean }
       has_business_role: {
         Args: {
@@ -10528,6 +10565,9 @@ export type Database = {
         | "compliance_admin"
         | "marketing_admin"
         | "auditor"
+        | "business_admin"
+        | "ticket_admin"
+        | "sales_admin"
       benefit_customer_type: "residential" | "business" | "both"
       benefit_plan_type: "flex" | "contract_saver" | "both"
       business_user_role: "owner" | "billing" | "tech" | "viewer"
@@ -10858,6 +10898,9 @@ export const Constants = {
         "compliance_admin",
         "marketing_admin",
         "auditor",
+        "business_admin",
+        "ticket_admin",
+        "sales_admin",
       ],
       benefit_customer_type: ["residential", "business", "both"],
       benefit_plan_type: ["flex", "contract_saver", "both"],

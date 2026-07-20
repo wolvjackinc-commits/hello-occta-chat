@@ -42,22 +42,33 @@ const AdminAccessDenied = () => {
   );
 };
 
-export const ProtectedAdminRoute = () => {
+type Role = "admin" | "super_admin" | "business_admin" | "ticket_admin" | "sales_admin" | "moderator";
+
+interface Props {
+  /** Any of these roles grants access. Defaults to ["admin","super_admin"]. */
+  requiredRoles?: Role[];
+}
+
+export const ProtectedAdminRoute = ({ requiredRoles }: Props = {}) => {
   const location = useLocation();
+  const roles = requiredRoles && requiredRoles.length > 0 ? requiredRoles : ["admin", "super_admin"];
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-access"],
+    queryKey: ["admin-access", roles.join(",")],
     queryFn: async () => {
       // Re-validate with the Auth server rather than trusting a cached session token.
       const { data: userData, error: userErr } = await supabase.auth.getUser();
       if (userErr || !userData?.user) {
         return { status: "no-session" } as const;
       }
-      const { data: hasAdminRole, error: roleErr } = await supabase.rpc("has_role", {
-        _user_id: userData.user.id,
-        _role: "admin",
-      });
-      if (roleErr) return { status: "denied" } as const;
-      return { status: hasAdminRole ? "admin" : "denied" } as const;
+      // Check each accepted role; any match grants access.
+      for (const r of roles) {
+        const { data: ok } = await supabase.rpc("has_role", {
+          _user_id: userData.user.id,
+          _role: r as any,
+        });
+        if (ok) return { status: "admin" } as const;
+      }
+      return { status: "denied" } as const;
     },
     staleTime: 30_000,
     refetchOnWindowFocus: true,

@@ -6,6 +6,9 @@ Allow: /
 
 # Private / authenticated / payment / customer-data routes
 Disallow: /admin
+Disallow: /overview
+Disallow: /customers
+Disallow: /.lovable/
 Disallow: /auth
 Disallow: /dashboard
 Disallow: /billing-settings

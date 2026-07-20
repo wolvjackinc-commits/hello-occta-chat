@@ -173,3 +173,4 @@ const AuditLog = () => {
 };
 
 export default AuditLog;
+export { AuditLog as AdminAuditLog };

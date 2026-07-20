@@ -83,7 +83,7 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
         .limit(50);
 
       if (error) throw error;
-      return (data || []) as CommunicationLog[];
+      return (data || []) as unknown as CommunicationLog[];
     },
   });
 

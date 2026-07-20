@@ -128,6 +128,8 @@ const AdminSimPlans = lazy(() => import("./pages/admin/SimPlansAdmin").then(m =>
 const AdminSimOrders = lazy(() => import("./pages/admin/SimOrders").then(m => ({ default: m.AdminSimOrders })));
 const AdminBusinessLeads = lazy(() => import("./pages/admin/BusinessLeads"));
 const AdminBusinessQuoteRequests = lazy(() => import("./pages/admin/BusinessQuoteRequests"));
+const AdminBusinessActivityLog = lazy(() => import("./pages/admin/BusinessActivityLog"));
+const AdminRolesPermissions = lazy(() => import("./pages/admin/RolesPermissions"));
 // New business hub (replaces legacy /business page)
 const BusinessHub = lazy(() => import("./pages/business/BusinessHub"));
 const BusinessBroadbandPage = lazy(() => import("./pages/business/BusinessBroadband"));
@@ -236,6 +238,8 @@ const AnimatedRoutes = () => {
             <Route path="sim-orders" element={<Suspense fallback={<AdminRouteFallback />}><AdminSimOrders /></Suspense>} />
             <Route path="business-leads" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessLeads /></Suspense>} />
             <Route path="business-quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessQuoteRequests /></Suspense>} />
+            <Route path="business-activity" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessActivityLog /></Suspense>} />
+            <Route path="roles" element={<Suspense fallback={<AdminRouteFallback />}><AdminRolesPermissions /></Suspense>} />
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />

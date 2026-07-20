@@ -7,7 +7,19 @@ import { Loader2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const ALL_ROLES = ["admin", "super_admin", "business_admin", "ticket_admin", "sales_admin", "moderator"] as const;
+const ALL_ROLES = [
+  "super_admin",
+  "admin",
+  "business_admin",
+  "ticket_admin",
+  "sales_admin",
+  "finance_admin",
+  "marketing_admin",
+  "compliance_admin",
+  "support_agent",
+  "sales_agent",
+  "auditor",
+] as const;
 type Role = (typeof ALL_ROLES)[number];
 
 type Row = { user_id: string; email: string | null; full_name: string | null; roles: Role[] };

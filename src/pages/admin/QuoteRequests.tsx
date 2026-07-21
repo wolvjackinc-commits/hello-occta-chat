@@ -24,6 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy } from "lucide-react";
 import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
+import { ComposeQuoteEmailDialog } from "@/components/admin/ComposeQuoteEmailDialog";
 
 const STATUS_OPTIONS = ["all", "new", "in_review", "needs_info", "assigned", "draft_quote_created", "quoted", "final_quote_ready", "expired", "rejected", "closed", "converted"] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -84,6 +85,7 @@ export const AdminQuoteRequests = () => {
   const [latestCs, setLatestCs] = useState<any>(null);
   const [shareDialog, setShareDialog] = useState<{ open: boolean; url?: string; quoteNumber?: string }>({ open: false });
   const [csBusy, setCsBusy] = useState<string | null>(null);
+  const [composeOpen, setComposeOpen] = useState(false);
 
   const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   const fetchSupplierProduct = async (identifier?: string | null) => {
@@ -446,30 +448,19 @@ export const AdminQuoteRequests = () => {
   };
 
   // One-click: approve (if needed) + send. Locks the quote on send.
+  // Approve (if needed), then open the Compose & Preview dialog so admin can
+  // add a personal note and review the branded email before sending.
   const sendQuoteToCustomer = async () => {
     if (!latestQuote) return;
     setBusy("send_quote");
     try {
       if (latestQuote.status !== "approved") {
         await _approveFinal();
-        // refetch to reflect approved
         if (selected?.id) await loadLatestQuote(selected.id);
       }
-      const { data, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: latestQuote.id, rotate_token: true } });
-      const err = (data as any)?.error || error?.message;
-      if (err) {
-        if (err === "blocked_low_margin") {
-          toast({ title: "Blocked by margin guard", description: "Run a margin check / override before sending.", variant: "destructive" });
-        } else {
-          throw new Error((data as any)?.message || err);
-        }
-        return;
-      }
-      toast({ title: "Quote sent — locked", description: "Customer received their secure link. Quote is now locked." });
-      qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
-      if (selected) await loadLatestQuote(selected.id);
+      setComposeOpen(true);
     } catch (e: any) {
-      toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+      toast({ title: "Approve failed", description: e?.message, variant: "destructive" });
     } finally { setBusy(null); }
   };
 
@@ -1088,6 +1079,24 @@ export const AdminQuoteRequests = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ComposeQuoteEmailDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        quoteId={latestQuote?.id}
+        quoteNumber={latestQuote?.quote_number}
+        onSent={({ public_token }) => {
+          qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
+          if (selected) loadLatestQuote(selected.id);
+          if (public_token) {
+            setShareDialog({
+              open: true,
+              url: `${window.location.origin}/quote/${public_token}`,
+              quoteNumber: latestQuote?.quote_number,
+            });
+          }
+        }}
+      />
     </div>
   );
 };

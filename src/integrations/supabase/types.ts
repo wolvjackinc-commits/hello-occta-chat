@@ -4416,6 +4416,57 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_leads: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          email: string | null
+          id: string
+          interest: string
+          message: string | null
+          name: string
+          page_path: string | null
+          phone: string | null
+          postcode: string
+          source: string | null
+          status: string
+          updated_at: string
+          utm: Json | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest: string
+          message?: string | null
+          name: string
+          page_path?: string | null
+          phone?: string | null
+          postcode: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+          utm?: Json | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest?: string
+          message?: string | null
+          name?: string
+          page_path?: string | null
+          phone?: string | null
+          postcode?: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+          utm?: Json | null
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string

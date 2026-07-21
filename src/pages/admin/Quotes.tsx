@@ -455,16 +455,28 @@ export const AdminQuotes = () => {
                   <TableCell className="text-right">
                     <div className="flex flex-wrap gap-1 justify-end">
                       {!r.locked_at && (r.status === "draft" || r.status === "approved") && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busyId === r.id}
-                          onClick={() => sendQuote(r.id, r.quote_number)}
-                          title="This will send an email to the customer and lock the quote"
-                          className="h-7 text-xs"
-                        >
-                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send & lock"}
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busyId === r.id}
+                            onClick={() => openComposeDialog(r.id, r.quote_number)}
+                            title="Compose a branded email with a custom note and preview it before sending"
+                            className="h-7 text-xs"
+                          >
+                            <Mail className="w-3 h-3 mr-1" /> Compose & send
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={busyId === r.id}
+                            onClick={() => sendQuote(r.id, r.quote_number)}
+                            title="Send default email now (no custom note)"
+                            className="h-7 text-xs"
+                          >
+                            {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Quick send"}
+                          </Button>
+                        </>
                       )}
                       {!r.cs && (
                         <Button

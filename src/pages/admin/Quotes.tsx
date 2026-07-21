@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Copy, AlertTriangle, ShieldCheck, Mail, Eye } from "lucide-react";
 import { CreateCSPaymentDialog } from "@/components/admin/CreateCSPaymentDialog";
+import { QuoteReadReceiptsDialog } from "@/components/admin/QuoteReadReceiptsDialog";
 import {
   AdminPageHeader,
   AdminEmptyState,
@@ -50,6 +51,32 @@ export const AdminQuotes = () => {
     previewLoading?: boolean;
     sending?: boolean;
   }>({ open: false, customMessage: "" });
+  const [receiptsDialog, setReceiptsDialog] = useState<{ open: boolean; quoteId?: string; quoteNumber?: string }>({ open: false });
+
+  const safeResend = async (id: string, quoteNumber: string) => {
+    if (!window.confirm(
+      `Resend quote ${quoteNumber}?\n\n` +
+      `• A new secure link will be generated (the previous link stops working)\n` +
+      `• The customer receives the latest approved version\n` +
+      `• Read receipts refresh (new opened_at / open_count)\n\n` +
+      `The quote's status and revision number are unchanged.`
+    )) return;
+    setBusyId(id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-quote-email", {
+        body: { quote_id: id, rotate_token: true, resend: true },
+      });
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.message || (data as any)?.error || error?.message);
+      }
+      toast({ title: `Quote ${quoteNumber} resent`, description: "Tracking refreshed. New secure link is live." });
+      const token = (data as any)?.public_token;
+      if (token) setTokenDialog({ open: true, kind: "quote", token, quoteNumber });
+      qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+    } catch (e: any) {
+      toast({ title: "Resend failed", description: e?.message, variant: "destructive" });
+    } finally { setBusyId(null); }
+  };
 
   const { data: vatActive } = useQuery({
     queryKey: ["is-vat-active"],
@@ -531,6 +558,12 @@ export const AdminQuotes = () => {
                           ...(r.locked_at
                             ? [
                                 {
+                                  label: "Safe resend (refresh link & tracking)",
+                                  icon: <Mail className="h-4 w-4" />,
+                                  disabled: busyId === r.id,
+                                  onSelect: () => safeResend(r.id, r.quote_number),
+                                },
+                                {
                                   label: "Edit & Resend (new revision)",
                                   disabled: busyId === r.id,
                                   onSelect: async () => {
@@ -560,6 +593,11 @@ export const AdminQuotes = () => {
                               ]
                             : []),
                           { type: "separator" as const },
+                          {
+                            label: "Read receipts",
+                            icon: <Eye className="h-4 w-4" />,
+                            onSelect: () => setReceiptsDialog({ open: true, quoteId: r.id, quoteNumber: r.quote_number }),
+                          },
                           {
                             label: r.unified_journey_opt_in
                               ? "Disable unified journey"
@@ -654,6 +692,13 @@ export const AdminQuotes = () => {
         open={payDialog.open}
         onOpenChange={(o) => { setPayDialog({ open: o, csId: o ? payDialog.csId : null }); if (!o) qc.invalidateQueries({ queryKey: ["admin-quotes"] }); }}
         contractSummaryId={payDialog.csId ?? null}
+      />
+
+      <QuoteReadReceiptsDialog
+        open={receiptsDialog.open}
+        onOpenChange={(o) => setReceiptsDialog({ open: o, quoteId: o ? receiptsDialog.quoteId : undefined, quoteNumber: o ? receiptsDialog.quoteNumber : undefined })}
+        quoteId={receiptsDialog.quoteId}
+        quoteNumber={receiptsDialog.quoteNumber}
       />
 
       {/* Compose & preview quote email */}

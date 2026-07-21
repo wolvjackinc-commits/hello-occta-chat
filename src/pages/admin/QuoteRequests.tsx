@@ -448,30 +448,19 @@ export const AdminQuoteRequests = () => {
   };
 
   // One-click: approve (if needed) + send. Locks the quote on send.
+  // Approve (if needed), then open the Compose & Preview dialog so admin can
+  // add a personal note and review the branded email before sending.
   const sendQuoteToCustomer = async () => {
     if (!latestQuote) return;
     setBusy("send_quote");
     try {
       if (latestQuote.status !== "approved") {
         await _approveFinal();
-        // refetch to reflect approved
         if (selected?.id) await loadLatestQuote(selected.id);
       }
-      const { data, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: latestQuote.id, rotate_token: true } });
-      const err = (data as any)?.error || error?.message;
-      if (err) {
-        if (err === "blocked_low_margin") {
-          toast({ title: "Blocked by margin guard", description: "Run a margin check / override before sending.", variant: "destructive" });
-        } else {
-          throw new Error((data as any)?.message || err);
-        }
-        return;
-      }
-      toast({ title: "Quote sent — locked", description: "Customer received their secure link. Quote is now locked." });
-      qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
-      if (selected) await loadLatestQuote(selected.id);
+      setComposeOpen(true);
     } catch (e: any) {
-      toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+      toast({ title: "Approve failed", description: e?.message, variant: "destructive" });
     } finally { setBusy(null); }
   };
 

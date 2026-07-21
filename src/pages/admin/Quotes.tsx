@@ -655,6 +655,90 @@ export const AdminQuotes = () => {
         onOpenChange={(o) => { setPayDialog({ open: o, csId: o ? payDialog.csId : null }); if (!o) qc.invalidateQueries({ queryKey: ["admin-quotes"] }); }}
         contractSummaryId={payDialog.csId ?? null}
       />
+
+      {/* Compose & preview quote email */}
+      <Dialog
+        open={composeDialog.open}
+        onOpenChange={(o) => setComposeDialog((s) => ({ ...s, open: o }))}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-4 h-4" /> Compose quote email — {composeDialog.quoteNumber}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider mb-2">
+                Custom note to customer <span className="text-muted-foreground font-normal normal-case tracking-normal">(optional — appears above quote details)</span>
+              </label>
+              <textarea
+                className="w-full border-2 border-foreground p-3 text-sm min-h-[140px] font-sans"
+                value={composeDialog.customMessage}
+                onChange={(e) => setComposeDialog((s) => ({ ...s, customMessage: e.target.value, previewHtml: undefined }))}
+                placeholder="e.g. Hi Sam — following our call today, here's the updated quote. I've included the router upgrade we discussed. Any questions just reply to this email."
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Plain text only. Blank lines create paragraphs. HTML is escaped for safety.
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={runPreview}
+                disabled={composeDialog.previewLoading || composeDialog.sending}
+              >
+                {composeDialog.previewLoading
+                  ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Rendering…</>
+                  : <><Eye className="w-3 h-3 mr-1" /> Preview email</>}
+              </Button>
+              {composeDialog.recipient && (
+                <span className="text-xs self-center text-muted-foreground">
+                  Recipient: <strong className="text-foreground">{composeDialog.recipient}</strong>
+                </span>
+              )}
+            </div>
+
+            {composeDialog.previewHtml !== undefined && (
+              <div className="border-2 border-foreground">
+                <div className="bg-muted px-3 py-2 border-b-2 border-foreground text-xs font-black uppercase tracking-wider">
+                  Subject: <span className="normal-case tracking-normal font-mono">{composeDialog.previewSubject}</span>
+                </div>
+                <iframe
+                  title="Email preview"
+                  sandbox=""
+                  srcDoc={composeDialog.previewHtml}
+                  className="w-full h-[500px] bg-white"
+                />
+                <p className="text-[11px] text-muted-foreground px-3 py-2 border-t border-border">
+                  The secure quote link shown here is a placeholder. A fresh one-time-use link is generated when you press Send.
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="pt-3 border-t-2 border-foreground">
+            <Button
+              variant="outline"
+              onClick={() => setComposeDialog({ open: false, customMessage: "" })}
+              disabled={composeDialog.sending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="hero"
+              onClick={sendFromCompose}
+              disabled={composeDialog.sending || composeDialog.previewLoading}
+            >
+              {composeDialog.sending
+                ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Sending…</>
+                : <><Mail className="w-3 h-3 mr-1" /> Send & lock quote</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -11,6 +11,9 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const quote_id: string | undefined = body?.quote_id;
   if (!quote_id) return jsonResponse({ error: "missing_quote_id" }, 400);
+  const customMessageRaw: string = typeof body?.custom_message === "string" ? body.custom_message : "";
+  const previewOnly: boolean = body?.preview_only === true;
+  const rotateToken: boolean = body?.rotate_token === true;
 
   const supabase = getServiceClient();
   const { data: quote } = await supabase.from("quotes").select("*").eq("id", quote_id).maybeSingle();
@@ -22,8 +25,10 @@ Deno.serve(async (req) => {
   }
 
   // Margin guard: block sending if latest margin check is red without override.
-  const { data: canSend } = await supabase.rpc("can_send_quote", { _quote_id: quote_id });
-  if (canSend === false) {
+  // Skip for preview-only requests so admins can review the email before deciding.
+  if (!previewOnly) {
+    const { data: canSend } = await supabase.rpc("can_send_quote", { _quote_id: quote_id });
+    if (canSend === false) {
     await supabase.rpc("log_event", {
       _actor_type: "admin", _event_type: "quote_blocked_low_margin",
       _title: `Quote send blocked ${quote.quote_number}`,
@@ -31,6 +36,7 @@ Deno.serve(async (req) => {
       _severity: "warn",
     });
     return jsonResponse({ error: "blocked_low_margin", message: "Latest margin check is red. Override required before sending." }, 409);
+    }
   }
 
   const { data: qr } = await supabase.from("quote_requests").select("email, full_name").eq("id", quote.quote_request_id).single();
@@ -38,40 +44,106 @@ Deno.serve(async (req) => {
   // Create a public token if missing. Do not rotate by default on resend: old
   // emailed links may already have an in-progress journey attached, and changing
   // the hash strands the customer on a stale link. Only rotate when explicitly
-  // requested by admin.
+  // requested by admin. For preview requests we render with a placeholder link
+  // so we never expose or rotate a real token unnecessarily.
   let publicToken: string | null = null;
-  if (!quote.public_token_hash) {
-    const { raw, hash } = await generateTokenPair();
-    publicToken = raw;
-    await supabase.from("quotes").update({ public_token_hash: hash, token_expires_at: quote.expires_at, unified_journey_opt_in: unifiedJourney }).eq("id", quote.id);
-  } else if (body.rotate_token === true) {
-    const { raw, hash } = await generateTokenPair();
-    publicToken = raw;
-    await supabase.from("quotes").update({ public_token_hash: hash, unified_journey_opt_in: unifiedJourney }).eq("id", quote.id);
-  }
-  if (!publicToken) {
-    return jsonResponse({
-      error: "token_rotation_required",
-      message: "This quote already has a secure link. Use the existing customer email link, or explicitly rotate the token before resending.",
-    }, 409);
+  if (!previewOnly) {
+    if (!quote.public_token_hash) {
+      const { raw, hash } = await generateTokenPair();
+      publicToken = raw;
+      await supabase.from("quotes").update({ public_token_hash: hash, token_expires_at: quote.expires_at, unified_journey_opt_in: unifiedJourney }).eq("id", quote.id);
+    } else if (rotateToken) {
+      const { raw, hash } = await generateTokenPair();
+      publicToken = raw;
+      await supabase.from("quotes").update({ public_token_hash: hash, unified_journey_opt_in: unifiedJourney }).eq("id", quote.id);
+    }
+    if (!publicToken) {
+      return jsonResponse({
+        error: "token_rotation_required",
+        message: "This quote already has a secure link. Use the existing customer email link, or explicitly rotate the token before resending.",
+      }, 409);
+    }
   }
 
-  const url = `https://www.occta.co.uk/quote/${publicToken}`;
+  const url = previewOnly
+    ? `https://www.occta.co.uk/quote/[secure-link-generated-on-send]`
+    : `https://www.occta.co.uk/quote/${publicToken}`;
 
   const helpfulLinksHtml = await fetchHelpfulLinksHtml(supabase, "quote_sent");
+
+  // Render admin's custom note (plain text with paragraph breaks) into
+  // an escaped, brand-styled block placed above the quote details.
+  const customBlock = customMessageRaw.trim().length
+    ? `<div style="margin:16px 0;padding:14px 16px;border-left:4px solid #facc15;background:#fffbea;font-size:13px;line-height:1.55;color:#111;">
+         <div style="font-size:10px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:6px;">A note from your account manager</div>
+         ${customMessageRaw.trim().split(/\n{2,}/).map(p =>
+           `<p style="margin:0 0 8px 0;">${escapeHtml(p).replace(/\n/g, "<br/>")}</p>`
+         ).join("")}
+       </div>`
+    : "";
 
   const html = brutalistEmailShell(
     "Your OCCTA quote is ready",
     `<p>Hi ${escapeHtml(qr?.full_name?.split(" ")[0] ?? "there")},</p>
      <p>Your OCCTA quote (<strong>${escapeHtml(quote.quote_number)}</strong>) is ready to view.</p>
      <p><strong>Plan:</strong> ${escapeHtml(quote.plan_name)} — £${Number(quote.monthly_gross).toFixed(2)}/month</p>
+     ${customBlock}
      <p style="font-size:12px;color:#555;">Your final price, speed estimate, contract length, one-off charges, installation details, cancellation/cease charges and key terms will be confirmed in your Contract Summary before you pay. No payment is taken until you've reviewed and accepted your Contract Summary.</p>
      <p style="font-size:11px;color:#777;">This link is unique to you. Quote expires ${new Date(quote.expires_at).toLocaleDateString("en-GB")}.</p>
      ${helpfulLinksHtml}`,
     { label: "View your quote", url },
   );
 
-  const sendRes = await sendResendEmail({ to: qr!.email, subject: `Your OCCTA quote ${quote.quote_number}`, html });
+  const subject = `Your OCCTA quote ${quote.quote_number}`;
+
+  // Preview mode: return the fully-rendered HTML + subject without sending
+  // or logging so admins can review before dispatching.
+  if (previewOnly) {
+    return jsonResponse({ ok: true, preview: true, subject, html, recipient: qr?.email ?? null });
+  }
+
+  // Pre-insert log row so the tracking pixel can point at it and we
+  // capture read receipts (opened_at / open_count / last_opened_at).
+  let logRowId: string | null = null;
+  try {
+    const { data: logRow } = await supabase
+      .from("communications_log")
+      .insert({
+        user_id: quote.customer_id ?? null,
+        template_name: "quote_sent",
+        recipient_email: qr!.email,
+        status: "queued",
+        subject,
+        metadata: { quote_id, quote_number: quote.quote_number, has_custom_message: customMessageRaw.trim().length > 0 },
+      })
+      .select("id")
+      .single();
+    logRowId = logRow?.id ?? null;
+  } catch (e) {
+    console.error("[send-quote-email] pre-log insert failed", e);
+  }
+
+  const sendRes = await sendResendEmail({
+    to: qr!.email,
+    subject,
+    html,
+    trackingLogId: logRowId,
+  });
+
+  // Update the log row with the final send outcome + rendered body.
+  if (logRowId) {
+    try {
+      await supabase.from("communications_log").update({
+        status: sendRes.ok ? "sent" : "failed",
+        provider_message_id: sendRes.ok ? sendRes.messageId : null,
+        error_message: sendRes.ok ? null : sendRes.error,
+        sent_at: sendRes.ok ? new Date().toISOString() : null,
+        body_html: html,
+      }).eq("id", logRowId);
+    } catch (e) {
+      console.error("[send-quote-email] log update failed", e);
+    }
+  }
   if (!sendRes.ok) return jsonResponse({ error: "email_failed", details: sendRes.error }, 502);
 
   await supabase.from("quotes").update({

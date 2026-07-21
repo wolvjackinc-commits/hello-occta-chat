@@ -82,6 +82,10 @@ const LearnHub = lazy(() => import("./pages/learn/LearnHub"));
 const LearnPage = lazy(() => import("./pages/learn/LearnPage"));
 const CoverageAreas = lazy(() => import("./pages/CoverageAreas"));
 const RoutersPage = lazy(() => import("./pages/seo/Routers"));
+const BroadbandPlansSeo = lazy(() => import("./pages/seo/BroadbandPlans"));
+const SimOnlyPlansSeo = lazy(() => import("./pages/seo/SimOnlyPlans"));
+const SwitchBroadbandSeo = lazy(() => import("./pages/seo/SwitchBroadband"));
+const LandlinePlansSeo = lazy(() => import("./pages/seo/LandlinePlans"));
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import NoContractBroadbandComparison from "./pages/NoContractBroadbandComparison";
@@ -125,6 +129,7 @@ const AdminContractBenefits = lazy(() => import("./pages/admin/ContractBenefits"
 const AdminCampaigns = lazy(() => import("./pages/admin/Campaigns").then(m => ({ default: m.AdminCampaigns })));
 const AdminComplaints = lazy(() => import("./pages/admin/Complaints").then(m => ({ default: m.AdminComplaints })));
 const AdminKnowledgeBase = lazy(() => import("./pages/admin/KnowledgeBase").then(m => ({ default: m.AdminKnowledgeBase })));
+const AdminBlogEditor = lazy(() => import("./pages/admin/BlogEditor").then(m => ({ default: m.AdminBlogEditor })));
 const AdminFairPricing = lazy(() => import("./pages/admin/FairPricing").then(m => ({ default: m.AdminFairPricing })));
 const AdminSuppliersGiacomImport = lazy(() => import("./pages/admin/SuppliersGiacomImport").then(m => ({ default: m.AdminSuppliersGiacomImport })));
 const AdminCustomerJourney = lazy(() => import("./pages/admin/CustomerJourney"));

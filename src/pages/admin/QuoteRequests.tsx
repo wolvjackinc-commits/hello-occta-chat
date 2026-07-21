@@ -1079,6 +1079,24 @@ export const AdminQuoteRequests = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ComposeQuoteEmailDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        quoteId={latestQuote?.id}
+        quoteNumber={latestQuote?.quote_number}
+        onSent={({ public_token }) => {
+          qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
+          if (selected) loadLatestQuote(selected.id);
+          if (public_token) {
+            setShareDialog({
+              open: true,
+              url: `${window.location.origin}/quote/${public_token}`,
+              quoteNumber: latestQuote?.quote_number,
+            });
+          }
+        }}
+      />
     </div>
   );
 };

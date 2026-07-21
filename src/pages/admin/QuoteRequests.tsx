@@ -85,6 +85,7 @@ export const AdminQuoteRequests = () => {
   const [latestCs, setLatestCs] = useState<any>(null);
   const [shareDialog, setShareDialog] = useState<{ open: boolean; url?: string; quoteNumber?: string }>({ open: false });
   const [csBusy, setCsBusy] = useState<string | null>(null);
+  const [composeOpen, setComposeOpen] = useState(false);
 
   const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   const fetchSupplierProduct = async (identifier?: string | null) => {

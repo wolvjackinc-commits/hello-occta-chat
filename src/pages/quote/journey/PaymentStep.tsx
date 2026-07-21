@@ -48,8 +48,9 @@ export default function PaymentStep({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
+  // Card/invoice-link payments are temporarily disabled — Direct Debit only for new contracts.
   const [method, setMethod] = useState<"direct_debit" | "invoice_link" | null>(
-    (paymentMethod?.method as any) ?? null,
+    (paymentMethod?.method as any) ?? "direct_debit",
   );
   const [day, setDay] = useState<number>(paymentMethod?.billing_anchor_day ?? 1);
   const [submitting, setSubmitting] = useState(false);
@@ -166,34 +167,17 @@ export default function PaymentStep({
 
   return (
     <div className="space-y-6">
-      {/* Method selector */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={() => setMethod("direct_debit")}
-          className={`text-left border-4 p-5 transition-all ${
-            method === "direct_debit" ? "border-primary bg-primary/5" : "border-foreground/30 hover:border-foreground"
-          }`}
-        >
-          <Building2 className="w-6 h-6 mb-2" />
-          <p className="font-display uppercase text-sm">Pay monthly by Direct Debit</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Provide your bank details and OCCTA LIMITED will collect your agreed monthly amount automatically. Your payments are protected by the Direct Debit Guarantee.
-          </p>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMethod("invoice_link")}
-          className={`text-left border-4 p-5 transition-all ${
-            method === "invoice_link" ? "border-primary bg-primary/5" : "border-foreground/30 hover:border-foreground"
-          }`}
-        >
-          <FileText className="w-6 h-6 mb-2" />
-          <p className="font-display uppercase text-sm">Receive a monthly invoice and pay online</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            OCCTA will email your monthly invoice with a secure online payment link. You will need to complete the payment manually by the due date.
-          </p>
-        </button>
+      {/* Direct Debit is the only available method for new contracts. */}
+      <div className="border-4 border-primary bg-primary/5 p-5">
+        <div className="flex items-start gap-3">
+          <Building2 className="w-6 h-6 mt-0.5 text-primary" />
+          <div>
+            <p className="font-display uppercase text-sm">Pay monthly by Direct Debit</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              To keep billing simple and secure, all new OCCTA contracts are set up on Direct Debit. Enter your bank details below — payments are protected by the Direct Debit Guarantee.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Billing day */}

@@ -6,6 +6,8 @@ import Layout from "@/components/layout/Layout";
 import { SEO, JsonLd, createBreadcrumbSchema } from "@/components/seo";
 import { learnPages, learnCategoryLabels, LearnCategory } from "@/data/learnPages";
 import { ArrowRight } from "lucide-react";
+import LeadCaptureWidget from "@/components/marketing/LeadCaptureWidget";
+import { Button } from "@/components/ui/button";
 
 const orderedCategories: LearnCategory[] = [
   "broadband",
@@ -71,6 +73,23 @@ export default function LearnHub() {
           );
         })}
       </div>
+
+      <section className="border-t-4 border-foreground bg-secondary py-12">
+        <div className="container mx-auto px-4 max-w-3xl grid gap-6 md:grid-cols-[1fr_1.1fr] items-start">
+          <div>
+            <h2 className="font-display uppercase text-2xl md:text-3xl mb-3">Ready to move on?</h2>
+            <p className="text-muted-foreground mb-4">
+              Reading is one thing — knowing what's at your address is another. Run a free postcode check
+              or pick a plan directly.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild className="font-display uppercase"><Link to="/coverage-areas">Check my area</Link></Button>
+              <Button asChild variant="outline" className="font-display uppercase"><Link to="/broadband">See plans</Link></Button>
+            </div>
+          </div>
+          <LeadCaptureWidget source="learn-hub" compact />
+        </div>
+      </section>
     </Layout>
   );
 }

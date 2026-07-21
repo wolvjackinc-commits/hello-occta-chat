@@ -477,4 +477,8 @@
   <url><loc>https://www.occta.co.uk/compare/occta-vs-community-fibre</loc><lastmod>2026-07-21</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://www.occta.co.uk/compare/occta-vs-hyperoptic</loc><lastmod>2026-07-21</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://www.occta.co.uk/compare/occta-vs-ee</loc><lastmod>2026-07-21</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+
+  <!-- Coverage hub + new SEO landing pages -->
+  <url><loc>https://www.occta.co.uk/coverage-areas</loc><lastmod>2026-07-21</lastmod><changefreq>weekly</changefreq><priority>0.90</priority></url>
+  <url><loc>https://www.occta.co.uk/routers</loc><lastmod>2026-07-21</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
 </urlset>

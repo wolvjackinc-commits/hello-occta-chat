@@ -80,6 +80,8 @@ const BlogIndex = lazy(() => import("./pages/kb/BlogIndex"));
 const BlogPost = lazy(() => import("./pages/kb/BlogPost"));
 const LearnHub = lazy(() => import("./pages/learn/LearnHub"));
 const LearnPage = lazy(() => import("./pages/learn/LearnPage"));
+const CoverageAreas = lazy(() => import("./pages/CoverageAreas"));
+const RoutersPage = lazy(() => import("./pages/seo/Routers"));
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import NoContractBroadbandComparison from "./pages/NoContractBroadbandComparison";
@@ -398,6 +400,8 @@ const AnimatedRoutes = () => {
         {/* SEO content pages */}
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/coverage" element={<CoveragePage />} />
+        <Route path="/coverage-areas" element={<Suspense fallback={null}><CoverageAreas /></Suspense>} />
+        <Route path="/routers" element={<Suspense fallback={null}><RoutersPage /></Suspense>} />
         <Route path="/fibre-broadband" element={<FibreBroadbandPage />} />
         <Route path="/broadband-and-digital-voice" element={<BroadbandAndDigitalVoicePage />} />
         <Route path="/small-business-telecom" element={<SmallBusinessTelecomPage />} />

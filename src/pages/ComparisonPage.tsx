@@ -7,6 +7,8 @@ import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/
 import { getComparisonBySlug, comparisons } from "@/data/comparisons";
 import NotFound from "@/pages/NotFound";
 import { motion } from "framer-motion";
+import LeadCaptureWidget from "@/components/marketing/LeadCaptureWidget";
+import PostcodeChecker from "@/components/home/PostcodeChecker";
 
 const ComparisonPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -161,19 +163,47 @@ const ComparisonPage = () => {
       {/* CTA */}
       <section className="py-12 bg-secondary">
         <div className="container mx-auto px-4 max-w-3xl">
-          <div className="card-brutal bg-card p-6 md:p-8 text-center">
-            <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">
-              Ready to Switch from {comparison.competitor}?
+          <div className="card-brutal bg-card p-6 md:p-8">
+            <h2 className="text-2xl md:text-3xl font-display uppercase mb-3 text-center">
+              Ready to switch from {comparison.competitor}?
             </h2>
-            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              Price Lock 24 or Flex 30 where eligible. No confusing mid-contract rises on Price Lock. Check what's available at your address.
+            <p className="text-muted-foreground mb-6 max-w-lg mx-auto text-center">
+              Three ways to get moving — check your postcode, pick a plan, or ask us to do it for you. Price Lock 24 or Flex 30 where eligible.
             </p>
-            <Link to="/broadband">
-              <Button variant="hero" size="lg">
-                View All Plans
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            </Link>
+            <div className="grid gap-3 sm:grid-cols-3 mb-6">
+              <Link to="/coverage-areas" className="border-4 border-foreground p-4 text-center hover:bg-secondary transition-colors group">
+                <div className="font-display uppercase text-sm mb-1 group-hover:text-primary">1. Check my address</div>
+                <div className="text-xs text-muted-foreground">See what speeds we can deliver.</div>
+              </Link>
+              <Link to="/broadband" className="border-4 border-foreground p-4 text-center hover:bg-secondary transition-colors group">
+                <div className="font-display uppercase text-sm mb-1 group-hover:text-primary">2. Pick a plan</div>
+                <div className="text-xs text-muted-foreground">Flex 30 or Price Lock 24.</div>
+              </Link>
+              <Link to="/contact" className="border-4 border-foreground p-4 text-center hover:bg-secondary transition-colors group">
+                <div className="font-display uppercase text-sm mb-1 group-hover:text-primary">3. Talk to us</div>
+                <div className="text-xs text-muted-foreground">A human, not a script.</div>
+              </Link>
+            </div>
+            <div className="max-w-md mx-auto mb-6">
+              <PostcodeChecker />
+            </div>
+            <div className="text-center">
+              <Link to="/broadband">
+                <Button variant="hero" size="lg">
+                  View all plans <ArrowRight className="w-5 h-5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <LeadCaptureWidget
+              source={`compare-${comparison.slug}`}
+              title={`Want us to compare ${comparison.competitor} against your address?`}
+              description="Drop your postcode — we'll come back with the exact OCCTA equivalent, including any speed and price differences."
+              defaultInterest="broadband"
+              compact
+            />
           </div>
         </div>
       </section>

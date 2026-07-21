@@ -82,6 +82,10 @@ const LearnHub = lazy(() => import("./pages/learn/LearnHub"));
 const LearnPage = lazy(() => import("./pages/learn/LearnPage"));
 const CoverageAreas = lazy(() => import("./pages/CoverageAreas"));
 const RoutersPage = lazy(() => import("./pages/seo/Routers"));
+const BroadbandPlansSeo = lazy(() => import("./pages/seo/BroadbandPlans"));
+const SimOnlyPlansSeo = lazy(() => import("./pages/seo/SimOnlyPlans"));
+const SwitchBroadbandSeo = lazy(() => import("./pages/seo/SwitchBroadband"));
+const LandlinePlansSeo = lazy(() => import("./pages/seo/LandlinePlans"));
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import NoContractBroadbandComparison from "./pages/NoContractBroadbandComparison";
@@ -125,6 +129,7 @@ const AdminContractBenefits = lazy(() => import("./pages/admin/ContractBenefits"
 const AdminCampaigns = lazy(() => import("./pages/admin/Campaigns").then(m => ({ default: m.AdminCampaigns })));
 const AdminComplaints = lazy(() => import("./pages/admin/Complaints").then(m => ({ default: m.AdminComplaints })));
 const AdminKnowledgeBase = lazy(() => import("./pages/admin/KnowledgeBase").then(m => ({ default: m.AdminKnowledgeBase })));
+const AdminBlogEditor = lazy(() => import("./pages/admin/BlogEditor").then(m => ({ default: m.AdminBlogEditor })));
 const AdminFairPricing = lazy(() => import("./pages/admin/FairPricing").then(m => ({ default: m.AdminFairPricing })));
 const AdminSuppliersGiacomImport = lazy(() => import("./pages/admin/SuppliersGiacomImport").then(m => ({ default: m.AdminSuppliersGiacomImport })));
 const AdminCustomerJourney = lazy(() => import("./pages/admin/CustomerJourney"));
@@ -237,6 +242,7 @@ const AnimatedRoutes = () => {
             <Route path="campaigns" element={<Suspense fallback={<AdminRouteFallback />}><AdminCampaigns /></Suspense>} />
             <Route path="complaints" element={<Suspense fallback={<AdminRouteFallback />}><AdminComplaints /></Suspense>} />
             <Route path="knowledge-base" element={<Suspense fallback={<AdminRouteFallback />}><AdminKnowledgeBase /></Suspense>} />
+            <Route path="blog" element={<Suspense fallback={<AdminRouteFallback />}><AdminBlogEditor /></Suspense>} />
             <Route path="fair-pricing" element={<Suspense fallback={<AdminRouteFallback />}><AdminFairPricing /></Suspense>} />
             <Route path="suppliers/giacom-import" element={<Suspense fallback={<AdminRouteFallback />}><AdminSuppliersGiacomImport /></Suspense>} />
             <Route path="sim-plans" element={<Suspense fallback={<AdminRouteFallback />}><AdminSimPlans /></Suspense>} />
@@ -402,6 +408,10 @@ const AnimatedRoutes = () => {
         <Route path="/coverage" element={<CoveragePage />} />
         <Route path="/coverage-areas" element={<Suspense fallback={null}><CoverageAreas /></Suspense>} />
         <Route path="/routers" element={<Suspense fallback={null}><RoutersPage /></Suspense>} />
+        <Route path="/broadband-plans" element={<Suspense fallback={null}><BroadbandPlansSeo /></Suspense>} />
+        <Route path="/sim-only-plans" element={<Suspense fallback={null}><SimOnlyPlansSeo /></Suspense>} />
+        <Route path="/switch-broadband-provider" element={<Suspense fallback={null}><SwitchBroadbandSeo /></Suspense>} />
+        <Route path="/landline-plans" element={<Suspense fallback={null}><LandlinePlansSeo /></Suspense>} />
         <Route path="/fibre-broadband" element={<FibreBroadbandPage />} />
         <Route path="/broadband-and-digital-voice" element={<BroadbandAndDigitalVoicePage />} />
         <Route path="/small-business-telecom" element={<SmallBusinessTelecomPage />} />

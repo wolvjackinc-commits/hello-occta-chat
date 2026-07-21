@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, MapPin, Search, Wifi, Smartphone, PhoneCall, Router } from "lucide-react";
+import { ArrowRight, MapPin, Search, Wifi, Smartphone, PhoneCall, Router, CheckCircle2, Sparkles } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { SEO, JsonLd, createBreadcrumbSchema } from "@/components/seo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { locations } from "@/data/locations";
+import { slugForPostcode, extractPostcodeArea } from "@/data/postcodeAreas";
 import LeadCaptureWidget from "@/components/marketing/LeadCaptureWidget";
 
 const productTiles = [
@@ -18,18 +19,41 @@ const productTiles = [
 export default function CoverageAreas() {
   const [q, setQ] = useState("");
 
-  const groups = useMemo(() => {
-    const filtered = locations.filter(
-      (l) => !q || l.city.toLowerCase().includes(q.toLowerCase()) || l.region.toLowerCase().includes(q.toLowerCase()),
-    );
+  const postcodeMatch = useMemo(() => {
+    const area = extractPostcodeArea(q);
+    if (!area) return null;
+    const slug = slugForPostcode(q);
+    const location = slug ? locations.find((l) => l.slug === slug) : null;
+    return { area, slug, location };
+  }, [q]);
+
+  const { ranked, groups } = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    const matchedSlug = postcodeMatch?.slug ?? null;
+
+    // Rank: postcode-matched city first, then text matches, then everything else.
+    const scored = locations
+      .map((l) => {
+        let score = 0;
+        if (matchedSlug && l.slug === matchedSlug) score += 100;
+        if (query && (l.city.toLowerCase().includes(query) || l.region.toLowerCase().includes(query))) score += 40;
+        if (query && l.city.toLowerCase().startsWith(query)) score += 10;
+        return { location: l, score };
+      })
+      .filter((r) => !query || r.score > 0 || postcodeMatch)
+      .sort((a, b) => b.score - a.score || a.location.city.localeCompare(b.location.city));
+
+    const ranked = scored.slice(0, 12).map((r) => r.location);
+
     const map = new Map<string, typeof locations>();
-    filtered.forEach((l) => {
+    scored.forEach(({ location: l }) => {
       const arr = map.get(l.region) ?? [];
       arr.push(l);
       map.set(l.region, arr);
     });
-    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [q]);
+    const groups = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    return { ranked, groups };
+  }, [q, postcodeMatch]);
 
   const breadcrumb = createBreadcrumbSchema([
     { name: "Home", url: "/" },
@@ -76,12 +100,51 @@ export default function CoverageAreas() {
               <Search className="mr-2 h-4 w-4" /> Check availability
             </Button>
           </form>
+
+          {postcodeMatch && (
+            <div className="mt-6 border-4 border-foreground bg-card p-5">
+              <div className="flex items-center gap-2 text-xs font-display uppercase tracking-[0.18em] text-primary mb-2">
+                <Sparkles className="h-3.5 w-3.5" /> Best match for {postcodeMatch.area}
+              </div>
+              {postcodeMatch.location ? (
+                <>
+                  <h2 className="font-display uppercase text-2xl mb-1">{postcodeMatch.location.city}</h2>
+                  <p className="text-sm text-muted-foreground mb-4">{postcodeMatch.location.region} · Fibre, 5G SIM and Digital Home Phone available at most addresses.</p>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                    {[
+                      { to: `/broadband-${postcodeMatch.location.slug}`, icon: Wifi, label: "Broadband here" },
+                      { to: "/sim", icon: Smartphone, label: "SIM plans" },
+                      { to: "/routers", icon: Router, label: "Router options" },
+                      { to: "/landline", icon: PhoneCall, label: "Digital voice" },
+                    ].map((t) => (
+                      <Link key={t.to} to={t.to} className="border-2 border-foreground p-3 hover:bg-secondary/40 flex items-center gap-2">
+                        <t.icon className="h-4 w-4 text-primary" />
+                        <span className="font-display uppercase text-xs">{t.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Availability confirmed in-flow — final speeds shown at your exact address.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm mb-3">We don't have a dedicated page for the <strong>{postcodeMatch.area}</strong> area yet, but coverage is likely — Openreach fibre reaches most UK postcodes.</p>
+                  <Button asChild size="sm" className="font-display uppercase">
+                    <Link to={`/build-plan?postcode=${encodeURIComponent(q)}`}>Run a full check</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
       <section className="py-10">
         <div className="container mx-auto px-4 max-w-5xl">
-          <h2 className="font-display uppercase text-xl mb-4">What's available with OCCTA</h2>
+          <h2 className="font-display uppercase text-xl mb-4">
+            {q ? `Top matches${postcodeMatch ? ` for ${postcodeMatch.area}` : ""}` : "What's available with OCCTA"}
+          </h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
             {productTiles.map((t) => (
               <Link key={t.to} to={t.to} className="border-4 border-foreground p-4 bg-card hover:bg-secondary/40 transition-colors group">
@@ -91,6 +154,29 @@ export default function CoverageAreas() {
               </Link>
             ))}
           </div>
+
+          {q && ranked.length > 0 && (
+            <div className="mb-10">
+              <h3 className="font-display uppercase text-sm text-muted-foreground mb-3">Ranked by relevance</h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {ranked.map((l, idx) => (
+                  <Link
+                    key={l.slug}
+                    to={`/broadband-${l.slug}`}
+                    className={`border-2 p-4 hover:bg-secondary/40 transition-colors group ${idx === 0 && postcodeMatch?.slug === l.slug ? "border-primary bg-primary/5" : "border-foreground"}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-display uppercase text-base group-hover:text-primary">{l.city}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{l.region}</div>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {groups.length === 0 ? (
             <div className="border-4 border-foreground p-6 text-center">

@@ -408,6 +408,10 @@ const AnimatedRoutes = () => {
         <Route path="/coverage" element={<CoveragePage />} />
         <Route path="/coverage-areas" element={<Suspense fallback={null}><CoverageAreas /></Suspense>} />
         <Route path="/routers" element={<Suspense fallback={null}><RoutersPage /></Suspense>} />
+        <Route path="/broadband-plans" element={<Suspense fallback={null}><BroadbandPlansSeo /></Suspense>} />
+        <Route path="/sim-only-plans" element={<Suspense fallback={null}><SimOnlyPlansSeo /></Suspense>} />
+        <Route path="/switch-broadband-provider" element={<Suspense fallback={null}><SwitchBroadbandSeo /></Suspense>} />
+        <Route path="/landline-plans" element={<Suspense fallback={null}><LandlinePlansSeo /></Suspense>} />
         <Route path="/fibre-broadband" element={<FibreBroadbandPage />} />
         <Route path="/broadband-and-digital-voice" element={<BroadbandAndDigitalVoicePage />} />
         <Route path="/small-business-telecom" element={<SmallBusinessTelecomPage />} />

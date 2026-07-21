@@ -1587,7 +1587,9 @@ export type Database = {
           error_message: string | null
           id: string
           invoice_id: string | null
+          last_opened_at: string | null
           metadata: Json | null
+          open_count: number
           opened_at: string | null
           payment_request_id: string | null
           provider_message_id: string | null
@@ -1606,7 +1608,9 @@ export type Database = {
           error_message?: string | null
           id?: string
           invoice_id?: string | null
+          last_opened_at?: string | null
           metadata?: Json | null
+          open_count?: number
           opened_at?: string | null
           payment_request_id?: string | null
           provider_message_id?: string | null
@@ -1625,7 +1629,9 @@ export type Database = {
           error_message?: string | null
           id?: string
           invoice_id?: string | null
+          last_opened_at?: string | null
           metadata?: Json | null
+          open_count?: number
           opened_at?: string | null
           payment_request_id?: string | null
           provider_message_id?: string | null

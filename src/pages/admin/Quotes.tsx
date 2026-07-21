@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Loader2, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Search, RefreshCw, Loader2, Copy, AlertTriangle, ShieldCheck, Mail, Eye } from "lucide-react";
 import { CreateCSPaymentDialog } from "@/components/admin/CreateCSPaymentDialog";
 import {
   AdminPageHeader,
@@ -39,6 +39,17 @@ export const AdminQuotes = () => {
   const [overrideReason, setOverrideReason] = useState("");
   const [payDialog, setPayDialog] = useState<{ open: boolean; csId?: string | null }>({ open: false, csId: null });
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [composeDialog, setComposeDialog] = useState<{
+    open: boolean;
+    quoteId?: string;
+    quoteNumber?: string;
+    recipient?: string | null;
+    customMessage: string;
+    previewHtml?: string;
+    previewSubject?: string;
+    previewLoading?: boolean;
+    sending?: boolean;
+  }>({ open: false, customMessage: "" });
 
   const { data: vatActive } = useQuery({
     queryKey: ["is-vat-active"],
@@ -167,6 +178,78 @@ export const AdminQuotes = () => {
     } catch (e: any) {
       toast({ title: "Send failed", description: e?.message, variant: "destructive" });
     } finally { setBusyId(null); }
+  };
+
+  const openComposeDialog = (id: string, quoteNumber: string) => {
+    setComposeDialog({
+      open: true,
+      quoteId: id,
+      quoteNumber,
+      customMessage: "",
+      previewHtml: undefined,
+      previewSubject: undefined,
+      recipient: null,
+    });
+  };
+
+  const runPreview = async () => {
+    if (!composeDialog.quoteId) return;
+    setComposeDialog((s) => ({ ...s, previewLoading: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke("send-quote-email", {
+        body: {
+          quote_id: composeDialog.quoteId,
+          preview_only: true,
+          custom_message: composeDialog.customMessage,
+        },
+      });
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.error || error?.message || "Preview failed");
+      }
+      setComposeDialog((s) => ({
+        ...s,
+        previewHtml: (data as any)?.html ?? "",
+        previewSubject: (data as any)?.subject ?? "",
+        recipient: (data as any)?.recipient ?? null,
+        previewLoading: false,
+      }));
+    } catch (e: any) {
+      toast({ title: "Preview failed", description: e?.message, variant: "destructive" });
+      setComposeDialog((s) => ({ ...s, previewLoading: false }));
+    }
+  };
+
+  const sendFromCompose = async () => {
+    if (!composeDialog.quoteId || !composeDialog.quoteNumber) return;
+    setComposeDialog((s) => ({ ...s, sending: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke("send-quote-email", {
+        body: {
+          quote_id: composeDialog.quoteId,
+          rotate_token: true,
+          custom_message: composeDialog.customMessage,
+        },
+      });
+      if (error || (data as any)?.error) {
+        const msg = (data as any)?.message || (data as any)?.error || error?.message;
+        if ((data as any)?.error === "blocked_low_margin") {
+          toast({ title: "Blocked by margin guard", description: "Run a margin check and use override to send.", variant: "destructive" });
+          setComposeDialog((s) => ({ ...s, sending: false }));
+          return;
+        }
+        throw new Error(msg);
+      }
+      toast({ title: `Quote ${composeDialog.quoteNumber} sent` });
+      const token = (data as any)?.public_token;
+      setComposeDialog({ open: false, customMessage: "" });
+      if (token) {
+        setTokenDialog({ open: true, kind: "quote", token, quoteNumber: composeDialog.quoteNumber });
+      }
+      qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+    } catch (e: any) {
+      toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+      setComposeDialog((s) => ({ ...s, sending: false }));
+    }
   };
 
   const runMarginCheck = async (id: string) => {
@@ -372,16 +455,28 @@ export const AdminQuotes = () => {
                   <TableCell className="text-right">
                     <div className="flex flex-wrap gap-1 justify-end">
                       {!r.locked_at && (r.status === "draft" || r.status === "approved") && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busyId === r.id}
-                          onClick={() => sendQuote(r.id, r.quote_number)}
-                          title="This will send an email to the customer and lock the quote"
-                          className="h-7 text-xs"
-                        >
-                          {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send & lock"}
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busyId === r.id}
+                            onClick={() => openComposeDialog(r.id, r.quote_number)}
+                            title="Compose a branded email with a custom note and preview it before sending"
+                            className="h-7 text-xs"
+                          >
+                            <Mail className="w-3 h-3 mr-1" /> Compose & send
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={busyId === r.id}
+                            onClick={() => sendQuote(r.id, r.quote_number)}
+                            title="Send default email now (no custom note)"
+                            className="h-7 text-xs"
+                          >
+                            {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Quick send"}
+                          </Button>
+                        </>
                       )}
                       {!r.cs && (
                         <Button
@@ -560,6 +655,90 @@ export const AdminQuotes = () => {
         onOpenChange={(o) => { setPayDialog({ open: o, csId: o ? payDialog.csId : null }); if (!o) qc.invalidateQueries({ queryKey: ["admin-quotes"] }); }}
         contractSummaryId={payDialog.csId ?? null}
       />
+
+      {/* Compose & preview quote email */}
+      <Dialog
+        open={composeDialog.open}
+        onOpenChange={(o) => setComposeDialog((s) => ({ ...s, open: o }))}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-4 h-4" /> Compose quote email — {composeDialog.quoteNumber}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider mb-2">
+                Custom note to customer <span className="text-muted-foreground font-normal normal-case tracking-normal">(optional — appears above quote details)</span>
+              </label>
+              <textarea
+                className="w-full border-2 border-foreground p-3 text-sm min-h-[140px] font-sans"
+                value={composeDialog.customMessage}
+                onChange={(e) => setComposeDialog((s) => ({ ...s, customMessage: e.target.value, previewHtml: undefined }))}
+                placeholder="e.g. Hi Sam — following our call today, here's the updated quote. I've included the router upgrade we discussed. Any questions just reply to this email."
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Plain text only. Blank lines create paragraphs. HTML is escaped for safety.
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={runPreview}
+                disabled={composeDialog.previewLoading || composeDialog.sending}
+              >
+                {composeDialog.previewLoading
+                  ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Rendering…</>
+                  : <><Eye className="w-3 h-3 mr-1" /> Preview email</>}
+              </Button>
+              {composeDialog.recipient && (
+                <span className="text-xs self-center text-muted-foreground">
+                  Recipient: <strong className="text-foreground">{composeDialog.recipient}</strong>
+                </span>
+              )}
+            </div>
+
+            {composeDialog.previewHtml !== undefined && (
+              <div className="border-2 border-foreground">
+                <div className="bg-muted px-3 py-2 border-b-2 border-foreground text-xs font-black uppercase tracking-wider">
+                  Subject: <span className="normal-case tracking-normal font-mono">{composeDialog.previewSubject}</span>
+                </div>
+                <iframe
+                  title="Email preview"
+                  sandbox=""
+                  srcDoc={composeDialog.previewHtml}
+                  className="w-full h-[500px] bg-white"
+                />
+                <p className="text-[11px] text-muted-foreground px-3 py-2 border-t border-border">
+                  The secure quote link shown here is a placeholder. A fresh one-time-use link is generated when you press Send.
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="pt-3 border-t-2 border-foreground">
+            <Button
+              variant="outline"
+              onClick={() => setComposeDialog({ open: false, customMessage: "" })}
+              disabled={composeDialog.sending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="hero"
+              onClick={sendFromCompose}
+              disabled={composeDialog.sending || composeDialog.previewLoading}
+            >
+              {composeDialog.sending
+                ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Sending…</>
+                : <><Mail className="w-3 h-3 mr-1" /> Send & lock quote</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

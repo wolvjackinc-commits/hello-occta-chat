@@ -119,7 +119,7 @@ export const AdminBlogEditor = () => {
       kind: "blog" as const,
       visibility: "public" as const,
       audience: "public" as const,
-      status: publish ? "approved" : "draft",
+      status: (publish ? "approved" : "draft") as "approved" | "draft",
       category: draft.category,
       tags: draft.tags ? draft.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
       seo_title: draft.seo_title || null,

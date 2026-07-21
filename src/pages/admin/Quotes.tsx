@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Copy, AlertTriangle, ShieldCheck, Mail, Eye } from "lucide-react";
 import { CreateCSPaymentDialog } from "@/components/admin/CreateCSPaymentDialog";
+import { QuoteReadReceiptsDialog } from "@/components/admin/QuoteReadReceiptsDialog";
 import {
   AdminPageHeader,
   AdminEmptyState,
@@ -50,6 +51,32 @@ export const AdminQuotes = () => {
     previewLoading?: boolean;
     sending?: boolean;
   }>({ open: false, customMessage: "" });
+  const [receiptsDialog, setReceiptsDialog] = useState<{ open: boolean; quoteId?: string; quoteNumber?: string }>({ open: false });
+
+  const safeResend = async (id: string, quoteNumber: string) => {
+    if (!window.confirm(
+      `Resend quote ${quoteNumber}?\n\n` +
+      `• A new secure link will be generated (the previous link stops working)\n` +
+      `• The customer receives the latest approved version\n` +
+      `• Read receipts refresh (new opened_at / open_count)\n\n` +
+      `The quote's status and revision number are unchanged.`
+    )) return;
+    setBusyId(id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-quote-email", {
+        body: { quote_id: id, rotate_token: true, resend: true },
+      });
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.message || (data as any)?.error || error?.message);
+      }
+      toast({ title: `Quote ${quoteNumber} resent`, description: "Tracking refreshed. New secure link is live." });
+      const token = (data as any)?.public_token;
+      if (token) setTokenDialog({ open: true, kind: "quote", token, quoteNumber });
+      qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+    } catch (e: any) {
+      toast({ title: "Resend failed", description: e?.message, variant: "destructive" });
+    } finally { setBusyId(null); }
+  };
 
   const { data: vatActive } = useQuery({
     queryKey: ["is-vat-active"],

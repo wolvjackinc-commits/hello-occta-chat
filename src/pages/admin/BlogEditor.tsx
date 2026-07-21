@@ -13,7 +13,7 @@ import { comparisons } from "@/data/comparisons";
 
 type BlogRow = {
   id: string; title: string; slug: string; summary: string | null; content: string;
-  status: string; visibility: string; tags: string[] | null; category: string | null;
+  status: string; visibility: string; tags: string[] | null; structured_data: { category?: string } | null;
   seo_title: string | null; seo_description: string | null;
   related_slugs: string[] | null; updated_at: string; read_minutes: number | null;
 };
@@ -74,7 +74,7 @@ export const AdminBlogEditor = () => {
   const load = async () => {
     const { data, error } = await supabase
       .from("kb_articles")
-      .select("id, title, slug, summary, content, status, visibility, tags, category, seo_title, seo_description, related_slugs, updated_at, read_minutes")
+      .select("id, title, slug, summary, content, status, visibility, tags, structured_data, seo_title, seo_description, related_slugs, updated_at, read_minutes")
       .eq("kind", "blog")
       .order("updated_at", { ascending: false });
     if (error) { toast({ title: "Load failed", description: error.message, variant: "destructive" }); return; }
@@ -93,7 +93,7 @@ export const AdminBlogEditor = () => {
     setEditing(r);
     setDraft({
       id: r.id, title: r.title, slug: r.slug, summary: r.summary ?? "", content: r.content,
-      category: r.category ?? "broadband", tags: (r.tags ?? []).join(", "),
+      category: r.structured_data?.category ?? "broadband", tags: (r.tags ?? []).join(", "),
       seo_title: r.seo_title ?? "", seo_description: r.seo_description ?? "",
       read_minutes: r.read_minutes ? String(r.read_minutes) : "",
     });
@@ -120,7 +120,7 @@ export const AdminBlogEditor = () => {
       visibility: "public" as const,
       audience: "public" as const,
       status: (publish ? "approved" : "draft") as "approved" | "draft",
-      category: draft.category,
+      structured_data: { category: draft.category } as unknown as Record<string, unknown>,
       tags: draft.tags ? draft.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
       seo_title: draft.seo_title || null,
       seo_description: draft.seo_description || null,
@@ -186,7 +186,7 @@ export const AdminBlogEditor = () => {
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {r.category && <Badge variant="outline" className="text-[10px]">{r.category}</Badge>}
+                  {r.structured_data?.category && <Badge variant="outline" className="text-[10px]">{r.structured_data.category}</Badge>}
                   {(r.tags ?? []).slice(0, 3).map((t) => (
                     <Badge key={t} variant="outline" className="text-[10px]">#{t}</Badge>
                   ))}

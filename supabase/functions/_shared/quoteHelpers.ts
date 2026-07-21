@@ -86,6 +86,7 @@ export async function sendResendEmail(opts: {
   html: string;
   replyTo?: string;
   attachments?: Array<{ filename: string; content: string; contentType?: string }>;
+  trackingLogId?: string | null;
 }): Promise<{ ok: true; messageId: string | null } | { ok: false; error: string }> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
@@ -101,6 +102,13 @@ export async function sendResendEmail(opts: {
   const addrMatch = rawFrom.match(/<([^>]+)>/);
   const address = (addrMatch ? addrMatch[1] : rawFrom).trim();
   const from = `OCCTA <${address}>`;
+  // Inject a 1x1 tracking pixel referencing communications_log id when provided
+  let html = opts.html;
+  if (opts.trackingLogId) {
+    const trackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/email-open-track?id=${opts.trackingLogId}`;
+    const pixel = `<img src="${trackUrl}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;opacity:0;" />`;
+    html = html.includes("</body>") ? html.replace("</body>", `${pixel}</body>`) : `${html}${pixel}`;
+  }
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -108,7 +116,7 @@ export async function sendResendEmail(opts: {
       from,
       to: Array.isArray(opts.to) ? opts.to : [opts.to],
       subject: opts.subject,
-      html: opts.html,
+      html,
       reply_to: opts.replyTo,
       attachments: opts.attachments?.map((a) => ({
         filename: a.filename,

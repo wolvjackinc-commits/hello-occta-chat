@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Loader2, Copy, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Search, RefreshCw, Loader2, Copy, AlertTriangle, ShieldCheck, Mail, Eye } from "lucide-react";
 import { CreateCSPaymentDialog } from "@/components/admin/CreateCSPaymentDialog";
 import {
   AdminPageHeader,
@@ -39,6 +39,17 @@ export const AdminQuotes = () => {
   const [overrideReason, setOverrideReason] = useState("");
   const [payDialog, setPayDialog] = useState<{ open: boolean; csId?: string | null }>({ open: false, csId: null });
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [composeDialog, setComposeDialog] = useState<{
+    open: boolean;
+    quoteId?: string;
+    quoteNumber?: string;
+    recipient?: string | null;
+    customMessage: string;
+    previewHtml?: string;
+    previewSubject?: string;
+    previewLoading?: boolean;
+    sending?: boolean;
+  }>({ open: false, customMessage: "" });
 
   const { data: vatActive } = useQuery({
     queryKey: ["is-vat-active"],
@@ -167,6 +178,78 @@ export const AdminQuotes = () => {
     } catch (e: any) {
       toast({ title: "Send failed", description: e?.message, variant: "destructive" });
     } finally { setBusyId(null); }
+  };
+
+  const openComposeDialog = (id: string, quoteNumber: string) => {
+    setComposeDialog({
+      open: true,
+      quoteId: id,
+      quoteNumber,
+      customMessage: "",
+      previewHtml: undefined,
+      previewSubject: undefined,
+      recipient: null,
+    });
+  };
+
+  const runPreview = async () => {
+    if (!composeDialog.quoteId) return;
+    setComposeDialog((s) => ({ ...s, previewLoading: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke("send-quote-email", {
+        body: {
+          quote_id: composeDialog.quoteId,
+          preview_only: true,
+          custom_message: composeDialog.customMessage,
+        },
+      });
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.error || error?.message || "Preview failed");
+      }
+      setComposeDialog((s) => ({
+        ...s,
+        previewHtml: (data as any)?.html ?? "",
+        previewSubject: (data as any)?.subject ?? "",
+        recipient: (data as any)?.recipient ?? null,
+        previewLoading: false,
+      }));
+    } catch (e: any) {
+      toast({ title: "Preview failed", description: e?.message, variant: "destructive" });
+      setComposeDialog((s) => ({ ...s, previewLoading: false }));
+    }
+  };
+
+  const sendFromCompose = async () => {
+    if (!composeDialog.quoteId || !composeDialog.quoteNumber) return;
+    setComposeDialog((s) => ({ ...s, sending: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke("send-quote-email", {
+        body: {
+          quote_id: composeDialog.quoteId,
+          rotate_token: true,
+          custom_message: composeDialog.customMessage,
+        },
+      });
+      if (error || (data as any)?.error) {
+        const msg = (data as any)?.message || (data as any)?.error || error?.message;
+        if ((data as any)?.error === "blocked_low_margin") {
+          toast({ title: "Blocked by margin guard", description: "Run a margin check and use override to send.", variant: "destructive" });
+          setComposeDialog((s) => ({ ...s, sending: false }));
+          return;
+        }
+        throw new Error(msg);
+      }
+      toast({ title: `Quote ${composeDialog.quoteNumber} sent` });
+      const token = (data as any)?.public_token;
+      setComposeDialog({ open: false, customMessage: "" });
+      if (token) {
+        setTokenDialog({ open: true, kind: "quote", token, quoteNumber: composeDialog.quoteNumber });
+      }
+      qc.invalidateQueries({ queryKey: ["admin-quotes"] });
+    } catch (e: any) {
+      toast({ title: "Send failed", description: e?.message, variant: "destructive" });
+      setComposeDialog((s) => ({ ...s, sending: false }));
+    }
   };
 
   const runMarginCheck = async (id: string) => {

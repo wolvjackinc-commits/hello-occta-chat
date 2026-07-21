@@ -78,6 +78,8 @@ const DbHelpArticle = lazy(() => import("./pages/kb/DbHelpArticle"));
 const DbGuidePage = lazy(() => import("./pages/kb/DbGuidePage"));
 const BlogIndex = lazy(() => import("./pages/kb/BlogIndex"));
 const BlogPost = lazy(() => import("./pages/kb/BlogPost"));
+const LearnHub = lazy(() => import("./pages/learn/LearnHub"));
+const LearnPage = lazy(() => import("./pages/learn/LearnPage"));
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import NoContractBroadbandComparison from "./pages/NoContractBroadbandComparison";
@@ -323,6 +325,10 @@ const AnimatedRoutes = () => {
         <Route path="/help/:slug" element={<Suspense fallback={null}><DbHelpArticle /></Suspense>} />
         <Route path="/blog" element={<Suspense fallback={null}><BlogIndex /></Suspense>} />
         <Route path="/blog/:slug" element={<Suspense fallback={null}><BlogPost /></Suspense>} />
+
+        {/* /learn hub + long-tail SEO explainers */}
+        <Route path="/learn" element={<Suspense fallback={null}><LearnHub /></Suspense>} />
+        <Route path="/learn/:slug" element={<Suspense fallback={null}><LearnPage /></Suspense>} />
 
         {/* Location broadband pages (50 cities) — explicit routes keep the sitemap and SEO scans in sync. */}
         <Route path="/broadband-london" element={<LocationBroadband />} />

@@ -56,6 +56,15 @@ const Footer = () => {
       { name: "Help Centre", path: "/help" },
       { name: "Blog", path: "/blog" },
     ],
+    learn: [
+      { name: "Learn Hub", path: "/learn" },
+      { name: "What is FTTP?", path: "/learn/what-is-fttp" },
+      { name: "How much speed do I need?", path: "/learn/broadband-speed-guide" },
+      { name: "How to switch broadband", path: "/learn/how-to-switch-broadband" },
+      { name: "Mid-contract price rises", path: "/learn/mid-contract-price-rises" },
+      { name: "Direct Debit explained", path: "/learn/direct-debit-explained" },
+      { name: "Digital Voice explained", path: "/learn/digital-voice-explained" },
+    ],
   };
 
   return (
@@ -110,7 +119,7 @@ const Footer = () => {
 
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-10">
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-4 mb-6">
@@ -217,6 +226,22 @@ const Footer = () => {
             </ul>
           </div>
 
+          {/* Learn */}
+          <div>
+            <h4 className="font-display text-xl mb-6 text-primary">LEARN</h4>
+            <ul className="space-y-3">
+              {footerLinks.learn.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    to={link.path}
+                    className="text-background/80 hover:text-primary transition-colors font-medium"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           {/* Legal */}
           <div>

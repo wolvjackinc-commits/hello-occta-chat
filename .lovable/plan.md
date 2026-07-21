@@ -1,58 +1,80 @@
-# Business Operations v4
+## Goal
 
-Five deliverables, one coordinated build. All new tables get GRANTs + RLS in the same migration.
+Make OCCTA visible for almost any UK search around **broadband, SIM, digital voice, routers, switching, conversions, and payments** — the same content-moat playbook Wise and GoCardless use (dense blog + explainer + comparison + location hubs, all interlinked, all schema-marked).
 
-## 1. Admin roles & permissions page
+## What we already have
 
-**DB**
-- Extend `app_role` enum with `business_admin`, `ticket_admin`, `sales_admin` (keep existing `admin`, `moderator`, `user`).
-- Reuse `user_roles` + `has_role()`; add helper `has_any_admin_role(uid)` for guard checks.
+- Keyword landing pages (`/keyword/*`), comparison pages, location pages (`/broadband-in/:city`), guides + blog (DB-backed, sitemap fragment via `kb-sitemap` edge function).
+- `SEO.tsx` + `StructuredData.tsx` component set, prerender plugin, `sitemap.xml`, JSON-LD helpers.
 
-**Frontend**
-- New `/admin/roles` page (super-admin only): list staff, assign/revoke roles via `user_roles`, audit each change into `audit_logs`.
-- Update `ProtectedAdminRoute.tsx` to accept a `requiredRole` prop; gate `BusinessLeads`, `BusinessQuoteRequests`, business ticket admin pages by matching role.
+The gap is **volume, depth and interlinking** — not infrastructure.
 
-## 2. Business ticket activity log — filter, search, export
+## Plan (single build pass)
 
-**Frontend**
-- New admin view `/admin/business/activity` reading `business_ticket_activity` joined with `support_tickets` and profiles.
-- Filters: ticket ID/subject search, assignee dropdown, event type multiselect (status_change, priority_change, assignment, message, attachment, access), date range.
-- Filters persisted in URL, CSV export of filtered rows.
+### 1. Content Hub — `/learn`
 
-## 3. Attachment preview / download / access log
+New parent hub at `/learn` linking every guide, comparison, blog, help and location page in one crawlable index. Category rails: Broadband basics · Switching · Fibre & speeds · Routers & Wi-Fi · SIM & mobile · Digital Voice · Billing & payments · Business telecom · Local coverage.
 
-**Storage**
-- Signed URLs from existing `business-ticket-attachments` bucket (60s).
+### 2. New static SEO pages (20)
 
-**Frontend**
-- In `BusinessSupport.tsx` ticket detail: list attachments with preview (image/PDF inline in dialog) and download buttons.
-- Every preview/download inserts a `business_ticket_activity` row with `event_type = 'attachment_access'` and file name via a new `log-ticket-attachment-access` Edge Function (uses `getClaims` for auth).
+High-intent, low-competition long-tail queries — each gets its own route, unique H1, 600–1000 words, FAQ schema, related-links rail, CTA to postcode checker.
 
-## 4. Auto invoice emailing to business billing contact
+Broadband & speeds
+- `/learn/what-is-fttp` — FTTP vs FTTC vs SOGEA explained
+- `/learn/broadband-speed-guide` — what speed do I actually need
+- `/learn/slow-broadband-fixes` — troubleshooting
+- `/learn/wifi-vs-broadband` — common confusion
+- `/learn/router-buying-guide` — bring-your-own router
+- `/learn/mesh-wifi-guide`
 
-**Edge Function** `send-business-invoice-email`:
-- Trigger: DB trigger on `invoices` insert where `business_profile_id is not null` fires `pg_net` POST.
-- Function fetches invoice, generates PDF server-side (reuse jsPDF pattern), resolves recipient = first `business_contacts` row with `receives_invoices=true`, falls back to profile billing_email.
-- Sends via `send-transactional-email` with new template `business-invoice-ready` (PDF as link, not attachment — per rules, use signed dashboard link + hosted PDF URL).
-- Log to `communications_log` with `body_html`.
+Switching & contracts
+- `/learn/how-to-switch-broadband` — One Touch Switch walkthrough
+- `/learn/leaving-bt` / `/learn/leaving-sky` / `/learn/leaving-virgin` / `/learn/leaving-talktalk`
+- `/learn/mid-contract-price-rises` — why OCCTA doesn't do them
 
-## 5. Ticket notifications (email + in-app)
+SIM & voice
+- `/learn/esim-vs-physical-sim`
+- `/learn/best-sim-only-deals-uk`
+- `/learn/digital-voice-explained` — PSTN switch-off
+- `/learn/keeping-your-landline-number`
 
-**DB**
-- New `notifications` table (user_id, type, title, body, link, read_at, created_at) with RLS.
-- Trigger on `business_ticket_activity`: for events `status_change`, `message`, `attachment_uploaded`, insert notification row and fire `pg_net` to `notify-business-ticket` edge function.
+Payments & billing (Wise/GoCardless-style)
+- `/learn/direct-debit-explained`
+- `/learn/direct-debit-guarantee`
+- `/learn/paying-broadband-bill`
 
-**Edge Function** `notify-business-ticket`:
-- Resolves ticket owner + assignee, sends via `send-transactional-email` (new template `business-ticket-update`).
+### 3. Location expansion
 
-**Frontend**
-- Bell icon in header (business + admin) reading `notifications` with realtime subscription; mark-as-read on click.
+Extend `src/data/locations.ts` from current set to **50 UK towns/cities** (top broadband-search markets) — same template, unique intro + local ISPs + coverage notes so pages stay non-duplicate.
+
+### 4. Comparison expansion
+
+Add 6 new comparison rows to `src/data/comparisons.ts`: OCCTA vs BT / Sky / Virgin / TalkTalk / Vodafone / Now Broadband — leverages existing `ComparisonPage` route.
+
+### 5. Interlinking + schema
+
+- Every new page: BreadcrumbList + FAQPage + Article JSON-LD.
+- `RelatedLinks` component on all learn/guide/comparison/location pages (3 contextual siblings + 1 CTA to postcode checker).
+- Footer gets a "Learn" column linking the hub.
+- Sitemap generator updated to include all new routes.
+
+### 6. Homepage + service pages content boost
+
+- Homepage: add a "Popular guides" strip pulling 6 top learn pages.
+- `/broadband`, `/sim-plans`, `/landline`: append an FAQ (10 Qs each) with FAQPage schema — biggest SEO lift for money pages.
 
 ## Technical notes
 
-- New tables: `notifications`. New enum values on `app_role`. New templates: `business-invoice-ready`, `business-ticket-update`.
-- New pages: `src/pages/admin/RolesPermissions.tsx`, `src/pages/admin/BusinessActivityLog.tsx`.
-- New components: `src/components/NotificationBell.tsx`, `src/components/business/TicketAttachmentList.tsx`.
-- New edge functions: `send-business-invoice-email`, `notify-business-ticket`, `log-ticket-attachment-access`.
-- All migrations follow CREATE → GRANT → RLS → POLICY order.
-- Realtime enabled on `notifications`.
+- One route file per learn page under `src/pages/learn/*` using existing `SeoContentLayout`.
+- Register routes in `App.tsx` (lazy-loaded).
+- Update `public/sitemap.xml` + prerender list in `vite-plugin-prerender.ts` for all new paths.
+- No DB changes — all content is static TSX so it prerenders for crawlers.
+- No design changes — reuses brutalist tokens and existing SEO components.
+
+## Out of scope
+
+- New CMS or dynamic authoring UI.
+- Paid link building / off-site SEO.
+- Rewriting existing guides (only additive).
+
+Approve and I'll ship it in one pass.

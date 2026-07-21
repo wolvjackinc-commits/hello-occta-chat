@@ -558,6 +558,12 @@ export const AdminQuotes = () => {
                           ...(r.locked_at
                             ? [
                                 {
+                                  label: "Safe resend (refresh link & tracking)",
+                                  icon: <Mail className="h-4 w-4" />,
+                                  disabled: busyId === r.id,
+                                  onSelect: () => safeResend(r.id, r.quote_number),
+                                },
+                                {
                                   label: "Edit & Resend (new revision)",
                                   disabled: busyId === r.id,
                                   onSelect: async () => {
@@ -587,6 +593,11 @@ export const AdminQuotes = () => {
                               ]
                             : []),
                           { type: "separator" as const },
+                          {
+                            label: "Read receipts",
+                            icon: <Eye className="h-4 w-4" />,
+                            onSelect: () => setReceiptsDialog({ open: true, quoteId: r.id, quoteNumber: r.quote_number }),
+                          },
                           {
                             label: r.unified_journey_opt_in
                               ? "Disable unified journey"

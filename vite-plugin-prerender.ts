@@ -475,6 +475,11 @@ const routes: RouteSEO[] = [
     { slug: "occta-vs-virgin-media", competitor: "Virgin Media" },
     { slug: "occta-vs-talktalk", competitor: "TalkTalk" },
     { slug: "occta-vs-plusnet", competitor: "Plusnet" },
+    { slug: "occta-vs-vodafone", competitor: "Vodafone" },
+    { slug: "occta-vs-now-broadband", competitor: "NOW Broadband" },
+    { slug: "occta-vs-community-fibre", competitor: "Community Fibre" },
+    { slug: "occta-vs-hyperoptic", competitor: "Hyperoptic" },
+    { slug: "occta-vs-ee", competitor: "EE" },
   ].map(({ slug, competitor }): RouteSEO => ({
     path: `/compare/${slug}`,
     title: `OCCTA vs ${competitor} — Honest Comparison | OCCTA - Cheap UK Broadband & SIM`,

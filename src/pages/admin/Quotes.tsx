@@ -694,6 +694,13 @@ export const AdminQuotes = () => {
         contractSummaryId={payDialog.csId ?? null}
       />
 
+      <QuoteReadReceiptsDialog
+        open={receiptsDialog.open}
+        onOpenChange={(o) => setReceiptsDialog({ open: o, quoteId: o ? receiptsDialog.quoteId : undefined, quoteNumber: o ? receiptsDialog.quoteNumber : undefined })}
+        quoteId={receiptsDialog.quoteId}
+        quoteNumber={receiptsDialog.quoteNumber}
+      />
+
       {/* Compose & preview quote email */}
       <Dialog
         open={composeDialog.open}

@@ -120,7 +120,7 @@ export const AdminBlogEditor = () => {
       visibility: "public" as const,
       audience: "public" as const,
       status: (publish ? "approved" : "draft") as "approved" | "draft",
-      structured_data: { category: draft.category } as unknown as Record<string, unknown>,
+      structured_data: { category: draft.category } as never,
       tags: draft.tags ? draft.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
       seo_title: draft.seo_title || null,
       seo_description: draft.seo_description || null,

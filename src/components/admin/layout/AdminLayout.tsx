@@ -112,6 +112,7 @@ const navSections: NavSection[] = [
       { label: "Communications",   to: "/admin/communications" },
       { label: "Chat Transcripts", to: "/admin/chat-transcripts" },
       { label: "Knowledge Base",   to: "/admin/knowledge-base" },
+      { label: "Blog",             to: "/admin/blog" },
     ],
   },
   {

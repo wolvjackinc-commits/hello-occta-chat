@@ -84,19 +84,26 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Also try to update communications_log if this is a log ID
-    const { data: commLog, error: commError } = await supabase
+    // Also try to update communications_log if this is a log ID.
+    // Records first-open time, updates last-open time, and increments open_count on every hit.
+    const now = new Date().toISOString();
+    const { data: existing } = await supabase
       .from("communications_log")
-      .update({
-        opened_at: new Date().toISOString(),
-      })
+      .select("id, opened_at, open_count")
       .eq("id", trackingId)
-      .is("opened_at", null)
-      .select()
       .maybeSingle();
 
-    if (commLog) {
-      console.log(`email-open-track: Marked communications_log ${trackingId} as opened`);
+    if (existing) {
+      const nextCount = (existing.open_count ?? 0) + 1;
+      await supabase
+        .from("communications_log")
+        .update({
+          opened_at: existing.opened_at ?? now,
+          last_opened_at: now,
+          open_count: nextCount,
+        })
+        .eq("id", trackingId);
+      console.log(`email-open-track: communications_log ${trackingId} open_count=${nextCount}`);
     }
 
     return gifResponse();

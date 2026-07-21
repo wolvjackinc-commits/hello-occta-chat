@@ -1414,29 +1414,72 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Use RESEND_FROM_EMAIL for all emails - this must be a verified domain in Resend
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk";
-    
+
     // Get admin email for BCC (if configured)
     const adminEmail = Deno.env.get("ADMIN_EMAIL");
     const bccList = type === "order_confirmation" && adminEmail ? [adminEmail] : undefined;
-    
+
+    // Append helpful-links block if configured for this template
+    try {
+      const key = HELP_LINK_KEY_BY_TYPE[type];
+      if (key) {
+        const block = await fetchHelpfulLinksHtml(supabaseAdmin, key);
+        if (block) {
+          html = html.includes("</body>")
+            ? html.replace("</body>", `${block}</body>`)
+            : `${html}${block}`;
+        }
+      }
+    } catch (_e) { /* non-fatal */ }
+
+    // If we're logging, pre-insert a row so we can embed a read-receipt
+    // tracking pixel that points back at this log id. This means every
+    // logged customer email will record open time / open count.
+    let logRowId: string | null = null;
+    let resolvedUserId: string | null = directUserId || null;
+    if (logToCommunications) {
+      try {
+        if (!resolvedUserId && invoiceId) {
+          const { data: inv } = await supabaseAdmin.from("invoices").select("user_id").eq("id", invoiceId).single();
+          resolvedUserId = inv?.user_id ?? null;
+        } else if (!resolvedUserId && paymentRequestId) {
+          const { data: pr } = await supabaseAdmin.from("payment_requests").select("user_id").eq("id", paymentRequestId).single();
+          resolvedUserId = pr?.user_id ?? null;
+        }
+        const { data: logRow } = await supabaseAdmin
+          .from("communications_log")
+          .insert({
+            invoice_id: invoiceId || null,
+            payment_request_id: paymentRequestId || null,
+            user_id: resolvedUserId,
+            template_name: type,
+            recipient_email: to,
+            status: "queued",
+            subject,
+            metadata: { subject },
+          })
+          .select("id")
+          .single();
+        logRowId = logRow?.id ?? null;
+      } catch (preLogErr) {
+        console.error("Pre-insert communications_log failed:", preLogErr);
+      }
+    }
+
+    if (logRowId) {
+      const trackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/email-open-track?id=${logRowId}`;
+      const pixel = `<img src="${trackUrl}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;opacity:0;" />`;
+      html = html.includes("</body>")
+        ? html.replace("</body>", `${pixel}</body>`)
+        : `${html}${pixel}`;
+    }
+
     const emailResponse = await resend.emails.send({
       from: `OCCTA <${fromEmail}>`,
       to: [to],
       bcc: bccList,
       subject,
-      html: await (async () => {
-        try {
-          const key = HELP_LINK_KEY_BY_TYPE[type];
-          if (!key) return html;
-          const block = await fetchHelpfulLinksHtml(supabaseAdmin, key);
-          if (!block) return html;
-          return html.includes("</body>")
-            ? html.replace("</body>", `${block}</body>`)
-            : `${html}${block}`;
-        } catch (_e) {
-          return html;
-        }
-      })(),
+      html,
     });
 
     const resendResult = emailResponse as {
@@ -1454,32 +1497,32 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Email sent successfully: ${type} to ${to}`);
 
-    // Log to communications_log if requested (use already-parsed values from earlier)
+    // Update the pre-inserted log row with sent status + rendered body (or
+    // fall back to a fresh insert if we couldn't pre-insert for any reason).
     if (logToCommunications) {
       try {
-        // Get user_id from direct param, invoice, or payment_request
-        let userId = directUserId || null;
-        if (!userId && invoiceId) {
-          const { data: inv } = await supabaseAdmin.from("invoices").select("user_id").eq("id", invoiceId).single();
-          userId = inv?.user_id;
-        } else if (!userId && paymentRequestId) {
-          const { data: pr } = await supabaseAdmin.from("payment_requests").select("user_id").eq("id", paymentRequestId).single();
-          userId = pr?.user_id;
+        if (logRowId) {
+          await supabaseAdmin.from("communications_log").update({
+            status: "sent",
+            provider_message_id: resendResult.data?.id || resendResult.id || null,
+            sent_at: new Date().toISOString(),
+            body_html: html,
+          }).eq("id", logRowId);
+        } else {
+          await supabaseAdmin.from("communications_log").insert({
+            invoice_id: invoiceId || null,
+            payment_request_id: paymentRequestId || null,
+            user_id: resolvedUserId,
+            template_name: type,
+            recipient_email: to,
+            status: "sent",
+            provider_message_id: resendResult.data?.id || resendResult.id || null,
+            sent_at: new Date().toISOString(),
+            metadata: { subject },
+            subject,
+            body_html: html,
+          });
         }
-
-        await supabaseAdmin.from("communications_log").insert({
-          invoice_id: invoiceId || null,
-          payment_request_id: paymentRequestId || null,
-          user_id: userId,
-          template_name: type,
-          recipient_email: to,
-          status: "sent",
-          provider_message_id: resendResult.data?.id || resendResult.id || null,
-          sent_at: new Date().toISOString(),
-          metadata: { subject },
-          subject,
-          body_html: html,
-        });
         console.log("Logged to communications_log");
       } catch (logErr) {
         console.error("Failed to log to communications_log:", logErr);

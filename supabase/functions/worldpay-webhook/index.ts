@@ -230,6 +230,27 @@ serve(async (req) => {
     console.warn("webhook_deliveries insert failed", e);
   }
 
+  // Local wrapper around `json` that also updates the delivery row so admins
+  // can see final status/http_status/result for each webhook attempt.
+  const respond = async (status: number, data: unknown): Promise<Response> => {
+    if (deliveryId) {
+      try {
+        const finalStatus =
+          status >= 200 && status < 300 ? "processed" : status === 401 ? "unauthorized" : "failed";
+        await supabase
+          .from("webhook_deliveries")
+          .update({
+            status: finalStatus,
+            http_status: status,
+            result: data as any,
+            error_message: status >= 400 ? (typeof (data as any)?.error === "string" ? (data as any).error : null) : null,
+          })
+          .eq("id", deliveryId);
+      } catch {}
+    }
+    return json(status, data);
+  };
+
   // Always log every incoming webhook request (fingerprint only in prod,
   // full preview here for debuggability). Never awaited into the response
   // to keep latency low.

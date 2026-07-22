@@ -40,6 +40,7 @@ const AdminAuditLog = lazy(() => import("./pages/admin/AuditLog").then(m => ({ d
 const AdminPaymentRequests = lazy(() => import("./pages/admin/PaymentRequests").then(m => ({ default: m.AdminPaymentRequests })));
 const AdminCommunications = lazy(() => import("./pages/admin/Communications").then(m => ({ default: m.AdminCommunications })));
 const AdminChatTranscripts = lazy(() => import("./pages/admin/ChatTranscripts").then(m => ({ default: m.AdminChatTranscripts })));
+const AdminLiveChat = lazy(() => import("./pages/admin/LiveChat"));
 import Broadband from "./pages/Broadband";
 import Pay from "./pages/Pay";
 import PayInternalReturn from "./pages/PayInternalReturn";

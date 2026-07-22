@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Paperclip, Send, Users, BookOpen, Search, ShieldAlert, ShieldCheck, ShieldQuestion, Download } from "lucide-react";
+import { Loader2, Paperclip, Send, Users, BookOpen, Search, ShieldAlert, ShieldCheck, ShieldQuestion, Download, FileDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -230,6 +230,88 @@ export default function AdminLiveChat() {
     toast({ title: "Conversation resolved" });
   };
 
+  const [exporting, setExporting] = useState(false);
+  const exportTranscript = async () => {
+    if (!active) return;
+    setExporting(true);
+    try {
+      // Fetch full message history (bypass in-memory state to be safe).
+      const { data: msgs } = await supabase
+        .from("chat_messages")
+        .select("id, conversation_id, role, content, attachments, created_at, sender_admin_id")
+        .eq("conversation_id", active.id)
+        .order("created_at", { ascending: true });
+
+      // Attachments metadata: enrich with scan status + signed URLs (7-day).
+      const attachmentsMeta: any[] = [];
+      for (const m of msgs ?? []) {
+        const list = Array.isArray(m.attachments) ? (m.attachments as any[]) : [];
+        for (const a of list) {
+          if (!a?.path) continue;
+          const { data: sc } = await supabase
+            .from("chat_attachment_scans" as any)
+            .select("status, reasons, scanned_at, size, content_type")
+            .eq("path", a.path)
+            .maybeSingle();
+          const { data: signed } = await supabase.storage
+            .from("chat-attachments")
+            .createSignedUrl(a.path, 60 * 60 * 24 * 7);
+          attachmentsMeta.push({
+            message_id: m.id,
+            name: a.name,
+            path: a.path,
+            signed_url: signed?.signedUrl ?? null,
+            scan: sc ?? null,
+          });
+        }
+      }
+
+      // Linked invoice / order records for the customer.
+      let linkedOrders: any[] = [];
+      let linkedInvoices: any[] = [];
+      if (active.user_id) {
+        const [{ data: orders }, { data: invoices }] = await Promise.all([
+          supabase.from("orders").select("id, order_number, status, created_at, total_amount").eq("user_id", active.user_id).order("created_at", { ascending: false }).limit(50),
+          supabase.from("invoices").select("id, invoice_number, status, issue_date, due_date, total").eq("user_id", active.user_id).order("issue_date", { ascending: false }).limit(50),
+        ]);
+        linkedOrders = orders ?? [];
+        linkedInvoices = invoices ?? [];
+      }
+
+      const bundle = {
+        exported_at: new Date().toISOString(),
+        conversation: active,
+        messages: msgs ?? [],
+        attachments: attachmentsMeta,
+        linked_records: { orders: linkedOrders, invoices: linkedInvoices },
+      };
+
+      // JSON download
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      a.href = url;
+      a.download = `chat-${active.session_id.slice(0, 8)}-${stamp}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      // Log for audit trail (best-effort).
+      const { data: userRes } = await supabase.auth.getUser();
+      await supabase.from("audit_logs").insert({
+        action: "chat_transcript_export",
+        entity: "chat_conversation",
+        metadata: { conversation_id: active.id, message_count: msgs?.length ?? 0, by: userRes.user?.id },
+      });
+
+      toast({ title: "Transcript exported", description: `${msgs?.length ?? 0} messages · ${attachmentsMeta.length} attachments` });
+    } catch (e: any) {
+      toast({ title: "Export failed", description: e.message, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const openGuidePicker = async () => {
     setGuideOpen(true);
     if (guides.length > 0) return;
@@ -361,6 +443,10 @@ export default function AdminLiveChat() {
                   </Badge>
                   <Button size="sm" variant="outline" onClick={openGuidePicker}>
                     <BookOpen className="w-4 h-4 mr-1" /> Send guide
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={exportTranscript} disabled={exporting}>
+                    {exporting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <FileDown className="w-4 h-4 mr-1" />}
+                    Export transcript
                   </Button>
                   <Button size="sm" variant="outline" onClick={resolveConversation}>Resolve</Button>
                 </div>

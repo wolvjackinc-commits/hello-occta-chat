@@ -301,6 +301,42 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notification_events: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          recipients: string[] | null
+          reference_url: string | null
+          subject: string | null
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          recipients?: string[] | null
+          reference_url?: string | null
+          subject?: string | null
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          recipients?: string[] | null
+          reference_url?: string | null
+          subject?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       admin_notification_prefs: {
         Row: {
           created_at: string
@@ -1508,6 +1544,42 @@ export type Database = {
           tool_used?: string | null
           user_id?: string | null
           was_helpful?: boolean | null
+        }
+        Relationships: []
+      }
+      chat_attachment_scans: {
+        Row: {
+          content_type: string | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          path: string
+          reasons: Json | null
+          scanned_at: string | null
+          size_bytes: number | null
+          status: string
+        }
+        Insert: {
+          content_type?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          path: string
+          reasons?: Json | null
+          scanned_at?: string | null
+          size_bytes?: number | null
+          status?: string
+        }
+        Update: {
+          content_type?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          path?: string
+          reasons?: Json | null
+          scanned_at?: string | null
+          size_bytes?: number | null
+          status?: string
         }
         Relationships: []
       }

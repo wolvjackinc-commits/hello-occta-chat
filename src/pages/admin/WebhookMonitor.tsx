@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Play, Search, Download } from "lucide-react";
+import { Loader2, RefreshCw, Play, Search, Download, Layers } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +46,9 @@ export default function AdminWebhookMonitor() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Delivery | null>(null);
   const [replaying, setReplaying] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkResults, setBulkResults] = useState<Record<string, { before: string; after: string; http?: number; error?: string }>>({});
 
   const load = async () => {
     setLoading(true);
@@ -123,6 +126,43 @@ export default function AdminWebhookMonitor() {
     URL.revokeObjectURL(url);
   };
 
+  // Group only FAILED (or unauthorized) deliveries by event_type for bulk replay.
+  const failedGroups = useMemo(() => {
+    const groups: Record<string, Delivery[]> = {};
+    rows.forEach((r) => {
+      if (r.status !== "failed" && r.status !== "unauthorized") return;
+      const key = `${r.source}::${r.event_type || "unknown"}`;
+      (groups[key] ||= []).push(r);
+    });
+    return groups;
+  }, [rows]);
+
+  const runBulkReplay = async (groupKey: string) => {
+    const group = failedGroups[groupKey] || [];
+    if (group.length === 0) return;
+    if (!confirm(`Replay ${group.length} failed ${groupKey} deliveries?`)) return;
+    setBulkRunning(true);
+    const next = { ...bulkResults };
+    for (const row of group) {
+      next[row.id] = { before: row.status, after: "…" };
+      setBulkResults({ ...next });
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-webhook-replay", { body: { delivery_id: row.id } });
+        if (error) throw error;
+        const http = (data as any)?.status;
+        // Fetch fresh row to see new status.
+        const { data: fresh } = await supabase.from("webhook_deliveries").select("status").eq("id", row.id).maybeSingle();
+        next[row.id] = { before: row.status, after: (fresh?.status as string) || "unknown", http };
+      } catch (e: any) {
+        next[row.id] = { before: row.status, after: "error", error: e.message };
+      }
+      setBulkResults({ ...next });
+    }
+    setBulkRunning(false);
+    await load();
+    toast({ title: "Bulk replay complete", description: `${group.length} deliveries reprocessed` });
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -131,6 +171,9 @@ export default function AdminWebhookMonitor() {
           <p className="text-sm text-muted-foreground">Every incoming webhook (Worldpay etc.) with replay for debugging.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setBulkOpen(true)} disabled={Object.keys(failedGroups).length === 0}>
+            <Layers className="w-4 h-4 mr-1" /> Bulk replay
+          </Button>
           <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
             <Download className="w-4 h-4 mr-1" /> Export CSV
           </Button>
@@ -237,6 +280,61 @@ export default function AdminWebhookMonitor() {
                 Replay event
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkOpen} onOpenChange={(o) => !o && setBulkOpen(false)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="font-black uppercase tracking-tight">Bulk replay failed deliveries</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 overflow-auto pr-4">
+            {Object.keys(failedGroups).length === 0 ? (
+              <div className="p-6 text-sm text-muted-foreground">No failed or unauthorized deliveries in the current window.</div>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(failedGroups).map(([key, group]) => (
+                  <div key={key} className="border-2 border-foreground">
+                    <div className="flex items-center justify-between p-3 bg-muted/40 border-b-2 border-foreground">
+                      <div>
+                        <div className="font-black uppercase text-sm tracking-tight">{key}</div>
+                        <div className="text-xs text-muted-foreground">{group.length} failed deliver{group.length === 1 ? "y" : "ies"}</div>
+                      </div>
+                      <Button size="sm" onClick={() => runBulkReplay(key)} disabled={bulkRunning}>
+                        {bulkRunning ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Play className="w-4 h-4 mr-1" />}
+                        Replay group
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-[minmax(0,1fr)_100px_100px_60px] px-3 py-1 border-b border-border text-[10px] uppercase tracking-widest font-black bg-background">
+                      <div>Reference</div>
+                      <div>Before</div>
+                      <div>After</div>
+                      <div>HTTP</div>
+                    </div>
+                    {group.map((r) => {
+                      const res = bulkResults[r.id];
+                      const after = res?.after ?? "—";
+                      const improved = res && res.before !== "processed" && after === "processed";
+                      return (
+                        <div key={r.id} className="grid grid-cols-[minmax(0,1fr)_100px_100px_60px] px-3 py-1.5 border-b border-border text-xs">
+                          <div className="truncate font-mono">{r.external_reference || r.id}</div>
+                          <div><Badge className={`border-2 text-[10px] ${STATUS_STYLES[res?.before ?? r.status] || "bg-muted"}`}>{res?.before ?? r.status}</Badge></div>
+                          <div>
+                            {after === "…" ? <Loader2 className="w-3 h-3 animate-spin" /> :
+                              <Badge className={`border-2 text-[10px] ${STATUS_STYLES[after] || "bg-muted"} ${improved ? "font-black" : ""}`}>{after}</Badge>}
+                          </div>
+                          <div className="text-xs">{res?.http ?? "—"}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBulkResults({}); setBulkOpen(false); }}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

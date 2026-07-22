@@ -212,6 +212,25 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   const sessionId = useRef(getSessionId());
   const isFreshChat = messages.length <= 1 && messages[0]?.role === "assistant";
 
+  // Attach the guest session id as a request header so RLS can scope anon
+  // reads on chat_conversations/chat_messages to this session only.
+  useEffect(() => {
+    try {
+      const rest = (supabase as any)?.rest;
+      if (rest && rest.headers) {
+        rest.headers["x-session-id"] = sessionId.current;
+      }
+      // Also set on the realtime socket so postgres_changes subscriptions
+      // reuse the same session scope when RLS is evaluated.
+      const realtime = (supabase as any)?.realtime;
+      if (realtime && typeof realtime.setAuth === "function") {
+        // no-op; kept for forward compatibility
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -8322,6 +8322,48 @@ export type Database = {
         }
         Relationships: []
       }
+      cancellation_case_history_customer: {
+        Row: {
+          case_id: string | null
+          created_at: string | null
+          from_status: string | null
+          id: string | null
+          reason: string | null
+          to_status: string | null
+        }
+        Insert: {
+          case_id?: string | null
+          created_at?: string | null
+          from_status?: string | null
+          id?: string | null
+          reason?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          case_id?: string | null
+          created_at?: string | null
+          from_status?: string | null
+          id?: string | null
+          reason?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancellation_case_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "customer_cancellation_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellation_case_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "service_cancellation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_analytics_summary: {
         Row: {
           assistant_messages: number | null
@@ -9659,6 +9701,65 @@ export type Database = {
           value_label?: string | null
         }
         Relationships: []
+      }
+      quote_events_customer: {
+        Row: {
+          contract_summary_id: string | null
+          created_at: string | null
+          event_type: string | null
+          id: string | null
+          quote_id: string | null
+          quote_request_id: string | null
+          title: string | null
+        }
+        Insert: {
+          contract_summary_id?: string | null
+          created_at?: string | null
+          event_type?: string | null
+          id?: string | null
+          quote_id?: string | null
+          quote_request_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          contract_summary_id?: string | null
+          created_at?: string | null
+          event_type?: string | null
+          id?: string | null
+          quote_id?: string | null
+          quote_request_id?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_events_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_events_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sim_orders_by_token: {
         Row: {

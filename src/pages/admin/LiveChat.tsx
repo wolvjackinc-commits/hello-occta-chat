@@ -6,7 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Paperclip, Send, Users } from "lucide-react";
+import { Loader2, Paperclip, Send, Users, BookOpen, Search } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Conversation = {
   id: string;
@@ -47,6 +53,10 @@ export default function AdminLiveChat() {
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState<"all" | "open" | "requested">("open");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideQuery, setGuideQuery] = useState("");
+  const [guides, setGuides] = useState<{ id: string; title: string; slug: string; summary: string | null }[]>([]);
+  const [guidesLoading, setGuidesLoading] = useState(false);
 
   // Preselect from URL param.
   useEffect(() => {
@@ -165,6 +175,52 @@ export default function AdminLiveChat() {
     toast({ title: "Conversation resolved" });
   };
 
+  const openGuidePicker = async () => {
+    setGuideOpen(true);
+    if (guides.length > 0) return;
+    setGuidesLoading(true);
+    const { data } = await supabase
+      .from("kb_articles")
+      .select("id, title, slug, summary")
+      .eq("status", "approved")
+      .order("updated_at", { ascending: false })
+      .limit(200);
+    setGuides((data ?? []) as any);
+    setGuidesLoading(false);
+  };
+
+  const sendGuide = async (g: { title: string; slug: string; summary: string | null }) => {
+    if (!activeId) return;
+    const origin = window.location.origin;
+    const url = `${origin}/help/${g.slug}`;
+    const content = `📘 Here's a guide that should help:\n\n**${g.title}**\n${g.summary || ""}\n\n${url}`;
+    const { data: userRes } = await supabase.auth.getUser();
+    const adminId = userRes.user?.id ?? null;
+    const { error } = await supabase.from("chat_messages").insert({
+      conversation_id: activeId,
+      role: "admin",
+      content,
+      sender_admin_id: adminId,
+      attachments: [{ kind: "guide", title: g.title, slug: g.slug, url }],
+    });
+    if (error) {
+      toast({ title: "Send guide failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    await supabase
+      .from("chat_conversations")
+      .update({ status: "human_active", assigned_admin_id: adminId, last_message_at: new Date().toISOString() })
+      .eq("id", activeId);
+    setGuideOpen(false);
+    toast({ title: "Guide sent", description: g.title });
+  };
+
+  const filteredGuides = guides.filter((g) => {
+    if (!guideQuery.trim()) return true;
+    const q = guideQuery.toLowerCase();
+    return g.title.toLowerCase().includes(q) || (g.summary ?? "").toLowerCase().includes(q) || g.slug.toLowerCase().includes(q);
+  });
+
   return (
     <div className="p-4 md:p-6">
       <div className="mb-4 flex items-center justify-between">
@@ -248,6 +304,9 @@ export default function AdminLiveChat() {
                   <Badge className={`border-2 ${STATUS_STYLES[active.status] || "bg-muted"}`}>
                     {active.status.replace("_", " ")}
                   </Badge>
+                  <Button size="sm" variant="outline" onClick={openGuidePicker}>
+                    <BookOpen className="w-4 h-4 mr-1" /> Send guide
+                  </Button>
                   <Button size="sm" variant="outline" onClick={resolveConversation}>Resolve</Button>
                 </div>
               </div>
@@ -321,6 +380,35 @@ export default function AdminLiveChat() {
           )}
         </div>
       </div>
+
+      <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="font-black uppercase tracking-tight">Send a help guide</DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
+            <Input value={guideQuery} onChange={(e) => setGuideQuery(e.target.value)} placeholder="Search guides…" className="pl-8" />
+          </div>
+          <ScrollArea className="flex-1 mt-2 pr-2">
+            {guidesLoading ? (
+              <div className="p-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
+            ) : filteredGuides.length === 0 ? (
+              <div className="p-6 text-sm text-muted-foreground">No guides match.</div>
+            ) : filteredGuides.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => sendGuide(g)}
+                className="w-full text-left p-3 border-b border-border hover:bg-muted"
+              >
+                <div className="font-bold text-sm">{g.title}</div>
+                {g.summary && <div className="text-xs text-muted-foreground line-clamp-2">{g.summary}</div>}
+                <div className="text-[10px] text-muted-foreground mt-1">/help/{g.slug}</div>
+              </button>
+            ))}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

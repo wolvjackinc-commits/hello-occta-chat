@@ -301,6 +301,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notification_prefs: {
+        Row: {
+          created_at: string
+          email_enabled: boolean
+          event_type: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_enabled?: boolean
+          event_type: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_enabled?: boolean
+          event_type?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_reconciliation_tasks: {
         Row: {
           created_at: string
@@ -8388,6 +8415,63 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_deliveries: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string | null
+          external_reference: string | null
+          headers: Json
+          http_status: number | null
+          id: string
+          last_replayed_at: string | null
+          last_replayed_by: string | null
+          payload: Json
+          replay_count: number
+          result: Json | null
+          signature_valid: boolean | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string | null
+          external_reference?: string | null
+          headers?: Json
+          http_status?: number | null
+          id?: string
+          last_replayed_at?: string | null
+          last_replayed_by?: string | null
+          payload?: Json
+          replay_count?: number
+          result?: Json | null
+          signature_valid?: boolean | null
+          source: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string | null
+          external_reference?: string | null
+          headers?: Json
+          http_status?: number | null
+          id?: string
+          last_replayed_at?: string | null
+          last_replayed_by?: string | null
+          payload?: Json
+          replay_count?: number
+          result?: Json | null
+          signature_valid?: boolean | null
+          source?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }

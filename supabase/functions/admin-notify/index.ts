@@ -994,9 +994,32 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`[admin-notify] Sending email to: ${ADMIN_EMAIL}`);
     console.log(`[admin-notify] Subject: ${emailContent.subject}`);
 
+    // Resolve recipients from admin_notification_prefs. Admins can opt out of
+    // specific event types; if no explicit prefs exist we fall back to the
+    // default ADMIN_EMAIL so nothing is missed.
+    let recipients: string[] = [ADMIN_EMAIL];
+    try {
+      const { data: prefsRows } = await supabase
+        .from("admin_notification_prefs")
+        .select("user_id, email_enabled")
+        .eq("event_type", type)
+        .eq("email_enabled", true);
+      if (prefsRows && prefsRows.length > 0) {
+        const ids = prefsRows.map((r: any) => r.user_id);
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, email")
+          .in("id", ids);
+        const emails = (profs ?? []).map((p: any) => p.email).filter(Boolean);
+        if (emails.length > 0) recipients = Array.from(new Set([...emails, ADMIN_EMAIL]));
+      }
+    } catch (e) {
+      console.warn("[admin-notify] pref lookup failed, using default recipient", e);
+    }
+
     const emailResponse = await resend.emails.send({
       from: `OCCTA <${FROM_EMAIL}>`,
-      to: [ADMIN_EMAIL],
+      to: recipients,
       subject: emailContent.subject,
       html: emailContent.html,
     });

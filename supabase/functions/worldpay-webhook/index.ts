@@ -188,6 +188,69 @@ serve(async (req) => {
   const payloadSha256 = await sha256Hex(body);
   const bodyPreview = body.slice(0, 2000);
 
+  // Log to webhook_deliveries so admins can view + replay.
+  let deliveryId: string | null = null;
+  try {
+    const headersObj: Record<string, string> = {};
+    req.headers.forEach((v, k) => {
+      // Never persist auth-bearing headers
+      const kl = k.toLowerCase();
+      if (kl.includes("secret") || kl.includes("signature") || kl === "authorization") {
+        headersObj[k] = "[redacted]";
+      } else {
+        headersObj[k] = v;
+      }
+    });
+    let parsedPayload: unknown = null;
+    try { parsedPayload = JSON.parse(body); } catch { parsedPayload = { raw: bodyPreview }; }
+    const eventType =
+      (parsedPayload as any)?.type ||
+      (parsedPayload as any)?.eventType ||
+      (parsedPayload as any)?.event ||
+      null;
+    const externalRef =
+      (parsedPayload as any)?.transactionReference ||
+      (parsedPayload as any)?.orderCode ||
+      (parsedPayload as any)?.merchantReference ||
+      null;
+    const { data: dRow } = await supabase
+      .from("webhook_deliveries")
+      .insert({
+        source: `worldpay:${gateway}`,
+        event_type: eventType ? String(eventType).slice(0, 120) : null,
+        external_reference: externalRef ? String(externalRef).slice(0, 200) : null,
+        payload: parsedPayload as any,
+        headers: headersObj as any,
+        status: "received",
+      })
+      .select("id")
+      .maybeSingle();
+    deliveryId = (dRow?.id as string) ?? null;
+  } catch (e) {
+    console.warn("webhook_deliveries insert failed", e);
+  }
+
+  // Local wrapper around `json` that also updates the delivery row so admins
+  // can see final status/http_status/result for each webhook attempt.
+  const respond = async (status: number, data: unknown): Promise<Response> => {
+    if (deliveryId) {
+      try {
+        const finalStatus =
+          status >= 200 && status < 300 ? "processed" : status === 401 ? "unauthorized" : "failed";
+        await supabase
+          .from("webhook_deliveries")
+          .update({
+            status: finalStatus,
+            http_status: status,
+            result: data as any,
+            error_message: status >= 400 ? (typeof (data as any)?.error === "string" ? (data as any).error : null) : null,
+          })
+          .eq("id", deliveryId);
+      } catch {}
+    }
+    return json(status, data);
+  };
+
   // Always log every incoming webhook request (fingerprint only in prod,
   // full preview here for debuggability). Never awaited into the response
   // to keep latency low.
@@ -221,7 +284,7 @@ serve(async (req) => {
       entity: "payment",
       metadata: { gateway, payload_sha256: payloadSha256 },
     });
-    return json(500, { error: "Webhook configuration error" });
+    return await respond(500, { error: "Webhook configuration error" });
   }
 
   const signature =
@@ -265,7 +328,7 @@ serve(async (req) => {
         `payload_sha256=${payloadSha256}`,
       priority: "urgent",
     });
-    return json(401, { error: "Unauthorized" });
+    return await respond(401, { error: "Unauthorized" });
   }
 
   // Parse JSON
@@ -285,7 +348,7 @@ serve(async (req) => {
         `payload_sha256=${payloadSha256}\nbody_preview=${bodyPreview}`,
       priority: "high",
     });
-    return json(400, { error: "Malformed JSON" });
+    return await respond(400, { error: "Malformed JSON" });
   }
 
   const shape = validateSmbShape(parsed);
@@ -302,7 +365,7 @@ serve(async (req) => {
         `payload_sha256=${payloadSha256}\nbody_preview=${bodyPreview}`,
       priority: "high",
     });
-    return json(shape.status, { error: "Invalid payload", missing: shape.missing });
+    return await respond(shape.status, { error: "Invalid payload", missing: shape.missing });
   }
 
   const ev = shape.data;
@@ -320,7 +383,7 @@ serve(async (req) => {
         payload_sha256: payloadSha256,
       },
     });
-    return json(200, { received: true, ignored: true });
+    return await respond(200, { received: true, ignored: true });
   }
 
   // Locate the payment request by exact provider_reference match.
@@ -334,7 +397,7 @@ serve(async (req) => {
 
   if (prErr) {
     console.error("payment_requests lookup error", prErr);
-    return json(200, { received: true, error: "lookup_error" });
+    return await respond(200, { received: true, error: "lookup_error" });
   }
   if (!pr) {
     await supabase.from("audit_logs").insert({
@@ -363,7 +426,7 @@ serve(async (req) => {
         priority: "urgent",
       });
     }
-    return json(200, { received: true, unknown_reference: true });
+    return await respond(200, { received: true, unknown_reference: true });
   }
 
   // A payment request must be linked to either a contract summary (new-customer
@@ -390,7 +453,7 @@ serve(async (req) => {
         priority: "urgent",
       });
     }
-    return json(200, { received: true, rejected: "unlinked" });
+    return await respond(200, { received: true, rejected: "unlinked" });
   }
 
   // Idempotency: dedupe by eventId across this PR's event log.
@@ -411,7 +474,7 @@ serve(async (req) => {
         gateway,
       },
     });
-    return json(200, { received: true, duplicate: true });
+    return await respond(200, { received: true, duplicate: true });
   }
 
   // Terminal-paid is immutable; record duplicate and return.
@@ -464,7 +527,7 @@ serve(async (req) => {
       priority: "urgent",
       relatedUserId: pr.user_id ?? null,
     });
-    return json(200, { received: true, mismatch: true });
+    return await respond(200, { received: true, mismatch: true });
   }
 
   const nowIso = new Date().toISOString();
@@ -481,7 +544,7 @@ serve(async (req) => {
         eventTimestamp: ev.eventTimestamp,
       },
     });
-    return json(200, { received: true });
+    return await respond(200, { received: true });
   }
 
   if (ev.type === "authorized") {
@@ -510,7 +573,7 @@ serve(async (req) => {
         })
         .eq("id", pr.id);
     }
-    return json(200, { received: true, authorized: true });
+    return await respond(200, { received: true, authorized: true });
   }
 
   if (ev.type === SETTLE_EVENT) {
@@ -520,7 +583,7 @@ serve(async (req) => {
         event_type: "duplicate_webhook",
         metadata: { eventId: ev.eventId, type: ev.type, gateway },
       });
-      return json(200, { received: true, already_paid: true });
+      return await respond(200, { received: true, already_paid: true });
     }
 
     const { error: updErr } = await supabase
@@ -543,7 +606,7 @@ serve(async (req) => {
 
     if (updErr) {
       console.error("Failed to mark PR paid:", updErr);
-      return json(200, { received: true, error: "update_failed" });
+      return await respond(200, { received: true, error: "update_failed" });
     }
 
     await supabase.from("payment_request_events").insert({
@@ -634,7 +697,7 @@ serve(async (req) => {
     } catch (e) {
       console.error("payment_received_email_dispatch_threw", e);
     }
-    return json(200, { received: true, paid: true });
+    return await respond(200, { received: true, paid: true });
   }
 
   // refused / cancelled / expired / error
@@ -651,7 +714,7 @@ serve(async (req) => {
         event_type: "post_paid_failure_ignored",
         metadata: { eventId: ev.eventId, type: ev.type, gateway },
       });
-      return json(200, { received: true, already_paid: true });
+      return await respond(200, { received: true, already_paid: true });
     }
     const newStatus = ev.type === "cancelled" ? "cancelled" : "failed";
     await supabase
@@ -681,9 +744,9 @@ serve(async (req) => {
         currency: providerCurrency,
       },
     });
-    return json(200, { received: true, status: newStatus });
+    return await respond(200, { received: true, status: newStatus });
   }
 
   // Should be unreachable (KNOWN_EVENTS check above).
-  return json(200, { received: true });
+  return await respond(200, { received: true });
 });

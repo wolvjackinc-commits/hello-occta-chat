@@ -112,6 +112,8 @@ type AttachmentMeta = {
   name: string;
   size: number;
   type: string;
+  path?: string;
+  url?: string;
 };
 
 type Message = {
@@ -781,17 +783,36 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
-  const handleAttachmentsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAttachmentsChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
-    if (files.length === 0) return;
-    const newAttachments = files.map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-    }));
-    setPendingAttachments((prev) => [...prev, ...newAttachments]);
     event.target.value = "";
+    if (files.length === 0) return;
+    const sid = sessionId.current;
+    const { data: userRes } = await supabase.auth.getUser();
+    const uid = userRes.user?.id ?? "guest";
+    for (const file of files) {
+      // 15MB safety cap for customer uploads
+      if (file.size > 15 * 1024 * 1024) {
+        toast({ title: "File too large", description: `${file.name} exceeds 15MB`, variant: "destructive" });
+        continue;
+      }
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `user/${uid}/${sid}/${Date.now()}-${safe}`;
+      const up = await supabase.storage.from("chat-attachments").upload(path, file, { upsert: false });
+      if (up.error) {
+        toast({ title: "Upload failed", description: up.error.message, variant: "destructive" });
+        continue;
+      }
+      const signed = await supabase.storage.from("chat-attachments").createSignedUrl(path, 60 * 60 * 24 * 7);
+      setPendingAttachments((prev) => [...prev, {
+        id: crypto.randomUUID(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        path,
+        url: signed.data?.signedUrl,
+      }]);
+    }
   };
 
   const handleRemoveAttachment = (id: string) => {

@@ -284,7 +284,7 @@ serve(async (req) => {
       entity: "payment",
       metadata: { gateway, payload_sha256: payloadSha256 },
     });
-    return json(500, { error: "Webhook configuration error" });
+    return await respond(500, { error: "Webhook configuration error" });
   }
 
   const signature =
@@ -328,7 +328,7 @@ serve(async (req) => {
         `payload_sha256=${payloadSha256}`,
       priority: "urgent",
     });
-    return json(401, { error: "Unauthorized" });
+    return await respond(401, { error: "Unauthorized" });
   }
 
   // Parse JSON
@@ -348,7 +348,7 @@ serve(async (req) => {
         `payload_sha256=${payloadSha256}\nbody_preview=${bodyPreview}`,
       priority: "high",
     });
-    return json(400, { error: "Malformed JSON" });
+    return await respond(400, { error: "Malformed JSON" });
   }
 
   const shape = validateSmbShape(parsed);
@@ -365,7 +365,7 @@ serve(async (req) => {
         `payload_sha256=${payloadSha256}\nbody_preview=${bodyPreview}`,
       priority: "high",
     });
-    return json(shape.status, { error: "Invalid payload", missing: shape.missing });
+    return await respond(shape.status, { error: "Invalid payload", missing: shape.missing });
   }
 
   const ev = shape.data;
@@ -383,7 +383,7 @@ serve(async (req) => {
         payload_sha256: payloadSha256,
       },
     });
-    return json(200, { received: true, ignored: true });
+    return await respond(200, { received: true, ignored: true });
   }
 
   // Locate the payment request by exact provider_reference match.
@@ -397,7 +397,7 @@ serve(async (req) => {
 
   if (prErr) {
     console.error("payment_requests lookup error", prErr);
-    return json(200, { received: true, error: "lookup_error" });
+    return await respond(200, { received: true, error: "lookup_error" });
   }
   if (!pr) {
     await supabase.from("audit_logs").insert({
@@ -426,7 +426,7 @@ serve(async (req) => {
         priority: "urgent",
       });
     }
-    return json(200, { received: true, unknown_reference: true });
+    return await respond(200, { received: true, unknown_reference: true });
   }
 
   // A payment request must be linked to either a contract summary (new-customer
@@ -453,7 +453,7 @@ serve(async (req) => {
         priority: "urgent",
       });
     }
-    return json(200, { received: true, rejected: "unlinked" });
+    return await respond(200, { received: true, rejected: "unlinked" });
   }
 
   // Idempotency: dedupe by eventId across this PR's event log.
@@ -474,7 +474,7 @@ serve(async (req) => {
         gateway,
       },
     });
-    return json(200, { received: true, duplicate: true });
+    return await respond(200, { received: true, duplicate: true });
   }
 
   // Terminal-paid is immutable; record duplicate and return.
@@ -527,7 +527,7 @@ serve(async (req) => {
       priority: "urgent",
       relatedUserId: pr.user_id ?? null,
     });
-    return json(200, { received: true, mismatch: true });
+    return await respond(200, { received: true, mismatch: true });
   }
 
   const nowIso = new Date().toISOString();
@@ -544,7 +544,7 @@ serve(async (req) => {
         eventTimestamp: ev.eventTimestamp,
       },
     });
-    return json(200, { received: true });
+    return await respond(200, { received: true });
   }
 
   if (ev.type === "authorized") {
@@ -573,7 +573,7 @@ serve(async (req) => {
         })
         .eq("id", pr.id);
     }
-    return json(200, { received: true, authorized: true });
+    return await respond(200, { received: true, authorized: true });
   }
 
   if (ev.type === SETTLE_EVENT) {
@@ -583,7 +583,7 @@ serve(async (req) => {
         event_type: "duplicate_webhook",
         metadata: { eventId: ev.eventId, type: ev.type, gateway },
       });
-      return json(200, { received: true, already_paid: true });
+      return await respond(200, { received: true, already_paid: true });
     }
 
     const { error: updErr } = await supabase
@@ -606,7 +606,7 @@ serve(async (req) => {
 
     if (updErr) {
       console.error("Failed to mark PR paid:", updErr);
-      return json(200, { received: true, error: "update_failed" });
+      return await respond(200, { received: true, error: "update_failed" });
     }
 
     await supabase.from("payment_request_events").insert({
@@ -697,7 +697,7 @@ serve(async (req) => {
     } catch (e) {
       console.error("payment_received_email_dispatch_threw", e);
     }
-    return json(200, { received: true, paid: true });
+    return await respond(200, { received: true, paid: true });
   }
 
   // refused / cancelled / expired / error
@@ -714,7 +714,7 @@ serve(async (req) => {
         event_type: "post_paid_failure_ignored",
         metadata: { eventId: ev.eventId, type: ev.type, gateway },
       });
-      return json(200, { received: true, already_paid: true });
+      return await respond(200, { received: true, already_paid: true });
     }
     const newStatus = ev.type === "cancelled" ? "cancelled" : "failed";
     await supabase
@@ -744,9 +744,9 @@ serve(async (req) => {
         currency: providerCurrency,
       },
     });
-    return json(200, { received: true, status: newStatus });
+    return await respond(200, { received: true, status: newStatus });
   }
 
   // Should be unreachable (KNOWN_EVENTS check above).
-  return json(200, { received: true });
+  return await respond(200, { received: true });
 });

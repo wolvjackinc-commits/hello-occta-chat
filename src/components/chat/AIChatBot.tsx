@@ -812,6 +812,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
         path,
         url: signed.data?.signedUrl,
       }]);
+      // Fire-and-forget malware scan; admins can't download until this returns clean.
+      supabase.functions.invoke("chat-attachment-scan", {
+        body: { path, content_type: file.type },
+      }).catch((e) => console.warn("attachment scan failed", e));
     }
   };
 

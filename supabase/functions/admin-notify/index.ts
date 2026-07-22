@@ -905,6 +905,24 @@ const handler = async (req: Request): Promise<Response> => {
         emailContent = generateBusinessEnquiryEmail(enrichedData);
         break;
       case "human_chat_request":
+        {
+        // Find the latest message id in this conversation for a jump-to-message deep link.
+        let msgId: string | null = null;
+        try {
+          const convId = String(enrichedData.id || "");
+          if (convId) {
+            const { data: last } = await supabase
+              .from("chat_messages")
+              .select("id")
+              .eq("conversation_id", convId)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            msgId = (last?.id as string) ?? null;
+          }
+        } catch { /* non-fatal */ }
+        const convId = encodeURIComponent(String(enrichedData.id || ""));
+        const deep = `${ADMIN_DASHBOARD_URL}/live-chat?c=${convId}${msgId ? `&m=${encodeURIComponent(msgId)}` : ""}`;
         emailContent = generateGenericAdminEmail(
           "🙋 Customer wants a human",
           "Live chat handoff",
@@ -916,9 +934,10 @@ const handler = async (req: Request): Promise<Response> => {
             ["Last message", String(enrichedData.last_message || "—")],
             ["Summary", String(enrichedData.summary || "—")],
           ],
-          `${ADMIN_DASHBOARD_URL}/live-chat?c=${encodeURIComponent(String(enrichedData.id || ""))}`,
-          "Open live chat →",
+          deep,
+          "Jump to conversation →",
         );
+        }
         break;
       case "dd_mandate_submitted":
         emailContent = generateGenericAdminEmail(
@@ -932,8 +951,8 @@ const handler = async (req: Request): Promise<Response> => {
             ["Account", String(enrichedData.account_masked || "••••••••")],
             ["Status", String(enrichedData.status || "pending")],
           ],
-          `${ADMIN_DASHBOARD_URL}/payments-dd`,
-          "View mandates →",
+          `${ADMIN_DASHBOARD_URL}/payments-dd?highlight=${encodeURIComponent(String(enrichedData.id || ""))}`,
+          "Open this mandate →",
         );
         break;
       case "invoice_paid":
@@ -947,8 +966,8 @@ const handler = async (req: Request): Promise<Response> => {
             ["Method", String(enrichedData.payment_method || "—")],
             ["Paid at", formatDate(String(enrichedData.paid_at || new Date().toISOString()))],
           ],
-          `${ADMIN_DASHBOARD_URL}/billing`,
-          "Open billing →",
+          `${ADMIN_DASHBOARD_URL}/billing?invoice=${encodeURIComponent(String(enrichedData.id || enrichedData.invoice_number || ""))}`,
+          "Open this invoice →",
         );
         break;
       case "contract_signed":
@@ -962,8 +981,8 @@ const handler = async (req: Request): Promise<Response> => {
             ["Plan", String(enrichedData.plan_name || "—")],
             ["Signed at", formatDate(String(enrichedData.signed_at || new Date().toISOString()))],
           ],
-          `${ADMIN_DASHBOARD_URL}/orders`,
-          "View orders →",
+          `${ADMIN_DASHBOARD_URL}/orders?highlight=${encodeURIComponent(String(enrichedData.order_id || enrichedData.id || ""))}`,
+          "Open this order →",
         );
         break;
       case "order_live":
@@ -977,8 +996,8 @@ const handler = async (req: Request): Promise<Response> => {
             ["Status", String(enrichedData.status || "live")],
             ["Activated", formatDate(String(enrichedData.activated_at || new Date().toISOString()))],
           ],
-          `${ADMIN_DASHBOARD_URL}/orders`,
-          "Open order →",
+          `${ADMIN_DASHBOARD_URL}/orders?highlight=${encodeURIComponent(String(enrichedData.id || enrichedData.order_number || ""))}`,
+          "Open this order →",
         );
         break;
       case "new_quote_request":
@@ -1023,6 +1042,26 @@ const handler = async (req: Request): Promise<Response> => {
       subject: emailContent.subject,
       html: emailContent.html,
     });
+
+    // Log this admin notification event so it can be reviewed / CSV-exported.
+    try {
+      const sendErr = (emailResponse as any)?.error?.message ?? null;
+      const refUrlMatch = /href="([^"]+)"/.exec(emailContent.html || "");
+      await supabase.from("admin_notification_events").insert({
+        event_type: type,
+        subject: emailContent.subject,
+        recipients,
+        success: !sendErr,
+        error_message: sendErr,
+        reference_url: refUrlMatch?.[1] ?? null,
+        metadata: {
+          message_id: (emailResponse as any)?.data?.id ?? null,
+          reference: (enrichedData as any)?.reference ?? (enrichedData as any)?.id ?? null,
+        },
+      });
+    } catch (logErr) {
+      console.warn("[admin-notify] failed to log notification event", logErr);
+    }
 
     console.log(`[admin-notify] Email sent successfully:`, emailResponse);
 

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Play, Search } from "lucide-react";
+import { Loader2, RefreshCw, Play, Search, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -102,6 +102,27 @@ export default function AdminWebhookMonitor() {
     }
   };
 
+  const exportCsv = () => {
+    const rows = filtered;
+    const headers = ["id","source","event_type","external_reference","status","http_status","replay_count","last_replayed_at","error_message","created_at"];
+    const esc = (v: unknown) => {
+      if (v === null || v === undefined) return "";
+      const s = typeof v === "string" ? v : JSON.stringify(v);
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const csv = [
+      headers.join(","),
+      ...rows.map((r) => headers.map((h) => esc((r as any)[h])).join(",")),
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `webhook-deliveries-${new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -109,9 +130,14 @@ export default function AdminWebhookMonitor() {
           <h1 className="text-3xl font-black uppercase tracking-tight">Webhook Monitor</h1>
           <p className="text-sm text-muted-foreground">Every incoming webhook (Worldpay etc.) with replay for debugging.</p>
         </div>
-        <Button variant="outline" onClick={load} disabled={loading}>
-          {loading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />} Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
+            <Download className="w-4 h-4 mr-1" /> Export CSV
+          </Button>
+          <Button variant="outline" onClick={load} disabled={loading}>
+            {loading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />} Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

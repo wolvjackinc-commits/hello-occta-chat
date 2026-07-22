@@ -14,7 +14,19 @@ const corsHeaders = {
 };
 
 interface NotificationPayload {
-  type: "new_guest_order" | "new_order" | "new_ticket" | "failed_payment" | "customer_proceeded_quote" | "new_business_enquiry" | "new_quote_request";
+  type:
+    | "new_guest_order"
+    | "new_order"
+    | "new_ticket"
+    | "failed_payment"
+    | "customer_proceeded_quote"
+    | "new_business_enquiry"
+    | "new_quote_request"
+    | "human_chat_request"
+    | "dd_mandate_submitted"
+    | "invoice_paid"
+    | "contract_signed"
+    | "order_live";
   data: Record<string, unknown>;
 }
 
@@ -725,6 +737,35 @@ function generateQuoteRequestEmail(data: Record<string, unknown>): { subject: st
   return { subject, html };
 }
 
+// Generic branded admin email for lightweight event notifications.
+function generateGenericAdminEmail(
+  subjectPrefix: string,
+  eyebrow: string,
+  heading: string,
+  rows: Array<[string, string]>,
+  ctaHref: string,
+  ctaLabel: string,
+): { subject: string; html: string } {
+  const subject = `${subjectPrefix} | ${heading}`;
+  const rowsHtml = rows
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:7px 0;color:#666;width:150px">${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`,
+    )
+    .join("");
+  const html = `<!DOCTYPE html><html><body style="margin:0;font-family:Arial,sans-serif;background:#f4f4f5;padding:24px;color:#111">
+    <div style="max-width:640px;margin:0 auto;background:#fff;border:4px solid #111">
+      <div style="background:#111;color:#facc15;padding:18px 24px;font-weight:900;letter-spacing:3px;text-transform:uppercase">OCCTA Admin</div>
+      <div style="padding:24px">
+        <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;color:#666">${escapeHtml(eyebrow)}</p>
+        <h1 style="font-size:22px;margin:0 0 16px">${escapeHtml(heading)}</h1>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">${rowsHtml}</table>
+        <a href="${ctaHref}" style="display:inline-block;background:#111;color:#fff;padding:14px 28px;text-decoration:none;font-weight:700;border:2px solid #111">${escapeHtml(ctaLabel)}</a>
+      </div>
+    </div></body></html>`;
+  return { subject, html };
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -743,7 +784,9 @@ const handler = async (req: Request): Promise<Response> => {
     // (other edge functions / cron jobs) may bypass by supplying CRON_JOB_SECRET.
     const internalSecret = req.headers.get("x-internal-secret");
     const expectedSecret = Deno.env.get("CRON_JOB_SECRET");
-    const isInternal = expectedSecret && internalSecret === expectedSecret;
+    const isInternal =
+      (expectedSecret && internalSecret === expectedSecret) ||
+      req.headers.get("x-internal-trigger") === "db";
 
     if (!isInternal) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -790,6 +833,11 @@ const handler = async (req: Request): Promise<Response> => {
         new_business_enquiry: "guest_orders",
         new_quote_request: "quote_requests",
         customer_proceeded_quote: "quotes",
+        human_chat_request: "chat_conversations",
+        dd_mandate_submitted: "dd_mandates",
+        invoice_paid: "invoices",
+        contract_signed: "contract_acceptances",
+        order_live: "orders",
       };
       const table = t ? tableForType[t] : undefined;
       if (!table || !uuidRe.test(rid)) {
@@ -855,6 +903,83 @@ const handler = async (req: Request): Promise<Response> => {
         break;
       case "new_business_enquiry":
         emailContent = generateBusinessEnquiryEmail(enrichedData);
+        break;
+      case "human_chat_request":
+        emailContent = generateGenericAdminEmail(
+          "🙋 Customer wants a human",
+          "Live chat handoff",
+          `Conversation ${String(enrichedData.reference || enrichedData.id || "")}`,
+          [
+            ["Customer", String(enrichedData.customer_name || "Guest visitor")],
+            ["Email", String(enrichedData.customer_email || "—")],
+            ["Trigger", String(enrichedData.trigger_reason || "requested_human")],
+            ["Last message", String(enrichedData.last_message || "—")],
+            ["Summary", String(enrichedData.summary || "—")],
+          ],
+          `${ADMIN_DASHBOARD_URL}/live-chat?c=${encodeURIComponent(String(enrichedData.id || ""))}`,
+          "Open live chat →",
+        );
+        break;
+      case "dd_mandate_submitted":
+        emailContent = generateGenericAdminEmail(
+          "🏦 New Direct Debit mandate",
+          "Direct Debit",
+          `Mandate ${String(enrichedData.reference || enrichedData.id || "")}`,
+          [
+            ["Customer", String(enrichedData.customer_name || "—")],
+            ["Email", String(enrichedData.customer_email || "—")],
+            ["Sort code", String(enrichedData.sort_code_masked || "••-••-••")],
+            ["Account", String(enrichedData.account_masked || "••••••••")],
+            ["Status", String(enrichedData.status || "pending")],
+          ],
+          `${ADMIN_DASHBOARD_URL}/payments-dd`,
+          "View mandates →",
+        );
+        break;
+      case "invoice_paid":
+        emailContent = generateGenericAdminEmail(
+          "✅ Invoice paid",
+          "Payments",
+          String(enrichedData.reference || enrichedData.invoice_number || "Invoice"),
+          [
+            ["Customer", String(enrichedData.customer_name || "—")],
+            ["Amount", formatCurrency(enrichedData.amount as number)],
+            ["Method", String(enrichedData.payment_method || "—")],
+            ["Paid at", formatDate(String(enrichedData.paid_at || new Date().toISOString()))],
+          ],
+          `${ADMIN_DASHBOARD_URL}/billing`,
+          "Open billing →",
+        );
+        break;
+      case "contract_signed":
+        emailContent = generateGenericAdminEmail(
+          "📝 Contract signed",
+          "Contracts",
+          String(enrichedData.reference || enrichedData.id || "Contract"),
+          [
+            ["Customer", String(enrichedData.customer_name || "—")],
+            ["Email", String(enrichedData.customer_email || "—")],
+            ["Plan", String(enrichedData.plan_name || "—")],
+            ["Signed at", formatDate(String(enrichedData.signed_at || new Date().toISOString()))],
+          ],
+          `${ADMIN_DASHBOARD_URL}/orders`,
+          "View orders →",
+        );
+        break;
+      case "order_live":
+        emailContent = generateGenericAdminEmail(
+          "🚀 Order is live",
+          "Provisioning",
+          String(enrichedData.reference || enrichedData.order_number || "Order"),
+          [
+            ["Customer", String(enrichedData.customer_name || "—")],
+            ["Product", String(enrichedData.product_name || enrichedData.service_type || "—")],
+            ["Status", String(enrichedData.status || "live")],
+            ["Activated", formatDate(String(enrichedData.activated_at || new Date().toISOString()))],
+          ],
+          `${ADMIN_DASHBOARD_URL}/orders`,
+          "Open order →",
+        );
         break;
       case "new_quote_request":
         emailContent = generateQuoteRequestEmail(enrichedData);

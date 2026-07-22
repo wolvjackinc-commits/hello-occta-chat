@@ -1484,6 +1484,92 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_conversations: {
+        Row: {
+          assigned_admin_id: string | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          handoff_reason: string | null
+          id: string
+          last_message_at: string
+          session_id: string
+          status: string
+          summary: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_admin_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          handoff_reason?: string | null
+          id?: string
+          last_message_at?: string
+          session_id: string
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_admin_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          handoff_reason?: string | null
+          id?: string
+          last_message_at?: string
+          session_id?: string
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          attachments: Json
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          sender_admin_id: string | null
+        }
+        Insert: {
+          attachments?: Json
+          content?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          sender_admin_id?: string | null
+        }
+        Update: {
+          attachments?: Json
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          sender_admin_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_messages: {
         Row: {
           attachments_json: Json
@@ -10704,6 +10790,12 @@ export type Database = {
         Args: { _anchor_day: number; _from: string }
         Returns: string
       }
+      notify_admin_event:
+        | { Args: { _data: Json; _type: string }; Returns: undefined }
+        | {
+            Args: { _extra?: Json; _id: string; _type: string }
+            Returns: undefined
+          }
       quote_below_retail_floor: {
         Args: { _quote_id: string }
         Returns: boolean

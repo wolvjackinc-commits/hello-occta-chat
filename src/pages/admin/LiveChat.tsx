@@ -182,7 +182,7 @@ export default function AdminLiveChat() {
     const { data } = await supabase
       .from("kb_articles")
       .select("id, title, slug, summary")
-      .eq("status", "published")
+      .eq("status", "approved")
       .order("updated_at", { ascending: false })
       .limit(200);
     setGuides((data ?? []) as any);

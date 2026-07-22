@@ -188,6 +188,48 @@ serve(async (req) => {
   const payloadSha256 = await sha256Hex(body);
   const bodyPreview = body.slice(0, 2000);
 
+  // Log to webhook_deliveries so admins can view + replay.
+  let deliveryId: string | null = null;
+  try {
+    const headersObj: Record<string, string> = {};
+    req.headers.forEach((v, k) => {
+      // Never persist auth-bearing headers
+      const kl = k.toLowerCase();
+      if (kl.includes("secret") || kl.includes("signature") || kl === "authorization") {
+        headersObj[k] = "[redacted]";
+      } else {
+        headersObj[k] = v;
+      }
+    });
+    let parsedPayload: unknown = null;
+    try { parsedPayload = JSON.parse(body); } catch { parsedPayload = { raw: bodyPreview }; }
+    const eventType =
+      (parsedPayload as any)?.type ||
+      (parsedPayload as any)?.eventType ||
+      (parsedPayload as any)?.event ||
+      null;
+    const externalRef =
+      (parsedPayload as any)?.transactionReference ||
+      (parsedPayload as any)?.orderCode ||
+      (parsedPayload as any)?.merchantReference ||
+      null;
+    const { data: dRow } = await supabase
+      .from("webhook_deliveries")
+      .insert({
+        source: `worldpay:${gateway}`,
+        event_type: eventType ? String(eventType).slice(0, 120) : null,
+        external_reference: externalRef ? String(externalRef).slice(0, 200) : null,
+        payload: parsedPayload as any,
+        headers: headersObj as any,
+        status: "received",
+      })
+      .select("id")
+      .maybeSingle();
+    deliveryId = (dRow?.id as string) ?? null;
+  } catch (e) {
+    console.warn("webhook_deliveries insert failed", e);
+  }
+
   // Always log every incoming webhook request (fingerprint only in prod,
   // full preview here for debuggability). Never awaited into the response
   // to keep latency low.

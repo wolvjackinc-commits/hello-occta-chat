@@ -808,7 +808,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     if (files.length === 0) return;
     const sid = sessionId.current;
     const { data: userRes } = await supabase.auth.getUser();
-    const uid = userRes.user?.id ?? "guest";
+    const uid = userRes.user?.id ?? null;
     for (const file of files) {
       // 15MB safety cap for customer uploads
       if (file.size > 15 * 1024 * 1024) {
@@ -816,7 +816,11 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
         continue;
       }
       const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `user/${uid}/${sid}/${Date.now()}-${safe}`;
+      // Guests write to guest/<session_id>/... so storage RLS can scope by the
+      // x-session-id header; authenticated users write under user/<uid>/...
+      const path = uid
+        ? `user/${uid}/${sid}/${Date.now()}-${safe}`
+        : `guest/${sid}/${Date.now()}-${safe}`;
       const up = await supabase.storage.from("chat-attachments").upload(path, file, { upsert: false });
       if (up.error) {
         toast({ title: "Upload failed", description: up.error.message, variant: "destructive" });

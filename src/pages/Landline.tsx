@@ -247,14 +247,23 @@ const Landline = () => {
                 <p className="text-sm text-muted-foreground mb-4">Select any combination or leave blank for pay-as-you-go (8p/min UK calls)</p>
                 <div className="space-y-2">
                   {callPlans.map((cp) => (
-                    <motion.button
+                    <motion.div
                       key={cp.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={selectedCallPlans.includes(cp.id)}
                       className={`w-full p-4 text-left border-4 transition-colors ${
                         selectedCallPlans.includes(cp.id)
                           ? 'border-primary bg-primary/5' 
                           : 'border-foreground/10 hover:border-foreground/30 bg-background'
                       }`}
                       onClick={() => toggleCallPlan(cp.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          toggleCallPlan(cp.id);
+                        }
+                      }}
                       whileHover={{ x: 4 }}
                       transition={{ duration: 0.12 }}
                     >
@@ -274,7 +283,7 @@ const Landline = () => {
                           <p className="font-display text-lg text-primary">{cp.price}</p>
                         </div>
                       </div>
-                    </motion.button>
+                    </motion.div>
                   ))}
                 </div>
               </div>

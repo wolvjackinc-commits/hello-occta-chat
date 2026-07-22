@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Paperclip, Send, Users, BookOpen, Search } from "lucide-react";
+import { Loader2, Paperclip, Send, Users, BookOpen, Search, ShieldAlert, ShieldCheck, ShieldQuestion, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +64,61 @@ export default function AdminLiveChat() {
     const c = params.get("c");
     if (c) setActiveId(c);
   }, []);
+
+  // Deep-link: ?m=<message_id> — scroll to and highlight that message once loaded.
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const m = params.get("m");
+    if (m) setHighlightId(m);
+  }, []);
+  useEffect(() => {
+    if (!highlightId || messages.length === 0) return;
+    // Wait a tick for DOM to paint.
+    const t = setTimeout(() => {
+      const el = document.getElementById(`msg-${highlightId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-4", "ring-yellow-400");
+        setTimeout(() => el.classList.remove("ring-4", "ring-yellow-400"), 3000);
+      }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [highlightId, messages.length]);
+
+  // Scan-status lookup for attachments.
+  const [scanMap, setScanMap] = useState<Record<string, { status: string; reasons: string[] | null }>>({});
+  useEffect(() => {
+    const paths = messages
+      .flatMap((m) => (Array.isArray(m.attachments) ? (m.attachments as any[]) : []))
+      .map((a: any) => a?.path)
+      .filter(Boolean);
+    if (paths.length === 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from("chat_attachment_scans" as any)
+        .select("path, status, reasons")
+        .in("path", paths);
+      const map: Record<string, { status: string; reasons: string[] | null }> = {};
+      (data ?? []).forEach((r: any) => { map[r.path] = { status: r.status, reasons: r.reasons }; });
+      setScanMap(map);
+    })();
+  }, [messages]);
+
+  const safeDownload = async (path: string, name: string, force = false) => {
+    const { data, error } = await supabase.functions.invoke("chat-attachment-download", {
+      body: { path, force },
+    });
+    if (error) {
+      const details = (error as any)?.context?.text ? await (error as any).context.text() : error.message;
+      toast({ title: "Download blocked", description: details, variant: "destructive" });
+      return;
+    }
+    const url = (data as any)?.url;
+    if (!url) { toast({ title: "Download failed", variant: "destructive" }); return; }
+    const a = document.createElement("a");
+    a.href = url; a.download = name; a.rel = "noopener"; a.click();
+  };
 
   const loadConversations = async () => {
     let q = supabase
@@ -316,6 +371,7 @@ export default function AdminLiveChat() {
                   {messages.map((m) => (
                     <div
                       key={m.id}
+                      id={`msg-${m.id}`}
                       className={`max-w-[80%] p-3 border-2 ${
                         m.role === "admin"
                           ? "ml-auto bg-foreground text-background border-foreground"
@@ -330,6 +386,41 @@ export default function AdminLiveChat() {
                         {m.role} · {new Date(m.created_at).toLocaleTimeString("en-GB")}
                       </div>
                       <div className="whitespace-pre-wrap text-sm">{m.content}</div>
+                      {Array.isArray(m.attachments) && (m.attachments as any[]).length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {(m.attachments as any[]).map((a: any, i: number) => {
+                            if (!a?.path) return null;
+                            const scan = scanMap[a.path];
+                            const st = scan?.status ?? "pending";
+                            const Icon = st === "clean" ? ShieldCheck : st === "quarantined" ? ShieldAlert : ShieldQuestion;
+                            const tone =
+                              st === "clean" ? "text-emerald-600 border-emerald-500" :
+                              st === "quarantined" ? "text-red-600 border-red-500" :
+                              "text-amber-600 border-amber-500";
+                            return (
+                              <div key={i} className={`flex items-center gap-2 border-2 ${tone} p-2 bg-background text-foreground text-xs`}>
+                                <Icon className="w-4 h-4 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-bold truncate">{a.name || a.path.split("/").pop()}</div>
+                                  <div className="opacity-70 uppercase tracking-widest text-[10px]">
+                                    {st}{scan?.reasons?.length ? ` · ${scan.reasons.join(", ")}` : ""}
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={st === "pending"}
+                                  onClick={() => safeDownload(a.path, a.name || "attachment", st === "quarantined")}
+                                  title={st === "quarantined" ? "Force download quarantined file" : "Download"}
+                                >
+                                  <Download className="w-3 h-3 mr-1" />
+                                  {st === "quarantined" ? "Force" : "Download"}
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {messages.length === 0 && (

@@ -41,6 +41,8 @@ const AdminPaymentRequests = lazy(() => import("./pages/admin/PaymentRequests").
 const AdminCommunications = lazy(() => import("./pages/admin/Communications").then(m => ({ default: m.AdminCommunications })));
 const AdminChatTranscripts = lazy(() => import("./pages/admin/ChatTranscripts").then(m => ({ default: m.AdminChatTranscripts })));
 const AdminLiveChat = lazy(() => import("./pages/admin/LiveChat"));
+const AdminWebhookMonitor = lazy(() => import("./pages/admin/WebhookMonitor"));
+const AdminNotificationSettings = lazy(() => import("./pages/admin/NotificationSettings"));
 import Broadband from "./pages/Broadband";
 import Pay from "./pages/Pay";
 import PayInternalReturn from "./pages/PayInternalReturn";
@@ -232,6 +234,8 @@ const AnimatedRoutes = () => {
             <Route path="communications" element={<Suspense fallback={<AdminRouteFallback />}><AdminCommunications /></Suspense>} />
             <Route path="chat-transcripts" element={<Suspense fallback={<AdminRouteFallback />}><AdminChatTranscripts /></Suspense>} />
             <Route path="live-chat" element={<Suspense fallback={<AdminRouteFallback />}><AdminLiveChat /></Suspense>} />
+            <Route path="webhook-monitor" element={<Suspense fallback={<AdminRouteFallback />}><AdminWebhookMonitor /></Suspense>} />
+            <Route path="notification-settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminNotificationSettings /></Suspense>} />
             <Route path="quote-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuoteRequests /></Suspense>} />
             <Route path="quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuotes /></Suspense>} />
             <Route path="vat-settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminVatSettings /></Suspense>} />

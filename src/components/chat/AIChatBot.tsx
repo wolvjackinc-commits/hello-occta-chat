@@ -668,10 +668,91 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     };
   }, [trackedTickets, pushSystemMessage]);
 
-  const handleEscalateToHuman = useCallback(() => {
+  const handleEscalateToHuman = useCallback(async () => {
     setHelpOpen(false);
-    sendMessage("I'd like to speak to a human support advisor please.");
-  }, [sendMessage]);
+    // Post an immediate confirmation into the bot transcript.
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content:
+          "Passing you to a human advisor now — I've alerted the team by email. Please keep this window open; a real person will reply here shortly.",
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    try {
+      const lastFew = messages
+        .slice(-8)
+        .map((m) => ({ role: m.role, content: m.content }));
+      const lastCustomerMessage = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const accessToken = currentSession?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-handoff`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          sessionId: sessionId.current,
+          reason: "requested_human",
+          lastMessage: lastCustomerMessage,
+          summary: lastCustomerMessage || "Customer requested human support",
+          transcript: lastFew,
+        }),
+      });
+    } catch (err) {
+      console.error("[chat-handoff] failed", err);
+    }
+  }, [messages]);
+
+  // Realtime: surface admin replies inside the floating chat.
+  useEffect(() => {
+    const sid = sessionId.current;
+    if (!sid) return;
+    let cancelled = false;
+    let convId: string | null = null;
+    (async () => {
+      const { data } = await supabase
+        .from("chat_conversations")
+        .select("id")
+        .eq("session_id", sid)
+        .maybeSingle();
+      if (cancelled || !data?.id) return;
+      convId = data.id as string;
+      const ch = supabase
+        .channel(`chat-admin-${convId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "chat_messages",
+            filter: `conversation_id=eq.${convId}`,
+          },
+          (payload) => {
+            const row = payload.new as { role: string; content: string };
+            if (row.role !== "admin") return;
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: `👤 ${row.content}`,
+                createdAt: new Date().toISOString(),
+              },
+            ]);
+          },
+        )
+        .subscribe();
+      return () => supabase.removeChannel(ch);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Escape closes the floating chat + Tab/Shift+Tab stays inside it.
   useFocusTrap({

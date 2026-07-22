@@ -231,6 +231,7 @@ const AnimatedRoutes = () => {
             <Route path="payment-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentRequests /></Suspense>} />
             <Route path="communications" element={<Suspense fallback={<AdminRouteFallback />}><AdminCommunications /></Suspense>} />
             <Route path="chat-transcripts" element={<Suspense fallback={<AdminRouteFallback />}><AdminChatTranscripts /></Suspense>} />
+            <Route path="live-chat" element={<Suspense fallback={<AdminRouteFallback />}><AdminLiveChat /></Suspense>} />
             <Route path="quote-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuoteRequests /></Suspense>} />
             <Route path="quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuotes /></Suspense>} />
             <Route path="vat-settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminVatSettings /></Suspense>} />

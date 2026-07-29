@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     await svc
       .from("chat_conversations")
       .update({
-        status: "human_requested",
+        status: "awaiting_human",
         handoff_reason: reason,
         summary,
         user_id: userId ?? undefined,
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
         user_id: userId,
         customer_name: customerName,
         customer_email: customerEmail,
-        status: "human_requested",
+        status: "awaiting_human",
         handoff_reason: reason,
         summary,
         last_message_at: new Date().toISOString(),

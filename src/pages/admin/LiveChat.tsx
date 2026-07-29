@@ -37,8 +37,8 @@ type ChatRow = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  human_requested: "bg-yellow-100 text-yellow-900 border-yellow-500",
-  human_active: "bg-emerald-100 text-emerald-900 border-emerald-600",
+  awaiting_human: "bg-yellow-100 text-yellow-900 border-yellow-500",
+  live: "bg-emerald-100 text-emerald-900 border-emerald-600",
   bot: "bg-muted text-foreground border-border",
   resolved: "bg-slate-100 text-slate-700 border-slate-400",
   closed: "bg-slate-100 text-slate-500 border-slate-300",
@@ -126,8 +126,8 @@ export default function AdminLiveChat() {
       .select("id, session_id, user_id, customer_name, customer_email, status, summary, handoff_reason, last_message_at, created_at")
       .order("last_message_at", { ascending: false })
       .limit(200);
-    if (filter === "open") q = q.in("status", ["human_requested", "human_active"]);
-    if (filter === "requested") q = q.eq("status", "human_requested");
+    if (filter === "open") q = q.in("status", ["awaiting_human", "live"]);
+    if (filter === "requested") q = q.eq("status", "awaiting_human");
     const { data, error } = await q;
     if (error) {
       toast({ title: "Failed to load conversations", description: error.message, variant: "destructive" });
@@ -199,7 +199,7 @@ export default function AdminLiveChat() {
       // Move conversation to active on first reply.
       await supabase
         .from("chat_conversations")
-        .update({ status: "human_active", assigned_admin_id: adminId, last_message_at: new Date().toISOString() })
+        .update({ status: "live", assigned_admin_id: adminId, last_message_at: new Date().toISOString() })
         .eq("id", activeId);
       setReply("");
     } catch (err: any) {
@@ -346,7 +346,7 @@ export default function AdminLiveChat() {
     }
     await supabase
       .from("chat_conversations")
-      .update({ status: "human_active", assigned_admin_id: adminId, last_message_at: new Date().toISOString() })
+      .update({ status: "live", assigned_admin_id: adminId, last_message_at: new Date().toISOString() })
       .eq("id", activeId);
     setGuideOpen(false);
     toast({ title: "Guide sent", description: g.title });

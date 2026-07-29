@@ -7,6 +7,15 @@ const ADMIN_EMAIL = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("ADMIN_EM
 const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk";
 const ADMIN_DASHBOARD_URL = "https://www.occta.co.uk/admin";
 
+// Module-scoped service client — used by BOTH the public rate-limit path and
+// the notification/logging paths below. (Previously it was declared inside the
+// public-caller branch, so every internal DB-trigger call threw a
+// ReferenceError and no admin email was ever sent.)
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+);
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -789,10 +798,6 @@ const handler = async (req: Request): Promise<Response> => {
       req.headers.get("x-internal-trigger") === "db";
 
     if (!isInternal) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, serviceRoleKey);
-
       const { data: allowed } = await supabase.rpc("check_rate_limit", {
         _identifier: ipAddress,
         _action: "admin_notify",

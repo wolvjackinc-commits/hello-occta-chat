@@ -7,6 +7,15 @@ const ADMIN_EMAIL = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("ADMIN_EM
 const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk";
 const ADMIN_DASHBOARD_URL = "https://www.occta.co.uk/admin";
 
+// Module-scoped service client — used by BOTH the public rate-limit path and
+// the notification/logging paths below. (Previously it was declared inside the
+// public-caller branch, so every internal DB-trigger call threw a
+// ReferenceError and no admin email was ever sent.)
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+);
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":

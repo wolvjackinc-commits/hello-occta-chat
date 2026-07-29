@@ -798,10 +798,6 @@ const handler = async (req: Request): Promise<Response> => {
       req.headers.get("x-internal-trigger") === "db";
 
     if (!isInternal) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, serviceRoleKey);
-
       const { data: allowed } = await supabase.rpc("check_rate_limit", {
         _identifier: ipAddress,
         _action: "admin_notify",

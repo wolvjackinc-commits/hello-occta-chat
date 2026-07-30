@@ -187,7 +187,7 @@ export default function AdminLiveChat() {
       const adminId = userRes.user?.id ?? null;
       const attachments = attachmentPath
         ? [{ path: attachmentPath, name: attachmentName ?? attachmentPath.split("/").pop() }]
-        : null;
+        : [];
       const { error } = await supabase.from("chat_messages").insert({
         conversation_id: activeId,
         role: "admin",

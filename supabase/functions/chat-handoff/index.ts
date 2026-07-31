@@ -135,7 +135,8 @@ Deno.serve(async (req) => {
     const rows = transcript
       .map((m) => ({
         conversation_id: convId,
-        role: m.role === "user" ? "customer" : m.role === "assistant" ? "bot" : "system",
+        // chat_messages.role only allows user | assistant | admin | system.
+        role: m.role === "user" ? "user" : m.role === "assistant" ? "assistant" : "system",
         content: String(m.content || "").slice(0, 4000),
         attachments: [],
       }))

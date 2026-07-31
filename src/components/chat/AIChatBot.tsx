@@ -122,6 +122,8 @@ type Message = {
   content: string;
   createdAt: string;
   attachments?: AttachmentMeta[];
+  /** "human" marks a reply typed by a real advisor in the admin live chat. */
+  agent?: "bot" | "human";
 };
 
 interface AIChatBotProps {

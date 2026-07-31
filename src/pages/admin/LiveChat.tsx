@@ -30,7 +30,7 @@ type Conversation = {
 type ChatRow = {
   id: string;
   conversation_id: string;
-  role: "customer" | "bot" | "admin" | "system";
+  role: "user" | "customer" | "assistant" | "bot" | "admin" | "system";
   content: string | null;
   attachments: unknown;
   created_at: string;
@@ -463,13 +463,18 @@ export default function AdminLiveChat() {
                           ? "ml-auto bg-foreground text-background border-foreground"
                           : m.role === "system"
                             ? "mx-auto text-xs italic bg-muted border-border"
-                            : m.role === "bot"
+                            : m.role === "bot" || m.role === "assistant"
                               ? "bg-muted border-border"
                               : "bg-background border-foreground"
                       }`}
                     >
                       <div className="text-[10px] uppercase tracking-widest opacity-70 mb-1">
-                        {m.role} · {new Date(m.created_at).toLocaleTimeString("en-GB")}
+                        {m.role === "assistant" || m.role === "bot"
+                          ? "IRA (bot)"
+                          : m.role === "user" || m.role === "customer"
+                            ? "Customer"
+                            : m.role}{" "}
+                        · {new Date(m.created_at).toLocaleTimeString("en-GB")}
                       </div>
                       <div className="whitespace-pre-wrap text-sm">{m.content}</div>
                       {Array.isArray(m.attachments) && (m.attachments as any[]).length > 0 && (

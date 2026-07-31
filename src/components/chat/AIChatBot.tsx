@@ -122,6 +122,8 @@ type Message = {
   content: string;
   createdAt: string;
   attachments?: AttachmentMeta[];
+  /** "human" marks a reply typed by a real advisor in the admin live chat. */
+  agent?: "bot" | "human";
 };
 
 interface AIChatBotProps {
@@ -198,6 +200,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   const [ticketOpen, setTicketOpen] = useState(false);
   const [ticketPrefill, setTicketPrefill] = useState<TicketPrefill | undefined>(undefined);
   const [statusAnnouncement, setStatusAnnouncement] = useState("");
+  // Conversation row that mirrors this chat for admins, plus whether a real
+  // advisor has joined (status flips to "live" in the admin console).
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [liveAgent, setLiveAgent] = useState(false);
   // Tickets the user has raised from this chat that we now watch for updates.
   const [trackedTickets, setTrackedTickets] = useState<
     { id: string; ref: string; lastStatus?: string }[]
@@ -368,6 +374,35 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       .join("\n");
   }, [formatAttachmentSize]);
 
+  // Mirror each bot turn into chat_conversations/chat_messages so admins can
+  // see the full context before (and after) they join. Fire-and-forget.
+  const logTurn = useCallback(async (turn: { role: string; content: string }[]) => {
+    const rows = turn.filter((t) => t.content?.trim());
+    if (!rows.length) return;
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const accessToken = currentSession?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-handoff`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          sessionId: sessionId.current,
+          mode: "log",
+          summary: rows.find((r) => r.role === "user")?.content?.slice(0, 300) || "Bot conversation",
+          transcript: rows,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (data?.conversationId) setConversationId((prev) => prev ?? data.conversationId);
+    } catch (err) {
+      console.error("[chat-log] failed", err);
+    }
+  }, []);
+
   const sendMessage = useCallback(async (messageText: string, attachments: AttachmentMeta[] = []) => {
     const trimmedMessage = messageText.trim();
     if ((!trimmedMessage && attachments.length === 0) || isLoading) return;
@@ -453,7 +488,12 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
           role: "assistant", 
           content: data.content,
           createdAt: new Date().toISOString(),
+          agent: "bot",
         }]);
+        void logTurn([
+          { role: "user", content: effectiveMessage },
+          { role: "assistant", content: String(data.content ?? "") },
+        ]);
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -468,7 +508,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       setIsLoading(false);
       pendingMessageRef.current = null;
     }
-  }, [messages, user?.id, isLoading, toast, formatAttachmentSummary]);
+  }, [messages, user?.id, isLoading, toast, formatAttachmentSummary, logTurn]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -729,51 +769,93 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     }
   }, [messages]);
 
-  // Realtime: surface admin replies inside the floating chat.
+  // Find (or pick up) the mirrored conversation for this session.
   useEffect(() => {
     const sid = sessionId.current;
     if (!sid) return;
     let cancelled = false;
-    let convId: string | null = null;
     (async () => {
       const { data } = await supabase
         .from("chat_conversations")
-        .select("id")
+        .select("id, status")
         .eq("session_id", sid)
         .maybeSingle();
       if (cancelled || !data?.id) return;
-      convId = data.id as string;
-      const ch = supabase
-        .channel(`chat-admin-${convId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "chat_messages",
-            filter: `conversation_id=eq.${convId}`,
-          },
-          (payload) => {
-            const row = payload.new as { role: string; content: string };
-            if (row.role !== "admin") return;
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                role: "assistant",
-                content: `👤 ${row.content}`,
-                createdAt: new Date().toISOString(),
-              },
-            ]);
-          },
-        )
-        .subscribe();
-      return () => supabase.removeChannel(ch);
+      setConversationId(data.id as string);
+      if (data.status === "live") setLiveAgent(true);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Realtime: surface admin replies and the "a human joined" transition.
+  useEffect(() => {
+    if (!conversationId) return;
+    const announceHuman = () => {
+      setLiveAgent((prev) => {
+        if (prev) return prev;
+        setMessages((msgs) => [
+          ...msgs,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content:
+              "👤 **You're now speaking with a human advisor** from the OCCTA support team. IRA has shared your conversation so far, so you don't need to repeat yourself.",
+            createdAt: new Date().toISOString(),
+            agent: "human",
+          },
+        ]);
+        setStatusAnnouncement("A human advisor has joined the chat.");
+        return true;
+      });
+    };
+
+    const ch = supabase
+      .channel(`chat-admin-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const row = payload.new as { role: string; content: string };
+          if (row.role !== "admin") return;
+          announceHuman();
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: row.content,
+              createdAt: new Date().toISOString(),
+              agent: "human",
+            },
+          ]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_conversations",
+          filter: `id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const row = payload.new as { status?: string };
+          if (row.status === "live") announceHuman();
+          if (row.status === "resolved") setLiveAgent(false);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [conversationId]);
 
   // Escape closes the floating chat + Tab/Shift+Tab stays inside it.
   useFocusTrap({
@@ -913,10 +995,12 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                       id="ira-chat-heading"
                       className="block font-display text-primary-foreground uppercase text-sm leading-none"
                     >
-                      {isAdmin ? "IRA Admin" : "IRA"}
+                      {liveAgent ? "OCCTA Advisor" : isAdmin ? "IRA Admin" : "IRA"}
                     </span>
                     <span className="block text-[10px] uppercase text-primary-foreground/80 mt-1 truncate">
-                      {user ? "Secure account assistant" : "OCCTA telecom support"}
+                      {liveAgent
+                        ? "Live — you're speaking with a human"
+                        : user ? "Secure account assistant" : "OCCTA telecom support"}
                     </span>
                   </div>
                 </div>
@@ -1049,8 +1133,17 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                             className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}
                           >
                             {message.role === "assistant" && (
-                              <div className="w-7 h-7 bg-primary flex items-center justify-center shrink-0 border-2 border-foreground">
-                                <Bot className="w-4 h-4 text-primary-foreground" />
+                              <div
+                                className={`w-7 h-7 flex items-center justify-center shrink-0 border-2 border-foreground ${
+                                  message.agent === "human" ? "bg-success" : "bg-primary"
+                                }`}
+                                title={message.agent === "human" ? "Human advisor" : "IRA (AI assistant)"}
+                              >
+                                {message.agent === "human" ? (
+                                  <UserIcon className="w-4 h-4 text-background" />
+                                ) : (
+                                  <Bot className="w-4 h-4 text-primary-foreground" />
+                                )}
                               </div>
                             )}
                               <div
@@ -1060,6 +1153,11 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                                   : "bg-card border-2 border-foreground/60"
                               }`}
                             >
+                              {message.agent === "human" && (
+                                <p className="mb-1 text-[10px] font-display uppercase tracking-wider text-success">
+                                  Human advisor
+                                </p>
+                              )}
                               <AssistantMessageBody message={message} onQuickReply={sendMessage} />
                               {message.attachments?.length && (
                                 <div className="mt-2 space-y-1 text-xs text-muted-foreground">

@@ -13,6 +13,7 @@ const corsHeaders = {
 
 interface HandoffPayload {
   sessionId: string;
+  mode?: "handoff" | "log";
   reason?: string;
   summary?: string;
   lastMessage?: string;
@@ -64,6 +65,7 @@ Deno.serve(async (req) => {
 
   const summary = String(body.summary || body.lastMessage || "Customer requested a human advisor").slice(0, 2000);
   const reason = String(body.reason || "requested_human").slice(0, 120);
+  const isLogOnly = body.mode === "log";
 
   // Enrich with profile if signed in.
   let customerName = body.customerName?.slice(0, 200) || null;
@@ -90,18 +92,19 @@ Deno.serve(async (req) => {
   let convId: string;
   if (existing) {
     convId = existing.id as string;
-    await svc
-      .from("chat_conversations")
-      .update({
-        status: "awaiting_human",
-        handoff_reason: reason,
-        summary,
-        user_id: userId ?? undefined,
-        customer_name: customerName ?? undefined,
-        customer_email: customerEmail ?? undefined,
-        last_message_at: new Date().toISOString(),
-      })
-      .eq("id", convId);
+    const update: Record<string, unknown> = {
+      user_id: userId ?? undefined,
+      customer_name: customerName ?? undefined,
+      customer_email: customerEmail ?? undefined,
+      last_message_at: new Date().toISOString(),
+    };
+    if (!isLogOnly) {
+      // Only an explicit handoff flips the conversation into the human queue.
+      update.status = "awaiting_human";
+      update.handoff_reason = reason;
+      update.summary = summary;
+    }
+    await svc.from("chat_conversations").update(update).eq("id", convId);
   } else {
     const { data: inserted, error } = await svc
       .from("chat_conversations")
@@ -110,9 +113,9 @@ Deno.serve(async (req) => {
         user_id: userId,
         customer_name: customerName,
         customer_email: customerEmail,
-        status: "awaiting_human",
-        handoff_reason: reason,
-        summary,
+        status: isLogOnly ? "ai" : "awaiting_human",
+        handoff_reason: isLogOnly ? null : reason,
+        summary: isLogOnly ? summary : summary,
         last_message_at: new Date().toISOString(),
       })
       .select("id")
@@ -132,8 +135,10 @@ Deno.serve(async (req) => {
     const rows = transcript
       .map((m) => ({
         conversation_id: convId,
-        role: m.role === "user" ? "customer" : m.role === "assistant" ? "bot" : "system",
+        // chat_messages.role only allows user | assistant | admin | system.
+        role: m.role === "user" ? "user" : m.role === "assistant" ? "assistant" : "system",
         content: String(m.content || "").slice(0, 4000),
+        attachments: [],
       }))
       .filter((r) => r.content);
     if (rows.length) {
@@ -141,11 +146,20 @@ Deno.serve(async (req) => {
     }
   }
 
+  if (isLogOnly) {
+    // Live bot transcript logging — no handoff, no admin alert.
+    return new Response(JSON.stringify({ ok: true, conversationId: convId }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   // System message announcing handoff.
   await svc.from("chat_messages").insert({
     conversation_id: convId,
     role: "system",
     content: `Customer requested a human advisor. Reason: ${reason}.`,
+    attachments: [],
   });
 
   return new Response(JSON.stringify({ ok: true, conversationId: convId }), {

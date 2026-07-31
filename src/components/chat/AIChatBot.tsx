@@ -200,6 +200,10 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
   const [ticketOpen, setTicketOpen] = useState(false);
   const [ticketPrefill, setTicketPrefill] = useState<TicketPrefill | undefined>(undefined);
   const [statusAnnouncement, setStatusAnnouncement] = useState("");
+  // Conversation row that mirrors this chat for admins, plus whether a real
+  // advisor has joined (status flips to "live" in the admin console).
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [liveAgent, setLiveAgent] = useState(false);
   // Tickets the user has raised from this chat that we now watch for updates.
   const [trackedTickets, setTrackedTickets] = useState<
     { id: string; ref: string; lastStatus?: string }[]
@@ -370,6 +374,35 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       .join("\n");
   }, [formatAttachmentSize]);
 
+  // Mirror each bot turn into chat_conversations/chat_messages so admins can
+  // see the full context before (and after) they join. Fire-and-forget.
+  const logTurn = useCallback(async (turn: { role: string; content: string }[]) => {
+    const rows = turn.filter((t) => t.content?.trim());
+    if (!rows.length) return;
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const accessToken = currentSession?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-handoff`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          sessionId: sessionId.current,
+          mode: "log",
+          summary: rows.find((r) => r.role === "user")?.content?.slice(0, 300) || "Bot conversation",
+          transcript: rows,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (data?.conversationId) setConversationId((prev) => prev ?? data.conversationId);
+    } catch (err) {
+      console.error("[chat-log] failed", err);
+    }
+  }, []);
+
   const sendMessage = useCallback(async (messageText: string, attachments: AttachmentMeta[] = []) => {
     const trimmedMessage = messageText.trim();
     if ((!trimmedMessage && attachments.length === 0) || isLoading) return;
@@ -455,7 +488,12 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
           role: "assistant", 
           content: data.content,
           createdAt: new Date().toISOString(),
+          agent: "bot",
         }]);
+        void logTurn([
+          { role: "user", content: effectiveMessage },
+          { role: "assistant", content: String(data.content ?? "") },
+        ]);
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -470,7 +508,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       setIsLoading(false);
       pendingMessageRef.current = null;
     }
-  }, [messages, user?.id, isLoading, toast, formatAttachmentSummary]);
+  }, [messages, user?.id, isLoading, toast, formatAttachmentSummary, logTurn]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

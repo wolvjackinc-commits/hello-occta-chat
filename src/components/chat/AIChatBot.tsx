@@ -995,10 +995,12 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                       id="ira-chat-heading"
                       className="block font-display text-primary-foreground uppercase text-sm leading-none"
                     >
-                      {isAdmin ? "IRA Admin" : "IRA"}
+                      {liveAgent ? "OCCTA Advisor" : isAdmin ? "IRA Admin" : "IRA"}
                     </span>
                     <span className="block text-[10px] uppercase text-primary-foreground/80 mt-1 truncate">
-                      {user ? "Secure account assistant" : "OCCTA telecom support"}
+                      {liveAgent
+                        ? "Live — you're speaking with a human"
+                        : user ? "Secure account assistant" : "OCCTA telecom support"}
                     </span>
                   </div>
                 </div>
@@ -1131,8 +1133,17 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                             className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}
                           >
                             {message.role === "assistant" && (
-                              <div className="w-7 h-7 bg-primary flex items-center justify-center shrink-0 border-2 border-foreground">
-                                <Bot className="w-4 h-4 text-primary-foreground" />
+                              <div
+                                className={`w-7 h-7 flex items-center justify-center shrink-0 border-2 border-foreground ${
+                                  message.agent === "human" ? "bg-success" : "bg-primary"
+                                }`}
+                                title={message.agent === "human" ? "Human advisor" : "IRA (AI assistant)"}
+                              >
+                                {message.agent === "human" ? (
+                                  <UserIcon className="w-4 h-4 text-background" />
+                                ) : (
+                                  <Bot className="w-4 h-4 text-primary-foreground" />
+                                )}
                               </div>
                             )}
                               <div
@@ -1142,6 +1153,11 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                                   : "bg-card border-2 border-foreground/60"
                               }`}
                             >
+                              {message.agent === "human" && (
+                                <p className="mb-1 text-[10px] font-display uppercase tracking-wider text-success">
+                                  Human advisor
+                                </p>
+                              )}
                               <AssistantMessageBody message={message} onQuickReply={sendMessage} />
                               {message.attachments?.length && (
                                 <div className="mt-2 space-y-1 text-xs text-muted-foreground">

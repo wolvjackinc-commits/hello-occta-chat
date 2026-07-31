@@ -769,51 +769,93 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     }
   }, [messages]);
 
-  // Realtime: surface admin replies inside the floating chat.
+  // Find (or pick up) the mirrored conversation for this session.
   useEffect(() => {
     const sid = sessionId.current;
     if (!sid) return;
     let cancelled = false;
-    let convId: string | null = null;
     (async () => {
       const { data } = await supabase
         .from("chat_conversations")
-        .select("id")
+        .select("id, status")
         .eq("session_id", sid)
         .maybeSingle();
       if (cancelled || !data?.id) return;
-      convId = data.id as string;
-      const ch = supabase
-        .channel(`chat-admin-${convId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "chat_messages",
-            filter: `conversation_id=eq.${convId}`,
-          },
-          (payload) => {
-            const row = payload.new as { role: string; content: string };
-            if (row.role !== "admin") return;
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                role: "assistant",
-                content: `👤 ${row.content}`,
-                createdAt: new Date().toISOString(),
-              },
-            ]);
-          },
-        )
-        .subscribe();
-      return () => supabase.removeChannel(ch);
+      setConversationId(data.id as string);
+      if (data.status === "live") setLiveAgent(true);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Realtime: surface admin replies and the "a human joined" transition.
+  useEffect(() => {
+    if (!conversationId) return;
+    const announceHuman = () => {
+      setLiveAgent((prev) => {
+        if (prev) return prev;
+        setMessages((msgs) => [
+          ...msgs,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content:
+              "👤 **You're now speaking with a human advisor** from the OCCTA support team. IRA has shared your conversation so far, so you don't need to repeat yourself.",
+            createdAt: new Date().toISOString(),
+            agent: "human",
+          },
+        ]);
+        setStatusAnnouncement("A human advisor has joined the chat.");
+        return true;
+      });
+    };
+
+    const ch = supabase
+      .channel(`chat-admin-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const row = payload.new as { role: string; content: string };
+          if (row.role !== "admin") return;
+          announceHuman();
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: row.content,
+              createdAt: new Date().toISOString(),
+              agent: "human",
+            },
+          ]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_conversations",
+          filter: `id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const row = payload.new as { status?: string };
+          if (row.status === "live") announceHuman();
+          if (row.status === "resolved") setLiveAgent(false);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [conversationId]);
 
   // Escape closes the floating chat + Tab/Shift+Tab stays inside it.
   useFocusTrap({

@@ -842,9 +842,6 @@ export const AdminQuoteRequests = () => {
                 </div>
               )}
 
-              <div className="mt-4 border-2 border-foreground/20 p-3 space-y-2">
-                <p className="font-display uppercase text-[10px] tracking-widest">Request more info from customer</p>
-
               <QuoteFollowUps request={selected} onChanged={() => refetchFollowups()} />
 
               <div className="mt-4 border-2 border-foreground/20 p-3 space-y-2">

@@ -33,6 +33,7 @@ export type FollowUp = {
   channel: string;
   outcome: string;
   notes: string;
+  customer_summary: string | null;
   next_followup_at: string | null;
   created_by: string | null;
   created_by_name: string | null;
@@ -71,12 +72,16 @@ export function groupFollowUps(rows: FollowUp[]): Record<string, FollowUp[]> {
   return map;
 }
 
-/** The soonest pending next-follow-up across a request's follow-ups. */
+/**
+ * The current/next action comes from the NEWEST live follow-up entry only.
+ * Older entries are historical records of completed follow-ups, so their
+ * scheduled dates must never keep a request permanently overdue.
+ * `list` is expected newest-first (see groupFollowUps).
+ */
 export function nextFollowUp(list?: FollowUp[]): FollowUp | null {
-  if (!list?.length) return null;
-  const withNext = list.filter((f) => !!f.next_followup_at);
-  if (!withNext.length) return null;
-  return withNext.sort((a, b) => (a.next_followup_at! < b.next_followup_at! ? -1 : 1))[0];
+  const latest = list?.[0];
+  if (!latest?.next_followup_at) return null;
+  return latest;
 }
 
 export function dueState(

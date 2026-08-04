@@ -241,9 +241,16 @@ export const AdminQuoteRequests = () => {
   );
 
   // Follow-ups for the currently listed requests (admin-only table).
-  const requestIds = useMemo(() => (data ?? []).map((r: any) => r.id), [data]);
-  const { data: followupRows, refetch: refetchFollowups } = useQuery({
-    queryKey: ["admin-quote-request-followups", requestIds],
+  // Key on a stable sorted id string so a re-allocated array identity
+  // doesn't trigger extra requests.
+  const requestIds = useMemo(() => (data ?? []).map((r: any) => r.id as string), [data]);
+  const requestIdsKey = useMemo(() => [...requestIds].sort().join(","), [requestIds]);
+  const {
+    data: followupRows,
+    refetch: refetchFollowups,
+    isPending: followupsPending,
+  } = useQuery({
+    queryKey: ["admin-quote-request-followups", requestIdsKey],
     enabled: requestIds.length > 0,
     queryFn: async () => {
       const { data: rows, error } = await (supabase as any)
@@ -256,10 +263,15 @@ export const AdminQuoteRequests = () => {
     },
   });
   const followupsByRequest = useMemo(() => groupFollowUps(followupRows ?? []), [followupRows]);
+  // Don't filter on follow-up state until follow-ups have loaded, otherwise
+  // every row would momentarily look like "No follow-up set".
+  const followupsLoading = requestIds.length > 0 && followupsPending;
   const visibleRows = useMemo(
-    () => (data ?? []).filter((r: any) =>
-      matchesFollowUpFilter(followupFilter, followupsByRequest[r.id], r.status)),
-    [data, followupFilter, followupsByRequest],
+    () => (followupsLoading
+      ? (data ?? [])
+      : (data ?? []).filter((r: any) =>
+        matchesFollowUpFilter(followupFilter, followupsByRequest[r.id], r.status))),
+    [data, followupFilter, followupsByRequest, followupsLoading],
   );
 
   useEffect(() => {
@@ -639,6 +651,7 @@ export const AdminQuoteRequests = () => {
                       state={dueState(followupsByRequest[r.id], r.status)}
                       nextAt={nextFollowUp(followupsByRequest[r.id])?.next_followup_at ?? null}
                       compact
+                      loading={followupsLoading}
                     />
                   </TableCell>
                 </TableRow>

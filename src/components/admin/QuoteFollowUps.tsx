@@ -40,6 +40,7 @@ const emptyForm = () => ({
   channel: "phone",
   outcome: "spoke_to_customer",
   notes: "",
+  customerSummary: "",
   nextDate: "",
   nextTime: "",
 });
@@ -97,7 +98,8 @@ export function QuoteFollowUps({
     const nx = utcIsoToLondonParts(f.next_followup_at);
     setForm({
       id: f.id, date: at.date, time: at.time, channel: f.channel, outcome: f.outcome,
-      notes: f.notes ?? "", nextDate: nx.date, nextTime: nx.time,
+      notes: f.notes ?? "", customerSummary: f.customer_summary ?? "",
+      nextDate: nx.date, nextTime: nx.time,
     });
     setFormOpen(true);
   };
@@ -120,6 +122,7 @@ export function QuoteFollowUps({
         channel: form.channel,
         outcome: form.outcome,
         notes: form.notes.trim(),
+        customer_summary: form.customerSummary.trim() || null,
         next_followup_at: nextAt,
       };
       if (form.id) {
@@ -130,6 +133,16 @@ export function QuoteFollowUps({
         if (err) throw err;
         toast({ title: "Follow-up updated" });
       } else {
+        // A new entry represents completion of the previously scheduled
+        // follow-up: clear stale next dates from older live entries so only
+        // the newest entry drives the current/next action.
+        const { error: clearErr } = await (supabase as any)
+          .from("quote_request_followups")
+          .update({ next_followup_at: null, updated_by: uid })
+          .eq("quote_request_id", request.id)
+          .is("deleted_at", null)
+          .not("next_followup_at", "is", null);
+        if (clearErr) throw clearErr;
         const { error: err } = await (supabase as any)
           .from("quote_request_followups")
           .insert({ ...payload, created_by: uid, created_by_name: staffName });

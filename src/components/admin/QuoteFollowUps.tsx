@@ -479,7 +479,7 @@ export function QuoteFollowUps({
           <DialogHeader>
             <DialogTitle>Send follow-up details to customer</DialogTitle>
             <DialogDescription>
-              To {request.email || "—"}. Review and edit — only this text is sent. Internal notes are not shared unless you include them here.
+              To {request.email || "—"}. Prefilled from the customer-facing summary only — internal notes are never included. Review and edit before sending.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 overflow-y-auto pr-1">
@@ -515,11 +515,20 @@ export function NextFollowUpBadge({
   state,
   nextAt,
   compact,
+  loading,
 }: {
   state: ReturnType<typeof dueState>;
   nextAt: string | null;
   compact?: boolean;
+  loading?: boolean;
 }) {
+  if (loading) {
+    return (
+      <Badge variant="outline" className="border-2 text-muted-foreground flex items-center gap-1 w-fit">
+        <Loader2 className="w-3 h-3 animate-spin" /> Loading…
+      </Badge>
+    );
+  }
   if (state === "none") {
     return (
       <Badge variant="outline" className="border-2 text-muted-foreground">

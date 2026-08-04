@@ -25,6 +25,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy } from "lucide-react";
 import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
 import { ComposeQuoteEmailDialog } from "@/components/admin/ComposeQuoteEmailDialog";
+import { QuoteFollowUps, NextFollowUpBadge } from "@/components/admin/QuoteFollowUps";
+import {
+  FOLLOWUP_FILTERS, dueState, groupFollowUps, matchesFollowUpFilter, nextFollowUp,
+  type FollowUp,
+} from "@/lib/quoteFollowups";
 
 const STATUS_OPTIONS = ["all", "new", "in_review", "needs_info", "assigned", "draft_quote_created", "quoted", "final_quote_ready", "expired", "rejected", "closed", "converted"] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -46,6 +51,7 @@ export const AdminQuoteRequests = () => {
   const qc = useQueryClient();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<string>("all");
+  const [followupFilter, setFollowupFilter] = useState<string>("all");
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
@@ -232,6 +238,28 @@ export const AdminQuoteRequests = () => {
   const selected = useMemo(
     () => (data ?? []).find((r: any) => r.id === selectedId) ?? null,
     [data, selectedId],
+  );
+
+  // Follow-ups for the currently listed requests (admin-only table).
+  const requestIds = useMemo(() => (data ?? []).map((r: any) => r.id), [data]);
+  const { data: followupRows, refetch: refetchFollowups } = useQuery({
+    queryKey: ["admin-quote-request-followups", requestIds],
+    enabled: requestIds.length > 0,
+    queryFn: async () => {
+      const { data: rows, error } = await (supabase as any)
+        .from("quote_request_followups")
+        .select("*")
+        .in("quote_request_id", requestIds)
+        .is("deleted_at", null);
+      if (error) throw error;
+      return (rows ?? []) as FollowUp[];
+    },
+  });
+  const followupsByRequest = useMemo(() => groupFollowUps(followupRows ?? []), [followupRows]);
+  const visibleRows = useMemo(
+    () => (data ?? []).filter((r: any) =>
+      matchesFollowUpFilter(followupFilter, followupsByRequest[r.id], r.status)),
+    [data, followupFilter, followupsByRequest],
   );
 
   useEffect(() => {
@@ -534,6 +562,14 @@ export const AdminQuoteRequests = () => {
               {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s === "all" ? "All statuses" : s}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={followupFilter} onValueChange={setFollowupFilter}>
+            <SelectTrigger className="w-52 border-2 border-foreground" aria-label="Filter by follow-up">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {FOLLOWUP_FILTERS.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
@@ -550,15 +586,16 @@ export const AdminQuoteRequests = () => {
               <TableHead className="font-display uppercase">Service</TableHead>
               <TableHead className="font-display uppercase">Postcode</TableHead>
               <TableHead className="font-display uppercase">Status</TableHead>
+              <TableHead className="font-display uppercase">Next follow-up</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
-            ) : (data ?? []).length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No quote requests.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+            ) : visibleRows.length === 0 ? (
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No quote requests match these filters.</TableCell></TableRow>
             ) : (
-              (data ?? []).map((r: any) => (
+              visibleRows.map((r: any) => (
                 <TableRow key={r.id} className="cursor-pointer border-b-2 border-foreground/10 hover:bg-muted/40"
                   onClick={() => setSelectedId(r.id)}>
                   <TableCell className="text-sm">{format(new Date(r.created_at), "dd MMM HH:mm")}</TableCell>
@@ -596,6 +633,13 @@ export const AdminQuoteRequests = () => {
                   <TableCell className="text-xs font-mono">{r.postcode}</TableCell>
                   <TableCell>
                     <Badge className={`${STATUS_COLORS[r.status] ?? "bg-muted"} border-2 border-foreground capitalize`}>{r.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    <NextFollowUpBadge
+                      state={dueState(followupsByRequest[r.id], r.status)}
+                      nextAt={nextFollowUp(followupsByRequest[r.id])?.next_followup_at ?? null}
+                      compact
+                    />
                   </TableCell>
                 </TableRow>
               ))
@@ -797,6 +841,8 @@ export const AdminQuoteRequests = () => {
                   )}
                 </div>
               )}
+
+              <QuoteFollowUps request={selected} onChanged={() => refetchFollowups()} />
 
               <div className="mt-4 border-2 border-foreground/20 p-3 space-y-2">
                 <p className="font-display uppercase text-[10px] tracking-widest">Request more info from customer</p>

@@ -6231,6 +6231,86 @@ export type Database = {
           },
         ]
       }
+      quote_request_followups: {
+        Row: {
+          channel: Database["public"]["Enums"]["followup_channel"]
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          followup_at: string
+          id: string
+          next_followup_at: string | null
+          notes: string
+          outcome: Database["public"]["Enums"]["followup_outcome"]
+          quote_request_id: string
+          send_reference: string | null
+          send_status: string | null
+          sent_at: string | null
+          sent_by: string | null
+          sent_message_html: string | null
+          sent_subject: string | null
+          sent_to: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          channel?: Database["public"]["Enums"]["followup_channel"]
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          followup_at: string
+          id?: string
+          next_followup_at?: string | null
+          notes?: string
+          outcome?: Database["public"]["Enums"]["followup_outcome"]
+          quote_request_id: string
+          send_reference?: string | null
+          send_status?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_message_html?: string | null
+          sent_subject?: string | null
+          sent_to?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["followup_channel"]
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          followup_at?: string
+          id?: string
+          next_followup_at?: string | null
+          notes?: string
+          outcome?: Database["public"]["Enums"]["followup_outcome"]
+          quote_request_id?: string
+          send_reference?: string | null
+          send_status?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_message_html?: string | null
+          sent_subject?: string | null
+          sent_to?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_request_followups_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_requests: {
         Row: {
           address_line_1: string | null
@@ -11073,6 +11153,18 @@ export type Database = {
         | "superseded"
         | "cancelled"
         | "void_manual_review"
+      followup_channel: "phone" | "email" | "sms" | "whatsapp" | "other"
+      followup_outcome:
+        | "not_contacted"
+        | "no_answer"
+        | "spoke_to_customer"
+        | "information_requested"
+        | "quote_discussed"
+        | "call_back_requested"
+        | "interested"
+        | "not_interested"
+        | "converted"
+        | "other"
       fraud_flag_severity: "low" | "medium" | "high"
       fraud_flag_status: "open" | "reviewed" | "dismissed" | "confirmed"
       fraud_flag_type:
@@ -11414,6 +11506,19 @@ export const Constants = {
         "superseded",
         "cancelled",
         "void_manual_review",
+      ],
+      followup_channel: ["phone", "email", "sms", "whatsapp", "other"],
+      followup_outcome: [
+        "not_contacted",
+        "no_answer",
+        "spoke_to_customer",
+        "information_requested",
+        "quote_discussed",
+        "call_back_requested",
+        "interested",
+        "not_interested",
+        "converted",
+        "other",
       ],
       fraud_flag_severity: ["low", "medium", "high"],
       fraud_flag_status: ["open", "reviewed", "dismissed", "confirmed"],

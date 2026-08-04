@@ -844,6 +844,11 @@ export const AdminQuoteRequests = () => {
 
               <div className="mt-4 border-2 border-foreground/20 p-3 space-y-2">
                 <p className="font-display uppercase text-[10px] tracking-widest">Request more info from customer</p>
+
+              <QuoteFollowUps request={selected} onChanged={() => refetchFollowups()} />
+
+              <div className="mt-4 border-2 border-foreground/20 p-3 space-y-2">
+                <p className="font-display uppercase text-[10px] tracking-widest">Request more info from customer</p>
                 <Textarea value={needsInfoMsg} onChange={(e) => setNeedsInfoMsg(e.target.value)} rows={2} placeholder="Customer-safe message (no internal notes)…" />
                 <Button size="sm" variant="outline" onClick={requestMoreInfo} disabled={busy === "info"}>
                   {busy === "info" ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Send & set Needs info

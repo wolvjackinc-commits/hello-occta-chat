@@ -298,7 +298,7 @@ export function QuoteFollowUps({
         </Button>
       </div>
 
-      <NextFollowUpBadge state={state} nextAt={next?.next_followup_at ?? null} />
+      <NextFollowUpBadge state={state} nextAt={next?.next_followup_at ?? null} loading={loading} />
 
       {loading ? (
         <p className="text-xs text-muted-foreground flex items-center gap-2">

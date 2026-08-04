@@ -25,6 +25,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy } from "lucide-react";
 import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
 import { ComposeQuoteEmailDialog } from "@/components/admin/ComposeQuoteEmailDialog";
+import { QuoteFollowUps, NextFollowUpBadge } from "@/components/admin/QuoteFollowUps";
+import {
+  FOLLOWUP_FILTERS, dueState, groupFollowUps, matchesFollowUpFilter, nextFollowUp,
+  type FollowUp,
+} from "@/lib/quoteFollowups";
 
 const STATUS_OPTIONS = ["all", "new", "in_review", "needs_info", "assigned", "draft_quote_created", "quoted", "final_quote_ready", "expired", "rejected", "closed", "converted"] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -46,6 +51,7 @@ export const AdminQuoteRequests = () => {
   const qc = useQueryClient();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<string>("all");
+  const [followupFilter, setFollowupFilter] = useState<string>("all");
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
@@ -232,6 +238,28 @@ export const AdminQuoteRequests = () => {
   const selected = useMemo(
     () => (data ?? []).find((r: any) => r.id === selectedId) ?? null,
     [data, selectedId],
+  );
+
+  // Follow-ups for the currently listed requests (admin-only table).
+  const requestIds = useMemo(() => (data ?? []).map((r: any) => r.id), [data]);
+  const { data: followupRows, refetch: refetchFollowups } = useQuery({
+    queryKey: ["admin-quote-request-followups", requestIds],
+    enabled: requestIds.length > 0,
+    queryFn: async () => {
+      const { data: rows, error } = await (supabase as any)
+        .from("quote_request_followups")
+        .select("*")
+        .in("quote_request_id", requestIds)
+        .is("deleted_at", null);
+      if (error) throw error;
+      return (rows ?? []) as FollowUp[];
+    },
+  });
+  const followupsByRequest = useMemo(() => groupFollowUps(followupRows ?? []), [followupRows]);
+  const visibleRows = useMemo(
+    () => (data ?? []).filter((r: any) =>
+      matchesFollowUpFilter(followupFilter, followupsByRequest[r.id], r.status)),
+    [data, followupFilter, followupsByRequest],
   );
 
   useEffect(() => {

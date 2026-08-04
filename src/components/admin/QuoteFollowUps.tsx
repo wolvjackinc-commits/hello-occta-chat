@@ -329,7 +329,20 @@ export function QuoteFollowUps({
                 By {f.created_by_name || "staff"} · created {formatLondonDateTime(f.created_at)}
                 {f.updated_at !== f.created_at ? ` · updated ${formatLondonDateTime(f.updated_at)}` : ""}
               </p>
-              <p className="text-xs whitespace-pre-wrap">{f.notes}</p>
+              <div className="border-l-2 border-foreground/30 pl-2">
+                <p className="font-display uppercase text-[9px] tracking-widest text-muted-foreground">
+                  Internal notes — never sent automatically
+                </p>
+                <p className="text-xs whitespace-pre-wrap">{f.notes}</p>
+              </div>
+              {f.customer_summary?.trim() ? (
+                <div className="border-l-2 border-primary pl-2">
+                  <p className="font-display uppercase text-[9px] tracking-widest text-primary">
+                    Customer-facing summary
+                  </p>
+                  <p className="text-xs whitespace-pre-wrap">{f.customer_summary}</p>
+                </div>
+              ) : null}
               {f.next_followup_at && (
                 <p className="text-[10px] text-muted-foreground">
                   Next follow-up: {formatLondonDateTime(f.next_followup_at)}
@@ -397,10 +410,23 @@ export function QuoteFollowUps({
               </div>
             </div>
             <div>
-              <Label htmlFor="fu-notes" className="text-xs">Follow-up details / notes</Label>
+              <Label htmlFor="fu-notes" className="text-xs">
+                Internal follow-up notes — never sent automatically
+              </Label>
               <Textarea id="fu-notes" rows={5} value={form.notes}
                 onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
                 placeholder="What was discussed, next steps, objections, pricing points…" />
+            </div>
+            <div>
+              <Label htmlFor="fu-cust" className="text-xs">
+                Customer-facing follow-up summary (optional)
+              </Label>
+              <Textarea id="fu-cust" rows={4} value={form.customerSummary}
+                onChange={(e) => setForm((p) => ({ ...p, customerSummary: e.target.value }))}
+                placeholder="Wording that is safe to send to the customer. Used to prefill the follow-up email." />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Only this text (never the internal notes) prefills the customer email.
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

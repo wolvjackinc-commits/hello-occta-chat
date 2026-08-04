@@ -562,6 +562,14 @@ export const AdminQuoteRequests = () => {
               {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s === "all" ? "All statuses" : s}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={followupFilter} onValueChange={setFollowupFilter}>
+            <SelectTrigger className="w-52 border-2 border-foreground" aria-label="Filter by follow-up">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {FOLLOWUP_FILTERS.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
@@ -578,15 +586,16 @@ export const AdminQuoteRequests = () => {
               <TableHead className="font-display uppercase">Service</TableHead>
               <TableHead className="font-display uppercase">Postcode</TableHead>
               <TableHead className="font-display uppercase">Status</TableHead>
+              <TableHead className="font-display uppercase">Next follow-up</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
-            ) : (data ?? []).length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No quote requests.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+            ) : visibleRows.length === 0 ? (
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No quote requests match these filters.</TableCell></TableRow>
             ) : (
-              (data ?? []).map((r: any) => (
+              visibleRows.map((r: any) => (
                 <TableRow key={r.id} className="cursor-pointer border-b-2 border-foreground/10 hover:bg-muted/40"
                   onClick={() => setSelectedId(r.id)}>
                   <TableCell className="text-sm">{format(new Date(r.created_at), "dd MMM HH:mm")}</TableCell>

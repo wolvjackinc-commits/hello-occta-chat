@@ -634,6 +634,13 @@ export const AdminQuoteRequests = () => {
                   <TableCell>
                     <Badge className={`${STATUS_COLORS[r.status] ?? "bg-muted"} border-2 border-foreground capitalize`}>{r.status}</Badge>
                   </TableCell>
+                  <TableCell className="text-xs">
+                    <NextFollowUpBadge
+                      state={dueState(followupsByRequest[r.id], r.status)}
+                      nextAt={nextFollowUp(followupsByRequest[r.id])?.next_followup_at ?? null}
+                      compact
+                    />
+                  </TableCell>
                 </TableRow>
               ))
             )}

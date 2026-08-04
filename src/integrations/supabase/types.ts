@@ -6237,6 +6237,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           created_by_name: string | null
+          customer_summary: string | null
           deleted_at: string | null
           deleted_by: string | null
           followup_at: string
@@ -6260,6 +6261,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           created_by_name?: string | null
+          customer_summary?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           followup_at: string
@@ -6283,6 +6285,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           created_by_name?: string | null
+          customer_summary?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           followup_at?: string

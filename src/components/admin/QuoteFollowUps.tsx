@@ -40,6 +40,7 @@ const emptyForm = () => ({
   channel: "phone",
   outcome: "spoke_to_customer",
   notes: "",
+  customerSummary: "",
   nextDate: "",
   nextTime: "",
 });
@@ -97,7 +98,8 @@ export function QuoteFollowUps({
     const nx = utcIsoToLondonParts(f.next_followup_at);
     setForm({
       id: f.id, date: at.date, time: at.time, channel: f.channel, outcome: f.outcome,
-      notes: f.notes ?? "", nextDate: nx.date, nextTime: nx.time,
+      notes: f.notes ?? "", customerSummary: f.customer_summary ?? "",
+      nextDate: nx.date, nextTime: nx.time,
     });
     setFormOpen(true);
   };
@@ -120,6 +122,7 @@ export function QuoteFollowUps({
         channel: form.channel,
         outcome: form.outcome,
         notes: form.notes.trim(),
+        customer_summary: form.customerSummary.trim() || null,
         next_followup_at: nextAt,
       };
       if (form.id) {
@@ -130,6 +133,16 @@ export function QuoteFollowUps({
         if (err) throw err;
         toast({ title: "Follow-up updated" });
       } else {
+        // A new entry represents completion of the previously scheduled
+        // follow-up: clear stale next dates from older live entries so only
+        // the newest entry drives the current/next action.
+        const { error: clearErr } = await (supabase as any)
+          .from("quote_request_followups")
+          .update({ next_followup_at: null, updated_by: uid })
+          .eq("quote_request_id", request.id)
+          .is("deleted_at", null)
+          .not("next_followup_at", "is", null);
+        if (clearErr) throw clearErr;
         const { error: err } = await (supabase as any)
           .from("quote_request_followups")
           .insert({ ...payload, created_by: uid, created_by_name: staffName });
@@ -176,7 +189,12 @@ export function QuoteFollowUps({
     lines.push(`Contact method: ${channelLabel(f.channel)}`);
     lines.push("");
     lines.push("Summary:");
-    lines.push(f.notes || "");
+    // Internal notes are NEVER used here. Only the admin-authored
+    // customer-facing summary, or a neutral placeholder.
+    lines.push(
+      f.customer_summary?.trim() ||
+        "We've reviewed your quote request and are progressing it. We'll confirm the next steps with you shortly.",
+    );
     if (f.next_followup_at) {
       lines.push("");
       lines.push(`We'll be in touch again on ${formatLondonLong(f.next_followup_at)} (UK time).`);
@@ -280,7 +298,7 @@ export function QuoteFollowUps({
         </Button>
       </div>
 
-      <NextFollowUpBadge state={state} nextAt={next?.next_followup_at ?? null} />
+      <NextFollowUpBadge state={state} nextAt={next?.next_followup_at ?? null} loading={loading} />
 
       {loading ? (
         <p className="text-xs text-muted-foreground flex items-center gap-2">
@@ -311,7 +329,20 @@ export function QuoteFollowUps({
                 By {f.created_by_name || "staff"} · created {formatLondonDateTime(f.created_at)}
                 {f.updated_at !== f.created_at ? ` · updated ${formatLondonDateTime(f.updated_at)}` : ""}
               </p>
-              <p className="text-xs whitespace-pre-wrap">{f.notes}</p>
+              <div className="border-l-2 border-foreground/30 pl-2">
+                <p className="font-display uppercase text-[9px] tracking-widest text-muted-foreground">
+                  Internal notes — never sent automatically
+                </p>
+                <p className="text-xs whitespace-pre-wrap">{f.notes}</p>
+              </div>
+              {f.customer_summary?.trim() ? (
+                <div className="border-l-2 border-primary pl-2">
+                  <p className="font-display uppercase text-[9px] tracking-widest text-primary">
+                    Customer-facing summary
+                  </p>
+                  <p className="text-xs whitespace-pre-wrap">{f.customer_summary}</p>
+                </div>
+              ) : null}
               {f.next_followup_at && (
                 <p className="text-[10px] text-muted-foreground">
                   Next follow-up: {formatLondonDateTime(f.next_followup_at)}
@@ -379,10 +410,23 @@ export function QuoteFollowUps({
               </div>
             </div>
             <div>
-              <Label htmlFor="fu-notes" className="text-xs">Follow-up details / notes</Label>
+              <Label htmlFor="fu-notes" className="text-xs">
+                Internal follow-up notes — never sent automatically
+              </Label>
               <Textarea id="fu-notes" rows={5} value={form.notes}
                 onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
                 placeholder="What was discussed, next steps, objections, pricing points…" />
+            </div>
+            <div>
+              <Label htmlFor="fu-cust" className="text-xs">
+                Customer-facing follow-up summary (optional)
+              </Label>
+              <Textarea id="fu-cust" rows={4} value={form.customerSummary}
+                onChange={(e) => setForm((p) => ({ ...p, customerSummary: e.target.value }))}
+                placeholder="Wording that is safe to send to the customer. Used to prefill the follow-up email." />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Only this text (never the internal notes) prefills the customer email.
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -435,7 +479,7 @@ export function QuoteFollowUps({
           <DialogHeader>
             <DialogTitle>Send follow-up details to customer</DialogTitle>
             <DialogDescription>
-              To {request.email || "—"}. Review and edit — only this text is sent. Internal notes are not shared unless you include them here.
+              To {request.email || "—"}. Prefilled from the customer-facing summary only — internal notes are never included. Review and edit before sending.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 overflow-y-auto pr-1">
@@ -471,11 +515,20 @@ export function NextFollowUpBadge({
   state,
   nextAt,
   compact,
+  loading,
 }: {
   state: ReturnType<typeof dueState>;
   nextAt: string | null;
   compact?: boolean;
+  loading?: boolean;
 }) {
+  if (loading) {
+    return (
+      <Badge variant="outline" className="border-2 text-muted-foreground flex items-center gap-1 w-fit">
+        <Loader2 className="w-3 h-3 animate-spin" /> Loading…
+      </Badge>
+    );
+  }
   if (state === "none") {
     return (
       <Badge variant="outline" className="border-2 text-muted-foreground">

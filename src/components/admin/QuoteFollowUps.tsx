@@ -189,7 +189,12 @@ export function QuoteFollowUps({
     lines.push(`Contact method: ${channelLabel(f.channel)}`);
     lines.push("");
     lines.push("Summary:");
-    lines.push(f.notes || "");
+    // Internal notes are NEVER used here. Only the admin-authored
+    // customer-facing summary, or a neutral placeholder.
+    lines.push(
+      f.customer_summary?.trim() ||
+        "We've reviewed your quote request and are progressing it. We'll confirm the next steps with you shortly.",
+    );
     if (f.next_followup_at) {
       lines.push("");
       lines.push(`We'll be in touch again on ${formatLondonLong(f.next_followup_at)} (UK time).`);

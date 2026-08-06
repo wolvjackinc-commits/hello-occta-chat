@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const auth = req.headers.get("Authorization") ?? "";
-  const internal = req.headers.get("x-internal-secret, x-task-secret") ?? "";
+  const internal = req.headers.get("x-internal-secret") ?? "";
   const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
   const taskSecret = Deno.env.get("TASK_HUTT_RESTORE_SECRET") ?? "";
   const okAuth =

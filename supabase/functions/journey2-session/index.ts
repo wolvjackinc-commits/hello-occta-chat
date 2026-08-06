@@ -352,7 +352,10 @@ Deno.serve(async (req) => {
     const maxDays = Math.max(1, Number(ps?.start_date_max_days ?? 90));
     const coolingDays = 14; // statutory cooling-off window used by the shared journey
     const today = ymdInLondon(new Date());
-    const earliest = addDays(today, coolingDays);
+    // The shared journey's earliest selectable date is the day AFTER cooling-off
+    // ends, so Journey 2 must use the same day-15 boundary. Offering day 14 here
+    // made the date valid pre-contract but rejected after acceptance.
+    const earliest = addDays(today, coolingDays + 1);
     if (p.data.preferred_start_date < earliest) {
       return jsonResponse({ error: "date_before_earliest", earliest_selectable_start_date: earliest }, 400);
     }

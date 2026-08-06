@@ -34,6 +34,7 @@ const EXACT_PRIVATE = new Set<string>([
 
 const PRIVATE_PREFIXES = [
   "/admin",
+  "/.lovable/",
   "/dashboard/",
   "/quote/contract-summary/",
   "/quote/payment/",

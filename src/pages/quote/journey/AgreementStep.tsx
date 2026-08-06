@@ -17,6 +17,51 @@ const CHECKBOXES = [
 
 type CbKey = typeof CHECKBOXES[number]["key"];
 
+/**
+ * Device, network and (with permission) location signals collected at the moment
+ * of signing. Used only to detect fraudulent orders and identity theft.
+ */
+async function collectRiskSignals(startedAt: number): Promise<Record<string, unknown>> {
+  const out: Record<string, unknown> = {};
+  try {
+    const nav = navigator as Navigator & { deviceMemory?: number; webdriver?: boolean };
+    out.browser_timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? null;
+    out.browser_locale = nav.language ?? null;
+    out.screen_signature = `${window.screen.width}x${window.screen.height}@${window.devicePixelRatio}`;
+    out.platform = nav.platform ?? null;
+    if (typeof nav.deviceMemory === "number") out.device_memory = nav.deviceMemory;
+    if (typeof nav.hardwareConcurrency === "number") out.hardware_concurrency = nav.hardwareConcurrency;
+    if (typeof nav.maxTouchPoints === "number") out.touch_points = nav.maxTouchPoints;
+    out.cookies_enabled = nav.cookieEnabled;
+    out.do_not_track = String(nav.doNotTrack ?? "unset").slice(0, 20);
+    out.webdriver_flag = nav.webdriver === true;
+    out.page_dwell_ms = Math.max(0, Math.round(Date.now() - startedAt));
+  } catch { /* signals are best-effort */ }
+
+  // Precise location only if the browser has already been granted permission —
+  // we never interrupt the signing flow with a prompt.
+  try {
+    const perm = await navigator.permissions?.query({ name: "geolocation" as PermissionName });
+    out.geo_permission = perm?.state ?? "unknown";
+    if (perm?.state === "granted") {
+      const pos = await new Promise<GeolocationPosition | null>((resolve) => {
+        const t = setTimeout(() => resolve(null), 3000);
+        navigator.geolocation.getCurrentPosition(
+          (p) => { clearTimeout(t); resolve(p); },
+          () => { clearTimeout(t); resolve(null); },
+          { timeout: 3000, maximumAge: 300000 },
+        );
+      });
+      if (pos) {
+        out.geo_latitude = pos.coords.latitude;
+        out.geo_longitude = pos.coords.longitude;
+        out.geo_accuracy_m = pos.coords.accuracy;
+      }
+    }
+  } catch { /* location is optional */ }
+  return out;
+}
+
 export default function AgreementStep({
   token,
   quote,
@@ -42,6 +87,7 @@ export default function AgreementStep({
   const [addressConfirmed, setAddressConfirmed] = useState(false);
   const [checks, setChecks] = useState<Record<CbKey, boolean>>({ received_read: false, details_correct: false, understand_charges: false, consent: false });
   const [submitting, setSubmitting] = useState(false);
+  const [startedAt] = useState(() => Date.now());
 
   const loadDetail = useCallback(async () => {
     const { data, error } = await supabase.functions.invoke("journey-cs-detail", { body: { token } });
@@ -111,6 +157,7 @@ export default function AgreementStep({
     if (!formValid || submitting || acceptedAt) return;
     setSubmitting(true);
     try {
+      const riskSignals = await collectRiskSignals(startedAt);
       const { data, error } = await supabase.functions.invoke("accept-contract-summary", {
         body: {
           token,
@@ -127,6 +174,7 @@ export default function AgreementStep({
           cs_version: cs?.version,
           source_route: typeof window !== "undefined" ? window.location.pathname : null,
           session_id: typeof window !== "undefined" ? window.sessionStorage.getItem("occta_session_id") || crypto.randomUUID() : null,
+          risk_signals: riskSignals,
         },
       });
       if (error || (data as any)?.error) {

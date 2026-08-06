@@ -37,6 +37,15 @@ Deno.serve(async (req) => {
 
   const supabase = getServiceClient();
   const settings = await loadJourneySettings(supabase);
+  // Authoritative VAT rate — never hard-coded.
+  const vatPercent = Number((settings as any).vat_default_rate ?? 0);
+  if (!(vatPercent > 0 && vatPercent <= 100)) {
+    return jsonResponse({
+      error: "vat_config_unavailable",
+      message: "We couldn't confirm the VAT rate just now. Your order is saved — please try again in a moment.",
+      retryable: true,
+    }, 503);
+  }
   const tokenHash = await sha256Hex(parsed.data.token);
 
   const { data: session } = await supabase
@@ -47,9 +56,6 @@ Deno.serve(async (req) => {
   if (!session) return jsonResponse({ error: "session_not_found" }, 404);
   if (["cancelled", "expired"].includes(session.status)) {
     return jsonResponse({ error: "session_closed", status: session.status }, 409);
-  }
-  if (session.status === "manual_review") {
-    return jsonResponse({ error: "manual_review", reason: session.manual_review_reason }, 409);
   }
 
   const details = session.customer_details as {
@@ -87,10 +93,32 @@ Deno.serve(async (req) => {
       customer_type: "residential",
     });
     if (!priced) {
+      // The session stays in Journey 2 and stays retryable — it is never
+      // silently converted into a quote request.
       await supabase.from("customer_journey_sessions")
-        .update({ status: "manual_review", manual_review_reason: "price_not_exact_at_contract" })
+        .update({ last_error: "price_not_exact_at_contract", last_activity_at: new Date().toISOString() })
         .eq("id", session.id);
-      return jsonResponse({ error: "price_not_exact", message: "We need to confirm your price before you order. Our team will contact you." }, 409);
+      await supabase.from("admin_tasks").insert({
+        task_type: "journey2_price_resolution",
+        title: "Journey 2 price could not be resolved at contract stage",
+        description: `Session ${session.id} (${session.speed_bucket}/${session.plan_term}) has no exact price.`,
+        priority: "high",
+        status: "open",
+        metadata: { session_id: session.id, test_session: !!session.test_session },
+      }).then(() => {}).catch(() => {});
+      await supabase.rpc("log_event", {
+        _actor_type: "public",
+        _event_type: "journey2_price_not_exact",
+        _title: "Journey 2 exact price unavailable at contract stage",
+        _details: { session_id: session.id },
+        _source_module: "journey2",
+        _severity: "error",
+      }).then(() => {}).catch(() => {});
+      return jsonResponse({
+        error: "price_unavailable",
+        message: "This option isn't priced right now. Your order is saved — please try again shortly or choose another option.",
+        retryable: true,
+      }, 409);
     }
 
     // quote_request — the intake record every downstream service reads from.
@@ -142,12 +170,14 @@ Deno.serve(async (req) => {
       customer_type: "residential",
       contract_length_months: session.plan_term === "price_lock_24" ? 24 : null,
       monthly_net: round2(monthly_net),
-      monthly_vat_rate: VAT * 100,
+      monthly_vat_rate: vatPercent,
       monthly_vat_amount: monthly_vat,
       monthly_gross,
       setup_net, setup_vat_amount: round2(setup_gross - setup_net), setup_gross,
       router_net, router_vat_amount: round2(router_gross - router_net), router_gross,
-      total_due_today_gross: round2(router_gross + setup_gross),
+      // Journey 2 has no upfront payment step: one-off charges are billed on
+      // the first invoice, never today.
+      total_due_today_gross: 0,
       expires_at: expiresAt,
       token_expires_at: expiresAt,
       public_token_hash: hash,
@@ -222,7 +252,7 @@ Deno.serve(async (req) => {
         one_off_charges_incl_vat: round2(router_gross + setup_gross),
         amount_due_today: 0,
         estimated_first_bill_incl_vat: round2(monthly_gross + router_gross + setup_gross),
-        vat_rate_percent: VAT * 100,
+        vat_rate_percent: vatPercent,
       },
       schedule: {
         preferred_start_date: session.preferred_start_date,

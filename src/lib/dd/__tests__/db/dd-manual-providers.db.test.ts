@@ -64,8 +64,11 @@ maybe("Direct Debit manual providers (database-backed)", () => {
       ssl: /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: false },
     });
     await db.connect();
-    const { rows } = await db.query("select id from auth.users order by created_at limit 1");
+    // Resolve a real user id without touching the managed `auth` schema: the
+    // public profiles table mirrors auth.users one-for-one.
+    const { rows } = await db.query("select id from profiles order by created_at limit 1");
     userId = rows[0]?.id ?? "";
+    if (!userId) throw new Error("No profile row available for the Direct Debit suite");
   });
 
   afterAll(async () => {
@@ -173,11 +176,106 @@ maybe("Direct Debit manual providers (database-backed)", () => {
     expect(h[0].new_status).toBe("submitted_to_provider");
 
     const { rows: o } = await db.query(
-      "select count(*)::int n from dd_email_outbox where mandate_id = $1 and new_status = 'submitted_to_provider'",
+      "select count(*)::int n from dd_email_outbox where mandate_id = $1 and payload->>'new_status' = 'submitted_to_provider'",
       [id],
     );
     expect(o[0].n).toBe(1);
   });
+
+  // Provider-specific end-to-end workflow evidence. These mandates are TEST
+  // mandates and are deliberately RETAINED as the auditable evidence the
+  // production preflight requires for each manual provider.
+  for (const p of [
+    { code: "fastpay", collector: "FastPay Ltd", sun: "246668", notice: 5 },
+    { code: "accesspay", collector: "APS Re OCCTA", sun: "538166", notice: 3 },
+  ]) {
+    it(`runs the full manual workflow for ${p.code} with ${p.notice} working days notice`, async () => {
+      const ref = `DD-EVIDENCE-${p.code.toUpperCase()}`;
+      await db.query(
+        `delete from dd_email_outbox where mandate_id in (select id from dd_mandates where mandate_reference = $1)`,
+        [ref],
+      );
+      await db.query(
+        `delete from dd_mandate_status_history where mandate_id in (select id from dd_mandates where mandate_reference = $1)`,
+        [ref],
+      );
+      await db.query(`delete from dd_mandates where mandate_reference = $1`, [ref]);
+      const { rows: ins } = await db.query(
+        `insert into dd_mandates (user_id, status, mandate_reference, bank_last4, account_holder_name, is_test)
+         values ($1,'details_received',$2,'4321','DD Evidence Test', true) returning id`,
+        [userId, ref],
+      );
+      const id = ins[0].id as string;
+
+      const steps = [
+        { to: "awaiting_manual_submission" as const, extra: {} },
+        {
+          to: "submitted_to_provider" as const,
+          extra: {
+            provider: p.code,
+            reference: `${p.code.toUpperCase()}-PORTAL-EVIDENCE`,
+            submittedAt: new Date().toISOString(),
+            note: `Submitted by hand in the ${p.code} portal`,
+          },
+        },
+        { to: "action_required" as const, extra: {} },
+        { to: "submitted_to_provider" as const, extra: {} },
+        { to: "active" as const, extra: {} },
+      ];
+      for (const step of steps) {
+        const res = await change(id, step.to, step.extra);
+        expect(res.rows[0].r.success, `${p.code} -> ${step.to}: ${JSON.stringify(res.rows[0].r)}`).toBe(true);
+      }
+
+      // One history row and exactly one suppressed test email per transition.
+      const { rows: counts } = await db.query(
+        `select (select count(*)::int from dd_mandate_status_history where mandate_id = $1) h,
+                (select count(*)::int from dd_email_outbox where mandate_id = $1) o,
+                (select count(distinct idempotency_key)::int from dd_email_outbox where mandate_id = $1) k,
+                (select count(*)::int from dd_email_outbox where mandate_id = $1 and status = 'suppressed_test' and is_test) s`,
+        [id],
+      );
+      expect(counts[0].h).toBe(steps.length);
+      expect(counts[0].o).toBe(steps.length);
+      expect(counts[0].k).toBe(steps.length);
+      expect(counts[0].s).toBe(steps.length);
+
+      // A repeated identical request creates neither history nor email.
+      const dup = await change(id, "active");
+      expect(dup.rows[0].r.error).toBe("no_op_status_change");
+      const { rows: after } = await db.query(
+        "select count(*)::int o, (select count(*)::int from dd_mandate_status_history where mandate_id = $1) h from dd_email_outbox where mandate_id = $1",
+        [id],
+      );
+      expect(after[0].o).toBe(steps.length);
+      expect(after[0].h).toBe(steps.length);
+
+      // Provider-specific wording and masked-only content.
+      const { rows: pay } = await db.query(
+        `select payload from dd_email_outbox where mandate_id = $1 and payload->>'new_status' = 'active'`,
+        [id],
+      );
+      const payload = pay[0].payload as Record<string, unknown>;
+      expect(payload.provider_code).toBe(p.code);
+      expect(payload.provider_collection_name).toBe(p.collector);
+      expect(payload.provider_service_user_number).toBe(p.sun);
+      expect(Number(payload.advance_notice_working_days)).toBe(p.notice);
+      expect(payload.mandate_bank_last4).toBe("4321");
+      const raw = JSON.stringify(payload).toLowerCase();
+      for (const forbidden of ["sort_code", "account_number_full", "ciphertext", "nonce", "signature", "consent_ip"]) {
+        expect(raw.includes(forbidden), `${p.code} payload must not contain ${forbidden}`).toBe(false);
+      }
+
+      // Nothing production-side was created by this evidence run.
+      const { rows: live } = await db.query(
+        `select (select count(*)::int from dd_email_outbox where mandate_id = $1 and status <> 'suppressed_test') sent,
+                (select count(*)::int from dd_mandates where id = $1 and is_test = false) livem`,
+        [id],
+      );
+      expect(live[0].sent).toBe(0);
+      expect(live[0].livem).toBe(0);
+    });
+  }
 
   it("keeps outbox notifications idempotent when a transition is retried", async () => {
     const id = await newMandate({ status: "awaiting_manual_submission" });
@@ -213,7 +311,9 @@ maybe("Direct Debit manual providers (database-backed)", () => {
     await change(id, "submitted_to_provider", { provider: "fastpay", reference: "FP-SAFE-1" });
     const { rows } = await db.query("select payload from dd_email_outbox where mandate_id = $1", [id]);
     const raw = JSON.stringify(rows[0].payload).toLowerCase();
-    for (const forbidden of ["account_number", "sort_code", "ciphertext", "nonce", "signature", "consent_ip", "account_number_full"]) {
+    // `account_number` here would be the OCCTA customer account reference; the
+    // forbidden values are the BANK secrets, which must never be carried.
+    for (const forbidden of ["sort_code", "ciphertext", "nonce", "signature", "consent_ip", "account_number_full"]) {
       expect(raw.includes(forbidden), `payload must not contain ${forbidden}`).toBe(false);
     }
   });

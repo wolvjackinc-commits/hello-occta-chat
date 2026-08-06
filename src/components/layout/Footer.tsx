@@ -1,9 +1,22 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Phone, Mail, Bot, LayoutDashboard, Ticket, Shield, Lock, CheckCircle, Users } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { companyConfig } from "@/lib/companyConfig";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [isSignedIn, setIsSignedIn] = useState(false);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsSignedIn(!!session?.user);
+    });
+    supabase.auth.getSession().then(({ data }) => setIsSignedIn(!!data.session?.user));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const accountPath = isSignedIn ? "/dashboard" : "/auth?claim=1&next=/dashboard";
 
   const footerLinks = {
     services: [
@@ -26,7 +39,7 @@ const Footer = () => {
     support: [
       { name: "Help & Support Hub", path: "/support" },
       { name: "AI Assistant", path: "/support#ai-help" },
-      { name: "My OCCTA (Customer Login)", path: "/dashboard" },
+      { name: isSignedIn ? "My OCCTA (Dashboard)" : "My OCCTA (Customer Login)", path: accountPath },
       { name: "Network Status", path: "/status" },
       { name: "Contact Us", path: "/support#contact" },
     ],

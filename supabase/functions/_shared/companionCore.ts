@@ -6,6 +6,7 @@ export type CompanionMessage = {
 export type AccountIntent =
   | "overview"
   | "invoices"
+  | "payments"
   | "orders"
   | "services"
   | "tickets"
@@ -43,13 +44,14 @@ export function detectAccountIntent(messages: CompanionMessage[]): AccountIntent
   const userMessages = messages.filter((message) => message.role === "user");
   for (let index = userMessages.length - 1; index >= 0; index -= 1) {
     const text = userMessages[index].content.toLowerCase();
-    const personal = /\b(my|mine|me|account|customer|logged in|signed in)\b/.test(text)
-      || /^(view|show|check|track|explain)\s+(invoices?|orders?|services?|tickets?|account|installation)/.test(text);
+    const personal = /\b(my|mine|me|account|customer|logged in|signed in|am i on|do i have)\b/.test(text)
+      || /^(view|show|check|track|explain)\s+(invoices?|orders?|services?|tickets?|account|installation|direct debit|payments?)/.test(text);
     if (!personal) continue;
-    if (/\b(invoice|invoices|bill|billing statement|latest bill|payment status)\b/.test(text)) return "invoices";
-    if (/\b(installation|activation|engineer|go live|go-live|appointment)\b/.test(text)) return "installation";
+    if (/\b(my direct debit|direct debit status|mandate status|payment method|bank mandate)\b/.test(text)) return "payments";
+    if (/\b(invoice|invoices|bill|billing statement|latest bill|amount due|how much do i owe|payment status)\b/.test(text)) return "invoices";
+    if (/\b(installation|activation|engineer|go live|go-live|appointment|start date)\b/.test(text)) return "installation";
     if (/\b(order|orders|track|tracking)\b/.test(text)) return "orders";
-    if (/\b(service|services|broadband line|mobile line|sim service|digital voice)\b/.test(text)) return "services";
+    if (/\b(service|services|broadband line|mobile line|sim service|digital voice|my plan|my package|plan am i on)\b/.test(text)) return "services";
     if (/\b(ticket|tickets|support case|support request|complaint status)\b/.test(text)) return "tickets";
     if (/\b(document|documents|contract summary|receipt|receipts)\b/.test(text)) return "documents";
     if (/\b(account|profile|details|overview)\b/.test(text)) return "overview";
@@ -59,16 +61,24 @@ export function detectAccountIntent(messages: CompanionMessage[]): AccountIntent
 
 export function detectPublicIntent(text: string): string {
   const lower = text.toLowerCase();
-  if (/\b(no internet|internet down|broadband down|offline|red light|los light)\b/.test(lower)) return "no_internet";
+  if (/\b(no internet|internet down|broadband down|offline|total outage|los light)\b/.test(lower)) return "no_internet";
+  if (/\b(router lights?|red light|orange light|flashing light|ont lights?)\b/.test(lower)) return "router_lights";
   if (/\b(slow wi-?fi|slow broadband|buffering|poor signal|weak wi-?fi)\b/.test(lower)) return "slow_wifi";
+  if (/\b(pppoe details|pppoe password|cannot find pppoe|can't find pppoe|missing pppoe)\b/.test(lower)) return "pppoe_missing";
   if (/\b(router|pppoe|wan port|ont|mesh|wi-?fi setup)\b/.test(lower)) return "router";
+  if (/\b(e-?sim|embedded sim)\b/.test(lower)) return "esim";
+  if (/\b(flex 30.*price lock|price lock.*flex 30|rolling.*fixed|fixed.*rolling|which contract|contract options?)\b/.test(lower)) return "contract_choice";
+  if (/\b(how much speed|which speed|speed do i need|how fast.*need|mbps.*need)\b/.test(lower)) return "speed_need";
+  if (/\b(service status|network status|known outage|status page)\b/.test(lower)) return "service_status";
+  if (/\b(vat|value added tax|tax invoice|reclaim vat)\b/.test(lower)) return "vat";
+  if (/\b(keep my number|port my number|number transfer|transfer my number)\b/.test(lower)) return "number_porting";
   if (/\b(direct debit|dd mandate|bank mandate|payment method)\b/.test(lower)) return "direct_debit";
   if (/\b(first invoice|first bill|pro[- ]?rata|part month)\b/.test(lower)) return "first_invoice";
   if (/\b(cancel|cancellation|leave occta|notice period|termination|exit fee)\b/.test(lower)) return "cancellation";
-  if (/\b(switch|one touch switch|change provider|keep my number|port number)\b/.test(lower)) return "switching";
+  if (/\b(switch|one touch switch|change provider)\b/.test(lower)) return "switching";
   if (/\b(complaint|complain|adr|ombudsman)\b/.test(lower)) return "complaints";
   if (/\b(vulnerable|telecare|medical alarm|priority support|battery backup)\b/.test(lower)) return "vulnerable";
-  if (/\b(sim|esim|mobile plan|mobile data|roaming)\b/.test(lower)) return "sim";
+  if (/\b(sim|mobile plan|mobile data|roaming)\b/.test(lower)) return "sim";
   if (/\b(landline|digital voice|home phone|pstn)\b/.test(lower)) return "voice";
   if (/\b(broadband|full fibre|fttp|sogea|internet plan|price lock|flex 30)\b/.test(lower)) return "broadband";
   if (/\b(human|advisor|agent|person|speak to support)\b/.test(lower)) return "human";
@@ -83,7 +93,16 @@ export function extractAccountNumber(messages: CompanionMessage[]): string | nul
 export function extractDateOfBirth(messages: CompanionMessage[]): string | null {
   const text = conversationUserText(messages);
   const iso = text.match(ISO_DOB_RE);
-  if (iso) return iso[0];
+  if (iso) {
+    const [year, month, day] = iso[0].split("-");
+    const date = new Date(`${iso[0]}T00:00:00Z`);
+    if (
+      !Number.isNaN(date.getTime())
+      && date.getUTCFullYear() === Number(year)
+      && date.getUTCMonth() + 1 === Number(month)
+      && date.getUTCDate() === Number(day)
+    ) return iso[0];
+  }
   const uk = text.match(UK_DOB_RE);
   if (!uk) return null;
   const day = uk[1].padStart(2, "0");

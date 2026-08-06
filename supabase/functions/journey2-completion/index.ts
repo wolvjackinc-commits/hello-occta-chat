@@ -94,6 +94,10 @@ Deno.serve(async (req) => {
   }
 
   const masked = session.dd_masked as Record<string, any> | null;
+  const product = snap?.product ?? {};
+  const addr = (snap?.service_address ?? {}) as Record<string, string | null>;
+  const addressLine = [addr.line1, addr.line2, addr.city, addr.postcode]
+    .filter((x) => !!x && String(x).trim().length > 0).join(", ") || null;
 
   return jsonResponse({
     ok: true,
@@ -101,6 +105,22 @@ Deno.serve(async (req) => {
       test_session: !!session.test_session,
       order_number: orderNumber,
       plan_name: snap?.product?.plan_name ?? null,
+      contract_term: product.contract_term ?? null,
+      minimum_term_months: product.minimum_term_months ?? null,
+      estimated_download_mbps: product.estimated_download_mbps ?? null,
+      estimated_upload_mbps: product.estimated_upload_mbps ?? null,
+      speed_statement: product.speed_statement ?? null,
+      customer_name: snap?.customer?.full_name ?? null,
+      customer_email: snap?.customer?.email ?? null,
+      service_address: addressLine,
+      addons: Array.isArray(snap?.addons)
+        ? (snap.addons as { id: string; label: string; monthly: number }[]).map((a) => ({
+            id: a.id, label: a.label, monthly: Number(a.monthly ?? 0),
+          }))
+        : [],
+      router_label: (snap?.router as Record<string, unknown> | null)?.label as string ?? null,
+      current_provider: snap?.switching?.current_provider ?? null,
+      number_action: snap?.switching?.number_action ?? null,
       monthly_ex_vat: Number(pricing.monthly_ex_vat ?? 0),
       monthly_vat: Number(pricing.monthly_vat ?? 0),
       monthly_incl_vat: Number(pricing.monthly_incl_vat ?? 0),

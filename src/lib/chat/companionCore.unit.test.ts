@@ -64,6 +64,17 @@ describe("OCCTA companion privacy controls", () => {
     expect(redacted).not.toContain("4411");
   });
 
+  it("removes UK bank details and card-like numbers", () => {
+    const redacted = redactSensitiveText(
+      "Sort code 12-34-56 account 12345678 card 4111 1111 1111 1111",
+    );
+    expect(redacted).toContain("[bank details removed]");
+    expect(redacted).toContain("[payment number removed]");
+    expect(redacted).not.toContain("12-34-56");
+    expect(redacted).not.toContain("12345678");
+    expect(redacted).not.toContain("4111 1111 1111 1111");
+  });
+
   it("rejects impossible UK and ISO calendar dates", () => {
     expect(extractDateOfBirth(messages("31/02/1990"))).toBeNull();
     expect(extractDateOfBirth(messages("1990-02-31"))).toBeNull();

@@ -1929,7 +1929,7 @@ OCCTA Limited is registered in England and Wales (Company No. 13828933)
   return { html, text };
 }
 
-): { html: string; text: string; subject: string } {
+ {
   const statusMessages: Record<string, { subject: string; title: string; message: string; nextSteps: string[] }> = {
     verified: {
       subject: 'Your OCCTA Direct Debit has been verified',

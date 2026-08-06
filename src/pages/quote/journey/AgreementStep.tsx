@@ -67,10 +67,13 @@ export default function AgreementStep({
   token,
   quote,
   onAccepted,
+  onEditStep,
 }: {
   token: string;
   quote: any;
   onAccepted: () => void;
+  /** Journey 2 only — lets the customer go back and change details before signing. */
+  onEditStep?: (step: "address" | "plan" | "router" | "extras" | "details" | "start_date" | "billing") => void;
 }) {
   const { toast } = useToast();
   const [generating, setGenerating] = useState(true);
@@ -335,9 +338,19 @@ export default function AgreementStep({
             <div className="sm:col-span-2">
               <Label htmlFor="ag-mobile">Mobile number (from your details)</Label>
               <Input id="ag-mobile" type="tel" value={phoneMasked ?? ""} readOnly disabled placeholder="******0000" />
-              <p className="text-xs text-muted-foreground mt-1">
-                To change this, go back to your customer details step — any earlier verification is cleared.
-              </p>
+              {onEditStep ? (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Wrong number?{" "}
+                  <button type="button" className="underline font-medium text-foreground" onClick={() => onEditStep("details")}>
+                    Change my mobile number
+                  </button>{" "}
+                  — any earlier verification is cleared.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  To change this, go back to your customer details step — any earlier verification is cleared.
+                </p>
+              )}
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="ag-dob">Date of birth (you must be 18 or older)</Label>

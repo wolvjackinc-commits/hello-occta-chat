@@ -42,7 +42,7 @@ export const AdminRewards = () => {
     setRows((data ?? []) as Reward[]);
     setLoading(false);
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [tab]);
+  useEffect(() => { load();   }, [tab]);
 
   async function submit() {
     if (!active || !action) return;

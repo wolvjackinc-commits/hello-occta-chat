@@ -250,4 +250,7 @@ export const quoteTokenStore = {
   set(sessionId: string, token: string) {
     try { sessionStorage.setItem(QT_KEY(sessionId), token); } catch { /* ignore */ }
   },
+  clear(sessionId: string) {
+    try { sessionStorage.removeItem(QT_KEY(sessionId)); } catch { /* ignore */ }
+  },
 };

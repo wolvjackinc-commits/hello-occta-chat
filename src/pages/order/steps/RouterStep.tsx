@@ -22,7 +22,8 @@ export default function RouterStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Router</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Bring your own or take one of ours. Monthly router charges are included in your monthly total; one-off charges appear in your first bill.
+          No plan includes a router. Bring your own, or buy one of ours as a one-off purchase or a monthly charge.
+          Monthly router charges are added to your monthly total; one-off charges appear on your first bill.
         </p>
       </div>
 

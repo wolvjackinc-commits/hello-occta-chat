@@ -32,6 +32,8 @@ export default function DetailsStep({
   onBack: () => void;
 }) {
   const d = session.customer_details;
+  // Phone-number questions only apply when a voice service is being taken.
+  const voiceSelected = (session.selected_addons ?? []).includes("digital_voice");
   const [fullName, setFullName] = useState(d?.full_name ?? "");
   const [email, setEmail] = useState(d?.email ?? "");
   const [phone, setPhone] = useState(d?.phone ?? "");
@@ -68,7 +70,7 @@ export default function DetailsStep({
     if (contractStatus === "in_contract" && !contractEnd) {
       return setErr("Please tell us when your current contract ends, or choose a different option.");
     }
-    if (numberAction === "port_in" && numberToPort.replace(/\D/g, "").length < 10) {
+    if (voiceSelected && numberAction === "port_in" && numberToPort.replace(/\D/g, "").length < 10) {
       return setErr("Please enter the number you'd like to bring with you.");
     }
     if (!privacyAck) return setErr("Please confirm you've read how we handle your information.");
@@ -89,8 +91,8 @@ export default function DetailsStep({
       current_provider: provider.trim() || null,
       current_contract_status: contractStatus,
       current_contract_end_date: contractStatus === "in_contract" ? contractEnd : null,
-      number_action: numberAction,
-      number_to_port: numberAction === "port_in" ? numberToPort.trim() : null,
+      number_action: voiceSelected ? numberAction : "none",
+      number_to_port: voiceSelected && numberAction === "port_in" ? numberToPort.trim() : null,
       accessibility_needs: access.trim() || null,
       vulnerability_support_needs: vulnerability.trim() || null,
       marketing_consent: marketing,
@@ -188,23 +190,27 @@ export default function DetailsStep({
               <Input id="j2-cend" type="date" value={contractEnd ?? ""} onChange={(e) => setContractEnd(e.target.value)} />
             </div>
           )}
-          <div>
-            <Label htmlFor="j2-number">Phone number</Label>
-            <Select value={numberAction} onValueChange={(v) => setNumberAction(v as typeof numberAction)}>
-              <SelectTrigger id="j2-number"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">I don't need a phone number</SelectItem>
-                <SelectItem value="keep_existing">Keep my existing number</SelectItem>
-                <SelectItem value="port_in">Bring my number to OCCTA</SelectItem>
-                <SelectItem value="new_number">Give me a new number</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {numberAction === "port_in" && (
-            <div>
-              <Label htmlFor="j2-port">Number to bring with you</Label>
-              <Input id="j2-port" type="tel" value={numberToPort ?? ""} onChange={(e) => setNumberToPort(e.target.value)} maxLength={30} />
-            </div>
+          {voiceSelected && (
+            <>
+              <div>
+                <Label htmlFor="j2-number">Phone number</Label>
+                <Select value={numberAction} onValueChange={(v) => setNumberAction(v as typeof numberAction)}>
+                  <SelectTrigger id="j2-number"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">I don't need a phone number</SelectItem>
+                    <SelectItem value="keep_existing">Keep my existing number</SelectItem>
+                    <SelectItem value="port_in">Bring my number to OCCTA</SelectItem>
+                    <SelectItem value="new_number">Give me a new number</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {numberAction === "port_in" && (
+                <div>
+                  <Label htmlFor="j2-port">Number to bring with you</Label>
+                  <Input id="j2-port" type="tel" value={numberToPort ?? ""} onChange={(e) => setNumberToPort(e.target.value)} maxLength={30} />
+                </div>
+              )}
+            </>
           )}
         </div>
       </fieldset>

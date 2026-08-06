@@ -1,4 +1,4 @@
-import { money, PLAN_TERM_LABEL, type Journey2Session } from "@/lib/journey2/client";
+import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Journey2Session } from "@/lib/journey2/client";
 
 /**
  * Live order summary. Every figure comes from the server-resolved price
@@ -16,6 +16,7 @@ export default function OrderSummaryCard({ session }: { session: Journey2Session
   }
   const addons = p.addons ?? [];
   const oneOff = (p.setup?.oneOff ?? 0) + (p.router?.oneOff ?? 0);
+  const est = SPEED_ESTIMATES[p.speed_bucket];
   return (
     <aside className="border-4 border-foreground p-5">
       <h2 className="font-display uppercase text-sm tracking-widest mb-3">Your order</h2>
@@ -28,6 +29,12 @@ export default function OrderSummaryCard({ session }: { session: Journey2Session
           <dt className="text-muted-foreground">Term</dt>
           <dd className="text-right font-medium">{PLAN_TERM_LABEL[p.plan_term]}</dd>
         </div>
+        {est && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">Estimated speed</dt>
+            <dd className="text-right font-medium">{est.download} Mbps down / {est.upload} Mbps up</dd>
+          </div>
+        )}
         {p.router && (
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Router</dt>

@@ -196,6 +196,135 @@ export type Database = {
           },
         ]
       }
+      acceptance_risk_signals: {
+        Row: {
+          accept_language: string | null
+          accepted_by_email: string | null
+          browser_locale: string | null
+          browser_timezone: string | null
+          contract_acceptance_id: string | null
+          contract_summary_id: string | null
+          cookies_enabled: boolean | null
+          created_at: string
+          customer_id: string | null
+          device_fingerprint: string | null
+          device_memory: string | null
+          do_not_track: string | null
+          forwarded_for: string | null
+          geo_accuracy_m: number | null
+          geo_latitude: number | null
+          geo_longitude: number | null
+          geo_permission: string | null
+          hardware_concurrency: number | null
+          id: string
+          ip: string | null
+          ip_city: string | null
+          ip_country: string | null
+          ip_region: string | null
+          ip_timezone: string | null
+          journey_id: string | null
+          page_dwell_ms: number | null
+          platform: string | null
+          quote_id: string | null
+          raw_signals: Json
+          risk_reasons: Json
+          risk_score: number
+          screen_signature: string | null
+          touch_points: number | null
+          user_agent: string | null
+          webdriver_flag: boolean | null
+        }
+        Insert: {
+          accept_language?: string | null
+          accepted_by_email?: string | null
+          browser_locale?: string | null
+          browser_timezone?: string | null
+          contract_acceptance_id?: string | null
+          contract_summary_id?: string | null
+          cookies_enabled?: boolean | null
+          created_at?: string
+          customer_id?: string | null
+          device_fingerprint?: string | null
+          device_memory?: string | null
+          do_not_track?: string | null
+          forwarded_for?: string | null
+          geo_accuracy_m?: number | null
+          geo_latitude?: number | null
+          geo_longitude?: number | null
+          geo_permission?: string | null
+          hardware_concurrency?: number | null
+          id?: string
+          ip?: string | null
+          ip_city?: string | null
+          ip_country?: string | null
+          ip_region?: string | null
+          ip_timezone?: string | null
+          journey_id?: string | null
+          page_dwell_ms?: number | null
+          platform?: string | null
+          quote_id?: string | null
+          raw_signals?: Json
+          risk_reasons?: Json
+          risk_score?: number
+          screen_signature?: string | null
+          touch_points?: number | null
+          user_agent?: string | null
+          webdriver_flag?: boolean | null
+        }
+        Update: {
+          accept_language?: string | null
+          accepted_by_email?: string | null
+          browser_locale?: string | null
+          browser_timezone?: string | null
+          contract_acceptance_id?: string | null
+          contract_summary_id?: string | null
+          cookies_enabled?: boolean | null
+          created_at?: string
+          customer_id?: string | null
+          device_fingerprint?: string | null
+          device_memory?: string | null
+          do_not_track?: string | null
+          forwarded_for?: string | null
+          geo_accuracy_m?: number | null
+          geo_latitude?: number | null
+          geo_longitude?: number | null
+          geo_permission?: string | null
+          hardware_concurrency?: number | null
+          id?: string
+          ip?: string | null
+          ip_city?: string | null
+          ip_country?: string | null
+          ip_region?: string | null
+          ip_timezone?: string | null
+          journey_id?: string | null
+          page_dwell_ms?: number | null
+          platform?: string | null
+          quote_id?: string | null
+          raw_signals?: Json
+          risk_reasons?: Json
+          risk_score?: number
+          screen_signature?: string | null
+          touch_points?: number | null
+          user_agent?: string | null
+          webdriver_flag?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acceptance_risk_signals_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceptance_risk_signals_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_acceptances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_deletions: {
         Row: {
           account_number: string | null

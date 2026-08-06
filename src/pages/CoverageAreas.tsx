@@ -13,7 +13,7 @@ const productTiles = [
   { to: "/broadband", icon: Wifi, label: "Home broadband", copy: "Fibre from £34.99/mo. Flex 30 or Price Lock 24." },
   { to: "/sim", icon: Smartphone, label: "SIM plans", copy: "5G data on the UK's biggest network. Rolling monthly." },
   { to: "/landline", icon: PhoneCall, label: "Digital home phone", copy: "Keep your number. Works over fibre." },
-  { to: "/help/own-router-setup", icon: Router, label: "Router & Wi-Fi", copy: "Free router included or bring your own." },
+  { to: "/help/own-router-setup", icon: Router, label: "Router & Wi-Fi", copy: "Buy ours one-off or monthly, or bring your own." },
 ];
 
 export default function CoverageAreas() {

@@ -5,8 +5,8 @@ export default function RoutersPage() {
   return (
     <>
       <SeoContentLayout
-        title="Broadband routers explained — free router or bring your own | OCCTA"
-        metaDescription="Every OCCTA broadband plan includes a free Wi-Fi router. Prefer your own? Bring it. Full setup guide, compatibility, and mesh Wi-Fi tips for UK homes."
+        title="Broadband routers explained — buy ours or bring your own | OCCTA"
+        metaDescription="OCCTA plans never include a router. Buy a Wi-Fi 6 router one-off or monthly, or bring your own. Setup guide, compatibility and mesh Wi-Fi tips for UK homes."
         canonical="/routers"
         h1="Broadband routers — free with every plan, or bring your own"
         shortAnswer="OCCTA ships a free dual-band Wi-Fi 6 router with every broadband order and supports bring-your-own routers on FTTP and FTTC. Setup takes about ten minutes."
@@ -21,7 +21,7 @@ export default function RoutersPage() {
           { question: "Is the router really free?", answer: "Yes. No hire-purchase, no return fee if you cancel, no deposit. It's yours to keep." },
           { question: "Can I use my BT / Sky / Virgin router?", answer: "BT Smart Hubs work with FTTP but not FTTC (they're locked to BT credentials). Sky and Virgin routers can't be re-used on OCCTA. Third-party routers (ASUS, TP-Link, Netgear, etc.) work fine." },
           { question: "Does it come pre-configured?", answer: "Yes. Serial number, Wi-Fi name and password are printed on the sticker. Plug in on activation day and it just works." },
-          { question: "What about static IPs and port forwarding?", answer: "The included router supports port forwarding, DDNS and guest Wi-Fi. Static IPs are available as a £5/mo add-on for FTTC/FTTP plans." },
+          { question: "What about static IPs and port forwarding?", answer: "Our routers support port forwarding, DDNS and guest Wi-Fi. Static IPs are available as a £5/mo add-on for FTTC/FTTP plans." },
           { question: "Do you support mesh systems like eero and Deco?", answer: "Yes — replace or extend the router with any mesh brand. On FTTP we can even put the mesh straight on the ONT and skip the OCCTA router entirely." },
         ]}
         relatedLinks={[

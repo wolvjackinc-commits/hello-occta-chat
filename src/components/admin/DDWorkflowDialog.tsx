@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, CheckCircle, ExternalLink, XCircle, AlertTriangle, FileText, History, ShieldCheck } from "lucide-react";
+import { Loader2, CheckCircle, ExternalLink, XCircle, AlertTriangle, FileText, History, ShieldCheck, Mail, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,6 +182,47 @@ export function DDWorkflowDialog({
     },
     enabled: open,
   });
+
+  // Customer notifications queued by the atomic status routine. Only a FAILED
+  // notification may be resent; sent and suppressed_test rows are read-only so
+  // a customer can never receive the same status email twice.
+  const { data: notifications, refetch: refetchNotifications } = useQuery({
+    queryKey: ["dd-notifications", mandateId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dd_email_outbox")
+        .select("id, subject, status, retry_count, last_error, sent_at, is_test, created_at")
+        .eq("mandate_id", mandateId)
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: open,
+  });
+
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const handleResend = async (outboxId: string) => {
+    setResendingId(outboxId);
+    try {
+      const { data, error } = await supabase.functions.invoke("dd-outbox-worker", {
+        body: { outboxId, resend: true },
+      });
+      const first = (data as { results?: Array<{ status?: string; error?: string }> })?.results?.[0];
+      if (error || first?.status !== "sent") {
+        toast({
+          title: "Resend failed",
+          description: first?.error ?? error?.message ?? "The notification could not be sent. It stays queued for retry.",
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Notification resent", description: "The customer has been emailed the current status." });
+      }
+      await refetchNotifications();
+    } finally {
+      setResendingId(null);
+    }
+  };
 
   // Pre-select whichever provider the mandate is already allocated to.
   useEffect(() => {

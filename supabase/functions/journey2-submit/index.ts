@@ -15,7 +15,7 @@
  * submission, invoice, payment request or supplier action.
  */
 import {
-  corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp, maskEmail,
+  corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp
 } from "../_shared/quoteHelpers.ts";
 import { verifyStoredSnapshot, snapshotMatchesSession, type Journey2Snapshot } from "../_shared/journey2Snapshot.ts";
 import { buildJourney2DocumentPack, REQUIRED_DOC_TYPES } from "../_shared/journey2Docs.ts";
@@ -78,128 +78,14 @@ Deno.serve(async (req) => {
     }, 409);
   }
 
-  // ── Isolated test path ───────────────────────────────────────────────────
+  // ── Isolated test sessions are not handled here ─────────────────────────
+  // A test journey never reaches this function: it runs entirely through
+  // journey2-test-runner against the journey2_test_* tables.
   if (session.test_session) {
-    const { data: testCs } = await supabase
-      .from("journey2_test_contract_summaries")
-      .select("id, status, accepted_at, snapshot_sha256")
-      .eq("session_id", session.id)
-      .maybeSingle();
-    if (!testCs || testCs.status !== "accepted" || !testCs.accepted_at) {
-      return jsonResponse({ error: "test_contract_not_accepted" }, 409);
-    }
-    if (testCs.snapshot_sha256 !== storedHash) {
-      return jsonResponse({ error: "test_contract_fingerprint_mismatch" }, 409);
-    }
-    const { data: testAcc } = await supabase
-      .from("journey2_test_acceptances")
-      .select("id")
-      .eq("test_contract_summary_id", testCs.id)
-      .maybeSingle();
-    if (!testAcc) return jsonResponse({ error: "test_acceptance_evidence_missing" }, 409);
-
-    let runId = session.test_run_id as string | null;
-    if (!runId) {
-      const run = await supabase.from("journey2_test_runs").insert({
-        session_id: session.id,
-        checkout_session_id: session.checkout_session_id,
-        label: "TEST — Journey 2 isolated admin run",
-        status: "running",
-      }).select("id").single();
-      if (run.error) return jsonResponse({ error: "test_run_failed", details: run.error.message }, 500);
-      runId = run.data.id;
-    }
-
-    const existing = await supabase
-      .from("journey2_test_orders")
-      .select("id, test_order_number")
-      .eq("session_id", session.id)
-      .maybeSingle();
-
-    const testOrderNumber = existing.data?.test_order_number
-      ?? `TEST-J2-${String(session.id).slice(0, 8).toUpperCase()}`;
-
-    const p = snapshot.pricing;
-    const orderUp = await supabase.from("journey2_test_orders").upsert({
-      test_run_id: runId,
-      session_id: session.id,
-      checkout_session_id: session.checkout_session_id,
-      test_order_number: testOrderNumber,
-      label: "TEST — not a customer order",
-      plan_name: snapshot.product.plan_name,
-      monthly_ex_vat: p.monthly_ex_vat,
-      monthly_vat_amount: p.monthly_vat,
-      monthly_incl_vat: p.monthly_incl_vat,
-      one_off_incl_vat: p.one_off_charges_incl_vat,
-      amount_due_today: 0,
-      estimated_first_bill_incl_vat: p.estimated_first_bill_incl_vat,
-      preferred_start_date: session.preferred_start_date,
-      billing_anchor_day: session.billing_anchor_day,
-      dd_masked: session.dd_masked,
-      dd_status: "setup_requested_test",
-      snapshot_sha256: storedHash,
-      snapshot,
-    }, { onConflict: "session_id" }).select("id").single();
-    if (orderUp.error) return jsonResponse({ error: "test_order_failed", details: orderUp.error.message }, 500);
-
-    // TEST document pack — test tables only, never contractual storage.
-    const pack = buildJourney2DocumentPack(snapshot, {
-      order_number: testOrderNumber,
-      snapshot_sha256: storedHash,
-      dd_status: "setup_requested_test",
-      test: true,
-    });
-    for (const doc of pack) {
-      await supabase.from("journey2_test_documents").upsert({
-        test_order_id: orderUp.data.id,
-        doc_type: doc.doc_type,
-        title: doc.title,
-        snapshot_sha256: storedHash,
-        content: doc.content,
-      }, { onConflict: "test_order_id,doc_type" });
-    }
-
-    // Suppressed email evidence only — no delivery provider is called.
-    await supabase.from("journey2_test_email_outbox").upsert({
-      test_order_id: orderUp.data.id,
-      email_type: "journey2_welcome_pack",
-      recipient_masked: maskEmail(String(snapshot.customer.email || "test@example.invalid")),
-      subject: "TEST — suppressed welcome pack (never sent)",
-      attachments: pack.map((d) => d.doc_type),
-      status: "suppressed_test",
-    }, { onConflict: "test_order_id,email_type" });
-
-    await supabase.from("journey2_test_dd_intake")
-      .update({ dd_status: "setup_requested_test" }).eq("session_id", session.id);
-
-    await supabase.from("journey2_test_runs").update({
-      status: "completed",
-      finished_at: new Date().toISOString(),
-      result: { submitted_via: "journey2-submit", test_order_number: testOrderNumber, snapshot_sha256: storedHash },
-    }).eq("id", runId);
-
-    await supabase.from("customer_journey_sessions").update({
-      status: "completed",
-      current_step: "complete",
-      last_completed_step: "review",
-      test_run_id: runId,
-      test_order_id: orderUp.data.id,
-      test_acceptance_id: testAcc.id,
-      dd_status: "setup_requested_test",
-      submitted_at: session.submitted_at ?? new Date().toISOString(),
-      completed_at: session.completed_at ?? new Date().toISOString(),
-      last_activity_at: new Date().toISOString(),
-      last_error: null,
-    }).eq("id", session.id);
-
     return jsonResponse({
-      ok: true,
-      test_session: true,
-      order_number: testOrderNumber,
-      snapshot_sha256: storedHash,
-      documents: pack.length,
-      replayed: !!existing.data,
-    });
+      error: "use_isolated_test_runner",
+      message: "Isolated Journey 2 test journeys are submitted through journey2-test-runner only.",
+    }, 400);
   }
 
   // ── Live path ────────────────────────────────────────────────────────────

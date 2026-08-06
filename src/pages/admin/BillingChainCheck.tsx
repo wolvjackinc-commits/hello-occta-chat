@@ -105,7 +105,7 @@ export function AdminBillingChainCheck() {
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { run("report"); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { run("report");   }, []);
 
   const filteredRows = rows.filter(r => {
     if (!includeArchived && isArchivedLike(r.service_status)) return false;

@@ -39,7 +39,7 @@ function record(sample: PerfSample) {
   if (ring.length > RING_SIZE) ring.shift();
   if (perfEnabled()) {
     // Plain numbers only — no payload, no URLs.
-    // eslint-disable-next-line no-console
+     
     console.debug(`[perf] ${sample.name} ${sample.ms}ms ${sample.ok ? "ok" : "err"}`);
   }
 }

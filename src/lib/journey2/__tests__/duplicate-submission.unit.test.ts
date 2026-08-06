@@ -9,7 +9,7 @@ import { journey2 } from "../client";
 
 const invoke = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
 
-describe("Duplicate submission", () => {
+describe("[unit, mocked] Duplicate submission", () => {
   beforeEach(() => invoke.mockReset());
 
   it("returns the same order for a repeated submission of one checkout session", async () => {

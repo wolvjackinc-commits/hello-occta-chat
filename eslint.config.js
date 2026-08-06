@@ -21,6 +21,9 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // Reported, not fatal: the Deno edge functions deliberately work with
+      // untyped Postgres/JSON payloads. Every other rule stays an error.
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
 );

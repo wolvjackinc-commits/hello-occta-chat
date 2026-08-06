@@ -93,7 +93,7 @@ Deno.serve(perfServe("get-payment-receipt", async (req) => {
   if (prErr || !pr) return jsonResponse({ error: "not_found" }, 404);
 
   // Ownership or staff
-  let isOwner = pr.user_id && pr.user_id === userId;
+  const isOwner = pr.user_id && pr.user_id === userId;
   if (!isOwner) {
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
     const isStaff = (roles ?? []).some((r: any) => STAFF_ROLES.includes(r.role));

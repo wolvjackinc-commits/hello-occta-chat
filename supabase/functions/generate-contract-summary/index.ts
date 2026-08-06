@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
   // ── Build Plan re-verify (if quote came from /build-plan) ──
   let bpAddendum = "";
   let bpFields: Record<string, unknown> = {};
-  let extraOneOff: { label: string; amount: number }[] = [];
+  const extraOneOff: { label: string; amount: number }[] = [];
   if (q.speed_bucket && q.plan_term) {
     const ro = (q.router_option ?? {}) as any;
     const so = (q.setup_option  ?? {}) as any;

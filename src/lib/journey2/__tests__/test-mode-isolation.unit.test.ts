@@ -9,7 +9,7 @@ import { journey2 } from "../client";
 
 const invoke = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
 
-describe("Test-mode isolation", () => {
+describe("[unit, mocked] Test-mode isolation", () => {
   beforeEach(() => invoke.mockReset());
 
   it("marks an admin test submission as a test order, not a live order", async () => {

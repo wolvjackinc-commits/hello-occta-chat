@@ -8,7 +8,15 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "test:unit": "vitest run --exclude '**/__tests__/db/**'",
+    "test:j1-regression": "vitest run src/lib/journey2/__tests__/journey1-regression.unit.test.ts",
+    "test:j2-integration": "vitest run src/lib/journey2/__tests__/db/journey2-isolation.db.test.ts",
+    "test:pricing-vat": "vitest run src/lib/journey2/__tests__/pricing-vat.unit.test.ts",
+    "test:duplicate": "vitest run src/lib/journey2/__tests__/duplicate-submission.unit.test.ts",
+    "test:isolation": "vitest run src/lib/journey2/__tests__/test-mode-isolation.unit.test.ts src/lib/journey2/__tests__/db/journey2-isolation.db.test.ts",
+    "test:migrations": "bash scripts/apply-migrations.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -85,6 +93,7 @@
     "@testing-library/user-event": "^14",
     "@types/jest-axe": "^3",
     "@types/node": "^22.16.5",
+    "@types/pg": "^8.20.4",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
@@ -96,6 +105,7 @@
     "jest-axe": "^9",
     "jsdom": "^25",
     "lovable-tagger": "^1.1.13",
+    "pg": "^8.22.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

@@ -137,7 +137,7 @@ export const AdminQuotes = () => {
         profileMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
       }
       const quoteIds = (rows ?? []).map((r: any) => r.id);
-      let csMap = new Map<string, any>();
+      const csMap = new Map<string, any>();
       if (quoteIds.length) {
         const { data: cs } = await (supabase as any)
           .from("contract_summaries")
@@ -149,7 +149,7 @@ export const AdminQuotes = () => {
 
       // hydrate active/paid payment requests per CS (block duplicate create)
       const csIds = Array.from(csMap.values()).map((c: any) => c.id).filter(Boolean);
-      let prMap = new Map<string, any>();
+      const prMap = new Map<string, any>();
       if (csIds.length) {
         const { data: prs } = await (supabase as any)
           .from("payment_requests")

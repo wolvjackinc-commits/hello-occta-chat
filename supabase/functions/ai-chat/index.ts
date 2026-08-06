@@ -2027,7 +2027,7 @@ After chatting with IRA, users should feel:
 
 IRA's success is clarity + trust, not conversion at all costs.`;
 
-    let currentMessages = [
+    const currentMessages = [
       { role: "system", content: systemPrompt },
       ...messages,
     ];

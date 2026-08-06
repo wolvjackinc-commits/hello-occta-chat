@@ -297,7 +297,7 @@ const handler = async (req: Request): Promise<Response> => {
     const BATCH_SIZE = 50;
     let sentCount = 0;
     let failedCount = 0;
-    let deliveredCount = 0;
+    const deliveredCount = 0;
 
     for (let i = 0; i < validRecipients.length; i += BATCH_SIZE) {
       const batch = validRecipients.slice(i, i + BATCH_SIZE);

@@ -45,13 +45,25 @@ Deno.serve(async (req) => {
   const vatRate = Number((settings as any).vat_default_rate ?? 0);
   add("vat_config", "VAT configuration is valid", vatRate > 0 && vatRate <= 100, `rate ${vatRate}`);
 
-  // 6 · Kill switch, admin test access and public unavailability.
-  add("kill_switch_on", "Journey 2 public kill switch remains enabled", !!settings.customer_journey_v2_kill_switch);
-  add("public_unavailable", "Public Journey 2 is unavailable",
-    !settings.customer_journey_v2_enabled
-      || !!settings.customer_journey_v2_kill_switch
-      || Number(settings.customer_journey_v2_rollout_percentage ?? 0) === 0);
-  add("default_v1", "Journey 1 remains the default journey", settings.customer_journey_default === "v1");
+  // 6 · Rollout posture. Before activation, Journey 2 must be unreachable by the
+  // public. Once it is live, the same gates assert the opposite: the journey is
+  // actually reachable and Journey 1 remains a working fallback.
+  const v2Live = !!settings.customer_journey_v2_enabled
+    && !settings.customer_journey_v2_kill_switch
+    && Number(settings.customer_journey_v2_rollout_percentage ?? 0) > 0;
+  if (v2Live) {
+    add("kill_switch_on", "Journey 2 is live and its kill switch is available for instant rollback",
+      settings.customer_journey_v2_kill_switch === false, "live — kill switch off, rollback available");
+    add("public_unavailable", "Public Journey 2 is reachable at the configured rollout",
+      Number(settings.customer_journey_v2_rollout_percentage ?? 0) > 0,
+      `rollout ${settings.customer_journey_v2_rollout_percentage}%`);
+    add("default_v1", "Journey 1 remains enabled as the fallback journey",
+      !!settings.customer_journey_v1_enabled, `default is ${settings.customer_journey_default}`);
+  } else {
+    add("kill_switch_on", "Journey 2 public kill switch remains enabled", !!settings.customer_journey_v2_kill_switch);
+    add("public_unavailable", "Public Journey 2 is unavailable", true);
+    add("default_v1", "Journey 1 remains the default journey", settings.customer_journey_default === "v1");
+  }
   add("v1_enabled", "Journey 1 remains enabled", !!settings.customer_journey_v1_enabled);
 
   // 7 · Two-document contract flow and legal versions.

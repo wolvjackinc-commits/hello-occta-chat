@@ -253,6 +253,22 @@ export default function Pay() {
   // If this page is opened inside the Lovable preview domain, 3DS flows can crash with
   // "The current origin is not supported". Always move the customer to the stable/published
   // domain BEFORE starting Worldpay.
+  // Declared before any early return so the hook order never changes.
+  const handleDownloadReceipt = useCallback(() => {
+    if (!paymentDetails) return;
+    generateReceiptPdf({
+      receiptId: paymentDetails.receiptId,
+      invoiceNumber: paymentDetails.invoiceNumber,
+      customerName: paymentDetails.customerName,
+      customerEmail: paymentDetails.customerEmail,
+      accountNumber: paymentDetails.accountNumber,
+      amount: paymentDetails.amount,
+      paidAt: paymentDetails.paidAt,
+      method: paymentDetails.method,
+      reference: paymentDetails.reference,
+    });
+  }, [paymentDetails]);
+
   if (shouldOpenOnStableOrigin) {
     const stableUrl = `${stableOrigin}/pay?${searchParams.toString()}`;
     // Return flows (with status/requestId) auto-redirect — the customer already
@@ -321,21 +337,6 @@ export default function Pay() {
       setIsProcessing(false);
     }
   };
-
-  const handleDownloadReceipt = useCallback(() => {
-    if (!paymentDetails) return;
-    generateReceiptPdf({
-      receiptId: paymentDetails.receiptId,
-      invoiceNumber: paymentDetails.invoiceNumber,
-      customerName: paymentDetails.customerName,
-      customerEmail: paymentDetails.customerEmail,
-      accountNumber: paymentDetails.accountNumber,
-      amount: paymentDetails.amount,
-      paidAt: paymentDetails.paidAt,
-      method: paymentDetails.method,
-      reference: paymentDetails.reference,
-    });
-  }, [paymentDetails]);
 
   const handleNavigation = () => {
     if (isLoggedIn) navigate("/dashboard");

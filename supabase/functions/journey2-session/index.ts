@@ -484,11 +484,7 @@ Deno.serve(async (req) => {
     patch.status = "active";
     patch.current_step = nextStep(body.step);
     patch.contract_snapshot_id = null;
-    if (session.test_session) {
-      await supabase.from("journey2_test_contract_summaries")
-        .update({ status: "superseded" }).eq("session_id", session.id);
-      patch.test_contract_summary_id = null;
-    } else {
+    {
       await supabase.from("quotes")
         .update({ status: "expired" })
         .eq("id", session.quote_id)

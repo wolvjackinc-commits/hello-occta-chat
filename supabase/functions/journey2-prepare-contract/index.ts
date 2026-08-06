@@ -178,43 +178,13 @@ Deno.serve(async (req) => {
     }).eq("id", session.id);
   }
 
-  // ── TEST path: contract documents live only in the test tables ─────────────
+  // Isolated test journeys never reach this function; they are prepared by
+  // journey2-test-runner against journey2_test_snapshots.
   if (session.test_session) {
-    const pack = buildJourney2DocumentPack(snapshot, {
-      order_number: "TEST — pending submission",
-      snapshot_sha256: snapshotHash,
-      dd_status: "suppressed_test",
-      test: true,
-    });
-    const cs = pack.find((d) => d.doc_type === "contract_summary")!;
-    const ci = pack.find((d) => d.doc_type === "contract_information")!;
-
-    const ins = await supabase.from("journey2_test_contract_summaries").upsert({
-      test_run_id: session.test_run_id ?? null,
-      session_id: session.id,
-      checkout_session_id: session.checkout_session_id,
-      status: "issued",
-      snapshot_sha256: snapshotHash,
-      summary: cs.content,
-      contract_information: ci.content,
-    }, { onConflict: "session_id" }).select("id").single();
-    if (ins.error) return jsonResponse({ error: "test_contract_failed", details: ins.error.message }, 500);
-
-    await supabase.from("customer_journey_sessions").update({
-      test_contract_summary_id: ins.data.id,
-      status: "contract_prepared",
-      current_step: "contract",
-      last_activity_at: new Date().toISOString(),
-      last_error: null,
-    }).eq("id", session.id);
-
     return jsonResponse({
-      ok: true,
-      test_session: true,
-      contract_ready: true,
-      test_contract_summary_id: ins.data.id,
-      snapshot_sha256: snapshotHash,
-    });
+      error: "use_isolated_test_runner",
+      message: "Isolated Journey 2 test contracts are prepared through journey2-test-runner only.",
+    }, 400);
   }
 
   // ── LIVE path ─────────────────────────────────────────────────────────────

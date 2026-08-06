@@ -25,7 +25,7 @@ export default function OrderComplete() {
   if (error) {
     return (
       <Layout>
-        <SEO title="Order status | OCCTA" description="Your OCCTA order status." noindex />
+        <SEO title="Order status | OCCTA" description="Your OCCTA order status." noIndex />
         <section className="container mx-auto px-4 py-16 max-w-2xl">
           <div className="border-4 border-foreground p-6">
             <h1 className="font-display uppercase text-2xl mb-2">We can't show this order yet</h1>
@@ -58,7 +58,7 @@ export default function OrderComplete() {
 
   return (
     <Layout>
-      <SEO title="Order confirmed | OCCTA" description="Your OCCTA order is confirmed." noindex />
+      <SEO title="Order confirmed | OCCTA" description="Your OCCTA order is confirmed." noIndex />
       <section className="container mx-auto px-4 py-12 max-w-3xl">
         {state.test_session && (
           <p className="mb-4 border-4 border-foreground bg-foreground text-background p-3 font-display uppercase text-sm">

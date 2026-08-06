@@ -10,7 +10,7 @@ import { startAssignedJourney } from "../route";
 
 const invoke = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
 
-describe("Journey 2 integration", () => {
+describe("[unit, mocked] Journey 2 integration", () => {
   beforeEach(() => invoke.mockReset());
 
   it("routes a v2-assigned visitor into the ordering flow", async () => {

@@ -7,7 +7,7 @@ const breakdown = (exVat: number, vatPercent: number) => {
   return { ex_vat: exVat, vat, incl_vat: Math.round((exVat + vat) * 100) / 100 };
 };
 
-describe("Journey 2 pricing and VAT", () => {
+describe("[unit, mocked] Journey 2 pricing and VAT", () => {
   it("derives VAT from the configured rate, never a hard-coded 20%", () => {
     expect(breakdown(30, 20)).toEqual({ ex_vat: 30, vat: 6, incl_vat: 36 });
     expect(breakdown(30, 5)).toEqual({ ex_vat: 30, vat: 1.5, incl_vat: 31.5 });

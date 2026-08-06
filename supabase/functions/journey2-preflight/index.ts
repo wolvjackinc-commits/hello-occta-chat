@@ -89,9 +89,8 @@ Deno.serve(async (req) => {
   add("test_sequence", "The test run completed the correct ten-step sequence",
     !!s && s.current_step === "complete" && !!s.preferred_start_date && !!s.billing_anchor_day && !!s.dd_masked);
   add("contract_after_billing", "Contract documents were prepared only after start date and billing",
-    !!sn && !!s?.preferred_start_date && !!s?.billing_anchor_day
-      && new Date(sn.created_at) >= new Date(s.updated_at ?? sn.created_at) === false ? !!sn : !!sn,
-    "snapshot exists and both selections were captured before it");
+    !!sn && !!s?.preferred_start_date && !!s?.billing_anchor_day && !!s?.dd_masked,
+    "snapshot exists and both the start date and billing selections were captured");
   add("snapshot_hash", "The contractual snapshot has a valid SHA-256 fingerprint",
     typeof sn?.snapshot_sha256 === "string" && sn.snapshot_sha256.length === 64);
   const p = sn?.snapshot?.pricing ?? {};
@@ -157,12 +156,15 @@ Deno.serve(async (req) => {
   } catch { storageOk = false; }
   add("document_storage", "Document storage is operational", storageOk);
 
-  // Transactional submission path must exist.
-  const { data: commitFn } = await supabase
-    .from("pg_proc_journey2_check" as never).select("*").limit(1).maybeSingle()
-    .then((r) => r, () => ({ data: null }));
+  // Transactional submission path must exist and must reject test sessions.
+  const commitProbe = await supabase.rpc("journey2_commit_order", {
+    _session_id: "00000000-0000-0000-0000-000000000000",
+    _customer_id: "00000000-0000-0000-0000-000000000000",
+    _guest_order_id: null,
+  });
   add("transactional_submit", "The transactional final-submission routine is installed",
-    commitFn !== undefined);
+    !commitProbe.error && (commitProbe.data as any)?.error === "session_not_found",
+    commitProbe.error?.message ?? "responds to validation probe");
 
   // No unresolved critical Journey 2 failures.
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();

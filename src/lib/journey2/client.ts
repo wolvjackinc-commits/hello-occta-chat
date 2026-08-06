@@ -216,6 +216,18 @@ export type Journey2Completion = {
   test_session: boolean;
   order_number: string | null;
   plan_name: string | null;
+  contract_term?: string | null;
+  minimum_term_months?: number | null;
+  estimated_download_mbps?: number | null;
+  estimated_upload_mbps?: number | null;
+  speed_statement?: string | null;
+  customer_name?: string | null;
+  customer_email?: string | null;
+  service_address?: string | null;
+  addons?: { id: string; label: string; monthly: number }[];
+  router_label?: string | null;
+  current_provider?: string | null;
+  number_action?: string | null;
   monthly_ex_vat: number;
   monthly_vat: number;
   monthly_incl_vat: number;

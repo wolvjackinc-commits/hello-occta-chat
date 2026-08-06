@@ -4,9 +4,9 @@ const STEPS: { key: string; label: string }[] = [
   { key: "router", label: "Router" },
   { key: "extras", label: "Extras" },
   { key: "details", label: "Your details" },
-  { key: "contract", label: "Contract" },
   { key: "start_date", label: "Start date" },
-  { key: "billing", label: "Payment" },
+  { key: "billing", label: "Billing" },
+  { key: "contract", label: "Contract" },
   { key: "review", label: "Review" },
   { key: "complete", label: "Done" },
 ];

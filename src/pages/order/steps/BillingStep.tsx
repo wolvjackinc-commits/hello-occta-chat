@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DIRECT_DEBIT_GUARANTEE_PARAGRAPHS } from "@/lib/legal/directDebitGuarantee";
+import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
 import { money, type Journey2Session } from "@/lib/journey2/client";
 
 const DAYS = [1, 5, 10, 15, 20, 25, 28];
@@ -145,7 +145,7 @@ export default function BillingStep({
       <section className="border-2 border-foreground p-4">
         <h2 className="font-display uppercase text-sm tracking-widest mb-2">The Direct Debit Guarantee</h2>
         <ul className="space-y-2 text-xs text-muted-foreground list-disc pl-5">
-          {DIRECT_DEBIT_GUARANTEE_PARAGRAPHS.map((p) => <li key={p}>{p}</li>)}
+          {DD_GUARANTEE_TEXT.split("\n\n").map((p) => <li key={p.slice(0, 24)}>{p}</li>)}
         </ul>
       </section>
 

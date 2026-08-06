@@ -38,7 +38,7 @@ const BusinessQuote = () => {
   });
 
   const toggleService = (k: ServiceKey) => {
-    setServices((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
+    setServices((s) => { const n = new Set(s); if (n.has(k)) { n.delete(k); } else { n.add(k); } return n; });
   };
   const setReq = (k: string, v: string) => setReqs((r) => ({ ...r, [k]: v }));
 

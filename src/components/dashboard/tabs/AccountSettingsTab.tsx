@@ -104,13 +104,13 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
     return stored && VALID_DIRS.includes(stored) ? stored : "all";
   })();
   const setHistoryTypeFilter = (v: string) => {
-    try { window.localStorage.setItem("occta:consent:type-filter", v); } catch {}
+    try { window.localStorage.setItem("occta:consent:type-filter", v); } catch { /* storage unavailable */ }
     const next = new URLSearchParams(searchParams);
     if (v === "all") next.delete("consentType"); else next.set("consentType", v);
     setSearchParams(next, { replace: true });
   };
   const setHistoryDirectionFilter = (v: string) => {
-    try { window.localStorage.setItem("occta:consent:direction-filter", v); } catch {}
+    try { window.localStorage.setItem("occta:consent:direction-filter", v); } catch { /* storage unavailable */ }
     const next = new URLSearchParams(searchParams);
     if (v === "all") next.delete("consentDir"); else next.set("consentDir", v);
     setSearchParams(next, { replace: true });
@@ -458,7 +458,7 @@ export function AccountSettingsTab({ profile }: { profile: Profile | null }) {
                         <tbody>${rowsHtml}</tbody>
                       </table>
                       <p class="footer">This document reflects consent changes recorded in your OCCTA account and is provided for your GDPR records.</p>
-                      <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 200); }<\/script>
+                      <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 200); }<\u002fscript>
                       </body></html>`;
                     const w = window.open("", "_blank");
                     if (!w) {

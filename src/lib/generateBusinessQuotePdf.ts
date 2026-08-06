@@ -96,5 +96,5 @@ export function generateBusinessQuotePdf(q: BusinessQuoteData): void {
   w.document.open();
   w.document.write(html);
   w.document.close();
-  setTimeout(() => { try { w.focus(); w.print(); } catch {} }, 400);
+  setTimeout(() => { try { w.focus(); w.print(); } catch { /* print blocked */ } }, 400);
 }

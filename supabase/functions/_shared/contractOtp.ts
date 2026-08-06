@@ -11,6 +11,9 @@
  *    is persisted.
  */
 import { getServiceClient, sha256Hex } from "./quoteHelpers.ts";
+import { maskMobile, normaliseUkMobile } from "./otpPhone.ts";
+
+export { maskMobile, normaliseUkMobile };
 
 export const OTP_SEND_URL = "https://api.thesmsworks.co.uk/v1/otp/send";
 export const OTP_VERIFY_URL = "https://api.thesmsworks.co.uk/v1/otp/verify";
@@ -24,22 +27,6 @@ export const MAX_VERIFY_ATTEMPTS = 5;
 
 export type JourneyType = "journey_1" | "journey_2";
 
-/** Normalise common UK inputs to bare `44…` digits. Returns null when invalid. */
-export function normaliseUkMobile(input: string | null | undefined): string | null {
-  if (!input) return null;
-  let d = String(input).replace(/[^\d+]/g, "");
-  if (d.startsWith("+")) d = d.slice(1);
-  d = d.replace(/\D/g, "");
-  if (d.startsWith("00")) d = d.slice(2);
-  if (d.startsWith("0")) d = "44" + d.slice(1);
-  if (d.startsWith("7") && d.length === 10) d = "44" + d;
-  if (!/^447[1-9]\d{8}$/.test(d)) return null;
-  return d;
-}
-
-export function maskMobile(normalised: string): string {
-  return "******" + normalised.slice(-4);
-}
 
 export async function hashMobile(normalised: string): Promise<string> {
   const salt = Deno.env.get("SMS_OTP_HASH_SALT") ?? "";

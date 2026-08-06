@@ -6,7 +6,6 @@ export type CompanionMessage = {
 export type AccountIntent =
   | "overview"
   | "invoices"
-  | "payments"
   | "orders"
   | "services"
   | "tickets"
@@ -45,9 +44,8 @@ export function detectAccountIntent(messages: CompanionMessage[]): AccountIntent
   for (let index = userMessages.length - 1; index >= 0; index -= 1) {
     const text = userMessages[index].content.toLowerCase();
     const personal = /\b(my|mine|me|account|customer|logged in|signed in|am i on|do i have)\b/.test(text)
-      || /^(view|show|check|track|explain)\s+(invoices?|orders?|services?|tickets?|account|installation|direct debit|payments?)/.test(text);
+      || /^(view|show|check|track|explain)\s+(invoices?|orders?|services?|tickets?|account|installation)/.test(text);
     if (!personal) continue;
-    if (/\b(my direct debit|direct debit status|mandate status|payment method|bank mandate)\b/.test(text)) return "payments";
     if (/\b(invoice|invoices|bill|billing statement|latest bill|amount due|how much do i owe|payment status)\b/.test(text)) return "invoices";
     if (/\b(installation|activation|engineer|go live|go-live|appointment|start date)\b/.test(text)) return "installation";
     if (/\b(order|orders|track|tracking)\b/.test(text)) return "orders";

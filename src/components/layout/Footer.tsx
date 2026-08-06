@@ -26,7 +26,7 @@ const Footer = () => {
     support: [
       { name: "Help & Support Hub", path: "/support" },
       { name: "AI Assistant", path: "/support#ai-help" },
-      { name: "My Dashboard", path: "/dashboard" },
+      { name: "My OCCTA (Customer Login)", path: "/dashboard" },
       { name: "Network Status", path: "/status" },
       { name: "Contact Us", path: "/support#contact" },
     ],
@@ -83,7 +83,7 @@ const Footer = () => {
                 Get instant help with our AI assistant
               </Link>
               <span className="hidden sm:inline text-background/70">•</span>
-              <Link to="/dashboard" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
+              <Link to="/dashboard" aria-label="Manage your OCCTA account" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
                 <LayoutDashboard className="w-4 h-4" />
                 Manage your account
               </Link>

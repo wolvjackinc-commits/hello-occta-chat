@@ -159,7 +159,7 @@ maybe("Journey 2 real isolated engine run", () => {
     expect(failed, `failed gates: ${failed.join(", ")}`).toEqual([]);
   });
 
-  it("completed all ten journey stages, admin-only, with the kill switch ON", async () => {
+  it("completed all ten journey stages, admin-only, regardless of the public posture", async () => {
     const { rows } = await db.query(
       "select gate_key from journey2_test_events where test_run_id = $1 and ok = true",
       [run!.test_run_id],
@@ -169,10 +169,12 @@ maybe("Journey 2 real isolated engine run", () => {
       expect(keys.has(`stage_${stage}`), `stage ${stage} must be proven`).toBe(true);
     }
     expect(keys.has("admin_test_access_with_kill_switch")).toBe(true);
+    // The isolated run must work whether Journey 2 is still gated behind the
+    // kill switch or already live; Journey 1 must always remain as a fallback.
     const { rows: settings } = await db.query(
-      "select customer_journey_v2_kill_switch as k from platform_settings where singleton = true",
+      "select customer_journey_v1_enabled as v1 from platform_settings where singleton = true",
     );
-    expect(settings[0].k).toBe(true);
+    expect(settings[0].v1).toBe(true);
   });
 
   it("stored a canonical SHA-256 snapshot, rejected tampering and stayed immutable", async () => {

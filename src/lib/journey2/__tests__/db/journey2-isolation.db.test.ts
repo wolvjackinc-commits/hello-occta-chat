@@ -99,7 +99,7 @@ maybe("Journey 2 database-backed isolation", () => {
 
     const ins = await db.query(
       `insert into journey2_test_sessions (public_token_hash, status, current_step)
-       values (encode(gen_random_bytes(32), 'hex'), 'in_progress', 'address')
+       values (md5(random()::text) || md5(clock_timestamp()::text), 'in_progress', 'address')
        returning id, checkout_session_id`,
     );
     sessionId = ins.rows[0].id;

@@ -3235,6 +3235,30 @@ export type Database = {
           },
         ]
       }
+      dd_encryption_migration_switch: {
+        Row: {
+          armed: boolean
+          created_at: string
+          id: boolean
+          last_run_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          armed?: boolean
+          created_at?: string
+          id?: boolean
+          last_run_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          armed?: boolean
+          created_at?: string
+          id?: boolean
+          last_run_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dd_intake_requests: {
         Row: {
           auth_tag: string | null

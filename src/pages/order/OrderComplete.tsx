@@ -1,10 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
-import { Loader2, FileText, CheckCircle2 } from "lucide-react";
+import {
+  Loader2, FileText, CheckCircle2, Check, Copy, Download, Gauge, MapPin, CalendarDays,
+  Landmark, Mail, Phone, ShieldCheck, Sparkles, ArrowRight, Printer,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { journey2, money, type Journey2Completion } from "@/lib/journey2/client";
+import { companyConfig } from "@/lib/companyConfig";
+
+const TERM_LABEL: Record<string, string> = {
+  flex_30: "Flex 30 — rolling monthly",
+  price_lock_24: "Price Lock 24 — fixed 24 months",
+};
+
+const dateLong = (v: string | null | undefined) => {
+  if (!v) return "—";
+  const d = new Date(v);
+  return Number.isNaN(d.getTime())
+    ? v
+    : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+};
+
+const ordinal = (n: number) => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+};
 
 /**
  * Journey 2 completion. Read-only: opening this page never creates or changes

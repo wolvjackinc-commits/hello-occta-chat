@@ -215,6 +215,23 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   if (aErr) return jsonResponse({ error: "accept_failed", details: aErr.message }, 500);
   const acceptanceId = accInsert?.id;
 
+  // Fraud / identity-theft evidence. Never blocks the acceptance.
+  try {
+    await recordAcceptanceRisk(supabase, req, {
+      contract_acceptance_id: acceptanceId ?? null,
+      contract_summary_id: cs.id,
+      quote_id: cs.quote_id,
+      journey_id: journey?.id ?? null,
+      customer_id: cs.customer_id ?? null,
+      accepted_by_email: i.accepted_by_email,
+      ip,
+      user_agent: ua,
+      signals: (i.risk_signals ?? {}) as Record<string, unknown>,
+    });
+  } catch (e) {
+    console.warn("[accept-contract-summary] risk capture failed", (e as Error).message);
+  }
+
   const { error: csErr } = await supabase.from("contract_summaries").update({
     status: "accepted",
     accepted_at: acceptedAt,

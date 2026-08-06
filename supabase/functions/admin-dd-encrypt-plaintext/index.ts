@@ -25,9 +25,23 @@ serve(async (req) => {
 
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-  if (!serviceKey || token !== serviceKey) return json({ success: false, error: "Forbidden" }, 403);
+  if (!serviceKey) return json({ success: false, error: "Forbidden" }, 403);
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", serviceKey, { auth: { persistSession: false } });
+
+  // Access: the service-role key, OR the one-shot switch armed by a migration.
+  // The switch disarms itself at the end of a successful run, and the response
+  // only ever contains counts — never any bank data.
+  let armed = false;
+  if (token !== serviceKey) {
+    const { data: sw } = await supabase
+      .from("dd_encryption_migration_switch")
+      .select("armed")
+      .eq("id", true)
+      .maybeSingle();
+    armed = sw?.armed === true;
+    if (!armed) return json({ success: false, error: "Forbidden" }, 403);
+  }
 
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { /* no body */ }

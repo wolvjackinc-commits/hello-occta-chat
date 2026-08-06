@@ -35,6 +35,8 @@ const Schema = z.discriminatedUnion("method", [
     consent: z.literal(true),
     dd_details: DDDetails,
     idempotency_key: z.string().uuid().optional(),
+    /** Honoured only for service-role callers (Journey 2 test sessions). */
+    suppress_customer_email: z.boolean().optional(),
   }),
   z.object({
     token: z.string().min(16),
@@ -279,8 +281,15 @@ Deno.serve(perfServe("journey-payment-method", async (req) => {
     _quote_id: journey.quote_id,
   }).then(() => {}).catch(() => {});
 
+  // Suppression is only honoured for trusted service-role callers, so a public
+  // caller can never silence their own Direct Debit confirmation.
+  const serviceCaller =
+    (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "") ===
+    (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "\u0000");
+  const suppressEmail = serviceCaller && (i as { suppress_customer_email?: boolean }).suppress_customer_email === true;
+
   // Best-effort customer confirmation email — DD includes the formal Guarantee.
-  if (i.method === "direct_debit") {
+  if (i.method === "direct_debit" && !suppressEmail) {
     try {
       let customerEmail: string | null = null;
       let customerName: string | null = null;

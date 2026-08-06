@@ -52,8 +52,22 @@ export type Journey2Session = {
   customer_details: {
     full_name: string; email: string; phone: string;
     date_of_birth?: string | null; current_provider?: string | null; marketing_consent?: boolean;
+    billing_address_same?: boolean;
+    billing_address?: { address_line_1: string; address_line_2?: string | null; town: string; county?: string | null; postcode: string } | null;
+    current_contract_status?: "out_of_contract" | "in_contract" | "unknown" | "new_line";
+    current_contract_end_date?: string | null;
+    number_action?: "none" | "keep_existing" | "port_in" | "new_number";
+    number_to_port?: string | null;
+    accessibility_needs?: string | null;
+    vulnerability_support_needs?: string | null;
   } | null;
   price_snapshot: PriceSnapshot | null;
+  preferred_start_date: string | null;
+  cooling_off_acknowledged: boolean | null;
+  billing_anchor_day: number | null;
+  dd_masked: { last4: string; sort_last2: string; bank_name: string; account_holder_name: string; status: string } | null;
+  digital_voice_acknowledged: boolean | null;
+  checkout_session_id: string | null;
   quote_id: string | null;
   order_id: string | null;
   expires_at: string;
@@ -121,7 +135,11 @@ export const journey2 = {
       "journey2-session", { action: "get", token },
     ),
 
-  saveStep: (token: string, step: "address" | "plan" | "router" | "extras" | "details", payload: Record<string, unknown>) =>
+  saveStep: (
+    token: string,
+    step: "address" | "plan" | "router" | "extras" | "details" | "start_date" | "billing",
+    payload: Record<string, unknown>,
+  ) =>
     call<{ ok: boolean; session?: Journey2Session; error?: string; message?: string; redirect?: string; details?: unknown }>(
       "journey2-session", { action: "save_step", token, step, payload },
     ),
@@ -134,6 +152,15 @@ export const journey2 = {
   prepareContract: (token: string) =>
     call<{ ok: boolean; quote_token?: string; contract_ready?: boolean; contract_error?: string; error?: string; message?: string }>(
       "journey2-prepare-contract", { token },
+    ),
+
+  /**
+   * Replays the already captured start date and Direct Debit into the shared
+   * production services once the contract has been accepted.
+   */
+  applyPostContract: (token: string, quote_token: string) =>
+    call<{ ok: boolean; applied?: boolean; retryable?: boolean; failures?: { step: string; error: string }[]; error?: string; message?: string }>(
+      "journey2-apply-postcontract", { token, quote_token },
     ),
 
   finalise: (token: string) =>

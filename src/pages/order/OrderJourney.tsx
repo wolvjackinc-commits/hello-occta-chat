@@ -14,12 +14,12 @@ import PlanStep from "./steps/PlanStep";
 import RouterStep from "./steps/RouterStep";
 import ExtrasStep from "./steps/ExtrasStep";
 import DetailsStep from "./steps/DetailsStep";
+import StartDateStep from "./steps/StartDateStep";
+import BillingStep from "./steps/BillingStep";
 import AgreementStep from "@/pages/quote/journey/AgreementStep";
-import StartDateStep from "@/pages/quote/journey/StartDateStep";
-import PaymentStep from "@/pages/quote/journey/PaymentStep";
 import ReviewStep, { CompletedStep } from "@/pages/quote/journey/ReviewStep";
 
-const SELECTION_STEPS = ["address", "plan", "router", "extras", "details"] as const;
+const SELECTION_STEPS = ["address", "plan", "router", "extras", "details", "start_date", "billing"] as const;
 type SelectionStep = typeof SELECTION_STEPS[number];
 
 /**
@@ -42,6 +42,8 @@ export default function OrderJourney() {
   const [error, setError] = useState<string | null>(null);
   const [backStep, setBackStep] = useState<SelectionStep | null>(null);
   const finalisedRef = useRef(false);
+  const appliedRef = useRef(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   // ── Load session + catalogue ───────────────────────────────────────────────
   const loadSession = useCallback(async () => {
@@ -113,6 +115,35 @@ export default function OrderJourney() {
   const refreshQuoteJourney = useCallback(async () => {
     if (quoteToken) await loadQuoteJourney(quoteToken);
   }, [quoteToken, loadQuoteJourney]);
+
+  /**
+   * Journey 2 captured the start date and Direct Debit before the contract, so
+   * they are applied to the shared services the moment acceptance is recorded.
+   */
+  const applyPostContract = useCallback(async () => {
+    if (!token || !quoteToken || appliedRef.current) return;
+    appliedRef.current = true;
+    setApplyError(null);
+    const res = await journey2.applyPostContract(token, quoteToken).catch(() => null);
+    if (!res?.ok) {
+      appliedRef.current = false;
+      setApplyError(res?.message ?? "We couldn't finish setting up your billing just now. Please try again.");
+    }
+    await refreshQuoteJourney();
+  }, [token, quoteToken, refreshQuoteJourney]);
+
+  const onContractAccepted = useCallback(async () => {
+    await applyPostContract();
+  }, [applyPostContract]);
+
+  // A resumed session can already be accepted but not yet applied.
+  useEffect(() => {
+    const step = journeyState?.journey?.current_step;
+    if (!quoteToken || appliedRef.current) return;
+    if (journeyState?.journey?.contract_accepted_at && (step === "start_date" || step === "payment")) {
+      void applyPostContract();
+    }
+  }, [journeyState?.journey?.current_step, journeyState?.journey?.contract_accepted_at, quoteToken, applyPostContract]);
 
   const save = async (step: SelectionStep, payload: Record<string, unknown>) => {
     if (!token || saving) return;
@@ -214,7 +245,15 @@ export default function OrderJourney() {
               <DetailsStep session={session} saving={saving}
                 onSave={(p) => save("details", p)} onBack={() => setBackStep("extras")} />
             )}
-            {inSelection && !catalogue && activeStep !== "address" && activeStep !== "details" && (
+            {inSelection && activeStep === "start_date" && (
+              <StartDateStep session={session} saving={saving}
+                onSave={(p) => save("start_date", p)} onBack={() => setBackStep("details")} />
+            )}
+            {inSelection && activeStep === "billing" && (
+              <BillingStep session={session} saving={saving}
+                onSave={(p) => save("billing", p)} onBack={() => setBackStep("start_date")} />
+            )}
+            {inSelection && !catalogue && ["plan", "router", "extras"].includes(activeStep) && (
               <div className="border-4 border-foreground p-6">
                 <p className="font-display uppercase text-lg mb-2">Prices are briefly unavailable</p>
                 <p className="text-sm text-muted-foreground">
@@ -235,21 +274,24 @@ export default function OrderJourney() {
 
             {!inSelection && journeyState?.ok && quoteToken && (
               <>
+                {applyError && (
+                  <div className="border-4 border-destructive p-4 mb-4">
+                    <p className="font-display uppercase text-sm mb-2">We need one more moment</p>
+                    <p className="text-sm text-muted-foreground mb-3">{applyError}</p>
+                    <Button type="button" onClick={applyPostContract}>Try again</Button>
+                  </div>
+                )}
                 {(contractStep === "quote" || contractStep === "agreement") && (
-                  <AgreementStep token={quoteToken} quote={journeyState.quote} onAccepted={refreshQuoteJourney} />
+                  <AgreementStep token={quoteToken} quote={journeyState.quote} onAccepted={onContractAccepted} />
                 )}
-                {contractStep === "start_date" && (
-                  <StartDateStep token={quoteToken} journey={journeyState.journey} onSaved={refreshQuoteJourney} />
-                )}
-                {contractStep === "payment" && (
-                  <PaymentStep
-                    token={quoteToken}
-                    quote={journeyState.quote}
-                    journey={journeyState.journey}
-                    paymentMethod={journeyState.payment_method}
-                    ddProviderTemplateAvailable={journeyState.dd_provider_template_available}
-                    onSaved={refreshQuoteJourney}
-                  />
+                {(contractStep === "start_date" || contractStep === "payment") && (
+                  <div className="border-4 border-foreground p-6 text-center">
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-3" aria-hidden="true" />
+                    <p className="font-display uppercase text-lg mb-1">Applying your start date and Direct Debit</p>
+                    <p className="text-sm text-muted-foreground">
+                      You already gave us these — we're saving them against your agreement. Nothing is taken today.
+                    </p>
+                  </div>
                 )}
                 {contractStep === "review" && (
                   <ReviewStep

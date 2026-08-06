@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Loader2, ChevronRight, Check, Info } from "lucide-react";
 import { useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
+import { startAssignedJourney } from "@/lib/journey2/route";
 
 interface PostcodeCheckerProps {
   variant?: "hero" | "standalone";
@@ -15,7 +16,16 @@ interface PostcodeCheckerProps {
 const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false }: PostcodeCheckerProps) => {
   const { status, postcode: ctxPostcode, addresses, selectedAddress, result, errorType, checkPostcode, selectAddress, reset, triggerFallback } = useAvailability();
   const [localPostcode, setLocalPostcode] = useState(ctxPostcode || "");
+  const [routing, setRouting] = useState(false);
   const navigate = useNavigate();
+
+  // The server decides whether this visitor gets Journey 1 or Journey 2.
+  const startJourney = async () => {
+    if (routing) return;
+    setRouting(true);
+    await startAssignedJourney((path) => navigate(path));
+    setRouting(false);
+  };
 
   const handleCheck = () => {
     checkPostcode(localPostcode);
@@ -173,11 +183,12 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
               : "Choose your plan and we'll confirm the final speed, setup and price before order."}
           </p>
           <Button
-            onClick={() => navigate("/build-plan")}
+            onClick={startJourney}
+            disabled={routing}
             size="lg"
             className="mt-3 w-full h-12 font-display uppercase tracking-wider"
           >
-            Build your plan <ChevronRight className="w-4 h-4 ml-1" />
+            {routing ? "Preparing…" : "Build your plan"} <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </>
       )}

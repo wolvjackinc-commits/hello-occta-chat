@@ -256,6 +256,7 @@ export default function AgreementStep({
             <p><strong>{cs.plan_name}</strong> — {cs.service_type?.replaceAll("_", " ")}</p>
             <p className="text-muted-foreground">{cs.contract_length} · Notice: {cs.notice_period}</p>
             <p className="text-muted-foreground">Estimated speed: {cs.estimated_download_speed ?? "—"} / {cs.estimated_upload_speed ?? "—"} Mbps</p>
+            <p className="text-xs text-muted-foreground">Speeds shown are estimates for your line, not guarantees.</p>
           </section>
 
           <section>

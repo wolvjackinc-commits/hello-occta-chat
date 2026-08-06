@@ -220,9 +220,13 @@ Deno.serve(async (req) => {
             ? "30-day rolling. Cancel with 30 days' notice."
             : `${q.contract_length_months} months minimum term.`),
     notice_period: q.notice_period ?? "30 days",
-    estimated_download_speed: q.estimated_download_speed,
-    estimated_upload_speed: q.estimated_upload_speed,
-    speed_notes: (q.speed_notes ?? "") + bpAddendum,
+    // Estimated speeds must always appear on the Contract Summary. Older quotes
+    // (and snapshots) can be missing them, so fall back to the speed bucket.
+    estimated_download_speed: q.estimated_download_speed
+      ?? speedEstimatesFor(q.speed_bucket)?.download ?? null,
+    estimated_upload_speed: q.estimated_upload_speed
+      ?? speedEstimatesFor(q.speed_bucket)?.upload ?? null,
+    speed_notes: (q.speed_notes ?? speedStatementFor(q.speed_bucket) ?? "") + bpAddendum,
     price_rise_policy: q.price_rise_policy ?? PRICE_RISE_POLICY_TEXT,
     digital_voice_warning: isVoice ? DIGITAL_VOICE_WARNING_TEXT : null,
     vulnerable_customer_note: VULNERABLE_CUSTOMER_NOTE_TEXT,

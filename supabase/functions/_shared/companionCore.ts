@@ -147,7 +147,7 @@ export function redactSensitiveText(value: string): string {
     .replace(ACCOUNT_NUMBER_RE, (match) => maskAccountNumber(match))
     .replace(ISO_DOB_RE, "[date of birth provided securely]")
     .replace(UK_DOB_RE, "[date of birth provided securely]")
-    .replace(/\b\d{2}[- ]?\d{2}[- ]?\d{2}\s+\d{8}\b/g, "[bank details removed]")
+    .replace(/\b\d{2}[- ]?\d{2}[- ]?\d{2}(?:\s*(?:account(?:\s+number)?|a\/c)?\s*)\d{8}\b/gi, "[bank details removed]")
     .replace(/\b(?:\d[ -]?){13,19}\b/g, "[payment number removed]")
     .replace(/\b(password|passcode|pin)\s*[:=]\s*\S+/gi, "$1: [removed]")
     .slice(0, 4000);

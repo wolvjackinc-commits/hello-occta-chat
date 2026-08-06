@@ -16,6 +16,7 @@ import { useAppMode } from "@/hooks/useAppMode";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { OverviewTab } from "@/components/dashboard/tabs/OverviewTab";
+import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { ServicesTab } from "@/components/dashboard/tabs/ServicesTab";
 import { PackagesTab } from "@/components/dashboard/tabs/PackagesTab";
 import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab";
@@ -220,6 +221,7 @@ const Dashboard = () => {
   // requests, receipts, documents and timeline. Local tab queries remain
   // only as supplementary detail (tickets, files, etc).
   const [overview, setOverview] = useState<any>(null);
+  const [linkedRecords, setLinkedRecords] = useState(0);
 
   useEffect(() => {
     logClientEvent({ event_type: "dashboard_view", title: "dashboard.opened", source_module: "dashboard" });
@@ -261,6 +263,7 @@ const Dashboard = () => {
           const linked = ["quote_requests", "guest_orders", "orders", "order_journeys", "contract_summaries", "payment_methods"]
             .reduce((sum, k) => sum + (Number((data as any)[k]) || 0), 0);
           if (linked > 0) {
+            setLinkedRecords(linked);
             toast({ title: "Account linked", description: `We connected ${linked} record${linked === 1 ? "" : "s"} to your account.` });
           }
         }
@@ -566,6 +569,21 @@ const Dashboard = () => {
                 Sign Out
               </Button>
             </div>
+          </motion.div>
+
+          {/* Premium welcome / account-linked banner */}
+          <motion.div variants={itemVariants}>
+            <WelcomeBanner
+              name={userFullName}
+              accountNumber={(overview as any)?.account_number || profile?.account_number || null}
+              linkedRecords={linkedRecords}
+              identityVerified={isIdentityVerified}
+              activeServices={activeOrders.length}
+              outstandingInvoices={outstandingInvoices.length}
+              outstandingTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
+              documents={userFiles.length}
+              openTickets={openTickets.length}
+            />
           </motion.div>
 
           {/* Account Info Card */}

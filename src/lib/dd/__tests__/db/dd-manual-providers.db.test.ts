@@ -190,16 +190,7 @@ maybe("Direct Debit manual providers (database-backed)", () => {
     { code: "accesspay", collector: "APS Re OCCTA", sun: "538166", notice: 3 },
   ]) {
     it(`runs the full manual workflow for ${p.code} with ${p.notice} working days notice`, async () => {
-      const ref = `DD-EVIDENCE-${p.code.toUpperCase()}`;
-      await db.query(
-        `delete from dd_email_outbox where mandate_id in (select id from dd_mandates where mandate_reference = $1)`,
-        [ref],
-      );
-      await db.query(
-        `delete from dd_mandate_status_history where mandate_id in (select id from dd_mandates where mandate_reference = $1)`,
-        [ref],
-      );
-      await db.query(`delete from dd_mandates where mandate_reference = $1`, [ref]);
+      const ref = `DD-EVIDENCE-${p.code.toUpperCase()}-${Date.now()}`;
       const { rows: ins } = await db.query(
         `insert into dd_mandates (user_id, status, mandate_reference, bank_last4, account_holder_name, is_test)
          values ($1,'details_received',$2,'4321','DD Evidence Test', true) returning id`,

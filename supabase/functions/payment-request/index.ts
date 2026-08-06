@@ -779,8 +779,13 @@ serve(async (req) => {
       // VERIFY DD MANDATE (admin action) with email notification
       // ==========================================
       case 'verify-dd-mandate': {
-        const { mandateId, status, provider, providerReference } = data;
-        const adminUserId = verifiedAdminUserId;
+        // MANUAL PROVIDER MODEL: OCCTA submits mandates by hand in one of two
+        // provider portals (FastPay Ltd, AccessPay / APS Re OCCTA). There is no
+        // provider API call here and no email is sent from this handler.
+        // Everything is delegated to dd_admin_change_mandate_status, which writes
+        // the status, the audit history and the customer notification atomically,
+        // then the dd-outbox-worker delivers it server-side.
+        const { mandateId, status, provider, providerReference, submittedAt, internalNote, overrideReason } = data;
 
         if (!mandateId || !status) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
@@ -789,165 +794,65 @@ serve(async (req) => {
           });
         }
 
-        const validStatuses = ['verified', 'active', 'cancelled', 'submitted_to_provider', 'failed'];
-        if (!validStatuses.includes(status)) {
-          return new Response(JSON.stringify({ success: false, error: 'Invalid status' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
+        const { data: result, error: rpcError } = await supabase.rpc('dd_admin_change_mandate_status', {
+          _mandate_id: mandateId,
+          _new_status: status,
+          _provider_code: provider ?? null,
+          _provider_reference: providerReference ?? null,
+          _submitted_at: submittedAt ?? null,
+          _internal_note: internalNote ?? null,
+          _override_reason: overrideReason ?? null,
+          _actor: verifiedAdminUserId,
+        });
 
-        // For submitted_to_provider, require provider details
-        if (status === 'submitted_to_provider' && (!provider || !providerReference)) {
-          return new Response(JSON.stringify({ success: false, error: 'Provider and provider reference required for submitted_to_provider status' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        // Get current mandate with user info
-        const { data: currentMandate, error: fetchError } = await supabase
-          .from('dd_mandates')
-          .select('*, payment_request_id')
-          .eq('id', mandateId)
-          .single();
-
-        if (fetchError || !currentMandate) {
-          return new Response(JSON.stringify({ success: false, error: 'Mandate not found' }), {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        const previousStatus = currentMandate.status;
-
-        // Build update payload - include provider fields if submitting to provider
-        const updatePayload: Record<string, unknown> = { 
-          status, 
-          updated_at: new Date().toISOString() 
-        };
-        
-        if (status === 'submitted_to_provider' && provider && providerReference) {
-          updatePayload.provider = provider;
-          updatePayload.provider_reference = providerReference;
-        }
-
-        // Update mandate status
-        const { data: mandate, error } = await supabase
-          .from('dd_mandates')
-          .update(updatePayload)
-          .eq('id', mandateId)
-          .select('*, payment_request_id')
-          .single();
-
-        if (error || !mandate) {
-          return new Response(JSON.stringify({ success: false, error: 'Failed to update mandate' }), {
+        if (rpcError) {
+          return new Response(JSON.stringify({ success: false, error: rpcError.message }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
 
-        // If verified/active, mark payment request as completed
-        if (['verified', 'active'].includes(status) && mandate.payment_request_id) {
-          await supabase
-            .from('payment_requests')
-            .update({ status: 'completed', completed_at: new Date().toISOString() })
-            .eq('id', mandate.payment_request_id);
-
-          await supabase.from('payment_request_events').insert({
-            request_id: mandate.payment_request_id,
-            event_type: 'completed',
-            metadata: { mandate_status: status, verified_by: adminUserId },
+        const changed = result as Record<string, unknown> | null;
+        if (!changed?.success) {
+          return new Response(JSON.stringify(changed ?? { success: false, error: 'unknown_error' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
 
-        // Audit log with detailed action type
-        const actionType = status === 'cancelled' ? 'cancel' : 
-                          status === 'active' ? 'activate' : 'update';
-        
-        await supabase.from('audit_logs').insert({
-          actor_user_id: adminUserId,
-          action: actionType,
-          entity: 'dd_mandate',
-          entity_id: mandateId,
-          metadata: { 
-            previous_status: previousStatus,
-            new_status: status,
-            mandate_reference: mandate.mandate_reference,
-            ...(provider && { provider }),
-            ...(providerReference && { provider_reference: providerReference }),
-          },
-        });
-
-        // Send email notification to customer on status change
-        if (previousStatus !== status) {
-          // Get customer email from payment request or profile
-          let customerEmail: string | null = null;
-          let customerName: string | null = null;
-          let accountNumber: string | null = null;
-
-          if (mandate.payment_request_id) {
-            const { data: request } = await supabase
+        // Keep the linked payment request in step once the mandate is live.
+        if (status === 'active') {
+          const { data: m } = await supabase
+            .from('dd_mandates')
+            .select('payment_request_id, mandate_reference')
+            .eq('id', mandateId)
+            .single();
+          if (m?.payment_request_id) {
+            await supabase
               .from('payment_requests')
-              .select('customer_email, customer_name, account_number')
-              .eq('id', mandate.payment_request_id)
-              .single();
-            if (request) {
-              customerEmail = request.customer_email;
-              customerName = request.customer_name;
-              accountNumber = request.account_number;
-            }
-          }
-
-          if (!customerEmail && mandate.user_id) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('email, full_name, account_number')
-              .eq('id', mandate.user_id)
-              .single();
-            if (profile) {
-              customerEmail = profile.email;
-              customerName = profile.full_name;
-              accountNumber = profile.account_number;
-            }
-          }
-
-          // Send DD status email
-          if (customerEmail) {
-            const resendApiKey = Deno.env.get('RESEND_API_KEY');
-            if (resendApiKey) {
-              const emailContent = getDDStatusEmail({
-                customerName: customerName || 'Customer',
-                accountNumber,
-                mandateReference: mandate.mandate_reference,
-                status,
-                previousStatus,
-              });
-
-              try {
-                await fetch('https://api.resend.com/emails', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${resendApiKey}`,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    from: 'OCCTA <billing@occta.co.uk>',
-                    to: [customerEmail],
-                    subject: emailContent.subject,
-                    html: emailContent.html,
-                    text: emailContent.text,
-                  }),
-                });
-                console.log(`DD status email sent to ${customerEmail} for status: ${status}`);
-              } catch (emailErr) {
-                console.error('Failed to send DD status email:', emailErr);
-              }
-            }
+              .update({ status: 'completed', completed_at: new Date().toISOString() })
+              .eq('id', m.payment_request_id);
+            await supabase.from('payment_request_events').insert({
+              request_id: m.payment_request_id,
+              event_type: 'completed',
+              metadata: { mandate_status: status, verified_by: verifiedAdminUserId },
+            });
           }
         }
 
-        return new Response(JSON.stringify({ success: true, mandate }), {
+        // Deliver the queued notification server-side only.
+        let notificationStatus = String(changed.outbox_status ?? 'pending');
+        try {
+          const { data: worked } = await supabase.functions.invoke('dd-outbox-worker', {
+            body: { outboxId: changed.outbox_id },
+          });
+          const first = (worked as { results?: Array<{ status?: string }> })?.results?.[0];
+          if (first?.status) notificationStatus = first.status;
+        } catch (_err) {
+          notificationStatus = 'pending';
+        }
+
+        return new Response(JSON.stringify({ ...changed, notification_status: notificationStatus }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }

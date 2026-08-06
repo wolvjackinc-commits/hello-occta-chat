@@ -136,6 +136,15 @@ export default function OrderJourney() {
     await applyPostContract();
   }, [applyPostContract]);
 
+  // A resumed session can already be accepted but not yet applied.
+  useEffect(() => {
+    const step = journeyState?.journey?.current_step;
+    if (!quoteToken || appliedRef.current) return;
+    if (journeyState?.journey?.contract_accepted_at && (step === "start_date" || step === "payment")) {
+      void applyPostContract();
+    }
+  }, [journeyState?.journey?.current_step, journeyState?.journey?.contract_accepted_at, quoteToken, applyPostContract]);
+
   const save = async (step: SelectionStep, payload: Record<string, unknown>) => {
     if (!token || saving) return;
     setSaving(true);

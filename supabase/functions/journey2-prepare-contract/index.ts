@@ -21,7 +21,6 @@ import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16) });
 const round2 = (n: number) => Math.round(n * 100) / 100;
-const VAT = 0.20;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

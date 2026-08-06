@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+import { decryptJson } from '../_shared/ddCrypto.ts';
 
 // Append helpful KB links to an email HTML string (fail-soft).
 async function withHelpfulLinks(supabase: any, html: string, key: string): Promise<string> {
@@ -871,7 +872,8 @@ serve(async (req) => {
           });
         }
 
-        // Fetch ALL mandate fields for admin view
+        // Bank details live encrypted at rest; plaintext columns are legacy only
+        // and are nulled by the encryption migration.
         const { data: mandate, error } = await supabase
           .from('dd_mandates')
           .select(`
@@ -881,6 +883,8 @@ serve(async (req) => {
             mandate_reference,
             sort_code, 
             account_number_full, 
+            bank_details_ciphertext,
+            bank_details_nonce,
             account_holder_name, 
             billing_address, 
             consent_timestamp, 
@@ -916,11 +920,27 @@ serve(async (req) => {
           },
         });
 
+        // Decrypt on the fly when the record has been migrated to AES-256-GCM.
+        let sortCode: string | null = (mandate.sort_code as string | null) ?? null;
+        let accountNumber: string | null = (mandate.account_number_full as string | null) ?? null;
+        if (mandate.bank_details_ciphertext && mandate.bank_details_nonce) {
+          try {
+            const plain = await decryptJson<{ sort_code?: string; account_number?: string }>(
+              String(mandate.bank_details_ciphertext),
+              String(mandate.bank_details_nonce),
+            );
+            sortCode = plain.sort_code ?? sortCode;
+            accountNumber = plain.account_number ?? accountNumber;
+          } catch (_e) {
+            sortCode = sortCode ?? null;
+          }
+        }
+
         return new Response(JSON.stringify({ 
           success: true, 
           bankDetails: {
-            sortCode: mandate.sort_code,
-            accountNumber: mandate.account_number_full,
+            sortCode,
+            accountNumber,
             accountHolderName: mandate.account_holder_name,
             billingAddress: mandate.billing_address,
             consentTimestamp: mandate.consent_timestamp,
@@ -1909,16 +1929,7 @@ OCCTA Limited is registered in England and Wales (Company No. 13828933)
   return { html, text };
 }
 
-// ==========================================
-// DD STATUS CHANGE EMAIL TEMPLATE
-// ==========================================
-function getDDStatusEmail(data: {
-  customerName: string;
-  accountNumber: string | null;
-  mandateReference: string | null;
-  status: string;
-  previousStatus: string;
-}): { html: string; text: string; subject: string } {
+): { html: string; text: string; subject: string } {
   const statusMessages: Record<string, { subject: string; title: string; message: string; nextSteps: string[] }> = {
     verified: {
       subject: 'Your OCCTA Direct Debit has been verified',

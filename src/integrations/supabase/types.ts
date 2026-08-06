@@ -11648,6 +11648,14 @@ export type Database = {
         Returns: boolean
       }
       is_vat_active: { Args: never; Returns: boolean }
+      journey2_commit_order: {
+        Args: {
+          _customer_id: string
+          _guest_order_id?: string
+          _session_id: string
+        }
+        Returns: Json
+      }
       link_quote_requests_to_user: {
         Args: { _user_id: string }
         Returns: number

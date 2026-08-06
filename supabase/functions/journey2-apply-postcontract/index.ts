@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
   const { data: journey } = await supabase
     .from("order_journeys")
-    .select("id, quote_id, current_step, status, contract_accepted_at, preferred_start_date, payment_method, billing_anchor_day")
+    .select("id, quote_id, current_step, status, contract_accepted_at, preferred_start_date, payment_method, billing_anchor_day, earliest_selectable_start_date")
     .eq("token_hash", quoteHash)
     .maybeSingle();
   if (!journey) return jsonResponse({ error: "no_journey" }, 404);
@@ -72,14 +72,37 @@ Deno.serve(async (req) => {
 
   const failures: { step: string; error: string }[] = [];
 
+  /**
+   * The customer chose the date BEFORE signing, but the cooling-off period only
+   * starts at acceptance — so a date chosen at the window's edge, or a session
+   * resumed a day later, can fall before the journey's earliest allowed date.
+   * Move it forward to the first permitted day rather than failing the order.
+   */
+  const chosenStart = String(session.preferred_start_date);
+  const earliestAllowed = journey.earliest_selectable_start_date as string | null;
+  const startDateToApply = earliestAllowed && chosenStart < earliestAllowed ? earliestAllowed : chosenStart;
+  const startDateMoved = startDateToApply !== chosenStart;
+
   // 1 · Preferred start date, chosen before the contract was generated.
   if (!journey.preferred_start_date) {
     const sd = await callShared("journey-start-date", {
       token: quote_token,
-      preferred_start_date: session.preferred_start_date,
+      preferred_start_date: startDateToApply,
       cooling_off_acknowledged: true,
     });
     if (!sd.ok) failures.push({ step: "start_date", error: sd.json?.error ?? `http_${sd.status}` });
+    else if (startDateMoved) {
+      await supabase.from("customer_journey_sessions")
+        .update({ preferred_start_date: startDateToApply }).eq("id", session.id);
+      await supabase.rpc("log_event", {
+        _actor_type: "public",
+        _event_type: "journey2_start_date_moved_to_earliest",
+        _title: "Journey 2 preferred start date moved to the earliest allowed date",
+        _details: { session_id: session.id, chosen: chosenStart, applied: startDateToApply },
+        _source_module: "journey2",
+        _severity: "warning",
+      }).then(() => {}).catch(() => {});
+    }
   }
 
   // 2 · Direct Debit, decrypted only here and handed to the existing service.

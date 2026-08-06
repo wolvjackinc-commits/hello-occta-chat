@@ -22,6 +22,7 @@ import { loadJourneySettings, resolveJourney2Price, planNameFor, JOURNEY2_SETUP 
 import { RESOLVER_VERSION } from "../_shared/buildPlanResolver.ts";
 import {
   buildJourney2Snapshot, snapshotFingerprint, verifyStoredSnapshot,
+  speedEstimatesFor, speedStatementFor,
   type Journey2Snapshot,
 } from "../_shared/journey2Snapshot.ts";
 import { buildJourney2DocumentPack } from "../_shared/journey2Docs.ts";
@@ -270,9 +271,14 @@ Deno.serve(async (req) => {
       speed_bucket: session.speed_bucket,
       plan_term: session.plan_term,
       router_option: snapshot.router,
-      estimated_download_speed: snapshot.product.estimated_download_mbps || null,
-      estimated_upload_speed: snapshot.product.estimated_upload_mbps || null,
-      speed_notes: snapshot.product.speed_statement,
+      // Snapshots created before the speed fields existed are immutable, so the
+      // estimate is derived from the agreed speed bucket instead. The contract
+      // must always state an estimated speed.
+      estimated_download_speed: snapshot.product.estimated_download_mbps
+        || speedEstimatesFor(session.speed_bucket)?.download || null,
+      estimated_upload_speed: snapshot.product.estimated_upload_mbps
+        || speedEstimatesFor(session.speed_bucket)?.upload || null,
+      speed_notes: snapshot.product.speed_statement || speedStatementFor(session.speed_bucket),
       setup_option: { option: JOURNEY2_SETUP, label: snapshot.product.setup.label, oneOff: snapshot.product.setup.one_off_incl_vat },
       selected_addons: snapshot.addons,
       journey_version: "v2",

@@ -113,6 +113,8 @@ import ContractSaverBroadband from "./pages/broadband/ContractSaver";
 import SwitchingPage from "./pages/Switching";
 import RewardsPage from "./pages/Rewards";
 import BuildPlan from "./pages/BuildPlan";
+const OrderStart = lazy(() => import("./pages/order/OrderStart"));
+const OrderJourney = lazy(() => import("./pages/order/OrderJourney"));
 import QuoteStart from "./pages/quote/QuoteStart";
 import QuoteThankYou from "./pages/quote/QuoteThankYou";
 import UnifiedJourney from "./pages/quote/UnifiedJourney";
@@ -282,6 +284,8 @@ const AnimatedRoutes = () => {
         <Route path="/receipt/:token" element={<ReceiptView mode="token" />} />
         <Route path="/quote/payment/:token" element={<QuotePayment />} />
         <Route path="/quote/:token" element={<UnifiedJourney />} />
+        <Route path="/order" element={<Suspense fallback={<AdminRouteFallback />}><OrderStart /></Suspense>} />
+        <Route path="/order/:token" element={<Suspense fallback={<AdminRouteFallback />}><OrderJourney /></Suspense>} />
         <Route path="/legal/acceptable-use" element={<AcceptableUse />} />
         <Route path="/legal/complaints-code" element={<ComplaintsCode />} />
         <Route path="/legal/vulnerable-customers" element={<VulnerableCustomers />} />

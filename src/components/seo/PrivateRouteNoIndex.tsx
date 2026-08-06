@@ -40,6 +40,9 @@ const PRIVATE_PREFIXES = [
   "/receipt/",
 ];
 
+/** Tokenised Journey 2 order links (/order/:token) must never be indexed. */
+const PRIVATE_TOKEN_ROOTS = ["/order/"];
+
 const PUBLIC_QUOTE_PATHS = new Set<string>(["/quote/start", "/quote/thank-you"]);
 
 function isPrivate(pathname: string): boolean {
@@ -52,6 +55,9 @@ function isPrivate(pathname: string): boolean {
     const rest = pathname.slice("/quote/".length);
     // /quote/<token> with no further slash → private journey link
     if (rest.length > 0 && !rest.includes("/")) return true;
+  }
+  for (const root of PRIVATE_TOKEN_ROOTS) {
+    if (pathname.startsWith(root) && pathname.slice(root.length).length > 0) return true;
   }
   return false;
 }

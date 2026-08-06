@@ -2970,6 +2970,138 @@ export type Database = {
           },
         ]
       }
+      customer_journey_sessions: {
+        Row: {
+          abandoned_at: string | null
+          anonymous_session_id_hash: string | null
+          completed_at: string | null
+          contract_acceptance_id: string | null
+          contract_summary_id: string | null
+          created_at: string
+          current_step: string
+          customer_details: Json | null
+          customer_id: string | null
+          expires_at: string
+          guest_order_id: string | null
+          id: string
+          idempotency_key: string | null
+          ip: string | null
+          journey_assigned_at: string
+          journey_version: string
+          last_activity_at: string
+          last_completed_step: string | null
+          manual_review_reason: string | null
+          order_id: string | null
+          order_journey_id: string | null
+          payment_method_id: string | null
+          plan_term: string | null
+          postcode: string | null
+          price_snapshot: Json | null
+          pricing_version: string | null
+          public_token_hash: string
+          quote_id: string | null
+          quote_public_token_hash: string | null
+          quote_request_id: string | null
+          resume_email_sent_at: string | null
+          router_option: Json | null
+          selected_addons: Json
+          service_address: Json | null
+          setup_option: Json | null
+          speed_bucket: string | null
+          status: string
+          test_session: boolean
+          updated_at: string
+          user_agent: string | null
+          utm_snapshot: Json | null
+        }
+        Insert: {
+          abandoned_at?: string | null
+          anonymous_session_id_hash?: string | null
+          completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_summary_id?: string | null
+          created_at?: string
+          current_step?: string
+          customer_details?: Json | null
+          customer_id?: string | null
+          expires_at?: string
+          guest_order_id?: string | null
+          id?: string
+          idempotency_key?: string | null
+          ip?: string | null
+          journey_assigned_at?: string
+          journey_version?: string
+          last_activity_at?: string
+          last_completed_step?: string | null
+          manual_review_reason?: string | null
+          order_id?: string | null
+          order_journey_id?: string | null
+          payment_method_id?: string | null
+          plan_term?: string | null
+          postcode?: string | null
+          price_snapshot?: Json | null
+          pricing_version?: string | null
+          public_token_hash: string
+          quote_id?: string | null
+          quote_public_token_hash?: string | null
+          quote_request_id?: string | null
+          resume_email_sent_at?: string | null
+          router_option?: Json | null
+          selected_addons?: Json
+          service_address?: Json | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          status?: string
+          test_session?: boolean
+          updated_at?: string
+          user_agent?: string | null
+          utm_snapshot?: Json | null
+        }
+        Update: {
+          abandoned_at?: string | null
+          anonymous_session_id_hash?: string | null
+          completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_summary_id?: string | null
+          created_at?: string
+          current_step?: string
+          customer_details?: Json | null
+          customer_id?: string | null
+          expires_at?: string
+          guest_order_id?: string | null
+          id?: string
+          idempotency_key?: string | null
+          ip?: string | null
+          journey_assigned_at?: string
+          journey_version?: string
+          last_activity_at?: string
+          last_completed_step?: string | null
+          manual_review_reason?: string | null
+          order_id?: string | null
+          order_journey_id?: string | null
+          payment_method_id?: string | null
+          plan_term?: string | null
+          postcode?: string | null
+          price_snapshot?: Json | null
+          pricing_version?: string | null
+          public_token_hash?: string
+          quote_id?: string | null
+          quote_public_token_hash?: string | null
+          quote_request_id?: string | null
+          resume_email_sent_at?: string | null
+          router_option?: Json | null
+          selected_addons?: Json
+          service_address?: Json | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          status?: string
+          test_session?: boolean
+          updated_at?: string
+          user_agent?: string | null
+          utm_snapshot?: Json | null
+        }
+        Relationships: []
+      }
       dd_intake_requests: {
         Row: {
           auth_tag: string | null
@@ -4813,6 +4945,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           ip: string | null
+          journey_version: string
           link_nonce_expires_at: string | null
           link_nonce_hash: string | null
           linked_at: string | null
@@ -4858,6 +4991,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           ip?: string | null
+          journey_version?: string
           link_nonce_expires_at?: string | null
           link_nonce_hash?: string | null
           linked_at?: string | null
@@ -4903,6 +5037,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           ip?: string | null
+          journey_version?: string
           link_nonce_expires_at?: string | null
           link_nonce_hash?: string | null
           linked_at?: string | null
@@ -5101,6 +5236,7 @@ export type Database = {
           installation_date: string | null
           internal_notes: string | null
           journey_id: string | null
+          journey_version: string
           legacy_compliance_status:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
@@ -5163,6 +5299,7 @@ export type Database = {
           installation_date?: string | null
           internal_notes?: string | null
           journey_id?: string | null
+          journey_version?: string
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
@@ -5225,6 +5362,7 @@ export type Database = {
           installation_date?: string | null
           internal_notes?: string | null
           journey_id?: string | null
+          journey_version?: string
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
@@ -5692,6 +5830,18 @@ export type Database = {
           business_vat_display: string
           created_at: string
           credit_note_prefix: string
+          customer_journey_default: string
+          customer_journey_v1_enabled: boolean
+          customer_journey_v2_abandoned_resume_enabled: boolean
+          customer_journey_v2_assumed_availability: boolean
+          customer_journey_v2_enabled: boolean
+          customer_journey_v2_kill_switch: boolean
+          customer_journey_v2_last_preflight_at: string | null
+          customer_journey_v2_last_preflight_result: Json | null
+          customer_journey_v2_resume_delay_minutes: number
+          customer_journey_v2_rollout_percentage: number
+          customer_journey_v2_session_expiry_days: number
+          customer_journey_v2_test_mode: boolean
           fair_pricing: Json
           id: string
           invoice_issue_notice_days: number
@@ -5719,6 +5869,18 @@ export type Database = {
           business_vat_display?: string
           created_at?: string
           credit_note_prefix?: string
+          customer_journey_default?: string
+          customer_journey_v1_enabled?: boolean
+          customer_journey_v2_abandoned_resume_enabled?: boolean
+          customer_journey_v2_assumed_availability?: boolean
+          customer_journey_v2_enabled?: boolean
+          customer_journey_v2_kill_switch?: boolean
+          customer_journey_v2_last_preflight_at?: string | null
+          customer_journey_v2_last_preflight_result?: Json | null
+          customer_journey_v2_resume_delay_minutes?: number
+          customer_journey_v2_rollout_percentage?: number
+          customer_journey_v2_session_expiry_days?: number
+          customer_journey_v2_test_mode?: boolean
           fair_pricing?: Json
           id?: string
           invoice_issue_notice_days?: number
@@ -5746,6 +5908,18 @@ export type Database = {
           business_vat_display?: string
           created_at?: string
           credit_note_prefix?: string
+          customer_journey_default?: string
+          customer_journey_v1_enabled?: boolean
+          customer_journey_v2_abandoned_resume_enabled?: boolean
+          customer_journey_v2_assumed_availability?: boolean
+          customer_journey_v2_enabled?: boolean
+          customer_journey_v2_kill_switch?: boolean
+          customer_journey_v2_last_preflight_at?: string | null
+          customer_journey_v2_last_preflight_result?: Json | null
+          customer_journey_v2_resume_delay_minutes?: number
+          customer_journey_v2_rollout_percentage?: number
+          customer_journey_v2_session_expiry_days?: number
+          customer_journey_v2_test_mode?: boolean
           fair_pricing?: Json
           id?: string
           invoice_issue_notice_days?: number
@@ -10549,6 +10723,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      expire_customer_journey_sessions: { Args: never; Returns: number }
       expire_old_quotes: { Args: never; Returns: number }
       finalize_service_cancellation: {
         Args: {
@@ -10878,6 +11053,18 @@ export type Database = {
           business_vat_display: string
           created_at: string
           credit_note_prefix: string
+          customer_journey_default: string
+          customer_journey_v1_enabled: boolean
+          customer_journey_v2_abandoned_resume_enabled: boolean
+          customer_journey_v2_assumed_availability: boolean
+          customer_journey_v2_enabled: boolean
+          customer_journey_v2_kill_switch: boolean
+          customer_journey_v2_last_preflight_at: string | null
+          customer_journey_v2_last_preflight_result: Json | null
+          customer_journey_v2_resume_delay_minutes: number
+          customer_journey_v2_rollout_percentage: number
+          customer_journey_v2_session_expiry_days: number
+          customer_journey_v2_test_mode: boolean
           fair_pricing: Json
           id: string
           invoice_issue_notice_days: number

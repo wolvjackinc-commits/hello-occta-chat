@@ -38,7 +38,19 @@ describe("OCCTA companion intent routing", () => {
     expect(extractDateOfBirth(conversation)).toBe("1990-01-15");
   });
 
-  it("routes common support questions without requiring the model", () => {
+  it("uses the latest correction during verification", () => {
+    const conversation = messages(
+      "Check my account",
+      "OCC00001111",
+      "OCC12345678",
+      "31/02/1990",
+      "15/01/1990",
+    );
+    expect(extractAccountNumber(conversation)).toBe("OCC12345678");
+    expect(extractDateOfBirth(conversation)).toBe("1990-01-15");
+  });
+
+  it("routes common support questions without requiring a generated answer", () => {
     expect(detectPublicIntent("What do the red router lights mean?"))).toBe("router_lights");
     expect(detectPublicIntent("Flex 30 or Price Lock: which is better?"))).toBe("contract_choice");
     expect(detectPublicIntent("How much broadband speed do I need?"))).toBe("speed_need");

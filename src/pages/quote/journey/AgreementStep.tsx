@@ -381,6 +381,12 @@ export default function AgreementStep({
             </p>
           )}
 
+          <ContractSmsVerification
+            token={token}
+            onVerifiedChange={setMobileVerified}
+            onMaskedChange={setPhoneMasked}
+          />
+
           <Button
             variant="hero"
             className="w-full font-display uppercase"

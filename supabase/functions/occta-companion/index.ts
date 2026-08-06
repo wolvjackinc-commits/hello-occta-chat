@@ -3,7 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import {
   type AccountIntent,
   type CompanionMessage,
-  conversationUserText,
   detectAccountIntent,
   detectPublicIntent,
   extractAccountNumber,
@@ -35,7 +34,6 @@ type VerificationClaims = {
   sessionId: string;
   accountNumber: string;
   userId?: string;
-  email?: string;
   exp: number;
 };
 
@@ -190,9 +188,8 @@ async function verifyGuestAccount(
   serviceClient: any,
   accountNumber: string,
   dateOfBirth: string,
-  sessionId: string,
 ): Promise<CustomerScope | null> {
-  const identifier = await digestIdentifier(`${sessionId}:${accountNumber}`);
+  const identifier = await digestIdentifier(accountNumber.toUpperCase());
   const allowed = await checkRateLimit(serviceClient, "occta_companion_verification", identifier, 5, 15, true);
   if (!allowed) throw new Error("verification_rate_limited");
 
@@ -246,7 +243,7 @@ async function scopeFromClaims(serviceClient: any, claims: VerificationClaims): 
   return {
     userId: profile?.id ?? guestOrder?.user_id ?? null,
     accountNumber: profile?.account_number ?? guestOrder?.account_number ?? claims.accountNumber,
-    email: profile?.email ?? guestOrder?.email ?? claims.email ?? null,
+    email: profile?.email ?? guestOrder?.email ?? null,
     fullName: profile?.full_name ?? guestOrder?.full_name ?? null,
     phone: profile?.phone ?? guestOrder?.phone ?? null,
     signedIn: false,
@@ -480,18 +477,38 @@ function approvedPublicReply(intent: string): string | null {
   switch (intent) {
     case "broadband":
       return withOptions(
-        `OCCTA offers four clear broadband speed bands, subject to what is available at your address:\n\n• **Essential Fibre** — up to 80Mbps\n• **Superfast Fibre** — 150–330Mbps options\n• **Ultrafast Fibre** — 500Mbps–1Gbps where available\n• **Gigabit Fibre** — up to 1Gbps where available\n\nYou can choose a flexible **Flex 30** option or a fixed-term **Price Lock 24** option where eligible. Final speed, monthly price, setup and router choices are confirmed before you order. [Check your address](${BASE_URL}/build-plan).`,
+        `OCCTA has three public broadband tiers, subject to what is available at your address:\n\n• **Essential Fibre** — up to 80Mbps\n• **Superfast Fibre** — up to 330Mbps\n• **Ultrafast Fibre** — up to 1,000Mbps where available\n\nYou can choose a flexible **Flex 30** option or a fixed-term **Price Lock 24** option where eligible. Final speed, monthly price, setup and router choices are confirmed before you order. [Check your address](${BASE_URL}/build-plan).`,
         ["Check availability", "Compare Flex and Price Lock", "Which speed do I need?"],
+      );
+    case "contract_choice":
+      return withOptions(
+        `**Flex 30** is designed for customers who value flexibility and do not want a long minimum term. **Price Lock 24** is a 24-month option designed for lower monthly pricing and price certainty. The best choice depends on how long you expect to stay and whether flexibility or long-term value matters more. Setup and eligibility are confirmed for the address before order.`,
+        ["Check availability", "Show broadband tiers", "Help me choose a speed"],
+      );
+    case "speed_need":
+      return withOptions(
+        `For normal browsing, email and one or two HD streams, **up to 80Mbps** can be enough. A household with several people, 4K streaming, gaming and video calls will usually benefit from **150–330Mbps**. Heavy households, large downloads and creators may benefit from **500–1,000Mbps** where available. Wi-Fi quality and upload needs matter as well as the headline download speed.`,
+        ["Check my address", "Explain upload speed", "Improve my Wi-Fi"],
       );
     case "sim":
       return withOptions(
         `Current personal and business SIM options are shown in OCCTA's live catalogue. Network, data allowance, term, roaming and eSIM or physical-SIM availability can vary, so I won't guess. [View current SIM options](${BASE_URL}/sim).`,
         ["View SIM plans", "Explain eSIM", "Talk to support"],
       );
+    case "esim":
+      return withOptions(
+        `An eSIM is a digital SIM installed on a compatible phone instead of a removable plastic card. Whether OCCTA can supply one depends on the current plan, network and device. Check the live SIM options or ask the team to confirm compatibility before ordering. [View SIM options](${BASE_URL}/sim).`,
+        ["View SIM plans", "Check phone compatibility", "Talk to support"],
+      );
     case "voice":
       return withOptions(
         `OCCTA Digital Home Phone works through broadband and is offered as a broadband add-on or bundle rather than a standalone traditional landline. Number transfer is usually possible, but it must be confirmed for the specific order. [Read about Digital Voice](${BASE_URL}/landline).`,
         ["Keep my phone number", "Check broadband plans", "Digital Voice setup"],
+      );
+    case "number_porting":
+      return withOptions(
+        `OCCTA can usually request a transfer of an eligible existing number, but the losing provider, number type and order details must be checked first. Do not cancel the old phone service yourself until the transfer is confirmed, because that can risk losing the number.`,
+        ["Start a switch", "Digital Voice information", "Talk to support"],
       );
     case "switching":
       return withOptions(
@@ -503,15 +520,30 @@ function approvedPublicReply(intent: string): string | null {
         `Cancellation depends on the plan you chose. **Flex 30** is the flexible monthly option and uses its stated notice terms. **Price Lock 24** has a fixed minimum term, so early termination charges may apply if it ends early. Important account actions are confirmed by the OCCTA team. [Read the cancellation information](${BASE_URL}/cancellation).`,
         ["Check my account", "Talk to a human", "Read cancellation terms"],
       );
+    case "service_status":
+      return withOptions(
+        `Check OCCTA's service-status page first for a known incident. If nothing is listed, restart the router and ONT or modem once, then test one device by Ethernet if possible. A local Wi-Fi issue may not appear as a network outage. [Open service status](${BASE_URL}/status).`,
+        ["My internet is down", "Explain router lights", "Talk to a human"],
+      );
     case "no_internet":
       return withOptions(
         `Let's separate a local Wi-Fi problem from a line fault. Check that the router and ONT or modem have power, make sure cables are firmly connected, then restart the equipment once and allow several minutes to reconnect. If possible, test one device by Ethernet. [Follow the no-internet checklist](${BASE_URL}/help/no-internet-troubleshooting).`,
         ["Tell me my router lights", "Check service status", "Talk to a human"],
       );
+    case "router_lights":
+      return withOptions(
+        `Light labels vary by router and ONT model. A red or unlit **LOS/Optical** light can indicate a fibre signal problem; an Internet light that stays red may indicate authentication or line setup; a Wi-Fi light only shows the local wireless network. Tell me the device model and exact light label before changing settings.`,
+        ["My LOS light is red", "My Internet light is red", "Talk to support"],
+      );
     case "slow_wifi":
       return withOptions(
         `Slow Wi-Fi is often caused by distance, walls or interference rather than the broadband line. Test by Ethernet first, move the router into the open, use 5GHz near the router and pause large downloads or cloud backups. [Try the slow Wi-Fi fixes](${BASE_URL}/help/slow-wifi-fix).`,
         ["Run a proper speed test", "Improve Wi-Fi coverage", "Talk to support"],
+      );
+    case "pppoe_missing":
+      return withOptions(
+        `PPPoE credentials are sensitive. They are normally provided in the OCCTA welcome or go-live information for a compatible own-router setup. Do not post them in chat. If you cannot find them, ask support to resend them through the approved secure channel after account verification.`,
+        ["Check my account", "Open own-router guide", "Talk to support"],
       );
     case "router":
       return withOptions(
@@ -527,6 +559,11 @@ function approvedPublicReply(intent: string): string | null {
       return withOptions(
         `A first invoice can include the first full billing period plus a part-month amount from activation to the regular billing date, and any clearly disclosed one-off setup or equipment charges. The exact calculation must come from your invoice. [See the first-invoice guide](${BASE_URL}/help/first-invoice-explained-help).`,
         ["Check my latest invoice", "Explain VAT", "Raise a billing ticket"],
+      );
+    case "vat":
+      return withOptions(
+        `Residential prices are normally presented including VAT. Business pricing may be shown excluding and including VAT, and the invoice is the definitive tax record. I will not calculate a customer's VAT from a guessed price—use the actual quote or invoice.`,
+        ["Check my latest invoice", "Explain my first invoice", "Raise a billing ticket"],
       );
     case "complaints":
       return withOptions(
@@ -591,6 +628,7 @@ async function assistantFallback(
 TRUTH AND SAFETY
 - OCCTA offers broadband, SIM-only mobile and Digital Home Phone.
 - Broadband choices may include Flex 30 and Price Lock 24 where eligible.
+- OCCTA's public broadband tiers are Essential Fibre up to 80Mbps, Superfast Fibre up to 330Mbps and Ultrafast Fibre up to 1,000Mbps where available.
 - Never say OCCTA has "no contracts". Never claim free installation, 24/7 UK support, guaranteed no downtime, guaranteed number porting, or universal availability.
 - Never invent prices, speeds, setup charges, notice periods, dates, offers, SIM allowances, roaming, networks, eligibility or account facts.
 - Digital Home Phone is a broadband add-on or bundle, not a standalone traditional landline.
@@ -684,8 +722,7 @@ serve(async (request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    if (!supabaseUrl || !serviceRoleKey || !anonKey) throw new Error("server_configuration");
+    if (!supabaseUrl || !serviceRoleKey) throw new Error("server_configuration");
 
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
     const authUser = await getAuthenticatedUser(serviceClient, request.headers.get("Authorization"));
@@ -727,7 +764,7 @@ serve(async (request) => {
               source: "account",
             };
           } else {
-            const verified = await verifyGuestAccount(serviceClient, accountNumber, dob, sessionId);
+            const verified = await verifyGuestAccount(serviceClient, accountNumber, dob);
             if (!verified) {
               reply = {
                 content: withOptions(
@@ -742,7 +779,6 @@ serve(async (request) => {
                 sessionId,
                 accountNumber: verified.accountNumber ?? accountNumber,
                 userId: verified.userId ?? undefined,
-                email: verified.email ?? undefined,
                 exp: Math.floor(Date.now() / 1000) + VERIFICATION_TTL_SECONDS,
               };
               const verificationToken = await signVerification(claimsToSign, serviceRoleKey);

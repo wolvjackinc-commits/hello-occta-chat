@@ -99,12 +99,10 @@ Deno.serve(async (req) => {
         .update({ last_error: "price_not_exact_at_contract", last_activity_at: new Date().toISOString() })
         .eq("id", session.id);
       await supabase.from("admin_tasks").insert({
-        task_type: "journey2_price_resolution",
         title: "Journey 2 price could not be resolved at contract stage",
-        description: `Session ${session.id} (${session.speed_bucket}/${session.plan_term}) has no exact price.`,
+        description: `Journey 2 session ${session.id} (${session.speed_bucket}/${session.plan_term}${session.test_session ? ", TEST" : ""}) has no exact price. The customer is still in Journey 2 and can retry.`,
         priority: "high",
         status: "open",
-        metadata: { session_id: session.id, test_session: !!session.test_session },
       }).then(() => {}).catch(() => {});
       await supabase.rpc("log_event", {
         _actor_type: "public",

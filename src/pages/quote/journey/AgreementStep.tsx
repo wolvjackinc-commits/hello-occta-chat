@@ -7,6 +7,7 @@ import { Loader2, Download, AlertTriangle, Check, RefreshCw } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FullContractTermsBlock from "@/components/legal/FullContractTermsBlock";
+import ContractSmsVerification from "@/components/contract/ContractSmsVerification";
 
 const CHECKBOXES = [
   { key: "received_read", text: "I confirm that I have received, read and had the opportunity to download my Contract Summary and Contract Information." },
@@ -82,7 +83,8 @@ export default function AgreementStep({
 
   const [fullName, setFullName] = useState("");
   const [emailConfirm, setEmailConfirm] = useState("");
-  const [mobileConfirm, setMobileConfirm] = useState("");
+  const [phoneMasked, setPhoneMasked] = useState<string | null>(null);
+  const [mobileVerified, setMobileVerified] = useState(false);
   const [dob, setDob] = useState("");
   const [addressConfirmed, setAddressConfirmed] = useState(false);
   const [checks, setChecks] = useState<Record<CbKey, boolean>>({ received_read: false, details_correct: false, understand_charges: false, consent: false });
@@ -147,7 +149,7 @@ export default function AgreementStep({
   const formValid =
     fullName.trim().length >= 2 &&
     emailConfirm.trim().length > 4 &&
-    mobileConfirm.trim().length >= 7 &&
+    mobileVerified &&
     dobValid &&
     addressConfirmed &&
     allChecksTicked &&
@@ -164,7 +166,7 @@ export default function AgreementStep({
           journey_mode: true,
           accepted_by_name: fullName.trim(),
           accepted_by_email: emailConfirm.trim().toLowerCase(),
-          accepted_by_mobile: mobileConfirm.trim(),
+          accepted_by_mobile: phoneMasked ?? "verified",
           address_confirmed: true,
           date_of_birth: dob,
           checkbox_received_read: checks.received_read,
@@ -331,8 +333,11 @@ export default function AgreementStep({
               <Input id="ag-email" type="email" value={emailConfirm} onChange={(e) => setEmailConfirm(e.target.value)} autoComplete="email" />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="ag-mobile">Confirm mobile number</Label>
-              <Input id="ag-mobile" type="tel" value={mobileConfirm} onChange={(e) => setMobileConfirm(e.target.value)} autoComplete="tel" placeholder="e.g. 07700 900123" />
+              <Label htmlFor="ag-mobile">Mobile number (from your details)</Label>
+              <Input id="ag-mobile" type="tel" value={phoneMasked ?? ""} readOnly disabled placeholder="******0000" />
+              <p className="text-xs text-muted-foreground mt-1">
+                To change this, go back to your customer details step — any earlier verification is cleared.
+              </p>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="ag-dob">Date of birth (you must be 18 or older)</Label>
@@ -376,6 +381,12 @@ export default function AgreementStep({
               <Loader2 className="w-3 h-3 animate-spin" /> Preparing the downloadable PDF before you can sign…
             </p>
           )}
+
+          <ContractSmsVerification
+            token={token}
+            onVerifiedChange={setMobileVerified}
+            onMaskedChange={setPhoneMasked}
+          />
 
           <Button
             variant="hero"

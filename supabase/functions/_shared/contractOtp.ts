@@ -155,7 +155,7 @@ export async function consumeOtpChallenge(challengeRowId: string, acceptanceId: 
     try {
       await supabase.from("audit_logs").insert({
         action: "contract_otp_consumed",
-        entity_type: "contract_acceptance",
+        entity: "contract_acceptance",
         entity_id: acceptanceId,
         metadata: { challenge_row_id: challengeRowId },
       });

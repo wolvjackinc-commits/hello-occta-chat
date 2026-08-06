@@ -139,6 +139,7 @@ const AdminBlogEditor = lazy(() => import("./pages/admin/BlogEditor").then(m => 
 const AdminFairPricing = lazy(() => import("./pages/admin/FairPricing").then(m => ({ default: m.AdminFairPricing })));
 const AdminSuppliersGiacomImport = lazy(() => import("./pages/admin/SuppliersGiacomImport").then(m => ({ default: m.AdminSuppliersGiacomImport })));
 const AdminCustomerJourney = lazy(() => import("./pages/admin/CustomerJourney"));
+const AdminJourneyControl = lazy(() => import("./pages/admin/JourneyControl"));
 const AdminSimPlans = lazy(() => import("./pages/admin/SimPlansAdmin").then(m => ({ default: m.AdminSimPlans })));
 const AdminSimOrders = lazy(() => import("./pages/admin/SimOrders").then(m => ({ default: m.AdminSimOrders })));
 const AdminBusinessLeads = lazy(() => import("./pages/admin/BusinessLeads"));

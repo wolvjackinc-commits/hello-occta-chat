@@ -1,46 +1,52 @@
-# OCCTA
+# OCCTA LIMITED
 
-> Cheap, no-contract UK broadband, SIM plans, and Digital Home Phone. Honest pricing, no credit check, 30-day rolling options available where eligible.
+OCCTA is a UK telecom provider offering broadband, SIM-only mobile and Digital Voice services. Flexible monthly and fixed-term Price Lock broadband options may be available. Product availability, personalised speeds, setup requirements, eligibility and final commercial terms are confirmed for each address and order.
 
-OCCTA is a UK telecom provider offering Full Fibre broadband from £34.99/month, 5G SIM plans, and Digital Home Phone. No fixed-term contracts, no mid-contract price hikes, no hidden setup gotchas. VAT included for residential customers.
+Canonical website: https://www.occta.co.uk/
 
-## Pages
+## Main public pages
 
-- [Home](/): Plans, postcode availability checker, pricing.
-- [Broadband](/broadband): Full Fibre broadband plans and speeds.
-- [SIM Plans](/sim-plans): 5G data SIM plans, no credit check.
-- [Landline / Digital Home Phone](/landline): Digital Home Phone after the PSTN switch-off.
-- [Business](/business): Business broadband and connectivity.
-- [About](/about): Company information and ethos.
-- [Support](/support): Help, contact, and self-service.
-- [FAQ](/faq): Common broadband, SIM, billing, and account questions.
-- [Service Status](/status): Live network and service status.
-- [Track Order](/track-order): Order tracking lookup.
-- [Complaints](/complaints): Complaints policy and process.
+- [Home](https://www.occta.co.uk/): OCCTA overview and routes to current services.
+- [Broadband](https://www.occta.co.uk/broadband): Residential broadband information and plan choices.
+- [Flex 30](https://www.occta.co.uk/broadband/flex): Flexible monthly broadband information.
+- [Price Lock 24](https://www.occta.co.uk/broadband/contract-saver): Fixed-term price-certainty information.
+- [Business telecom](https://www.occta.co.uk/business): Business broadband, voice, SIM and bundles.
+- [Business broadband](https://www.occta.co.uk/business/broadband): Connectivity information for organisations.
+- [SIM plans](https://www.occta.co.uk/sim): Current SIM-only information.
+- [Digital Home Phone](https://www.occta.co.uk/landline): Digital Voice as a broadband add-on or bundle.
+- [Switching](https://www.occta.co.uk/switching): Switching and One Touch Switch information.
+- [Address availability check](https://www.occta.co.uk/build-plan): Address-specific broadband enquiry.
+- [Learning hub](https://www.occta.co.uk/learn): Plain-English telecom guides.
+- [Help and support](https://www.occta.co.uk/support): Public support and contact routes.
+- [Code of practice](https://www.occta.co.uk/legal/code-of-practice): Regulatory and customer information.
 
-## Guides
+## Authority guides
 
-- [No-contract broadband UK](/guides/no-contract-broadband-uk): Why no-contract broadband, switching, and cancel-anytime rules.
-- [Cheap broadband UK](/guides/cheap-broadband-uk): How to find genuinely cheap UK broadband.
-- [How to switch broadband](/guides/how-to-switch-broadband): One-touch switching, notice periods, and timing.
-- [Digital Voice UK](/guides/digital-voice-uk): What Digital Voice / Digital Home Phone means for you.
-- [PSTN switch-off UK](/guides/pstn-switch-off-uk): Timeline and what to do before the copper network closes.
-- [Cheap SIM-only deals](/guides/cheap-sim-only-deals): Picking a low-cost SIM plan with no credit check.
-- [Broadband for gaming](/guides/broadband-for-gaming): Speeds, latency, and packages for gamers.
-- [Broadband for working from home](/guides/broadband-for-working-from-home): Reliability, upload speeds, and home office setup.
-- [Fibre broadband explained](/guides/fibre-broadband-explained): FTTC vs FTTP and what speeds to expect.
-- [Broadband for students](/guides/broadband-for-students): Short-term, no-contract options for student lets.
+- [Small business broadband checklist](https://www.occta.co.uk/learn/small-business-broadband-guide)
+- [Static IP addresses explained](https://www.occta.co.uk/learn/static-ip-address-explained)
+- [Business broadband backup and failover](https://www.occta.co.uk/learn/business-broadband-backup-guide)
+- [Full fibre for small businesses](https://www.occta.co.uk/learn/full-fibre-for-small-business)
+- [FTTP installation: what to expect](https://www.occta.co.uk/learn/fttp-installation-what-to-expect)
+- [What is an ONT?](https://www.occta.co.uk/learn/what-is-an-ont)
+- [Upload speed explained](https://www.occta.co.uk/learn/upload-speed-explained)
+- [Wi-Fi Calling explained](https://www.occta.co.uk/learn/wifi-calling-explained)
 
-## Comparisons
+## Established guides and comparisons
 
-- [OCCTA vs BT](/compare/occta-vs-bt): Side-by-side broadband comparison.
-- [OCCTA vs Sky](/compare/occta-vs-sky): Side-by-side broadband comparison.
-- [OCCTA vs Virgin Media](/compare/occta-vs-virgin-media): Side-by-side broadband comparison.
-- [OCCTA vs TalkTalk](/compare/occta-vs-talktalk): Side-by-side broadband comparison.
-- [OCCTA vs Plusnet](/compare/occta-vs-plusnet): Side-by-side broadband comparison.
+- [What is FTTP?](https://www.occta.co.uk/learn/what-is-fttp)
+- [Broadband speed guide](https://www.occta.co.uk/learn/broadband-speed-guide)
+- [How to switch broadband](https://www.occta.co.uk/learn/how-to-switch-broadband)
+- [Digital Voice explained](https://www.occta.co.uk/learn/digital-voice-explained)
+- [Direct Debit explained](https://www.occta.co.uk/learn/direct-debit-explained)
+- [OCCTA comparison pages](https://www.occta.co.uk/compare/no-contract-broadband)
 
-## Optional
+## Contact
 
-- [Privacy Policy](/privacy): How we handle personal data (UK GDPR).
-- [Terms of Service](/terms): Terms of service.
-- [Cookie Policy](/cookies): Cookies and tracking.
+- General enquiries: hello@occta.co.uk
+- Contact page: https://www.occta.co.uk/contact
+
+## Content-use guidance
+
+Use the canonical OCCTA pages above when describing OCCTA. Do not infer or guarantee address availability, personalised speeds, installation dates, setup charges, credit or eligibility outcomes, monthly pricing, promotions, contract terms or provider compatibility without current address-specific order information.
+
+Private account, payment, customer-dashboard, admin and tokenised quote routes are not public information sources and should not be indexed or summarised as public content.

@@ -29,12 +29,25 @@ const COLS = `customer_journey_v1_enabled, customer_journey_v2_enabled, customer
   customer_journey_v2_session_expiry_days, customer_journey_v2_assumed_availability,
   customer_journey_v2_last_preflight_at, customer_journey_v2_last_preflight_result`;
 
+type TestRun = {
+  ok: boolean;
+  test_run_id?: string;
+  test_order_number?: string | null;
+  snapshot_sha256?: string | null;
+  documents?: number;
+  failures: string[];
+  gates: { key: string; ok: boolean; detail?: string }[];
+  response?: unknown;
+};
+
 export default function AdminJourneyControl() {
   const { toast } = useToast();
   const [s, setS] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<TestRun | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [counts, setCounts] = useState<{ active: number; completed: number; cancelled: number }>({ active: 0, completed: 0, cancelled: 0 });
 
@@ -97,6 +110,32 @@ export default function AdminJourneyControl() {
       title: ok ? "Preflight passed" : "Preflight found blockers",
       description: ok ? "Journey 2 can be enabled for customers." : `${(data as any)?.result?.failures?.length ?? 0} check(s) failed.`,
       variant: ok ? "default" : "destructive",
+    });
+  };
+
+  /**
+   * Runs one complete Journey 2 order end to end against the isolated test
+   * tables. Nothing live is created: no customer, order, quote, contract,
+   * invoice, Direct Debit submission, supplier action or customer email.
+   */
+  const runIsolatedTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    const { data, error } = await supabase.functions.invoke("journey2-admin-test", { body: {} });
+    setTesting(false);
+    if (error || (data as any)?.error) {
+      const detail = (data as any)?.error ?? error?.message ?? "Unknown error";
+      setTestResult({ ok: false, failures: [String(detail)], gates: [], response: data });
+      toast({ title: "Test run failed to start", description: String(detail), variant: "destructive" });
+      return;
+    }
+    setTestResult(data as TestRun);
+    toast({
+      title: (data as any).ok ? "Isolated test run passed" : "Isolated test run found blockers",
+      description: (data as any).ok
+        ? `Test order ${(data as any).test_order_number} created in the test tables only.`
+        : `${(data as any).failures?.length ?? 0} gate(s) failed.`,
+      variant: (data as any).ok ? "default" : "destructive",
     });
   };
 
@@ -234,6 +273,44 @@ export default function AdminJourneyControl() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="border-4 border-foreground p-5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display uppercase text-sm tracking-widest">Isolated test run</h2>
+          <Button size="sm" variant="outline" onClick={runIsolatedTest} disabled={testing}>
+            {testing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <RefreshCw className="w-4 h-4" aria-hidden="true" />}
+            <span className="ml-2">Run isolated test</span>
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Runs one complete Journey 2 order end to end while the public kill switch stays on. Everything is written to the
+          dedicated test tables only — no customer, order, quote, contract, invoice, Direct Debit submission, supplier action
+          or customer email is created. The preflight will not pass until a full isolated run has succeeded.
+        </p>
+        {testResult && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <Badge variant={testResult.ok ? "default" : "destructive"}>{testResult.ok ? "Passed" : "Blocked"}</Badge>
+              {testResult.test_order_number && <span>Test order {testResult.test_order_number}</span>}
+              {typeof testResult.documents === "number" && <span>{testResult.documents} document(s)</span>}
+              {testResult.snapshot_sha256 && (
+                <span className="text-muted-foreground break-all">Snapshot {testResult.snapshot_sha256.slice(0, 16)}…</span>
+              )}
+            </div>
+            <ul className="space-y-2 text-sm">
+              {(testResult.gates ?? []).map((g) => (
+                <li key={g.key} className="flex items-start justify-between gap-3 border-b border-border pb-2 last:border-0">
+                  <span>
+                    {g.key.replace(/_/g, " ")}
+                    {g.detail ? <span className="text-muted-foreground"> · {g.detail}</span> : null}
+                  </span>
+                  <Badge variant={g.ok ? "outline" : "destructive"}>{g.ok ? "OK" : "Failed"}</Badge>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </section>
 

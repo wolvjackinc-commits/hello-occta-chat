@@ -236,7 +236,15 @@ export default function OrderJourney() {
               <DetailsStep session={session} saving={saving}
                 onSave={(p) => save("details", p)} onBack={() => setBackStep("extras")} />
             )}
-            {inSelection && !catalogue && activeStep !== "address" && activeStep !== "details" && (
+            {inSelection && activeStep === "start_date" && (
+              <StartDateStep session={session} saving={saving}
+                onSave={(p) => save("start_date", p)} onBack={() => setBackStep("details")} />
+            )}
+            {inSelection && activeStep === "billing" && (
+              <BillingStep session={session} saving={saving}
+                onSave={(p) => save("billing", p)} onBack={() => setBackStep("start_date")} />
+            )}
+            {inSelection && !catalogue && ["plan", "router", "extras"].includes(activeStep) && (
               <div className="border-4 border-foreground p-6">
                 <p className="font-display uppercase text-lg mb-2">Prices are briefly unavailable</p>
                 <p className="text-sm text-muted-foreground">
@@ -257,21 +265,24 @@ export default function OrderJourney() {
 
             {!inSelection && journeyState?.ok && quoteToken && (
               <>
+                {applyError && (
+                  <div className="border-4 border-destructive p-4 mb-4">
+                    <p className="font-display uppercase text-sm mb-2">We need one more moment</p>
+                    <p className="text-sm text-muted-foreground mb-3">{applyError}</p>
+                    <Button type="button" onClick={applyPostContract}>Try again</Button>
+                  </div>
+                )}
                 {(contractStep === "quote" || contractStep === "agreement") && (
-                  <AgreementStep token={quoteToken} quote={journeyState.quote} onAccepted={refreshQuoteJourney} />
+                  <AgreementStep token={quoteToken} quote={journeyState.quote} onAccepted={onContractAccepted} />
                 )}
-                {contractStep === "start_date" && (
-                  <StartDateStep token={quoteToken} journey={journeyState.journey} onSaved={refreshQuoteJourney} />
-                )}
-                {contractStep === "payment" && (
-                  <PaymentStep
-                    token={quoteToken}
-                    quote={journeyState.quote}
-                    journey={journeyState.journey}
-                    paymentMethod={journeyState.payment_method}
-                    ddProviderTemplateAvailable={journeyState.dd_provider_template_available}
-                    onSaved={refreshQuoteJourney}
-                  />
+                {(contractStep === "start_date" || contractStep === "payment") && (
+                  <div className="border-4 border-foreground p-6 text-center">
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-3" aria-hidden="true" />
+                    <p className="font-display uppercase text-lg mb-1">Applying your start date and Direct Debit</p>
+                    <p className="text-sm text-muted-foreground">
+                      You already gave us these — we're saving them against your agreement. Nothing is taken today.
+                    </p>
+                  </div>
                 )}
                 {contractStep === "review" && (
                   <ReviewStep

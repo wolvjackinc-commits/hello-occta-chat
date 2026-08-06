@@ -82,7 +82,8 @@ export default function AgreementStep({
 
   const [fullName, setFullName] = useState("");
   const [emailConfirm, setEmailConfirm] = useState("");
-  const [mobileConfirm, setMobileConfirm] = useState("");
+  const [phoneMasked, setPhoneMasked] = useState<string | null>(null);
+  const [mobileVerified, setMobileVerified] = useState(false);
   const [dob, setDob] = useState("");
   const [addressConfirmed, setAddressConfirmed] = useState(false);
   const [checks, setChecks] = useState<Record<CbKey, boolean>>({ received_read: false, details_correct: false, understand_charges: false, consent: false });
@@ -147,7 +148,7 @@ export default function AgreementStep({
   const formValid =
     fullName.trim().length >= 2 &&
     emailConfirm.trim().length > 4 &&
-    mobileConfirm.trim().length >= 7 &&
+    mobileVerified &&
     dobValid &&
     addressConfirmed &&
     allChecksTicked &&
@@ -164,7 +165,7 @@ export default function AgreementStep({
           journey_mode: true,
           accepted_by_name: fullName.trim(),
           accepted_by_email: emailConfirm.trim().toLowerCase(),
-          accepted_by_mobile: mobileConfirm.trim(),
+          accepted_by_mobile: phoneMasked ?? "verified",
           address_confirmed: true,
           date_of_birth: dob,
           checkbox_received_read: checks.received_read,

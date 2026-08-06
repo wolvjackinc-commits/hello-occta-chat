@@ -1063,6 +1063,88 @@ guides.push({
   relatedSlugs: ['no-contract-broadband-uk', 'cheap-broadband-uk', 'how-to-switch-broadband-uk'],
 });
 
+guides.push({
+  slug: 'broadband-for-renters',
+  title: 'Broadband for Renters: Flexible Internet Without Exit Fees',
+  metaTitle: 'Broadband for Renters UK — No Minimum Term Options',
+  description: 'Renting and need broadband? Compare flexible monthly broadband with fixed-term plans, avoid exit fees when you move, and see what to check before you sign.',
+  keywords: 'broadband for renters, no contract broadband uk, flexible broadband renters, broadband when renting, moving house broadband, broadband exit fees',
+  category: 'broadband',
+  categoryLabel: 'Broadband',
+  intro: 'If you rent, your tenancy rarely lines up with a 24-month broadband contract. This guide explains how renters can get broadband that moves when they do, what exit fees actually are, and when a fixed-term Price Lock plan still makes sense.',
+  sections: [
+    {
+      heading: 'Why Renting Changes the Broadband Maths',
+      paragraphs: [
+        'Most UK tenancies run 6 or 12 months, often rolling after that. Most broadband contracts run 18 or 24 months. If your notice period arrives before your contract ends, you are the one left holding the difference.',
+        'That gap is why renters end up paying early termination charges — a bill for the remaining months of a service they can no longer use at that address.',
+      ],
+    },
+    {
+      heading: 'Your Two Realistic Options',
+      paragraphs: ['OCCTA offers both, and the right choice depends on how settled you are:'],
+      bullets: [
+        'Flex 30 — flexible monthly options available where eligible, with no minimum term. Best if your move date is uncertain.',
+        'Price Lock 24 — a fixed 24-month term with the monthly price locked for the whole term. Best if you are staying put and want price certainty.',
+        'Rolling monthly usually costs a little more per month; a fixed term usually costs less but commits you.',
+        'Either way, the price is shown in pounds and pence before you order, with no April uplift on Price Lock 24.',
+      ],
+    },
+    {
+      heading: 'What to Check Before You Order',
+      paragraphs: ['Five things renters should confirm before signing anything:'],
+      bullets: [
+        'Minimum term and notice period — how many days notice you must give.',
+        'Early termination charges — how they are calculated if you leave early.',
+        'Whether the plan can move with you, and any charge for a new install at the new address.',
+        'Setup cost at your specific address — some addresses need an engineer visit.',
+        'Whether an engineer needs internal access, which may need your landlord or letting agent to agree.',
+      ],
+    },
+    {
+      heading: 'Moving Home: How to Avoid Paying Twice',
+      paragraphs: [
+        'On a flexible monthly plan, give notice as soon as your move date is confirmed and order at the new address so the two overlap by a few days rather than a few weeks.',
+        'On a fixed term, ask about transferring the service to the new address instead of cancelling — a transfer normally keeps your existing terms, while a cancellation can trigger the remaining-term charge.',
+      ],
+    },
+    {
+      heading: 'Landlord and Property Questions',
+      paragraphs: [
+        'You do not usually need permission to order broadband that uses existing sockets. You may need it where new cabling, a new external box, or drilling is involved — that is a change to the property, not just a service.',
+        'If the property already has a working socket from a previous tenant, activation is often faster and cheaper than a fresh install.',
+      ],
+    },
+  ],
+  faqs: [
+    {
+      question: 'Can renters get broadband without a long contract?',
+      answer: 'Yes. Flexible monthly options are available where eligible, with no minimum term, so you are not committed beyond the month you are in.',
+    },
+    {
+      question: 'Will I pay an exit fee if I move out?',
+      answer: 'On a no-minimum-term plan there is no early termination charge — you give notice and stop. On a fixed-term plan, cancelling early normally means paying for the remaining months, which is why transferring the service is usually cheaper.',
+    },
+    {
+      question: 'Do I need my landlord\u2019s permission for broadband?',
+      answer: 'Not normally if the property already has a usable socket. You should ask if the install needs new cabling, drilling, or an external box fitted, as that alters the property.',
+    },
+    {
+      question: 'Can I take my broadband to a new rented address?',
+      answer: 'Usually yes, subject to availability at the new address. Tell us your move date as early as you can so the new line is ready before you hand back the keys.',
+    },
+    {
+      question: 'Is flexible broadband more expensive than a fixed term?',
+      answer: 'Per month, usually slightly. Over a tenancy that ends early, it is often cheaper overall because you avoid remaining-term charges.',
+    },
+  ],
+  datePublished: '2026-08-06',
+  dateModified: '2026-08-06',
+  ctaText: 'Check availability at my address',
+  ctaLink: '/broadband',
+  relatedSlugs: ['no-contract-broadband-uk', 'broadband-for-students', 'how-to-switch-broadband-uk'],
+});
+
 export const getGuideBySlug = (slug: string): Guide | undefined =>
   guides.find((g) => g.slug === slug);
 

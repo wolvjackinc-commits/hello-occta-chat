@@ -81,105 +81,88 @@ Deno.serve(async (req) => {
     ? await supabase.from("journey2_test_events")
       .select("gate_key, ok, detail").eq("test_run_id", testRun.id)
     : { data: null as null };
-  const gateMap = new Map((gateRows ?? []).map((g: any) => [g.gate_key as string, g]));
+  const gateMap = new Map((gateRows ?? []).map((g: Record<string, unknown>) => [g.gate_key as string, g]));
   const gate = (key: string, label: string) => {
     const g = gateMap.get(key);
-    add(`run_${key}`, label, !!g?.ok, g ? (g.detail ?? "") : "gate not recorded by the test run");
+    add(`run_${key}`, label, !!g?.ok, g ? String(g.detail ?? "") : "gate not recorded by the isolated test run");
   };
 
-  let testSession: Record<string, unknown> | null = null;
-  let testOrder: Record<string, unknown> | null = null;
-  let snapshot: Record<string, unknown> | null = null;
-  if (testRun) {
-    testSession = (await supabase.from("customer_journey_sessions")
-      .select("*").eq("id", testRun.session_id).maybeSingle()).data as never;
-    testOrder = (await supabase.from("journey2_test_orders")
-      .select("*").eq("test_run_id", testRun.id).maybeSingle()).data as never;
-    snapshot = (await supabase.from("journey2_contract_snapshots")
-      .select("*").eq("session_id", testRun.session_id).maybeSingle()).data as never;
-  }
+  // Everything below reads ONLY the isolated journey2_test_* tables. Live
+  // tables are never consulted for evidence, and historical counts are never
+  // accepted in place of a real run.
+  const runId = testRun?.id ?? null;
+  const testSession = runId
+    ? (await supabase.from("journey2_test_sessions").select("*").eq("test_run_id", runId).maybeSingle()).data
+    : null;
+  const testOrder = runId
+    ? (await supabase.from("journey2_test_orders").select("*").eq("test_run_id", runId).maybeSingle()).data
+    : null;
+  const snapshot = testSession
+    ? (await supabase.from("journey2_test_snapshots").select("*").eq("session_id", testSession.id).maybeSingle()).data
+    : null;
 
-  const s = testSession as any; const t = testOrder as any; const sn = snapshot as any;
-  add("test_admin_access", "Admin test access works despite the kill switch", !!s?.test_session);
-  gate("admin_test_access_with_kill_switch", "The test run started while the public kill switch was enabled");
-  for (const step of ["address", "plan", "router", "extras", "details", "start_date", "billing"]) {
-    gate(`step_${step}`, `Test run completed the ${step.replace("_", " ")} step`);
-  }
-  gate("test_contract_isolated", "Test contract documents were written only to the isolated test tables");
-  gate("test_acceptance", "Test acceptance evidence was recorded in the isolated test tables");
-  gate("submit", "Test final submission committed transactionally");
-  gate("document_pack", "The full document pack was produced from the snapshot");
-  gate("email_suppressed_in_test", "The welcome email was suppressed for the test run");
-  gate("dd_encrypted_in_test", "Test Direct Debit details were stored encrypted only");
+  const s = testSession as Record<string, any> | null;
+  const t = testOrder as Record<string, any> | null;
+  const sn = snapshot as Record<string, any> | null;
+
+  add("test_isolation_tables", "The test run used the dedicated isolated test tables",
+    !!s && !!sn && String(s.label ?? "").startsWith("TEST"),
+    s ? `test session ${s.id}` : "no isolated test session for the latest run");
+
+  gate("admin_test_access_with_kill_switch", "A verified admin/service test ran while the public kill switch was ON");
+  gate("dedicated_test_session_table", "The test session was created in journey2_test_sessions");
+  for (const stage of [
+    "address", "plan", "router", "extras", "details", "start_date",
+    "billing", "contract", "review", "complete",
+  ]) gate(`stage_${stage}`, `The run completed the ${stage.replace("_", " ")} stage`);
+  gate("snapshot_hash_byte_for_byte", "The canonical snapshot SHA-256 matched byte-for-byte");
+  gate("tamper_rejected", "A deliberately tampered snapshot copy was rejected");
+  gate("snapshot_immutable", "The stored test snapshot could not be modified");
+  gate("zero_due_today", "Nothing was payable today");
+  gate("vat_matches_settings", "VAT matched the configured rate");
+  gate("one_offs_on_first_bill", "One-off charges were placed on the estimated first bill");
+  gate("dd_state_details_received", "Direct Debit reached details_received after billing");
+  gate("dd_state_pending_contract", "Direct Debit reached pending_contract at the contract stage");
+  gate("dd_state_setup_requested_test", "Direct Debit finished at setup_requested_test");
+  gate("dd_never_live_state", "Direct Debit never entered a live activation state");
+  gate("dd_encrypted_in_test", "Test bank details were stored encrypted only");
+  gate("dd_masked_only", "Only masked Direct Debit details were held on the session");
+  gate("exactly_one_test_order", "A repeat submission produced exactly one test order");
+  gate("exactly_one_test_acceptance", "Exactly one test acceptance was recorded");
+  gate("exactly_one_test_dd_intake", "Exactly one test Direct Debit intake was recorded");
+  gate("exactly_one_suppressed_email", "Exactly one suppressed test email was recorded");
+  gate("second_submit_created_nothing", "The second submission created nothing");
+  gate("document_pack_complete", "The complete document pack was produced from the snapshot");
+  gate("email_suppressed_in_test", "The welcome pack email was suppressed");
+  gate("ten_stage_sequence", "All ten logical stages were executed in order");
+  gate("completion_data_from_test_tables", "Completion data was served from the isolated test tables");
   for (const key of [
-    "no_live_order", "no_live_quote", "no_live_order_journey", "no_live_payment_method",
-    "no_live_dd_intake", "no_live_documents", "no_live_email_outbox",
-    "no_account_provisioning", "no_live_ids_on_session",
-  ]) gate(key, `Test isolation held: ${key.replace(/_/g, " ")}`);
+    "customer_journey_sessions_checkout_session_id",
+    "journey2_contract_snapshots_session_id",
+    "orders_checkout_session_id",
+    "quotes_checkout_session_id",
+    "order_journeys_checkout_session_id",
+    "payment_methods_checkout_session_id",
+    "journey2_dd_intake_session_id",
+    "journey2_documents_session_id",
+    "journey2_email_outbox_session_id",
+    "journey2_account_provisioning_session_id",
+  ]) gate(`no_live_write_${key}`, `Zero live writes: ${key.replace(/_/g, " ")}`);
+  for (const table of ["profiles", "quote_requests", "guest_orders"]) {
+    gate(`no_live_write_${table}`, `Zero live ${table} rows for the isolated test contact`);
+  }
 
-  add("test_sequence", "The test run completed the correct ten-step sequence",
-    !!s && s.current_step === "complete" && !!s.preferred_start_date && !!s.billing_anchor_day && !!s.dd_masked);
-  add("contract_after_billing", "Contract documents were prepared only after start date and billing",
-    !!sn && !!s?.preferred_start_date && !!s?.billing_anchor_day && !!s?.dd_masked,
-    "snapshot exists and both the start date and billing selections were captured");
-  add("snapshot_hash", "The contractual snapshot has a valid SHA-256 fingerprint",
-    typeof sn?.snapshot_sha256 === "string" && sn.snapshot_sha256.length === 64);
-  const p = sn?.snapshot?.pricing ?? {};
-  add("zero_due_today", "Nothing was payable today on the test order",
+  const p = (sn?.snapshot as Record<string, any>)?.pricing ?? {};
+  add("snapshot_hash_present", "The isolated contractual snapshot carries a valid SHA-256 fingerprint",
+    typeof sn?.snapshot_sha256 === "string" && /^[0-9a-f]{64}$/.test(sn.snapshot_sha256));
+  add("zero_due_today_stored", "The stored test order shows nothing payable today",
     Number(p.amount_due_today ?? 1) === 0 && Number(t?.amount_due_today ?? 1) === 0);
-  add("first_bill_one_off", "One-off charges were placed in the estimated first bill",
-    Number(p.estimated_first_bill_incl_vat ?? 0) >= Number(p.monthly_incl_vat ?? 0));
   add("vat_calculation", "VAT on the test order matches the configured rate",
     Math.abs(Number(p.monthly_ex_vat ?? 0) + Number(p.monthly_vat ?? 0) - Number(p.monthly_incl_vat ?? 0)) < 0.02
       && Number(p.vat_rate_percent ?? 0) === vatRate);
-  // Test runs are isolated, so contract and acceptance evidence must exist in
-  // the dedicated test tables and never in the live contractual tables.
-  const testCs = s ? (await supabase.from("journey2_test_contract_summaries")
-    .select("id, status, snapshot_sha256").eq("session_id", s.id).maybeSingle()).data as any : null;
-  add("cs_generation", "Contract Summary and Contract Information were generated for the test run",
-    !!testCs && testCs.snapshot_sha256 === sn?.snapshot_sha256,
-    testCs ? `test contract ${testCs.id} (${testCs.status})` : "no isolated test contract");
-  const testAcc = s ? (await supabase.from("journey2_test_acceptances")
-    .select("id, accepted_at, snapshot_sha256").eq("session_id", s.id).maybeSingle()).data as any : null;
-  add("acceptance_evidence", "Acceptance evidence was recorded for the test run",
-    !!testAcc && testAcc.snapshot_sha256 === sn?.snapshot_sha256,
-    testAcc ? `accepted at ${testAcc.accepted_at}` : "no isolated acceptance record");
-  add("dd_masking", "Direct Debit details were masked, never exposed in full",
-    !!s?.dd_masked && String((s.dd_masked as any).last4 ?? "").length === 4
-      && !("account_number" in (s.dd_masked as any)) && !("sort_code" in (s.dd_masked as any)));
-  const testDd = s ? (await supabase.from("journey2_test_dd_intake")
-    .select("bank_details_ciphertext, nonce, dd_status")
-    .eq("session_id", s.id).maybeSingle()).data as any : null;
-  add("dd_encrypted", "Direct Debit bank details were stored encrypted",
-    !!testDd?.bank_details_ciphertext && !!testDd?.nonce);
-  add("dd_lifecycle", "Direct Debit lifecycle status is a known state, never submitted to a provider",
-    ["details_received", "pending_contract", "pending_activation", "active"].includes(String(testDd?.dd_status ?? "")),
-    String(testDd?.dd_status ?? "no test Direct Debit intake"));
-  add("no_test_provider_submission", "No Direct Debit was submitted to the provider in test mode",
-    !!s && !(await supabase.from("payment_methods").select("id")
-      .eq("checkout_session_id", s.checkout_session_id).maybeSingle()).data);
-  add("no_test_customer_email", "No customer email entered the live outbox in test mode",
-    !!s && !(await supabase.from("journey2_email_outbox").select("id")
-      .eq("session_id", s.id).maybeSingle()).data);
-  add("no_test_live_order", "No live order, customer or supplier action was created in test mode",
-    !!s && !s.order_id && !s.customer_id && !!t?.test_order_number);
-  const { count: testOrderCount } = await supabase.from("journey2_test_orders")
-    .select("id", { count: "exact", head: true })
-    .eq("session_id", s?.id ?? "00000000-0000-0000-0000-000000000000");
-  add("idempotent_submission", "Repeat submission cannot create a second order for one checkout session",
-    (testOrderCount ?? 0) === 1, `${testOrderCount ?? 0} test order(s) for the test session`);
-  const { count: docCount } = await supabase.from("journey2_test_documents")
-    .select("id", { count: "exact", head: true })
-    .eq("test_order_id", t?.id ?? "00000000-0000-0000-0000-000000000000");
-  const { data: testOutbox } = await supabase.from("journey2_test_email_outbox")
-    .select("status").eq("test_order_id", t?.id ?? "00000000-0000-0000-0000-000000000000").maybeSingle();
-  add("welcome_pack", "The welcome pack is complete and was suppressed for the test order",
-    (docCount ?? 0) >= 8 && testOutbox?.status === "suppressed_test",
-    `${docCount ?? 0} document(s), outbox ${testOutbox?.status ?? "missing"}`);
-  add("completion_route", "The completion view can be rendered from committed data",
-    !!t?.test_order_number && !!t?.snapshot_sha256);
-  add("no_silent_fallback", "There is no automatic Journey 1 fallback in Journey 2",
-    !!s && s.status !== "manual_review");
+  add("completion_route", "Completion data can be rendered from committed isolated data",
+    !!t?.test_order_number && t?.snapshot_sha256 === sn?.snapshot_sha256);
+  add("dd_encryption", "Direct Debit detail encryption key is configured", !!Deno.env.get("DD_FIELD_ENC_KEY"));
 
   // Direct Debit provider readiness.
   const { data: ddCfg } = await supabase

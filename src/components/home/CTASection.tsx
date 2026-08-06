@@ -111,7 +111,7 @@ const CTASection = () => {
             variants={itemVariants}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Link to="/quote/start?interest=broadband">
+            <Link to="/order">
               <motion.div
                 whileHover={{ 
                   y: -6, 
@@ -122,7 +122,7 @@ const CTASection = () => {
                 transition={{ duration: 0.15 }}
               >
                 <Button variant="hero" size="xl" className="w-full sm:w-auto border-background">
-                  Get a personalised quote
+                  Start your broadband order
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </motion.div>

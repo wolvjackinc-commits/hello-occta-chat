@@ -1,0 +1,1 @@
+GRANT SELECT ON TABLE public.platform_settings TO authenticated;

@@ -15,6 +15,8 @@ import {
   getRequestIp, generateTokenPair,
 } from "../_shared/quoteHelpers.ts";
 import { loadJourneySettings, resolveJourney2Price, planNameFor, JOURNEY2_SETUP } from "../_shared/journey2.ts";
+import { RESOLVER_VERSION } from "../_shared/buildPlanResolver.ts";
+import { sha256Json } from "../_shared/ddCrypto.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16) });
@@ -62,6 +64,14 @@ Deno.serve(async (req) => {
   if (!session.speed_bucket || !session.plan_term) return jsonResponse({ error: "plan_not_selected" }, 409);
   if (!details?.full_name || !details?.email || !details?.phone) return jsonResponse({ error: "details_incomplete" }, 409);
   if (!address?.address_line_1 || !address?.town || !session.postcode) return jsonResponse({ error: "address_incomplete" }, 409);
+  // Contract documents are never generated before the start date and billing
+  // selections exist — the documents must state both.
+  if (!session.preferred_start_date || !session.cooling_off_acknowledged) {
+    return jsonResponse({ error: "start_date_required", message: "Choose your preferred start date before we prepare your contract." }, 409);
+  }
+  if (!session.billing_anchor_day || !session.dd_masked) {
+    return jsonResponse({ error: "billing_required", message: "Complete your billing day and Direct Debit details before we prepare your contract." }, 409);
+  }
 
   // ── Idempotent replay: quote already materialised for this session ────────
   let quoteToken: string | null = null;
@@ -152,6 +162,8 @@ Deno.serve(async (req) => {
       },
       setup_option: { option: JOURNEY2_SETUP, label: priced.setup.label, oneOff: priced.setup.oneOff },
       selected_addons: priced.addons,
+      journey_version: "v2",
+      checkout_session_id: session.checkout_session_id,
     }).select("id, quote_number").single();
     if (qIns.error) return jsonResponse({ error: "quote_failed", details: qIns.error.message }, 500);
 
@@ -173,11 +185,80 @@ Deno.serve(async (req) => {
       current_step: "agreement",
       status: "in_progress",
       journey_version: "v2",
+      checkout_session_id: session.checkout_session_id,
       quote_continued_at: new Date().toISOString(),
       ip, ua,
     }).select("id").single();
 
+    // ── Immutable final contractual snapshot ───────────────────────────────
+    const snapshotBody = {
+      customer: {
+        full_name: details.full_name,
+        email: details.email,
+        phone: details.phone,
+        date_of_birth: details.date_of_birth ?? null,
+      },
+      service_address: {
+        address_line_1: address.address_line_1,
+        address_line_2: address.address_line_2 ?? null,
+        town: address.town,
+        county: address.county ?? null,
+        postcode: String(session.postcode).toUpperCase(),
+      },
+      billing_address: (details as any).billing_address_same === false
+        ? (details as any).billing_address ?? null
+        : "same_as_service_address",
+      product: {
+        plan_name: planNameFor(session.speed_bucket as any, session.plan_term as any),
+        speed_bucket: session.speed_bucket,
+        contract_term: session.plan_term,
+        minimum_term_months: session.plan_term === "price_lock_24" ? 24 : 1,
+      },
+      router: priced.router,
+      addons: priced.addons,
+      pricing: {
+        monthly_ex_vat: round2(monthly_net),
+        monthly_vat: monthly_vat,
+        monthly_incl_vat: monthly_gross,
+        one_off_charges_incl_vat: round2(router_gross + setup_gross),
+        amount_due_today: 0,
+        estimated_first_bill_incl_vat: round2(monthly_gross + router_gross + setup_gross),
+        vat_rate_percent: VAT * 100,
+      },
+      schedule: {
+        preferred_start_date: session.preferred_start_date,
+        billing_day: session.billing_anchor_day,
+        expected_first_collection_date: null,
+        billing_commencement_rule: "Billing starts when the service goes live; the first Direct Debit is collected on the billing day at least 3 working days after advance notice, and only once the mandate is active.",
+      },
+      direct_debit: session.dd_masked,
+      journey_version: "v2",
+      checkout_session_id: session.checkout_session_id,
+      pricing_version: RESOLVER_VERSION,
+      test_session: !!session.test_session,
+      created_at: new Date().toISOString(),
+    };
+    const snapshotHash = await sha256Json(snapshotBody);
+    // Legal document versions come from the site copy registry the contract
+    // documents themselves render from.
+    const { data: legalRows } = await supabase
+      .from("site_copy")
+      .select("key, updated_at")
+      .in("key", ["terms_of_service", "privacy_policy", "contract_summary", "direct_debit_guarantee"]);
+    const legalVersions = Object.fromEntries((legalRows ?? []).map((r: any) => [r.key, r.updated_at]));
+    const snapIns = await supabase.from("journey2_contract_snapshots").upsert({
+      session_id: session.id,
+      checkout_session_id: session.checkout_session_id,
+      journey_version: "v2",
+      test_session: !!session.test_session,
+      pricing_version: RESOLVER_VERSION,
+      legal_document_versions: legalVersions ?? {},
+      snapshot: snapshotBody,
+      snapshot_sha256: snapshotHash,
+    }, { onConflict: "session_id", ignoreDuplicates: true }).select("id").maybeSingle();
+
     await supabase.from("customer_journey_sessions").update({
+      contract_snapshot_id: snapIns.data?.id ?? null,
       quote_id: quoteId,
       quote_public_token_hash: hash,
       order_journey_id: jIns.data?.id ?? null,

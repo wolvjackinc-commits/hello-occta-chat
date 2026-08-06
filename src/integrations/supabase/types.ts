@@ -2182,6 +2182,7 @@ export type Database = {
           checkbox_details_correct: boolean
           checkbox_received_read: boolean
           checkbox_understand_charges: boolean
+          checkout_session_id: string | null
           complaints_code_version: string | null
           contract_information_pack_id: string | null
           contract_information_pack_pdf_hash: string | null
@@ -2200,6 +2201,7 @@ export type Database = {
           id: string
           ip: string | null
           journey_id: string | null
+          journey_version: string | null
           legacy_compliance_status:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
@@ -2243,6 +2245,7 @@ export type Database = {
           checkbox_details_correct?: boolean
           checkbox_received_read?: boolean
           checkbox_understand_charges?: boolean
+          checkout_session_id?: string | null
           complaints_code_version?: string | null
           contract_information_pack_id?: string | null
           contract_information_pack_pdf_hash?: string | null
@@ -2261,6 +2264,7 @@ export type Database = {
           id?: string
           ip?: string | null
           journey_id?: string | null
+          journey_version?: string | null
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
@@ -2304,6 +2308,7 @@ export type Database = {
           checkbox_details_correct?: boolean
           checkbox_received_read?: boolean
           checkbox_understand_charges?: boolean
+          checkout_session_id?: string | null
           complaints_code_version?: string | null
           contract_information_pack_id?: string | null
           contract_information_pack_pdf_hash?: string | null
@@ -2322,6 +2327,7 @@ export type Database = {
           id?: string
           ip?: string | null
           journey_id?: string | null
+          journey_version?: string | null
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
@@ -2974,13 +2980,19 @@ export type Database = {
         Row: {
           abandoned_at: string | null
           anonymous_session_id_hash: string | null
+          billing_anchor_day: number | null
+          checkout_session_id: string
           completed_at: string | null
           contract_acceptance_id: string | null
+          contract_snapshot_id: string | null
           contract_summary_id: string | null
+          cooling_off_acknowledged: boolean
           created_at: string
           current_step: string
           customer_details: Json | null
           customer_id: string | null
+          dd_masked: Json | null
+          digital_voice_acknowledged: boolean
           expires_at: string
           guest_order_id: string | null
           id: string
@@ -2990,12 +3002,15 @@ export type Database = {
           journey_version: string
           last_activity_at: string
           last_completed_step: string | null
+          last_error: string | null
           manual_review_reason: string | null
           order_id: string | null
           order_journey_id: string | null
           payment_method_id: string | null
           plan_term: string | null
+          post_contract_applied_at: string | null
           postcode: string | null
+          preferred_start_date: string | null
           price_snapshot: Json | null
           pricing_version: string | null
           public_token_hash: string
@@ -3017,13 +3032,19 @@ export type Database = {
         Insert: {
           abandoned_at?: string | null
           anonymous_session_id_hash?: string | null
+          billing_anchor_day?: number | null
+          checkout_session_id?: string
           completed_at?: string | null
           contract_acceptance_id?: string | null
+          contract_snapshot_id?: string | null
           contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean
           created_at?: string
           current_step?: string
           customer_details?: Json | null
           customer_id?: string | null
+          dd_masked?: Json | null
+          digital_voice_acknowledged?: boolean
           expires_at?: string
           guest_order_id?: string | null
           id?: string
@@ -3033,12 +3054,15 @@ export type Database = {
           journey_version?: string
           last_activity_at?: string
           last_completed_step?: string | null
+          last_error?: string | null
           manual_review_reason?: string | null
           order_id?: string | null
           order_journey_id?: string | null
           payment_method_id?: string | null
           plan_term?: string | null
+          post_contract_applied_at?: string | null
           postcode?: string | null
+          preferred_start_date?: string | null
           price_snapshot?: Json | null
           pricing_version?: string | null
           public_token_hash: string
@@ -3060,13 +3084,19 @@ export type Database = {
         Update: {
           abandoned_at?: string | null
           anonymous_session_id_hash?: string | null
+          billing_anchor_day?: number | null
+          checkout_session_id?: string
           completed_at?: string | null
           contract_acceptance_id?: string | null
+          contract_snapshot_id?: string | null
           contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean
           created_at?: string
           current_step?: string
           customer_details?: Json | null
           customer_id?: string | null
+          dd_masked?: Json | null
+          digital_voice_acknowledged?: boolean
           expires_at?: string
           guest_order_id?: string | null
           id?: string
@@ -3076,12 +3106,15 @@ export type Database = {
           journey_version?: string
           last_activity_at?: string
           last_completed_step?: string | null
+          last_error?: string | null
           manual_review_reason?: string | null
           order_id?: string | null
           order_journey_id?: string | null
           payment_method_id?: string | null
           plan_term?: string | null
+          post_contract_applied_at?: string | null
           postcode?: string | null
+          preferred_start_date?: string | null
           price_snapshot?: Json | null
           pricing_version?: string | null
           public_token_hash?: string
@@ -4372,6 +4405,109 @@ export type Database = {
         }
         Relationships: []
       }
+      journey2_contract_snapshots: {
+        Row: {
+          checkout_session_id: string
+          created_at: string
+          id: string
+          journey_version: string
+          legal_document_versions: Json
+          pricing_version: string
+          session_id: string
+          snapshot: Json
+          snapshot_sha256: string
+          test_session: boolean
+        }
+        Insert: {
+          checkout_session_id: string
+          created_at?: string
+          id?: string
+          journey_version?: string
+          legal_document_versions?: Json
+          pricing_version: string
+          session_id: string
+          snapshot: Json
+          snapshot_sha256: string
+          test_session?: boolean
+        }
+        Update: {
+          checkout_session_id?: string
+          created_at?: string
+          id?: string
+          journey_version?: string
+          legal_document_versions?: Json
+          pricing_version?: string
+          session_id?: string
+          snapshot?: Json
+          snapshot_sha256?: string
+          test_session?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_contract_snapshots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_dd_intake: {
+        Row: {
+          account_holder_name: string | null
+          bank_details_ciphertext: string
+          bank_name: string | null
+          consumed_at: string | null
+          created_at: string
+          enc_alg: string
+          enc_key_id: string
+          id: string
+          masked_account_last4: string
+          masked_sort_last2: string
+          nonce: string
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          bank_details_ciphertext: string
+          bank_name?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          enc_alg?: string
+          enc_key_id: string
+          id?: string
+          masked_account_last4: string
+          masked_sort_last2: string
+          nonce: string
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          bank_details_ciphertext?: string
+          bank_name?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          enc_alg?: string
+          enc_key_id?: string
+          id?: string
+          masked_account_last4?: string
+          masked_sort_last2?: string
+          nonce?: string
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_dd_intake_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kb_article_versions: {
         Row: {
           article_id: string
@@ -4927,6 +5063,7 @@ export type Database = {
           cancellation_token_hash: string | null
           cancellation_token_used_at: string | null
           cancelled_at: string | null
+          checkout_session_id: string | null
           completed_at: string | null
           consolidated_email_sent_at: string | null
           contract_acceptance_id: string | null
@@ -4973,6 +5110,7 @@ export type Database = {
           cancellation_token_hash?: string | null
           cancellation_token_used_at?: string | null
           cancelled_at?: string | null
+          checkout_session_id?: string | null
           completed_at?: string | null
           consolidated_email_sent_at?: string | null
           contract_acceptance_id?: string | null
@@ -5019,6 +5157,7 @@ export type Database = {
           cancellation_token_hash?: string | null
           cancellation_token_used_at?: string | null
           cancelled_at?: string | null
+          checkout_session_id?: string | null
           completed_at?: string | null
           consolidated_email_sent_at?: string | null
           contract_acceptance_id?: string | null
@@ -5214,6 +5353,7 @@ export type Database = {
           cancellation_preview: Json | null
           cancellation_requested_at: string | null
           cease_date: string | null
+          checkout_session_id: string | null
           city: string | null
           contract_acceptance_id: string | null
           contract_summary_id: string | null
@@ -5277,6 +5417,7 @@ export type Database = {
           cancellation_preview?: Json | null
           cancellation_requested_at?: string | null
           cease_date?: string | null
+          checkout_session_id?: string | null
           city?: string | null
           contract_acceptance_id?: string | null
           contract_summary_id?: string | null
@@ -5340,6 +5481,7 @@ export type Database = {
           cancellation_preview?: Json | null
           cancellation_requested_at?: string | null
           cease_date?: string | null
+          checkout_session_id?: string | null
           city?: string | null
           contract_acceptance_id?: string | null
           contract_summary_id?: string | null
@@ -5458,6 +5600,7 @@ export type Database = {
           active: boolean
           bank_name: string | null
           billing_anchor_day: number
+          checkout_session_id: string | null
           consent_at: string | null
           consent_text: string | null
           consent_version: string | null
@@ -5468,6 +5611,7 @@ export type Database = {
           idempotency_key: string | null
           ip: string | null
           journey_id: string | null
+          journey_version: string | null
           masked_account_last4: string | null
           masked_sort_last2: string | null
           method: string
@@ -5480,6 +5624,7 @@ export type Database = {
           active?: boolean
           bank_name?: string | null
           billing_anchor_day: number
+          checkout_session_id?: string | null
           consent_at?: string | null
           consent_text?: string | null
           consent_version?: string | null
@@ -5490,6 +5635,7 @@ export type Database = {
           idempotency_key?: string | null
           ip?: string | null
           journey_id?: string | null
+          journey_version?: string | null
           masked_account_last4?: string | null
           masked_sort_last2?: string | null
           method: string
@@ -5502,6 +5648,7 @@ export type Database = {
           active?: boolean
           bank_name?: string | null
           billing_anchor_day?: number
+          checkout_session_id?: string | null
           consent_at?: string | null
           consent_text?: string | null
           consent_version?: string | null
@@ -5512,6 +5659,7 @@ export type Database = {
           idempotency_key?: string | null
           ip?: string | null
           journey_id?: string | null
+          journey_version?: string | null
           masked_account_last4?: string | null
           masked_sort_last2?: string | null
           method?: string
@@ -6667,6 +6815,7 @@ export type Database = {
           billing_start_rule: string | null
           bucket_override_reason: string | null
           cease_fee_gross: number | null
+          checkout_session_id: string | null
           completed_at: string | null
           contract_length_months: number | null
           contract_type:
@@ -6697,6 +6846,7 @@ export type Database = {
           installation_gross: number
           installation_net: number
           installation_vat_amount: number
+          journey_version: string | null
           legacy_compliance_status:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
@@ -6761,6 +6911,7 @@ export type Database = {
           billing_start_rule?: string | null
           bucket_override_reason?: string | null
           cease_fee_gross?: number | null
+          checkout_session_id?: string | null
           completed_at?: string | null
           contract_length_months?: number | null
           contract_type?:
@@ -6791,6 +6942,7 @@ export type Database = {
           installation_gross?: number
           installation_net?: number
           installation_vat_amount?: number
+          journey_version?: string | null
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
@@ -6855,6 +7007,7 @@ export type Database = {
           billing_start_rule?: string | null
           bucket_override_reason?: string | null
           cease_fee_gross?: number | null
+          checkout_session_id?: string | null
           completed_at?: string | null
           contract_length_months?: number | null
           contract_type?:
@@ -6885,6 +7038,7 @@ export type Database = {
           installation_gross?: number
           installation_net?: number
           installation_vat_amount?: number
+          journey_version?: string | null
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null

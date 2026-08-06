@@ -395,33 +395,20 @@ Deno.serve(async (req) => {
       account_holder_name: p.data.dd_details.account_holder_name,
       status: "details_received",
     };
-    // Test sessions store their encrypted intake in the dedicated test table,
-    // which no provider path ever reads from.
-    const up = session.test_session
-      ? await supabase.from("journey2_test_dd_intake").upsert({
-          session_id: session.id,
-          bank_details_ciphertext: enc.ciphertext_hex,
-          nonce: enc.nonce_hex,
-          enc_key_id: enc.key_id,
-          enc_alg: "AES-256-GCM",
-          masked_account_last4: masked.last4,
-          masked_sort_last2: masked.sort_last2,
-          bank_name: masked.bank_name,
-          account_holder_name: masked.account_holder_name,
-          dd_status: "pending_contract",
-        }, { onConflict: "session_id" })
-      : await supabase.from("journey2_dd_intake").upsert({
-          session_id: session.id,
-          bank_details_ciphertext: enc.ciphertext_hex,
-          nonce: enc.nonce_hex,
-          enc_key_id: enc.key_id,
-          enc_alg: "AES-256-GCM",
-          masked_account_last4: masked.last4,
-          masked_sort_last2: masked.sort_last2,
-          bank_name: masked.bank_name,
-          account_holder_name: masked.account_holder_name,
-          consumed_at: null,
-        }, { onConflict: "session_id" });
+    // Isolated test intake never reaches this function — it is captured by
+    // journey2-test-runner in journey2_test_dd_intake.
+    const up = await supabase.from("journey2_dd_intake").upsert({
+      session_id: session.id,
+      bank_details_ciphertext: enc.ciphertext_hex,
+      nonce: enc.nonce_hex,
+      enc_key_id: enc.key_id,
+      enc_alg: "AES-256-GCM",
+      masked_account_last4: masked.last4,
+      masked_sort_last2: masked.sort_last2,
+      bank_name: masked.bank_name,
+      account_holder_name: masked.account_holder_name,
+      consumed_at: null,
+    }, { onConflict: "session_id" });
     if (up.error) {
       return jsonResponse({
         error: "dd_storage_failed",

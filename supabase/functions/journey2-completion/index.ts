@@ -6,6 +6,7 @@
  * a Direct Debit request or an email.
  */
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { getTestCompletion } from "../_shared/journey2TestPath.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16) });
@@ -24,6 +25,13 @@ Deno.serve(async (req) => {
 
   const supabase = getServiceClient();
   const tokenHash = await sha256Hex(parsed.data.token);
+
+  // An isolated TEST token resolves only against the journey2_test_* tables.
+  const testResult = await getTestCompletion(supabase, parsed.data.token);
+  if (testResult) {
+    if (!testResult.completion) return jsonResponse({ error: "not_completed" }, 409);
+    return jsonResponse({ ok: true, completion: testResult.completion });
+  }
 
   const { data: session } = await supabase
     .from("customer_journey_sessions")
@@ -49,10 +57,6 @@ Deno.serve(async (req) => {
       .from("orders").select("occta_order_number, cooling_off_ends_at").eq("id", session.order_id).maybeSingle();
     orderNumber = order?.occta_order_number ?? null;
     coolingOffEndsAt = order?.cooling_off_ends_at ?? null;
-  } else if (session.test_session) {
-    const { data: t } = await supabase
-      .from("journey2_test_orders").select("test_order_number").eq("session_id", session.id).maybeSingle();
-    orderNumber = t?.test_order_number ?? null;
   }
   if (!orderNumber) return jsonResponse({ error: "not_completed" }, 409);
 

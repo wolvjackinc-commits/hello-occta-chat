@@ -33,18 +33,16 @@ import { logAudit } from "@/lib/audit";
 import { normalizeAccountNumber, isAccountNumberValid } from "@/lib/account";
 import { Download, FileText, Lock, CheckCircle2, Mail } from "lucide-react";
 
+/**
+ * Route wrapper. Legacy bookmarks may still be UUID-based, so the UUID
+ * resolution lives in its own component. This keeps every hook in the main
+ * detail component unconditional (Rules of Hooks).
+ */
 export const AdminCustomerDetail = () => {
   const { accountNumber: rawAccountNumber } = useParams<{ accountNumber: string }>();
   const navigate = useNavigate();
   const accountNumber = rawAccountNumber ? normalizeAccountNumber(rawAccountNumber) : null;
-  const { toast } = useToast();
-  const [updatingServiceId, setUpdatingServiceId] = useState<string | null>(null);
-  const [previewEmail, setPreviewEmail] = useState<any | null>(null);
 
-  // Legacy bookmarks may still be UUID-based. Detect that and either
-  // redirect to the canonical account-number route, or surface the
-  // "Account reconciliation required" screen — never render the page
-  // using a UUID.
   const looksLikeUuid =
     !!rawAccountNumber &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -62,6 +60,7 @@ export const AdminCustomerDetail = () => {
       return data ?? null;
     },
   });
+
   if (looksLikeUuid) {
     if (legacyLoading) {
       return (
@@ -97,6 +96,26 @@ export const AdminCustomerDetail = () => {
       </div>
     );
   }
+
+  return (
+    <CustomerDetailContent
+      accountNumber={accountNumber}
+      rawAccountNumber={rawAccountNumber}
+    />
+  );
+};
+
+const CustomerDetailContent = ({
+  accountNumber,
+  rawAccountNumber,
+}: {
+  accountNumber: string | null;
+  rawAccountNumber?: string;
+}) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [updatingServiceId, setUpdatingServiceId] = useState<string | null>(null);
+  const [previewEmail, setPreviewEmail] = useState<any | null>(null);
 
   const { data, refetch, isLoading, isError } = useQuery({
     queryKey: ["admin-customer", accountNumber],

@@ -97,8 +97,9 @@ Deno.serve(async (req) => {
   }
   const ip = getRequestIp(req);
   if (ip) {
-    const rl = await checkRateLimit(`otp:${ip}`, "send_contract_otp", 10, 60);
-    if (!rl.allowed) return jsonResponse({ error: "send_limit_reached" }, 429);
+    // checkRateLimit returns a boolean (true = allowed).
+    const allowed = await checkRateLimit(`otp:${ip}`, "send_contract_otp", 10, 60);
+    if (!allowed) return jsonResponse({ error: "send_limit_reached" }, 429);
   }
 
   const jwt = smsWorksJwt();

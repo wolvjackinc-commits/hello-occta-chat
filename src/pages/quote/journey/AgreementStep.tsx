@@ -326,6 +326,31 @@ export default function AgreementStep({
             <p className="text-xs text-muted-foreground">All four confirmations below must be ticked. Nothing is binding until you click the button at the bottom.</p>
           </div>
 
+          {onEditStep && (
+            <div className="border-2 border-dashed border-foreground/40 p-3">
+              <p className="font-display uppercase text-xs tracking-widest mb-2">Need to change something first?</p>
+              <p className="text-xs text-muted-foreground mb-2">
+                You can still edit anything before you sign. Once you sign, changes can only be made by our team.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ["address", "Service address"],
+                  ["plan", "Plan and term"],
+                  ["router", "Router"],
+                  ["extras", "Extras"],
+                  ["details", "Your details / mobile"],
+                  ["start_date", "Start date"],
+                  ["billing", "Billing and Direct Debit"],
+                ] as const).map(([step, label]) => (
+                  <Button key={step} type="button" variant="outline" size="sm" className="text-xs"
+                    onClick={() => onEditStep(step)}>
+                    Edit {label.toLowerCase()}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="ag-name">Typed full legal name</Label>

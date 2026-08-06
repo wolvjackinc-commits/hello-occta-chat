@@ -4551,13 +4551,6 @@ export type Database = {
             referencedRelation: "journey2_live_sessions"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "journey2_contract_snapshots_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "journey2_test_sessions"
-            referencedColumns: ["id"]
-          },
         ]
       }
       journey2_dd_intake: {
@@ -4619,13 +4612,6 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "journey2_live_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "journey2_dd_intake_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "journey2_test_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -4776,13 +4762,6 @@ export type Database = {
             referencedRelation: "journey2_live_sessions"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "journey2_email_outbox_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "journey2_test_sessions"
-            referencedColumns: ["id"]
-          },
         ]
       }
       journey2_test_acceptances: {
@@ -4823,6 +4802,13 @@ export type Database = {
           test_contract_summary_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "journey2_test_acc_session_fk"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "journey2_test_acceptances_test_contract_summary_id_fkey"
             columns: ["test_contract_summary_id"]
@@ -4883,6 +4869,13 @@ export type Database = {
             referencedRelation: "journey2_test_runs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "journey2_test_cs_session_fk"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       journey2_test_dd_intake: {
@@ -4934,7 +4927,15 @@ export type Database = {
           session_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "journey2_test_dd_intake_session_fk"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       journey2_test_documents: {
         Row: {
@@ -5122,6 +5123,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "journey2_test_orders_session_fk"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "journey2_test_orders_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -5133,13 +5141,6 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "journey2_live_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "journey2_test_orders_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "journey2_test_sessions"
             referencedColumns: ["id"]
           },
           {
@@ -5193,6 +5194,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "journey2_test_runs_session_fk"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "journey2_test_runs_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -5206,8 +5214,147 @@ export type Database = {
             referencedRelation: "journey2_live_sessions"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      journey2_test_sessions: {
+        Row: {
+          accepted_at: string | null
+          billing_anchor_day: number | null
+          checkout_session_id: string
+          contract_locked: boolean
+          cooling_off_acknowledged: boolean
+          created_at: string
+          current_step: string
+          customer_details: Json | null
+          dd_consent: boolean
+          dd_masked: Json | null
+          dd_status: string | null
+          digital_voice_acknowledged: boolean
+          id: string
+          journey_version: string
+          label: string
+          last_completed_step: string | null
+          plan_term: string | null
+          postcode: string | null
+          preferred_start_date: string | null
+          price_snapshot: Json | null
+          public_token_hash: string
+          router_option: Json | null
+          selected_addons: Json
+          service_address: Json | null
+          setup_option: Json | null
+          speed_bucket: string | null
+          status: string
+          submitted_at: string | null
+          test_run_id: string | null
+          test_session: boolean
+          test_snapshot_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          billing_anchor_day?: number | null
+          checkout_session_id?: string
+          contract_locked?: boolean
+          cooling_off_acknowledged?: boolean
+          created_at?: string
+          current_step?: string
+          customer_details?: Json | null
+          dd_consent?: boolean
+          dd_masked?: Json | null
+          dd_status?: string | null
+          digital_voice_acknowledged?: boolean
+          id?: string
+          journey_version?: string
+          label?: string
+          last_completed_step?: string | null
+          plan_term?: string | null
+          postcode?: string | null
+          preferred_start_date?: string | null
+          price_snapshot?: Json | null
+          public_token_hash: string
+          router_option?: Json | null
+          selected_addons?: Json
+          service_address?: Json | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          status?: string
+          submitted_at?: string | null
+          test_run_id?: string | null
+          test_session?: boolean
+          test_snapshot_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          billing_anchor_day?: number | null
+          checkout_session_id?: string
+          contract_locked?: boolean
+          cooling_off_acknowledged?: boolean
+          created_at?: string
+          current_step?: string
+          customer_details?: Json | null
+          dd_consent?: boolean
+          dd_masked?: Json | null
+          dd_status?: string | null
+          digital_voice_acknowledged?: boolean
+          id?: string
+          journey_version?: string
+          label?: string
+          last_completed_step?: string | null
+          plan_term?: string | null
+          postcode?: string | null
+          preferred_start_date?: string | null
+          price_snapshot?: Json | null
+          public_token_hash?: string
+          router_option?: Json | null
+          selected_addons?: Json
+          service_address?: Json | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          status?: string
+          submitted_at?: string | null
+          test_run_id?: string | null
+          test_session?: boolean
+          test_snapshot_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journey2_test_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          pricing_version: string | null
+          session_id: string
+          snapshot: Json
+          snapshot_sha256: string
+          test_run_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string
+          pricing_version?: string | null
+          session_id: string
+          snapshot: Json
+          snapshot_sha256: string
+          test_run_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          pricing_version?: string | null
+          session_id?: string
+          snapshot?: Json
+          snapshot_sha256?: string
+          test_run_id?: string | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "journey2_test_runs_session_id_fkey"
+            foreignKeyName: "journey2_test_snapshots_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "journey2_test_sessions"
@@ -10895,183 +11042,6 @@ export type Database = {
         ]
       }
       journey2_live_sessions: {
-        Row: {
-          abandoned_at: string | null
-          anonymous_session_id_hash: string | null
-          billing_anchor_day: number | null
-          checkout_session_id: string | null
-          completed_at: string | null
-          contract_acceptance_id: string | null
-          contract_snapshot_id: string | null
-          contract_summary_id: string | null
-          cooling_off_acknowledged: boolean | null
-          created_at: string | null
-          current_step: string | null
-          customer_details: Json | null
-          customer_id: string | null
-          dd_masked: Json | null
-          dd_status: string | null
-          digital_voice_acknowledged: boolean | null
-          expires_at: string | null
-          guest_order_id: string | null
-          id: string | null
-          idempotency_key: string | null
-          ip: string | null
-          journey_assigned_at: string | null
-          journey_version: string | null
-          last_activity_at: string | null
-          last_completed_step: string | null
-          last_error: string | null
-          manual_review_reason: string | null
-          order_id: string | null
-          order_journey_id: string | null
-          payment_method_id: string | null
-          plan_term: string | null
-          post_contract_applied_at: string | null
-          postcode: string | null
-          preferred_start_date: string | null
-          price_snapshot: Json | null
-          pricing_version: string | null
-          public_token_hash: string | null
-          quote_id: string | null
-          quote_public_token_hash: string | null
-          quote_request_id: string | null
-          resume_email_sent_at: string | null
-          router_option: Json | null
-          selected_addons: Json | null
-          service_address: Json | null
-          setup_option: Json | null
-          speed_bucket: string | null
-          status: string | null
-          submitted_at: string | null
-          test_acceptance_id: string | null
-          test_contract_summary_id: string | null
-          test_order_id: string | null
-          test_run_id: string | null
-          test_session: boolean | null
-          updated_at: string | null
-          user_agent: string | null
-          utm_snapshot: Json | null
-        }
-        Insert: {
-          abandoned_at?: string | null
-          anonymous_session_id_hash?: string | null
-          billing_anchor_day?: number | null
-          checkout_session_id?: string | null
-          completed_at?: string | null
-          contract_acceptance_id?: string | null
-          contract_snapshot_id?: string | null
-          contract_summary_id?: string | null
-          cooling_off_acknowledged?: boolean | null
-          created_at?: string | null
-          current_step?: string | null
-          customer_details?: Json | null
-          customer_id?: string | null
-          dd_masked?: Json | null
-          dd_status?: string | null
-          digital_voice_acknowledged?: boolean | null
-          expires_at?: string | null
-          guest_order_id?: string | null
-          id?: string | null
-          idempotency_key?: string | null
-          ip?: string | null
-          journey_assigned_at?: string | null
-          journey_version?: string | null
-          last_activity_at?: string | null
-          last_completed_step?: string | null
-          last_error?: string | null
-          manual_review_reason?: string | null
-          order_id?: string | null
-          order_journey_id?: string | null
-          payment_method_id?: string | null
-          plan_term?: string | null
-          post_contract_applied_at?: string | null
-          postcode?: string | null
-          preferred_start_date?: string | null
-          price_snapshot?: Json | null
-          pricing_version?: string | null
-          public_token_hash?: string | null
-          quote_id?: string | null
-          quote_public_token_hash?: string | null
-          quote_request_id?: string | null
-          resume_email_sent_at?: string | null
-          router_option?: Json | null
-          selected_addons?: Json | null
-          service_address?: Json | null
-          setup_option?: Json | null
-          speed_bucket?: string | null
-          status?: string | null
-          submitted_at?: string | null
-          test_acceptance_id?: string | null
-          test_contract_summary_id?: string | null
-          test_order_id?: string | null
-          test_run_id?: string | null
-          test_session?: boolean | null
-          updated_at?: string | null
-          user_agent?: string | null
-          utm_snapshot?: Json | null
-        }
-        Update: {
-          abandoned_at?: string | null
-          anonymous_session_id_hash?: string | null
-          billing_anchor_day?: number | null
-          checkout_session_id?: string | null
-          completed_at?: string | null
-          contract_acceptance_id?: string | null
-          contract_snapshot_id?: string | null
-          contract_summary_id?: string | null
-          cooling_off_acknowledged?: boolean | null
-          created_at?: string | null
-          current_step?: string | null
-          customer_details?: Json | null
-          customer_id?: string | null
-          dd_masked?: Json | null
-          dd_status?: string | null
-          digital_voice_acknowledged?: boolean | null
-          expires_at?: string | null
-          guest_order_id?: string | null
-          id?: string | null
-          idempotency_key?: string | null
-          ip?: string | null
-          journey_assigned_at?: string | null
-          journey_version?: string | null
-          last_activity_at?: string | null
-          last_completed_step?: string | null
-          last_error?: string | null
-          manual_review_reason?: string | null
-          order_id?: string | null
-          order_journey_id?: string | null
-          payment_method_id?: string | null
-          plan_term?: string | null
-          post_contract_applied_at?: string | null
-          postcode?: string | null
-          preferred_start_date?: string | null
-          price_snapshot?: Json | null
-          pricing_version?: string | null
-          public_token_hash?: string | null
-          quote_id?: string | null
-          quote_public_token_hash?: string | null
-          quote_request_id?: string | null
-          resume_email_sent_at?: string | null
-          router_option?: Json | null
-          selected_addons?: Json | null
-          service_address?: Json | null
-          setup_option?: Json | null
-          speed_bucket?: string | null
-          status?: string | null
-          submitted_at?: string | null
-          test_acceptance_id?: string | null
-          test_contract_summary_id?: string | null
-          test_order_id?: string | null
-          test_run_id?: string | null
-          test_session?: boolean | null
-          updated_at?: string | null
-          user_agent?: string | null
-          utm_snapshot?: Json | null
-        }
-        Relationships: []
-      }
-      journey2_test_sessions: {
         Row: {
           abandoned_at: string | null
           anonymous_session_id_hash: string | null

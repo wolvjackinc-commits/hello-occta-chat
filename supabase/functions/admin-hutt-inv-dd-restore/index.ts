@@ -32,7 +32,11 @@ Deno.serve(async (req) => {
   const auth = req.headers.get("Authorization") ?? "";
   const internal = req.headers.get("x-internal-secret") ?? "";
   const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
-  const okAuth = auth === `Bearer ${serviceKey}` || (cronSecret && internal === cronSecret);
+  const taskSecret = Deno.env.get("TASK_HUTT_RESTORE_SECRET") ?? "";
+  const okAuth =
+    auth === `Bearer ${serviceKey}` ||
+    (cronSecret && internal === cronSecret) ||
+    (taskSecret && req.headers.get("x-task-secret") === taskSecret);
   let jwtRole: string | null = null;
   try {
     const t = auth.replace(/^Bearer\s+/i, "");

@@ -1,6 +1,7 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, getRequestIp, checkRateLimit, sendResendEmail, brutalistEmailShell, escapeHtml, maskEmail } from "../_shared/quoteHelpers.ts";
 import { ACCEPTANCE_CHECKBOX_TEXT } from "../_shared/legalText.ts";
 import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
+import { requireVerifiedOtp, resolveJourneyContext, consumeOtpChallenge } from "../_shared/contractOtp.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { perfServe } from "../_shared/perfLog.ts";
 
@@ -119,6 +120,24 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     if (typeof i.cs_version === "number" && i.cs_version !== cs.version) {
       return jsonResponse({ error: "cs_version_stale", current_version: cs.version }, 409);
     }
+
+    // Independent server-side SMS OTP gate. A verified, unconsumed challenge
+    // must exist for this journey and the order's current mobile number —
+    // frontend state is never trusted.
+    const otpCtx = await resolveJourneyContext(hash);
+    if (!otpCtx.ok) return jsonResponse({ error: otpCtx.error }, otpCtx.status);
+    const otpGate = await requireVerifiedOtp({
+      journeyId: otpCtx.journeyId,
+      journeyType: otpCtx.journeyType,
+      mobile: otpCtx.mobile,
+    });
+    if (!otpGate.ok) {
+      return jsonResponse({
+        error: otpGate.error,
+        message: "Please verify your mobile number before signing.",
+      }, 403);
+    }
+    otpChallengeRowId = (otpGate.challenge?.id as string | undefined) ?? null;
   } else {
     if (i.checkbox_confirmed !== true) return jsonResponse({ error: "checkbox_required" }, 400);
   }

@@ -47,6 +47,7 @@ export default function OrderJourney() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const appliedRef = useRef(false);
   const [applyError, setApplyError] = useState<string | null>(null);
+  const editingRef = useRef(false);
 
   // ── Load session + catalogue ───────────────────────────────────────────────
   const loadSession = useCallback(async () => {
@@ -186,6 +187,15 @@ export default function OrderJourney() {
       }
       setBackStep(null);
       setSession(res.session);
+      // Editing after the contract was prepared invalidates it — regenerate so
+      // the customer only ever signs a contract that matches their choices.
+      if (editingRef.current) {
+        editingRef.current = false;
+        quoteTokenStore.clear(res.session.id);
+        setQuoteToken(null);
+        setJourneyState(null);
+        appliedRef.current = false;
+      }
       if (!(SELECTION_STEPS as readonly string[]).includes(res.session.current_step)) {
         await enterContractPhase(res.session);
       }
@@ -195,6 +205,16 @@ export default function OrderJourney() {
     } finally {
       setSaving(false);
     }
+  };
+
+  /**
+   * Pre-signature editing. Only offered while the contract has not been accepted —
+   * after signing, changes are admin-only.
+   */
+  const startEdit = (step: SelectionStep) => {
+    editingRef.current = true;
+    setBackStep(step);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (loading) {
@@ -307,7 +327,12 @@ export default function OrderJourney() {
                   </div>
                 )}
                 {(contractStep === "quote" || contractStep === "agreement") && (
-                  <AgreementStep token={quoteToken} quote={journeyState.quote} onAccepted={onContractAccepted} />
+                  <AgreementStep
+                    token={quoteToken}
+                    quote={journeyState.quote}
+                    onAccepted={onContractAccepted}
+                    onEditStep={journeyState.journey?.contract_accepted_at ? undefined : startEdit}
+                  />
                 )}
                 {(contractStep === "start_date" || contractStep === "payment") && (
                   <div className="border-4 border-foreground p-6 text-center">

@@ -279,9 +279,9 @@ maybe("Direct Debit manual providers (database-backed)", () => {
 
   it("keeps outbox notifications idempotent when a transition is retried", async () => {
     const id = await newMandate({ status: "awaiting_manual_submission" });
-    await change(id, "submitted_to_provider", { provider: "accesspay", reference: "AP-PORTAL-0001" });
+    await change(id, "submitted_to_provider", { provider: "accesspay", reference: "AP-PORTAL-0001", submittedAt: new Date().toISOString() });
     // A retried identical transition is a no-op and must not queue a second email.
-    await change(id, "submitted_to_provider", { provider: "accesspay", reference: "AP-PORTAL-0001" });
+    await change(id, "submitted_to_provider", { provider: "accesspay", reference: "AP-PORTAL-0001", submittedAt: new Date().toISOString() });
     const { rows } = await db.query(
       "select count(*)::int n, count(distinct idempotency_key)::int k from dd_email_outbox where mandate_id = $1",
       [id],
@@ -292,7 +292,7 @@ maybe("Direct Debit manual providers (database-backed)", () => {
 
   it("suppresses the customer email for test mandates and never calls a provider", async () => {
     const id = await newMandate({ status: "awaiting_manual_submission" });
-    await change(id, "submitted_to_provider", { provider: "fastpay", reference: "FP-TEST-1" });
+    await change(id, "submitted_to_provider", { provider: "fastpay", reference: "FP-TEST-1", submittedAt: new Date().toISOString() });
     const ok = await change(id, "active");
     expect(ok.rows[0].r.success).toBe(true);
     const { rows } = await db.query(
@@ -308,7 +308,7 @@ maybe("Direct Debit manual providers (database-backed)", () => {
 
   it("never puts bank details in the outbox payload", async () => {
     const id = await newMandate({ status: "awaiting_manual_submission" });
-    await change(id, "submitted_to_provider", { provider: "fastpay", reference: "FP-SAFE-1" });
+    await change(id, "submitted_to_provider", { provider: "fastpay", reference: "FP-SAFE-1", submittedAt: new Date().toISOString() });
     const { rows } = await db.query("select payload from dd_email_outbox where mandate_id = $1", [id]);
     const raw = JSON.stringify(rows[0].payload).toLowerCase();
     // `account_number` here would be the OCCTA customer account reference; the

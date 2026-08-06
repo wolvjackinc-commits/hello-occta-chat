@@ -23,7 +23,8 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
   const startJourney = async () => {
     if (routing) return;
     setRouting(true);
-    await startAssignedJourney((path) => navigate(path));
+    setRoutingError(null);
+    await startAssignedJourney((path) => navigate(path), (msg) => setRoutingError(msg));
     setRouting(false);
   };
 

@@ -54,16 +54,17 @@ const LIVE_TABLES = [
   "service_activation_outbox",
 ];
 
+// The ten canonical Journey 2 stages, exactly as the orchestrator records them.
 const REQUIRED_STAGES = [
   "address",
   "plan",
   "router",
   "extras",
   "details",
-  "review",
+  "start_date",
+  "billing",
   "contract",
-  "dd",
-  "submit",
+  "review",
   "complete",
 ];
 
@@ -144,7 +145,7 @@ maybe("Journey 2 real isolated engine run", () => {
       [run!.test_run_id],
     );
     expect(rows.length).toBe(1);
-    expect(rows[0].status).toBe("passed");
+    expect(rows[0].status).toBe("completed");
     expect(rows[0].finished_at).not.toBeNull();
   });
 
@@ -165,9 +166,9 @@ maybe("Journey 2 real isolated engine run", () => {
     );
     const keys = new Set(rows.map((r) => r.gate_key));
     for (const stage of REQUIRED_STAGES) {
-      expect(keys.has(`run_stage_${stage}`), `stage ${stage} must be proven`).toBe(true);
+      expect(keys.has(`stage_${stage}`), `stage ${stage} must be proven`).toBe(true);
     }
-    expect(keys.has("run_admin_test_access_with_kill_switch")).toBe(true);
+    expect(keys.has("admin_test_access_with_kill_switch")).toBe(true);
     const { rows: settings } = await db.query(
       "select customer_journey_v2_kill_switch as k from platform_settings where singleton = true",
     );
@@ -186,9 +187,10 @@ maybe("Journey 2 real isolated engine run", () => {
       [run!.test_run_id],
     );
     const keys = new Set(gates.map((r) => r.gate_key));
-    expect(keys.has("run_hash_recomputed")).toBe(true);
-    expect(keys.has("run_tamper_rejected")).toBe(true);
-    expect(keys.has("run_snapshot_immutable")).toBe(true);
+    expect(keys.has("snapshot_hash_byte_for_byte")).toBe(true);
+    expect(keys.has("submit_hash_recomputed")).toBe(true);
+    expect(keys.has("tamper_rejected")).toBe(true);
+    expect(keys.has("snapshot_immutable")).toBe(true);
   });
 
   it("stored real configured pricing with VAT and nothing payable today", async () => {
@@ -201,10 +203,10 @@ maybe("Journey 2 real isolated engine run", () => {
     expect(Number(rows[0].amount_due_today)).toBe(0);
     expect(Number(rows[0].monthly_incl_vat)).toBeGreaterThan(0);
     const pricing = rows[0].snapshot?.pricing ?? {};
-    expect(Number(pricing.vat_rate ?? 0)).toBeGreaterThan(0);
+    expect(Number(pricing.vat_rate_percent ?? 0)).toBeGreaterThan(0);
     expect(Number(pricing.monthly_incl_vat ?? 0)).toBeCloseTo(Number(rows[0].monthly_incl_vat), 2);
     // First bill carries the one-off charges, today's payment does not.
-    expect(Number(pricing.first_bill_total ?? 0)).toBeGreaterThanOrEqual(
+    expect(Number(pricing.estimated_first_bill_incl_vat ?? 0)).toBeGreaterThanOrEqual(
       Number(rows[0].monthly_incl_vat),
     );
   });
@@ -220,7 +222,21 @@ maybe("Journey 2 real isolated engine run", () => {
     expect(String(rows[0].bank_details_ciphertext)).not.toMatch(/\d{8}/);
     expect(String(rows[0].masked_account_last4)).toMatch(/^\d{4}$/);
     expect(String(rows[0].masked_sort_last2)).toMatch(/^\d{2}$/);
-    expect(rows[0].dd_status).toBe("setup_requested");
+    // Test runs use a deliberately distinct, non-live terminal state.
+    expect(rows[0].dd_status).toBe("setup_requested_test");
+    const { rows: ddGates } = await db.query(
+      "select gate_key from journey2_test_events where test_run_id = $1 and ok = true",
+      [run!.test_run_id],
+    );
+    const ddKeys = ddGates.map((r) => r.gate_key);
+    for (const g of [
+      "dd_state_details_received",
+      "dd_state_pending_contract",
+      "dd_state_setup_requested_test",
+      "dd_never_live_state",
+    ]) {
+      expect(ddKeys, `${g} must be proven`).toContain(g);
+    }
   });
 
   it("produced exactly one acceptance, order, DD record, and one email per type after double submission", async () => {

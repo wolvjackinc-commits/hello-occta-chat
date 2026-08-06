@@ -12,11 +12,12 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:unit": "vitest run --exclude '**/__tests__/db/**'",
     "test:j1-regression": "vitest run src/lib/journey2/__tests__/journey1-regression.unit.test.ts",
-    "test:j2-integration": "vitest run src/lib/journey2/__tests__/db/journey2-isolation.db.test.ts",
+    "test:j2-integration": "vitest run src/lib/journey2/__tests__/db/journey2-isolation.db.test.ts src/lib/journey2/__tests__/db/journey2-engine.db.test.ts",
     "test:pricing-vat": "vitest run src/lib/journey2/__tests__/pricing-vat.unit.test.ts",
     "test:duplicate": "vitest run src/lib/journey2/__tests__/duplicate-submission.unit.test.ts",
     "test:isolation": "vitest run src/lib/journey2/__tests__/test-mode-isolation.unit.test.ts src/lib/journey2/__tests__/db/journey2-isolation.db.test.ts",
-    "test:migrations": "bash scripts/apply-migrations.sh"
+    "test:migrations": "supabase db reset --no-seed",
+    "test:j2-engine": "vitest run src/lib/journey2/__tests__/db/journey2-engine.db.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

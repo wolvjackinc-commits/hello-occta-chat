@@ -3,9 +3,6 @@ import { corsHeaders, jsonResponse } from "../_shared/quoteHelpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.headers.get("x-diag-secret") !== Deno.env.get("CRON_JOB_SECRET")) {
-    return jsonResponse({ error: "forbidden" }, 403);
-  }
   const raw = (Deno.env.get("SMS_WORKS_JWT") ?? "").trim();
   const out: Record<string, unknown> = {
     present: raw.length > 0,

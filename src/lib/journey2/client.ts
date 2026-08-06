@@ -124,7 +124,17 @@ function readUtm(): Record<string, string> | undefined {
 
 async function call<T>(fn: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(fn, { body });
-  if (error && !data) throw new Error(error.message ?? "network_error");
+  if (error && !data) {
+    // Non-2xx responses arrive as an error with the JSON body on the attached
+    // Response. Surfacing that body means the customer sees the real, actionable
+    // reason instead of a generic "we couldn't reach our ordering service".
+    const ctx = (error as { context?: Response }).context;
+    if (ctx && typeof ctx.json === "function") {
+      const parsed = await ctx.json().catch(() => null);
+      if (parsed && typeof parsed === "object") return parsed as T;
+    }
+    throw new Error(error.message ?? "network_error");
+  }
   return data as T;
 }
 

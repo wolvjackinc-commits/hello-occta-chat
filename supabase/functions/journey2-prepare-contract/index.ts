@@ -1,14 +1,18 @@
 /**
- * Journey 2 — materialise the session into the existing contractual pipeline.
+ * Journey 2 — prepare the contractual documents from one canonical snapshot.
  *
- * Idempotently creates the quote_request, the exactly-priced quote and the
- * order_journeys row, then triggers Contract Summary generation through the
- * existing `journey-generate-cs` service. The quote token it returns is what
- * drives the shared contract, start-date, Direct Debit, review and submission
- * steps, so Journey 2 never runs a second copy of that logic.
+ * LIVE sessions materialise into the existing contractual pipeline (quote
+ * request, exactly-priced quote, order journey, Contract Summary + Contract
+ * Information) so nothing commercial is duplicated.
  *
- * Never sends a quote email, never creates invoices, payment requests,
- * Worldpay sessions, mandates or orders.
+ * TEST sessions are fully isolated from session creation onwards: they never
+ * touch quote_requests, quotes, order_journeys, contract_summaries,
+ * contract_information_packs, contract_acceptances, payment_methods, orders,
+ * profiles, invoices, payment requests, the live email outbox or any provider.
+ * Their contract documents are written to journey2_test_contract_summaries.
+ *
+ * Never sends an email, never creates invoices, payment requests, card
+ * sessions, mandates or orders.
  */
 import {
   corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit,
@@ -16,7 +20,11 @@ import {
 } from "../_shared/quoteHelpers.ts";
 import { loadJourneySettings, resolveJourney2Price, planNameFor, JOURNEY2_SETUP } from "../_shared/journey2.ts";
 import { RESOLVER_VERSION } from "../_shared/buildPlanResolver.ts";
-import { sha256Json } from "../_shared/ddCrypto.ts";
+import {
+  buildJourney2Snapshot, snapshotFingerprint, verifyStoredSnapshot,
+  type Journey2Snapshot,
+} from "../_shared/journey2Snapshot.ts";
+import { buildJourney2DocumentPack } from "../_shared/journey2Docs.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16) });
@@ -37,7 +45,6 @@ Deno.serve(async (req) => {
 
   const supabase = getServiceClient();
   const settings = await loadJourneySettings(supabase);
-  // Authoritative VAT rate — never hard-coded.
   const vatPercent = Number((settings as any).vat_default_rate ?? 0);
   if (!(vatPercent > 0 && vatPercent <= 100)) {
     return jsonResponse({
@@ -58,19 +65,12 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "session_closed", status: session.status }, 409);
   }
 
-  const details = session.customer_details as {
-    full_name?: string; email?: string; phone?: string; date_of_birth?: string | null;
-    current_provider?: string | null; marketing_consent?: boolean;
-  } | null;
-  const address = session.service_address as {
-    address_line_1?: string; address_line_2?: string | null; town?: string; county?: string | null;
-  } | null;
+  const details = (session.customer_details ?? null) as Record<string, any> | null;
+  const address = (session.service_address ?? null) as Record<string, any> | null;
 
   if (!session.speed_bucket || !session.plan_term) return jsonResponse({ error: "plan_not_selected" }, 409);
   if (!details?.full_name || !details?.email || !details?.phone) return jsonResponse({ error: "details_incomplete" }, 409);
   if (!address?.address_line_1 || !address?.town || !session.postcode) return jsonResponse({ error: "address_incomplete" }, 409);
-  // Contract documents are never generated before the start date and billing
-  // selections exist — the documents must state both.
   if (!session.preferred_start_date || !session.cooling_off_acknowledged) {
     return jsonResponse({ error: "start_date_required", message: "Choose your preferred start date before we prepare your contract." }, 409);
   }
@@ -78,12 +78,30 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "billing_required", message: "Complete your billing day and Direct Debit details before we prepare your contract." }, 409);
   }
 
-  // ── Idempotent replay: quote already materialised for this session ────────
-  let quoteToken: string | null = null;
-  let quoteId: string | null = session.quote_id ?? null;
+  // ── One canonical snapshot per session ─────────────────────────────────────
+  const { data: existingSnap } = await supabase
+    .from("journey2_contract_snapshots")
+    .select("id, snapshot, snapshot_sha256")
+    .eq("session_id", session.id)
+    .maybeSingle();
 
-  if (!quoteId) {
-    // Re-resolve the price server-side. The client snapshot is never trusted.
+  let snapshot: Journey2Snapshot;
+  let snapshotHash: string;
+  let snapshotId: string | null = existingSnap?.id ?? null;
+
+  if (existingSnap) {
+    // An accepted snapshot is immutable; replay verifies it instead of rebuilding.
+    const v = await verifyStoredSnapshot(existingSnap.snapshot, existingSnap.snapshot_sha256);
+    if (!v.ok) {
+      return jsonResponse({
+        error: "snapshot_integrity_failed",
+        detail: v.reason,
+        message: "Your order details need to be re-confirmed before we can continue.",
+      }, 409);
+    }
+    snapshot = existingSnap.snapshot as Journey2Snapshot;
+    snapshotHash = existingSnap.snapshot_sha256 as string;
+  } else {
     const priced = await resolveJourney2Price(supabase, settings, {
       speed_bucket: session.speed_bucket,
       plan_term: session.plan_term,
@@ -93,25 +111,17 @@ Deno.serve(async (req) => {
       customer_type: "residential",
     });
     if (!priced) {
-      // The session stays in Journey 2 and stays retryable — it is never
-      // silently converted into a quote request.
       await supabase.from("customer_journey_sessions")
         .update({ last_error: "price_not_exact_at_contract", last_activity_at: new Date().toISOString() })
         .eq("id", session.id);
-      await supabase.from("admin_tasks").insert({
-        title: "Journey 2 price could not be resolved at contract stage",
-        description: `Journey 2 session ${session.id} (${session.speed_bucket}/${session.plan_term}${session.test_session ? ", TEST" : ""}) has no exact price. The customer is still in Journey 2 and can retry.`,
-        priority: "high",
-        status: "open",
-      }).then(() => {}).catch(() => {});
-      await supabase.rpc("log_event", {
-        _actor_type: "public",
-        _event_type: "journey2_price_not_exact",
-        _title: "Journey 2 exact price unavailable at contract stage",
-        _details: { session_id: session.id },
-        _source_module: "journey2",
-        _severity: "error",
-      }).then(() => {}).catch(() => {});
+      if (!session.test_session) {
+        await supabase.from("admin_tasks").insert({
+          title: "Journey 2 price could not be resolved at contract stage",
+          description: `Journey 2 session ${session.id} (${session.speed_bucket}/${session.plan_term}) has no exact price. The customer is still in Journey 2 and can retry.`,
+          priority: "high",
+          status: "open",
+        }).then(() => {}).catch(() => {});
+      }
       return jsonResponse({
         error: "price_unavailable",
         message: "This option isn't priced right now. Your order is saved — please try again shortly or choose another option.",
@@ -119,27 +129,137 @@ Deno.serve(async (req) => {
       }, 409);
     }
 
-    // quote_request — the intake record every downstream service reads from.
+    const { data: legalRows } = await supabase
+      .from("site_copy")
+      .select("key, updated_at")
+      .in("key", ["terms_of_service", "privacy_policy", "contract_summary", "direct_debit_guarantee"]);
+    const legalVersions = Object.fromEntries(
+      (legalRows ?? []).map((r: any) => [String(r.key), String(r.updated_at)]).sort(),
+    ) as Record<string, string>;
+
+    snapshot = buildJourney2Snapshot({
+      session,
+      priced,
+      vatPercent,
+      pricingVersion: RESOLVER_VERSION,
+      planName: planNameFor(session.speed_bucket as any, session.plan_term as any),
+      legalVersions,
+    });
+    snapshotHash = await snapshotFingerprint(snapshot);
+
+    const snapIns = await supabase.from("journey2_contract_snapshots").upsert({
+      session_id: session.id,
+      checkout_session_id: session.checkout_session_id,
+      journey_version: "v2",
+      test_session: !!session.test_session,
+      pricing_version: RESOLVER_VERSION,
+      legal_document_versions: legalVersions,
+      snapshot,
+      snapshot_sha256: snapshotHash,
+    }, { onConflict: "session_id", ignoreDuplicates: true }).select("id").maybeSingle();
+    snapshotId = snapIns.data?.id ?? null;
+    if (!snapshotId) {
+      const { data: again } = await supabase.from("journey2_contract_snapshots")
+        .select("id, snapshot, snapshot_sha256").eq("session_id", session.id).maybeSingle();
+      snapshotId = again?.id ?? null;
+      if (again) { snapshot = again.snapshot as Journey2Snapshot; snapshotHash = again.snapshot_sha256 as string; }
+    }
+
+    // Keep the browser-visible price snapshot aligned with the agreed figures.
+    await supabase.from("customer_journey_sessions").update({
+      contract_snapshot_id: snapshotId,
+      price_snapshot: {
+        ...(() => { const { internal: _i, ...safe } = priced as any; return safe; })(),
+        amount_due_today: 0,
+        one_off_in_first_bill: snapshot.pricing.one_off_charges_incl_vat,
+      },
+      pricing_version: RESOLVER_VERSION,
+      last_activity_at: new Date().toISOString(),
+    }).eq("id", session.id);
+  }
+
+  // ── TEST path: contract documents live only in the test tables ─────────────
+  if (session.test_session) {
+    const pack = buildJourney2DocumentPack(snapshot, {
+      order_number: "TEST — pending submission",
+      snapshot_sha256: snapshotHash,
+      dd_status: "suppressed_test",
+      test: true,
+    });
+    const cs = pack.find((d) => d.doc_type === "contract_summary")!;
+    const ci = pack.find((d) => d.doc_type === "contract_information")!;
+
+    const ins = await supabase.from("journey2_test_contract_summaries").upsert({
+      test_run_id: session.test_run_id ?? null,
+      session_id: session.id,
+      checkout_session_id: session.checkout_session_id,
+      status: "issued",
+      snapshot_sha256: snapshotHash,
+      summary: cs.content,
+      contract_information: ci.content,
+    }, { onConflict: "session_id" }).select("id").single();
+    if (ins.error) return jsonResponse({ error: "test_contract_failed", details: ins.error.message }, 500);
+
+    await supabase.from("customer_journey_sessions").update({
+      test_contract_summary_id: ins.data.id,
+      status: "contract_prepared",
+      current_step: "contract",
+      last_activity_at: new Date().toISOString(),
+      last_error: null,
+    }).eq("id", session.id);
+
+    return jsonResponse({
+      ok: true,
+      test_session: true,
+      contract_ready: true,
+      test_contract_summary_id: ins.data.id,
+      snapshot_sha256: snapshotHash,
+    });
+  }
+
+  // ── LIVE path ─────────────────────────────────────────────────────────────
+  let quoteToken: string | null = null;
+  let quoteId: string | null = session.quote_id ?? null;
+
+  if (!quoteId) {
+    const priced = await resolveJourney2Price(supabase, settings, {
+      speed_bucket: session.speed_bucket,
+      plan_term: session.plan_term,
+      router_option: (session.router_option as any)?.router_option ?? "own",
+      router_payment_type: (session.router_option as any)?.router_payment_type ?? "none",
+      addons: (session.selected_addons ?? []) as any,
+      customer_type: "residential",
+    });
+    if (!priced) return jsonResponse({ error: "price_unavailable", retryable: true }, 409);
+
+    // The quote must carry exactly the agreed snapshot figures.
+    if (Math.abs(round2(priced.monthly_total_incl_vat) - snapshot.pricing.monthly_incl_vat) > 0.005) {
+      return jsonResponse({
+        error: "price_changed_since_snapshot",
+        message: "Our prices changed while you were ordering. Please review your order again so you agree the current price.",
+      }, 409);
+    }
+
     let quoteRequestId: string | null = session.quote_request_id ?? null;
     if (!quoteRequestId) {
       const qrIns = await supabase.from("quote_requests").insert({
-        full_name: details.full_name,
-        email: details.email,
-        phone: details.phone,
-        date_of_birth: details.date_of_birth ?? null,
-        postcode: String(session.postcode).toUpperCase(),
-        address_line_1: address.address_line_1,
-        address_line_2: address.address_line_2 ?? null,
-        town: address.town,
-        county: address.county ?? null,
+        full_name: snapshot.customer.full_name,
+        email: snapshot.customer.email,
+        phone: snapshot.customer.phone,
+        date_of_birth: snapshot.customer.date_of_birth,
+        postcode: String(snapshot.service_address.postcode),
+        address_line_1: snapshot.service_address.address_line_1,
+        address_line_2: snapshot.service_address.address_line_2,
+        town: snapshot.service_address.town,
+        county: snapshot.service_address.county,
         service_interest: "broadband",
         plan_preference: session.plan_term === "flex_30" ? "flex" : "contract_saver",
         customer_type: "residential",
         preferred_contact_method: "email",
-        marketing_consent: !!details.marketing_consent,
-        source: session.test_session ? "journey_v2_test" : "journey_v2",
+        marketing_consent: snapshot.customer.marketing_consent,
+        source: "journey_v2",
         status: "quoted",
-        message: `${session.test_session ? "[TEST] " : ""}Journey 2 order: ${session.speed_bucket} · ${session.plan_term} · router=${(session.router_option as any)?.router_option ?? "own"}/${(session.router_option as any)?.router_payment_type ?? "none"} · addons=${((session.selected_addons ?? []) as string[]).join(",") || "none"}`,
+        message: `Journey 2 order: ${session.speed_bucket} · ${session.plan_term} · router=${snapshot.router.option}/${snapshot.router.payment_type} · addons=${snapshot.addons.map((a) => a.id).join(",") || "none"}`,
         ip,
         user_agent: ua,
       }).select("id, reference").single();
@@ -149,32 +269,29 @@ Deno.serve(async (req) => {
         .update({ quote_request_id: quoteRequestId }).eq("id", session.id);
     }
 
-    const monthly_net = priced.internal.monthly_broadband_ex_vat + priced.internal.router_monthly_ex_vat + priced.internal.addons_monthly_ex_vat;
-    const monthly_gross = priced.monthly_total_incl_vat;
-    const monthly_vat = round2(monthly_gross - monthly_net);
+    const monthly_net = snapshot.pricing.monthly_ex_vat;
+    const monthly_gross = snapshot.pricing.monthly_incl_vat;
     const router_net = priced.internal.router_one_off_ex_vat;
-    const router_gross = priced.router.oneOff;
+    const router_gross = round2(priced.router.oneOff);
     const setup_net = priced.internal.setup_one_off_ex_vat;
-    const setup_gross = priced.setup.oneOff;
+    const setup_gross = round2(priced.setup.oneOff);
 
     const { raw, hash } = await generateTokenPair();
     const expiresAt = new Date(Date.now() + 30 * 86400_000).toISOString();
 
     const qIns = await supabase.from("quotes").insert({
       quote_request_id: quoteRequestId,
-      plan_name: planNameFor(session.speed_bucket as any, session.plan_term as any),
+      plan_name: snapshot.product.plan_name,
       service_type: "broadband",
       plan_type: session.plan_term === "flex_30" ? "flex" : "contract_saver",
       customer_type: "residential",
       contract_length_months: session.plan_term === "price_lock_24" ? 24 : null,
-      monthly_net: round2(monthly_net),
+      monthly_net,
       monthly_vat_rate: vatPercent,
-      monthly_vat_amount: monthly_vat,
+      monthly_vat_amount: snapshot.pricing.monthly_vat,
       monthly_gross,
       setup_net, setup_vat_amount: round2(setup_gross - setup_net), setup_gross,
       router_net, router_vat_amount: round2(router_gross - router_net), router_gross,
-      // Journey 2 has no upfront payment step: one-off charges are billed on
-      // the first invoice, never today.
       total_due_today_gross: 0,
       expires_at: expiresAt,
       token_expires_at: expiresAt,
@@ -182,13 +299,9 @@ Deno.serve(async (req) => {
       status: "approved",
       speed_bucket: session.speed_bucket,
       plan_term: session.plan_term,
-      router_option: {
-        option: priced.router.option, label: priced.router.label,
-        monthly: priced.router.monthly, oneOff: priced.router.oneOff,
-        payment_type: priced.router.payment_type,
-      },
-      setup_option: { option: JOURNEY2_SETUP, label: priced.setup.label, oneOff: priced.setup.oneOff },
-      selected_addons: priced.addons,
+      router_option: snapshot.router,
+      setup_option: { option: JOURNEY2_SETUP, label: snapshot.product.setup.label, oneOff: snapshot.product.setup.one_off_incl_vat },
+      selected_addons: snapshot.addons,
       journey_version: "v2",
       checkout_session_id: session.checkout_session_id,
     }).select("id, quote_number").single();
@@ -204,8 +317,6 @@ Deno.serve(async (req) => {
       actor_type: "public",
     });
 
-    // order_journeys — the shared state machine for contract, start date,
-    // Direct Debit, review and submission.
     const jIns = await supabase.from("order_journeys").insert({
       quote_id: quoteId,
       token_hash: hash,
@@ -217,97 +328,26 @@ Deno.serve(async (req) => {
       ip, ua,
     }).select("id").single();
 
-    // ── Immutable final contractual snapshot ───────────────────────────────
-    const snapshotBody = {
-      customer: {
-        full_name: details.full_name,
-        email: details.email,
-        phone: details.phone,
-        date_of_birth: details.date_of_birth ?? null,
-      },
-      service_address: {
-        address_line_1: address.address_line_1,
-        address_line_2: address.address_line_2 ?? null,
-        town: address.town,
-        county: address.county ?? null,
-        postcode: String(session.postcode).toUpperCase(),
-      },
-      billing_address: (details as any).billing_address_same === false
-        ? (details as any).billing_address ?? null
-        : "same_as_service_address",
-      product: {
-        plan_name: planNameFor(session.speed_bucket as any, session.plan_term as any),
-        speed_bucket: session.speed_bucket,
-        contract_term: session.plan_term,
-        minimum_term_months: session.plan_term === "price_lock_24" ? 24 : 1,
-      },
-      router: priced.router,
-      addons: priced.addons,
-      pricing: {
-        monthly_ex_vat: round2(monthly_net),
-        monthly_vat: monthly_vat,
-        monthly_incl_vat: monthly_gross,
-        one_off_charges_incl_vat: round2(router_gross + setup_gross),
-        amount_due_today: 0,
-        estimated_first_bill_incl_vat: round2(monthly_gross + router_gross + setup_gross),
-        vat_rate_percent: vatPercent,
-      },
-      schedule: {
-        preferred_start_date: session.preferred_start_date,
-        billing_day: session.billing_anchor_day,
-        expected_first_collection_date: null,
-        billing_commencement_rule: "Billing starts when the service goes live; the first Direct Debit is collected on the billing day at least 3 working days after advance notice, and only once the mandate is active.",
-      },
-      direct_debit: session.dd_masked,
-      journey_version: "v2",
-      checkout_session_id: session.checkout_session_id,
-      pricing_version: RESOLVER_VERSION,
-      test_session: !!session.test_session,
-      created_at: new Date().toISOString(),
-    };
-    const snapshotHash = await sha256Json(snapshotBody);
-    // Legal document versions come from the site copy registry the contract
-    // documents themselves render from.
-    const { data: legalRows } = await supabase
-      .from("site_copy")
-      .select("key, updated_at")
-      .in("key", ["terms_of_service", "privacy_policy", "contract_summary", "direct_debit_guarantee"]);
-    const legalVersions = Object.fromEntries((legalRows ?? []).map((r: any) => [r.key, r.updated_at]));
-    const snapIns = await supabase.from("journey2_contract_snapshots").upsert({
-      session_id: session.id,
-      checkout_session_id: session.checkout_session_id,
-      journey_version: "v2",
-      test_session: !!session.test_session,
-      pricing_version: RESOLVER_VERSION,
-      legal_document_versions: legalVersions ?? {},
-      snapshot: snapshotBody,
-      snapshot_sha256: snapshotHash,
-    }, { onConflict: "session_id", ignoreDuplicates: true }).select("id").maybeSingle();
-
     await supabase.from("customer_journey_sessions").update({
-      contract_snapshot_id: snapIns.data?.id ?? null,
       quote_id: quoteId,
       quote_public_token_hash: hash,
       order_journey_id: jIns.data?.id ?? null,
       status: "contract_prepared",
       current_step: "contract",
       last_activity_at: new Date().toISOString(),
-      price_snapshot: (() => { const { internal: _i, ...safe } = priced as any; return safe; })(),
     }).eq("id", session.id);
 
     await supabase.rpc("log_event", {
       _actor_type: "public",
       _event_type: "journey2_contract_prepared",
       _title: `Journey 2 contract prepared for ${qIns.data.quote_number}`,
-      _details: { session_id: session.id, quote_id: quoteId, journey_id: jIns.data?.id ?? null, test_session: session.test_session },
+      _details: { session_id: session.id, quote_id: quoteId, snapshot_sha256: snapshotHash },
       _source_module: "journey2",
       _quote_id: quoteId,
     }).then(() => {}).catch(() => {});
   }
 
   if (!quoteToken) {
-    // Replay after a refresh: the raw quote token is only known to the browser
-    // that received it, so rotate it onto the same quote and journey.
     const { raw, hash } = await generateTokenPair();
     await supabase.from("quotes").update({ public_token_hash: hash }).eq("id", quoteId);
     await supabase.from("order_journeys").update({ token_hash: hash }).eq("quote_id", quoteId);
@@ -317,7 +357,6 @@ Deno.serve(async (req) => {
     quoteToken = raw;
   }
 
-  // Prepare (or reuse) the Contract Summary through the existing service.
   const projectUrl = Deno.env.get("SUPABASE_URL")!;
   const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const csRes = await fetch(`${projectUrl}/functions/v1/journey-generate-cs`, {
@@ -341,9 +380,11 @@ Deno.serve(async (req) => {
 
   return jsonResponse({
     ok: true,
+    test_session: false,
     quote_token: quoteToken,
     quote_id: quoteId,
     contract_ready: true,
     contract_summary_id: (csJson as any).contract_summary_id ?? null,
+    snapshot_sha256: snapshotHash,
   });
 });

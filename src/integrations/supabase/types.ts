@@ -3026,6 +3026,9 @@ export type Database = {
           speed_bucket: string | null
           status: string
           submitted_at: string | null
+          test_acceptance_id: string | null
+          test_contract_summary_id: string | null
+          test_order_id: string | null
           test_run_id: string | null
           test_session: boolean
           updated_at: string
@@ -3081,6 +3084,9 @@ export type Database = {
           speed_bucket?: string | null
           status?: string
           submitted_at?: string | null
+          test_acceptance_id?: string | null
+          test_contract_summary_id?: string | null
+          test_order_id?: string | null
           test_run_id?: string | null
           test_session?: boolean
           updated_at?: string
@@ -3136,6 +3142,9 @@ export type Database = {
           speed_bucket?: string | null
           status?: string
           submitted_at?: string | null
+          test_acceptance_id?: string | null
+          test_contract_summary_id?: string | null
+          test_order_id?: string | null
           test_run_id?: string | null
           test_session?: boolean
           updated_at?: string
@@ -4414,6 +4423,79 @@ export type Database = {
         }
         Relationships: []
       }
+      journey2_account_provisioning: {
+        Row: {
+          checkout_session_id: string
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          last_attempt_at: string | null
+          last_error: string | null
+          order_id: string
+          provisioned_at: string | null
+          retry_count: number
+          session_id: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          checkout_session_id: string
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          order_id: string
+          provisioned_at?: string | null
+          retry_count?: number
+          session_id: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          checkout_session_id?: string
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          order_id?: string
+          provisioned_at?: string | null
+          retry_count?: number
+          session_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_account_provisioning_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_account_provisioning_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "journey2_account_provisioning_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey2_contract_snapshots: {
         Row: {
           checkout_session_id: string
@@ -4457,6 +4539,20 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_contract_snapshots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_contract_snapshots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -4513,6 +4609,78 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_dd_intake_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_dd_intake_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_documents: {
+        Row: {
+          content: Json
+          created_at: string
+          doc_type: string
+          id: string
+          order_id: string | null
+          session_id: string
+          snapshot_sha256: string
+          storage_key: string | null
+          title: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          doc_type: string
+          id?: string
+          order_id?: string | null
+          session_id: string
+          snapshot_sha256: string
+          storage_key?: string | null
+          title: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          doc_type?: string
+          id?: string
+          order_id?: string | null
+          session_id?: string
+          snapshot_sha256?: string
+          storage_key?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_documents_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_documents_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "journey2_documents_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -4598,7 +4766,172 @@ export type Database = {
             referencedRelation: "customer_journey_sessions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "journey2_email_outbox_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_email_outbox_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      journey2_test_acceptances: {
+        Row: {
+          accepted_at: string
+          accepted_name: string
+          acknowledgements: Json
+          created_at: string
+          evidence: Json
+          id: string
+          label: string
+          session_id: string
+          snapshot_sha256: string
+          test_contract_summary_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          accepted_name: string
+          acknowledgements?: Json
+          created_at?: string
+          evidence?: Json
+          id?: string
+          label?: string
+          session_id: string
+          snapshot_sha256: string
+          test_contract_summary_id: string
+        }
+        Update: {
+          accepted_at?: string
+          accepted_name?: string
+          acknowledgements?: Json
+          created_at?: string
+          evidence?: Json
+          id?: string
+          label?: string
+          session_id?: string
+          snapshot_sha256?: string
+          test_contract_summary_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_test_acceptances_test_contract_summary_id_fkey"
+            columns: ["test_contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_contract_summaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_test_contract_summaries: {
+        Row: {
+          accepted_at: string | null
+          checkout_session_id: string
+          contract_information: Json
+          created_at: string
+          id: string
+          label: string
+          session_id: string
+          snapshot_sha256: string
+          status: string
+          summary: Json
+          test_run_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          checkout_session_id: string
+          contract_information: Json
+          created_at?: string
+          id?: string
+          label?: string
+          session_id: string
+          snapshot_sha256: string
+          status?: string
+          summary: Json
+          test_run_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          checkout_session_id?: string
+          contract_information?: Json
+          created_at?: string
+          id?: string
+          label?: string
+          session_id?: string
+          snapshot_sha256?: string
+          status?: string
+          summary?: Json
+          test_run_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_test_contract_summaries_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_test_dd_intake: {
+        Row: {
+          account_holder_name: string
+          bank_details_ciphertext: string
+          bank_name: string
+          created_at: string
+          dd_status: string
+          enc_alg: string
+          enc_key_id: string | null
+          id: string
+          label: string
+          masked_account_last4: string
+          masked_sort_last2: string
+          nonce: string
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_holder_name: string
+          bank_details_ciphertext: string
+          bank_name: string
+          created_at?: string
+          dd_status?: string
+          enc_alg?: string
+          enc_key_id?: string | null
+          id?: string
+          label?: string
+          masked_account_last4: string
+          masked_sort_last2: string
+          nonce: string
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_holder_name?: string
+          bank_details_ciphertext?: string
+          bank_name?: string
+          created_at?: string
+          dd_status?: string
+          enc_alg?: string
+          enc_key_id?: string | null
+          id?: string
+          label?: string
+          masked_account_last4?: string
+          masked_sort_last2?: string
+          nonce?: string
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       journey2_test_documents: {
         Row: {
@@ -4793,6 +5126,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "journey2_test_orders_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_test_orders_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "journey2_test_orders_test_run_id_fkey"
             columns: ["test_run_id"]
             isOneToOne: false
@@ -4847,6 +5194,20 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_test_runs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_test_runs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -10530,6 +10891,360 @@ export type Database = {
           },
         ]
       }
+      journey2_live_sessions: {
+        Row: {
+          abandoned_at: string | null
+          anonymous_session_id_hash: string | null
+          billing_anchor_day: number | null
+          checkout_session_id: string | null
+          completed_at: string | null
+          contract_acceptance_id: string | null
+          contract_snapshot_id: string | null
+          contract_summary_id: string | null
+          cooling_off_acknowledged: boolean | null
+          created_at: string | null
+          current_step: string | null
+          customer_details: Json | null
+          customer_id: string | null
+          dd_masked: Json | null
+          dd_status: string | null
+          digital_voice_acknowledged: boolean | null
+          expires_at: string | null
+          guest_order_id: string | null
+          id: string | null
+          idempotency_key: string | null
+          ip: string | null
+          journey_assigned_at: string | null
+          journey_version: string | null
+          last_activity_at: string | null
+          last_completed_step: string | null
+          last_error: string | null
+          manual_review_reason: string | null
+          order_id: string | null
+          order_journey_id: string | null
+          payment_method_id: string | null
+          plan_term: string | null
+          post_contract_applied_at: string | null
+          postcode: string | null
+          preferred_start_date: string | null
+          price_snapshot: Json | null
+          pricing_version: string | null
+          public_token_hash: string | null
+          quote_id: string | null
+          quote_public_token_hash: string | null
+          quote_request_id: string | null
+          resume_email_sent_at: string | null
+          router_option: Json | null
+          selected_addons: Json | null
+          service_address: Json | null
+          setup_option: Json | null
+          speed_bucket: string | null
+          status: string | null
+          submitted_at: string | null
+          test_acceptance_id: string | null
+          test_contract_summary_id: string | null
+          test_order_id: string | null
+          test_run_id: string | null
+          test_session: boolean | null
+          updated_at: string | null
+          user_agent: string | null
+          utm_snapshot: Json | null
+        }
+        Insert: {
+          abandoned_at?: string | null
+          anonymous_session_id_hash?: string | null
+          billing_anchor_day?: number | null
+          checkout_session_id?: string | null
+          completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_snapshot_id?: string | null
+          contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean | null
+          created_at?: string | null
+          current_step?: string | null
+          customer_details?: Json | null
+          customer_id?: string | null
+          dd_masked?: Json | null
+          dd_status?: string | null
+          digital_voice_acknowledged?: boolean | null
+          expires_at?: string | null
+          guest_order_id?: string | null
+          id?: string | null
+          idempotency_key?: string | null
+          ip?: string | null
+          journey_assigned_at?: string | null
+          journey_version?: string | null
+          last_activity_at?: string | null
+          last_completed_step?: string | null
+          last_error?: string | null
+          manual_review_reason?: string | null
+          order_id?: string | null
+          order_journey_id?: string | null
+          payment_method_id?: string | null
+          plan_term?: string | null
+          post_contract_applied_at?: string | null
+          postcode?: string | null
+          preferred_start_date?: string | null
+          price_snapshot?: Json | null
+          pricing_version?: string | null
+          public_token_hash?: string | null
+          quote_id?: string | null
+          quote_public_token_hash?: string | null
+          quote_request_id?: string | null
+          resume_email_sent_at?: string | null
+          router_option?: Json | null
+          selected_addons?: Json | null
+          service_address?: Json | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          test_acceptance_id?: string | null
+          test_contract_summary_id?: string | null
+          test_order_id?: string | null
+          test_run_id?: string | null
+          test_session?: boolean | null
+          updated_at?: string | null
+          user_agent?: string | null
+          utm_snapshot?: Json | null
+        }
+        Update: {
+          abandoned_at?: string | null
+          anonymous_session_id_hash?: string | null
+          billing_anchor_day?: number | null
+          checkout_session_id?: string | null
+          completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_snapshot_id?: string | null
+          contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean | null
+          created_at?: string | null
+          current_step?: string | null
+          customer_details?: Json | null
+          customer_id?: string | null
+          dd_masked?: Json | null
+          dd_status?: string | null
+          digital_voice_acknowledged?: boolean | null
+          expires_at?: string | null
+          guest_order_id?: string | null
+          id?: string | null
+          idempotency_key?: string | null
+          ip?: string | null
+          journey_assigned_at?: string | null
+          journey_version?: string | null
+          last_activity_at?: string | null
+          last_completed_step?: string | null
+          last_error?: string | null
+          manual_review_reason?: string | null
+          order_id?: string | null
+          order_journey_id?: string | null
+          payment_method_id?: string | null
+          plan_term?: string | null
+          post_contract_applied_at?: string | null
+          postcode?: string | null
+          preferred_start_date?: string | null
+          price_snapshot?: Json | null
+          pricing_version?: string | null
+          public_token_hash?: string | null
+          quote_id?: string | null
+          quote_public_token_hash?: string | null
+          quote_request_id?: string | null
+          resume_email_sent_at?: string | null
+          router_option?: Json | null
+          selected_addons?: Json | null
+          service_address?: Json | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          test_acceptance_id?: string | null
+          test_contract_summary_id?: string | null
+          test_order_id?: string | null
+          test_run_id?: string | null
+          test_session?: boolean | null
+          updated_at?: string | null
+          user_agent?: string | null
+          utm_snapshot?: Json | null
+        }
+        Relationships: []
+      }
+      journey2_test_sessions: {
+        Row: {
+          abandoned_at: string | null
+          anonymous_session_id_hash: string | null
+          billing_anchor_day: number | null
+          checkout_session_id: string | null
+          completed_at: string | null
+          contract_acceptance_id: string | null
+          contract_snapshot_id: string | null
+          contract_summary_id: string | null
+          cooling_off_acknowledged: boolean | null
+          created_at: string | null
+          current_step: string | null
+          customer_details: Json | null
+          customer_id: string | null
+          dd_masked: Json | null
+          dd_status: string | null
+          digital_voice_acknowledged: boolean | null
+          expires_at: string | null
+          guest_order_id: string | null
+          id: string | null
+          idempotency_key: string | null
+          ip: string | null
+          journey_assigned_at: string | null
+          journey_version: string | null
+          last_activity_at: string | null
+          last_completed_step: string | null
+          last_error: string | null
+          manual_review_reason: string | null
+          order_id: string | null
+          order_journey_id: string | null
+          payment_method_id: string | null
+          plan_term: string | null
+          post_contract_applied_at: string | null
+          postcode: string | null
+          preferred_start_date: string | null
+          price_snapshot: Json | null
+          pricing_version: string | null
+          public_token_hash: string | null
+          quote_id: string | null
+          quote_public_token_hash: string | null
+          quote_request_id: string | null
+          resume_email_sent_at: string | null
+          router_option: Json | null
+          selected_addons: Json | null
+          service_address: Json | null
+          setup_option: Json | null
+          speed_bucket: string | null
+          status: string | null
+          submitted_at: string | null
+          test_acceptance_id: string | null
+          test_contract_summary_id: string | null
+          test_order_id: string | null
+          test_run_id: string | null
+          test_session: boolean | null
+          updated_at: string | null
+          user_agent: string | null
+          utm_snapshot: Json | null
+        }
+        Insert: {
+          abandoned_at?: string | null
+          anonymous_session_id_hash?: string | null
+          billing_anchor_day?: number | null
+          checkout_session_id?: string | null
+          completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_snapshot_id?: string | null
+          contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean | null
+          created_at?: string | null
+          current_step?: string | null
+          customer_details?: Json | null
+          customer_id?: string | null
+          dd_masked?: Json | null
+          dd_status?: string | null
+          digital_voice_acknowledged?: boolean | null
+          expires_at?: string | null
+          guest_order_id?: string | null
+          id?: string | null
+          idempotency_key?: string | null
+          ip?: string | null
+          journey_assigned_at?: string | null
+          journey_version?: string | null
+          last_activity_at?: string | null
+          last_completed_step?: string | null
+          last_error?: string | null
+          manual_review_reason?: string | null
+          order_id?: string | null
+          order_journey_id?: string | null
+          payment_method_id?: string | null
+          plan_term?: string | null
+          post_contract_applied_at?: string | null
+          postcode?: string | null
+          preferred_start_date?: string | null
+          price_snapshot?: Json | null
+          pricing_version?: string | null
+          public_token_hash?: string | null
+          quote_id?: string | null
+          quote_public_token_hash?: string | null
+          quote_request_id?: string | null
+          resume_email_sent_at?: string | null
+          router_option?: Json | null
+          selected_addons?: Json | null
+          service_address?: Json | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          test_acceptance_id?: string | null
+          test_contract_summary_id?: string | null
+          test_order_id?: string | null
+          test_run_id?: string | null
+          test_session?: boolean | null
+          updated_at?: string | null
+          user_agent?: string | null
+          utm_snapshot?: Json | null
+        }
+        Update: {
+          abandoned_at?: string | null
+          anonymous_session_id_hash?: string | null
+          billing_anchor_day?: number | null
+          checkout_session_id?: string | null
+          completed_at?: string | null
+          contract_acceptance_id?: string | null
+          contract_snapshot_id?: string | null
+          contract_summary_id?: string | null
+          cooling_off_acknowledged?: boolean | null
+          created_at?: string | null
+          current_step?: string | null
+          customer_details?: Json | null
+          customer_id?: string | null
+          dd_masked?: Json | null
+          dd_status?: string | null
+          digital_voice_acknowledged?: boolean | null
+          expires_at?: string | null
+          guest_order_id?: string | null
+          id?: string | null
+          idempotency_key?: string | null
+          ip?: string | null
+          journey_assigned_at?: string | null
+          journey_version?: string | null
+          last_activity_at?: string | null
+          last_completed_step?: string | null
+          last_error?: string | null
+          manual_review_reason?: string | null
+          order_id?: string | null
+          order_journey_id?: string | null
+          payment_method_id?: string | null
+          plan_term?: string | null
+          post_contract_applied_at?: string | null
+          postcode?: string | null
+          preferred_start_date?: string | null
+          price_snapshot?: Json | null
+          pricing_version?: string | null
+          public_token_hash?: string | null
+          quote_id?: string | null
+          quote_public_token_hash?: string | null
+          quote_request_id?: string | null
+          resume_email_sent_at?: string | null
+          router_option?: Json | null
+          selected_addons?: Json | null
+          service_address?: Json | null
+          setup_option?: Json | null
+          speed_bucket?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          test_acceptance_id?: string | null
+          test_contract_summary_id?: string | null
+          test_order_id?: string | null
+          test_run_id?: string | null
+          test_session?: boolean | null
+          updated_at?: string | null
+          user_agent?: string | null
+          utm_snapshot?: Json | null
+        }
+        Relationships: []
+      }
       manual_fulfilment_eligible_orders: {
         Row: {
           account_number: string | null
@@ -11650,10 +12365,14 @@ export type Database = {
       is_vat_active: { Args: never; Returns: boolean }
       journey2_commit_order: {
         Args: {
-          _customer_id: string
           _guest_order_id?: string
+          _recomputed_sha256: string
           _session_id: string
         }
+        Returns: Json
+      }
+      journey2_link_provisioned_account: {
+        Args: { _order_id: string; _user_id: string }
         Returns: Json
       }
       link_quote_requests_to_user: {

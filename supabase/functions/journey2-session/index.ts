@@ -293,9 +293,16 @@ Deno.serve(async (req) => {
   if (!(PRE_CONTRACT_STEPS as readonly string[]).includes(body.step)) {
     return jsonResponse({ error: "step_not_editable" }, 409);
   }
-  // Once documents exist, any material change must supersede them and be
-  // re-accepted. Non-material edits (details) may still be saved.
+  // Once the immutable contractual snapshot exists it can never be replaced,
+  // so a material change is refused outright rather than quietly superseding a
+  // document the customer may already have read.
   const material = (MATERIAL_STEPS as readonly string[]).includes(body.step);
+  if (session.contract_snapshot_id && material) {
+    return jsonResponse({
+      error: "contract_locked",
+      message: "Your contract has already been prepared from these choices. Start a new order to change your plan, router, extras, start date or billing.",
+    }, 409);
+  }
   const supersede = session.status === "contract_prepared" && material;
 
   const patch: Record<string, unknown> = {
@@ -393,18 +400,33 @@ Deno.serve(async (req) => {
       account_holder_name: p.data.dd_details.account_holder_name,
       status: "details_received",
     };
-    const up = await supabase.from("journey2_dd_intake").upsert({
-      session_id: session.id,
-      bank_details_ciphertext: enc.ciphertext_hex,
-      nonce: enc.nonce_hex,
-      enc_key_id: enc.key_id,
-      enc_alg: "AES-256-GCM",
-      masked_account_last4: masked.last4,
-      masked_sort_last2: masked.sort_last2,
-      bank_name: masked.bank_name,
-      account_holder_name: masked.account_holder_name,
-      consumed_at: null,
-    }, { onConflict: "session_id" });
+    // Test sessions store their encrypted intake in the dedicated test table,
+    // which no provider path ever reads from.
+    const up = session.test_session
+      ? await supabase.from("journey2_test_dd_intake").upsert({
+          session_id: session.id,
+          bank_details_ciphertext: enc.ciphertext_hex,
+          nonce: enc.nonce_hex,
+          enc_key_id: enc.key_id,
+          enc_alg: "AES-256-GCM",
+          masked_account_last4: masked.last4,
+          masked_sort_last2: masked.sort_last2,
+          bank_name: masked.bank_name,
+          account_holder_name: masked.account_holder_name,
+          dd_status: "pending_contract",
+        }, { onConflict: "session_id" })
+      : await supabase.from("journey2_dd_intake").upsert({
+          session_id: session.id,
+          bank_details_ciphertext: enc.ciphertext_hex,
+          nonce: enc.nonce_hex,
+          enc_key_id: enc.key_id,
+          enc_alg: "AES-256-GCM",
+          masked_account_last4: masked.last4,
+          masked_sort_last2: masked.sort_last2,
+          bank_name: masked.bank_name,
+          account_holder_name: masked.account_holder_name,
+          consumed_at: null,
+        }, { onConflict: "session_id" });
     if (up.error) {
       return jsonResponse({
         error: "dd_storage_failed",
@@ -467,13 +489,19 @@ Deno.serve(async (req) => {
     patch.status = "active";
     patch.current_step = nextStep(body.step);
     patch.contract_snapshot_id = null;
-    await supabase.from("quotes")
-      .update({ status: "expired" })
-      .eq("id", session.quote_id)
-      .in("status", ["approved", "sent", "viewed"]);
-    await supabase.from("customer_journey_sessions")
-      .update({ quote_id: null, quote_public_token_hash: null, order_journey_id: null, contract_summary_id: null })
-      .eq("id", session.id);
+    if (session.test_session) {
+      await supabase.from("journey2_test_contract_summaries")
+        .update({ status: "superseded" }).eq("session_id", session.id);
+      patch.test_contract_summary_id = null;
+    } else {
+      await supabase.from("quotes")
+        .update({ status: "expired" })
+        .eq("id", session.quote_id)
+        .in("status", ["approved", "sent", "viewed"]);
+      await supabase.from("customer_journey_sessions")
+        .update({ quote_id: null, quote_public_token_hash: null, order_journey_id: null, contract_summary_id: null })
+        .eq("id", session.id);
+    }
     await supabase.rpc("log_event", {
       _actor_type: "public",
       _event_type: "journey2_documents_superseded",

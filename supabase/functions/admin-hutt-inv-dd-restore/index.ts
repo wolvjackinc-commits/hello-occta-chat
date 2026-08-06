@@ -232,8 +232,7 @@ Deno.serve(async (req) => {
       <p style="font-size:13px;color:#555">Account number: ${ACCOUNT}${ddRequestNumber ? ` · Direct Debit request: ${ddRequestNumber}` : ""}</p>
     `;
 
-    const sendResp = await supabase.functions.invoke("send-email", {
-      body: {
+    const sendPayload = {
         type: "custom_admin",
         to: profile.email,
         invoiceId: inv.id,
@@ -249,12 +248,20 @@ Deno.serve(async (req) => {
           cta_text: "Complete your Direct Debit mandate",
           cta_url: ddUrl,
         },
+    };
+    const sendRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
       },
+      body: JSON.stringify(sendPayload),
     });
-    if (sendResp.error) {
-      return json({ error: "email_failed", details: String((sendResp.error as any)?.message ?? sendResp.error) }, 502);
+    const r = await sendRes.json().catch(() => ({}));
+    if (!sendRes.ok) {
+      return json({ error: "email_failed", status: sendRes.status, details: r }, 502);
     }
-    const r = sendResp.data as any;
     const messageId = r?.data?.data?.id ?? r?.data?.id ?? r?.id ?? null;
     if (!messageId) return json({ error: "no_provider_acceptance", response: r }, 502);
 

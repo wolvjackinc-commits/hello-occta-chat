@@ -145,7 +145,6 @@ Deno.serve(async (req) => {
       .update({ last_error: failures.map((f) => `${f.step}:${f.error}`).join("; ") })
       .eq("id", session.id);
     await supabase.from("admin_tasks").insert({
-      task_type: "journey2_post_contract_failed",
       title: "Journey 2 order needs attention after contract acceptance",
       description: `Session ${session.id} could not apply: ${failures.map((f) => `${f.step} (${f.error})`).join(", ")}`,
       priority: "high",

@@ -332,8 +332,11 @@ export default function AgreementStep({
               <Input id="ag-email" type="email" value={emailConfirm} onChange={(e) => setEmailConfirm(e.target.value)} autoComplete="email" />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="ag-mobile">Confirm mobile number</Label>
-              <Input id="ag-mobile" type="tel" value={mobileConfirm} onChange={(e) => setMobileConfirm(e.target.value)} autoComplete="tel" placeholder="e.g. 07700 900123" />
+              <Label htmlFor="ag-mobile">Mobile number (from your details)</Label>
+              <Input id="ag-mobile" type="tel" value={phoneMasked ?? ""} readOnly disabled placeholder="******0000" />
+              <p className="text-xs text-muted-foreground mt-1">
+                To change this, go back to your customer details step — any earlier verification is cleared.
+              </p>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="ag-dob">Date of birth (you must be 18 or older)</Label>

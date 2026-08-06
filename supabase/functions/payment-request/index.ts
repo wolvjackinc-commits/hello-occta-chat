@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+import { decryptJson } from '../_shared/ddCrypto.ts';
 
 // Append helpful KB links to an email HTML string (fail-soft).
 async function withHelpfulLinks(supabase: any, html: string, key: string): Promise<string> {
@@ -779,8 +780,13 @@ serve(async (req) => {
       // VERIFY DD MANDATE (admin action) with email notification
       // ==========================================
       case 'verify-dd-mandate': {
-        const { mandateId, status, provider, providerReference } = data;
-        const adminUserId = verifiedAdminUserId;
+        // MANUAL PROVIDER MODEL: OCCTA submits mandates by hand in one of two
+        // provider portals (FastPay Ltd, AccessPay / APS Re OCCTA). There is no
+        // provider API call here and no email is sent from this handler.
+        // Everything is delegated to dd_admin_change_mandate_status, which writes
+        // the status, the audit history and the customer notification atomically,
+        // then the dd-outbox-worker delivers it server-side.
+        const { mandateId, status, provider, providerReference, submittedAt, internalNote, overrideReason } = data;
 
         if (!mandateId || !status) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
@@ -789,165 +795,65 @@ serve(async (req) => {
           });
         }
 
-        const validStatuses = ['verified', 'active', 'cancelled', 'submitted_to_provider', 'failed'];
-        if (!validStatuses.includes(status)) {
-          return new Response(JSON.stringify({ success: false, error: 'Invalid status' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
+        const { data: result, error: rpcError } = await supabase.rpc('dd_admin_change_mandate_status', {
+          _mandate_id: mandateId,
+          _new_status: status,
+          _provider_code: provider ?? null,
+          _provider_reference: providerReference ?? null,
+          _submitted_at: submittedAt ?? null,
+          _internal_note: internalNote ?? null,
+          _override_reason: overrideReason ?? null,
+          _actor: verifiedAdminUserId,
+        });
 
-        // For submitted_to_provider, require provider details
-        if (status === 'submitted_to_provider' && (!provider || !providerReference)) {
-          return new Response(JSON.stringify({ success: false, error: 'Provider and provider reference required for submitted_to_provider status' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        // Get current mandate with user info
-        const { data: currentMandate, error: fetchError } = await supabase
-          .from('dd_mandates')
-          .select('*, payment_request_id')
-          .eq('id', mandateId)
-          .single();
-
-        if (fetchError || !currentMandate) {
-          return new Response(JSON.stringify({ success: false, error: 'Mandate not found' }), {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        const previousStatus = currentMandate.status;
-
-        // Build update payload - include provider fields if submitting to provider
-        const updatePayload: Record<string, unknown> = { 
-          status, 
-          updated_at: new Date().toISOString() 
-        };
-        
-        if (status === 'submitted_to_provider' && provider && providerReference) {
-          updatePayload.provider = provider;
-          updatePayload.provider_reference = providerReference;
-        }
-
-        // Update mandate status
-        const { data: mandate, error } = await supabase
-          .from('dd_mandates')
-          .update(updatePayload)
-          .eq('id', mandateId)
-          .select('*, payment_request_id')
-          .single();
-
-        if (error || !mandate) {
-          return new Response(JSON.stringify({ success: false, error: 'Failed to update mandate' }), {
+        if (rpcError) {
+          return new Response(JSON.stringify({ success: false, error: rpcError.message }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
 
-        // If verified/active, mark payment request as completed
-        if (['verified', 'active'].includes(status) && mandate.payment_request_id) {
-          await supabase
-            .from('payment_requests')
-            .update({ status: 'completed', completed_at: new Date().toISOString() })
-            .eq('id', mandate.payment_request_id);
-
-          await supabase.from('payment_request_events').insert({
-            request_id: mandate.payment_request_id,
-            event_type: 'completed',
-            metadata: { mandate_status: status, verified_by: adminUserId },
+        const changed = result as Record<string, unknown> | null;
+        if (!changed?.success) {
+          return new Response(JSON.stringify(changed ?? { success: false, error: 'unknown_error' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
 
-        // Audit log with detailed action type
-        const actionType = status === 'cancelled' ? 'cancel' : 
-                          status === 'active' ? 'activate' : 'update';
-        
-        await supabase.from('audit_logs').insert({
-          actor_user_id: adminUserId,
-          action: actionType,
-          entity: 'dd_mandate',
-          entity_id: mandateId,
-          metadata: { 
-            previous_status: previousStatus,
-            new_status: status,
-            mandate_reference: mandate.mandate_reference,
-            ...(provider && { provider }),
-            ...(providerReference && { provider_reference: providerReference }),
-          },
-        });
-
-        // Send email notification to customer on status change
-        if (previousStatus !== status) {
-          // Get customer email from payment request or profile
-          let customerEmail: string | null = null;
-          let customerName: string | null = null;
-          let accountNumber: string | null = null;
-
-          if (mandate.payment_request_id) {
-            const { data: request } = await supabase
+        // Keep the linked payment request in step once the mandate is live.
+        if (status === 'active') {
+          const { data: m } = await supabase
+            .from('dd_mandates')
+            .select('payment_request_id, mandate_reference')
+            .eq('id', mandateId)
+            .single();
+          if (m?.payment_request_id) {
+            await supabase
               .from('payment_requests')
-              .select('customer_email, customer_name, account_number')
-              .eq('id', mandate.payment_request_id)
-              .single();
-            if (request) {
-              customerEmail = request.customer_email;
-              customerName = request.customer_name;
-              accountNumber = request.account_number;
-            }
-          }
-
-          if (!customerEmail && mandate.user_id) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('email, full_name, account_number')
-              .eq('id', mandate.user_id)
-              .single();
-            if (profile) {
-              customerEmail = profile.email;
-              customerName = profile.full_name;
-              accountNumber = profile.account_number;
-            }
-          }
-
-          // Send DD status email
-          if (customerEmail) {
-            const resendApiKey = Deno.env.get('RESEND_API_KEY');
-            if (resendApiKey) {
-              const emailContent = getDDStatusEmail({
-                customerName: customerName || 'Customer',
-                accountNumber,
-                mandateReference: mandate.mandate_reference,
-                status,
-                previousStatus,
-              });
-
-              try {
-                await fetch('https://api.resend.com/emails', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${resendApiKey}`,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    from: 'OCCTA <billing@occta.co.uk>',
-                    to: [customerEmail],
-                    subject: emailContent.subject,
-                    html: emailContent.html,
-                    text: emailContent.text,
-                  }),
-                });
-                console.log(`DD status email sent to ${customerEmail} for status: ${status}`);
-              } catch (emailErr) {
-                console.error('Failed to send DD status email:', emailErr);
-              }
-            }
+              .update({ status: 'completed', completed_at: new Date().toISOString() })
+              .eq('id', m.payment_request_id);
+            await supabase.from('payment_request_events').insert({
+              request_id: m.payment_request_id,
+              event_type: 'completed',
+              metadata: { mandate_status: status, verified_by: verifiedAdminUserId },
+            });
           }
         }
 
-        return new Response(JSON.stringify({ success: true, mandate }), {
+        // Deliver the queued notification server-side only.
+        let notificationStatus = String(changed.outbox_status ?? 'pending');
+        try {
+          const { data: worked } = await supabase.functions.invoke('dd-outbox-worker', {
+            body: { outboxId: changed.outbox_id },
+          });
+          const first = (worked as { results?: Array<{ status?: string }> })?.results?.[0];
+          if (first?.status) notificationStatus = first.status;
+        } catch (_err) {
+          notificationStatus = 'pending';
+        }
+
+        return new Response(JSON.stringify({ ...changed, notification_status: notificationStatus }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -966,7 +872,8 @@ serve(async (req) => {
           });
         }
 
-        // Fetch ALL mandate fields for admin view
+        // Bank details live encrypted at rest; plaintext columns are legacy only
+        // and are nulled by the encryption migration.
         const { data: mandate, error } = await supabase
           .from('dd_mandates')
           .select(`
@@ -976,6 +883,8 @@ serve(async (req) => {
             mandate_reference,
             sort_code, 
             account_number_full, 
+            bank_details_ciphertext,
+            enc_nonce,
             account_holder_name, 
             billing_address, 
             consent_timestamp, 
@@ -1011,11 +920,27 @@ serve(async (req) => {
           },
         });
 
+        // Decrypt on the fly when the record has been migrated to AES-256-GCM.
+        let sortCode: string | null = (mandate.sort_code as string | null) ?? null;
+        let accountNumber: string | null = (mandate.account_number_full as string | null) ?? null;
+        if (mandate.bank_details_ciphertext && mandate.enc_nonce) {
+          try {
+            const plain = await decryptJson<{ sort_code?: string; account_number?: string }>(
+              String(mandate.bank_details_ciphertext),
+              String(mandate.enc_nonce),
+            );
+            sortCode = plain.sort_code ?? sortCode;
+            accountNumber = plain.account_number ?? accountNumber;
+          } catch (_e) {
+            sortCode = sortCode ?? null;
+          }
+        }
+
         return new Response(JSON.stringify({ 
           success: true, 
           bankDetails: {
-            sortCode: mandate.sort_code,
-            accountNumber: mandate.account_number_full,
+            sortCode,
+            accountNumber,
             accountHolderName: mandate.account_holder_name,
             billingAddress: mandate.billing_address,
             consentTimestamp: mandate.consent_timestamp,
@@ -2002,163 +1927,6 @@ OCCTA Limited is registered in England and Wales (Company No. 13828933)
 `;
 
   return { html, text };
-}
-
-// ==========================================
-// DD STATUS CHANGE EMAIL TEMPLATE
-// ==========================================
-function getDDStatusEmail(data: {
-  customerName: string;
-  accountNumber: string | null;
-  mandateReference: string | null;
-  status: string;
-  previousStatus: string;
-}): { html: string; text: string; subject: string } {
-  const statusMessages: Record<string, { subject: string; title: string; message: string; nextSteps: string[] }> = {
-    verified: {
-      subject: 'Your OCCTA Direct Debit has been verified',
-      title: 'Direct Debit Verified',
-      message: 'Your Direct Debit mandate has been successfully verified. We will now submit it to our payment provider for activation.',
-      nextSteps: [
-        'Your mandate is being submitted to our payment provider',
-        'You will receive confirmation once fully active',
-        'Your first payment will be collected as agreed',
-      ],
-    },
-    submitted_to_provider: {
-      subject: 'Your OCCTA Direct Debit is being processed',
-      title: 'Direct Debit Processing',
-      message: 'Your Direct Debit mandate has been submitted to our payment provider and is currently being processed.',
-      nextSteps: [
-        'Processing typically takes 2-3 business days',
-        'You will receive confirmation once active',
-        'No action required from you',
-      ],
-    },
-    active: {
-      subject: 'Your OCCTA Direct Debit is now active',
-      title: 'Direct Debit Active',
-      message: 'Great news! Your Direct Debit mandate is now fully active and ready to process payments.',
-      nextSteps: [
-        'Payments will be collected automatically as agreed',
-        'You will receive advance notice before each payment',
-        'You can cancel at any time by contacting your bank',
-      ],
-    },
-    cancelled: {
-      subject: 'Your OCCTA Direct Debit has been cancelled',
-      title: 'Direct Debit Cancelled',
-      message: 'Your Direct Debit mandate has been cancelled. No further payments will be collected via this mandate.',
-      nextSteps: [
-        'No further payments will be taken via Direct Debit',
-        'If you have outstanding payments, please arrange an alternative payment method',
-        'Contact us if you would like to set up a new Direct Debit',
-      ],
-    },
-  };
-
-  const statusInfo = statusMessages[data.status] || {
-    subject: 'Update on your OCCTA Direct Debit',
-    title: 'Direct Debit Update',
-    message: `Your Direct Debit mandate status has been updated to: ${data.status}.`,
-    nextSteps: ['Contact us if you have any questions.'],
-  };
-
-  const statusColor = data.status === 'active' ? '#dcfce7' : data.status === 'cancelled' ? '#fee2e2' : '#fef3c7';
-  const refHtml = data.mandateReference ? `<div class="status-ref">Reference: ${data.mandateReference}</div>` : '';
-  const accountHtml = data.accountNumber ? `<div class="status-ref">Account: ${data.accountNumber}</div>` : '';
-  const stepsHtml = statusInfo.nextSteps.map(step => `<li>${step}</li>`).join('');
-
-  const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${statusInfo.subject}</title>
-  <style>
-    body { margin: 0; padding: 0; background: #f5f4ef; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    .wrapper { padding: 40px 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #fff; border: 4px solid #0d0d0d; }
-    .header { background: #0d0d0d; padding: 24px; text-align: center; }
-    .logo { color: #fff; font-size: 28px; letter-spacing: 4px; font-weight: bold; }
-    .content { padding: 32px; }
-    .greeting { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
-    .text { font-size: 15px; line-height: 1.6; color: #333; margin: 16px 0; }
-    .status-box { background: ${statusColor}; border: 3px solid #0d0d0d; padding: 24px; text-align: center; margin: 24px 0; }
-    .status-title { font-size: 20px; font-weight: bold; color: #0d0d0d; }
-    .status-ref { font-size: 13px; color: #666; margin-top: 8px; }
-    .next-steps { background: #f5f4ef; border-left: 4px solid #0d0d0d; padding: 16px; margin: 24px 0; }
-    .next-steps h4 { margin: 0 0 12px 0; font-size: 14px; }
-    .next-steps ul { margin: 0; padding-left: 20px; color: #666; }
-    .next-steps li { margin-bottom: 8px; }
-    .footer { background: #0d0d0d; padding: 24px; text-align: center; color: #888; font-size: 12px; }
-  </style>
-</head>
-<body>
-  <div class="wrapper">
-    <div class="container">
-      <div class="header">
-        <div class="logo">OCCTA</div>
-      </div>
-      <div class="content">
-        <p class="greeting">Hi ${data.customerName},</p>
-        
-        <div class="status-box">
-          <div class="status-title">${statusInfo.title}</div>
-          ${refHtml}
-          ${accountHtml}
-        </div>
-        
-        <p class="text">${statusInfo.message}</p>
-        
-        <div class="next-steps">
-          <h4>What happens next?</h4>
-          <ul>
-            ${stepsHtml}
-          </ul>
-        </div>
-        
-        <p class="text" style="font-size: 13px; color: #666;">
-          If you have any questions, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
-        </p>
-      </div>
-      <div class="footer">
-        <p>© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.</p>
-        <p>OCCTA Limited is registered in England and Wales (Company No. 13828933)</p>
-        <p style="margin-top: 12px; font-size: 11px;">This is an automated message. Please do not reply directly to this email.</p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
-
-  const stepsText = statusInfo.nextSteps.map(step => `- ${step}`).join('\n');
-  const refText = data.mandateReference ? `Reference: ${data.mandateReference}` : '';
-  const accountText = data.accountNumber ? `Account: ${data.accountNumber}` : '';
-
-  const text = `
-OCCTA Direct Debit Update
-
-Hi ${data.customerName},
-
-${statusInfo.title}
-${refText}
-${accountText}
-
-${statusInfo.message}
-
-What happens next?
-${stepsText}
-
-Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
-
----
-© ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
-OCCTA Limited is registered in England and Wales (Company No. 13828933)
-`;
-
-  return { html, text, subject: statusInfo.subject };
 }
 
 // ==========================================

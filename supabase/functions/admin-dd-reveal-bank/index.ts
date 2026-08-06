@@ -121,7 +121,55 @@ Deno.serve(async (req) => {
     const { data: rows, error: intakeErr } = await q;
     if (intakeErr) return j(500, { error: "intake_query_failed", details: intakeErr.message });
     const intake = rows?.[0];
-    if (!intake) return j(404, { error: "intake_not_found" });
+    if (!intake) {
+      // Fallback: mandates captured outside Journey 2 keep their own encrypted
+      // payload on dd_mandates (written by the plaintext-encryption migration).
+      if (!mandate_id) return j(404, { error: "intake_not_found" });
+      const { data: m2 } = await supabase
+        .from("dd_mandates")
+        .select("id, bank_details_ciphertext, enc_nonce, bank_last4, masked_sort_last2, account_holder_name")
+        .eq("id", mandate_id)
+        .maybeSingle();
+      if (!m2?.bank_details_ciphertext || !m2?.enc_nonce) {
+        return j(404, { error: "intake_not_found" });
+      }
+      const mKey = await loadKey();
+      const mCt = parseBytea(m2.bank_details_ciphertext);
+      const mIv = parseBytea(m2.enc_nonce);
+      if (mCt.length === 0 || mIv.length !== 12) return j(500, { error: "bad_ciphertext" });
+      let mPlain: Record<string, unknown>;
+      try {
+        const dec = await crypto.subtle.decrypt({ name: "AES-GCM", iv: mIv }, mKey, mCt);
+        mPlain = JSON.parse(new TextDecoder().decode(dec));
+      } catch (e) {
+        return j(500, { error: "decrypt_failed", details: String((e as Error).message) });
+      }
+      try {
+        await supabase.from("audit_logs").insert({
+          actor_user_id: adminId,
+          action: "dd_bank_details_revealed",
+          entity: "dd_mandate",
+          entity_id: m2.id,
+          metadata: {
+            reason: reason ?? null,
+            user_id: resolvedUserId,
+            mandate_id,
+            masked_account_last4: m2.bank_last4,
+            masked_sort_last2: m2.masked_sort_last2,
+          },
+        });
+      } catch { /* non-fatal */ }
+      return j(200, {
+        ok: true,
+        source: "mandate",
+        mandate_id: m2.id,
+        account_holder_name: mPlain.account_holder_name ?? m2.account_holder_name ?? null,
+        sort_code: mPlain.sort_code ?? null,
+        account_number: mPlain.account_number ?? null,
+        billing_address: mPlain.billing_address ?? null,
+        postcode: mPlain.postcode ?? null,
+      });
+    }
 
     // Decrypt
     const key = await loadKey();

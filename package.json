@@ -17,7 +17,8 @@
     "test:duplicate": "vitest run src/lib/journey2/__tests__/duplicate-submission.unit.test.ts",
     "test:isolation": "vitest run src/lib/journey2/__tests__/test-mode-isolation.unit.test.ts src/lib/journey2/__tests__/db/journey2-isolation.db.test.ts",
     "test:migrations": "supabase db reset --no-seed",
-    "test:j2-engine": "vitest run src/lib/journey2/__tests__/db/journey2-engine.db.test.ts"
+    "test:j2-engine": "vitest run src/lib/journey2/__tests__/db/journey2-engine.db.test.ts",
+    "test:dd": "vitest run src/lib/dd/__tests__/db/dd-manual-providers.db.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

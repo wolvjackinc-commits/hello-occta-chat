@@ -163,16 +163,43 @@ Deno.serve(async (req) => {
       && Number(p.vat_rate_percent ?? 0) === vatRate);
   add("completion_route", "Completion data can be rendered from committed isolated data",
     !!t?.test_order_number && t?.snapshot_sha256 === sn?.snapshot_sha256);
-  // Direct Debit provider readiness.
-  const { data: ddCfg } = await supabase
-    .from("dd_provider_config")
-    .select("*")
-    .limit(1)
-    .maybeSingle();
-  add("dd_provider", "Direct Debit provider configuration is present", !!ddCfg);
-  const ddTemplateOk = !!ddCfg && Object.entries(ddCfg).some(([k, v]) =>
-    /template|mandate|instruction/i.test(k) && !!v);
-  add("dd_template", "Provider-approved Direct Debit template and Guarantee are present", ddTemplateOk);
+  // Direct Debit provider readiness — MANUAL PORTAL model.
+  // OCCTA has no provider API, webhook or automated submission: two manual
+  // bureaux are configured and an admin submits each mandate in the portal.
+  // These gates therefore require configuration + template metadata + an admin
+  // selection path, and must NOT require API keys, webhooks, an approval date
+  // or live collection being enabled.
+  const { data: ddProviders } = await supabase
+    .from("dd_providers")
+    .select("provider_code, display_name, legal_collection_name, service_user_number, advance_notice_working_days, mandate_template_name, guarantee_template_name, submission_mode, enabled");
+  const enabledProviders = (ddProviders ?? []).filter((p) => p.enabled);
+  add("dd_provider", "At least one enabled manual Direct Debit provider is configured",
+    enabledProviders.length > 0,
+    enabledProviders.map((p) => p.provider_code).join(", ") || "none configured");
+  add("dd_provider_manual_mode", "Every configured Direct Debit provider is manual-portal only (no API/webhook required)",
+    enabledProviders.length > 0 && enabledProviders.every((p) => p.submission_mode === "manual_portal"));
+  add("dd_provider_sun", "Each provider has a valid six-digit Service User Number and a positive advance-notice period",
+    enabledProviders.length > 0 && enabledProviders.every((p) =>
+      /^[0-9]{6}$/.test(String(p.service_user_number ?? "")) && Number(p.advance_notice_working_days) > 0),
+    enabledProviders.map((p) => `${p.provider_code}:${p.service_user_number}/${p.advance_notice_working_days}wd`).join(", "));
+  add("dd_template", "Mandate and Guarantee template metadata are recorded for every provider",
+    enabledProviders.length > 0 && enabledProviders.every((p) => !!p.mandate_template_name && !!p.guarantee_template_name),
+    enabledProviders.map((p) => p.mandate_template_name).join(", "));
+  // Admin selection capability: the atomic status routine must be installed and
+  // must refuse a provider-dependent status with no provider selected.
+  const selProbe = await supabase.rpc("dd_admin_change_mandate_status", {
+    _mandate_id: "00000000-0000-0000-0000-000000000000",
+    _new_status: "submitted_to_provider",
+  });
+  add("dd_admin_selection", "Admins can select a provider and record a manual submission",
+    !selProbe.error && (selProbe.data as any)?.error === "mandate_not_found",
+    selProbe.error?.message ?? "responds to validation probe");
+  const { count: plaintextCount } = await supabase
+    .from("dd_mandates")
+    .select("id", { count: "exact", head: true })
+    .or("sort_code.not.is.null,account_number_full.not.is.null");
+  add("dd_no_plaintext_bank_details", "No mandate holds plaintext bank details in live columns",
+    (plaintextCount ?? 0) === 0, `${plaintextCount ?? 0} row(s) with plaintext`);
   add("dd_encryption", "Direct Debit detail encryption key is configured", !!Deno.env.get("DD_FIELD_ENC_KEY"));
 
   // 14 · Email provider.

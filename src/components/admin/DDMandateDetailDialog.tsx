@@ -118,22 +118,30 @@ export function DDMandateDetailDialog({
 
     setIsUpdating(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-
-      const { data, error } = await supabase.functions.invoke("payment-request", {
+      const { data, error } = await supabase.functions.invoke("dd-mandate-status", {
         body: {
-          action: "verify-dd-mandate",
           mandateId: mandate.id,
-          status: newStatus,
-          adminUserId: userData?.user?.id,
+          newStatus,
         },
       });
 
       if (error || !data?.success) {
-        throw new Error(data?.error || "Failed to update mandate status");
+        throw new Error(
+          data?.error === "provider_selection_required"
+            ? "Select the Direct Debit provider first — use the mandate workflow actions."
+            : data?.error === "no_op_status_change"
+              ? "The mandate is already at that status. Nothing changed and no email was sent."
+              : data?.error || error?.message || "Failed to update mandate status",
+        );
       }
 
-      toast({ title: "Mandate status updated", description: "Customer will receive an email notification." });
+      toast({
+        title: "Mandate status updated",
+        description:
+          data?.notification_status === "suppressed_test"
+            ? "Test mandate — customer notification suppressed."
+            : "Customer notification queued and sent server-side.",
+      });
       onUpdate();
       setNewStatus("");
     } catch (err) {

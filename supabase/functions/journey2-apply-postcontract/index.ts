@@ -92,8 +92,10 @@ Deno.serve(async (req) => {
     });
     if (!sd.ok) failures.push({ step: "start_date", error: sd.json?.error ?? `http_${sd.status}` });
     else if (startDateMoved) {
-      await supabase.from("customer_journey_sessions")
-        .update({ preferred_start_date: startDateToApply }).eq("id", session.id);
+      // The session (and therefore the signed snapshot) keeps the date the
+      // customer actually agreed — rewriting it would break the byte-for-byte
+      // snapshot integrity check at submission. Only the live journey carries
+      // the adjusted date, and the move is logged for staff.
       await supabase.rpc("log_event", {
         _actor_type: "public",
         _event_type: "journey2_start_date_moved_to_earliest",

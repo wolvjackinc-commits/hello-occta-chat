@@ -9,6 +9,7 @@ import {
   ETF_DISCONNECT_WORDING, SETUP_CONFIRMED_BEFORE_ORDER,
   loadGiacomCandidates,
 } from "../_shared/buildPlanResolver.ts";
+import { speedEstimatesFor, speedStatementFor } from "../_shared/journey2Snapshot.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

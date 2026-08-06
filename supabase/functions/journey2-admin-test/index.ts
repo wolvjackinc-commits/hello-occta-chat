@@ -95,9 +95,12 @@ Deno.serve(async (req) => {
   await supabase.from("journey2_test_runs")
     .update({ session_id: session.id, checkout_session_id: session.checkout_session_id }).eq("id", runId);
 
+  // The isolated test path must be usable irrespective of the public posture:
+  // before launch it has to bypass the kill switch, and after launch it must
+  // still run without touching the live journey.
   gate("admin_test_access_with_kill_switch",
-    !!settings.customer_journey_v2_kill_switch && !!session.test_session,
-    `isolated test session created while the public kill switch is ${settings.customer_journey_v2_kill_switch ? "ON" : "OFF"}`);
+    !!session.test_session,
+    `isolated test session created while the public kill switch is ${settings.customer_journey_v2_kill_switch ? "ON (bypassed)" : "OFF (Journey 2 live)"}`);
   gate("dedicated_test_session_table", session.label?.startsWith("TEST") === true,
     "session stored in journey2_test_sessions");
 

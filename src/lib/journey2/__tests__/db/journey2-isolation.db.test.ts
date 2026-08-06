@@ -10,6 +10,11 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Client } from "pg";
 
 const url = process.env.DATABASE_URL ?? process.env.SUPABASE_DB_URL ?? "";
+const isCi = process.env.CI === "true" || process.env.CI === "1";
+if (isCi && !url) {
+  // CI must never silently skip the database-backed suite.
+  throw new Error("CI requires DATABASE_URL (or SUPABASE_DB_URL) for the Journey 2 database suite. Refusing to skip.");
+}
 const maybe = url ? describe : describe.skip;
 
 const LIVE_TABLES = [

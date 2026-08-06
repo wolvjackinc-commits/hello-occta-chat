@@ -27,7 +27,7 @@ const SESSION_COLS = `
   id, journey_version, status, current_step, last_completed_step, test_session,
   postcode, service_address, speed_bucket, plan_term, router_option, setup_option,
   selected_addons, customer_details, price_snapshot, pricing_version,
-  preferred_start_date, cooling_off_acknowledged, billing_anchor_day, dd_masked,
+  preferred_start_date, cooling_off_acknowledged, billing_anchor_day, dd_masked, dd_status,
   digital_voice_acknowledged, checkout_session_id, contract_snapshot_id,
   quote_id, order_journey_id, order_id, guest_order_id, manual_review_reason,
   last_activity_at, expires_at, completed_at, created_at
@@ -414,6 +414,9 @@ Deno.serve(async (req) => {
     }
     patch.billing_anchor_day = p.data.billing_anchor_day;
     patch.dd_masked = masked;
+    // Details are held, but nothing is requested from the provider until the
+    // customer has accepted the contract.
+    patch.dd_status = "pending_contract";
   }
 
   // Re-resolve the authoritative price whenever a commercial selection changes.

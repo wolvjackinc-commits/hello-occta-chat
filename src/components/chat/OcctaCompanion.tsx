@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
@@ -178,7 +178,6 @@ function buildTicketPrefill(messages: CompanionMessage[]): TicketPrefill {
   const priority: TicketPrefill["priority"] = /no internet|outage|line down|urgent/.test(userText) ? "high" : "normal";
   const first = messages.find((message) => message.role === "user")?.content ?? "Support request from chat";
   const transcript = messages
-    .filter((message) => message.id !== "welcome")
     .map((message) => `[${new Date(message.createdAt).toLocaleString("en-GB")}] ${message.role === "user" ? "Customer" : message.agent === "human" ? "OCCTA advisor" : "Ollie"}: ${redactForDisplay(message.content)}`)
     .join("\n\n");
   return {
@@ -196,6 +195,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
   const [messages, setMessages] = useState<CompanionMessage[]>(loadStoredMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string | undefined>(undefined);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -212,14 +212,27 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
   const quickActions = signedIn ? signedInActions : guestActions;
 
   useEffect(() => {
+    try {
+      const rest = (supabase as unknown as { rest?: { headers?: Record<string, string> } }).rest;
+      if (rest?.headers) rest.headers["x-session-id"] = sessionId.current;
+    } catch {
+      // Guest realtime/history still degrades safely if the client internals change.
+    }
+  }, []);
+
+  useEffect(() => {
     const initialise = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUserId(session?.user?.id ?? null);
-      const metadataName = session?.user?.user_metadata?.full_name ?? session?.user?.user_metadata?.name;
-      setFirstName(typeof metadataName === "string" ? metadataName.split(/\s+/)[0] : undefined);
-      if (session?.user?.id) {
-        const { data } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).maybeSingle();
-        if (data?.full_name) setFirstName(data.full_name.split(/\s+/)[0]);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUserId(session?.user?.id ?? null);
+        const metadataName = session?.user?.user_metadata?.full_name ?? session?.user?.user_metadata?.name;
+        setFirstName(typeof metadataName === "string" ? metadataName.split(/\s+/)[0] : undefined);
+        if (session?.user?.id) {
+          const { data } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).maybeSingle();
+          if (data?.full_name) setFirstName(data.full_name.split(/\s+/)[0]);
+        }
+      } finally {
+        setAuthReady(true);
       }
     };
     void initialise();
@@ -228,13 +241,21 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       const name = session?.user?.user_metadata?.full_name ?? session?.user?.user_metadata?.name;
       setFirstName(typeof name === "string" ? name.split(/\s+/)[0] : undefined);
       if (!session) sessionStorage.removeItem(VERIFICATION_KEY);
+      setAuthReady(true);
     });
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (messages.length === 0) setMessages([welcomeMessage(signedIn, firstName)]);
-  }, [messages.length, signedIn, firstName]);
+    if (!authReady) return;
+    setMessages((current) => {
+      const hasCustomerTurn = current.some((message) => message.role === "user");
+      if (current.length === 0 || (!hasCustomerTurn && current.length === 1 && current[0].role === "assistant")) {
+        return [welcomeMessage(signedIn, firstName)];
+      }
+      return current;
+    });
+  }, [authReady, signedIn, firstName]);
 
   useEffect(() => {
     sessionStorage.setItem(HISTORY_KEY, JSON.stringify(safeStoredMessages(messages)));
@@ -244,6 +265,21 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
   useEffect(() => {
     if (open) window.setTimeout(() => inputRef.current?.focus(), 80);
   }, [open]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from("chat_conversations")
+        .select("id, status")
+        .eq("session_id", sessionId.current)
+        .maybeSingle();
+      if (cancelled || !data?.id) return;
+      setConversationId(data.id);
+      setHumanLive(data.status === "live");
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useFocusTrap({
     active: !embedded && open,
@@ -258,6 +294,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const latestUserTurn = [...turns].reverse().find((turn) => turn.role === "user");
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-handoff`, {
         method: "POST",
         headers: {
@@ -270,7 +307,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
           mode: reason ? undefined : "log",
           reason,
           summary: redactForDisplay(turns.find((turn) => turn.role === "user")?.content ?? "Customer chat"),
-          lastMessage: redactForDisplay(turns.findLast?.((turn) => turn.role === "user")?.content ?? ""),
+          lastMessage: redactForDisplay(latestUserTurn?.content ?? ""),
           transcript: turns.map((turn) => ({ ...turn, content: redactForDisplay(turn.content) })),
         }),
       });
@@ -312,7 +349,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
         setMessages((current) => [...current, {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: row.content!,
+          content: row.content,
           createdAt: new Date().toISOString(),
           agent: "human",
         }]);
@@ -382,7 +419,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
 
     try {
       if (humanLive && conversationId) {
-        await logConversation([{ role: "user", content: raw }]);
+        await logConversation([{ role: "user", content: display }]);
         return;
       }
       const { data: { session } } = await supabase.auth.getSession();
@@ -406,12 +443,11 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.error ?? "companion_request_failed");
-      if (payload?.verificationToken) {
-        sessionStorage.setItem(VERIFICATION_KEY, payload.verificationToken);
-      }
+      const verifiedNow = typeof payload?.verificationToken === "string" && payload.verificationToken.length > 0;
+      if (verifiedNow) sessionStorage.setItem(VERIFICATION_KEY, payload.verificationToken);
       const assistantContent = String(payload?.content ?? "I couldn't load a reliable answer just now.");
       setMessages((current) => [
-        ...current.map((message) => ({ ...message, rawContent: undefined, content: redactForDisplay(message.content) })),
+        ...current.map((message) => verifiedNow ? { ...message, rawContent: undefined } : message),
         {
           id: crypto.randomUUID(),
           role: "assistant",

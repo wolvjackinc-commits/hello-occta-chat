@@ -29,12 +29,25 @@ const COLS = `customer_journey_v1_enabled, customer_journey_v2_enabled, customer
   customer_journey_v2_session_expiry_days, customer_journey_v2_assumed_availability,
   customer_journey_v2_last_preflight_at, customer_journey_v2_last_preflight_result`;
 
+type TestRun = {
+  ok: boolean;
+  test_run_id?: string;
+  test_order_number?: string | null;
+  snapshot_sha256?: string | null;
+  documents?: number;
+  failures: string[];
+  gates: { key: string; ok: boolean; detail?: string }[];
+  response?: unknown;
+};
+
 export default function AdminJourneyControl() {
   const { toast } = useToast();
   const [s, setS] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<TestRun | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [counts, setCounts] = useState<{ active: number; completed: number; cancelled: number }>({ active: 0, completed: 0, cancelled: 0 });
 

@@ -110,6 +110,24 @@ export const SNAPSHOT_SPEED_ESTIMATES: Record<string, { download: number; upload
   gigabit: { download: 900, upload: 110 },
 };
 
+/**
+ * Estimated line speeds for a speed bucket. Used as the single fallback wherever
+ * a stored snapshot or quote predates the speed fields, so the Contract Summary
+ * always states an estimated speed instead of an em dash.
+ */
+export function speedEstimatesFor(bucket: string | null | undefined): { download: number; upload: number } | null {
+  if (!bucket) return null;
+  return SNAPSHOT_SPEED_ESTIMATES[String(bucket)] ?? null;
+}
+
+/** Customer-facing speed statement for a bucket. */
+export function speedStatementFor(bucket: string | null | undefined): string | null {
+  const est = speedEstimatesFor(bucket);
+  if (!est) return null;
+  return `Estimated download up to ${est.download} Mbps and estimated upload up to ${est.upload} Mbps. ` +
+    `Speeds are estimates for your line and are not guaranteed.`;
+}
+
 export type SnapshotInput = {
   session: Record<string, any>;
   priced: any;

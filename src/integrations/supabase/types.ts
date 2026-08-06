@@ -7212,6 +7212,8 @@ export type Database = {
         Row: {
           api_mode: string
           business_vat_display: string
+          contract_sms_otp_bypass_reason: string | null
+          contract_sms_otp_required: boolean
           created_at: string
           credit_note_prefix: string
           customer_journey_default: string
@@ -7251,6 +7253,8 @@ export type Database = {
         Insert: {
           api_mode?: string
           business_vat_display?: string
+          contract_sms_otp_bypass_reason?: string | null
+          contract_sms_otp_required?: boolean
           created_at?: string
           credit_note_prefix?: string
           customer_journey_default?: string
@@ -7290,6 +7294,8 @@ export type Database = {
         Update: {
           api_mode?: string
           business_vat_display?: string
+          contract_sms_otp_bypass_reason?: string | null
+          contract_sms_otp_required?: boolean
           created_at?: string
           credit_note_prefix?: string
           customer_journey_default?: string
@@ -9636,6 +9642,60 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value?: string
+        }
+        Relationships: []
+      }
+      sms_otp_challenges: {
+        Row: {
+          challenge_id: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          journey_type: string
+          last_sent_at: string
+          phone_hash: string
+          phone_masked: string
+          send_attempts: number
+          session_or_order_reference: string
+          sms_message_id: string | null
+          updated_at: string
+          verified_at: string | null
+          verify_attempts: number
+        }
+        Insert: {
+          challenge_id: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          journey_type: string
+          last_sent_at?: string
+          phone_hash: string
+          phone_masked: string
+          send_attempts?: number
+          session_or_order_reference: string
+          sms_message_id?: string | null
+          updated_at?: string
+          verified_at?: string | null
+          verify_attempts?: number
+        }
+        Update: {
+          challenge_id?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          journey_type?: string
+          last_sent_at?: string
+          phone_hash?: string
+          phone_masked?: string
+          send_attempts?: number
+          session_or_order_reference?: string
+          sms_message_id?: string | null
+          updated_at?: string
+          verified_at?: string | null
+          verify_attempts?: number
         }
         Relationships: []
       }
@@ -12700,6 +12760,8 @@ export type Database = {
         Returns: {
           api_mode: string
           business_vat_display: string
+          contract_sms_otp_bypass_reason: string | null
+          contract_sms_otp_required: boolean
           created_at: string
           credit_note_prefix: string
           customer_journey_default: string

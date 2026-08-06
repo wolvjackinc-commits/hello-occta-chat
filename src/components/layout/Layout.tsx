@@ -3,7 +3,7 @@ import Header from "./Header";
 import { MessageCircle } from "lucide-react";
 
 const Footer = lazy(() => import("./Footer"));
-const AIChatBot = lazy(() => import("@/components/chat/AIChatBot"));
+const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanion"));
 
 interface LayoutProps {
   children: ReactNode;
@@ -29,13 +29,13 @@ const Layout = ({ children }: LayoutProps) => {
 
       {chatOpen ? (
         <Suspense fallback={null}>
-          <AIChatBot initialOpen onClose={() => setChatOpen(false)} />
+          <OcctaCompanion initialOpen onClose={() => setChatOpen(false)} />
         </Suspense>
       ) : (
         <button
           onClick={openChat}
           className="fixed right-4 bottom-4 z-[9999] rounded-full bg-primary text-primary-foreground p-3 shadow-lg hover:opacity-90 transition-opacity"
-          aria-label="Open chat"
+          aria-label="Open OCCTA chat"
         >
           <MessageCircle className="h-6 w-6" />
         </button>

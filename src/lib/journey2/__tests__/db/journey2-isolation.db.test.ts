@@ -47,6 +47,7 @@ maybe("Journey 2 database-backed isolation", () => {
   let db: Client;
   let sessionId = "";
   let checkoutId = "";
+  let runId = "";
 
   beforeAll(async () => {
     db = new Client({
@@ -58,9 +59,12 @@ maybe("Journey 2 database-backed isolation", () => {
   });
 
   afterAll(async () => {
-    if (sessionId) {
-      await db.query("delete from journey2_test_sessions where id = $1", [sessionId]);
-    }
+    // Best-effort cleanup: every row created here is TEST-labelled and lives
+    // only in the isolated journey2_test_* tables.
+    try {
+      if (sessionId) await db.query("delete from journey2_test_sessions where id = $1", [sessionId]);
+      if (runId) await db.query("delete from journey2_test_runs where id = $1", [runId]);
+    } catch { /* read-only CI role */ }
     await db.end();
   });
 
@@ -97,10 +101,16 @@ maybe("Journey 2 database-backed isolation", () => {
       before.set(t, rows[0].n);
     }
 
+    const run = await db.query(
+      "insert into journey2_test_runs (label, status) values ('TEST — db-backed suite', 'running') returning id",
+    );
+    runId = run.rows[0].id;
+
     const ins = await db.query(
-      `insert into journey2_test_sessions (public_token_hash, status, current_step)
-       values (md5(random()::text) || md5(clock_timestamp()::text), 'in_progress', 'address')
+      `insert into journey2_test_sessions (test_run_id, public_token_hash, status, current_step)
+       values ($1, md5(random()::text) || md5(clock_timestamp()::text), 'in_progress', 'address')
        returning id, checkout_session_id`,
+      [runId],
     );
     sessionId = ins.rows[0].id;
     checkoutId = ins.rows[0].checkout_session_id;
@@ -141,15 +151,15 @@ maybe("Journey 2 database-backed isolation", () => {
 
   it("allows only one test order per isolated test session", async () => {
     await db.query(
-      `insert into journey2_test_orders (session_id, checkout_session_id, test_order_number, monthly_incl_vat, amount_due_today, snapshot_sha256, snapshot)
-       values ($1, $2, 'TEST-J2-DBTEST01', 29.99, 0, repeat('a', 64), '{}'::jsonb)`,
-      [sessionId, checkoutId],
+      `insert into journey2_test_orders (test_run_id, session_id, checkout_session_id, test_order_number, monthly_incl_vat, amount_due_today, snapshot_sha256, snapshot)
+       values ($1, $2, $3, 'TEST-J2-DBTEST01', 29.99, 0, repeat('a', 64), '{}'::jsonb)`,
+      [runId, sessionId, checkoutId],
     );
     await expect(
       db.query(
-        `insert into journey2_test_orders (session_id, checkout_session_id, test_order_number, monthly_incl_vat, amount_due_today, snapshot_sha256, snapshot)
-         values ($1, $2, 'TEST-J2-DBTEST02', 29.99, 0, repeat('a', 64), '{}'::jsonb)`,
-        [sessionId, checkoutId],
+        `insert into journey2_test_orders (test_run_id, session_id, checkout_session_id, test_order_number, monthly_incl_vat, amount_due_today, snapshot_sha256, snapshot)
+         values ($1, $2, $3, 'TEST-J2-DBTEST02', 29.99, 0, repeat('a', 64), '{}'::jsonb)`,
+        [runId, sessionId, checkoutId],
       ),
     ).rejects.toThrow();
   });

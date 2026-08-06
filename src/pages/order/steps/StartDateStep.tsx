@@ -7,6 +7,12 @@ import type { Journey2Session } from "@/lib/journey2/client";
 
 /** Statutory cooling-off window mirrored by the server. */
 const COOLING_OFF_DAYS = 14;
+/**
+ * The shared journey allows a start date only AFTER the cooling-off period ends
+ * (end of day 14), so the first selectable day is day 15. Journey 2 must offer
+ * exactly the same window or the date is rejected once the contract is signed.
+ */
+const EARLIEST_START_OFFSET_DAYS = COOLING_OFF_DAYS + 1;
 
 function ymd(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -37,7 +43,7 @@ export default function StartDateStep({
   onBack: () => void;
 }) {
   const today = useMemo(() => new Date(), []);
-  const earliest = ymd(addDays(today, COOLING_OFF_DAYS));
+  const earliest = ymd(addDays(today, EARLIEST_START_OFFSET_DAYS));
   const latest = ymd(addDays(today, 90));
   const [date, setDate] = useState(session.preferred_start_date ?? earliest);
   const [ack, setAck] = useState(!!session.cooling_off_acknowledged);

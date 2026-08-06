@@ -169,18 +169,13 @@ Deno.serve(async (req) => {
 
   // ── start ────────────────────────────────────────────────────────────────
   if (body.action === "start") {
-    // Journey 2 can only be forced by an authenticated administrator.
-    let adminTest = false;
+    // The public journey never creates a test session. Isolated test journeys
+    // run only through journey2-test-runner, against journey2_test_* tables.
     if (body.admin_test) {
-      const authHeader = req.headers.get("Authorization");
-      if (authHeader?.startsWith("Bearer ")) {
-        const { data } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-        if (data?.user) {
-          const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
-          adminTest = (roles ?? []).some((r: any) => r.role === "admin" || r.role === "super_admin");
-        }
-      }
-      if (!adminTest) return jsonResponse({ error: "forbidden" }, 403);
+      return jsonResponse({
+        error: "use_isolated_test_runner",
+        message: "Isolated Journey 2 tests run through journey2-test-runner, never through the public session path.",
+      }, 400);
     }
 
     const anonHash = await hashAnon(body.anonymous_session_id);
@@ -207,7 +202,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: true, journey_version: existing.journey_version, resumed: true, token: raw });
     }
 
-    const assignment = assignJourneyVersion(settings, anonHash, { adminTest });
+    const assignment = assignJourneyVersion(settings, anonHash);
     if (assignment.version === null) {
       return jsonResponse({
         ok: true,
@@ -231,7 +226,7 @@ Deno.serve(async (req) => {
         anonymous_session_id_hash: anonHash,
         status: "active",
         current_step: "address",
-        test_session: adminTest || !!settings.customer_journey_v2_test_mode,
+        test_session: !!settings.customer_journey_v2_test_mode,
         setup_option: { option: JOURNEY2_SETUP },
         journey_assigned_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + expiryDays * 86400_000).toISOString(),
@@ -246,7 +241,7 @@ Deno.serve(async (req) => {
       _actor_type: "public",
       _event_type: "journey2_session_started",
       _title: "Journey 2 session started",
-      _details: { reason: assignment.reason, admin_test: adminTest, step: "address", test_session: insert.data.test_session },
+      _details: { reason: assignment.reason, step: "address", test_session: insert.data.test_session },
       _source_module: "journey2",
     }).then(() => {}).catch(() => {});
 

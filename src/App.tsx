@@ -113,6 +113,8 @@ import ContractSaverBroadband from "./pages/broadband/ContractSaver";
 import SwitchingPage from "./pages/Switching";
 import RewardsPage from "./pages/Rewards";
 import BuildPlan from "./pages/BuildPlan";
+const OrderStart = lazy(() => import("./pages/order/OrderStart"));
+const OrderJourney = lazy(() => import("./pages/order/OrderJourney"));
 import QuoteStart from "./pages/quote/QuoteStart";
 import QuoteThankYou from "./pages/quote/QuoteThankYou";
 import UnifiedJourney from "./pages/quote/UnifiedJourney";
@@ -137,6 +139,7 @@ const AdminBlogEditor = lazy(() => import("./pages/admin/BlogEditor").then(m => 
 const AdminFairPricing = lazy(() => import("./pages/admin/FairPricing").then(m => ({ default: m.AdminFairPricing })));
 const AdminSuppliersGiacomImport = lazy(() => import("./pages/admin/SuppliersGiacomImport").then(m => ({ default: m.AdminSuppliersGiacomImport })));
 const AdminCustomerJourney = lazy(() => import("./pages/admin/CustomerJourney"));
+const AdminJourneyControl = lazy(() => import("./pages/admin/JourneyControl"));
 const AdminSimPlans = lazy(() => import("./pages/admin/SimPlansAdmin").then(m => ({ default: m.AdminSimPlans })));
 const AdminSimOrders = lazy(() => import("./pages/admin/SimOrders").then(m => ({ default: m.AdminSimOrders })));
 const AdminBusinessLeads = lazy(() => import("./pages/admin/BusinessLeads"));
@@ -237,6 +240,7 @@ const AnimatedRoutes = () => {
             <Route path="live-chat" element={<Suspense fallback={<AdminRouteFallback />}><AdminLiveChat /></Suspense>} />
             <Route path="webhook-monitor" element={<Suspense fallback={<AdminRouteFallback />}><AdminWebhookMonitor /></Suspense>} />
             <Route path="notification-settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminNotificationSettings /></Suspense>} />
+            <Route path="journey-control" element={<Suspense fallback={<AdminRouteFallback />}><AdminJourneyControl /></Suspense>} />
             <Route path="notification-events" element={<Suspense fallback={<AdminRouteFallback />}><AdminNotificationEvents /></Suspense>} />
             <Route path="quote-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuoteRequests /></Suspense>} />
             <Route path="quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuotes /></Suspense>} />
@@ -282,6 +286,8 @@ const AnimatedRoutes = () => {
         <Route path="/receipt/:token" element={<ReceiptView mode="token" />} />
         <Route path="/quote/payment/:token" element={<QuotePayment />} />
         <Route path="/quote/:token" element={<UnifiedJourney />} />
+        <Route path="/order" element={<Suspense fallback={<AdminRouteFallback />}><OrderStart /></Suspense>} />
+        <Route path="/order/:token" element={<Suspense fallback={<AdminRouteFallback />}><OrderJourney /></Suspense>} />
         <Route path="/legal/acceptable-use" element={<AcceptableUse />} />
         <Route path="/legal/complaints-code" element={<ComplaintsCode />} />
         <Route path="/legal/vulnerable-customers" element={<VulnerableCustomers />} />

@@ -14,18 +14,17 @@
  *     preflight, which refuses synthetic or historical data.
  */
 import {
-  corsHeaders, jsonResponse, getServiceClient, requireStaff, generateTokenPair,
+  corsHeaders, jsonResponse, getServiceClient, requireStaff,
 } from "../_shared/quoteHelpers.ts";
 import { loadJourneySettings } from "../_shared/journey2.ts";
-import { JOURNEY2_SETUP } from "../_shared/journey2.ts";
 
 const FN_BASE = `${Deno.env.get("SUPABASE_URL")}/functions/v1`;
 const SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-async function callFn(name: string, body: unknown) {
+async function callFn(name: string, body: unknown, auth?: string) {
   const res = await fetch(`${FN_BASE}/${name}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${SVC}`, "Content-Type": "application/json" },
+    headers: { Authorization: auth ?? `Bearer ${SVC}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   const json = await res.json().catch(() => ({}));
@@ -54,22 +53,21 @@ Deno.serve(async (req) => {
   };
 
   // ── 1 · Isolated test session, created despite the public kill switch ─────
-  const { raw: token, hash } = await generateTokenPair();
-  const insert = await supabase.from("customer_journey_sessions").insert({
-    journey_version: "v2",
-    public_token_hash: hash,
-    anonymous_session_id_hash: `admintest-${crypto.randomUUID()}`,
-    status: "active",
-    current_step: "address",
-    test_session: true,
-    setup_option: { option: JOURNEY2_SETUP },
-    journey_assigned_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 2 * 86400_000).toISOString(),
-    ip: "admin-test",
-    user_agent: "journey2-admin-test",
-  }).select("id, checkout_session_id, test_session").single();
-  if (insert.error) return jsonResponse({ error: "test_session_failed", details: insert.error.message }, 500);
-  const session = insert.data;
+  const started = await callFn("journey2-session", {
+    action: "start",
+    anonymous_session_id: `admintest-${crypto.randomUUID()}`,
+    admin_test: true,
+  }, req.headers.get("Authorization") ?? undefined);
+  const token = String((started.json as any)?.token ?? "");
+  const startedSession = (started.json as any)?.session ?? null;
+  if (started.status !== 200 || (started.json as any)?.journey_version !== "v2" || !token || !startedSession?.id) {
+    return jsonResponse({
+      error: "admin_test_start_failed",
+      status: started.status,
+      response: started.json,
+    }, 500);
+  }
+  const session = startedSession as { id: string; checkout_session_id: string; test_session: boolean };
 
   const run = await supabase.from("journey2_test_runs").insert({
     session_id: session.id,
@@ -210,7 +208,9 @@ Deno.serve(async (req) => {
   const masked = (sessRow?.dd_masked ?? {}) as Record<string, unknown>;
   gate("dd_masked_only",
     String(masked.last4 ?? "").length === 4 && !("account_number" in masked) && !("sort_code" in masked));
-  gate("dd_lifecycle_status", String(ddIntake?.dd_status ?? "").includes("test"), String(ddIntake?.dd_status));
+  gate("dd_lifecycle_status",
+    ["details_received", "pending_contract", "pending_activation", "active"].includes(String(ddIntake?.dd_status ?? "")),
+    String(ddIntake?.dd_status));
   gate("ten_step_sequence",
     sessRow?.current_step === "complete" && !!sessRow?.preferred_start_date && !!sessRow?.billing_anchor_day,
     `final step ${sessRow?.current_step}`);

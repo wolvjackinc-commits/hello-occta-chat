@@ -475,6 +475,46 @@ export function DDWorkflowDialog({
           )}
 
           {/* Warning for destructive actions */}
+          {!!notifications?.length && (
+            <div className="border-t pt-4 space-y-2">
+              <p className="flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
+                <Mail className="w-3 h-3" /> Customer notifications
+              </p>
+              <div className="space-y-2">
+                {notifications.map((n) => (
+                  <div key={n.id} className="border-2 border-foreground/20 p-2 text-xs space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-medium">{n.subject || "Direct Debit update"}</span>
+                      <Badge variant={n.status === "failed" ? "destructive" : "outline"} className="shrink-0">
+                        {n.status === "suppressed_test" ? "test — not sent" : n.status}
+                      </Badge>
+                    </div>
+                    <div className="text-muted-foreground">
+                      {format(new Date(n.created_at), "dd MMM yyyy HH:mm")}
+                      {n.sent_at ? ` · sent ${format(new Date(n.sent_at), "dd MMM HH:mm")}` : ""}
+                      {n.retry_count ? ` · ${n.retry_count} attempt(s)` : ""}
+                    </div>
+                    {n.last_error && <p className="text-destructive">{n.last_error}</p>}
+                    {n.status === "failed" && !n.is_test && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-2 border-foreground h-7"
+                        disabled={resendingId === n.id}
+                        onClick={() => handleResend(n.id)}
+                      >
+                        {resendingId === n.id
+                          ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          : <RefreshCw className="w-3 h-3 mr-1" />}
+                        Resend
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {config.variant === "destructive" && (
             <div className="bg-destructive/10 border border-destructive/30 p-3 rounded text-sm text-destructive">
               <strong>Warning:</strong> This action will notify the customer immediately. 

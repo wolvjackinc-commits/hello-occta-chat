@@ -35,10 +35,15 @@ export default function AdminJourneyControl() {
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [counts, setCounts] = useState<{ active: number; completed: number; cancelled: number }>({ active: 0, completed: 0, cancelled: 0 });
 
   const load = async () => {
-    const { data } = await supabase.from("platform_settings").select(COLS).eq("singleton", true).maybeSingle();
+    const { data, error } = await supabase
+      .from("platform_settings").select(COLS).eq("singleton", true).maybeSingle();
+    if (error) setLoadError(`${error.message}${error.hint ? ` — ${error.hint}` : ""}`);
+    else if (!data) setLoadError("No platform settings row was found (expected one row with singleton = true).");
+    else setLoadError(null);
     setS((data ?? null) as Settings | null);
     const statuses: [string, "active" | "completed" | "cancelled"][] = [
       ["active", "active"], ["completed", "completed"], ["cancelled", "cancelled"],
@@ -98,7 +103,22 @@ export default function AdminJourneyControl() {
   if (loading) {
     return <div className="p-10 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>;
   }
-  if (!s) return <p className="p-6 text-sm text-muted-foreground">Journey settings are unavailable.</p>;
+  if (!s) {
+    return (
+      <div className="p-6 max-w-2xl">
+        <div className="border-4 border-destructive p-5">
+          <h1 className="font-display uppercase text-lg mb-2">Journey settings could not be loaded</h1>
+          <p className="text-sm text-muted-foreground mb-3">
+            The switches are hidden because the settings read failed. The exact reason is below.
+          </p>
+          <pre className="text-xs whitespace-pre-wrap border-2 border-border p-3 mb-3">{loadError ?? "Unknown error"}</pre>
+          <Button onClick={() => { setLoading(true); load(); }}>
+            <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />Try again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const checks = s.customer_journey_v2_last_preflight_result?.checks ?? [];
 

@@ -17,6 +17,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
   const { status, postcode: ctxPostcode, addresses, selectedAddress, result, errorType, checkPostcode, selectAddress, reset, triggerFallback } = useAvailability();
   const [localPostcode, setLocalPostcode] = useState(ctxPostcode || "");
   const [routing, setRouting] = useState(false);
+  const [routingError, setRoutingError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // The server decides whether this visitor gets Journey 1 or Journey 2.
@@ -191,6 +192,11 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
           >
             {routing ? "Preparing…" : "Build your plan"} <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
+          {routingError && (
+            <p role="alert" className="mt-2 border-2 border-destructive p-2 text-xs text-destructive">
+              {routingError}
+            </p>
+          )}
         </>
       )}
 

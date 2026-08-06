@@ -212,7 +212,8 @@ Deno.serve(async (req) => {
   const result = {
     ok: failuresList.length === 0,
     ran_at: new Date().toISOString(),
-    ran_by: staff.userId,
+    ran_by: authorised.userId,
+    ran_by_actor: authorised.actor,
     checks,
     failures: failuresList.map((f) => f.label),
   };

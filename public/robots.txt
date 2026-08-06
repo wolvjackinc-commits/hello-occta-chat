@@ -29,7 +29,8 @@ Disallow: /quote/payment/
 # (/quote/start, /quote/thank-you) are intentionally NOT disallowed.
 Disallow: /quote/$
 
-# AI / answer-engine crawlers — explicitly allowed for AEO/GEO visibility
+# AI / answer-engine crawlers — explicitly allowed for public content.
+# The private-route rules above continue to apply.
 User-agent: GPTBot
 Allow: /
 
@@ -48,6 +49,7 @@ Allow: /
 User-agent: ClaudeBot
 Allow: /
 
-# Sitemap
+# Sitemaps
 Sitemap: https://www.occta.co.uk/sitemap.xml
+Sitemap: https://www.occta.co.uk/sitemap-learning.xml
 Sitemap: https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/kb-sitemap

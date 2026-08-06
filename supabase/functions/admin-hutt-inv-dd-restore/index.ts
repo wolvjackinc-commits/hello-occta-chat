@@ -15,7 +15,7 @@ import { itemiseInvoice, buildInvoicePdfBytes, sha256Hex } from "../_shared/bill
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret, x-task-secret",
 };
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const auth = req.headers.get("Authorization") ?? "";
-  const internal = req.headers.get("x-internal-secret") ?? "";
+  const internal = req.headers.get("x-internal-secret, x-task-secret") ?? "";
   const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
   const taskSecret = Deno.env.get("TASK_HUTT_RESTORE_SECRET") ?? "";
   const okAuth =

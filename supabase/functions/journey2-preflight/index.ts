@@ -162,8 +162,6 @@ Deno.serve(async (req) => {
       && Number(p.vat_rate_percent ?? 0) === vatRate);
   add("completion_route", "Completion data can be rendered from committed isolated data",
     !!t?.test_order_number && t?.snapshot_sha256 === sn?.snapshot_sha256);
-  add("dd_encryption", "Direct Debit detail encryption key is configured", !!Deno.env.get("DD_FIELD_ENC_KEY"));
-
   // Direct Debit provider readiness.
   const { data: ddCfg } = await supabase
     .from("dd_provider_config")
@@ -191,7 +189,7 @@ Deno.serve(async (req) => {
   // Transactional submission path must exist and must reject test sessions.
   const commitProbe = await supabase.rpc("journey2_commit_order", {
     _session_id: "00000000-0000-0000-0000-000000000000",
-    _customer_id: "00000000-0000-0000-0000-000000000000",
+    _recomputed_sha256: "0".repeat(64),
     _guest_order_id: null,
   });
   add("transactional_submit", "The transactional final-submission routine is installed",

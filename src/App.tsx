@@ -239,6 +239,7 @@ const AnimatedRoutes = () => {
             <Route path="live-chat" element={<Suspense fallback={<AdminRouteFallback />}><AdminLiveChat /></Suspense>} />
             <Route path="webhook-monitor" element={<Suspense fallback={<AdminRouteFallback />}><AdminWebhookMonitor /></Suspense>} />
             <Route path="notification-settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminNotificationSettings /></Suspense>} />
+            <Route path="journey-control" element={<Suspense fallback={<AdminRouteFallback />}><AdminJourneyControl /></Suspense>} />
             <Route path="notification-events" element={<Suspense fallback={<AdminRouteFallback />}><AdminNotificationEvents /></Suspense>} />
             <Route path="quote-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuoteRequests /></Suspense>} />
             <Route path="quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuotes /></Suspense>} />

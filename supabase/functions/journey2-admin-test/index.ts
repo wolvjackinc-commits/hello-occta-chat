@@ -1,47 +1,52 @@
 /**
- * Journey 2 — isolated admin end-to-end test orchestrator.
+ * Journey 2 — isolated end-to-end test orchestrator.
  *
- * Administrator only. Drives one complete Journey 2 run (all ten steps,
- * contract preparation, acceptance and final submission) against the isolated
- * journey2_test_* path while the public kill switch stays enabled.
+ * Reachable by a server-validated administrator, or internally by the service
+ * role for automated deployment verification. It drives the DEDICATED test
+ * path (`_shared/journey2TestPath.ts`), which writes exclusively to
+ * `journey2_test_*` tables, so the run never creates a live session, snapshot,
+ * customer, order, quote, contract, Direct Debit provider request, invoice,
+ * payment request, supplier task or customer email.
  *
- * Hard safety rules enforced here:
- *   • The session is always created with test_session = true.
- *   • No live customer, order, quote, contract, invoice, payment request,
- *     Direct Debit provider submission, supplier action or customer email is
- *     created — this is asserted after the run and the run FAILS if any exists.
- *   • Every gate is recorded in journey2_test_events as real evidence for the
- *     preflight, which refuses synthetic or historical data.
+ * Every gate is written to `journey2_test_events` as real evidence. The
+ * preflight refuses to pass without a recent, complete run recorded here.
  */
-import {
-  corsHeaders, jsonResponse, getServiceClient, requireStaff,
-} from "../_shared/quoteHelpers.ts";
+import { corsHeaders, jsonResponse, getServiceClient } from "../_shared/quoteHelpers.ts";
 import { loadJourneySettings } from "../_shared/journey2.ts";
+import { authoriseTestCaller } from "../journey2-test-runner/index.ts";
+import {
+  createTestSession, loadTestSessionByToken, saveTestStep, prepareTestContract,
+  acceptTestContract, submitTestOrder, getTestCompletion, TEST_LABEL,
+  TEST_DD_LIFECYCLE, TEST_STAGES,
+} from "../_shared/journey2TestPath.ts";
+import { snapshotFingerprint, verifyStoredSnapshot } from "../_shared/journey2Snapshot.ts";
+import { REQUIRED_DOC_TYPES } from "../_shared/journey2Docs.ts";
 
-const FN_BASE = `${Deno.env.get("SUPABASE_URL")}/functions/v1`;
-const SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+/** Live tables that an isolated test run must never write to. */
+const LIVE_TABLES: { table: string; column: string }[] = [
+  { table: "customer_journey_sessions", column: "checkout_session_id" },
+  { table: "journey2_contract_snapshots", column: "session_id" },
+  { table: "orders", column: "checkout_session_id" },
+  { table: "quotes", column: "checkout_session_id" },
+  { table: "order_journeys", column: "checkout_session_id" },
+  { table: "payment_methods", column: "checkout_session_id" },
+  { table: "journey2_dd_intake", column: "session_id" },
+  { table: "journey2_documents", column: "session_id" },
+  { table: "journey2_email_outbox", column: "session_id" },
+  { table: "journey2_account_provisioning", column: "session_id" },
+  { table: "journey2_contract_snapshots", column: "checkout_session_id" },
+];
 
-async function callFn(name: string, body: unknown, auth?: string) {
-  const res = await fetch(`${FN_BASE}/${name}`, {
-    method: "POST",
-    headers: { Authorization: auth ?? `Bearer ${SVC}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const json = await res.json().catch(() => ({}));
-  return { status: res.status, json: json as Record<string, unknown> };
-}
-
-function londonYmd(offsetDays: number) {
-  const d = new Date(Date.now() + offsetDays * 86400_000);
-  return d.toISOString().slice(0, 10);
+function ymd(offsetDays: number) {
+  return new Date(Date.now() + offsetDays * 86400_000).toISOString().slice(0, 10);
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const staff = await requireStaff(req, ["admin", "super_admin"]);
-  if (!("userId" in staff)) return jsonResponse({ error: staff.error }, staff.status);
+  const authorised = await authoriseTestCaller(req);
+  if (!authorised.ok) return jsonResponse({ error: authorised.error }, authorised.status);
 
   const supabase = getServiceClient();
   const settings = await loadJourneySettings(supabase);
@@ -52,52 +57,53 @@ Deno.serve(async (req) => {
     return ok;
   };
 
-  // ── 1 · Isolated test session, created despite the public kill switch ─────
-  const started = await callFn("journey2-session", {
-    action: "start",
-    anonymous_session_id: `admintest-${crypto.randomUUID()}`,
-    admin_test: true,
-  }, req.headers.get("Authorization") ?? undefined);
-  const token = String((started.json as any)?.token ?? "");
-  const startedSession = (started.json as any)?.session ?? null;
-  if (started.status !== 200 || (started.json as any)?.journey_version !== "v2" || !token || !startedSession?.id) {
-    return jsonResponse({
-      error: "admin_test_start_failed",
-      status: started.status,
-      response: started.json,
-    }, 500);
-  }
-  const session = startedSession as { id: string; checkout_session_id: string; test_session: boolean };
-
+  // ── 1 · Test run record, then an ISOLATED test session ────────────────────
   const run = await supabase.from("journey2_test_runs").insert({
-    session_id: session.id,
-    checkout_session_id: session.checkout_session_id,
-    started_by: staff.userId,
-    label: "TEST — Journey 2 isolated admin end-to-end run",
+    label: TEST_LABEL,
+    started_by: authorised.actor === "admin" ? authorised.userId : null,
     status: "running",
   }).select("id").single();
   if (run.error) return jsonResponse({ error: "test_run_failed", details: run.error.message }, 500);
   const runId = run.data.id;
 
-  // Bind the session to this test run so every downstream function writes its
-  // isolated rows against the same evidence record.
-  await supabase.from("customer_journey_sessions")
-    .update({ test_run_id: runId })
-    .eq("id", session.id);
+  const finish = async (ok: boolean, extra: Record<string, unknown>) => {
+    for (const g of gates) {
+      await supabase.from("journey2_test_events")
+        .insert({ test_run_id: runId, gate_key: g.key, ok: g.ok, detail: g.detail ?? null });
+    }
+    const failures = gates.filter((g) => !g.ok).map((g) => g.key);
+    await supabase.from("journey2_test_runs").update({
+      status: ok && failures.length === 0 ? "completed" : "failed",
+      finished_at: new Date().toISOString(),
+      result: { gates, failures, ...extra },
+    }).eq("id", runId);
+    await supabase.rpc("log_event", {
+      _actor_type: "admin",
+      _event_type: "journey2_admin_test_run",
+      _title: `Journey 2 isolated test run ${ok && failures.length === 0 ? "passed" : "failed"}`,
+      _details: { test_run_id: runId, failures },
+      _source_module: "journey2",
+      _severity: ok && failures.length === 0 ? "info" : "warning",
+    }).then(() => {}).catch(() => {});
+    return jsonResponse({ ok: ok && failures.length === 0, test_run_id: runId, failures, gates, ...extra });
+  };
+
+  const created = await createTestSession(supabase, { testRunId: runId });
+  if (!created.ok) return await finish(false, { error: created.error });
+  const token = created.token;
+  let session = created.session;
+  await supabase.from("journey2_test_runs")
+    .update({ session_id: session.id, checkout_session_id: session.checkout_session_id }).eq("id", runId);
 
   gate("admin_test_access_with_kill_switch",
-    !!session.test_session && !!settings.customer_journey_v2_kill_switch,
-    "test session created while the public kill switch is enabled");
+    !!settings.customer_journey_v2_kill_switch && !!session.test_session,
+    `isolated test session created while the public kill switch is ${settings.customer_journey_v2_kill_switch ? "ON" : "OFF"}`);
+  gate("dedicated_test_session_table", session.label?.startsWith("TEST") === true,
+    "session stored in journey2_test_sessions");
 
-  // ── 2 · Drive the ten-step sequence in order ──────────────────────────────
+  // ── 2 · The seven pre-contract stages ─────────────────────────────────────
   const steps: [string, Record<string, unknown>][] = [
-    ["address", {
-      postcode: "SW1A 1AA",
-      address_line_1: "1 Test Street",
-      address_line_2: null,
-      town: "London",
-      county: "Greater London",
-    }],
+    ["address", { postcode: "SW1A 1AA", address_line_1: "1 Test Street", address_line_2: null, town: "London", county: "Greater London" }],
     ["plan", { speed_bucket: "superfast", plan_term: "flex_30" }],
     ["router", { router_option: "standard", router_payment_type: "one_off" }],
     ["extras", { addons: ["priority_support"], digital_voice_acknowledged: false }],
@@ -114,176 +120,189 @@ Deno.serve(async (req) => {
       marketing_consent: false,
       privacy_acknowledged: true,
     }],
-    ["start_date", { preferred_start_date: londonYmd(21), cooling_off_acknowledged: true }],
+    ["start_date", { preferred_start_date: ymd(21), cooling_off_acknowledged: true }],
     ["billing", {
       billing_anchor_day: 1,
       dd_consent: true,
       dd_details: {
-        account_holder_name: "TEST Journey Two",
-        sort_code: "000000",
-        account_number: "00000000",
-        bank_name: "TEST Bank",
-        billing_address: "1 Test Street, London",
-        postcode: "SW1A 1AA",
-        uk_account_confirmed: true,
-        payer_authorised_confirmed: true,
+        account_holder_name: "TEST Journey Two", sort_code: "000000", account_number: "00000000",
+        bank_name: "TEST Bank", billing_address: "1 Test Street, London", postcode: "SW1A 1AA",
+        uk_account_confirmed: true, payer_authorised_confirmed: true,
       },
     }],
   ];
-
-  const stepResults: Record<string, number> = {};
+  const stageLog: string[] = [];
   for (const [step, payload] of steps) {
-    const r = await callFn("journey2-session", { action: "save_step", token, step, payload });
-    stepResults[step] = r.status;
-    if (r.status !== 200 || (r.json as any).error) {
-      gate(`step_${step}`, false, `${r.status} ${JSON.stringify(r.json).slice(0, 240)}`);
-      await supabase.from("journey2_test_runs").update({
-        status: "failed", finished_at: new Date().toISOString(),
-        result: { failed_step: step, response: r.json, gates },
-      }).eq("id", runId);
-      for (const g of gates) {
-        await supabase.from("journey2_test_events").insert({ test_run_id: runId, gate_key: g.key, ok: g.ok, detail: g.detail ?? null });
-      }
-      return jsonResponse({ ok: false, error: "step_failed", step, response: r.json, test_run_id: runId }, 200);
+    const r = await saveTestStep(supabase, settings, session, step, payload);
+    if (!r.ok) {
+      gate(`stage_${step}`, false, `${r.status} ${r.error} ${JSON.stringify(r.details ?? {}).slice(0, 200)}`);
+      return await finish(false, { failed_stage: step });
     }
-    gate(`step_${step}`, true, "saved");
+    session = r.session;
+    stageLog.push(step);
+    gate(`stage_${step}`, true, "saved to journey2_test_sessions");
   }
+  const ddAfterBilling = await supabase.from("journey2_test_dd_intake")
+    .select("dd_status, bank_details_ciphertext, nonce, masked_account_last4, masked_sort_last2")
+    .eq("session_id", session.id).maybeSingle();
+  gate("dd_state_details_received", ddAfterBilling.data?.dd_status === "details_received",
+    String(ddAfterBilling.data?.dd_status));
+  gate("dd_encrypted_in_test",
+    !!ddAfterBilling.data?.bank_details_ciphertext && !!ddAfterBilling.data?.nonce,
+    "AES-256-GCM ciphertext and nonce present in journey2_test_dd_intake");
+  const masked = (session.dd_masked ?? {}) as Record<string, unknown>;
+  gate("dd_masked_only",
+    String(masked.last4 ?? "").length === 4 && !("account_number" in masked) && !("sort_code" in masked),
+    "only last 4 / last 2 held on the test session");
 
-  // ── 3 · Contract prepared only AFTER start date and billing ──────────────
-  const prep = await callFn("journey2-prepare-contract", { token });
-  gate("contract_prepared_after_billing", prep.status === 200 && !(prep.json as any).error,
-    `${prep.status} ${JSON.stringify(prep.json).slice(0, 240)}`);
+  // ── 3 · Contract stage ───────────────────────────────────────────────────
+  const prep = await prepareTestContract(supabase, settings, session);
+  if (!prep.ok) {
+    gate("stage_contract", false, `${prep.status} ${prep.error}`);
+    return await finish(false, { failed_stage: "contract" });
+  }
+  session = prep.session;
+  stageLog.push("contract");
+  gate("stage_contract", true, "test snapshot and test contract summary written");
+  gate("dd_state_pending_contract", session.dd_status === "pending_contract", String(session.dd_status));
 
-  const { data: snap } = await supabase.from("journey2_contract_snapshots")
+  const snapRow = await supabase.from("journey2_test_snapshots")
     .select("snapshot, snapshot_sha256").eq("session_id", session.id).maybeSingle();
-  gate("snapshot_fingerprint", typeof snap?.snapshot_sha256 === "string" && snap.snapshot_sha256.length === 64,
-    snap?.snapshot_sha256 ?? "no snapshot");
+  const storedHash = String(snapRow.data?.snapshot_sha256 ?? "");
+  const recomputed = snapRow.data ? await snapshotFingerprint(snapRow.data.snapshot) : "";
+  gate("snapshot_hash_byte_for_byte", !!storedHash && recomputed === storedHash,
+    `stored ${storedHash.slice(0, 16)}… recomputed ${recomputed.slice(0, 16)}…`);
 
-  const pricing = (snap?.snapshot as any)?.pricing ?? {};
-  gate("zero_due_today", Number(pricing.amount_due_today ?? 1) === 0, `due today ${pricing.amount_due_today}`);
+  // Deliberate tamper on a COPY: integrity verification must reject it.
+  const tampered = JSON.parse(JSON.stringify(snapRow.data?.snapshot ?? {}));
+  if (tampered?.pricing) tampered.pricing.monthly_incl_vat = Number(tampered.pricing.monthly_incl_vat ?? 0) + 1;
+  const tamperCheck = await verifyStoredSnapshot(tampered, storedHash);
+  gate("tamper_rejected", tamperCheck.ok === false && tamperCheck.reason === "fingerprint_mismatch",
+    tamperCheck.reason ?? "tampered snapshot was accepted");
+  const immutable = await supabase.from("journey2_test_snapshots")
+    .update({ snapshot_sha256: "0".repeat(64) }).eq("session_id", session.id);
+  gate("snapshot_immutable", !!immutable.error, immutable.error?.message ?? "snapshot was editable");
 
-  const { data: testCs } = await supabase.from("journey2_test_contract_summaries")
-    .select("id, status, snapshot_sha256").eq("session_id", session.id).maybeSingle();
-  gate("test_contract_isolated", !!testCs && testCs.snapshot_sha256 === snap?.snapshot_sha256,
-    testCs ? `test contract ${testCs.id}` : "no isolated test contract");
+  const pricing = (snapRow.data?.snapshot as any)?.pricing ?? {};
+  gate("zero_due_today", Number(pricing.amount_due_today ?? 1) === 0, `£${pricing.amount_due_today}`);
+  gate("vat_matches_settings",
+    Number(pricing.vat_rate_percent ?? -1) === Number(settings.vat_default_rate ?? 20)
+      && Math.abs(Number(pricing.monthly_ex_vat) + Number(pricing.monthly_vat) - Number(pricing.monthly_incl_vat)) < 0.02,
+    `${pricing.vat_rate_percent}% configured ${settings.vat_default_rate}%`);
+  gate("one_offs_on_first_bill",
+    Number(pricing.estimated_first_bill_incl_vat ?? 0)
+      === Math.round((Number(pricing.monthly_incl_vat ?? 0) + Number(pricing.one_off_charges_incl_vat ?? 0)) * 100) / 100,
+    `first bill £${pricing.estimated_first_bill_incl_vat}`);
 
-  // ── 4 · Acceptance evidence, test tables only ────────────────────────────
-  const acc = await callFn("journey2-test-accept", {
-    token,
+  // ── 4 · Review / acceptance stage ────────────────────────────────────────
+  const acc = await acceptTestContract(supabase, session, {
     accepted_name: "TEST Journey Two",
     acknowledgements: {
-      contract_summary_read: true,
-      contract_information_read: true,
-      cooling_off_understood: true,
-      dd_authorised: true,
+      contract_summary_read: true, contract_information_read: true,
+      cooling_off_understood: true, dd_authorised: true,
     },
+    evidence: { user_agent: "journey2-admin-test", ip: "isolated" },
   });
-  gate("test_acceptance", acc.status === 200 && !(acc.json as any).error,
-    `${acc.status} ${JSON.stringify(acc.json).slice(0, 240)}`);
+  if (!acc.ok) {
+    gate("stage_review", false, `${acc.status} ${acc.error}`);
+    return await finish(false, { failed_stage: "review" });
+  }
+  session = (await loadTestSessionByToken(supabase, token)) ?? session;
+  stageLog.push("review");
+  gate("stage_review", true, "test acceptance evidence recorded");
 
-  // ── 5 · Final submission, then an idempotent replay ──────────────────────
-  const sub1 = await callFn("journey2-submit", { token, final_consent: true });
-  gate("submit", sub1.status === 200 && (sub1.json as any).ok === true,
-    `${sub1.status} ${JSON.stringify(sub1.json).slice(0, 240)}`);
-  const sub2 = await callFn("journey2-submit", { token, final_consent: true });
-  const { count: orderCount } = await supabase.from("journey2_test_orders")
-    .select("id", { count: "exact", head: true }).eq("session_id", session.id);
-  gate("idempotent_submission", (orderCount ?? 0) === 1 && sub2.status === 200,
-    `${orderCount} test order(s) after a repeated submission`);
+  // ── 5 · Submit twice: exactly one of everything ──────────────────────────
+  const sub1 = await submitTestOrder(supabase, session);
+  if (!sub1.ok) {
+    gate("stage_complete", false, `${sub1.status} ${sub1.error}`);
+    return await finish(false, { failed_stage: "complete" });
+  }
+  const sub2 = await submitTestOrder(supabase, (await loadTestSessionByToken(supabase, token)) ?? session);
+  stageLog.push("complete");
+  gate("stage_complete", true, `test order ${sub1.test_order_number}`);
+  gate("submit_hash_recomputed", sub1.snapshot_sha256 === storedHash, sub1.snapshot_sha256);
+  gate("second_submit_created_nothing", sub2.ok === true && (sub2 as any).created === false,
+    "repeat submission returned the existing test order");
 
-  // ── 6 · Document pack, suppressed email, masked + encrypted DD ───────────
-  const { data: testOrder } = await supabase.from("journey2_test_orders")
-    .select("id, test_order_number, amount_due_today, snapshot_sha256")
-    .eq("session_id", session.id).maybeSingle();
-  const { count: docCount } = await supabase.from("journey2_test_documents")
-    .select("id", { count: "exact", head: true }).eq("test_order_id", testOrder?.id ?? crypto.randomUUID());
-  gate("document_pack", (docCount ?? 0) >= 8, `${docCount} test document(s)`);
-  gate("completion_data", !!testOrder?.test_order_number && testOrder?.snapshot_sha256 === snap?.snapshot_sha256,
-    testOrder?.test_order_number ?? "no test order");
+  const counts: Record<string, number> = {};
+  const countRows = async (table: string, column: string, value: string) => {
+    const { count } = await supabase.from(table).select("id", { count: "exact", head: true }).eq(column, value);
+    return count ?? 0;
+  };
+  counts.test_orders = await countRows("journey2_test_orders", "session_id", session.id);
+  counts.test_acceptances = await countRows("journey2_test_acceptances", "session_id", session.id);
+  counts.test_dd_intake = await countRows("journey2_test_dd_intake", "session_id", session.id);
+  counts.test_documents = await countRows("journey2_test_documents", "test_order_id", sub1.test_order_id);
+  counts.test_emails = await countRows("journey2_test_email_outbox", "test_order_id", sub1.test_order_id);
+  gate("exactly_one_test_order", counts.test_orders === 1, `${counts.test_orders}`);
+  gate("exactly_one_test_acceptance", counts.test_acceptances === 1, `${counts.test_acceptances}`);
+  gate("exactly_one_test_dd_intake", counts.test_dd_intake === 1, `${counts.test_dd_intake}`);
+  gate("exactly_one_suppressed_email", counts.test_emails === 1, `${counts.test_emails}`);
+
+  const { data: docRows } = await supabase.from("journey2_test_documents")
+    .select("doc_type").eq("test_order_id", sub1.test_order_id);
+  const docTypes = new Set((docRows ?? []).map((d: any) => d.doc_type));
+  const missingDocs = REQUIRED_DOC_TYPES.filter((t) => !docTypes.has(t));
+  gate("document_pack_complete", missingDocs.length === 0 && docTypes.size === counts.test_documents,
+    missingDocs.length ? `missing ${missingDocs.join(", ")}` : `${docTypes.size} unique document types`);
 
   const { data: outbox } = await supabase.from("journey2_test_email_outbox")
-    .select("status").eq("test_order_id", testOrder?.id ?? crypto.randomUUID()).maybeSingle();
-  gate("email_suppressed_in_test", outbox?.status === "suppressed_test", outbox?.status ?? "no suppressed record");
+    .select("status, recipient_masked").eq("test_order_id", sub1.test_order_id).maybeSingle();
+  gate("email_suppressed_in_test", outbox?.status === "suppressed_test", String(outbox?.status));
 
-  const { data: ddIntake } = await supabase.from("journey2_test_dd_intake")
-    .select("bank_details_ciphertext, nonce, masked_account_last4, dd_status")
-    .eq("session_id", session.id).maybeSingle();
-  gate("dd_encrypted_in_test", !!ddIntake?.bank_details_ciphertext && !!ddIntake?.nonce);
-  const { data: sessRow } = await supabase.from("customer_journey_sessions")
-    .select("*").eq("id", session.id).maybeSingle();
-  const masked = (sessRow?.dd_masked ?? {}) as Record<string, unknown>;
-  gate("dd_masked_only",
-    String(masked.last4 ?? "").length === 4 && !("account_number" in masked) && !("sort_code" in masked));
-  gate("dd_lifecycle_status",
-    ["details_received", "pending_contract", "pending_activation", "active"].includes(String(ddIntake?.dd_status ?? "")),
-    String(ddIntake?.dd_status));
-  gate("ten_step_sequence",
-    sessRow?.current_step === "complete" && !!sessRow?.preferred_start_date && !!sessRow?.billing_anchor_day,
-    `final step ${sessRow?.current_step}`);
+  const ddFinal = await supabase.from("journey2_test_dd_intake")
+    .select("dd_status").eq("session_id", session.id).maybeSingle();
+  gate("dd_state_setup_requested_test", ddFinal.data?.dd_status === "setup_requested_test", String(ddFinal.data?.dd_status));
+  gate("dd_never_live_state",
+    TEST_DD_LIFECYCLE.includes(String(ddFinal.data?.dd_status) as never)
+      && !["pending_activation", "active"].includes(String(ddFinal.data?.dd_status)),
+    "test lifecycle only");
 
-  // ── 7 · Live-side isolation assertions ──────────────────────────────────
-  const liveChecks: [string, PromiseLike<{ count: number | null }>][] = [
-    ["no_live_order", supabase.from("orders").select("id", { count: "exact", head: true })
-      .eq("checkout_session_id", session.checkout_session_id) as never],
-    ["no_live_quote", supabase.from("quotes").select("id", { count: "exact", head: true })
-      .eq("checkout_session_id", session.checkout_session_id) as never],
-    ["no_live_order_journey", supabase.from("order_journeys").select("id", { count: "exact", head: true })
-      .eq("checkout_session_id", session.checkout_session_id) as never],
-    ["no_live_payment_method", supabase.from("payment_methods").select("id", { count: "exact", head: true })
-      .eq("checkout_session_id", session.checkout_session_id) as never],
-    ["no_live_dd_intake", supabase.from("journey2_dd_intake").select("session_id", { count: "exact", head: true })
-      .eq("session_id", session.id) as never],
-    ["no_live_documents", supabase.from("journey2_documents").select("id", { count: "exact", head: true })
-      .eq("session_id", session.id) as never],
-    ["no_live_email_outbox", supabase.from("journey2_email_outbox").select("id", { count: "exact", head: true })
-      .eq("session_id", session.id) as never],
-    ["no_account_provisioning", supabase.from("journey2_account_provisioning").select("id", { count: "exact", head: true })
-      .eq("session_id", session.id) as never],
-  ];
-  for (const [key, q] of liveChecks) {
-    const { count } = await q;
-    gate(key, (count ?? 0) === 0, `${count ?? 0} live row(s)`);
+  // ── 6 · Ten logical stages and the completion data endpoint ─────────────
+  const finalSession = (await loadTestSessionByToken(supabase, token)) ?? session;
+  const stagesSeen = [...stageLog];
+  gate("ten_stage_sequence",
+    TEST_STAGES.every((s) => stagesSeen.includes(s)) && finalSession.current_step === "complete",
+    stagesSeen.join(" → "));
+
+  const completion = await getTestCompletion(supabase, token);
+  gate("completion_data_from_test_tables",
+    !!completion?.completion && completion.completion.order_number === sub1.test_order_number
+      && Number(completion.completion.amount_due_today) === 0
+      && completion.completion.snapshot_sha256 === storedHash,
+    completion?.completion?.order_number ?? "no completion data");
+
+  // ── 7 · Zero live writes ────────────────────────────────────────────────
+  const liveCounts: Record<string, number> = {};
+  for (const { table, column } of LIVE_TABLES) {
+    const value = column === "session_id" ? session.id : session.checkout_session_id;
+    const { count, error } = await supabase.from(table)
+      .select("*", { count: "exact", head: true }).eq(column, value);
+    const key = `${table}.${column}`;
+    liveCounts[key] = error ? -1 : (count ?? 0);
+    gate(`no_live_write_${table}_${column}`, !error && (count ?? 0) === 0,
+      error ? `check failed: ${error.message}` : `${count ?? 0} row(s)`);
   }
-  gate("no_live_ids_on_session",
-    !sessRow?.order_id && !sessRow?.customer_id && !sessRow?.quote_id && !sessRow?.contract_summary_id,
-    "session carries no live order, customer, quote or contract id");
-
-  // ── 8 · Persist evidence ────────────────────────────────────────────────
-  for (const g of gates) {
-    await supabase.from("journey2_test_events")
-      .insert({ test_run_id: runId, gate_key: g.key, ok: g.ok, detail: g.detail ?? null });
+  // Live tables keyed by contact rather than session: prove nothing was created
+  // for the isolated test email address.
+  const testEmail = (finalSession.customer_details ?? {}).email ?? "";
+  for (const [table, column] of [["profiles", "email"], ["quote_requests", "email"], ["guest_orders", "email"]] as const) {
+    const { count, error } = await supabase.from(table)
+      .select("*", { count: "exact", head: true }).eq(column, testEmail);
+    liveCounts[`${table}.${column}`] = error ? -1 : (count ?? 0);
+    gate(`no_live_write_${table}`, !error && (count ?? 0) === 0,
+      error ? `check failed: ${error.message}` : `${count ?? 0} row(s) for the test email`);
   }
-  const failures = gates.filter((g) => !g.ok).map((g) => g.key);
-  const ok = failures.length === 0;
 
-  await supabase.from("journey2_test_runs").update({
-    status: ok ? "completed" : "failed",
-    finished_at: new Date().toISOString(),
-    result: {
-      gates, failures, steps: stepResults,
-      test_order_number: testOrder?.test_order_number ?? null,
-      snapshot_sha256: snap?.snapshot_sha256 ?? null,
-      documents: docCount ?? 0,
-    },
-  }).eq("id", runId);
-
-  await supabase.rpc("log_event", {
-    _actor_type: "admin",
-    _event_type: "journey2_admin_test_run",
-    _title: `Journey 2 isolated admin test run ${ok ? "passed" : "failed"}`,
-    _details: { test_run_id: runId, failures, session_id: session.id },
-    _source_module: "journey2",
-    _severity: ok ? "info" : "warning",
-  }).then(() => {}).catch(() => {});
-
-  return jsonResponse({
-    ok,
-    test_run_id: runId,
+  return await finish(true, {
     session_id: session.id,
-    test_order_number: testOrder?.test_order_number ?? null,
-    snapshot_sha256: snap?.snapshot_sha256 ?? null,
-    documents: docCount ?? 0,
-    failures,
-    gates,
+    checkout_session_id: session.checkout_session_id,
+    test_order_number: sub1.test_order_number,
+    snapshot_sha256: storedHash,
+    dd_transitions: sub1.dd_transitions,
+    stages: stagesSeen,
+    isolated_counts: counts,
+    live_table_counts: liveCounts,
+    actor: authorised.actor,
   });
 });

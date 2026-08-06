@@ -89,6 +89,13 @@ export type JourneyAssignment = {
 /**
  * Deterministic journey router for NEW sessions only. An existing session
  * always keeps the version stored against it.
+ *
+ * `adminTest` may only be set after the caller has been validated
+ * server-side as an admin/super_admin (or the internal service role). A
+ * server-validated test start is allowed to reach Journey 2 while the public
+ * kill switch is ON, because it runs entirely against the isolated
+ * `journey2_test_*` tables. Anonymous and customer starts always resolve to
+ * Journey 1 while the kill switch is ON.
  */
 export function assignJourneyVersion(
   s: JourneySettings,
@@ -96,10 +103,7 @@ export function assignJourneyVersion(
   opts: { adminTest?: boolean } = {},
 ): JourneyAssignment {
   const v2Ready = s.customer_journey_v2_enabled && !s.customer_journey_v2_kill_switch && preflightPassed(s);
-  if (opts.adminTest) {
-    if (s.customer_journey_v2_kill_switch) return { version: null, reason: "kill_switch" };
-    return { version: "v2", reason: "admin_test_session" };
-  }
+  if (opts.adminTest) return { version: "v2", reason: "verified_admin_isolated_test" };
   if (s.customer_journey_v2_kill_switch) {
     return s.customer_journey_v1_enabled
       ? { version: "v1", reason: "v2_kill_switch" }

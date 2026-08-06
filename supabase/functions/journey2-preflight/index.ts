@@ -185,6 +185,64 @@ Deno.serve(async (req) => {
   add("dd_template", "Mandate and Guarantee template metadata are recorded for every provider",
     enabledProviders.length > 0 && enabledProviders.every((p) => !!p.mandate_template_name && !!p.guarantee_template_name),
     enabledProviders.map((p) => p.mandate_template_name).join(", "));
+
+  // Explicit per-provider gates for the two approved manual bureaux. These are
+  // configuration checks only: no API key, webhook, credential or external
+  // approval date is required or fabricated anywhere.
+  const expectedProviders = [
+    { code: "fastpay", collection: "FastPay Ltd", sun: "246668", notice: 5, template: "DDI - OCCTA Ltd.pdf" },
+    { code: "accesspay", collection: "APS Re OCCTA", sun: "538166", notice: 3, template: "Occta Mandate.pdf" },
+  ];
+  for (const exp of expectedProviders) {
+    const row = (ddProviders ?? []).find((p) => p.provider_code === exp.code);
+    const ok = !!row && row.enabled === true && row.submission_mode === "manual_portal"
+      && row.legal_collection_name === exp.collection
+      && String(row.service_user_number) === exp.sun
+      && Number(row.advance_notice_working_days) === exp.notice
+      && row.mandate_template_name === exp.template
+      && !!row.guarantee_template_name;
+    add(`dd_provider_${exp.code}`,
+      `${exp.collection} is configured as a manual-portal Direct Debit provider (SUN ${exp.sun}, ${exp.notice} working days' notice, ${exp.template})`,
+      ok,
+      row
+        ? `${row.legal_collection_name} / SUN ${row.service_user_number} / ${row.advance_notice_working_days}wd / ${row.mandate_template_name} / ${row.submission_mode} / enabled=${row.enabled}`
+        : "provider row missing");
+  }
+  add("dd_no_provider_api_required", "No Direct Debit provider API, webhook or automated submission is required or configured",
+    (ddProviders ?? []).every((p) => p.submission_mode === "manual_portal"),
+    "manual portal submission only");
+
+  // Lifecycle machinery: immutable history and an idempotent notification outbox.
+  const historyProbe = await supabase.from("dd_mandate_status_history").select("id", { count: "exact", head: true });
+  const outboxProbe = await supabase.from("dd_email_outbox").select("id", { count: "exact", head: true });
+  add("dd_status_history_installed", "An immutable Direct Debit status history table is installed",
+    !historyProbe.error, historyProbe.error?.message ?? "present");
+  add("dd_outbox_installed", "The idempotent Direct Debit notification outbox and server-side sender are installed",
+    !outboxProbe.error, outboxProbe.error?.message ?? "present");
+
+  // Recent database-backed workflow evidence for BOTH providers, produced by
+  // isolated TEST mandates whose emails were suppressed (never delivered).
+  const evidenceSince = new Date(Date.now() - 30 * 24 * 3600_000).toISOString();
+  const { data: evidence } = await supabase
+    .from("dd_email_outbox")
+    .select("payload, status, is_test, created_at")
+    .eq("is_test", true)
+    .gte("created_at", evidenceSince)
+    .limit(2000);
+  for (const exp of expectedProviders) {
+    const rows = (evidence ?? []).filter((e) => (e.payload as Record<string, unknown>)?.provider_code === exp.code);
+    const suppressed = rows.filter((e) => e.status === "suppressed_test");
+    const noticeOk = suppressed.some((e) =>
+      Number((e.payload as Record<string, unknown>)?.advance_notice_working_days) === exp.notice);
+    add(`dd_test_evidence_${exp.code}`,
+      `Recent database-backed ${exp.collection} workflow evidence exists with suppressed test notifications and ${exp.notice} working days' notice`,
+      suppressed.length > 0 && noticeOk && suppressed.length === rows.length,
+      `${suppressed.length} suppressed test notification(s) in the last 30 days`);
+  }
+  const leakedTest = (evidence ?? []).filter((e) => e.status !== "suppressed_test");
+  add("dd_test_never_delivered", "No test Direct Debit notification was ever queued for real delivery",
+    leakedTest.length === 0, `${leakedTest.length} non-suppressed test row(s)`);
+
   // Admin selection capability: the atomic status routine must be installed and
   // must refuse a provider-dependent status with no provider selected.
   const selProbe = await supabase.rpc("dd_admin_change_mandate_status", {

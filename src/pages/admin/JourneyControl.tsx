@@ -100,6 +100,32 @@ export default function AdminJourneyControl() {
     });
   };
 
+  /**
+   * Runs one complete Journey 2 order end to end against the isolated test
+   * tables. Nothing live is created: no customer, order, quote, contract,
+   * invoice, Direct Debit submission, supplier action or customer email.
+   */
+  const runIsolatedTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    const { data, error } = await supabase.functions.invoke("journey2-admin-test", { body: {} });
+    setTesting(false);
+    if (error || (data as any)?.error) {
+      const detail = (data as any)?.error ?? error?.message ?? "Unknown error";
+      setTestResult({ ok: false, failures: [String(detail)], gates: [], response: data });
+      toast({ title: "Test run failed to start", description: String(detail), variant: "destructive" });
+      return;
+    }
+    setTestResult(data as TestRun);
+    toast({
+      title: (data as any).ok ? "Isolated test run passed" : "Isolated test run found blockers",
+      description: (data as any).ok
+        ? `Test order ${(data as any).test_order_number} created in the test tables only.`
+        : `${(data as any).failures?.length ?? 0} gate(s) failed.`,
+      variant: (data as any).ok ? "default" : "destructive",
+    });
+  };
+
   if (loading) {
     return <div className="p-10 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>;
   }

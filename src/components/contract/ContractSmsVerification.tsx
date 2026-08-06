@@ -29,10 +29,12 @@ function friendly(code?: string | null) {
 export default function ContractSmsVerification({
   token,
   onVerifiedChange,
+  onMaskedChange,
   onChangeNumber,
 }: {
   token: string;
   onVerifiedChange: (verified: boolean) => void;
+  onMaskedChange?: (masked: string | null) => void;
   onChangeNumber?: () => void;
 }) {
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,8 @@ export default function ContractSmsVerification({
   const [resendIn, setResendIn] = useState(0);
   const [expiresIn, setExpiresIn] = useState(0);
   const inFlight = useRef(false);
+
+  useEffect(() => { onMaskedChange?.(phoneMasked); }, [phoneMasked, onMaskedChange]);
 
   const setVerifiedState = useCallback((v: boolean) => {
     setVerified(v);

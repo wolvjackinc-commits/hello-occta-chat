@@ -20,6 +20,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
+import { startAssignedJourney } from "@/lib/journey2/route";
 
 const UK_TELECOM_PROVIDERS = [
   "BT", "Sky", "TalkTalk", "Virgin Media", "Vodafone", "Plusnet",
@@ -826,6 +827,59 @@ function Line({ label, value, bold }: { label: string; value: string; bold?: boo
 }
 
 export default function BuildPlan() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [routingError, setRoutingError] = useState<string | null>(null);
+  const [routingAttempt, setRoutingAttempt] = useState(0);
+  const started = useRef(false);
+  const allowLegacyTest = searchParams.get("test") === "1";
+
+  useEffect(() => {
+    if (allowLegacyTest || started.current) return;
+    started.current = true;
+    setRoutingError(null);
+    void startAssignedJourney(
+      (path) => navigate(path, { replace: true }),
+      (message) => setRoutingError(message),
+    );
+  }, [allowLegacyTest, navigate, routingAttempt]);
+
+  if (!allowLegacyTest) {
+    return (
+      <Layout>
+        <SEO
+          title="Starting your broadband order | OCCTA Limited"
+          description="Start your OCCTA broadband order with clear prices, contract terms and Direct Debit setup."
+          canonical="/order"
+          noIndex
+        />
+        <main className="container mx-auto max-w-xl px-4 py-16 text-center" aria-live="polite">
+          {routingError ? (
+            <div className="border-4 border-foreground p-8">
+              <h1 className="font-display text-2xl uppercase">We couldn't start your order</h1>
+              <p className="mt-3 text-sm text-muted-foreground">{routingError}</p>
+              <Button
+                className="mt-5"
+                onClick={() => {
+                  started.current = false;
+                  setRoutingAttempt((attempt) => attempt + 1);
+                }}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Loader2 className="mx-auto mb-4 h-6 w-6 animate-spin" aria-hidden="true" />
+              <h1 className="font-display text-2xl uppercase">Starting your order</h1>
+              <p className="mt-2 text-sm text-muted-foreground">Loading the latest OCCTA ordering journey…</p>
+            </>
+          )}
+        </main>
+      </Layout>
+    );
+  }
+
   return (
     <AvailabilityProvider>
       <BuildPlanInner />

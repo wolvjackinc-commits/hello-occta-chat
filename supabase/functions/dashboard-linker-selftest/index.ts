@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     // 2. authenticated linker links the caller's own record
     const clientA = await asUser(emailA);
     const first = await clientA.rpc("link_my_customer_account");
-    const linkedFirst = Number((first.data as any)?.linked?.guest_orders ?? -1);
+    const linkedFirst = Number((first.data as any)?.guest_orders ?? -1);
     record("authenticated_linker_links_own_record", !first.error && linkedFirst === 1, JSON.stringify(first.data ?? first.error));
 
     const { data: ownedA } = await admin.from("guest_orders").select("user_id").eq("id", orderA).single();
@@ -82,13 +82,13 @@ Deno.serve(async (req) => {
 
     // 3. idempotency — second call links nothing new
     const second = await clientA.rpc("link_my_customer_account");
-    record("idempotent_second_call", !second.error && Number((second.data as any)?.linked?.guest_orders ?? -1) === 0,
+    record("idempotent_second_call", !second.error && Number((second.data as any)?.guest_orders ?? -1) === 0,
       JSON.stringify(second.data ?? second.error));
 
     // 4. cross-user isolation — B must not take A's record, and A keeps ownership
     const clientB = await asUser(emailB);
     const bCall = await clientB.rpc("link_my_customer_account");
-    record("cross_user_links_only_own", !bCall.error && Number((bCall.data as any)?.linked?.guest_orders ?? -1) === 1,
+    record("cross_user_links_only_own", !bCall.error && Number((bCall.data as any)?.guest_orders ?? -1) === 1,
       JSON.stringify(bCall.data ?? bCall.error));
     const { data: stillA } = await admin.from("guest_orders").select("user_id").eq("id", orderA).single();
     record("existing_ownership_not_reassigned", stillA?.user_id === uidA, String(stillA?.user_id));
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     // 5. empty account — linker succeeds with zero links and overview returns a shape
     const clientC = await asUser(emailC);
     const cCall = await clientC.rpc("link_my_customer_account");
-    record("empty_account_linker_ok", !cCall.error && Number((cCall.data as any)?.linked?.guest_orders ?? -1) === 0,
+    record("empty_account_linker_ok", !cCall.error && Number((cCall.data as any)?.guest_orders ?? -1) === 0,
       JSON.stringify(cCall.data ?? cCall.error));
     const cOverview = await clientC.rpc("get_my_customer_overview");
     record("empty_account_overview_ok", !cOverview.error && !!cOverview.data, JSON.stringify(cOverview.error ?? "ok"));
@@ -108,12 +108,12 @@ Deno.serve(async (req) => {
     // 6. overview never exposes bank secrets
     const aOverview = await clientA.rpc("get_my_customer_overview");
     const raw = JSON.stringify(aOverview.data ?? {}).toLowerCase();
-    const leaked = ["account_number_encrypted", "sort_code_encrypted", "account_number_plain", "sort_code_plain", "bank_account_number", "\"sort_code\""]
+    const leaked = ["account_number_full", "sort_code_encrypted", "account_number_plain", "sort_code_plain", "bank_account_number", "\"sort_code\""]
       .filter((k) => raw.includes(k));
     record("overview_hides_bank_secrets", !aOverview.error && leaked.length === 0, leaked.join(",") || "none");
 
     // 7. no direct read access to raw mandate bank columns
-    const mandate = await clientA.from("dd_mandates").select("account_number_encrypted").limit(1);
+    const mandate = await clientA.from("dd_mandates").select("account_number_full,sort_code").limit(1);
     record("dd_bank_columns_not_readable", !!mandate.error || (mandate.data ?? []).length === 0,
       mandate.error?.message ?? "no rows");
   } catch (e) {

@@ -25,6 +25,7 @@ import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { CardRenderer, extractCards } from "./StructuredCards";
 import { useFocusTrap } from "./useFocusTrap";
 import { RaiseTicketDialog, type TicketPrefill } from "@/components/app/RaiseTicketDialog";
+import { redactSensitiveText } from "../../../supabase/functions/_shared/companionCore.ts";
 
 type CompanionMessage = {
   id: string;
@@ -69,17 +70,11 @@ function getSessionId(): string {
   return created;
 }
 
-function maskAccountNumber(value: string): string {
-  const clean = value.toUpperCase();
-  return clean.length > 7 ? `${clean.slice(0, 3)}••••${clean.slice(-4)}` : clean;
-}
-
 function redactForDisplay(value: string): string {
-  return value
-    .replace(/\bOCC[A-Z0-9]{6,12}\b/gi, (match) => maskAccountNumber(match))
-    .replace(/\b(19\d{2}|20\d{2})-(0[1-9]|1[0-2])-([0-2]\d|3[01])\b/g, "Date of birth provided securely")
-    .replace(/\b([0-2]?\d|3[01])[\/.\-](0?\d|1[0-2])[\/.\-]((?:19|20)\d{2})\b/g, "Date of birth provided securely")
-    .replace(/\b(?:password|passcode|pin)\s*[:=]\s*\S+/gi, "$1: [removed]");
+  return redactSensitiveText(value)
+    .replace(/\[date of birth provided securely\]/g, "Date of birth provided securely")
+    .replace(/\[bank details removed\]/g, "Bank details removed")
+    .replace(/\[payment number removed\]/g, "Payment number removed");
 }
 
 function safeStoredMessages(messages: CompanionMessage[]): CompanionMessage[] {

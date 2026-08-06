@@ -62,6 +62,21 @@ const signedInActions = [
   "Show my support tickets",
 ];
 
+const actionRoutes: Record<string, string> = {
+  "open help centre": "/help",
+  "check availability": "/build-plan",
+  "check my address": "/build-plan",
+  "start an availability check": "/build-plan",
+  "view sim plans": "/sim",
+  "open own-router guide": "/help/own-router-setup",
+  "read cancellation terms": "/cancellation",
+  "read the complaints code": "/legal/complaints-code",
+  "open service status": "/status",
+  "digital voice information": "/landline",
+  "start a switch": "/switching",
+  "set up direct debit": "/direct-debit-setup",
+};
+
 function getSessionId(): string {
   const existing = sessionStorage.getItem(SESSION_KEY);
   if (existing) return existing;
@@ -385,6 +400,11 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
   const send = useCallback(async (value: string) => {
     const raw = value.trim();
     if (!raw || loading) return;
+    const actionRoute = actionRoutes[raw.toLowerCase()];
+    if (actionRoute) {
+      window.location.assign(actionRoute);
+      return;
+    }
     if (/^(sign in|login)$/i.test(raw)) {
       window.location.assign("/auth");
       return;

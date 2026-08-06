@@ -85,6 +85,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   // Locate CS — journey-mode looks up via order_journeys; legacy via CS token.
   let cs: any = null;
   let journey: any = null;
+  let otpChallengeRowId: string | null = null;
   if (i.journey_mode) {
     const { data: j } = await supabase
       .from("order_journeys")

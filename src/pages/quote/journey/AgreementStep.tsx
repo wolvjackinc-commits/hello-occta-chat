@@ -385,6 +385,10 @@ export default function AgreementStep({
           >
             {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording…</> : "Sign and enter into the agreement"}
           </Button>
+          <p className="text-[11px] text-muted-foreground mt-3">
+            For your protection we record the date and time, IP address, approximate location and device details of this
+            signature. We use this only to prevent fraudulent orders and identity theft, as explained in our Privacy Policy.
+          </p>
         </div>
       )}
     </div>

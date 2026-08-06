@@ -35,6 +35,26 @@ const Schema = z.object({
   session_id: z.string().max(120).optional(),
   // Phase 3 — date of birth captured at acceptance (18+ confirmation)
   date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // Fraud / identity-theft prevention signals collected in the browser at the
+  // moment of signing. Everything is optional and best-effort: a missing signal
+  // must never stop a genuine customer signing.
+  risk_signals: z.object({
+    browser_timezone: z.string().max(80).optional(),
+    browser_locale: z.string().max(40).optional(),
+    screen_signature: z.string().max(60).optional(),
+    platform: z.string().max(80).optional(),
+    device_memory: z.union([z.string().max(20), z.number()]).optional(),
+    hardware_concurrency: z.number().int().min(0).max(1024).optional(),
+    touch_points: z.number().int().min(0).max(64).optional(),
+    cookies_enabled: z.boolean().optional(),
+    do_not_track: z.string().max(20).optional(),
+    webdriver_flag: z.boolean().optional(),
+    page_dwell_ms: z.number().int().min(0).max(86_400_000).optional(),
+    geo_latitude: z.number().min(-90).max(90).optional(),
+    geo_longitude: z.number().min(-180).max(180).optional(),
+    geo_accuracy_m: z.number().min(0).max(10_000_000).optional(),
+    geo_permission: z.string().max(20).optional(),
+  }).partial().optional(),
 });
 
 function ageYears(dobIso: string): number {

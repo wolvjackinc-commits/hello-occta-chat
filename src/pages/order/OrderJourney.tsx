@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Loader2 } from "lucide-react";
@@ -32,6 +32,7 @@ type SelectionStep = typeof SELECTION_STEPS[number];
  */
 export default function OrderJourney() {
   const { token } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState<Journey2Session | null>(null);
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
@@ -41,7 +42,9 @@ export default function OrderJourney() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backStep, setBackStep] = useState<SelectionStep | null>(null);
-  const finalisedRef = useRef(false);
+  const submittedRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const appliedRef = useRef(false);
   const [applyError, setApplyError] = useState<string | null>(null);
 
@@ -104,13 +107,35 @@ export default function OrderJourney() {
     })();
   }, [loadSession, enterContractPhase]);
 
-  // Mirror the completed order back onto the Journey 2 session exactly once.
+  /**
+   * Transactional final submission. The order is only treated as placed once
+   * the server has committed it, so completion is never shown optimistically.
+   */
+  const submitOrder = useCallback(async () => {
+    if (!token || submittedRef.current) return;
+    submittedRef.current = true;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await journey2.submit(token);
+      if (res?.ok) {
+        navigate(`/order/${token}/complete`, { replace: true });
+        return;
+      }
+      submittedRef.current = false;
+      setSubmitError(res?.message ?? "We couldn't complete your order just now. Nothing has been charged — please try again.");
+    } catch {
+      submittedRef.current = false;
+      setSubmitError("We couldn't reach our ordering service. Nothing has been charged — please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [token, navigate]);
+
   useEffect(() => {
     const done = journeyState?.journey?.status === "completed" || journeyState?.journey?.current_step === "complete";
-    if (!done || !token || finalisedRef.current) return;
-    finalisedRef.current = true;
-    journey2.finalise(token).catch(() => { /* non-blocking */ });
-  }, [journeyState?.journey?.status, journeyState?.journey?.current_step, token]);
+    if (done) void submitOrder();
+  }, [journeyState?.journey?.status, journeyState?.journey?.current_step, submitOrder]);
 
   const refreshQuoteJourney = useCallback(async () => {
     if (quoteToken) await loadQuoteJourney(quoteToken);
@@ -303,12 +328,26 @@ export default function OrderJourney() {
                   />
                 )}
                 {(contractStep === "complete" || journeyState.journey?.status === "completed") && (
-                  <CompletedStep
-                    orderNumber={journeyState.submitted_order?.order_number ?? null}
-                    token={quoteToken}
-                    cancellationWindow={journeyState.cancellation_window}
-                    onChanged={refreshQuoteJourney}
-                  />
+                  submitError ? (
+                    <div className="border-4 border-destructive p-6" role="alert">
+                      <p className="font-display uppercase text-lg mb-2">We couldn't complete your order</p>
+                      <p className="text-sm text-muted-foreground mb-4">{submitError}</p>
+                      <Button onClick={submitOrder} className="font-display uppercase">Try again</Button>
+                    </div>
+                  ) : submitting ? (
+                    <div className="border-4 border-foreground p-6 text-center">
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto mb-3" aria-hidden="true" />
+                      <p className="font-display uppercase text-lg mb-1">Completing your order</p>
+                      <p className="text-sm text-muted-foreground">Please don't close this page — nothing is taken today.</p>
+                    </div>
+                  ) : (
+                    <CompletedStep
+                      orderNumber={journeyState.submitted_order?.order_number ?? null}
+                      token={quoteToken}
+                      cancellationWindow={journeyState.cancellation_window}
+                      onChanged={refreshQuoteJourney}
+                    />
+                  )
                 )}
               </>
             )}

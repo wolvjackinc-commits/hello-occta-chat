@@ -167,6 +167,41 @@ export const journey2 = {
     call<{ ok: boolean; submitted: boolean; order_number?: string | null; preferred_start_date?: string | null; error?: string }>(
       "journey2-finalise", { token },
     ),
+
+  /**
+   * Transactional final submission. Success is only returned once the server
+   * has committed the order, its links and the welcome-pack outbox record.
+   */
+  submit: (token: string) =>
+    call<{ ok: boolean; test_session?: boolean; order_id?: string; order_number?: string; error?: string; message?: string; retryable?: boolean }>(
+      "journey2-submit", { token, final_consent: true },
+    ),
+
+  completion: (token: string) =>
+    call<{ ok: boolean; completion?: Journey2Completion; error?: string }>(
+      "journey2-completion", { token },
+    ),
+};
+
+export type Journey2Completion = {
+  test_session: boolean;
+  order_number: string | null;
+  plan_name: string | null;
+  monthly_ex_vat: number;
+  monthly_vat: number;
+  monthly_incl_vat: number;
+  one_off_charges_incl_vat: number;
+  amount_due_today: number;
+  estimated_first_bill_incl_vat: number;
+  vat_rate_percent: number;
+  preferred_start_date: string | null;
+  billing_anchor_day: number | null;
+  dd_masked: { last4: string; sort_last2: string; bank_name: string; account_holder_name: string } | null;
+  dd_status: string | null;
+  cooling_off_ends_at: string | null;
+  documents: { label: string; url: string | null }[];
+  digital_voice_selected: boolean;
+  snapshot_sha256: string;
 };
 
 export const money = (n: number | null | undefined) =>

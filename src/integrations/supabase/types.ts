@@ -2992,6 +2992,7 @@ export type Database = {
           customer_details: Json | null
           customer_id: string | null
           dd_masked: Json | null
+          dd_status: string | null
           digital_voice_acknowledged: boolean
           expires_at: string
           guest_order_id: string | null
@@ -3024,6 +3025,8 @@ export type Database = {
           setup_option: Json | null
           speed_bucket: string | null
           status: string
+          submitted_at: string | null
+          test_run_id: string | null
           test_session: boolean
           updated_at: string
           user_agent: string | null
@@ -3044,6 +3047,7 @@ export type Database = {
           customer_details?: Json | null
           customer_id?: string | null
           dd_masked?: Json | null
+          dd_status?: string | null
           digital_voice_acknowledged?: boolean
           expires_at?: string
           guest_order_id?: string | null
@@ -3076,6 +3080,8 @@ export type Database = {
           setup_option?: Json | null
           speed_bucket?: string | null
           status?: string
+          submitted_at?: string | null
+          test_run_id?: string | null
           test_session?: boolean
           updated_at?: string
           user_agent?: string | null
@@ -3096,6 +3102,7 @@ export type Database = {
           customer_details?: Json | null
           customer_id?: string | null
           dd_masked?: Json | null
+          dd_status?: string | null
           digital_voice_acknowledged?: boolean
           expires_at?: string
           guest_order_id?: string | null
@@ -3128,6 +3135,8 @@ export type Database = {
           setup_option?: Json | null
           speed_bucket?: string | null
           status?: string
+          submitted_at?: string | null
+          test_run_id?: string | null
           test_session?: boolean
           updated_at?: string
           user_agent?: string | null
@@ -4501,6 +4510,340 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "journey2_dd_intake_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_email_outbox: {
+        Row: {
+          attachments: Json
+          checkout_session_id: string | null
+          created_at: string
+          email_type: string
+          id: string
+          last_attempt_at: string | null
+          last_error: string | null
+          order_id: string
+          recipient_email: string
+          retry_count: number
+          sent_at: string | null
+          session_id: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          checkout_session_id?: string | null
+          created_at?: string
+          email_type: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          order_id: string
+          recipient_email: string
+          retry_count?: number
+          sent_at?: string | null
+          session_id?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          checkout_session_id?: string | null
+          created_at?: string
+          email_type?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          order_id?: string
+          recipient_email?: string
+          retry_count?: number
+          sent_at?: string | null
+          session_id?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_email_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_email_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "journey2_email_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_email_outbox_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_test_documents: {
+        Row: {
+          content: Json
+          created_at: string
+          doc_type: string
+          id: string
+          snapshot_sha256: string | null
+          test_order_id: string
+          title: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          doc_type: string
+          id?: string
+          snapshot_sha256?: string | null
+          test_order_id: string
+          title: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          doc_type?: string
+          id?: string
+          snapshot_sha256?: string | null
+          test_order_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_test_documents_test_order_id_fkey"
+            columns: ["test_order_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_test_email_outbox: {
+        Row: {
+          attachments: Json
+          created_at: string
+          email_type: string
+          id: string
+          recipient_masked: string
+          status: string
+          subject: string
+          test_order_id: string
+        }
+        Insert: {
+          attachments?: Json
+          created_at?: string
+          email_type: string
+          id?: string
+          recipient_masked: string
+          status?: string
+          subject: string
+          test_order_id: string
+        }
+        Update: {
+          attachments?: Json
+          created_at?: string
+          email_type?: string
+          id?: string
+          recipient_masked?: string
+          status?: string
+          subject?: string
+          test_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_test_email_outbox_test_order_id_fkey"
+            columns: ["test_order_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_test_events: {
+        Row: {
+          created_at: string
+          detail: string | null
+          gate_key: string
+          id: string
+          ok: boolean
+          test_run_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          gate_key: string
+          id?: string
+          ok: boolean
+          test_run_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          gate_key?: string
+          id?: string
+          ok?: boolean
+          test_run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_test_events_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_test_orders: {
+        Row: {
+          amount_due_today: number
+          billing_anchor_day: number | null
+          checkout_session_id: string
+          created_at: string
+          dd_masked: Json | null
+          dd_status: string | null
+          estimated_first_bill_incl_vat: number | null
+          id: string
+          label: string
+          monthly_ex_vat: number | null
+          monthly_incl_vat: number | null
+          monthly_vat_amount: number | null
+          one_off_incl_vat: number
+          plan_name: string | null
+          preferred_start_date: string | null
+          session_id: string | null
+          snapshot: Json
+          snapshot_sha256: string | null
+          test_order_number: string
+          test_run_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_due_today?: number
+          billing_anchor_day?: number | null
+          checkout_session_id: string
+          created_at?: string
+          dd_masked?: Json | null
+          dd_status?: string | null
+          estimated_first_bill_incl_vat?: number | null
+          id?: string
+          label?: string
+          monthly_ex_vat?: number | null
+          monthly_incl_vat?: number | null
+          monthly_vat_amount?: number | null
+          one_off_incl_vat?: number
+          plan_name?: string | null
+          preferred_start_date?: string | null
+          session_id?: string | null
+          snapshot?: Json
+          snapshot_sha256?: string | null
+          test_order_number: string
+          test_run_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_due_today?: number
+          billing_anchor_day?: number | null
+          checkout_session_id?: string
+          created_at?: string
+          dd_masked?: Json | null
+          dd_status?: string | null
+          estimated_first_bill_incl_vat?: number | null
+          id?: string
+          label?: string
+          monthly_ex_vat?: number | null
+          monthly_incl_vat?: number | null
+          monthly_vat_amount?: number | null
+          one_off_incl_vat?: number
+          plan_name?: string | null
+          preferred_start_date?: string | null
+          session_id?: string | null
+          snapshot?: Json
+          snapshot_sha256?: string | null
+          test_order_number?: string
+          test_run_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_test_orders_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey2_test_orders_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey2_test_runs: {
+        Row: {
+          checkout_session_id: string | null
+          created_at: string
+          finished_at: string | null
+          id: string
+          label: string
+          result: Json
+          session_id: string | null
+          started_at: string
+          started_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          checkout_session_id?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          label?: string
+          result?: Json
+          session_id?: string | null
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          checkout_session_id?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          label?: string
+          result?: Json
+          session_id?: string | null
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey2_test_runs_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "customer_journey_sessions"
@@ -11305,6 +11648,14 @@ export type Database = {
         Returns: boolean
       }
       is_vat_active: { Args: never; Returns: boolean }
+      journey2_commit_order: {
+        Args: {
+          _customer_id: string
+          _guest_order_id?: string
+          _session_id: string
+        }
+        Returns: Json
+      }
       link_quote_requests_to_user: {
         Args: { _user_id: string }
         Returns: number

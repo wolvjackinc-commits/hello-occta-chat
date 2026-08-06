@@ -23,6 +23,20 @@ function friendly(code?: string | null) {
 }
 
 /**
+ * Edge functions answer with non-2xx statuses for handled errors, which makes
+ * supabase-js return an error with the body on `context`. Read it so the
+ * customer sees the real reason instead of a generic failure.
+ */
+async function readError(fnErr: unknown, data: Record<string, unknown> | null) {
+  if (data?.error) return data as Record<string, unknown>;
+  const ctx = (fnErr as { context?: Response } | null)?.context;
+  if (ctx && typeof ctx.json === "function") {
+    try { return (await ctx.json()) as Record<string, unknown>; } catch { /* ignore */ }
+  }
+  return null;
+}
+
+/**
  * Mobile OTP verification shown immediately before the electronic signature.
  * Used by both Customer Journey 1 and Customer Journey 2.0 (shared signing step).
  */
@@ -68,7 +82,8 @@ export default function ContractSmsVerification({
       if (cancelled) return;
       const d = data as Record<string, unknown> | null;
       if (fnErr || !d || d.error) {
-        setError(friendly((d?.error as string) ?? null));
+        const body = await readError(fnErr, d);
+        setError(friendly((body?.error as string) ?? null));
       } else {
         setRequired(d.required !== false);
         setPhoneMasked((d.phone_masked as string) ?? null);
@@ -102,8 +117,9 @@ export default function ContractSmsVerification({
       });
       const d = data as Record<string, unknown> | null;
       if (fnErr || !d || d.error) {
-        setError(friendly((d?.error as string) ?? null));
-        if (Number(d?.retry_after ?? 0) > 0) setResendIn(Number(d?.retry_after));
+        const body = await readError(fnErr, d);
+        setError(friendly((body?.error as string) ?? null));
+        if (Number(body?.retry_after ?? 0) > 0) setResendIn(Number(body?.retry_after));
         return;
       }
       if (d.already_verified === true) { setVerifiedState(true); return; }
@@ -130,7 +146,8 @@ export default function ContractSmsVerification({
       });
       const d = data as Record<string, unknown> | null;
       if (fnErr || !d || d.error) {
-        setError(friendly((d?.error as string) ?? null));
+        const body = await readError(fnErr, d);
+        setError(friendly((body?.error as string) ?? null));
         return;
       }
       setCode("");

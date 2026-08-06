@@ -77,6 +77,10 @@ function redactForDisplay(value: string): string {
     .replace(/\[payment number removed\]/g, "Payment number removed");
 }
 
+function clearRawContent(messages: CompanionMessage[]): CompanionMessage[] {
+  return messages.map((message) => ({ ...message, rawContent: undefined }));
+}
+
 function safeStoredMessages(messages: CompanionMessage[]): CompanionMessage[] {
   return messages.slice(-40).map((message) => ({
     ...message,
@@ -415,6 +419,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
     try {
       if (humanLive && conversationId) {
         await logConversation([{ role: "user", content: display }]);
+        setMessages((current) => clearRawContent(current));
         return;
       }
       const { data: { session } } = await supabase.auth.getSession();
@@ -441,8 +446,9 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       const verifiedNow = typeof payload?.verificationToken === "string" && payload.verificationToken.length > 0;
       if (verifiedNow) sessionStorage.setItem(VERIFICATION_KEY, payload.verificationToken);
       const assistantContent = String(payload?.content ?? "I couldn't load a reliable answer just now.");
+      const verificationPending = !signedIn && payload?.source === "account" && !verifiedNow;
       setMessages((current) => [
-        ...current.map((message) => verifiedNow ? { ...message, rawContent: undefined } : message),
+        ...(verificationPending ? current : clearRawContent(current)),
         {
           id: crypto.randomUUID(),
           role: "assistant",
@@ -458,18 +464,21 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       ]);
     } catch (error) {
       const message = error instanceof Error ? error.message : "request_failed";
-      setMessages((current) => [...current, {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: `${message.includes("wait") ? message : "I couldn't load that safely just now."} Please try again or call ${CONTACT_PHONE_DISPLAY}.\n\n<<<OPTIONS:["Try again","Open Help Centre","Talk to a human"]>>>`,
-        createdAt: new Date().toISOString(),
-        agent: "ollie",
-      }]);
+      setMessages((current) => [
+        ...clearRawContent(current),
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: `${message.includes("wait") ? message : "I couldn't load that safely just now."} Please try again or call ${CONTACT_PHONE_DISPLAY}.\n\n<<<OPTIONS:["Try again","Open Help Centre","Talk to a human"]>>>`,
+          createdAt: new Date().toISOString(),
+          agent: "ollie",
+        },
+      ]);
       setAnnouncement("The request could not be completed.");
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, humanLive, conversationId, logConversation, openTicket, requestHuman]);
+  }, [loading, messages, humanLive, conversationId, signedIn, logConversation, openTicket, requestHuman]);
 
   const clearChat = useCallback(() => {
     sessionStorage.removeItem(HISTORY_KEY);

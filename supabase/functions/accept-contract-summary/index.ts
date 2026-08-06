@@ -235,6 +235,16 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   if (aErr) return jsonResponse({ error: "accept_failed", details: aErr.message }, 500);
   const acceptanceId = accInsert?.id;
 
+  // Mark the SMS verification as consumed so it can never be replayed, and link
+  // it to the acceptance evidence. Never blocks the acceptance.
+  if (otpChallengeRowId) {
+    try {
+      await consumeOtpChallenge(otpChallengeRowId, acceptanceId ?? null);
+    } catch (e) {
+      console.warn("[accept-contract-summary] otp consume failed", (e as Error).message);
+    }
+  }
+
   // Fraud / identity-theft evidence. Never blocks the acceptance.
   try {
     await recordAcceptanceRisk(supabase, req, {

@@ -5130,20 +5130,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "journey2_test_orders_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "customer_journey_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "journey2_test_orders_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "journey2_live_sessions"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "journey2_test_orders_test_run_id_fkey"
             columns: ["test_run_id"]
             isOneToOne: false
@@ -5198,20 +5184,6 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "journey2_test_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "journey2_test_runs_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "customer_journey_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "journey2_test_runs_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "journey2_live_sessions"
             referencedColumns: ["id"]
           },
         ]

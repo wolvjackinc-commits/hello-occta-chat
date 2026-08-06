@@ -65,6 +65,9 @@ jobs:
       - name: Test-mode isolation tests
         run: bun run test:isolation
 
+      - name: Direct Debit manual-provider database tests
+        run: bun run test:dd
+
       - name: TypeScript typecheck
         run: bun run typecheck
 

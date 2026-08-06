@@ -1640,6 +1640,7 @@ export type Database = {
           id: string
           role: string
           sender_admin_id: string | null
+          source_analytics_id: string | null
         }
         Insert: {
           attachments?: Json
@@ -1649,6 +1650,7 @@ export type Database = {
           id?: string
           role: string
           sender_admin_id?: string | null
+          source_analytics_id?: string | null
         }
         Update: {
           attachments?: Json
@@ -1658,6 +1660,7 @@ export type Database = {
           id?: string
           role?: string
           sender_admin_id?: string | null
+          source_analytics_id?: string | null
         }
         Relationships: [
           {
@@ -11835,6 +11838,7 @@ export type Database = {
           cycle_start: string
         }[]
       }
+      chat_handoff_reason: { Args: { p_text: string }; Returns: string }
       check_rate_limit: {
         Args: {
           _action: string

@@ -51,7 +51,7 @@ export function SupportTab({ tickets, userId }: { tickets: Ticket[]; userId?: st
     return stored && VALID_TICKET_STATUS.has(stored) ? stored : "all";
   })();
   const setStatusFilter = (v: string) => {
-    try { window.localStorage.setItem(STATUS_FILTER_KEY, v); } catch {}
+    try { window.localStorage.setItem(STATUS_FILTER_KEY, v); } catch { /* storage unavailable */ }
     const next = new URLSearchParams(searchParams);
     if (v === "all") next.delete("ticketStatus");
     else next.set("ticketStatus", v);

@@ -372,6 +372,10 @@ const Dashboard = () => {
 
   const LayoutComponent = isAppMode ? AppLayout : Layout;
 
+  // Read-state-aware badge map. Must stay above the early returns below so the
+  // hook order is identical on every render.
+  const readMap = useMemo(() => (user?.id ? getReadMap(user.id) : {}), [user?.id, tickets, readVersion]);
+
   if (isLoading) {
     return (
       <LayoutComponent>
@@ -402,8 +406,6 @@ const Dashboard = () => {
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
   const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
   const awaitingTickets = tickets.filter(t => t.status === 'waiting_customer');
-  // Read-state-aware badge: count tickets that are open/awaiting AND unread.
-  const readMap = useMemo(() => (user?.id ? getReadMap(user.id) : {}), [user?.id, tickets, readVersion]);
   const badgeTickets = tickets.filter(
     (t) => (t.status === 'open' || t.status === 'in_progress' || t.status === 'waiting_customer')
   );

@@ -5334,6 +5334,36 @@ export type Database = {
           },
         ]
       }
+      journey2_test_tickets: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          note: string | null
+          token_sha256: string
+          uses_remaining: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          note?: string | null
+          token_sha256: string
+          uses_remaining?: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          note?: string | null
+          token_sha256?: string
+          uses_remaining?: number
+        }
+        Relationships: []
+      }
       kb_article_versions: {
         Row: {
           article_id: string

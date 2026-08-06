@@ -246,7 +246,7 @@ serve(async (req) => {
             error_message: status >= 400 ? (typeof (data as any)?.error === "string" ? (data as any).error : null) : null,
           })
           .eq("id", deliveryId);
-      } catch {}
+      } catch { /* delivery log update is best-effort */ }
     }
     return json(status, data);
   };

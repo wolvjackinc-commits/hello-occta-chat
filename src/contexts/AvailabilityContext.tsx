@@ -133,7 +133,7 @@ function saveToSession(state: AvailabilityState) {
         result: state.result,
       })
     );
-  } catch {}
+  } catch { /* session storage unavailable */ }
 }
 
 function loadFromSession(): Partial<AvailabilityState> | null {
@@ -149,7 +149,7 @@ function loadFromSession(): Partial<AvailabilityState> | null {
         result: parsed.result,
       };
     }
-  } catch {}
+  } catch { /* session storage unavailable */ }
   return null;
 }
 

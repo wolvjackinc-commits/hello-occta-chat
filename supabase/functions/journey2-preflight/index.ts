@@ -5,8 +5,9 @@
  * customers, then stores the result on platform_settings. Journey 2 cannot be
  * promoted to the default journey while any gate fails.
  */
-import { corsHeaders, jsonResponse, getServiceClient, requireStaff } from "../_shared/quoteHelpers.ts";
+import { corsHeaders, jsonResponse, getServiceClient } from "../_shared/quoteHelpers.ts";
 import { buildCatalogue, loadJourneySettings } from "../_shared/journey2.ts";
+import { authoriseTestCaller } from "../_shared/journey2TestAuth.ts";
 
 type Check = { key: string; label: string; ok: boolean; detail?: string };
 
@@ -14,8 +15,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const staff = await requireStaff(req, ["admin", "super_admin"]);
-  if (!("userId" in staff)) return jsonResponse({ error: staff.error }, staff.status);
+  const authorised = await authoriseTestCaller(req);
+  if (!authorised.ok) return jsonResponse({ error: authorised.error }, authorised.status);
 
   const supabase = getServiceClient();
   const settings = await loadJourneySettings(supabase);
@@ -211,7 +212,8 @@ Deno.serve(async (req) => {
   const result = {
     ok: failuresList.length === 0,
     ran_at: new Date().toISOString(),
-    ran_by: staff.userId,
+    ran_by: authorised.userId,
+    ran_by_actor: authorised.actor,
     checks,
     failures: failuresList.map((f) => f.label),
   };

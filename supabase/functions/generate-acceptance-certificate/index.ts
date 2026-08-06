@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient } from "../_shared/quoteHelpers.ts";
-// @ts-ignore - npm specifier resolved at runtime
+// @ts-expect-error - npm specifier resolved at runtime
 import { jsPDF } from "npm:jspdf@2.5.1";
 import { perfServe } from "../_shared/perfLog.ts";
 

@@ -53,7 +53,7 @@ const isAccountNumberSearch = (term: string): boolean => {
 
 // Check if input looks like a phone number (digits, possibly with spaces/dashes)
 const isPhoneSearch = (term: string): boolean => {
-  const cleaned = term.replace(/[\s\-\(\)]/g, '');
+  const cleaned = term.replace(/[\s\-()]/g, '');
   return /^\d{4,}$/.test(cleaned);
 };
 
@@ -122,7 +122,7 @@ export const AdminCustomers = () => {
         }
         // Priority 2: Phone search (last 4 digits or full number)
         else if (isPhoneSearch(term)) {
-          const cleaned = term.replace(/[\s\-\(\)]/g, '');
+          const cleaned = term.replace(/[\s\-()]/g, '');
           query = query.ilike("phone", `%${cleaned}%`);
         }
         // Priority 3: Email search

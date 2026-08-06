@@ -168,9 +168,9 @@ Deno.serve(async (req) => {
   // not killed when the HTTP response is returned.
   const preGenTask = preGenerateContractSummary(supabase, quote.id, auth.userId);
   try {
-    // @ts-ignore — EdgeRuntime is provided by the Supabase Deno runtime
+    // @ts-expect-error — EdgeRuntime is provided by the Supabase Deno runtime
     if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
-      // @ts-ignore
+      // @ts-expect-error EdgeRuntime is provided by the Supabase Deno runtime
       EdgeRuntime.waitUntil(preGenTask);
     }
   } catch { /* ignore */ }

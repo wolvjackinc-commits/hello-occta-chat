@@ -362,7 +362,9 @@ export async function loadGiacomCandidates(supabase: any, bucket: SpeedBucket): 
   const { data: profile, error: profErr } = await supabase
     .from("supplier_profiles")
     .select("id")
-    .eq("supplier_name", "Giacom")
+    .ilike("supplier_name", "%Giacom%")
+    .order("created_at", { ascending: true })
+    .limit(1)
     .maybeSingle();
   if (profErr) throw new Error("supplier_profile_load_failed");
   if (!profile) return [];

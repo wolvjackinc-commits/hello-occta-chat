@@ -418,7 +418,21 @@ const Dashboard = () => {
   }
 
   if (!user) {
-    return null;
+    return (
+      <LayoutComponent>
+        <div className="min-h-[60vh] flex items-center justify-center px-4">
+          <div className="p-6 border-4 border-foreground bg-background max-w-md text-center space-y-4">
+            <h1 className="text-display-sm">Sign in to My OCCTA</h1>
+            <p className="text-muted-foreground">
+              You need to be signed in to view your account. Taking you to the customer login…
+            </p>
+            <Link to="/auth?claim=1&next=/dashboard">
+              <Button variant="hero" className="w-full">Go to customer login</Button>
+            </Link>
+          </div>
+        </div>
+      </LayoutComponent>
+    );
   }
 
   // App mode: always render the native app-styled dashboard. AppDashboard
@@ -504,6 +518,28 @@ const Dashboard = () => {
           variants={containerVariants}
         >
           {/* Welcome Header */}
+          {loadError && (
+            <div
+              role="alert"
+              className="mb-6 p-4 border-4 border-foreground bg-destructive/10 flex flex-col sm:flex-row sm:items-center gap-3"
+            >
+              <p className="flex-1 text-sm">
+                {loadError}{" "}
+                <span className="text-muted-foreground">
+                  If this keeps happening, contact support and quote your account number.
+                </span>
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-4 border-foreground"
+                onClick={() => user?.id && fetchUserData(user.id)}
+                disabled={isDataLoading}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
           <motion.div
             variants={itemVariants}
             className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8"

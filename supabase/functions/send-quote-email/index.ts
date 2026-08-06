@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
   try {
     // @ts-expect-error — EdgeRuntime is provided by the Supabase Deno runtime
     if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
-      // @ts-expect-error
+      // @ts-expect-error EdgeRuntime is provided by the Supabase Deno runtime
       EdgeRuntime.waitUntil(preGenTask);
     }
   } catch { /* ignore */ }

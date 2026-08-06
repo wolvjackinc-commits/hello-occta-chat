@@ -14,12 +14,12 @@ import PlanStep from "./steps/PlanStep";
 import RouterStep from "./steps/RouterStep";
 import ExtrasStep from "./steps/ExtrasStep";
 import DetailsStep from "./steps/DetailsStep";
+import StartDateStep from "./steps/StartDateStep";
+import BillingStep from "./steps/BillingStep";
 import AgreementStep from "@/pages/quote/journey/AgreementStep";
-import StartDateStep from "@/pages/quote/journey/StartDateStep";
-import PaymentStep from "@/pages/quote/journey/PaymentStep";
 import ReviewStep, { CompletedStep } from "@/pages/quote/journey/ReviewStep";
 
-const SELECTION_STEPS = ["address", "plan", "router", "extras", "details"] as const;
+const SELECTION_STEPS = ["address", "plan", "router", "extras", "details", "start_date", "billing"] as const;
 type SelectionStep = typeof SELECTION_STEPS[number];
 
 /**
@@ -42,6 +42,8 @@ export default function OrderJourney() {
   const [error, setError] = useState<string | null>(null);
   const [backStep, setBackStep] = useState<SelectionStep | null>(null);
   const finalisedRef = useRef(false);
+  const appliedRef = useRef(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   // ── Load session + catalogue ───────────────────────────────────────────────
   const loadSession = useCallback(async () => {
@@ -113,6 +115,26 @@ export default function OrderJourney() {
   const refreshQuoteJourney = useCallback(async () => {
     if (quoteToken) await loadQuoteJourney(quoteToken);
   }, [quoteToken, loadQuoteJourney]);
+
+  /**
+   * Journey 2 captured the start date and Direct Debit before the contract, so
+   * they are applied to the shared services the moment acceptance is recorded.
+   */
+  const applyPostContract = useCallback(async () => {
+    if (!token || !quoteToken || appliedRef.current) return;
+    appliedRef.current = true;
+    setApplyError(null);
+    const res = await journey2.applyPostContract(token, quoteToken).catch(() => null);
+    if (!res?.ok) {
+      appliedRef.current = false;
+      setApplyError(res?.message ?? "We couldn't finish setting up your billing just now. Please try again.");
+    }
+    await refreshQuoteJourney();
+  }, [token, quoteToken, refreshQuoteJourney]);
+
+  const onContractAccepted = useCallback(async () => {
+    await applyPostContract();
+  }, [applyPostContract]);
 
   const save = async (step: SelectionStep, payload: Record<string, unknown>) => {
     if (!token || saving) return;

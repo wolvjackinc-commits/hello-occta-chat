@@ -311,21 +311,12 @@ export const AdminPaymentsDD = () => {
     setIsCancelling(true);
     try {
       const { error } = await supabase
-        .from("dd_mandates")
-        .update({ status: "cancelled" })
-        .eq("id", cancelConfirmMandate.id);
+        .functions.invoke("dd-mandate-status", {
+          body: { mandateId: cancelConfirmMandate.id, newStatus: "cancelled" },
+        })
+        .then((r) => ({ error: r.error || (r.data?.success ? null : new Error(r.data?.error || "Failed")) }));
 
       if (error) throw error;
-
-      await logAudit({
-        action: "cancel",
-        entity: "dd_mandate",
-        entityId: cancelConfirmMandate.id,
-        metadata: { 
-          mandate_reference: cancelConfirmMandate.mandate_reference,
-          previous_status: cancelConfirmMandate.status,
-        },
-      });
 
       toast({ title: "Mandate cancelled" });
       setCancelConfirmMandate(null);
@@ -339,22 +330,18 @@ export const AdminPaymentsDD = () => {
 
   const handleActivateMandate = async (mandate: DDMandate) => {
     try {
-      const { error } = await supabase
-        .from("dd_mandates")
-        .update({ status: "active" })
-        .eq("id", mandate.id);
-
-      if (error) throw error;
-
-      await logAudit({
-        action: "activate",
-        entity: "dd_mandate",
-        entityId: mandate.id,
-        metadata: { 
-          mandate_reference: mandate.mandate_reference,
-          previous_status: mandate.status,
-        },
+      // Status changes are recorded server-side: the routine writes the status,
+      // the audit history and the customer notification in one transaction.
+      const { data, error } = await supabase.functions.invoke("dd-mandate-status", {
+        body: { mandateId: mandate.id, newStatus: "active" },
       });
+      if (error || !data?.success) {
+        throw new Error(
+          data?.error === "provider_selection_required"
+            ? "Select the Direct Debit provider and record the manual submission first."
+            : data?.error || error?.message || "Failed to activate mandate",
+        );
+      }
 
       toast({ title: "Mandate activated" });
       refetchMandates();

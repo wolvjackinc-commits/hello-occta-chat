@@ -387,7 +387,8 @@ export const AdminPaymentRequests = () => {
     // Fetch the DD mandate linked to this payment request
     const { data: mandate } = await supabase
       .from("dd_mandates")
-      .select("*")
+      // Sensitive bank columns are not readable by the browser by design.
+      .select("id, user_id, status, mandate_reference, bank_last4, account_holder, account_holder_name, provider_code, provider_reference, submitted_to_provider_at, consent_timestamp, payment_request_id, created_at, updated_at")
       .eq("payment_request_id", request.id)
       .maybeSingle();
     

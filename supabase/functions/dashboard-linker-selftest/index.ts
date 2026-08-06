@@ -26,6 +26,21 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "forbidden" }, 403);
   }
 
+  // Optional maintenance: remove leftover users on the internal test domain only.
+  const bodyIn = await req.json().catch(() => ({})) as Record<string, unknown>;
+  if (bodyIn?.action === "cleanup_test_users") {
+    const adminClient = getServiceClient();
+    const { data: list } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const removed: string[] = [];
+    for (const u of list?.users ?? []) {
+      if (!u.email || !u.email.toLowerCase().endsWith(`@${TEST_DOMAIN}`)) continue;
+      await adminClient.from("profiles").delete().eq("id", u.id);
+      const { error } = await adminClient.auth.admin.deleteUser(u.id);
+      if (!error) removed.push(u.email);
+    }
+    return jsonResponse({ ok: true, removed });
+  }
+
   const url = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const admin = getServiceClient();

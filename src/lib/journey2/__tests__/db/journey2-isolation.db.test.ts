@@ -49,7 +49,11 @@ maybe("Journey 2 database-backed isolation", () => {
   let checkoutId = "";
 
   beforeAll(async () => {
-    db = new Client({ connectionString: url });
+    db = new Client({
+      connectionString: url,
+      // CI uses a local instance; managed instances present a self-signed chain.
+      ssl: /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: false },
+    });
     await db.connect();
   });
 

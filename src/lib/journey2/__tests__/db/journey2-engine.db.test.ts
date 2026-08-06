@@ -72,7 +72,7 @@ const maybe = configured ? describe : describe.skip;
 
 maybe("Journey 2 real isolated engine run", () => {
   let db: Client;
-  let before = new Map<string, number>();
+  const before = new Map<string, number>();
   let run: {
     test_run_id: string;
     session_id: string;

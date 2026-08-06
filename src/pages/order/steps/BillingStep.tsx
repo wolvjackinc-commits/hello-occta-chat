@@ -99,11 +99,17 @@ export default function BillingStep({
         </div>
         <div>
           <Label htmlFor="j2-dd-sort">Sort code</Label>
-          <Input id="j2-dd-sort" inputMode="numeric" value={sort} onChange={(e) => setSort(e.target.value)} placeholder="000000" maxLength={8} required />
+          <Input id="j2-dd-sort" inputMode="numeric" autoComplete="off" value={sort}
+            onChange={(e) => setSort(digitsOnly(e.target.value).slice(0, 6))}
+            placeholder="000000" maxLength={6} required />
+          <p className="text-xs text-muted-foreground mt-1">6 digits</p>
         </div>
         <div>
           <Label htmlFor="j2-dd-acct">Account number</Label>
-          <Input id="j2-dd-acct" inputMode="numeric" value={account} onChange={(e) => setAccount(e.target.value)} placeholder="00000000" maxLength={10} required />
+          <Input id="j2-dd-acct" inputMode="numeric" autoComplete="off" value={account}
+            onChange={(e) => setAccount(digitsOnly(e.target.value).slice(0, 8))}
+            placeholder="00000000" maxLength={8} required />
+          <p className="text-xs text-muted-foreground mt-1">8 digits</p>
         </div>
         <div className="sm:col-span-2">
           <Label htmlFor="j2-dd-bank">Bank name</Label>
@@ -144,6 +150,10 @@ export default function BillingStep({
 
       <section className="border-2 border-foreground p-4">
         <h2 className="font-display uppercase text-sm tracking-widest mb-2">The Direct Debit Guarantee</h2>
+        <p className="text-xs text-muted-foreground mb-3">
+          A copy of this Direct Debit Instruction, including the Direct Debit Guarantee below, will be emailed to you for
+          your records.
+        </p>
         <ul className="space-y-2 text-xs text-muted-foreground list-disc pl-5">
           {DD_GUARANTEE_TEXT.split("\n\n").map((p) => <li key={p.slice(0, 24)}>{p}</li>)}
         </ul>

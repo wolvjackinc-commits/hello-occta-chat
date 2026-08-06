@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Journey2Session } from "@/lib/journey2/client";
+import { getAvailabilityPrefill } from "@/lib/journey2/prefill";
 
 export default function AddressStep({
   session, saving, onSave,
@@ -12,11 +13,14 @@ export default function AddressStep({
   onSave: (payload: Record<string, unknown>) => void;
 }) {
   const a = session.service_address;
-  const [postcode, setPostcode] = useState(a?.postcode ?? session.postcode ?? "");
-  const [line1, setLine1] = useState(a?.address_line_1 ?? "");
-  const [line2, setLine2] = useState(a?.address_line_2 ?? "");
-  const [town, setTown] = useState(a?.town ?? "");
-  const [county, setCounty] = useState(a?.county ?? "");
+  // Anything the customer already told us on the availability checker is reused
+  // here so they never retype their postcode or chosen address.
+  const [prefill] = useState(() => (a ? null : getAvailabilityPrefill()));
+  const [postcode, setPostcode] = useState(a?.postcode ?? session.postcode ?? prefill?.postcode ?? "");
+  const [line1, setLine1] = useState(a?.address_line_1 ?? prefill?.line1 ?? "");
+  const [line2, setLine2] = useState(a?.address_line_2 ?? prefill?.line2 ?? "");
+  const [town, setTown] = useState(a?.town ?? prefill?.town ?? "");
+  const [county, setCounty] = useState(a?.county ?? prefill?.county ?? "");
   const [err, setErr] = useState<string | null>(null);
 
   const submit = (e: React.FormEvent) => {
@@ -42,6 +46,11 @@ export default function AddressStep({
         <p className="text-sm text-muted-foreground mt-1">
           We need the address the broadband will be installed at. You can order in one go — no callbacks, no waiting for a quote.
         </p>
+        {prefill && (prefill.postcode || prefill.line1) && (
+          <p className="text-xs text-muted-foreground mt-2">
+            We've filled this in from your availability check — please check it and change anything that isn't right.
+          </p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

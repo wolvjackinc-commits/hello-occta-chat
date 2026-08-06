@@ -884,7 +884,7 @@ serve(async (req) => {
             sort_code, 
             account_number_full, 
             bank_details_ciphertext,
-            bank_details_nonce,
+            enc_nonce,
             account_holder_name, 
             billing_address, 
             consent_timestamp, 
@@ -923,11 +923,11 @@ serve(async (req) => {
         // Decrypt on the fly when the record has been migrated to AES-256-GCM.
         let sortCode: string | null = (mandate.sort_code as string | null) ?? null;
         let accountNumber: string | null = (mandate.account_number_full as string | null) ?? null;
-        if (mandate.bank_details_ciphertext && mandate.bank_details_nonce) {
+        if (mandate.bank_details_ciphertext && mandate.enc_nonce) {
           try {
             const plain = await decryptJson<{ sort_code?: string; account_number?: string }>(
               String(mandate.bank_details_ciphertext),
-              String(mandate.bank_details_nonce),
+              String(mandate.enc_nonce),
             );
             sortCode = plain.sort_code ?? sortCode;
             accountNumber = plain.account_number ?? accountNumber;

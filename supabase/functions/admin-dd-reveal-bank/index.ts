@@ -127,15 +127,15 @@ Deno.serve(async (req) => {
       if (!mandate_id) return j(404, { error: "intake_not_found" });
       const { data: m2 } = await supabase
         .from("dd_mandates")
-        .select("id, bank_details_ciphertext, bank_details_nonce, bank_last4, sort_last2, account_holder_name")
+        .select("id, bank_details_ciphertext, enc_nonce, bank_last4, masked_sort_last2, account_holder_name")
         .eq("id", mandate_id)
         .maybeSingle();
-      if (!m2?.bank_details_ciphertext || !m2?.bank_details_nonce) {
+      if (!m2?.bank_details_ciphertext || !m2?.enc_nonce) {
         return j(404, { error: "intake_not_found" });
       }
       const mKey = await loadKey();
       const mCt = parseBytea(m2.bank_details_ciphertext);
-      const mIv = parseBytea(m2.bank_details_nonce);
+      const mIv = parseBytea(m2.enc_nonce);
       if (mCt.length === 0 || mIv.length !== 12) return j(500, { error: "bad_ciphertext" });
       let mPlain: Record<string, unknown>;
       try {
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
             user_id: resolvedUserId,
             mandate_id,
             masked_account_last4: m2.bank_last4,
-            masked_sort_last2: m2.sort_last2,
+            masked_sort_last2: m2.masked_sort_last2,
           },
         });
       } catch { /* non-fatal */ }

@@ -122,5 +122,13 @@ serve(async (req) => {
     }
   }
 
+  // Disarm the one-shot switch so this endpoint closes again.
+  if (armed) {
+    await supabase
+      .from("dd_encryption_migration_switch")
+      .update({ armed: false, last_run_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("id", true);
+  }
+
   return json({ success: true, ...summary });
 });

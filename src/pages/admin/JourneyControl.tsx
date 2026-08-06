@@ -276,6 +276,44 @@ export default function AdminJourneyControl() {
         )}
       </section>
 
+      <section className="border-4 border-foreground p-5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display uppercase text-sm tracking-widest">Isolated test run</h2>
+          <Button size="sm" variant="outline" onClick={runIsolatedTest} disabled={testing}>
+            {testing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <RefreshCw className="w-4 h-4" aria-hidden="true" />}
+            <span className="ml-2">Run isolated test</span>
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Runs one complete Journey 2 order end to end while the public kill switch stays on. Everything is written to the
+          dedicated test tables only — no customer, order, quote, contract, invoice, Direct Debit submission, supplier action
+          or customer email is created. The preflight will not pass until a full isolated run has succeeded.
+        </p>
+        {testResult && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <Badge variant={testResult.ok ? "default" : "destructive"}>{testResult.ok ? "Passed" : "Blocked"}</Badge>
+              {testResult.test_order_number && <span>Test order {testResult.test_order_number}</span>}
+              {typeof testResult.documents === "number" && <span>{testResult.documents} document(s)</span>}
+              {testResult.snapshot_sha256 && (
+                <span className="text-muted-foreground break-all">Snapshot {testResult.snapshot_sha256.slice(0, 16)}…</span>
+              )}
+            </div>
+            <ul className="space-y-2 text-sm">
+              {(testResult.gates ?? []).map((g) => (
+                <li key={g.key} className="flex items-start justify-between gap-3 border-b border-border pb-2 last:border-0">
+                  <span>
+                    {g.key.replace(/_/g, " ")}
+                    {g.detail ? <span className="text-muted-foreground"> · {g.detail}</span> : null}
+                  </span>
+                  <Badge variant={g.ok ? "outline" : "destructive"}>{g.ok ? "OK" : "Failed"}</Badge>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
       <section className="border-4 border-foreground p-5">
         <h2 className="font-display uppercase text-sm tracking-widest mb-3">Journey 2 sessions</h2>
         <dl className="grid grid-cols-3 gap-4 text-sm">

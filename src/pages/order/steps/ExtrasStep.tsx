@@ -12,8 +12,20 @@ export default function ExtrasStep({
   onBack: () => void;
 }) {
   const [selected, setSelected] = useState<AddonId[]>(session.selected_addons ?? []);
+  const [voiceAck, setVoiceAck] = useState(!!session.digital_voice_acknowledged);
+  const [err, setErr] = useState<string | null>(null);
   const toggle = (id: AddonId) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const hasVoice = selected.includes("digital_voice");
+
+  const submit = () => {
+    if (hasVoice && !voiceAck) {
+      setErr("Please confirm you've read how Digital Voice and emergency calls work.");
+      return;
+    }
+    setErr(null);
+    onSave({ addons: selected, digital_voice_acknowledged: hasVoice ? true : undefined });
+  };
 
   return (
     <div className="border-4 border-foreground p-6 space-y-5">
@@ -45,9 +57,27 @@ export default function ExtrasStep({
         </fieldset>
       )}
 
+      {hasVoice && (
+        <div className="border-2 border-foreground p-4 space-y-3">
+          <h2 className="font-display uppercase text-sm tracking-widest">Digital Voice — please read</h2>
+          <p className="text-sm text-muted-foreground">
+            Digital Voice calls, including 999, work over your broadband. They will not work during a power cut or a
+            broadband outage unless you have a backup, and your location isn't sent automatically in the same way as a
+            traditional landline. Tell us at the next step if anyone at your address relies on the phone for care or a
+            medical alarm.
+          </p>
+          <label className="flex items-start gap-3 text-sm leading-relaxed">
+            <input type="checkbox" checked={voiceAck} onChange={(e) => setVoiceAck(e.target.checked)} className="mt-1 h-4 w-4" />
+            I've read and understood how Digital Voice and emergency calls work.
+          </label>
+        </div>
+      )}
+
+      {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
+
       <div className="flex flex-wrap gap-3">
         <Button type="button" variant="outline" onClick={onBack}>Back</Button>
-        <Button type="button" disabled={saving} onClick={() => onSave({ addons: selected })}>
+        <Button type="button" disabled={saving} onClick={submit}>
           {saving ? "Saving…" : selected.length ? "Continue with extras" : "Continue without extras"}
         </Button>
       </div>

@@ -32,7 +32,6 @@ export default function DetailsStep({
   onBack: () => void;
 }) {
   const d = session.customer_details;
-  const hasDigitalVoice = (session.selected_addons ?? []).includes("digital_voice");
   const [fullName, setFullName] = useState(d?.full_name ?? "");
   const [email, setEmail] = useState(d?.email ?? "");
   const [phone, setPhone] = useState(d?.phone ?? "");
@@ -50,7 +49,6 @@ export default function DetailsStep({
   const [numberToPort, setNumberToPort] = useState(d?.number_to_port ?? "");
   const [access, setAccess] = useState(d?.accessibility_needs ?? "");
   const [vulnerability, setVulnerability] = useState(d?.vulnerability_support_needs ?? "");
-  const [voiceAck, setVoiceAck] = useState(!!session.digital_voice_acknowledged);
   const [marketing, setMarketing] = useState(!!d?.marketing_consent);
   const [privacyAck, setPrivacyAck] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -72,9 +70,6 @@ export default function DetailsStep({
     }
     if (numberAction === "port_in" && numberToPort.replace(/\D/g, "").length < 10) {
       return setErr("Please enter the number you'd like to bring with you.");
-    }
-    if (hasDigitalVoice && !voiceAck) {
-      return setErr("Please confirm you've read the Digital Voice information.");
     }
     if (!privacyAck) return setErr("Please confirm you've read how we handle your information.");
     setErr(null);
@@ -98,7 +93,6 @@ export default function DetailsStep({
       number_to_port: numberAction === "port_in" ? numberToPort.trim() : null,
       accessibility_needs: access.trim() || null,
       vulnerability_support_needs: vulnerability.trim() || null,
-      digital_voice_acknowledged: hasDigitalVoice ? voiceAck : undefined,
       marketing_consent: marketing,
       privacy_acknowledged: true,
     });
@@ -214,23 +208,6 @@ export default function DetailsStep({
           )}
         </div>
       </fieldset>
-
-      {hasDigitalVoice && (
-        <div className="border-2 border-foreground p-4 space-y-3">
-          <h2 className="font-display uppercase text-sm tracking-widest">Digital Voice — please read</h2>
-          <p className="text-sm text-muted-foreground">
-            Digital Voice calls, including 999, work over your broadband. They will not work during a power cut or a
-            broadband outage unless you have a backup, and your location isn't sent automatically in the same way as a
-            traditional landline. Tell us below if anyone at your address relies on the phone for care or medical alarms.
-          </p>
-          <div className="flex items-start gap-3">
-            <Checkbox id="j2-voice-ack" checked={voiceAck} onCheckedChange={(v) => setVoiceAck(v === true)} className="mt-0.5" />
-            <Label htmlFor="j2-voice-ack" className="text-sm font-normal leading-relaxed">
-              I've read and understood how Digital Voice and emergency calls work.
-            </Label>
-          </div>
-        </div>
-      )}
 
       <fieldset className="space-y-4 border-2 border-border p-4">
         <legend className="font-display uppercase text-xs tracking-widest px-1">Support needs (optional)</legend>

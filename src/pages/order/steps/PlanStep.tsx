@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { money, PLAN_TERM_LABEL, type Catalogue, type Journey2Session, type PlanTerm, type SpeedBucket } from "@/lib/journey2/client";
+import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Catalogue, type Journey2Session, type PlanTerm, type SpeedBucket } from "@/lib/journey2/client";
 
 export default function PlanStep({
   catalogue, session, saving, onSave, onBack,
@@ -22,6 +22,12 @@ export default function PlanStep({
   const flex = plan?.terms.flex_30?.monthly_incl_vat;
   const lock = plan?.terms.price_lock_24?.monthly_incl_vat;
   const saving24 = flex && lock ? Math.round((flex - lock) * 24 * 100) / 100 : null;
+  const est = plan
+    ? {
+        download: plan.estimated_download_mbps ?? SPEED_ESTIMATES[plan.speed_bucket]?.download ?? 0,
+        upload: plan.estimated_upload_mbps ?? SPEED_ESTIMATES[plan.speed_bucket]?.upload ?? 0,
+      }
+    : null;
 
   return (
     <div className="border-4 border-foreground p-6 space-y-5">
@@ -37,6 +43,8 @@ export default function PlanStep({
         {catalogue.plans.map((p) => {
           const selected = p.speed_bucket === bucket;
           const cheapest = Math.min(...Object.values(p.terms).map((t) => t!.monthly_incl_vat));
+          const down = p.estimated_download_mbps ?? SPEED_ESTIMATES[p.speed_bucket]?.download ?? 0;
+          const up = p.estimated_upload_mbps ?? SPEED_ESTIMATES[p.speed_bucket]?.upload ?? 0;
           return (
             <label key={p.speed_bucket}
               className={`flex items-center justify-between gap-4 border-2 p-4 cursor-pointer ${selected ? "border-foreground bg-muted" : "border-border"}`}>
@@ -45,6 +53,9 @@ export default function PlanStep({
                   onChange={() => setBucket(p.speed_bucket)} className="h-4 w-4" />
                 <span>
                   <span className="block font-display uppercase">{p.label}</span>
+                  <span className="block text-xs font-medium">
+                    Estimated download up to {down} Mbps · estimated upload up to {up} Mbps
+                  </span>
                   <span className="block text-xs text-muted-foreground">
                     {Object.keys(p.terms).length > 1 ? "Flex 30 or Price Lock 24" : PLAN_TERM_LABEL[Object.keys(p.terms)[0] as PlanTerm]}
                   </span>
@@ -58,6 +69,14 @@ export default function PlanStep({
           );
         })}
       </fieldset>
+
+      {est && (
+        <p className="text-xs border-2 border-foreground p-3">
+          Estimated speeds for your line: up to {est.download} Mbps download and up to {est.upload} Mbps upload.
+          These are estimates, not guarantees, and they are shown on your Contract Summary and Contract Information
+          so you always have them in writing.
+        </p>
+      )}
 
       {plan && (
         <fieldset className="space-y-3">

@@ -13,11 +13,30 @@ export type RouterPayType = "none" | "one_off" | "monthly";
 export type AddonId = "priority_support" | "static_ip" | "digital_voice" | "paper_billing";
 
 export type CatalogueTerm = { monthly_incl_vat: number; monthly_ex_vat: number; vat_amount: number };
+
+/**
+ * Estimated line speeds per speed bucket. Mirrors the server catalogue so the
+ * same estimates appear in the journey, the order summary and the contract.
+ * Estimates only — never presented as guaranteed speeds.
+ */
+export const SPEED_ESTIMATES: Record<SpeedBucket, { download: number; upload: number }> = {
+  essential: { download: 74, upload: 20 },
+  superfast: { download: 150, upload: 30 },
+  ultrafast: { download: 500, upload: 75 },
+  gigabit: { download: 900, upload: 110 },
+};
+
 export type Catalogue = {
   pricing_version: string;
   customer_type: "residential" | "business";
   setup: { option: string; label: string; one_off: number } | null;
-  plans: { speed_bucket: SpeedBucket; label: string; terms: Partial<Record<PlanTerm, CatalogueTerm>> }[];
+  plans: {
+    speed_bucket: SpeedBucket;
+    label: string;
+    estimated_download_mbps?: number;
+    estimated_upload_mbps?: number;
+    terms: Partial<Record<PlanTerm, CatalogueTerm>>;
+  }[];
   routers: { key: string; option: RouterOption; payment_type: RouterPayType; label: string; monthly: number; one_off: number }[];
   extras: { id: AddonId; label: string; monthly: number }[];
 };

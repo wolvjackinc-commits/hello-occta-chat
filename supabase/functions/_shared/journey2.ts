@@ -27,6 +27,21 @@ export const ADDON_IDS: AddonId[] = ["priority_support", "static_ip", "digital_v
 /** Journey 2 only sells setup options with an exact, known price. */
 export const JOURNEY2_SETUP: SetupChoice = "remote";
 
+/**
+ * Estimated line speeds shown against each speed bucket. These are estimates
+ * for the wholesale product, not guarantees — the exact wording is carried into
+ * the Contract Summary and Contract Information.
+ */
+export const SPEED_ESTIMATES: Record<SpeedBucket, { download: number; upload: number }> = {
+  essential: { download: 74, upload: 20 },
+  superfast: { download: 150, upload: 30 },
+  ultrafast: { download: 500, upload: 75 },
+  gigabit: { download: 900, upload: 110 },
+};
+export function speedEstimate(b: SpeedBucket) {
+  return SPEED_ESTIMATES[b] ?? { download: 0, upload: 0 };
+}
+
 export const JOURNEY2_STEPS = [
   "address", "plan", "router", "extras", "details",
   "start_date", "billing", "contract", "review", "complete",
@@ -132,6 +147,10 @@ export type CatalogueTerm = { monthly_incl_vat: number; monthly_ex_vat: number; 
 export type CataloguePlan = {
   speed_bucket: SpeedBucket;
   label: string;
+  /** Estimated download speed in Mbps. Estimate, never a guarantee. */
+  estimated_download_mbps: number;
+  /** Estimated upload speed in Mbps. Estimate, never a guarantee. */
+  estimated_upload_mbps: number;
   terms: Partial<Record<PlanTerm, CatalogueTerm>>;
 };
 export type CatalogueRouter = {
@@ -248,7 +267,14 @@ export async function buildCatalogue(
       if (!anchor) anchor = r;
     }
     if (Object.keys(terms).length > 0) {
-      plans.push({ speed_bucket: bucket, label: speedBucketLabel(bucket), terms });
+      const est = speedEstimate(bucket);
+      plans.push({
+        speed_bucket: bucket,
+        label: speedBucketLabel(bucket),
+        estimated_download_mbps: est.download,
+        estimated_upload_mbps: est.upload,
+        terms,
+      });
     }
   }
 

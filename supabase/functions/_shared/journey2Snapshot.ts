@@ -59,6 +59,7 @@ export type Journey2Snapshot = {
   product: {
     plan_name: string; speed_bucket: string; contract_term: string;
     minimum_term_months: number; setup: { option: string; label: string; one_off_incl_vat: number };
+    estimated_download_mbps: number; estimated_upload_mbps: number; speed_statement: string;
   };
   router: Record<string, unknown>;
   addons: { id: string; label: string; monthly: number }[];
@@ -100,6 +101,14 @@ const COOLING_OFF_STATEMENT =
 
 export const COOLING_OFF_DAYS = 14;
 export const SNAPSHOT_VERSION = "journey2-snapshot-v2";
+
+/** Estimated line speeds per speed bucket — estimates, never guarantees. */
+export const SNAPSHOT_SPEED_ESTIMATES: Record<string, { download: number; upload: number }> = {
+  essential: { download: 74, upload: 20 },
+  superfast: { download: 150, upload: 30 },
+  ultrafast: { download: 500, upload: 75 },
+  gigabit: { download: 900, upload: 110 },
+};
 
 export type SnapshotInput = {
   session: Record<string, any>;
@@ -175,6 +184,12 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
       speed_bucket: String(session.speed_bucket),
       contract_term: String(session.plan_term),
       minimum_term_months: session.plan_term === "price_lock_24" ? 24 : 1,
+      estimated_download_mbps: SNAPSHOT_SPEED_ESTIMATES[String(session.speed_bucket)]?.download ?? 0,
+      estimated_upload_mbps: SNAPSHOT_SPEED_ESTIMATES[String(session.speed_bucket)]?.upload ?? 0,
+      speed_statement:
+        `Estimated download up to ${SNAPSHOT_SPEED_ESTIMATES[String(session.speed_bucket)]?.download ?? 0} Mbps and ` +
+        `estimated upload up to ${SNAPSHOT_SPEED_ESTIMATES[String(session.speed_bucket)]?.upload ?? 0} Mbps. ` +
+        `Speeds are estimates for your line and are not guaranteed.`,
       setup: {
         option: String(priced.setup.option),
         label: String(priced.setup.label),

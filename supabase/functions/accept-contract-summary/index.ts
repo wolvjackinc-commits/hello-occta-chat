@@ -35,6 +35,26 @@ const Schema = z.object({
   session_id: z.string().max(120).optional(),
   // Phase 3 — date of birth captured at acceptance (18+ confirmation)
   date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // Fraud / identity-theft prevention signals collected in the browser at the
+  // moment of signing. Everything is optional and best-effort: a missing signal
+  // must never stop a genuine customer signing.
+  risk_signals: z.object({
+    browser_timezone: z.string().max(80).optional(),
+    browser_locale: z.string().max(40).optional(),
+    screen_signature: z.string().max(60).optional(),
+    platform: z.string().max(80).optional(),
+    device_memory: z.union([z.string().max(20), z.number()]).optional(),
+    hardware_concurrency: z.number().int().min(0).max(1024).optional(),
+    touch_points: z.number().int().min(0).max(64).optional(),
+    cookies_enabled: z.boolean().optional(),
+    do_not_track: z.string().max(20).optional(),
+    webdriver_flag: z.boolean().optional(),
+    page_dwell_ms: z.number().int().min(0).max(86_400_000).optional(),
+    geo_latitude: z.number().min(-90).max(90).optional(),
+    geo_longitude: z.number().min(-180).max(180).optional(),
+    geo_accuracy_m: z.number().min(0).max(10_000_000).optional(),
+    geo_permission: z.string().max(20).optional(),
+  }).partial().optional(),
 });
 
 function ageYears(dobIso: string): number {
@@ -195,6 +215,23 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   if (aErr) return jsonResponse({ error: "accept_failed", details: aErr.message }, 500);
   const acceptanceId = accInsert?.id;
 
+  // Fraud / identity-theft evidence. Never blocks the acceptance.
+  try {
+    await recordAcceptanceRisk(supabase, req, {
+      contract_acceptance_id: acceptanceId ?? null,
+      contract_summary_id: cs.id,
+      quote_id: cs.quote_id,
+      journey_id: journey?.id ?? null,
+      customer_id: cs.customer_id ?? null,
+      accepted_by_email: i.accepted_by_email,
+      ip,
+      user_agent: ua,
+      signals: (i.risk_signals ?? {}) as Record<string, unknown>,
+    });
+  } catch (e) {
+    console.warn("[accept-contract-summary] risk capture failed", (e as Error).message);
+  }
+
   const { error: csErr } = await supabase.from("contract_summaries").update({
     status: "accepted",
     accepted_at: acceptedAt,
@@ -308,6 +345,139 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Legacy welcome email (only used when NOT in unified-journey mode).
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Captures the network, device and (if the customer allowed it) location
+ * evidence for a signature, scores it, and raises a fraud flag when the
+ * pattern looks risky. Entirely best-effort: signing is never blocked.
+ */
+async function recordAcceptanceRisk(
+  supabase: ReturnType<typeof getServiceClient>,
+  req: Request,
+  ctx: {
+    contract_acceptance_id: string | null;
+    contract_summary_id: string;
+    quote_id: string | null;
+    journey_id: string | null;
+    customer_id: string | null;
+    accepted_by_email: string;
+    ip: string;
+    user_agent: string | null;
+    signals: Record<string, unknown>;
+  },
+) {
+  const h = (name: string) => req.headers.get(name);
+  const ipCountry = (h("cf-ipcountry") ?? h("x-vercel-ip-country") ?? h("x-country-code") ?? "").toUpperCase() || null;
+  const ipRegion = h("cf-region") ?? h("x-vercel-ip-country-region") ?? null;
+  const ipCity = h("cf-ipcity") ?? h("x-vercel-ip-city") ?? null;
+  const ipTimezone = h("cf-timezone") ?? h("x-vercel-ip-timezone") ?? null;
+  const forwardedFor = (h("x-forwarded-for") ?? "").slice(0, 200) || null;
+  const acceptLanguage = (h("accept-language") ?? "").slice(0, 120) || null;
+
+  const s = ctx.signals;
+  const str = (k: string) => (typeof s[k] === "string" ? String(s[k]).slice(0, 120) : null);
+  const num = (k: string) => (typeof s[k] === "number" ? Number(s[k]) : null);
+  const bool = (k: string) => (typeof s[k] === "boolean" ? Boolean(s[k]) : null);
+
+  const fingerprint = await sha256Hex([
+    ctx.user_agent ?? "", str("platform") ?? "", str("screen_signature") ?? "",
+    str("browser_timezone") ?? "", str("browser_locale") ?? "",
+  ].join("|"));
+
+  const reasons: string[] = [];
+  let score = 0;
+
+  if (ipCountry && ipCountry !== "GB") { score += 40; reasons.push(`signed_from_${ipCountry}`); }
+  const tz = str("browser_timezone");
+  if (tz && tz !== "Europe/London") { score += 15; reasons.push(`browser_timezone_${tz}`); }
+  if (bool("webdriver_flag") === true) { score += 50; reasons.push("automation_detected"); }
+  const dwell = num("page_dwell_ms");
+  if (dwell !== null && dwell < 10_000) { score += 10; reasons.push("very_fast_signature"); }
+  if (bool("cookies_enabled") === false) { score += 5; reasons.push("cookies_disabled"); }
+
+  // Same device signing for a different email, and same IP across many emails.
+  const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
+  const { data: sameDevice } = await supabase
+    .from("acceptance_risk_signals")
+    .select("accepted_by_email")
+    .eq("device_fingerprint", fingerprint)
+    .gte("created_at", since)
+    .limit(50);
+  const otherEmails = new Set(
+    (sameDevice ?? [])
+      .map((r: any) => String(r.accepted_by_email ?? "").toLowerCase())
+      .filter((e: string) => e && e !== ctx.accepted_by_email.toLowerCase()),
+  );
+  if (otherEmails.size > 0) { score += 30; reasons.push(`device_used_by_${otherEmails.size}_other_emails`); }
+
+  const { data: sameIp } = await supabase
+    .from("acceptance_risk_signals")
+    .select("accepted_by_email")
+    .eq("ip", ctx.ip)
+    .gte("created_at", since)
+    .limit(50);
+  const ipEmails = new Set(
+    (sameIp ?? [])
+      .map((r: any) => String(r.accepted_by_email ?? "").toLowerCase())
+      .filter((e: string) => e && e !== ctx.accepted_by_email.toLowerCase()),
+  );
+  if (ipEmails.size >= 2) { score += 25; reasons.push(`ip_used_by_${ipEmails.size}_other_emails`); }
+
+  await supabase.from("acceptance_risk_signals").insert({
+    contract_acceptance_id: ctx.contract_acceptance_id,
+    contract_summary_id: ctx.contract_summary_id,
+    quote_id: ctx.quote_id,
+    journey_id: ctx.journey_id,
+    customer_id: ctx.customer_id,
+    accepted_by_email: ctx.accepted_by_email,
+    ip: ctx.ip,
+    ip_country: ipCountry,
+    ip_region: ipRegion,
+    ip_city: ipCity,
+    ip_timezone: ipTimezone,
+    forwarded_for: forwardedFor,
+    user_agent: ctx.user_agent,
+    accept_language: acceptLanguage,
+    browser_timezone: tz,
+    browser_locale: str("browser_locale"),
+    screen_signature: str("screen_signature"),
+    platform: str("platform"),
+    device_memory: typeof s.device_memory === "number" ? String(s.device_memory) : str("device_memory"),
+    hardware_concurrency: num("hardware_concurrency"),
+    touch_points: num("touch_points"),
+    cookies_enabled: bool("cookies_enabled"),
+    do_not_track: str("do_not_track"),
+    webdriver_flag: bool("webdriver_flag"),
+    page_dwell_ms: dwell,
+    geo_latitude: num("geo_latitude"),
+    geo_longitude: num("geo_longitude"),
+    geo_accuracy_m: num("geo_accuracy_m"),
+    geo_permission: str("geo_permission"),
+    device_fingerprint: fingerprint,
+    risk_score: score,
+    risk_reasons: reasons,
+    raw_signals: s,
+  });
+
+  if (score >= 40) {
+    await supabase.from("fraud_flags").insert({
+      customer_id: ctx.customer_id,
+      flag_type: otherEmails.size > 0 ? "duplicate_email" : "suspicious_pattern",
+      severity: score >= 70 ? "high" : "medium",
+      status: "open",
+      details: {
+        source: "contract_acceptance",
+        contract_acceptance_id: ctx.contract_acceptance_id,
+        contract_summary_id: ctx.contract_summary_id,
+        email_masked: maskEmail(ctx.accepted_by_email),
+        risk_score: score,
+        risk_reasons: reasons,
+        ip_country: ipCountry,
+      },
+    });
+  }
+}
+
 async function sendAcceptanceWelcome(
   supabase: ReturnType<typeof getServiceClient>,
   cs: any,

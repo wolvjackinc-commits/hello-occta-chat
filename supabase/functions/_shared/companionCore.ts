@@ -84,33 +84,41 @@ export function detectPublicIntent(text: string): string {
 }
 
 export function extractAccountNumber(messages: CompanionMessage[]): string | null {
-  const match = conversationUserText(messages).match(ACCOUNT_NUMBER_RE);
-  return match ? match[0].toUpperCase() : null;
+  for (const message of [...messages].reverse()) {
+    if (message.role !== "user") continue;
+    const match = message.content.match(ACCOUNT_NUMBER_RE);
+    if (match) return match[0].toUpperCase();
+  }
+  return null;
+}
+
+function validIsoDate(candidate: string): string | null {
+  const [year, month, day] = candidate.split("-");
+  const date = new Date(`${candidate}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  if (
+    date.getUTCFullYear() !== Number(year)
+    || date.getUTCMonth() + 1 !== Number(month)
+    || date.getUTCDate() !== Number(day)
+  ) return null;
+  return candidate;
 }
 
 export function extractDateOfBirth(messages: CompanionMessage[]): string | null {
-  const text = conversationUserText(messages);
-  const iso = text.match(ISO_DOB_RE);
-  if (iso) {
-    const [year, month, day] = iso[0].split("-");
-    const date = new Date(`${iso[0]}T00:00:00Z`);
-    if (
-      !Number.isNaN(date.getTime())
-      && date.getUTCFullYear() === Number(year)
-      && date.getUTCMonth() + 1 === Number(month)
-      && date.getUTCDate() === Number(day)
-    ) return iso[0];
+  for (const message of [...messages].reverse()) {
+    if (message.role !== "user") continue;
+    const iso = message.content.match(ISO_DOB_RE);
+    if (iso) {
+      const validated = validIsoDate(iso[0]);
+      if (validated) return validated;
+    }
+    const uk = message.content.match(UK_DOB_RE);
+    if (!uk) continue;
+    const candidate = `${uk[3]}-${uk[2].padStart(2, "0")}-${uk[1].padStart(2, "0")}`;
+    const validated = validIsoDate(candidate);
+    if (validated) return validated;
   }
-  const uk = text.match(UK_DOB_RE);
-  if (!uk) return null;
-  const day = uk[1].padStart(2, "0");
-  const month = uk[2].padStart(2, "0");
-  const year = uk[3];
-  const candidate = `${year}-${month}-${day}`;
-  const date = new Date(`${candidate}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) return null;
-  if (date.getUTCFullYear() !== Number(year) || date.getUTCMonth() + 1 !== Number(month) || date.getUTCDate() !== Number(day)) return null;
-  return candidate;
+  return null;
 }
 
 export function maskAccountNumber(value: string | null | undefined): string {
@@ -142,7 +150,7 @@ export function redactSensitiveText(value: string): string {
     .replace(/\b\d{2}[- ]?\d{2}[- ]?\d{2}\s+\d{8}\b/g, "[bank details removed]")
     .replace(/\b(?:\d[ -]?){13,19}\b/g, "[payment number removed]")
     .replace(/\b(password|passcode|pin)\s*[:=]\s*\S+/gi, "$1: [removed]")
-    .slice(0, 2000);
+    .slice(0, 4000);
 }
 
 export function formatMoney(value: unknown): string {

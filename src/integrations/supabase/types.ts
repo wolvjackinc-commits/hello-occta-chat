@@ -12874,6 +12874,11 @@ export type Database = {
         Args: { _order_id: string; _user_id: string }
         Returns: Json
       }
+      link_customer_records: {
+        Args: { _email: string; _uid: string }
+        Returns: Json
+      }
+      link_my_customer_account: { Args: never; Returns: Json }
       link_quote_requests_to_user: {
         Args: { _user_id: string }
         Returns: number

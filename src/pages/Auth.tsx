@@ -101,13 +101,16 @@ const Auth = () => {
         if (recoveryMode || isWelcome) return;
         // After successful sign-in/sign-up, attempt to link any guest quote
         // requests submitted with this user's email. Function is RLS-safe.
+        // Canonical account linking: identity is derived server-side from the
+        // verified JWT, never sent from the browser.
         (supabase as any)
-          .rpc("link_quote_requests_to_user", { _user_id: session.user.id })
+          .rpc("link_my_customer_account")
           .then(({ data, error }: any) => {
-            if (!error && typeof data === "number" && data > 0) {
-              toast({
-                title: `Linked ${data} quote request${data === 1 ? "" : "s"} to your account`,
-              });
+            if (error || !data || typeof data !== "object") return;
+            const linked = ["quote_requests", "guest_orders", "orders", "order_journeys", "contract_summaries", "payment_methods"]
+              .reduce((sum, k) => sum + (Number(data[k]) || 0), 0);
+            if (linked > 0) {
+              toast({ title: `Linked ${linked} record${linked === 1 ? "" : "s"} to your account` });
             }
           })
           .finally(() => navigate(redirectTarget));

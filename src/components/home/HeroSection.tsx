@@ -119,11 +119,11 @@ const HeroSection = () => {
 
             <motion.div variants={itemVariants} className="mt-2">
               <Link
-                to="/build-plan"
+                to="/order"
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
               >
                 <FileText className="w-3.5 h-3.5" />
-                Get a quote first — no payment until Contract Summary
+                Start your order — review everything before confirming
               </Link>
             </motion.div>
 

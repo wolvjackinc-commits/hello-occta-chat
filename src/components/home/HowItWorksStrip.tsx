@@ -26,10 +26,10 @@ const HowItWorksStrip = () => {
         </div>
         <div className="mt-6 pt-5 border-t-2 border-foreground/10 flex justify-end">
           <Link
-            to="/build-plan"
+            to="/order"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
           >
-            Start building your plan <ArrowRight className="w-3.5 h-3.5" />
+            Start your order <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>

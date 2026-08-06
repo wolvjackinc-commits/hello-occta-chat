@@ -133,6 +133,7 @@ const navSections: NavSection[] = [
   {
     label: "Settings & Compliance", icon: Settings, children: [
       { label: "Settings",      to: "/admin/settings" },
+      { label: "Journey Control", to: "/admin/journey-control" },
       { label: "Notifications", to: "/admin/notification-settings" },
       { label: "Notification Events", to: "/admin/notification-events" },
       { label: "Webhook Monitor", to: "/admin/webhook-monitor" },

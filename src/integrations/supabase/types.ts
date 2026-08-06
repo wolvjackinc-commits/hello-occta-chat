@@ -3156,6 +3156,85 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_email_outbox: {
+        Row: {
+          created_at: string
+          id: string
+          idempotency_key: string
+          is_test: boolean
+          last_attempt_at: string | null
+          last_error: string | null
+          mandate_id: string
+          payload: Json
+          recipient_email: string | null
+          retry_count: number
+          sent_at: string | null
+          status: string
+          status_history_id: string | null
+          subject: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          is_test?: boolean
+          last_attempt_at?: string | null
+          last_error?: string | null
+          mandate_id: string
+          payload?: Json
+          recipient_email?: string | null
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+          status_history_id?: string | null
+          subject: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          is_test?: boolean
+          last_attempt_at?: string | null
+          last_error?: string | null
+          mandate_id?: string
+          payload?: Json
+          recipient_email?: string | null
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+          status_history_id?: string | null
+          subject?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_email_outbox_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "dd_mandates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_email_outbox_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "dd_mandates_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_email_outbox_status_history_id_fkey"
+            columns: ["status_history_id"]
+            isOneToOne: false
+            referencedRelation: "dd_mandate_status_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_intake_requests: {
         Row: {
           auth_tag: string | null
@@ -3229,25 +3308,95 @@ export type Database = {
           },
         ]
       }
+      dd_mandate_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          internal_note: string | null
+          is_test: boolean
+          mandate_id: string
+          new_status: string
+          old_status: string | null
+          override_reason: string | null
+          provider_code: string | null
+          provider_reference: string | null
+          submitted_at: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          internal_note?: string | null
+          is_test?: boolean
+          mandate_id: string
+          new_status: string
+          old_status?: string | null
+          override_reason?: string | null
+          provider_code?: string | null
+          provider_reference?: string | null
+          submitted_at?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          internal_note?: string | null
+          is_test?: boolean
+          mandate_id?: string
+          new_status?: string
+          old_status?: string | null
+          override_reason?: string | null
+          provider_code?: string | null
+          provider_reference?: string | null
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_mandate_status_history_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "dd_mandates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_mandate_status_history_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "dd_mandates_list"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_mandates: {
         Row: {
           account_holder: string | null
           account_holder_name: string | null
           account_number_full: string | null
+          bank_details_ciphertext: string | null
           bank_last4: string | null
           billing_address: string | null
           consent_ip: string | null
           consent_timestamp: string | null
           consent_user_agent: string | null
           created_at: string
+          enc_alg: string | null
+          enc_key_id: string | null
+          enc_nonce: string | null
           id: string
+          is_test: boolean
           mandate_reference: string | null
+          masked_account_last4: string | null
+          masked_sort_last2: string | null
           payment_request_id: string | null
+          plaintext_purged_at: string | null
           provider: string | null
+          provider_code: string | null
           provider_reference: string | null
           signature_name: string | null
           sort_code: string | null
           status: string
+          submitted_to_provider_at: string | null
           updated_at: string
           user_id: string
         }
@@ -3255,20 +3404,30 @@ export type Database = {
           account_holder?: string | null
           account_holder_name?: string | null
           account_number_full?: string | null
+          bank_details_ciphertext?: string | null
           bank_last4?: string | null
           billing_address?: string | null
           consent_ip?: string | null
           consent_timestamp?: string | null
           consent_user_agent?: string | null
           created_at?: string
+          enc_alg?: string | null
+          enc_key_id?: string | null
+          enc_nonce?: string | null
           id?: string
+          is_test?: boolean
           mandate_reference?: string | null
+          masked_account_last4?: string | null
+          masked_sort_last2?: string | null
           payment_request_id?: string | null
+          plaintext_purged_at?: string | null
           provider?: string | null
+          provider_code?: string | null
           provider_reference?: string | null
           signature_name?: string | null
           sort_code?: string | null
           status?: string
+          submitted_to_provider_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -3276,20 +3435,30 @@ export type Database = {
           account_holder?: string | null
           account_holder_name?: string | null
           account_number_full?: string | null
+          bank_details_ciphertext?: string | null
           bank_last4?: string | null
           billing_address?: string | null
           consent_ip?: string | null
           consent_timestamp?: string | null
           consent_user_agent?: string | null
           created_at?: string
+          enc_alg?: string | null
+          enc_key_id?: string | null
+          enc_nonce?: string | null
           id?: string
+          is_test?: boolean
           mandate_reference?: string | null
+          masked_account_last4?: string | null
+          masked_sort_last2?: string | null
           payment_request_id?: string | null
+          plaintext_purged_at?: string | null
           provider?: string | null
+          provider_code?: string | null
           provider_reference?: string | null
           signature_name?: string | null
           sort_code?: string | null
           status?: string
+          submitted_to_provider_at?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -3301,9 +3470,16 @@ export type Database = {
             referencedRelation: "payment_requests"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "dd_mandates_provider_code_fkey"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "dd_providers"
+            referencedColumns: ["provider_code"]
+          },
         ]
       }
-      dd_provider_config: {
+      dd_provider_config_legacy: {
         Row: {
           advance_notice_days: number
           created_at: string
@@ -3344,6 +3520,57 @@ export type Database = {
           provider_support_contact?: string | null
           service_user_number?: string | null
           singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dd_providers: {
+        Row: {
+          advance_notice_working_days: number
+          created_at: string
+          display_name: string
+          enabled: boolean
+          guarantee_template_name: string
+          guarantee_version_label: string
+          id: string
+          is_default: boolean
+          legal_collection_name: string
+          mandate_template_name: string
+          provider_code: string
+          service_user_number: string
+          submission_mode: string
+          updated_at: string
+        }
+        Insert: {
+          advance_notice_working_days: number
+          created_at?: string
+          display_name: string
+          enabled?: boolean
+          guarantee_template_name: string
+          guarantee_version_label: string
+          id?: string
+          is_default?: boolean
+          legal_collection_name: string
+          mandate_template_name: string
+          provider_code: string
+          service_user_number: string
+          submission_mode?: string
+          updated_at?: string
+        }
+        Update: {
+          advance_notice_working_days?: number
+          created_at?: string
+          display_name?: string
+          enabled?: boolean
+          guarantee_template_name?: string
+          guarantee_version_label?: string
+          id?: string
+          is_default?: boolean
+          legal_collection_name?: string
+          mandate_template_name?: string
+          provider_code?: string
+          service_user_number?: string
+          submission_mode?: string
           updated_at?: string
         }
         Relationships: []
@@ -10996,10 +11223,14 @@ export type Database = {
           created_at: string | null
           has_bank_details: boolean | null
           id: string | null
+          is_test: boolean | null
           mandate_reference: string | null
           payment_request_id: string | null
+          provider_code: string | null
+          provider_reference: string | null
           sort_code_masked: string | null
           status: string | null
+          submitted_to_provider_at: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -11011,10 +11242,14 @@ export type Database = {
           created_at?: string | null
           has_bank_details?: never
           id?: string | null
+          is_test?: boolean | null
           mandate_reference?: string | null
           payment_request_id?: string | null
+          provider_code?: string | null
+          provider_reference?: string | null
           sort_code_masked?: never
           status?: string | null
+          submitted_to_provider_at?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -11026,10 +11261,14 @@ export type Database = {
           created_at?: string | null
           has_bank_details?: never
           id?: string | null
+          is_test?: boolean | null
           mandate_reference?: string | null
           payment_request_id?: string | null
+          provider_code?: string | null
+          provider_reference?: string | null
           sort_code_masked?: never
           status?: string | null
+          submitted_to_provider_at?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -11041,7 +11280,59 @@ export type Database = {
             referencedRelation: "payment_requests"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "dd_mandates_provider_code_fkey"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "dd_providers"
+            referencedColumns: ["provider_code"]
+          },
         ]
+      }
+      dd_provider_config: {
+        Row: {
+          advance_notice_days: number | null
+          created_at: string | null
+          ddi_template_version: string | null
+          guarantee_version: string | null
+          id: string | null
+          live_collection_enabled: boolean | null
+          provider_approval_date: string | null
+          provider_name: string | null
+          provider_support_contact: string | null
+          service_user_number: string | null
+          singleton: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          advance_notice_days?: number | null
+          created_at?: string | null
+          ddi_template_version?: string | null
+          guarantee_version?: string | null
+          id?: string | null
+          live_collection_enabled?: never
+          provider_approval_date?: never
+          provider_name?: string | null
+          provider_support_contact?: never
+          service_user_number?: string | null
+          singleton?: never
+          updated_at?: string | null
+        }
+        Update: {
+          advance_notice_days?: number | null
+          created_at?: string | null
+          ddi_template_version?: string | null
+          guarantee_version?: string | null
+          id?: string | null
+          live_collection_enabled?: never
+          provider_approval_date?: never
+          provider_name?: string | null
+          provider_support_contact?: never
+          service_user_number?: string | null
+          singleton?: never
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       journey2_live_sessions: {
         Row: {
@@ -11903,6 +12194,23 @@ export type Database = {
         Args: { _ip?: string; _token_hash: string; _ua?: string }
         Returns: Json
       }
+      dd_admin_change_mandate_status: {
+        Args: {
+          _actor?: string
+          _internal_note?: string
+          _mandate_id: string
+          _new_status: string
+          _override_reason?: string
+          _provider_code?: string
+          _provider_reference?: string
+          _submitted_at?: string
+        }
+        Returns: Json
+      }
+      dd_allowed_next_statuses: { Args: { _status: string }; Returns: string[] }
+      dd_normalise_status: { Args: { _status: string }; Returns: string }
+      dd_status_customer_label: { Args: { _status: string }; Returns: string }
+      dd_status_subject: { Args: { _status: string }; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

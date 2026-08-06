@@ -44,7 +44,7 @@ describe("OTP provider contract", () => {
     expect(m).toBeTruthy();
     const template = m![1];
     expect(template.length).toBeLessThan(160);
-    expect(/^[\w\s.,'{}/?!:;()+\-@$&#%=*<>"\[\]]+$/.test(template)).toBe(true);
+    expect(/^[\w\s.,'{}/?!:;()+\-@$&#%=*<>"[\]]+$/.test(template)).toBe(true);
   });
 
   it("never stores the passcode or the full mobile number", async () => {

@@ -9,23 +9,11 @@
  */
 import { corsHeaders, jsonResponse, getServiceClient, requireStaff } from "../_shared/quoteHelpers.ts";
 import { loadJourneySettings } from "../_shared/journey2.ts";
+import { authoriseTestCaller } from "../_shared/journey2TestAuth.ts";
 import {
   createTestSession, loadTestSessionByToken, saveTestStep, prepareTestContract,
   acceptTestContract, submitTestOrder, getTestCompletion,
 } from "../_shared/journey2TestPath.ts";
-
-const SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-/** Server-side authorisation. `admin_test: true` from a browser is never trusted. */
-export async function authoriseTestCaller(req: Request): Promise<
-  { ok: true; actor: "admin" | "service"; userId: string | null } | { ok: false; status: number; error: string }
-> {
-  const auth = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-  if (SVC && auth === SVC) return { ok: true, actor: "service", userId: null };
-  const staff = await requireStaff(req, ["admin", "super_admin"]);
-  if ("userId" in staff) return { ok: true, actor: "admin", userId: staff.userId };
-  return { ok: false, status: staff.status === 200 ? 403 : staff.status, error: staff.error ?? "forbidden" };
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

@@ -13,7 +13,7 @@
  */
 import { corsHeaders, jsonResponse, getServiceClient } from "../_shared/quoteHelpers.ts";
 import { loadJourneySettings } from "../_shared/journey2.ts";
-import { authoriseTestCaller } from "../journey2-test-runner/index.ts";
+import { authoriseTestCaller } from "../_shared/journey2TestAuth.ts";
 import {
   createTestSession, loadTestSessionByToken, saveTestStep, prepareTestContract,
   acceptTestContract, submitTestOrder, getTestCompletion, TEST_LABEL,

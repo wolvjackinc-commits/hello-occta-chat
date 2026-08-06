@@ -22,6 +22,7 @@ import { loadJourneySettings, resolveJourney2Price, planNameFor, JOURNEY2_SETUP 
 import { RESOLVER_VERSION } from "../_shared/buildPlanResolver.ts";
 import {
   buildJourney2Snapshot, snapshotFingerprint, verifyStoredSnapshot,
+  speedEstimatesFor, speedStatementFor,
   type Journey2Snapshot,
 } from "../_shared/journey2Snapshot.ts";
 import { buildJourney2DocumentPack } from "../_shared/journey2Docs.ts";

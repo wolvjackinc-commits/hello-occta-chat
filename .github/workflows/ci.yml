@@ -8,28 +8,61 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: journey2_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/journey2_ci
+
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      - name: TypeScript typecheck
-        run: bunx tsc -p tsconfig.app.json --noEmit
-      - name: Lint
-        run: bunx eslint .
-      - name: Unit tests
-        run: bunx vitest run
+
+      - name: Install psql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Apply all migrations to the isolated CI database
+        run: bun run test:migrations
+
+      - name: Seed dedicated TEST catalogue and settings only
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/ci-seed.sql
+
       - name: Journey 1 regression tests
-        run: bunx vitest run src/lib/journey2/__tests__/journey1-regression.test.ts
-      - name: Journey 2 integration tests
-        run: bunx vitest run src/lib/journey2/__tests__/journey2-integration.test.ts
+        run: bun run test:j1-regression
+
+      - name: Journey 2 database-backed integration tests
+        run: bun run test:j2-integration
+
       - name: Pricing and VAT tests
-        run: bunx vitest run src/lib/journey2/__tests__/pricing-vat.test.ts
+        run: bun run test:pricing-vat
+
       - name: Duplicate-submission tests
-        run: bunx vitest run src/lib/journey2/__tests__/duplicate-submission.test.ts
+        run: bun run test:duplicate
+
       - name: Test-mode isolation tests
-        run: bunx vitest run src/lib/journey2/__tests__/test-mode-isolation.test.ts
+        run: bun run test:isolation
+
+      - name: TypeScript typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Unit tests
+        run: bun run test:unit
+
       - name: Production build
         run: bun run build

@@ -102,6 +102,19 @@ const Header = () => {
                 {item.name}
               </Link>
             ))}
+            {/* Always-visible customer account entry point */}
+            <Link
+              to={user ? "/dashboard" : "/auth?claim=1&next=/dashboard"}
+              aria-label={user ? "My OCCTA dashboard" : "Customer login"}
+              className={`px-4 py-2 font-display text-lg tracking-wide transition-all duration-150 flex items-center gap-2 border-4 ${
+                isActive("/dashboard")
+                  ? "bg-secondary text-foreground border-foreground shadow-brutal -translate-y-0.5"
+                  : "border-transparent hover:border-foreground hover:bg-secondary"
+              }`}
+            >
+              <User className="w-4 h-4" />
+              {user ? "My OCCTA" : "Customer Login"}
+            </Link>
             {isAdmin && (
               <Link
                 to="/admin"
@@ -185,6 +198,19 @@ const Header = () => {
                   {item.name}
                 </Link>
               ))}
+              <Link
+                to={user ? "/dashboard" : "/auth?claim=1&next=/dashboard"}
+                onClick={() => setIsOpen(false)}
+                aria-label={user ? "My OCCTA dashboard" : "Customer login"}
+                className={`px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
+                  isActive("/dashboard")
+                    ? "bg-secondary text-foreground border-foreground shadow-brutal"
+                    : "border-transparent hover:border-foreground hover:bg-secondary"
+                }`}
+              >
+                <User className="w-5 h-5" />
+                {user ? "My OCCTA" : "Customer Login"}
+              </Link>
               {isAdmin && (
                 <Link
                   to="/admin"

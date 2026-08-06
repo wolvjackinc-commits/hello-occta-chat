@@ -209,6 +209,7 @@ const Dashboard = () => {
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
   const [readVersion, setReadVersion] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
   useEffect(() => {
     const bump = () => setReadVersion((v) => v + 1);
     window.addEventListener(TICKETS_READ_EVENT, bump);
@@ -234,50 +235,59 @@ const Dashboard = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    let cancelled = false;
+    let handledUserId: string | null = null;
+
+    // Single guarded entry: link the account server-side, then load data once
+    // per authenticated user. Prevents auth-listener races and double fetches.
+    const handleSession = async (session: Session | null) => {
+      if (cancelled) return;
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
-      
+
       if (!session) {
-        navigate("/auth?claim=1&next=/dashboard");
-      } else {
-        // Defer data fetching to avoid deadlock
-        setTimeout(() => {
-          fetchUserData(session.user.id);
-        }, 0);
+        handledUserId = null;
+        navigate("/auth?claim=1&next=/dashboard", { replace: true });
+        return;
       }
+      if (handledUserId === session.user.id) return;
+      handledUserId = session.user.id;
+
+      // Canonical, server-derived account linking. Never sends a user id.
+      try {
+        const { data, error } = await (supabase as any).rpc("link_my_customer_account");
+        if (!error && data && typeof data === "object") {
+          const linked = ["quote_requests", "guest_orders", "orders", "order_journeys", "contract_summaries", "payment_methods"]
+            .reduce((sum, k) => sum + (Number((data as any)[k]) || 0), 0);
+          if (linked > 0) {
+            toast({ title: "Account linked", description: `We connected ${linked} record${linked === 1 ? "" : "s"} to your account.` });
+          }
+        }
+      } catch (e) {
+        logError("Dashboard.linkAccount", e);
+      }
+      if (!cancelled) await fetchUserData(session.user.id);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      void handleSession(session);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-      
-      if (!session) {
-        navigate("/auth?claim=1&next=/dashboard");
-      } else {
-        fetchUserData(session.user.id);
-        // Best-effort: backfill any guest quote_requests submitted with the
-        // same email before this user signed up. RPC is auth-only and
-        // verifies email match server-side.
-        (supabase as any)
-          .rpc("link_quote_requests_to_user", { _user_id: session.user.id })
-          .then(({ data, error }: any) => {
-            if (!error && typeof data === "number" && data > 0) {
-              toast({
-                title: `Linked ${data} quote request${data === 1 ? "" : "s"} to your account`,
-              });
-            }
-          });
-      }
+      void handleSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const fetchUserData = async (userId: string) => {
     setIsDataLoading(true);
+    setLoadError(null);
+    const failed: string[] = [];
     
     try {
       // Phase 7 (corrected): call canonical overview RPC first — it owns
@@ -319,11 +329,30 @@ const Dashboard = () => {
         setInvoices(invoicesResult.data);
       }
 
+      if (profileResult.error) failed.push("profile");
+      if (ordersResult.error) failed.push("orders");
+      if (guestOrdersResult.error) failed.push("guest orders");
+      if (ticketsResult.error) failed.push("support tickets");
+      if (filesResult.error) failed.push("documents");
+      if (invoicesResult.error) failed.push("invoices");
+
       if (overviewRes && (overviewRes as any).data) {
         setOverview((overviewRes as any).data);
+        const sectionErrors = (overviewRes as any).data?.section_errors;
+        if (Array.isArray(sectionErrors) && sectionErrors.length > 0) {
+          failed.push(...sectionErrors.map((s: string) => String(s).replace(/_/g, " ")));
+        }
+      } else if ((overviewRes as any)?.error) {
+        failed.push("account overview");
+        logError("Dashboard.overview", (overviewRes as any).error);
+      }
+
+      if (failed.length > 0) {
+        setLoadError(`We couldn't load: ${Array.from(new Set(failed)).join(", ")}. Everything else below is up to date.`);
       }
     } catch (error) {
       logError("Dashboard.fetchUserData", error);
+      setLoadError("We couldn't load your account right now. Please retry, or call us on the number in the footer if it keeps failing.");
     } finally {
       setIsDataLoading(false);
     }
@@ -389,7 +418,21 @@ const Dashboard = () => {
   }
 
   if (!user) {
-    return null;
+    return (
+      <LayoutComponent>
+        <div className="min-h-[60vh] flex items-center justify-center px-4">
+          <div className="p-6 border-4 border-foreground bg-background max-w-md text-center space-y-4">
+            <h1 className="text-display-sm">Sign in to My OCCTA</h1>
+            <p className="text-muted-foreground">
+              You need to be signed in to view your account. Taking you to the customer login…
+            </p>
+            <Link to="/auth?claim=1&next=/dashboard">
+              <Button variant="hero" className="w-full">Go to customer login</Button>
+            </Link>
+          </div>
+        </div>
+      </LayoutComponent>
+    );
   }
 
   // App mode: always render the native app-styled dashboard. AppDashboard
@@ -475,6 +518,28 @@ const Dashboard = () => {
           variants={containerVariants}
         >
           {/* Welcome Header */}
+          {loadError && (
+            <div
+              role="alert"
+              className="mb-6 p-4 border-4 border-foreground bg-destructive/10 flex flex-col sm:flex-row sm:items-center gap-3"
+            >
+              <p className="flex-1 text-sm">
+                {loadError}{" "}
+                <span className="text-muted-foreground">
+                  If this keeps happening, contact support and quote your account number.
+                </span>
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-4 border-foreground"
+                onClick={() => user?.id && fetchUserData(user.id)}
+                disabled={isDataLoading}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
           <motion.div
             variants={itemVariants}
             className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8"

@@ -6,7 +6,7 @@
 
 import { corsHeaders, jsonResponse, getServiceClient, requireStaff } from "../_shared/quoteHelpers.ts";
 import { FULL_CONTRACT_SECTIONS, FULL_CONTRACT_INTRO, FULL_CONTRACT_TERMS_VERSION } from "../_shared/fullContractTerms.ts";
-// @ts-ignore npm specifier resolved at runtime
+// @ts-expect-error npm specifier resolved at runtime
 import { jsPDF } from "npm:jspdf@2.5.1";
 
 const BUCKET = "contract-pdfs";

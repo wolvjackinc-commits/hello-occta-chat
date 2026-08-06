@@ -52,7 +52,8 @@ Deno.serve(async (req) => {
   if (profErr || !profile) return jsonResponse({ error: "supplier_not_found" }, 404);
 
   // Upsert key = (supplier_id, supplier_product_id). Always import active=false.
-  let inserted = 0, updated = 0, errors: string[] = [];
+  let inserted = 0, updated = 0;
+  const errors: string[] = [];
   for (const r of parsed.data.rows) {
     const row = {
       supplier_id: profile.id,

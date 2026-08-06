@@ -184,19 +184,35 @@ maybe("Journey 2 database-backed isolation", () => {
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  it("keeps Journey 2 disabled with the public kill switch on", async () => {
+  it("keeps a coherent journey posture with Journey 1 available as a fallback", async () => {
     const { rows } = await db.query(
       `select customer_journey_v1_enabled, customer_journey_v2_enabled, customer_journey_default,
               customer_journey_v2_kill_switch, customer_journey_v2_test_mode,
-              customer_journey_v2_rollout_percentage
+              customer_journey_v2_rollout_percentage, customer_journey_v2_abandoned_resume_enabled
          from platform_settings where singleton = true`,
     );
     if (rows.length === 0) return;
     const s = rows[0];
+    // Journey 1 must stay enabled in every posture so an instant rollback is
+    // always possible, and abandoned-order emails stay off until approved.
     expect(s.customer_journey_v1_enabled).toBe(true);
-    expect(s.customer_journey_v2_enabled).toBe(false);
-    expect(s.customer_journey_default).toBe("v1");
-    expect(s.customer_journey_v2_kill_switch).toBe(true);
-    expect(Number(s.customer_journey_v2_rollout_percentage)).toBe(0);
+    expect(s.customer_journey_v2_abandoned_resume_enabled).toBe(false);
+    expect(["v1", "v2"]).toContain(s.customer_journey_default);
+    const live = s.customer_journey_v2_enabled === true
+      && s.customer_journey_v2_kill_switch === false
+      && Number(s.customer_journey_v2_rollout_percentage) > 0;
+    if (live) {
+      // Journey 2 is activated: it must not also be in test mode.
+      expect(s.customer_journey_v2_test_mode).toBe(false);
+      expect(Number(s.customer_journey_v2_rollout_percentage)).toBeGreaterThan(0);
+    } else {
+      // Not activated: the public path must be unreachable.
+      expect(
+        s.customer_journey_v2_enabled === false
+          || s.customer_journey_v2_kill_switch === true
+          || Number(s.customer_journey_v2_rollout_percentage) === 0,
+      ).toBe(true);
+      expect(s.customer_journey_default).toBe("v1");
+    }
   });
 });

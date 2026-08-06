@@ -241,9 +241,8 @@ export default function OrderComplete() {
                 <Row label="Direct Debit status" value={(state.dd_status ?? "pending").replace(/_/g, " ")} />
               </dl>
               <p className="text-xs text-muted-foreground mt-3">
-                Your Direct Debit is only shown as active once your bank confirms the mandate. You always get at least{" "}
-                {companyConfig.tagline ? "advance" : "advance"} notice before any collection, and billing starts only
-                when your service goes live.
+                Your Direct Debit is only shown as active once your bank confirms the mandate. You always get advance
+                notice before any collection, and billing starts only when your service goes live.
               </p>
             </div>
           </div>
@@ -317,7 +316,7 @@ export default function OrderComplete() {
             <div className="border-4 border-foreground bg-muted p-6">
               <h2 className="font-display uppercase text-xl mb-1">Need a hand?</h2>
               <p className="text-sm text-muted-foreground mb-4">
-                Real people, {companyConfig.support?.phone ?? "Mon–Fri, 8am–6pm"}.
+                Real people, {companyConfig.supportHours.phone}.
               </p>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2">

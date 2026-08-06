@@ -79,6 +79,12 @@ Deno.serve(async (req) => {
   if (run.error) return jsonResponse({ error: "test_run_failed", details: run.error.message }, 500);
   const runId = run.data.id;
 
+  // Bind the session to this test run so every downstream function writes its
+  // isolated rows against the same evidence record.
+  await supabase.from("customer_journey_sessions")
+    .update({ test_run_id: runId })
+    .eq("id", session.id);
+
   gate("admin_test_access_with_kill_switch",
     !!session.test_session && !!settings.customer_journey_v2_kill_switch,
     "test session created while the public kill switch is enabled");

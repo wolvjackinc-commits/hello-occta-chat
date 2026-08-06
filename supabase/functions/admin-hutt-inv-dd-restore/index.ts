@@ -33,7 +33,16 @@ Deno.serve(async (req) => {
   const internal = req.headers.get("x-internal-secret") ?? "";
   const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
   const okAuth = auth === `Bearer ${serviceKey}` || (cronSecret && internal === cronSecret);
-  if (!okAuth) return json({ error: "forbidden" }, 403);
+  let jwtRole: string | null = null;
+  try {
+    const t = auth.replace(/^Bearer\s+/i, "");
+    if (t.split(".").length === 3) {
+      jwtRole = JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))?.role ?? null;
+    }
+  } catch { /* ignore */ }
+  if (!okAuth && jwtRole !== "service_role") {
+    return json({ error: "forbidden", saw_role: jwtRole, has_auth: Boolean(auth) }, 403);
+  }
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
   const body = await req.json().catch(() => ({}));

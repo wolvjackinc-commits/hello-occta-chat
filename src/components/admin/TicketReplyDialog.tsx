@@ -253,17 +253,17 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden border-4 border-foreground">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden border-4 border-foreground">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-3 font-display text-xl">
             <MessageSquare className="w-6 h-6" />
             TICKET: {ticket.subject}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 min-h-0 flex flex-col gap-4">
           {/* Ticket Info */}
-          <div className="flex flex-wrap items-center gap-3 p-4 border-4 border-foreground bg-secondary">
+          <div className="flex-shrink-0 flex flex-wrap items-center gap-3 p-4 border-4 border-foreground bg-secondary">
             <div className="flex items-center gap-2">
               <User className="w-4 h-4" />
               <span className="font-display">{profile?.full_name || "Unknown"}</span>
@@ -294,24 +294,25 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
           </div>
 
 
-          {/* Original Description */}
-          <div className="p-4 border-4 border-foreground bg-card">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-              <Clock className="w-3 h-3" />
-              {format(new Date(ticket.created_at), "dd MMM yyyy HH:mm")}
-            </div>
-            <p className="whitespace-pre-wrap">{ticket.description}</p>
-          </div>
-
-          {/* Messages */}
-          <ScrollArea className="h-[250px] border-4 border-foreground p-4 bg-secondary/50">
-            {isLoadingMessages ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin" />
+          {/* Full conversation: original message + every reply, one scroll region */}
+          <ScrollArea className="flex-1 min-h-[180px] border-4 border-foreground bg-secondary/50">
+            <div className="space-y-4 p-4">
+              <div className="p-3 border-2 border-foreground bg-card mr-8">
+                <div className="flex items-center gap-2 text-xs mb-1 opacity-70">
+                  <span className="uppercase font-display">Customer · original message</span>
+                  <span>•</span>
+                  <Clock className="w-3 h-3" />
+                  <span>{format(new Date(ticket.created_at), "dd MMM yyyy HH:mm")}</span>
+                </div>
+                <p className="whitespace-pre-wrap break-words text-sm">{ticket.description}</p>
               </div>
-            ) : messages.length > 0 ? (
-              <div className="space-y-4">
-                {messages.map((msg) => (
+
+              {isLoadingMessages ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                </div>
+              ) : messages.length > 0 ? (
+                messages.map((msg) => (
                   <div
                     key={msg.id}
                     className={`p-3 border-2 border-foreground ${
@@ -322,26 +323,22 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
                   >
                     <div className="flex items-center gap-2 text-xs mb-1 opacity-70">
                       <span className="uppercase font-display">
-                        {msg.is_staff_reply ? "Staff" : "Customer"}
+                        {msg.is_staff_reply ? "OCCTA staff" : "Customer"}
                       </span>
                       <span>•</span>
-                      <span>{format(new Date(msg.created_at), "dd MMM HH:mm")}</span>
-                      
+                      <span>{format(new Date(msg.created_at), "dd MMM yyyy HH:mm")}</span>
                     </div>
-                    <p className="whitespace-pre-wrap">{msg.message}</p>
+                    <p className="whitespace-pre-wrap break-words text-sm">{msg.message}</p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No replies yet.</p>
-              </div>
-            )}
+                ))
+              ) : (
+                <p className="text-center py-4 text-sm text-muted-foreground">No replies yet.</p>
+              )}
+            </div>
           </ScrollArea>
 
           {/* Reply Input */}
-          <div className="space-y-2">
+          <div className="flex-shrink-0 space-y-2">
             <Select
               onValueChange={(value) => {
                 const canned = cannedReplies.find((reply) => reply.label === value);
@@ -376,10 +373,12 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
                 {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              {profile?.email
+                ? `Your reply is emailed to ${profile.email} and appears in their dashboard.`
+                : "Your reply appears in the customer's dashboard; we'll email it if their account has an email address."}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Customer will receive an email notification with your reply.
-          </p>
         </div>
       </DialogContent>
     </Dialog>

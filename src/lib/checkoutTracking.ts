@@ -73,6 +73,7 @@ export function isCheckoutRoute(pathname: string): boolean {
   return p === "/build-plan"
     || p === "/pre-checkout"
     || p === "/checkout"
+    || p === "/thank-you"
     || p === "/business-checkout"
     || p === "/sim/checkout"
     || p === "/sim/order-success/:orderId"

@@ -4,7 +4,7 @@ import { MessageCircle } from "lucide-react";
 import CheckoutJourneyTracker from "@/components/checkout/CheckoutJourneyTracker";
 
 const Footer = lazy(() => import("./Footer"));
-const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanionLive"));
+const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanion"));
 
 interface LayoutProps {
   children: ReactNode;

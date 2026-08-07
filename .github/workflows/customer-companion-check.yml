@@ -6,20 +6,27 @@ on:
       - "src/components/chat/OcctaCompanion.tsx"
       - "src/components/layout/Layout.tsx"
       - "src/components/app/AppLayout.tsx"
+      - "src/lib/chat/ollieConversation.ts"
       - "src/lib/chat/companionCore.unit.test.ts"
       - "supabase/functions/_shared/companionCore.ts"
       - "supabase/functions/occta-companion/**"
+      - "supabase/functions/chat-handoff/**"
+      - "supabase/functions/chat-attachment-scan/**"
       - ".github/workflows/customer-companion-check.yml"
   push:
     branches:
       - "feature/occta-customer-companion"
+      - "fix/ollie-conversation-attachments"
     paths:
       - "src/components/chat/OcctaCompanion.tsx"
       - "src/components/layout/Layout.tsx"
       - "src/components/app/AppLayout.tsx"
+      - "src/lib/chat/ollieConversation.ts"
       - "src/lib/chat/companionCore.unit.test.ts"
       - "supabase/functions/_shared/companionCore.ts"
       - "supabase/functions/occta-companion/**"
+      - "supabase/functions/chat-handoff/**"
+      - "supabase/functions/chat-attachment-scan/**"
       - ".github/workflows/customer-companion-check.yml"
 
 permissions:
@@ -48,15 +55,18 @@ jobs:
       - name: TypeScript typecheck
         run: bun run typecheck
 
-      - name: Lint changed companion files
+      - name: Lint companion and attachment files
         run: >-
           bunx eslint
           src/components/chat/OcctaCompanion.tsx
           src/components/layout/Layout.tsx
           src/components/app/AppLayout.tsx
+          src/lib/chat/ollieConversation.ts
           src/lib/chat/companionCore.unit.test.ts
           supabase/functions/_shared/companionCore.ts
           supabase/functions/occta-companion/index.ts
+          supabase/functions/chat-handoff/index.ts
+          supabase/functions/chat-attachment-scan/index.ts
 
       - name: Companion unit tests
         run: bunx vitest run src/lib/chat/companionCore.unit.test.ts

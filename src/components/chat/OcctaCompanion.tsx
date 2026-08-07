@@ -4,9 +4,12 @@ import {
   Bot,
   Download,
   ExternalLink,
+  FileText,
+  Image as ImageIcon,
   LifeBuoy,
   Loader2,
   MessageCircle,
+  Paperclip,
   RefreshCw,
   Send,
   ShieldCheck,
@@ -25,7 +28,18 @@ import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { CardRenderer, extractCards } from "./StructuredCards";
 import { useFocusTrap } from "./useFocusTrap";
 import { RaiseTicketDialog, type TicketPrefill } from "@/components/app/RaiseTicketDialog";
-import { redactSensitiveText } from "../../../supabase/functions/_shared/companionCore.ts";
+import {
+  redactSensitiveText,
+  type CompanionMessage as CoreMessage,
+} from "../../../supabase/functions/_shared/companionCore.ts";
+import { resolvePublicConversationReply } from "@/lib/chat/ollieConversation";
+
+type ChatAttachment = {
+  path: string;
+  name: string;
+  size?: number;
+  contentType?: string;
+};
 
 type CompanionMessage = {
   id: string;
@@ -34,6 +48,7 @@ type CompanionMessage = {
   rawContent?: string;
   createdAt: string;
   agent?: "ollie" | "human";
+  attachments?: ChatAttachment[];
 };
 
 type Props = {
@@ -44,15 +59,20 @@ type Props = {
 };
 
 const ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/occta-companion`;
-const HISTORY_KEY = "occta-companion-history-v1";
+const HISTORY_KEY = "occta-companion-history-v2";
 const SESSION_KEY = "occta-companion-session-v1";
 const VERIFICATION_KEY = "occta-companion-verification-v1";
+const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+const ACCEPTED_ATTACHMENT_EXTENSIONS = new Set([
+  "jpg", "jpeg", "png", "webp", "gif", "heic", "heif",
+  "pdf", "txt", "csv", "doc", "docx", "xls", "xlsx", "pptx",
+]);
 
 const guestActions = [
-  "Compare broadband plans",
+  "Check broadband availability",
   "Fix my internet",
+  "Compare broadband plans",
   "How switching works",
-  "Check my account",
 ];
 
 const signedInActions = [
@@ -65,13 +85,17 @@ const signedInActions = [
 const actionRoutes: Record<string, string> = {
   "open help centre": "/help",
   "check availability": "/build-plan",
+  "check broadband availability": "/build-plan",
+  "open availability checker": "/build-plan",
   "check my address": "/build-plan",
   "start an availability check": "/build-plan",
+  "view broadband plans": "/broadband",
   "view sim plans": "/sim",
   "open own-router guide": "/help/own-router-setup",
   "read cancellation terms": "/cancellation",
   "read the complaints code": "/legal/complaints-code",
   "open service status": "/status",
+  "check service status": "/status",
   "digital voice information": "/landline",
   "start a switch": "/switching",
   "set up direct debit": "/direct-debit-setup",
@@ -92,6 +116,23 @@ function redactForDisplay(value: string): string {
     .replace(/\[payment number removed\]/g, "Payment number removed");
 }
 
+function safeAttachments(value: unknown): ChatAttachment[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 6).flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const path = typeof row.path === "string" ? row.path.slice(0, 500) : "";
+    const name = typeof row.name === "string" ? row.name.replace(/[\r\n]/g, " ").slice(0, 180) : "Attachment";
+    if (!path) return [];
+    return [{
+      path,
+      name,
+      size: Number.isFinite(Number(row.size)) ? Number(row.size) : undefined,
+      contentType: typeof row.contentType === "string" ? row.contentType.slice(0, 160) : undefined,
+    }];
+  });
+}
+
 function clearRawContent(messages: CompanionMessage[]): CompanionMessage[] {
   return messages.map((message) => ({ ...message, rawContent: undefined }));
 }
@@ -101,6 +142,7 @@ function safeStoredMessages(messages: CompanionMessage[]): CompanionMessage[] {
     ...message,
     content: redactForDisplay(message.content),
     rawContent: undefined,
+    attachments: safeAttachments(message.attachments),
   }));
 }
 
@@ -127,6 +169,19 @@ function extractOptions(content: string): { text: string; options: string[] } {
     options = [];
   }
   return { text: content.replace(match[0], "").trim(), options };
+}
+
+function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes < 1) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function attachmentIcon(attachment: ChatAttachment) {
+  return attachment.contentType?.startsWith("image/")
+    ? <ImageIcon className="h-4 w-4 shrink-0" />
+    : <FileText className="h-4 w-4 shrink-0" />;
 }
 
 function AssistantBody({ message, onAction }: { message: CompanionMessage; onAction: (value: string) => void }) {
@@ -163,8 +218,8 @@ function welcomeMessage(signedIn: boolean, name?: string): CompanionMessage {
     id: crypto.randomUUID(),
     role: "assistant",
     content: signedIn
-      ? `Welcome back${name ? `, ${name}` : ""}. I'm Ollie from OCCTA. I can securely check your invoices, orders, services and support cases, or help troubleshoot a problem.`
-      : `Hi, I'm Ollie from OCCTA. I can explain plans, help with switching, troubleshoot broadband and securely verify an existing account when you need personal information.`,
+      ? `Welcome back${name ? `, ${name}` : ""}. I'm Ollie from OCCTA. I can check your account, troubleshoot a service problem, find the right guide or bring in a human advisor without making you start again.`
+      : `Hi, I'm Ollie from OCCTA. Tell me what you need in normal words — I can help with broadband, SIMs, switching, billing questions and faults, remember the conversation as we troubleshoot, and bring in an advisor when needed.`,
     createdAt: new Date().toISOString(),
     agent: "ollie",
   };
@@ -192,7 +247,10 @@ function buildTicketPrefill(messages: CompanionMessage[]): TicketPrefill {
   const priority: TicketPrefill["priority"] = /no internet|outage|line down|urgent/.test(userText) ? "high" : "normal";
   const first = messages.find((message) => message.role === "user")?.content ?? "Support request from chat";
   const transcript = messages
-    .map((message) => `[${new Date(message.createdAt).toLocaleString("en-GB")}] ${message.role === "user" ? "Customer" : message.agent === "human" ? "OCCTA advisor" : "Ollie"}: ${redactForDisplay(message.content)}`)
+    .map((message) => {
+      const attachments = message.attachments?.length ? `\nAttachments: ${message.attachments.map((item) => item.name).join(", ")}` : "";
+      return `[${new Date(message.createdAt).toLocaleString("en-GB")}] ${message.role === "user" ? "Customer" : message.agent === "human" ? "OCCTA advisor" : "Ollie"}: ${redactForDisplay(message.content)}${attachments}`;
+    })
     .join("\n\n");
   return {
     category,
@@ -209,6 +267,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
   const [messages, setMessages] = useState<CompanionMessage[]>(loadStoredMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string | undefined>(undefined);
@@ -219,6 +278,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
   const [announcement, setAnnouncement] = useState("");
   const sessionId = useRef(getSessionId());
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -230,7 +290,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       const rest = (supabase as unknown as { rest?: { headers?: Record<string, string> } }).rest;
       if (rest?.headers) rest.headers["x-session-id"] = sessionId.current;
     } catch {
-      // Guest realtime/history still degrades safely if the client internals change.
+      // Guest realtime/history safely degrades if client internals change.
     }
   }, []);
 
@@ -333,18 +393,37 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
     }
   }, []);
 
+  const ensureConversation = useCallback(async (): Promise<string | null> => {
+    if (conversationId) return conversationId;
+    const recent = messages.slice(-10).map((message) => ({ role: message.role, content: message.content }));
+    const id = await logConversation(recent.length ? recent : [{ role: "assistant", content: "OCCTA customer chat started" }]);
+    return id ?? null;
+  }, [conversationId, messages, logConversation]);
+
   const requestHuman = useCallback(async () => {
-    const recent = messages.slice(-12).map((message) => ({ role: message.role, content: message.content }));
+    const recent = messages.slice(-14).map((message) => ({ role: message.role, content: message.content }));
     setMessages((current) => [...current, {
       id: crypto.randomUUID(),
       role: "assistant",
-      content: `I've passed this conversation to an OCCTA advisor. Keep the chat open and you will not need to repeat yourself. For urgent service-impacting issues, call ${CONTACT_PHONE_DISPLAY}.`,
+      content: `I’ve passed this conversation to an OCCTA advisor with the recent context attached. Keep the chat open and you won’t need to repeat yourself. For an urgent service-impacting issue, call ${CONTACT_PHONE_DISPLAY}.`,
       createdAt: new Date().toISOString(),
       agent: "ollie",
     }]);
     const id = await logConversation(recent, "requested_human");
     if (!id) toast({ title: "Human support requested", description: `The request was noted. You can also call ${CONTACT_PHONE_DISPLAY}.` });
   }, [messages, logConversation, toast]);
+
+  const openAttachment = useCallback(async (attachment: ChatAttachment) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("chat-handoff", {
+        body: { sessionId: sessionId.current, mode: "customer_download", path: attachment.path },
+      });
+      if (error || !data?.url) throw error ?? new Error("No download URL");
+      window.open(String(data.url), "_blank", "noopener,noreferrer");
+    } catch {
+      toast({ title: "Attachment unavailable", description: "The file may still be scanning or was blocked for safety.", variant: "destructive" });
+    }
+  }, [toast]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -356,16 +435,17 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
         table: "chat_messages",
         filter: `conversation_id=eq.${conversationId}`,
       }, (payload) => {
-        const row = payload.new as { role?: string; content?: string };
-        if (row.role !== "admin" || !row.content) return;
+        const row = payload.new as { role?: string; content?: string; attachments?: unknown; created_at?: string };
+        if (row.role !== "admin") return;
         setHumanLive(true);
         setAnnouncement("A human OCCTA advisor has replied.");
         setMessages((current) => [...current, {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: row.content,
-          createdAt: new Date().toISOString(),
+          content: row.content || (safeAttachments(row.attachments).length ? "Attachment from your OCCTA advisor" : "OCCTA advisor replied"),
+          createdAt: row.created_at || new Date().toISOString(),
           agent: "human",
+          attachments: safeAttachments(row.attachments),
         }]);
       })
       .on("postgres_changes", {
@@ -376,7 +456,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       }, (payload) => {
         const status = (payload.new as { status?: string }).status;
         if (status === "live") setHumanLive(true);
-        if (status === "resolved") setHumanLive(false);
+        if (status === "resolved" || status === "closed") setHumanLive(false);
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
@@ -397,9 +477,99 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
     setTicketOpen(true);
   }, [signedIn, messages]);
 
+  const uploadAttachment = useCallback(async (file: File) => {
+    if (uploadingAttachment) return;
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!ACCEPTED_ATTACHMENT_EXTENSIONS.has(extension)) {
+      toast({
+        title: "File type not supported",
+        description: "Attach an image, PDF, text/CSV file, or common Office document.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      toast({ title: "File too large", description: "Chat attachments can be up to 15 MB.", variant: "destructive" });
+      return;
+    }
+
+    setUploadingAttachment(true);
+    try {
+      const convId = await ensureConversation();
+      if (!convId) throw new Error("Could not create the secure chat thread");
+      const { data: { session } } = await supabase.auth.getSession();
+      const ownerPrefix = session?.user?.id ? `user/${session.user.id}` : `guest/${sessionId.current}`;
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-140) || "attachment";
+      const path = `${ownerPrefix}/${convId}/${Date.now()}-${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("chat-attachments")
+        .upload(path, file, { upsert: false, contentType: file.type || undefined });
+      if (uploadError) throw uploadError;
+
+      const { data: scanData, error: scanError } = await supabase.functions.invoke("chat-attachment-scan", {
+        body: {
+          path,
+          conversation_id: convId,
+          content_type: file.type || undefined,
+          session_id: sessionId.current,
+        },
+      });
+      if (scanError || scanData?.status !== "clean") {
+        throw new Error("This file could not pass the attachment safety check");
+      }
+
+      const attachment: ChatAttachment = {
+        path,
+        name: file.name,
+        size: file.size,
+        contentType: file.type || undefined,
+      };
+      const { error: messageError } = await supabase.functions.invoke("chat-handoff", {
+        body: {
+          sessionId: sessionId.current,
+          mode: "customer_attachment",
+          message: `Attachment: ${file.name}`,
+          attachments: [attachment],
+        },
+      });
+      if (messageError) throw messageError;
+
+      const attachmentMessage: CompanionMessage = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: `Attached: ${file.name}`,
+        createdAt: new Date().toISOString(),
+        attachments: [attachment],
+      };
+      setMessages((current) => [...current, attachmentMessage]);
+
+      if (!humanLive) {
+        const recentText = messages.slice(-5).map((message) => message.content).join(" ").toLowerCase();
+        const note = /internet|router|ont|light|wi-?fi|broadband/.test(recentText)
+          ? `Thanks — **${file.name}** is securely attached to this conversation and will be visible to an OCCTA advisor if we hand the fault over. I won’t pretend I can read details hidden inside the file; if it’s a router/ONT photo, tell me the light label you can read and I’ll keep troubleshooting with you.`
+          : `Thanks — **${file.name}** is securely attached to this conversation and will be visible to an OCCTA advisor if needed. Tell me what you want help with in the file and I’ll keep the conversation moving.`;
+        setMessages((current) => [...current, {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: note,
+          createdAt: new Date().toISOString(),
+          agent: "ollie",
+        }]);
+      }
+      setAnnouncement("Attachment uploaded securely.");
+    } catch (error) {
+      const description = error instanceof Error ? error.message : "Please try again.";
+      toast({ title: "Attachment not sent", description, variant: "destructive" });
+    } finally {
+      setUploadingAttachment(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [uploadingAttachment, ensureConversation, humanLive, messages, toast]);
+
   const send = useCallback(async (value: string) => {
     const raw = value.trim();
-    if (!raw || loading) return;
+    if (!raw || loading || uploadingAttachment) return;
     const actionRoute = actionRoutes[raw.toLowerCase()];
     if (actionRoute) {
       window.location.assign(actionRoute);
@@ -438,16 +608,46 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
 
     try {
       if (humanLive && conversationId) {
-        await logConversation([{ role: "user", content: display }]);
+        const { error } = await supabase.functions.invoke("chat-handoff", {
+          body: { sessionId: sessionId.current, mode: "customer_message", message: display },
+        });
+        if (error) throw error;
         setMessages((current) => clearRawContent(current));
         return;
       }
+
+      const coreMessages: CoreMessage[] = [...previousMessages, userMessage]
+        .filter((message) => message.role === "user" || message.role === "assistant")
+        .map((message) => ({ role: message.role, content: message.rawContent ?? message.content }));
+
+      // Handle known public/support conversations locally from approved OCCTA
+      // playbooks. Because the full history is passed in, short replies such as
+      // "Red lights" continue the fault instead of starting a new question.
+      const humanSupportReply = resolvePublicConversationReply(coreMessages);
+      if (humanSupportReply) {
+        setMessages((current) => [
+          ...clearRawContent(current),
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: humanSupportReply,
+            createdAt: new Date().toISOString(),
+            agent: "ollie",
+          },
+        ]);
+        setAnnouncement("Ollie has replied.");
+        void logConversation([
+          { role: "user", content: display },
+          { role: "assistant", content: humanSupportReply },
+        ]);
+        return;
+      }
+
+      // Account-specific requests and questions not covered by a deterministic
+      // playbook go to the secure companion endpoint. That endpoint uses verified
+      // account data and approved OCCTA knowledge, not a Lovable model runtime.
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const apiMessages = [...previousMessages, userMessage].map((message) => ({
-        role: message.role,
-        content: message.rawContent ?? message.content,
-      }));
       const response = await fetch(ENDPOINT, {
         method: "POST",
         headers: {
@@ -456,7 +656,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          messages: apiMessages,
+          messages: coreMessages,
           sessionId: sessionId.current,
           verificationToken: sessionStorage.getItem(VERIFICATION_KEY),
         }),
@@ -498,7 +698,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, humanLive, conversationId, signedIn, logConversation, openTicket, requestHuman]);
+  }, [loading, uploadingAttachment, messages, humanLive, conversationId, signedIn, logConversation, openTicket, requestHuman]);
 
   const clearChat = useCallback(() => {
     sessionStorage.removeItem(HISTORY_KEY);
@@ -510,9 +710,10 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
   }, [signedIn, firstName]);
 
   const downloadTranscript = useCallback(() => {
-    const transcript = messages.map((message) =>
-      `[${new Date(message.createdAt).toLocaleString("en-GB")}] ${message.role === "user" ? "You" : message.agent === "human" ? "OCCTA advisor" : "Ollie"}: ${redactForDisplay(message.content)}`,
-    ).join("\n\n");
+    const transcript = messages.map((message) => {
+      const attachments = message.attachments?.length ? `\nAttachments: ${message.attachments.map((item) => item.name).join(", ")}` : "";
+      return `[${new Date(message.createdAt).toLocaleString("en-GB")}] ${message.role === "user" ? "You" : message.agent === "human" ? "OCCTA advisor" : "Ollie"}: ${redactForDisplay(message.content)}${attachments}`;
+    }).join("\n\n");
     const blob = new Blob([`OCCTA chat transcript\nGenerated: ${new Date().toLocaleString("en-GB")}\n\n${transcript}`], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -531,7 +732,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       initial={{ opacity: 0, y: 18, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 18, scale: 0.98 }}
-      className={`${embedded ? "h-full min-h-[580px]" : "fixed inset-x-2 bottom-2 top-2 z-50 sm:inset-auto sm:bottom-6 sm:right-6 sm:top-auto sm:h-[min(700px,calc(100dvh-3rem))] sm:w-[430px]"} flex flex-col overflow-hidden border-4 border-foreground bg-card shadow-[10px_10px_0_hsl(var(--foreground))] ${className}`}
+      className={`${embedded ? "h-full min-h-[580px]" : "fixed inset-x-2 bottom-2 top-2 z-[9999] sm:inset-auto sm:bottom-6 sm:right-6 sm:top-auto sm:h-[min(720px,calc(100dvh-3rem))] sm:w-[440px]"} flex flex-col overflow-hidden border-4 border-foreground bg-card shadow-[10px_10px_0_hsl(var(--foreground))] ${className}`}
     >
       <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
       <header className="flex items-center justify-between border-b-4 border-foreground bg-primary px-4 py-3">
@@ -544,7 +745,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
               {humanLive ? "OCCTA Advisor" : "Ollie — OCCTA Assist"}
             </div>
             <div className="truncate text-[11px] text-primary-foreground/85">
-              {humanLive ? "Human advisor connected" : signedIn ? "Secure access to your account" : "Plans, support and secure verification"}
+              {humanLive ? "Human advisor connected · conversation retained" : signedIn ? "Account-aware support · guides · human handoff" : "Human-style support · guides · secure handoff"}
             </div>
           </div>
         </div>
@@ -558,7 +759,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
 
       <div className="flex items-center gap-2 border-b-2 border-foreground/20 bg-muted/50 px-4 py-2 text-[11px] text-muted-foreground">
         <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
-        Never share passwords, bank details, card details or one-time codes in chat.
+        Conversation context is retained in this session. Never share passwords, bank/card details or one-time codes.
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
@@ -573,7 +774,26 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
               <div className={`${message.role === "user" ? "max-w-[82%] bg-primary text-primary-foreground" : "max-w-[88%] border-2 border-foreground bg-background text-foreground"} px-3 py-2 text-sm`}>
                 {message.role === "assistant"
                   ? <AssistantBody message={message} onAction={(option) => void send(option)} />
-                  : <p className="whitespace-pre-wrap">{message.content}</p>}
+                  : message.content ? <p className="whitespace-pre-wrap">{message.content}</p> : null}
+                {message.attachments && message.attachments.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    {message.attachments.map((attachment) => (
+                      <button
+                        key={attachment.path}
+                        type="button"
+                        onClick={() => void openAttachment(attachment)}
+                        className={`flex w-full items-center gap-2 border-2 px-2 py-2 text-left text-xs ${message.role === "user" ? "border-primary-foreground/60 bg-primary-foreground/10" : "border-foreground/30 bg-muted/40"}`}
+                      >
+                        {attachmentIcon(attachment)}
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium">{attachment.name}</span>
+                          {formatFileSize(attachment.size) && <span className="block opacity-70">{formatFileSize(attachment.size)}</span>}
+                        </span>
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className={`mt-1 text-[10px] ${message.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                   {new Date(message.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                   {message.agent === "human" ? " · advisor" : ""}
@@ -581,10 +801,10 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
               </div>
             </div>
           ))}
-          {loading && (
+          {(loading || uploadingAttachment) && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              {humanLive ? "Sending to the advisor…" : "Ollie is checking…"}
+              {uploadingAttachment ? "Scanning and attaching the file…" : humanLive ? "Sending to the advisor…" : "Ollie is checking the conversation…"}
             </div>
           )}
           <div ref={endRef} />
@@ -602,23 +822,45 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       )}
 
       <form onSubmit={(event) => { event.preventDefault(); void send(input); }} className="border-t-4 border-foreground bg-background p-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.pptx"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void uploadAttachment(file);
+          }}
+        />
         <div className="flex gap-2">
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading || uploadingAttachment}
+            aria-label="Attach a file"
+            title="Attach image or document"
+          >
+            {uploadingAttachment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+          </Button>
           <Input
             ref={inputRef}
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder={humanLive ? "Message the OCCTA advisor" : "Ask Ollie anything about OCCTA"}
+            placeholder={humanLive ? "Message your OCCTA advisor…" : "Tell Ollie what happened…"}
             maxLength={4000}
-            disabled={loading}
+            disabled={loading || uploadingAttachment}
             aria-label="Chat message"
           />
-          <Button type="submit" size="icon" disabled={loading || !input.trim()} aria-label="Send message">
+          <Button type="submit" size="icon" disabled={loading || uploadingAttachment || !input.trim()} aria-label="Send message">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
         <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-          <button type="button" onClick={clearChat} className="inline-flex items-center gap-1 hover:text-foreground"><RefreshCw className="h-3 w-3" /> New secure chat</button>
-          <a href="/support" className="inline-flex items-center gap-1 hover:text-foreground">Support options <ExternalLink className="h-3 w-3" /></a>
+          <button type="button" onClick={clearChat} className="inline-flex items-center gap-1 hover:text-foreground"><RefreshCw className="h-3 w-3" /> New chat</button>
+          <span className="hidden sm:inline">Attachments up to 15 MB · safety scanned</span>
+          <a href="/support" className="inline-flex items-center gap-1 hover:text-foreground">Support <ExternalLink className="h-3 w-3" /></a>
         </div>
       </form>
 

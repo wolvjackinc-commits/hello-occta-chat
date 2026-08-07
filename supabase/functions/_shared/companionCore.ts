@@ -70,13 +70,8 @@ export function detectPublicIntent(text: string): string {
   const lower = text.toLowerCase();
   const postcode = extractUkPostcode(text);
 
-  // Address/postcode questions should go to the live availability journey instead
-  // of falling through to a generic refusal. We only claim postcode-level intent;
-  // final service availability still requires the exact property.
   if (postcode && /\b(occta|broadband|fibre|fiber|internet|availab\w*|coverage|cover\w*|serve\w*|get)\b/.test(lower)) return "availability";
 
-  // Real customers rarely phrase faults as the exact words "no internet". Cover
-  // natural wording such as "my internet is not working" and "can't connect".
   if (
     /\b(no internet|internet down|broadband down|offline|total outage|los light|no connection|lost connection)\b/.test(lower)
     || /\b(internet|broadband|wi-?fi|connection)\b.{0,24}\b(not working|isn['’]?t working|stopped working|won['’]?t work|doesn['’]?t work|keeps dropping|disconnected)\b/.test(lower)
@@ -84,7 +79,7 @@ export function detectPublicIntent(text: string): string {
     || /\bfix\s+(?:my\s+)?(?:internet|broadband|wi-?fi)\b/.test(lower)
   ) return "no_internet";
 
-  if (/\b(router lights?|red light|orange light|flashing light|ont lights?)\b/.test(lower)) return "router_lights";
+  if (/\b(router lights?|red lights?|orange lights?|amber lights?|flashing lights?|blinking lights?|ont lights?|los lights?|pon lights?|internet lights?)\b/.test(lower)) return "router_lights";
   if (/\b(slow wi-?fi|slow broadband|buffering|poor signal|weak wi-?fi)\b/.test(lower)) return "slow_wifi";
   if (/\b(pppoe details|pppoe password|cannot find pppoe|can't find pppoe|missing pppoe)\b/.test(lower)) return "pppoe_missing";
   if (/\b(router|pppoe|wan port|ont|mesh|wi-?fi setup)\b/.test(lower)) return "router";
@@ -101,9 +96,6 @@ export function detectPublicIntent(text: string): string {
   if (/\b(complaint|complain|adr|ombudsman)\b/.test(lower)) return "complaints";
   if (/\b(vulnerable|telecare|medical alarm|priority support|battery backup)\b/.test(lower)) return "vulnerable";
 
-  // Competitor pricing changes by postcode, promotion and date. Route these
-  // questions to a like-for-like comparison response rather than inventing a
-  // headline saving or silently returning an irrelevant broadband answer.
   if (
     /\b(bt|sky|virgin(?: media)?|talktalk|plusnet|vodafone|ee|zen)\b/.test(lower)
     && /\b(cheap\w*|price|cost|compare|comparison|better|difference|versus|vs\.?|save|saving|same)\b/.test(lower)
@@ -113,6 +105,64 @@ export function detectPublicIntent(text: string): string {
   if (/\b(landline|digital voice|home phone|pstn)\b/.test(lower)) return "voice";
   if (/\b(broadband|full fibre|fttp|sogea|internet plan|price lock|flex 30)\b/.test(lower)) return "broadband";
   if (/\b(human|advisor|agent|person|speak to support)\b/.test(lower)) return "human";
+  return "general";
+}
+
+/**
+ * Resolve short, natural follow-ups against the recent conversation.
+ * This is deliberately deterministic: it remembers the active support topic
+ * without asking a language model to invent facts or actions.
+ */
+export function detectContextualPublicIntent(messages: CompanionMessage[]): string {
+  const latest = lastUserText(messages).trim();
+  const direct = detectPublicIntent(latest);
+  if (direct !== "general") return direct;
+  if (!latest) return "general";
+
+  const prior = messages.slice(0, -1).slice(-10);
+  if (!prior.length) return "general";
+
+  const latestLower = latest.toLowerCase();
+  const priorText = prior.map((message) => message.content.toLowerCase()).join("\n");
+  const previousAssistant = [...prior].reverse().find((message) => message.role === "assistant")?.content.toLowerCase() ?? "";
+
+  const postcode = extractUkPostcode(latest);
+  if (postcode && /availab|postcode|address|coverage|property|build-plan/.test(priorText)) return "availability";
+
+  const faultContext = /no internet|internet.*down|broadband.*down|router|ont|los|pon|light label|lights can you see|line fault|wi-?fi.*internet|troubleshoot/.test(priorText);
+  if (faultContext) {
+    if (
+      /^(?:the\s+)?(?:red|orange|amber|green|blue|white)(?:\s+lights?)?$/.test(latestLower)
+      || /^(?:los|pon|internet|wan|power|broadband|dsl|wifi|wi-fi)(?:\s+(?:is\s+)?)?(?:red|orange|amber|green|off|on|flashing|blinking)?$/.test(latestLower)
+      || /^(?:router|ont)(?:\s+(?:light|lights|is red|red))?$/.test(latestLower)
+      || /^(?:all|both)\s+(?:lights?\s+)?(?:green|red|off)$/.test(latestLower)
+      || /^(?:no|none)\s+(?:lights?|power)$/.test(latestLower)
+    ) return "router_lights";
+
+    if (/^(yes|no|same|still down|still not working|didn['’]?t work|not fixed|working now|fixed|connected now|keeps dropping)$/.test(latestLower)) return "no_internet";
+  }
+
+  const comparisonContext = /provider_comparison|compare occta|\b(bt|sky|virgin(?: media)?|talktalk|plusnet|vodafone|ee|zen)\b.*(?:price|cost|speed|cheaper|compare)|monthly price and advertised speed/.test(priorText);
+  if (comparisonContext && /(?:£|\d+\s*(?:mbps|mb|gbps|gb)|per month|monthly|p\/m|pm|contract|months?)/.test(latestLower)) return "provider_comparison";
+
+  const contractContext = /flex 30|price lock 24|rolling.*fixed|fixed.*rolling|contract choice/.test(priorText);
+  if (contractContext && /^(flex(?: 30)?|price lock(?: 24)?|rolling|fixed|24 months?|30 day|monthly)$/.test(latestLower)) return "contract_choice";
+
+  const speedContext = /which speed|speed do i need|80mbps|330mbps|1,?000mbps|500.*1,?000/.test(priorText);
+  if (speedContext && /^\s*\d+(?:\.\d+)?\s*(?:mbps|mb|gbps|gb)?\s*$/.test(latestLower)) return "speed_need";
+
+  const switchingContext = /one touch switch|switching|keep my number|number transfer/.test(priorText);
+  if (switchingContext && /^(yes|no|keep it|keep my number|same number|transfer it|port it)$/.test(latestLower)) return "number_porting";
+
+  const billingContext = /first invoice|first bill|billing|invoice/.test(priorText);
+  if (billingContext && /^(why|how|vat|tax|part month|pro[- ]?rata|setup|activation charge)$/.test(latestLower)) {
+    return /vat|tax/.test(latestLower) ? "vat" : "first_invoice";
+  }
+
+  // If the assistant explicitly asked for a light label, keep that context even
+  // for terse answers such as "red" that would otherwise be impossible to route.
+  if (/light label|what lights|which light|los.*pon|internet.*light/.test(previousAssistant) && latestLower.length <= 40) return "router_lights";
+
   return "general";
 }
 

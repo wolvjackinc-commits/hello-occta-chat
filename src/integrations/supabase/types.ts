@@ -4608,6 +4608,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "installation_bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "installation_slots_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "installation_bookings_technician_id_fkey"
             columns: ["technician_id"]
             isOneToOne: false
@@ -11776,6 +11783,27 @@ export type Database = {
         }
         Relationships: []
       }
+      installation_slots_public: {
+        Row: {
+          has_availability: boolean | null
+          id: string | null
+          slot_date: string | null
+          slot_time: string | null
+        }
+        Insert: {
+          has_availability?: never
+          id?: string | null
+          slot_date?: string | null
+          slot_time?: string | null
+        }
+        Update: {
+          has_availability?: never
+          id?: string | null
+          slot_date?: string | null
+          slot_time?: string | null
+        }
+        Relationships: []
+      }
       journey2_live_sessions: {
         Row: {
           abandoned_at: string | null
@@ -12631,6 +12659,7 @@ export type Database = {
         Args: { _actor: string; _notes?: string; _order_id: string }
         Returns: Json
       }
+      current_guest_session_id: { Args: never; Returns: string }
       current_reward_unlock_rule: {
         Args: never
         Returns: Database["public"]["Enums"]["reward_unlock_rule"]

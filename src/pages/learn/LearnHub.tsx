@@ -1,11 +1,12 @@
 // /learn hub — one crawlable index of every static SEO explainer and authority
-// article, grouped by category. New content is stored separately in seoArticles
-// so expanding the hub cannot disturb customer journeys or account features.
+// article, grouped by category. Growth content is stored separately so expanding
+// the hub cannot disturb customer journeys or account features.
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO, JsonLd, createBreadcrumbSchema } from "@/components/seo";
 import { learnPages, learnCategoryLabels, LearnCategory } from "@/data/learnPages";
 import { seoArticles } from "@/data/seoArticles";
+import { seoGrowthArticles } from "@/data/seoGrowthArticles";
 import { ArrowRight } from "lucide-react";
 import LeadCaptureWidget from "@/components/marketing/LeadCaptureWidget";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ const orderedCategories: LearnCategory[] = [
   "payments",
 ];
 
-const allPages = [...learnPages, ...seoArticles];
+const allPages = [...learnPages, ...seoArticles, ...seoGrowthArticles];
 
 export default function LearnHub() {
   const breadcrumb = createBreadcrumbSchema([
@@ -30,10 +31,10 @@ export default function LearnHub() {
   return (
     <Layout>
       <SEO
-        title="Learn — UK broadband, business connectivity, SIM and voice guides | OCCTA"
-        description="Practical UK guides on full fibre, business broadband, Wi-Fi, switching, SIM, digital voice and payments, reviewed by the OCCTA telecom team."
+        title="UK Broadband Guides, Landline Switch-Off 2027 & Digital Voice | OCCTA"
+        description="Practical UK guides on broadband deals, fibre, switching, the 2027 landline switch-off, Digital Voice, broadband for pensioners, Wi-Fi, SIM and billing."
         canonical="/learn"
-        keywords="UK broadband guides, business broadband guide, full fibre installation, FTTP explained, Wi-Fi calling, SIM guides, digital voice, switch broadband"
+        keywords="UK broadband guides, broadband deals UK, landline switch off 2027, broadband for pensioners, digital landline, fibre broadband deals, broadband comparison, broadband speed test, One Touch Switch"
       />
       <JsonLd data={breadcrumb} />
 
@@ -43,12 +44,12 @@ export default function LearnHub() {
             Learn
           </span>
           <h1 className="font-display uppercase text-4xl md:text-6xl leading-[0.9] mb-4">
-            Broadband, business connectivity, SIM and billing—explained properly.
+            Broadband, the 2027 landline switch, Digital Voice and bills—explained properly.
           </h1>
           <p className="text-muted-foreground text-lg max-w-3xl">
-            Practical UK telecom guides written in plain English. Understand the technology,
-            compare the right details and prepare before you order—without keyword stuffing or
-            hidden sales claims.
+            Practical UK telecom guides written in plain English. Understand broadband deals,
+            switching, full fibre, the move from old landlines to digital voice and the choices
+            that matter before you order.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
             {allPages.length} guides available. Authority articles show their review date and
@@ -101,10 +102,10 @@ export default function LearnHub() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="font-display uppercase">
-                <Link to="/coverage-areas">Check my area</Link>
+                <Link to="/build-plan">Check my address</Link>
               </Button>
               <Button asChild variant="outline" className="font-display uppercase">
-                <Link to="/business/quote">Business quote</Link>
+                <Link to="/landline">Digital Home Phone</Link>
               </Button>
             </div>
           </div>

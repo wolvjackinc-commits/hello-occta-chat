@@ -41,7 +41,10 @@ export default function CheckoutJourneyTracker() {
   const lastPathRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!tracked) return;
+    if (!tracked) {
+      lastPathRef.current = null;
+      return;
+    }
     const route = normalizeCheckoutRoute(location.pathname);
     if (lastPathRef.current === route) return;
     lastPathRef.current = route;

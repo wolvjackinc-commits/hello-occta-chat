@@ -166,6 +166,7 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
   const handleSendReply = async () => {
     if (!ticket || !newMessage.trim()) return;
     setIsSending(true);
+    let emailFailed: string | null = null;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -193,22 +194,51 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
         },
       });
 
-      // Send email notification if we have user email
-      if (profile?.email) {
-        await supabase.functions.invoke("send-email", {
+      // Resolve the recipient — fall back to the profile record if the list
+      // row didn't carry an email, so replies are never silently email-less.
+      let recipientEmail = profile?.email ?? null;
+      let recipientName = profile?.full_name ?? null;
+      if (!recipientEmail && ticket.user_id) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", ticket.user_id)
+          .maybeSingle();
+        recipientEmail = prof?.email ?? null;
+        recipientName = recipientName ?? prof?.full_name ?? null;
+      }
+
+      if (recipientEmail) {
+        const { data: emailResult, error: emailError } = await supabase.functions.invoke("send-email", {
           body: {
             type: "ticket_reply",
-            to: profile.email,
+            to: recipientEmail,
             data: {
-              full_name: profile.full_name || "Customer",
+              full_name: recipientName || "Customer",
               ticket_subject: ticket.subject,
               message: newMessage.trim(),
             },
+            logToCommunications: true,
+            userId: ticket.user_id,
           },
         });
+        if (emailError) emailFailed = emailError.message;
+        else if (emailResult && typeof emailResult === "object" && "error" in emailResult) {
+          emailFailed = String((emailResult as { error?: unknown }).error);
+        }
+      } else {
+        emailFailed = "No email address on this customer's account.";
       }
 
-      toast({ title: "Reply sent successfully" });
+      if (emailFailed) {
+        toast({
+          title: "Reply saved — email NOT sent",
+          description: `${emailFailed} The customer can still see the reply in their dashboard.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Reply sent", description: `Emailed to ${recipientEmail}` });
+      }
       setNewMessage("");
       fetchMessages();
     } catch (error) {

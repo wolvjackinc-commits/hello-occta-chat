@@ -11,6 +11,7 @@ import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import {
   detectAccountIntent,
   detectPublicIntent,
+  extractUkPostcode,
   formatDate,
   formatMoney,
   maskAccountNumber,
@@ -131,8 +132,29 @@ function loadHistory(): ChatMessage[] {
   }
 }
 
-function publicReply(intent: string): string | null {
+function publicReply(intent: string, raw = ""): string | null {
   switch (intent) {
+    case "availability": {
+      const postcode = extractUkPostcode(raw);
+      if (!postcode) {
+        return withOptions(
+          "I can check OCCTA broadband availability. Send me the **postcode** and I’ll take you to the live property check — I don’t need bank details or an account number for that.",
+          ["Check availability", "View broadband plans", "Talk to a human"],
+        );
+      }
+      const compact = postcode.replace(/\s+/g, "");
+      return withOptions(
+        `I can start the live check for **${postcode}**. A postcode can contain several properties, so I shouldn’t say “available” or “not available” until you choose the exact address.\n\n[**Check ${postcode} now →**](/build-plan?postcode=${encodeURIComponent(compact)})\n\nThe checker will confirm the property, available technology, estimated speed, setup and final price before you order.`,
+        ["Check availability", "View broadband plans", "Talk to a human"],
+      );
+    }
+    case "provider_comparison": {
+      const provider = raw.match(/\b(BT|Sky|Virgin(?: Media)?|TalkTalk|Plusnet|Vodafone|EE|Zen)\b/i)?.[0] ?? "another provider";
+      return withOptions(
+        `I can help compare OCCTA with **${provider}**, but I won’t invent a headline “£X cheaper” figure because competitor offers change by postcode, promotion and date.\n\nFor a fair comparison, match **monthly price, download speed/technology, minimum term, setup/router charges and any in-contract price changes**. OCCTA offers **Flex 30** and **Price Lock 24**, with the actual address-specific price confirmed by our live checker.\n\nIf you tell me the **${provider} monthly price and advertised speed** you’re looking at, I can tell you exactly what to compare against the OCCTA quote.`,
+        ["Check availability", "Compare Flex and Price Lock", "View broadband plans"],
+      );
+    }
     case "broadband":
       return withOptions(
         "OCCTA keeps broadband simple: **Essential Fibre** up to 80Mbps, **Superfast Fibre** up to 330Mbps, and **Ultrafast Fibre** up to 1,000Mbps where the address supports it. You can choose **Flex 30** for flexibility or **Price Lock 24** for a longer fixed-term option. I won't guess the speed or price at your address — the availability checker confirms that before you order.",
@@ -167,8 +189,8 @@ function publicReply(intent: string): string | null {
       );
     case "no_internet":
       return withOptions(
-        "Let's work out whether this is Wi‑Fi or the broadband line. Check power to the router and ONT/modem, reseat the cables, restart the equipment once, then allow several minutes to reconnect. If you can, test one device by Ethernet. If the line is still down, I can hand this to support with the context attached.",
-        ["Open service status", "My router has a red light", "Talk to a human"],
+        "Let’s diagnose this rather than send you in circles.\n\n**1.** Check the router and, if you have full fibre, the ONT box both have power.\n**2.** Look for a **red/LOS** light on the ONT or a red Internet light on the router.\n**3.** Reseat the power/Ethernet cables, restart the equipment **once**, then allow several minutes to reconnect.\n**4.** If possible, try one device by Ethernet — that tells us whether the problem is Wi‑Fi or the broadband line.\n\nTell me what lights you can see and I’ll give you the next step. If the whole service is down, I can also pass the fault context to support.",
+        ["My router has a red light", "Wi-Fi connected but no internet", "Open service status", "Talk to a human"],
       );
     case "slow_wifi":
       return withOptions(
@@ -360,8 +382,6 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // While a human session is open (waiting or live) poll for advisor activity and
-  // status changes. Polling works for both signed-in and guest visitors.
   useEffect(() => {
     if (!conversationId) return;
     if (liveState !== "waiting" && liveState !== "live") return;
@@ -554,22 +574,20 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     }
 
     const publicIntent = detectPublicIntent(raw);
-    const approved = publicReply(publicIntent);
+    const approved = publicReply(publicIntent, raw);
     if (approved) {
       addAssistant(approved);
       return;
     }
 
     const kb = await searchKnowledge(raw);
-    addAssistant(kb || withOptions("I don't have enough verified information to answer that reliably, so I won't make it up. Ask me about broadband, SIM, Digital Voice, billing, switching or your signed-in account — or I can pass you to an advisor.", ["Open Help Centre", "Talk to a human", "Check my account"]));
+    addAssistant(kb || withOptions("I couldn't match that question confidently yet. I can still help — tell me whether this is about **availability, a broadband fault, price/plan choice, switching, SIM, billing or an existing order**, and I'll take the shortest route from there.", ["Check availability", "Fix my internet", "Open Help Centre", "Talk to a human"]));
   }, [awaitingAccountEmail, signedIn, addAssistant, claimAccount, handoff, loadOverview, loadTickets]);
 
   const send = useCallback(async (value: string) => {
     const raw = value.trim();
     if (!raw || loading) return;
 
-    // A human advisor owns this conversation (or one is being assigned):
-    // relay the message to the advisor and never let Ollie answer.
     if (liveState === "waiting" || liveState === "live") {
       const safe = redactForChat(raw);
       setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", content: safe, createdAt: new Date().toISOString() }]);

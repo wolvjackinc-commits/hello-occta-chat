@@ -4,6 +4,7 @@ import {
   detectPublicIntent,
   extractAccountNumber,
   extractDateOfBirth,
+  extractUkPostcode,
   maskAccountNumber,
   redactSensitiveText,
   type CompanionMessage,
@@ -56,6 +57,24 @@ describe("OCCTA companion intent routing", () => {
     expect(detectPublicIntent("How much broadband speed do I need?")).toBe("speed_need");
     expect(detectPublicIntent("Can I use an eSIM?")).toBe("esim");
     expect(detectPublicIntent("Is there a known outage?")).toBe("service_status");
+  });
+
+  it("understands natural fault wording customers actually use", () => {
+    expect(detectPublicIntent("my internet is not working")).toBe("no_internet");
+    expect(detectPublicIntent("Fix my internet")).toBe("no_internet");
+    expect(detectPublicIntent("WiFi connected but no internet")).toBe("no_internet");
+    expect(detectPublicIntent("I can't get online")).toBe("no_internet");
+  });
+
+  it("routes postcode availability questions and normalises the postcode", () => {
+    const text = "is occta availabel at EC1V2NX";
+    expect(detectPublicIntent(text)).toBe("availability");
+    expect(extractUkPostcode(text)).toBe("EC1V 2NX");
+  });
+
+  it("routes like-for-like provider comparison questions", () => {
+    expect(detectPublicIntent("how cheaper are you than BT?")).toBe("provider_comparison");
+    expect(detectPublicIntent("compare OCCTA vs Sky broadband price")).toBe("provider_comparison");
   });
 });
 

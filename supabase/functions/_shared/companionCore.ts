@@ -14,7 +14,8 @@ export type AccountIntent =
 
 const ACCOUNT_NUMBER_RE = /\bOCC[A-Z0-9]{6,12}\b/i;
 const ISO_DOB_RE = /\b(19\d{2}|20\d{2})-(0[1-9]|1[0-2])-([0-2]\d|3[01])\b/;
-const UK_DOB_RE = /\b([0-2]?\d|3[01])[\/.\-](0?\d|1[0-2])[\/.\-]((?:19|20)\d{2})\b/;
+const UK_DOB_RE = /\b([0-2]?\d|3[01])[/.-](0?\d|1[0-2])[/.-]((?:19|20)\d{2})\b/;
+const UK_POSTCODE_RE = /\b([A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b/i;
 
 export function normaliseMessages(value: unknown): CompanionMessage[] {
   if (!Array.isArray(value)) return [];
@@ -57,9 +58,32 @@ export function detectAccountIntent(messages: CompanionMessage[]): AccountIntent
   return null;
 }
 
+export function extractUkPostcode(text: string): string | null {
+  const match = text.toUpperCase().match(UK_POSTCODE_RE);
+  if (!match) return null;
+  const compact = match[1].replace(/\s+/g, "");
+  if (compact.length < 5) return null;
+  return `${compact.slice(0, -3)} ${compact.slice(-3)}`;
+}
+
 export function detectPublicIntent(text: string): string {
   const lower = text.toLowerCase();
-  if (/\b(no internet|internet down|broadband down|offline|total outage|los light)\b/.test(lower)) return "no_internet";
+  const postcode = extractUkPostcode(text);
+
+  // Address/postcode questions should go to the live availability journey instead
+  // of falling through to a generic refusal. We only claim postcode-level intent;
+  // final service availability still requires the exact property.
+  if (postcode && /\b(occta|broadband|fibre|fiber|internet|availab\w*|coverage|cover\w*|serve\w*|get)\b/.test(lower)) return "availability";
+
+  // Real customers rarely phrase faults as the exact words "no internet". Cover
+  // natural wording such as "my internet is not working" and "can't connect".
+  if (
+    /\b(no internet|internet down|broadband down|offline|total outage|los light|no connection|lost connection)\b/.test(lower)
+    || /\b(internet|broadband|wi-?fi|connection)\b.{0,24}\b(not working|isn['’]?t working|stopped working|won['’]?t work|doesn['’]?t work|keeps dropping|disconnected)\b/.test(lower)
+    || /\b(can['’]?t|cannot|unable to)\s+(?:get online|connect|access (?:the )?internet)\b/.test(lower)
+    || /\bfix\s+(?:my\s+)?(?:internet|broadband|wi-?fi)\b/.test(lower)
+  ) return "no_internet";
+
   if (/\b(router lights?|red light|orange light|flashing light|ont lights?)\b/.test(lower)) return "router_lights";
   if (/\b(slow wi-?fi|slow broadband|buffering|poor signal|weak wi-?fi)\b/.test(lower)) return "slow_wifi";
   if (/\b(pppoe details|pppoe password|cannot find pppoe|can't find pppoe|missing pppoe)\b/.test(lower)) return "pppoe_missing";
@@ -76,6 +100,15 @@ export function detectPublicIntent(text: string): string {
   if (/\b(switch|one touch switch|change provider)\b/.test(lower)) return "switching";
   if (/\b(complaint|complain|adr|ombudsman)\b/.test(lower)) return "complaints";
   if (/\b(vulnerable|telecare|medical alarm|priority support|battery backup)\b/.test(lower)) return "vulnerable";
+
+  // Competitor pricing changes by postcode, promotion and date. Route these
+  // questions to a like-for-like comparison response rather than inventing a
+  // headline saving or silently returning an irrelevant broadband answer.
+  if (
+    /\b(bt|sky|virgin(?: media)?|talktalk|plusnet|vodafone|ee|zen)\b/.test(lower)
+    && /\b(cheap\w*|price|cost|compare|comparison|better|difference|versus|vs\.?|save|saving|same)\b/.test(lower)
+  ) return "provider_comparison";
+
   if (/\b(sim|mobile plan|mobile data|roaming)\b/.test(lower)) return "sim";
   if (/\b(landline|digital voice|home phone|pstn)\b/.test(lower)) return "voice";
   if (/\b(broadband|full fibre|fttp|sogea|internet plan|price lock|flex 30)\b/.test(lower)) return "broadband";

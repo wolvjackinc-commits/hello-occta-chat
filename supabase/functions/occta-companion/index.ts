@@ -793,13 +793,30 @@ serve(async (request) => {
     }
 
     if (!reply) {
-      const approved = approvedPublicReply(publicIntent);
-      if (approved) reply = { content: approved, source: "approved_content" };
-    }
+      const knowledgeContext = await searchKnowledgeBase(serviceClient, latestUserText, Boolean(authUser?.id));
+      let aiContent: string | null = null;
+      try {
+        aiContent = await runOcctaBrain(messages, {
+          signedIn: Boolean(authUser?.id),
+          customerName: authUser?.user_metadata?.full_name
+            ? firstName(String(authUser.user_metadata.full_name))
+            : null,
+          knowledgeContext,
+          searchKnowledge: (query: string) =>
+            searchKnowledgeBase(serviceClient, query, Boolean(authUser?.id)),
+        });
+      } catch (aiError) {
+        console.error("occta brain failed", (aiError as Error).message);
+      }
 
-    if (!reply) {
-      const kb = await searchKnowledgeBase(serviceClient, latestUserText, Boolean(authUser?.id));
-      reply = { content: knowledgeFallback(kb), source: "knowledge_base" };
+      if (aiContent) {
+        reply = { content: aiContent, source: "ai" };
+      } else {
+        const approved = approvedPublicReply(publicIntent);
+        reply = approved
+          ? { content: approved, source: "approved_content" }
+          : { content: knowledgeFallback(knowledgeContext), source: "knowledge_base" };
+      }
     }
 
     const intentLabel = accountIntent ? `account_${accountIntent}` : publicIntent;

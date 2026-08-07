@@ -213,14 +213,14 @@ export default function CheckoutJourneyMonitor() {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        {[
+        {([
           ["Started", totals.total, "all" as Filter],
           ["Active", totals.active, "active" as Filter],
           ["Abandoned", totals.abandoned, "abandoned" as Filter],
           ["Completed", totals.completed, "completed" as Filter],
           ["With errors", totals.errors, "errors" as Filter],
           ["Conversion", `${totals.conversion}%`, "all" as Filter],
-        ].map(([label, value, target]) => (
+        ] as Array<[string, string | number, Filter]>).map(([label, value, target]) => (
           <button key={label} type="button" onClick={() => setFilter(target)}
             className="border-2 border-foreground/30 p-3 text-left hover:border-foreground transition-colors">
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>

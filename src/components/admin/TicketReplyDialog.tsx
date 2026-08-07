@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -253,7 +252,7 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden border-4 border-foreground">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl h-[90dvh] max-h-[90dvh] flex flex-col overflow-hidden border-4 border-foreground p-4 sm:p-6">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-3 font-display text-xl">
             <MessageSquare className="w-6 h-6" />
@@ -295,7 +294,12 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
 
 
           {/* Full conversation: original message + every reply, one scroll region */}
-          <ScrollArea className="flex-1 min-h-[180px] border-4 border-foreground bg-secondary/50">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-4 border-foreground bg-secondary/50"
+            role="region"
+            aria-label="Full ticket conversation"
+            tabIndex={0}
+          >
             <div className="space-y-4 p-4">
               <div className="p-3 border-2 border-foreground bg-card mr-8">
                 <div className="flex items-center gap-2 text-xs mb-1 opacity-70">
@@ -335,7 +339,7 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
                 <p className="text-center py-4 text-sm text-muted-foreground">No replies yet.</p>
               )}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Reply Input */}
           <div className="flex-shrink-0 space-y-2">

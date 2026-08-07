@@ -132,7 +132,7 @@ export function resolveIntelligentPublicReply(messages: CompanionMessage[]): str
   const context = recentText(messages);
   const priorAssistant = normalise(previousAssistant(messages));
 
-  if (/couldn't verify those details|could not verify those details/.test(priorAssistant)
+  if (/couldn t verify those details|could not verify those details/.test(priorAssistant)
     && (/try verification again|details.*correct|date of birth|dob|^\d{1,2}[./-]\d{1,2}[./-](?:19|20)\d{2}$/.test(value))) {
     return verificationLoopReply();
   }

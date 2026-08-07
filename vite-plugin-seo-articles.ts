@@ -1,15 +1,19 @@
 /**
- * Isolated build-time prerendering for the static authority articles in
- * src/data/seoArticles.ts. This plugin only writes /learn/<slug>/index.html
- * and does not alter application routes, customer journeys or private pages.
+ * Isolated build-time prerendering for static authority articles.
+ * This plugin only writes /learn/<slug>/index.html and does not alter
+ * application routes, customer journeys or private pages.
  */
 import type { Plugin } from "vite";
 import fs from "fs";
 import path from "path";
 import { seoArticles } from "./src/data/seoArticles";
+import { seoGrowthArticles } from "./src/data/seoGrowthArticles";
 
 const BASE_URL = "https://www.occta.co.uk";
 const OG_IMAGE = `${BASE_URL}/og-image.png`;
+const authorityArticles = [...seoArticles, ...seoGrowthArticles];
+
+type AuthorityArticle = (typeof authorityArticles)[number];
 
 function escapeHtml(value: string): string {
   return value
@@ -28,12 +32,19 @@ function replaceOrInsert(
   return html.replace("</head>", `    ${replacement}\n  </head>`);
 }
 
-function renderArticleHtml(template: string, article: (typeof seoArticles)[number]): string {
+function renderArticleHtml(template: string, article: AuthorityArticle): string {
   const canonical = `${BASE_URL}/learn/${article.slug}`;
   const title = article.title;
   const description = article.metaDescription;
 
-  let html = template;
+  // seoPrerender runs before this plugin and its root template may contain
+  // route-level JSON-LD. Authority pages get a clean, article-specific schema
+  // set so stale product/global claims cannot leak into an article page.
+  let html = template.replace(
+    /\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/g,
+    "",
+  );
+
   html = replaceOrInsert(html, /<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`);
   html = replaceOrInsert(
     html,
@@ -190,7 +201,7 @@ export function seoArticlePrerender(): Plugin {
 
         const template = fs.readFileSync(templatePath, "utf-8");
 
-        for (const article of seoArticles) {
+        for (const article of authorityArticles) {
           const articleDir = path.join(distDir, "learn", article.slug);
           fs.mkdirSync(articleDir, { recursive: true });
           fs.writeFileSync(
@@ -201,7 +212,7 @@ export function seoArticlePrerender(): Plugin {
         }
 
         console.log(
-          `SEO authority articles: generated ${seoArticles.length} static article pages.`,
+          `SEO authority articles: generated ${authorityArticles.length} static article pages.`,
         );
       },
     },

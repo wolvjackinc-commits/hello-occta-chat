@@ -5,17 +5,21 @@ on:
     paths:
       - "src/components/chat/OcctaCompanion.tsx"
       - "src/components/chat/OcctaCompanionV3.tsx"
+      - "src/components/chat/OcctaCompanionV4.tsx"
       - "src/components/layout/Layout.tsx"
       - "src/components/app/AppLayout.tsx"
       - "src/lib/chat/ollieConversation.ts"
       - "src/lib/chat/ollieIntelligence.ts"
       - "src/lib/chat/ollieBrowserResearch.ts"
       - "src/lib/chat/ollieIntelligence.unit.test.ts"
+      - "src/lib/chat/ollieResolution.unit.test.ts"
       - "src/lib/chat/companionCore.unit.test.ts"
       - "supabase/functions/_shared/companionCore.ts"
+      - "supabase/functions/_shared/occtaResolution.ts"
       - "supabase/functions/occta-companion/**"
       - "supabase/functions/occta-research/**"
       - "supabase/functions/chat-handoff/**"
+      - "supabase/functions/chat-transcript-actions/**"
       - "supabase/functions/chat-attachment-scan/**"
       - ".github/workflows/customer-companion-check.yml"
   push:
@@ -23,20 +27,25 @@ on:
       - "feature/occta-customer-companion"
       - "fix/ollie-conversation-attachments"
       - "feature/ollie-intelligence-v3"
+      - "fix/ollie-production-resolution"
     paths:
       - "src/components/chat/OcctaCompanion.tsx"
       - "src/components/chat/OcctaCompanionV3.tsx"
+      - "src/components/chat/OcctaCompanionV4.tsx"
       - "src/components/layout/Layout.tsx"
       - "src/components/app/AppLayout.tsx"
       - "src/lib/chat/ollieConversation.ts"
       - "src/lib/chat/ollieIntelligence.ts"
       - "src/lib/chat/ollieBrowserResearch.ts"
       - "src/lib/chat/ollieIntelligence.unit.test.ts"
+      - "src/lib/chat/ollieResolution.unit.test.ts"
       - "src/lib/chat/companionCore.unit.test.ts"
       - "supabase/functions/_shared/companionCore.ts"
+      - "supabase/functions/_shared/occtaResolution.ts"
       - "supabase/functions/occta-companion/**"
       - "supabase/functions/occta-research/**"
       - "supabase/functions/chat-handoff/**"
+      - "supabase/functions/chat-transcript-actions/**"
       - "supabase/functions/chat-attachment-scan/**"
       - ".github/workflows/customer-companion-check.yml"
 
@@ -71,17 +80,21 @@ jobs:
           bunx eslint
           src/components/chat/OcctaCompanion.tsx
           src/components/chat/OcctaCompanionV3.tsx
+          src/components/chat/OcctaCompanionV4.tsx
           src/components/layout/Layout.tsx
           src/components/app/AppLayout.tsx
           src/lib/chat/ollieConversation.ts
           src/lib/chat/ollieIntelligence.ts
           src/lib/chat/ollieBrowserResearch.ts
           src/lib/chat/ollieIntelligence.unit.test.ts
+          src/lib/chat/ollieResolution.unit.test.ts
           src/lib/chat/companionCore.unit.test.ts
           supabase/functions/_shared/companionCore.ts
+          supabase/functions/_shared/occtaResolution.ts
           supabase/functions/occta-companion/index.ts
           supabase/functions/occta-research/index.ts
           supabase/functions/chat-handoff/index.ts
+          supabase/functions/chat-transcript-actions/index.ts
           supabase/functions/chat-attachment-scan/index.ts
 
       - name: Companion unit tests
@@ -89,6 +102,7 @@ jobs:
           bunx vitest run
           src/lib/chat/companionCore.unit.test.ts
           src/lib/chat/ollieIntelligence.unit.test.ts
+          src/lib/chat/ollieResolution.unit.test.ts
 
       - name: Production build
         run: bun run build

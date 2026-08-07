@@ -90,9 +90,45 @@ Deno.serve(async (req) => {
 
     const { data: order } = await supabase
       .from("orders")
-      .select("occta_order_number, plan_name, plan_price, preferred_start_date, billing_anchor_day")
+      .select("id, occta_order_number, plan_name, plan_price, preferred_start_date, billing_anchor_day, service_type, address_line1, address_line2, city, postcode, user_id, journey_id")
       .eq("id", row.order_id)
       .maybeSingle();
+
+    // The unified journey already sends a full, branded order-confirmation
+    // email (with the signed Contract Summary attached). Sending the welcome
+    // pack on top of it delivered a second, near-empty "Order Confirmed"
+    // message to the customer. Suppress that duplicate unless an admin has
+    // explicitly asked for a resend.
+    if (!body.resend && order?.journey_id) {
+      const { data: journey } = await supabase
+        .from("order_journeys")
+        .select("consolidated_email_sent_at")
+        .eq("id", order.journey_id)
+        .maybeSingle();
+      if (journey?.consolidated_email_sent_at) {
+        await supabase.from("journey2_email_outbox").update({
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          last_attempt_at: new Date().toISOString(),
+          last_error: "suppressed_duplicate_consolidated_email",
+        }).eq("id", row.id);
+        results.push({ order_id: row.order_id, ok: true, detail: "suppressed_duplicate" });
+        continue;
+      }
+    }
+
+    // Resolve a human name so the greeting is never "Hi ,".
+    let customerName = "";
+    if (order?.user_id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", order.user_id)
+        .maybeSingle();
+      customerName = (profile?.full_name ?? "").trim();
+    }
+    if (!customerName) customerName = "there";
+
     const { data: summaryDoc } = await supabase
       .from("journey2_documents")
       .select("content")
@@ -109,6 +145,16 @@ Deno.serve(async (req) => {
         orderNumber: order?.occta_order_number ?? null,
         logToCommunications: true,
         data: {
+          // send-email's order_confirmation template reads snake_case keys —
+          // passing camelCase produced an email with blank fields and £0.00.
+          full_name: customerName,
+          order_number: order?.occta_order_number ?? "",
+          service_type: order?.service_type ?? "Broadband",
+          plan_name: order?.plan_name ?? "",
+          plan_price: order?.plan_price ?? 0,
+          address_line1: order?.address_line1 ?? "",
+          city: order?.city ?? "",
+          postcode: order?.postcode ?? "",
           orderNumber: order?.occta_order_number ?? null,
           planName: order?.plan_name ?? null,
           monthlyPrice: order?.plan_price ?? null,

@@ -207,7 +207,12 @@ const getOrderConfirmationHtml = (data: Record<string, unknown>) => `
             </div>
             <div class="order-row">
               <span class="order-label">Installation Address</span>
-              <span class="order-value">${escapeHtml(data.address_line1)}, ${escapeHtml(data.city)}, ${escapeHtml(data.postcode)}</span>
+              <span class="order-value">${escapeHtml(
+                [data.address_line1, data.address_line2, data.city, data.postcode]
+                  .map((p) => (p == null ? "" : String(p).trim()))
+                  .filter(Boolean)
+                  .join(", ") || "To be confirmed",
+              )}</span>
             </div>
           </div>
         </div>
@@ -1349,7 +1354,9 @@ const handler = async (req: Request): Promise<Response> => {
     switch (type) {
       case "order_confirmation":
         html = getOrderConfirmationHtml(data);
-        subject = `Order Confirmed - #${escapeHtml(data.order_number)}`;
+        subject = data.order_number
+          ? `Order Confirmed - ${escapeHtml(data.order_number)}`
+          : "Your OCCTA order is confirmed";
         break;
       case "welcome":
         html = getWelcomeHtml(data);

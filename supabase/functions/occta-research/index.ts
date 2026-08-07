@@ -46,7 +46,7 @@ function looksPersonalOrCommercial(query: string): boolean {
   return /\bOCC[A-Z0-9]{6,12}\b/i.test(query)
     || /\b(?:my|mine)\s+(?:account|invoice|bill|order|refund|service|ticket|contract)\b/i.test(query)
     || /\b(?:price|quote|setup fee|monthly cost|how much do i owe|pay my bill)\b/i.test(query)
-    || /\b\d{1,2}[/.\-]\d{1,2}[/.\-](?:19|20)\d{2}\b/.test(query)
+    || /\b\d{1,2}[./-]\d{1,2}[./-](?:19|20)\d{2}\b/.test(query)
     || /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(query);
 }
 
@@ -146,8 +146,6 @@ serve(async (request) => {
     });
   }
 
-  // Never use general web material to decide OCCTA account facts, prices,
-  // refunds, orders or contractual/commercial terms.
   if (looksPersonalOrCommercial(rawQuery)) {
     return json({ source: "none", content: "" });
   }

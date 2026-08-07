@@ -12,6 +12,12 @@
     "moduleDetection": "force",
     "noEmit": true,
 
+    /* Path aliases (shared with app config) */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,

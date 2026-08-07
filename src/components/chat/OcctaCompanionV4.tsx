@@ -591,21 +591,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
       let answer: string | null = null;
       let intent = expandedIntent || "general";
 
-      if (expandedIntent === "availability") {
-        answer = availabilityReply(raw);
-      } else if (expandedIntent === "provider_comparison") {
-        answer = providerComparisonReply(raw);
-      } else if (/\b(?:guide|guides|how to|instructions|manual|help page|show me how)\b/i.test(raw)) {
-        const guides = matchOcctaGuides(raw, expandedIntent || "general", 3);
-        if (guides.length) answer = internalFallback(raw, expandedIntent || "general");
-      }
-
-      if (!answer && !accountIntent) {
-        answer = resolveIntelligentPublicReply(core);
-        if (answer) intent = expandedIntent || "conversation";
-      }
-
-      if (!answer) {
+      {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const endpointMessages: CoreMessage[] = [...core];
@@ -614,29 +600,43 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
         if (verificationMemory.current.accountNumber) endpointMessages.push({ role: "user", content: verificationMemory.current.accountNumber });
         if (verificationMemory.current.dob) endpointMessages.push({ role: "user", content: verificationMemory.current.dob });
 
-        const response = await fetch(COMPANION_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ messages: endpointMessages, sessionId: sessionId.current, verificationToken: sessionStorage.getItem(VERIFICATION_KEY) }),
-        });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok) throw new Error(payload?.error || "companion_request_failed");
-        if (typeof payload?.verificationToken === "string" && payload.verificationToken) {
-          sessionStorage.setItem(VERIFICATION_KEY, payload.verificationToken);
-          verificationMemory.current = {};
-        }
-        answer = String(payload?.content || "").trim();
-        intent = String(payload?.source || expandedIntent || "general");
+        try {
+          const response = await fetch(COMPANION_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ messages: endpointMessages, sessionId: sessionId.current, verificationToken: sessionStorage.getItem(VERIFICATION_KEY) }),
+          });
+          const payload = await response.json().catch(() => null);
+          if (!response.ok) throw new Error(payload?.error || "companion_request_failed");
+          if (typeof payload?.verificationToken === "string" && payload.verificationToken) {
+            sessionStorage.setItem(VERIFICATION_KEY, payload.verificationToken);
+            verificationMemory.current = {};
+          }
+          answer = String(payload?.content || "").trim() || null;
+          intent = String(payload?.source || expandedIntent || "general");
 
-        if (/couldn['’]?t verify those details/i.test(answer)) {
-          answer = verificationFailureFallback();
-          setAwaitingSecureEmail(true);
-          sessionStorage.removeItem(VERIFICATION_KEY);
-          verificationMemory.current = {};
-        }
+          if (answer && /couldn['’]?t verify those details/i.test(answer)) {
+            answer = verificationFailureFallback();
+            setAwaitingSecureEmail(true);
+            sessionStorage.removeItem(VERIFICATION_KEY);
+            verificationMemory.current = {};
+          }
 
-        if (/don['’]?t have enough verified information|won['’]?t make it up|tell me whether this is about broadband/i.test(answer)) {
-          answer = internalFallback(raw, expandedIntent || "general");
+          if (answer && /don['’]?t have enough verified information|won['’]?t make it up|tell me whether this is about broadband/i.test(answer)) {
+            answer = null;
+          }
+        } catch (endpointError) {
+          console.warn("companion endpoint unavailable, using local fallback", endpointError);
+        }
+      }
+
+      // Local fallbacks only if the AI assistant could not answer.
+      if (!answer) {
+        if (expandedIntent === "availability") answer = availabilityReply(raw);
+        else if (expandedIntent === "provider_comparison") answer = providerComparisonReply(raw);
+        else if (!accountIntent) {
+          answer = resolveIntelligentPublicReply(core);
+          if (answer) intent = expandedIntent || "conversation";
         }
       }
 

@@ -5,8 +5,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const auth = await requireStaff(req);
-  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+  // Internal service-to-service path (used by admin-bulk-resend-quotes). Requires
+  // the service role key AND the explicit internal marker header.
+  const isInternal =
+    req.headers.get("x-internal-service") === "1" &&
+    req.headers.get("Authorization") === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
+  let actorId: string | null = null;
+  if (!isInternal) {
+    const auth = await requireStaff(req);
+    if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+    actorId = auth.userId;
+  }
+  const auth = { userId: actorId } as { userId: string | null };
 
   const body = await req.json().catch(() => ({}));
   const quote_id: string | undefined = body?.quote_id;

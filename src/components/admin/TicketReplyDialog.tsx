@@ -10,9 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -57,6 +55,14 @@ type Profile = {
 };
 
 const statusOptions = ['open', 'in_progress', 'resolved', 'closed'] as const;
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message?: unknown }).message || "Unknown error");
+  }
+  return String(error || "Unknown error");
+};
 const cannedReplies = [
   {
     label: "Acknowledgement",
@@ -169,7 +175,15 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user");
+      if (!user) throw new Error("Your session has expired. Sign in again before replying.");
+
+      const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
+      if (roleError || !isAdmin) {
+        throw new Error("This account does not have admin permission to reply. Sign in with an authorised admin account.");
+      }
 
       const { error: insertError } = await supabase
         .from("ticket_messages")
@@ -178,9 +192,10 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
           user_id: user.id,
           message: newMessage.trim(),
           is_staff_reply: true,
+          sender_role: "staff",
         });
 
-      if (insertError) throw insertError;
+      if (insertError) throw new Error(`Reply could not be saved: ${insertError.message}`);
 
       // Log audit
       await logAudit({
@@ -242,7 +257,11 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
       fetchMessages();
     } catch (error) {
       logError("TicketReplyDialog.handleSendReply", error);
-      toast({ title: "Failed to send reply", variant: "destructive" });
+      toast({
+        title: "Failed to send reply",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setIsSending(false);
     }

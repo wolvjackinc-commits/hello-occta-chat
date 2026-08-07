@@ -13,8 +13,7 @@ interface InstallationSlot {
   id: string;
   slot_date: string;
   slot_time: string;
-  capacity: number;
-  booked_count: number;
+  has_availability?: boolean;
 }
 
 interface InstallationSlotPickerProps {
@@ -54,18 +53,17 @@ export function InstallationSlotPicker({ onSlotSelected, selectedSlot }: Install
       const minDate = addDays(today, 3); // At least 3 days from now
 
       const { data, error } = await supabase
-        .from("installation_slots")
-        .select("slot_date, capacity, booked_count")
+        .from("installation_slots_public")
+        .select("slot_date, has_availability")
         .gte("slot_date", format(minDate, "yyyy-MM-dd"))
-        .eq("is_active", true);
+        .eq("has_availability", true);
 
       if (error) throw error;
 
       // Get unique dates that have availability
       const datesWithAvailability = [...new Set(
         (data || [])
-          .filter(slot => slot.booked_count < slot.capacity)
-          .map(slot => slot.slot_date)
+          .map(slot => slot.slot_date as string)
       )].map(dateStr => new Date(dateStr));
 
       setAvailableDates(datesWithAvailability);
@@ -80,17 +78,15 @@ export function InstallationSlotPicker({ onSlotSelected, selectedSlot }: Install
     setIsLoadingSlots(true);
     try {
       const { data, error } = await supabase
-        .from("installation_slots")
-        .select("*")
+        .from("installation_slots_public")
+        .select("id, slot_date, slot_time, has_availability")
         .eq("slot_date", format(date, "yyyy-MM-dd"))
-        .eq("is_active", true)
+        .eq("has_availability", true)
         .order("slot_time");
 
       if (error) throw error;
 
-      // Filter to only show slots with availability
-      const available = (data || []).filter(slot => slot.booked_count < slot.capacity);
-      setAvailableSlots(available);
+      setAvailableSlots((data || []) as InstallationSlot[]);
     } catch (error) {
       console.error("Error fetching slots:", error);
     } finally {
@@ -109,10 +105,6 @@ export function InstallationSlotPicker({ onSlotSelected, selectedSlot }: Install
 
   const isDateAvailable = (date: Date) => {
     return availableDates.some(d => isSameDay(d, date));
-  };
-
-  const getSpotsRemaining = (slot: InstallationSlot) => {
-    return slot.capacity - slot.booked_count;
   };
 
   if (isLoading) {
@@ -203,7 +195,6 @@ export function InstallationSlotPicker({ onSlotSelected, selectedSlot }: Install
                 <div className="space-y-3">
                   {availableSlots.map((slot) => {
                     const isSelected = selectedSlot?.id === slot.id;
-                    const spotsRemaining = getSpotsRemaining(slot);
 
                     return (
                       <Button
@@ -232,11 +223,8 @@ export function InstallationSlotPicker({ onSlotSelected, selectedSlot }: Install
                             </p>
                           </div>
                         </div>
-                        <Badge 
-                          variant={spotsRemaining <= 1 ? "destructive" : "secondary"}
-                          className="font-display"
-                        >
-                          {spotsRemaining} {spotsRemaining === 1 ? "spot" : "spots"} left
+                        <Badge variant="secondary" className="font-display">
+                          Available
                         </Badge>
                       </Button>
                     );

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   detectAccountIntent,
+  detectContextualPublicIntent,
   detectPublicIntent,
   extractAccountNumber,
   extractDateOfBirth,
@@ -13,11 +14,14 @@ import {
 const messages = (...content: string[]): CompanionMessage[] =>
   content.map((text) => ({ role: "user", content: text }));
 
+const conversation = (...turns: Array<["user" | "assistant", string]>): CompanionMessage[] =>
+  turns.map(([role, content]) => ({ role, content }));
+
 describe("OCCTA companion intent routing", () => {
   it("does not mistake a general SIM question for personal account data", () => {
-    const conversation = messages("What SIM plans do you offer?");
-    expect(detectAccountIntent(conversation)).toBeNull();
-    expect(detectPublicIntent(conversation[0].content)).toBe("sim");
+    const turns = messages("What SIM plans do you offer?");
+    expect(detectAccountIntent(turns)).toBeNull();
+    expect(detectPublicIntent(turns[0].content)).toBe("sim");
   });
 
   it("recognises personal, logged-in account requests", () => {
@@ -29,30 +33,31 @@ describe("OCCTA companion intent routing", () => {
   });
 
   it("keeps account intent active across step-by-step verification turns", () => {
-    const conversation = messages(
+    const turns = messages(
       "Check my account",
       "OCC12345678",
       "15/01/1990",
     );
-    expect(detectAccountIntent(conversation)).toBe("overview");
-    expect(extractAccountNumber(conversation)).toBe("OCC12345678");
-    expect(extractDateOfBirth(conversation)).toBe("1990-01-15");
+    expect(detectAccountIntent(turns)).toBe("overview");
+    expect(extractAccountNumber(turns)).toBe("OCC12345678");
+    expect(extractDateOfBirth(turns)).toBe("1990-01-15");
   });
 
   it("uses the latest correction during verification", () => {
-    const conversation = messages(
+    const turns = messages(
       "Check my account",
       "OCC00001111",
       "OCC12345678",
       "31/02/1990",
       "15/01/1990",
     );
-    expect(extractAccountNumber(conversation)).toBe("OCC12345678");
-    expect(extractDateOfBirth(conversation)).toBe("1990-01-15");
+    expect(extractAccountNumber(turns)).toBe("OCC12345678");
+    expect(extractDateOfBirth(turns)).toBe("1990-01-15");
   });
 
   it("routes common support questions without requiring a generated answer", () => {
     expect(detectPublicIntent("What do the red router lights mean?")).toBe("router_lights");
+    expect(detectPublicIntent("Red lights")).toBe("router_lights");
     expect(detectPublicIntent("Flex 30 or Price Lock: which is better?")).toBe("contract_choice");
     expect(detectPublicIntent("How much broadband speed do I need?")).toBe("speed_need");
     expect(detectPublicIntent("Can I use an eSIM?")).toBe("esim");
@@ -75,6 +80,62 @@ describe("OCCTA companion intent routing", () => {
   it("routes like-for-like provider comparison questions", () => {
     expect(detectPublicIntent("how cheaper are you than BT?")).toBe("provider_comparison");
     expect(detectPublicIntent("compare OCCTA vs Sky broadband price")).toBe("provider_comparison");
+  });
+});
+
+describe("OCCTA companion multi-turn conversation memory", () => {
+  it("continues a broadband fault when the customer replies only 'Red lights'", () => {
+    const turns = conversation(
+      ["user", "My internet is not working"],
+      ["assistant", "Tell me what lights you can see and I'll give you the next step."],
+      ["user", "Red lights"],
+    );
+    expect(detectContextualPublicIntent(turns)).toBe("router_lights");
+  });
+
+  it("keeps terse light-label answers inside the troubleshooting flow", () => {
+    const turns = conversation(
+      ["user", "My broadband is down"],
+      ["assistant", "Which light is red: LOS, PON, Internet, Power or WAN?"],
+      ["user", "LOS red"],
+    );
+    expect(detectContextualPublicIntent(turns)).toBe("router_lights");
+  });
+
+  it("understands a bare postcode when availability is already being discussed", () => {
+    const turns = conversation(
+      ["user", "Can I get OCCTA broadband?"],
+      ["assistant", "Send me the postcode and I'll start the property check."],
+      ["user", "EC1V2NX"],
+    );
+    expect(detectContextualPublicIntent(turns)).toBe("availability");
+  });
+
+  it("keeps a competitor price/speed reply attached to the comparison", () => {
+    const turns = conversation(
+      ["user", "How cheaper are you than BT?"],
+      ["assistant", "Tell me the BT monthly price and advertised speed."],
+      ["user", "£31.99 a month, 150Mbps"],
+    );
+    expect(detectContextualPublicIntent(turns)).toBe("provider_comparison");
+  });
+
+  it("keeps short contract answers in the current plan-choice conversation", () => {
+    const turns = conversation(
+      ["user", "Should I choose Flex 30 or Price Lock 24?"],
+      ["assistant", "Do you value flexibility or a longer fixed term?"],
+      ["user", "Flex"],
+    );
+    expect(detectContextualPublicIntent(turns)).toBe("contract_choice");
+  });
+
+  it("does not force unrelated short text into an old topic", () => {
+    const turns = conversation(
+      ["user", "What broadband do you sell?"],
+      ["assistant", "Essential, Superfast and Ultrafast Fibre."],
+      ["user", "hello"],
+    );
+    expect(detectContextualPublicIntent(turns)).toBe("general");
   });
 });
 

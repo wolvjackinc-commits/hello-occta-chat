@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bot,
   ExternalLink,
@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { RaiseTicketDialog, type TicketPrefill } from "@/components/app/RaiseTicketDialog";
 import {
+  maskEmail,
   redactSensitiveText,
   type CompanionMessage as CoreMessage,
 } from "../../../supabase/functions/_shared/companionCore.ts";
@@ -35,6 +36,7 @@ import {
   shouldOfferHuman,
   verificationFailureFallback,
 } from "@/lib/chat/ollieIntelligence";
+import { researchGeneralQuestion } from "@/lib/chat/ollieBrowserResearch";
 
 type Attachment = {
   path: string;
@@ -65,12 +67,14 @@ const HISTORY_KEY = "occta-companion-v3-history";
 const SESSION_KEY = "occta-companion-session-v1";
 const VERIFICATION_KEY = "occta-companion-verification-v1";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const EMAIL_GLOBAL_RE = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "pdf", "txt", "csv", "doc", "docx", "xls", "xlsx", "pptx"]);
 
 const routes: Record<string, string> = {
   "open help centre": "/help",
   "search help centre": "/help",
+  "search occta guidance": "/help",
   "check availability": "/build-plan",
   "check broadband availability": "/build-plan",
   "open availability checker": "/build-plan",
@@ -108,6 +112,7 @@ function getSessionId(): string {
 
 function redact(value: string): string {
   return redactSensitiveText(value)
+    .replace(EMAIL_GLOBAL_RE, (email) => maskEmail(email))
     .replace(/\[date of birth provided securely\]/g, "Date of birth provided securely")
     .replace(/\[bank details removed\]/g, "Bank details removed")
     .replace(/\[payment number removed\]/g, "Payment number removed");
@@ -491,22 +496,39 @@ export default function OcctaCompanionV3({ embedded = false, className = "", ini
       }
 
       const core = toCore([...before, userMessage]);
-      let answer = resolveIntelligentPublicReply(core);
-      let source = answer ? "conversation" : "";
+      const refundStatusQuery = /\brefund\b/i.test(raw) && /\b(?:still|waiting|status|not received|haven't received|have not received|where is|when will)\b/i.test(raw);
+      let answer: string | null = null;
+      let source = "";
+
+      if (refundStatusQuery && !signedIn) {
+        answer = `A refund **status** is private account information, so I won't guess whether it has been sent. Enter the **email registered on the OCCTA account** and I can request a secure account-access link; once signed in, I can use the account/support records available to your session.\n\n<<<OPTIONS:["Open sign in"]>>>`;
+        setAwaitingSecureEmail(true);
+        source = "secure_access";
+      } else {
+        answer = resolveIntelligentPublicReply(core);
+        source = answer ? "conversation" : "";
+      }
 
       if (!answer) {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const endpointMessages: CoreMessage[] = refundStatusQuery && signedIn
+          ? [...core, { role: "user", content: "Show my support tickets" }]
+          : core;
         const response = await fetch(COMPANION_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ messages: core, sessionId: sessionId.current, verificationToken: sessionStorage.getItem(VERIFICATION_KEY) }),
+          body: JSON.stringify({ messages: endpointMessages, sessionId: sessionId.current, verificationToken: sessionStorage.getItem(VERIFICATION_KEY) }),
         });
         const payload = await response.json().catch(() => null);
         if (!response.ok) throw new Error(payload?.error || "companion_request_failed");
         if (typeof payload?.verificationToken === "string" && payload.verificationToken) sessionStorage.setItem(VERIFICATION_KEY, payload.verificationToken);
         answer = String(payload?.content || "");
         source = String(payload?.source || "");
+
+        if (refundStatusQuery && signedIn && source === "account") {
+          answer = `I checked the **recent support cases** available on your signed-in account. I won't claim a refund was sent unless an account record actually confirms that.\n\n${answer}`;
+        }
 
         if (/couldn't verify those details/i.test(answer)) {
           answer = verificationFailureFallback();
@@ -516,16 +538,23 @@ export default function OcctaCompanionV3({ embedded = false, className = "", ini
 
         const genericFallback = source === "knowledge_base" && /don't have enough verified information|won't make it up|tell me whether this is about/i.test(answer);
         if (genericFallback) {
-          const { data: research } = await supabase.functions.invoke("occta-research", { body: { query: raw, sessionId: sessionId.current } });
-          if (typeof research?.content === "string" && research.content.trim()) {
+          const { data: research, error: researchError } = await supabase.functions.invoke("occta-research", { body: { query: raw, sessionId: sessionId.current } });
+          if (!researchError && typeof research?.content === "string" && research.content.trim()) {
             answer = research.content;
             source = String(research.source || "research");
+          } else {
+            const browserResearch = await researchGeneralQuestion(raw);
+            if (browserResearch) {
+              answer = browserResearch;
+              source = "trusted_web_browser";
+            }
           }
         }
       }
 
       if (!answer) {
-        answer = `I haven't found a reliable answer yet, so I don't want to guess. Tell me one more detail about what you're trying to do and I'll narrow it down. If we've already tried this twice and you're still stuck, I'll offer an advisor.\n\n<<<OPTIONS:["Ask a more specific question","Search Help Centre"]>>>`;
+        const browserResearch = await researchGeneralQuestion(raw);
+        answer = browserResearch || `I haven't found a reliable answer yet, so I don't want to guess. Tell me one more detail about what you're trying to do and I'll narrow it down. If we've already tried this twice and you're still stuck, I'll make the advisor option available.\n\n<<<OPTIONS:["Ask a more specific question","Search Help Centre"]>>>`;
       }
 
       setMessages((current) => [
@@ -543,7 +572,7 @@ export default function OcctaCompanionV3({ embedded = false, className = "", ini
     } finally {
       setLoading(false);
     }
-  }, [awaitingSecureEmail, conversationId, humanLive, loading, logConversation, messages, openTicket, requestHuman, uploading]);
+  }, [awaitingSecureEmail, conversationId, humanLive, loading, logConversation, messages, openTicket, requestHuman, signedIn, uploading]);
 
   const clearChat = useCallback(() => {
     sessionStorage.removeItem(HISTORY_KEY);

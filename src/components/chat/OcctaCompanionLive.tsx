@@ -116,7 +116,7 @@ function loadHistory(): ChatMessage[] {
     const parsed = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return [];
     return parsed
-      .filter((row) => row && (row.role === "user" || row.role === "assistant"))
+      .filter((row) => row && (row.role === "user" || row.role === "assistant" || row.role === "system"))
       .slice(-40)
       .map((row) => ({
         id: typeof row.id === "string" ? row.id : crypto.randomUUID(),

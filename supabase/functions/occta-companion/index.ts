@@ -17,6 +17,7 @@ import {
   redactSensitiveText,
   withOptions,
 } from "../_shared/companionCore.ts";
+import { runOcctaBrain } from "./brain.ts";
 
 const OCCTA_PHONE = "0800 260 6626";
 const OCCTA_EMAIL = "hello@occta.co.uk";
@@ -48,7 +49,7 @@ type CustomerScope = {
 type CompanionReply = {
   content: string;
   verificationToken?: string;
-  source?: "account" | "approved_content" | "knowledge_base";
+  source?: "account" | "approved_content" | "knowledge_base" | "ai";
 };
 
 type OrdersResult = {

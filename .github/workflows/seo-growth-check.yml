@@ -10,6 +10,7 @@ on:
       - "src/pages/kb/BlogIndex.tsx"
       - "vite-plugin-seo-articles.ts"
       - "public/sitemap-learning.xml"
+      - "public/llms.txt"
       - ".github/workflows/seo-growth-check.yml"
   push:
     branches:
@@ -22,6 +23,7 @@ on:
       - "src/pages/kb/BlogIndex.tsx"
       - "vite-plugin-seo-articles.ts"
       - "public/sitemap-learning.xml"
+      - "public/llms.txt"
       - ".github/workflows/seo-growth-check.yml"
 
 jobs:
@@ -55,7 +57,7 @@ jobs:
       - name: Production build and prerender
         run: bun run build
 
-      - name: Verify all acquisition pages were prerendered
+      - name: Verify acquisition pages, schema and discovery files
         shell: bash
         run: |
           set -euo pipefail
@@ -77,13 +79,15 @@ jobs:
 
           for slug in "${slugs[@]}"; do
             file="dist/learn/$slug/index.html"
+            url="https://www.occta.co.uk/learn/$slug"
             test -s "$file"
-            grep -q "https://www.occta.co.uk/learn/$slug" "$file"
+            grep -q "$url" "$file"
             grep -q 'application/ld+json' "$file"
             grep -q 'FAQPage' "$file"
             grep -q 'BreadcrumbList' "$file"
             grep -q '"@type":"Article"' "$file"
-            grep -q "https://www.occta.co.uk/learn/$slug" public/sitemap-learning.xml
+            grep -q "$url" public/sitemap-learning.xml
+            grep -q "$url" public/llms.txt
           done
 
       - name: Block legacy blanket claims from new prerendered articles

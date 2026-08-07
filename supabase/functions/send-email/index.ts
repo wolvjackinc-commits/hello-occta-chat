@@ -1354,7 +1354,9 @@ const handler = async (req: Request): Promise<Response> => {
     switch (type) {
       case "order_confirmation":
         html = getOrderConfirmationHtml(data);
-        subject = `Order Confirmed - #${escapeHtml(data.order_number)}`;
+        subject = data.order_number
+          ? `Order Confirmed - ${escapeHtml(data.order_number)}`
+          : "Your OCCTA order is confirmed";
         break;
       case "welcome":
         html = getWelcomeHtml(data);

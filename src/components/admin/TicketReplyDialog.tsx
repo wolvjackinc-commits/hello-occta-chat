@@ -177,11 +177,14 @@ export function TicketReplyDialog({ ticket, profile, open, onOpenChange, onUpdat
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Your session has expired. Sign in again before replying.");
 
-      const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
-        _user_id: user.id,
-        _role: "admin",
-      });
-      if (roleError || !isAdmin) {
+      const roleChecks = await Promise.all(
+        (["admin", "super_admin"] as const).map((_role) =>
+          supabase.rpc("has_role", { _user_id: user.id, _role })
+        )
+      );
+      const roleError = roleChecks.find(({ error }) => error)?.error;
+      const isAuthorisedAdmin = roleChecks.some(({ data, error }) => !error && data === true);
+      if (roleError || !isAuthorisedAdmin) {
         throw new Error("This account does not have admin permission to reply. Sign in with an authorised admin account.");
       }
 

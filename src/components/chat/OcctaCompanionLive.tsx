@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, ExternalLink, LifeBuoy, Loader2, MessageCircle, Send, ShieldCheck, UserRound, X } from "lucide-react";
+import { Bot, Download, ExternalLink, LifeBuoy, Loader2, Mail, MessageCircle, PhoneOff, Send, ShieldCheck, UserRound, X } from "lucide-react";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,11 +23,13 @@ import {
 
 type ChatMessage = {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   createdAt: string;
   agent?: "ollie" | "human";
 };
+
+type LiveState = "off" | "waiting" | "live" | "ended";
 
 type Props = {
   embedded?: boolean;

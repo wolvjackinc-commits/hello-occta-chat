@@ -3,7 +3,7 @@ import Header from "./Header";
 import { MessageCircle } from "lucide-react";
 
 const Footer = lazy(() => import("./Footer"));
-const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanion"));
+const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanionLive"));
 
 interface LayoutProps {
   children: ReactNode;

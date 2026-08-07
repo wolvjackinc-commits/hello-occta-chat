@@ -4,7 +4,7 @@ import AppBottomNav from "./AppBottomNav";
 import OfflineIndicator from "./OfflineIndicator";
 import { MessageCircle } from "lucide-react";
 
-const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanion"));
+const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanionLive"));
 
 interface AppLayoutProps {
   children: ReactNode;

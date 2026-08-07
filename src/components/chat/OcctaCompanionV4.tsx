@@ -78,7 +78,7 @@ const VERIFICATION_KEY = "occta-companion-verification-v1";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const EMAIL_GLOBAL_RE = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 const ACCOUNT_RE = /\bOCC[A-Z0-9]{6,12}\b/i;
-const UK_DOB_RE = /\b(?:[0-2]?\d|3[01])[/.\-](?:0?\d|1[0-2])[/.\-](?:19|20)\d{2}\b/;
+const UK_DOB_RE = /\b(?:[0-2]?\d|3[01])[./-](?:0?\d|1[0-2])[./-](?:19|20)\d{2}\b/;
 const ISO_DOB_RE = /\b(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:[0-2]\d|3[01])\b/;
 const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "pdf", "txt", "csv", "doc", "docx", "xls", "xlsx", "pptx"]);
@@ -148,7 +148,7 @@ function isAllowedOcctaUrl(value: string): boolean {
 }
 
 /** Customer chat must never surface third-party links. Keep the label/text, remove the destination. */
-export function occtaOnlyLinks(markdown: string): string {
+function occtaOnlyLinks(markdown: string): string {
   const withoutExternalMarkdown = markdown.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi, (_match, label: string, url: string) => {
     return isAllowedOcctaUrl(url) ? `[${label}](${url})` : label;
   });

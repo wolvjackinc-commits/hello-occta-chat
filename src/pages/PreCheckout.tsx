@@ -66,8 +66,7 @@ interface InstallationSlot {
   id: string;
   slot_date: string;
   slot_time: string;
-  capacity: number;
-  booked_count: number;
+  has_availability?: boolean;
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {

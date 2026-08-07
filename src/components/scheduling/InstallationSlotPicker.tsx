@@ -107,10 +107,6 @@ export function InstallationSlotPicker({ onSlotSelected, selectedSlot }: Install
     return availableDates.some(d => isSameDay(d, date));
   };
 
-  const getSpotsRemaining = (slot: InstallationSlot) => {
-    return slot.capacity - slot.booked_count;
-  };
-
   if (isLoading) {
     return (
       <Card className="border-4 border-foreground">
@@ -199,7 +195,6 @@ export function InstallationSlotPicker({ onSlotSelected, selectedSlot }: Install
                 <div className="space-y-3">
                   {availableSlots.map((slot) => {
                     const isSelected = selectedSlot?.id === slot.id;
-                    const spotsRemaining = getSpotsRemaining(slot);
 
                     return (
                       <Button
@@ -228,11 +223,8 @@ export function InstallationSlotPicker({ onSlotSelected, selectedSlot }: Install
                             </p>
                           </div>
                         </div>
-                        <Badge 
-                          variant={spotsRemaining <= 1 ? "destructive" : "secondary"}
-                          className="font-display"
-                        >
-                          {spotsRemaining} {spotsRemaining === 1 ? "spot" : "spots"} left
+                        <Badge variant="secondary" className="font-display">
+                          Available
                         </Badge>
                       </Button>
                     );

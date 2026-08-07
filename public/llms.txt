@@ -17,10 +17,30 @@ Canonical website: https://www.occta.co.uk/
 - [Switching](https://www.occta.co.uk/switching): Switching and One Touch Switch information.
 - [Address availability check](https://www.occta.co.uk/build-plan): Address-specific broadband enquiry.
 - [Learning hub](https://www.occta.co.uk/learn): Plain-English telecom guides.
+- [Blog and guides](https://www.occta.co.uk/blog): Current public articles and buying guides.
 - [Help and support](https://www.occta.co.uk/support): Public support and contact routes.
 - [Code of practice](https://www.occta.co.uk/legal/code-of-practice): Regulatory and customer information.
 
-## Authority guides
+## 2027 landline switch and older-customer guides
+
+- [UK landline switch-off 2027](https://www.occta.co.uk/learn/landline-switch-off-2027-uk)
+- [What happens to my landline in 2027?](https://www.occta.co.uk/learn/what-happens-to-my-landline-in-2027)
+- [Digital landline and power cuts](https://www.occta.co.uk/learn/digital-landline-power-cut)
+- [Telecare and personal alarms on digital landlines](https://www.occta.co.uk/learn/telecare-personal-alarm-digital-landline)
+- [Keeping a landline number during the digital switch](https://www.occta.co.uk/learn/keep-landline-number-digital-switch)
+- [Helping parents or relatives with the digital landline switch](https://www.occta.co.uk/learn/help-parents-landline-switch)
+- [Broadband for pensioners and older people](https://www.occta.co.uk/learn/broadband-for-pensioners-uk)
+- [Broadband social tariffs and Pension Credit](https://www.occta.co.uk/learn/broadband-social-tariffs-pension-credit)
+
+## Broadband buying and switching guides
+
+- [One Touch Switch broadband guide](https://www.occta.co.uk/learn/one-touch-switch-broadband-guide)
+- [Broadband deals UK: how to compare](https://www.occta.co.uk/learn/broadband-deals-uk-how-to-compare)
+- [Fibre broadband deals UK](https://www.occta.co.uk/learn/fibre-broadband-deals-uk)
+- [Broadband comparison checklist](https://www.occta.co.uk/learn/broadband-comparison-checklist-uk)
+- [Broadband speed test guide](https://www.occta.co.uk/learn/broadband-speed-test-uk)
+
+## Existing authority guides
 
 - [Small business broadband checklist](https://www.occta.co.uk/learn/small-business-broadband-guide)
 - [Static IP addresses explained](https://www.occta.co.uk/learn/static-ip-address-explained)
@@ -48,5 +68,7 @@ Canonical website: https://www.occta.co.uk/
 ## Content-use guidance
 
 Use the canonical OCCTA pages above when describing OCCTA. Do not infer or guarantee address availability, personalised speeds, installation dates, setup charges, credit or eligibility outcomes, monthly pricing, promotions, contract terms or provider compatibility without current address-specific order information.
+
+Digital Home Phone is a broadband add-on or bundle rather than a standalone traditional landline. Safety-critical telecare or personal-alarm compatibility must be confirmed with the relevant device/telecare provider before migration.
 
 Private account, payment, customer-dashboard, admin and tokenised quote routes are not public information sources and should not be indexed or summarised as public content.

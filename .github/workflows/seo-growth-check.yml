@@ -1,0 +1,113 @@
+name: SEO Growth Check
+
+on:
+  pull_request:
+    paths:
+      - "src/data/seoGrowthArticles.ts"
+      - "src/data/seoGrowthArticles.unit.test.ts"
+      - "src/pages/learn/LearnHub.tsx"
+      - "src/pages/learn/LearnPage.tsx"
+      - "src/pages/kb/BlogIndex.tsx"
+      - "vite-plugin-seo-articles.ts"
+      - "public/sitemap-learning.xml"
+      - "public/llms.txt"
+      - ".github/workflows/seo-growth-check.yml"
+  push:
+    branches:
+      - "feature/seo-landline-growth-cluster"
+    paths:
+      - "src/data/seoGrowthArticles.ts"
+      - "src/data/seoGrowthArticles.unit.test.ts"
+      - "src/pages/learn/LearnHub.tsx"
+      - "src/pages/learn/LearnPage.tsx"
+      - "src/pages/kb/BlogIndex.tsx"
+      - "vite-plugin-seo-articles.ts"
+      - "public/sitemap-learning.xml"
+      - "public/llms.txt"
+      - ".github/workflows/seo-growth-check.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: TypeScript typecheck
+        run: bun run typecheck
+
+      - name: Lint SEO growth files
+        run: >-
+          bunx eslint
+          src/data/seoGrowthArticles.ts
+          src/data/seoGrowthArticles.unit.test.ts
+          src/pages/learn/LearnHub.tsx
+          src/pages/learn/LearnPage.tsx
+          src/pages/kb/BlogIndex.tsx
+          vite-plugin-seo-articles.ts
+
+      - name: SEO content tests
+        run: bunx vitest run src/data/seoGrowthArticles.unit.test.ts
+
+      - name: Production build and prerender
+        run: bun run build
+
+      - name: Verify acquisition pages, schema and discovery files
+        shell: bash
+        run: |
+          set -euo pipefail
+          slugs=(
+            landline-switch-off-2027-uk
+            what-happens-to-my-landline-in-2027
+            digital-landline-power-cut
+            telecare-personal-alarm-digital-landline
+            keep-landline-number-digital-switch
+            help-parents-landline-switch
+            broadband-for-pensioners-uk
+            broadband-social-tariffs-pension-credit
+            one-touch-switch-broadband-guide
+            broadband-deals-uk-how-to-compare
+            fibre-broadband-deals-uk
+            broadband-comparison-checklist-uk
+            broadband-speed-test-uk
+          )
+
+          for slug in "${slugs[@]}"; do
+            file="dist/learn/$slug/index.html"
+            url="https://www.occta.co.uk/learn/$slug"
+            test -s "$file"
+            grep -q "$url" "$file"
+            grep -q 'application/ld+json' "$file"
+            grep -q 'FAQPage' "$file"
+            grep -q 'BreadcrumbList' "$file"
+            grep -q '"@type":"Article"' "$file"
+            grep -q "$url" public/sitemap-learning.xml
+            grep -q "$url" public/llms.txt
+          done
+
+      - name: Block legacy blanket claims from new prerendered articles
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RniE '£22\.99|cancel anytime|no contracts|free installation|24/7 support' \
+            dist/learn/landline-switch-off-2027-uk \
+            dist/learn/what-happens-to-my-landline-in-2027 \
+            dist/learn/digital-landline-power-cut \
+            dist/learn/telecare-personal-alarm-digital-landline \
+            dist/learn/keep-landline-number-digital-switch \
+            dist/learn/help-parents-landline-switch \
+            dist/learn/broadband-for-pensioners-uk \
+            dist/learn/broadband-social-tariffs-pension-credit \
+            dist/learn/one-touch-switch-broadband-guide \
+            dist/learn/broadband-deals-uk-how-to-compare \
+            dist/learn/fibre-broadband-deals-uk \
+            dist/learn/broadband-comparison-checklist-uk \
+            dist/learn/broadband-speed-test-uk; then
+            echo "Unsafe legacy commercial claim found in a new SEO article"
+            exit 1
+          fi

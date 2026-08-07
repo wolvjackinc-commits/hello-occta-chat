@@ -14,7 +14,7 @@ export type AccountIntent =
 
 const ACCOUNT_NUMBER_RE = /\bOCC[A-Z0-9]{6,12}\b/i;
 const ISO_DOB_RE = /\b(19\d{2}|20\d{2})-(0[1-9]|1[0-2])-([0-2]\d|3[01])\b/;
-const UK_DOB_RE = /\b([0-2]?\d|3[01])[\/.\-](0?\d|1[0-2])[\/.\-]((?:19|20)\d{2})\b/;
+const UK_DOB_RE = /\b([0-2]?\d|3[01])[/.-](0?\d|1[0-2])[/.-]((?:19|20)\d{2})\b/;
 const UK_POSTCODE_RE = /\b([A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b/i;
 
 export function normaliseMessages(value: unknown): CompanionMessage[] {

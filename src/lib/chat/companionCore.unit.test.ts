@@ -51,11 +51,11 @@ describe("OCCTA companion intent routing", () => {
   });
 
   it("routes common support questions without requiring a generated answer", () => {
-    expect(detectPublicIntent("What do the red router lights mean?"))).toBe("router_lights");
-    expect(detectPublicIntent("Flex 30 or Price Lock: which is better?"))).toBe("contract_choice");
-    expect(detectPublicIntent("How much broadband speed do I need?"))).toBe("speed_need");
-    expect(detectPublicIntent("Can I use an eSIM?"))).toBe("esim");
-    expect(detectPublicIntent("Is there a known outage?"))).toBe("service_status");
+    expect(detectPublicIntent("What do the red router lights mean?")).toBe("router_lights");
+    expect(detectPublicIntent("Flex 30 or Price Lock: which is better?")).toBe("contract_choice");
+    expect(detectPublicIntent("How much broadband speed do I need?")).toBe("speed_need");
+    expect(detectPublicIntent("Can I use an eSIM?")).toBe("esim");
+    expect(detectPublicIntent("Is there a known outage?")).toBe("service_status");
   });
 });
 

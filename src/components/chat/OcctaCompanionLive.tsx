@@ -639,6 +639,13 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
             {messages.map((message) => {
               const parsed = extractOptions(message.content);
               const isUser = message.role === "user";
+              if (message.role === "system") {
+                return (
+                  <div key={message.id} className="mx-auto max-w-[92%] rounded-md border border-dashed border-foreground/40 bg-background px-3 py-2 text-center text-xs text-muted-foreground">
+                    {parsed.body}
+                  </div>
+                );
+              }
               return (
                 <div key={message.id} className={`flex gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
                   {!isUser && <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/30 bg-background">{message.agent === "human" ? <UserRound className="h-4 w-4" /> : <Bot className="h-4 w-4" />}</div>}
@@ -653,23 +660,66 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
                 </div>
               );
             })}
-            {loading && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Ollie is checking the verified source…</div>}
+            {liveState === "waiting" && (
+              <div className="rounded-lg border-2 border-foreground bg-background p-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Assigning a human advisor…
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  You're in the queue and your chat stays open. Keep typing if you'd like — the advisor will see everything when they join.
+                </p>
+              </div>
+            )}
+            {loading && liveState === "off" && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Ollie is checking the verified source…</div>}
             <div ref={endRef} />
           </div>
         </ScrollArea>
 
         <div className="border-t-2 border-foreground bg-background p-3">
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-            {quickActions.map((action) => <button key={action} onClick={() => void send(action)} className="whitespace-nowrap rounded-full border border-foreground/30 px-3 py-1.5 text-xs hover:bg-muted">{action}</button>)}
-          </div>
-          <div className="flex gap-2">
-            <Input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(input); } }} placeholder={signedIn ? `Ask about your OCCTA account${firstName ? `, ${firstName}` : ""}…` : "Ask Ollie about OCCTA…"} disabled={loading} aria-label="Message Ollie" />
-            <Button onClick={() => void send(input)} disabled={loading || !input.trim()} size="icon" aria-label="Send message"><Send className="h-4 w-4" /></Button>
-          </div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><LifeBuoy className="h-3 w-3" /> Human handoff available</span>
-            <a href="/help" className="flex items-center gap-1 hover:text-foreground">Help Centre <ExternalLink className="h-3 w-3" /></a>
-          </div>
+          {liveState === "ended" ? (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide">This chat has ended</p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={downloadTranscript}><Download className="mr-1 h-4 w-4" /> Download transcript</Button>
+                {signedIn ? (
+                  <Button size="sm" variant="outline" onClick={() => void emailTranscript()} disabled={emailingTranscript}>
+                    {emailingTranscript ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Mail className="mr-1 h-4 w-4" />} Email it to me
+                  </Button>
+                ) : null}
+              </div>
+              {!signedIn && (
+                <div className="flex gap-2">
+                  <Input value={transcriptEmail} onChange={(event) => setTranscriptEmail(event.target.value)} placeholder="Email address for your copy" aria-label="Email address for transcript" />
+                  <Button size="sm" onClick={() => void emailTranscript()} disabled={emailingTranscript}>
+                    {emailingTranscript ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  </Button>
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">Need more help? Call {CONTACT_PHONE_DISPLAY} or reopen a new chat from the button.</p>
+            </div>
+          ) : (
+            <>
+              {liveState === "off" && (
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                  {quickActions.map((action) => <button key={action} onClick={() => void send(action)} className="whitespace-nowrap rounded-full border border-foreground/30 px-3 py-1.5 text-xs hover:bg-muted">{action}</button>)}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(input); } }} placeholder={liveState === "live" ? "Message your OCCTA advisor…" : liveState === "waiting" ? "Type while we connect an advisor…" : signedIn ? `Ask about your OCCTA account${firstName ? `, ${firstName}` : ""}…` : "Ask Ollie about OCCTA…"} disabled={loading && liveState === "off"} aria-label="Message Ollie" />
+                <Button onClick={() => void send(input)} disabled={!input.trim() || (loading && liveState === "off")} size="icon" aria-label="Send message"><Send className="h-4 w-4" /></Button>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                {liveState === "off" ? (
+                  <span className="flex items-center gap-1"><LifeBuoy className="h-3 w-3" /> Human handoff available</span>
+                ) : (
+                  <button onClick={() => void endChat()} className="flex items-center gap-1 font-semibold text-foreground hover:underline">
+                    <PhoneOff className="h-3 w-3" /> End chat
+                  </button>
+                )}
+                <a href="/help" className="flex items-center gap-1 hover:text-foreground">Help Centre <ExternalLink className="h-3 w-3" /></a>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

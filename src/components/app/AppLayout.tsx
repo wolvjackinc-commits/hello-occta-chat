@@ -4,7 +4,7 @@ import AppBottomNav from "./AppBottomNav";
 import OfflineIndicator from "./OfflineIndicator";
 import { MessageCircle } from "lucide-react";
 
-const AIChatBot = lazy(() => import("@/components/chat/AIChatBot"));
+const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanion"));
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -32,13 +32,13 @@ const AppLayout = ({ children, hideNav = false }: AppLayoutProps) => {
 
       {chatOpen ? (
         <Suspense fallback={null}>
-          <AIChatBot initialOpen onClose={() => setChatOpen(false)} />
+          <OcctaCompanion initialOpen onClose={() => setChatOpen(false)} />
         </Suspense>
       ) : (
         <button
           onClick={openChat}
           className="fixed right-4 bottom-20 z-[9999] rounded-full bg-primary text-primary-foreground p-3 shadow-lg hover:opacity-90 transition-opacity"
-          aria-label="Open chat"
+          aria-label="Open secure OCCTA account chat"
         >
           <MessageCircle className="h-6 w-6" />
         </button>

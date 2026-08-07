@@ -13,7 +13,6 @@
     "noEmit": true,
 
     /* Path aliases (shared with app config) */
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },

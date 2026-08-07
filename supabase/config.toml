@@ -20,8 +20,15 @@ project_id = "oexgjmuvgdndizsufipe"
   name = "daily-billing-chain-verify"
   schedule = "30 3 * * *"
 
+[[cron_jobs]]
+  command = "curl -X POST -H 'x-cron-secret: ${CRON_JOB_SECRET}' https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/journey2-resume-email"
+  name = "checkout-abandoned-recovery-worker"
+  schedule = "*/15 * * * *"
+
 [functions]
   [functions.admin-send-email]
+    verify_jwt = false
+  [functions.journey2-resume-email]
     verify_jwt = false
   [functions.admin-create-customer]
     verify_jwt = false

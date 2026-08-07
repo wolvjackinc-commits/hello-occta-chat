@@ -57,6 +57,7 @@ export const ProtectedAdminRoute = ({ requiredRoles }: Props = {}) => {
 
   useEffect(() => {
     let active = true;
+    const acceptedRoles = rolesKey.split(",") as Role[];
 
     const validate = async () => {
       // Never share admin approval through a query cache: every mount and auth
@@ -69,7 +70,7 @@ export const ProtectedAdminRoute = ({ requiredRoles }: Props = {}) => {
         return;
       }
 
-      for (const role of roles) {
+      for (const role of acceptedRoles) {
         const { data: allowed, error } = await supabase.rpc("has_role", {
           _user_id: userData.user.id,
           _role: role as any,

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, ShieldAlert } from "lucide-react";
+import CheckoutJourneyMonitor from "@/components/admin/CheckoutJourneyMonitor";
 
 type Settings = {
   customer_journey_v1_enabled: boolean;
@@ -80,7 +81,6 @@ export default function AdminJourneyControl() {
 
   const update = async (patch: Partial<Settings>, key: string) => {
     if (!s) return;
-    // Journey 2 can only become the default once preflight has passed.
     if (patch.customer_journey_default === "v2" && !preflightOk) {
       toast({ title: "Preflight required", description: "Run the Journey 2 preflight and clear all failures first.", variant: "destructive" });
       return;
@@ -162,7 +162,7 @@ export default function AdminJourneyControl() {
   const checks = s.customer_journey_v2_last_preflight_result?.checks ?? [];
 
   return (
-    <div className="space-y-6 p-4 md:p-6 max-w-4xl">
+    <div className="space-y-6 p-4 md:p-6 max-w-7xl">
       <header>
         <h1 className="font-display uppercase text-2xl">Customer journey control</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -183,7 +183,6 @@ export default function AdminJourneyControl() {
 
       <section className="border-4 border-foreground p-5 space-y-4">
         <h2 className="font-display uppercase text-sm tracking-widest">Availability</h2>
-
         {[
           { key: "customer_journey_v1_enabled", label: "Journey 1 (quote-led) enabled", value: s.customer_journey_v1_enabled },
           { key: "customer_journey_v2_enabled", label: "Journey 2 (order now) enabled", value: s.customer_journey_v2_enabled },
@@ -194,27 +193,16 @@ export default function AdminJourneyControl() {
         ].map((row) => (
           <div key={row.key} className="flex items-center justify-between gap-4 border-b border-border pb-3 last:border-0">
             <Label htmlFor={row.key} className="text-sm font-normal">{row.label}</Label>
-            <Switch
-              id={row.key}
-              checked={row.value}
-              disabled={savingKey === row.key}
-              onCheckedChange={(v) => update({ [row.key]: v } as Partial<Settings>, row.key)}
-            />
+            <Switch id={row.key} checked={row.value} disabled={savingKey === row.key}
+              onCheckedChange={(v) => update({ [row.key]: v } as Partial<Settings>, row.key)} />
           </div>
         ))}
-
         <div className="flex items-center justify-between gap-4">
           <Label className="text-sm font-normal">Default journey for new visitors</Label>
           <div className="flex gap-2">
             {(["v1", "v2"] as const).map((v) => (
-              <Button
-                key={v}
-                type="button"
-                size="sm"
-                variant={s.customer_journey_default === v ? "default" : "outline"}
-                disabled={savingKey === "default"}
-                onClick={() => update({ customer_journey_default: v }, "default")}
-              >
+              <Button key={v} type="button" size="sm" variant={s.customer_journey_default === v ? "default" : "outline"}
+                disabled={savingKey === "default"} onClick={() => update({ customer_journey_default: v }, "default")}>
                 {v === "v1" ? "Journey 1" : "Journey 2"}
               </Button>
             ))}
@@ -223,7 +211,7 @@ export default function AdminJourneyControl() {
       </section>
 
       <section className="border-4 border-foreground p-5 space-y-4">
-        <h2 className="font-display uppercase text-sm tracking-widest">Rollout</h2>
+        <h2 className="font-display uppercase text-sm tracking-widest">Rollout & recovery</h2>
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <Label htmlFor="pct">Journey 2 rollout %</Label>
@@ -231,7 +219,7 @@ export default function AdminJourneyControl() {
               onBlur={(e) => update({ customer_journey_v2_rollout_percentage: Math.max(0, Math.min(100, Number(e.target.value))) }, "pct")} />
           </div>
           <div>
-            <Label htmlFor="delay">Resume email delay (minutes)</Label>
+            <Label htmlFor="delay">First resume email delay (minutes)</Label>
             <Input id="delay" type="number" min={5} max={10080} defaultValue={s.customer_journey_v2_resume_delay_minutes}
               onBlur={(e) => update({ customer_journey_v2_resume_delay_minutes: Math.max(5, Number(e.target.value)) }, "delay")} />
           </div>
@@ -242,7 +230,7 @@ export default function AdminJourneyControl() {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Rollout is deterministic per visitor, so a returning visitor always sees the same journey.
+          Recovery sends at most three factual reminders: the first after the configured delay, a second roughly one day later and a final reminder roughly two days after that. Resuming, completing or cancelling stops the abandoned state.
         </p>
       </section>
 
@@ -325,6 +313,8 @@ export default function AdminJourneyControl() {
           ))}
         </dl>
       </section>
+
+      <CheckoutJourneyMonitor />
     </div>
   );
 }

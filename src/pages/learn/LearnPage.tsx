@@ -1,6 +1,6 @@
 // Renders a single /learn/<slug> page from static content.
-// Existing explainers live in learnPages; new authority articles live in
-// seoArticles so content expansion remains isolated and low-risk.
+// Existing explainers live in learnPages; authority content is split between
+// seoArticles and seoGrowthArticles so expansion remains isolated and low-risk.
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import SeoContentLayout from "@/components/seo/SeoContentLayout";
@@ -8,12 +8,15 @@ import { JsonLd } from "@/components/seo";
 import NotFound from "@/pages/NotFound";
 import { getLearnPageBySlug } from "@/data/learnPages";
 import { getSeoArticleBySlug } from "@/data/seoArticles";
+import { getSeoGrowthArticleBySlug } from "@/data/seoGrowthArticles";
 
 const SITE_URL = "https://www.occta.co.uk";
 
 export default function LearnPage() {
   const { slug } = useParams<{ slug: string }>();
-  const article = slug ? getSeoArticleBySlug(slug) : undefined;
+  const article = slug
+    ? getSeoGrowthArticleBySlug(slug) ?? getSeoArticleBySlug(slug)
+    : undefined;
   const page = article ?? (slug ? getLearnPageBySlug(slug) : undefined);
 
   if (!page) {

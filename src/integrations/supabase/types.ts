@@ -1801,6 +1801,214 @@ export type Database = {
           },
         ]
       }
+      checkout_reminders: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          failed_at: string | null
+          id: string
+          journey_session_id: string
+          last_error: string | null
+          provider_request_id: number | null
+          queued_at: string
+          reminder_number: number
+          stage: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          failed_at?: string | null
+          id?: string
+          journey_session_id: string
+          last_error?: string | null
+          provider_request_id?: number | null
+          queued_at?: string
+          reminder_number: number
+          stage?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          failed_at?: string | null
+          id?: string
+          journey_session_id?: string
+          last_error?: string | null
+          provider_request_id?: number | null
+          queued_at?: string
+          reminder_number?: number
+          stage?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_reminders_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkout_reminders_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkout_tracking_events: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          journey_session_id: string | null
+          progress_percent: number | null
+          route: string | null
+          severity: string
+          stage: string | null
+          tracking_session_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          journey_session_id?: string | null
+          progress_percent?: number | null
+          route?: string | null
+          severity?: string
+          stage?: string | null
+          tracking_session_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          journey_session_id?: string | null
+          progress_percent?: number | null
+          route?: string | null
+          severity?: string
+          stage?: string | null
+          tracking_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_tracking_events_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkout_tracking_events_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkout_tracking_events_tracking_session_id_fkey"
+            columns: ["tracking_session_id"]
+            isOneToOne: false
+            referencedRelation: "checkout_tracking_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkout_tracking_sessions: {
+        Row: {
+          abandoned_at: string | null
+          client_session_hash: string
+          completed_at: string | null
+          created_at: string
+          current_route: string
+          current_stage: string | null
+          error_count: number
+          id: string
+          journey_session_id: string | null
+          journey_version: string | null
+          last_activity_at: string
+          last_error: string | null
+          last_error_at: string | null
+          progress_percent: number | null
+          route_started: string
+          source: string
+          stage_started_at: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          abandoned_at?: string | null
+          client_session_hash: string
+          completed_at?: string | null
+          created_at?: string
+          current_route: string
+          current_stage?: string | null
+          error_count?: number
+          id?: string
+          journey_session_id?: string | null
+          journey_version?: string | null
+          last_activity_at?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          progress_percent?: number | null
+          route_started: string
+          source?: string
+          stage_started_at?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          abandoned_at?: string | null
+          client_session_hash?: string
+          completed_at?: string | null
+          created_at?: string
+          current_route?: string
+          current_stage?: string | null
+          error_count?: number
+          id?: string
+          journey_session_id?: string | null
+          journey_version?: string | null
+          last_activity_at?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          progress_percent?: number | null
+          route_started?: string
+          source?: string
+          stage_started_at?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_tracking_sessions_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkout_tracking_sessions_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_messages: {
         Row: {
           attachments_json: Json
@@ -3114,6 +3322,7 @@ export type Database = {
           anonymous_session_id_hash: string | null
           billing_anchor_day: number | null
           checkout_session_id: string
+          checkout_tracking_started_at: string | null
           completed_at: string | null
           contract_acceptance_id: string | null
           contract_snapshot_id: string | null
@@ -3121,11 +3330,13 @@ export type Database = {
           cooling_off_acknowledged: boolean
           created_at: string
           current_step: string
+          current_step_started_at: string | null
           customer_details: Json | null
           customer_id: string | null
           dd_masked: Json | null
           dd_status: string | null
           digital_voice_acknowledged: boolean
+          error_count: number
           expires_at: string
           guest_order_id: string | null
           id: string
@@ -3136,6 +3347,7 @@ export type Database = {
           last_activity_at: string
           last_completed_step: string | null
           last_error: string | null
+          last_error_at: string | null
           manual_review_reason: string | null
           order_id: string | null
           order_journey_id: string | null
@@ -3150,6 +3362,9 @@ export type Database = {
           quote_id: string | null
           quote_public_token_hash: string | null
           quote_request_id: string | null
+          reminder_count: number
+          reminder_last_queued_at: string | null
+          reminder_last_sent_at: string | null
           resume_email_sent_at: string | null
           router_option: Json | null
           selected_addons: Json
@@ -3172,6 +3387,7 @@ export type Database = {
           anonymous_session_id_hash?: string | null
           billing_anchor_day?: number | null
           checkout_session_id?: string
+          checkout_tracking_started_at?: string | null
           completed_at?: string | null
           contract_acceptance_id?: string | null
           contract_snapshot_id?: string | null
@@ -3179,11 +3395,13 @@ export type Database = {
           cooling_off_acknowledged?: boolean
           created_at?: string
           current_step?: string
+          current_step_started_at?: string | null
           customer_details?: Json | null
           customer_id?: string | null
           dd_masked?: Json | null
           dd_status?: string | null
           digital_voice_acknowledged?: boolean
+          error_count?: number
           expires_at?: string
           guest_order_id?: string | null
           id?: string
@@ -3194,6 +3412,7 @@ export type Database = {
           last_activity_at?: string
           last_completed_step?: string | null
           last_error?: string | null
+          last_error_at?: string | null
           manual_review_reason?: string | null
           order_id?: string | null
           order_journey_id?: string | null
@@ -3208,6 +3427,9 @@ export type Database = {
           quote_id?: string | null
           quote_public_token_hash?: string | null
           quote_request_id?: string | null
+          reminder_count?: number
+          reminder_last_queued_at?: string | null
+          reminder_last_sent_at?: string | null
           resume_email_sent_at?: string | null
           router_option?: Json | null
           selected_addons?: Json
@@ -3230,6 +3452,7 @@ export type Database = {
           anonymous_session_id_hash?: string | null
           billing_anchor_day?: number | null
           checkout_session_id?: string
+          checkout_tracking_started_at?: string | null
           completed_at?: string | null
           contract_acceptance_id?: string | null
           contract_snapshot_id?: string | null
@@ -3237,11 +3460,13 @@ export type Database = {
           cooling_off_acknowledged?: boolean
           created_at?: string
           current_step?: string
+          current_step_started_at?: string | null
           customer_details?: Json | null
           customer_id?: string | null
           dd_masked?: Json | null
           dd_status?: string | null
           digital_voice_acknowledged?: boolean
+          error_count?: number
           expires_at?: string
           guest_order_id?: string | null
           id?: string
@@ -3252,6 +3477,7 @@ export type Database = {
           last_activity_at?: string
           last_completed_step?: string | null
           last_error?: string | null
+          last_error_at?: string | null
           manual_review_reason?: string | null
           order_id?: string | null
           order_journey_id?: string | null
@@ -3266,6 +3492,9 @@ export type Database = {
           quote_id?: string | null
           quote_public_token_hash?: string | null
           quote_request_id?: string | null
+          reminder_count?: number
+          reminder_last_queued_at?: string | null
+          reminder_last_sent_at?: string | null
           resume_email_sent_at?: string | null
           router_option?: Json | null
           selected_addons?: Json
@@ -12263,6 +12492,46 @@ export type Database = {
         Args: { p_action: string; p_customer_id: string; p_reason: string }
         Returns: Json
       }
+      admin_checkout_session_list: {
+        Args: { _limit?: number }
+        Returns: {
+          abandoned_at: string
+          completed_at: string
+          current_route: string
+          current_stage: string
+          customer_email: string
+          customer_name: string
+          error_count: number
+          journey_session_id: string
+          journey_version: string
+          last_activity_at: string
+          last_error: string
+          order_id: string
+          plan_label: string
+          postcode: string
+          progress_percent: number
+          quote_id: string
+          reminder_count: number
+          session_id: string
+          source: string
+          stage_started_at: string
+          started_at: string
+          status: string
+          utm_source: string
+        }[]
+      }
+      admin_checkout_timeline: {
+        Args: { _session_id: string; _source: string }
+        Returns: {
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          severity: string
+          stage: string
+          title: string
+        }[]
+      }
       admin_link_quote_request: {
         Args: { _new_user_id: string; _qr_id: string; _reason: string }
         Returns: undefined
@@ -12324,6 +12593,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      checkout_stage_progress: { Args: { _stage: string }; Returns: number }
       compute_cancellation_preview: {
         Args: { p_requested_date: string; p_service_id: string }
         Returns: Json
@@ -12950,6 +13220,7 @@ export type Database = {
             Args: { _extra?: Json; _id: string; _type: string }
             Returns: undefined
           }
+      process_checkout_tracking: { Args: never; Returns: Json }
       quote_below_retail_floor: {
         Args: { _quote_id: string }
         Returns: boolean
@@ -12986,6 +13257,20 @@ export type Database = {
           tags: string[]
           title: string
         }[]
+      }
+      track_checkout_event: {
+        Args: {
+          _client_session_id: string
+          _error_code?: string
+          _error_message?: string
+          _event_type: string
+          _journey_token?: string
+          _metadata?: Json
+          _progress_percent?: number
+          _route: string
+          _stage?: string
+        }
+        Returns: string
       }
     }
     Enums: {

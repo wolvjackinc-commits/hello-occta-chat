@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, ExternalLink, LifeBuoy, Loader2, MessageCircle, Send, ShieldCheck, UserRound, X } from "lucide-react";
+import { Bot, Download, ExternalLink, LifeBuoy, Loader2, Mail, MessageCircle, PhoneOff, Send, ShieldCheck, UserRound, X } from "lucide-react";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,11 +23,13 @@ import {
 
 type ChatMessage = {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   createdAt: string;
   agent?: "ollie" | "human";
 };
+
+type LiveState = "off" | "waiting" | "live" | "ended";
 
 type Props = {
   embedded?: boolean;
@@ -114,7 +116,7 @@ function loadHistory(): ChatMessage[] {
     const parsed = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return [];
     return parsed
-      .filter((row) => row && (row.role === "user" || row.role === "assistant"))
+      .filter((row) => row && (row.role === "user" || row.role === "assistant" || row.role === "system"))
       .slice(-40)
       .map((row) => ({
         id: typeof row.id === "string" ? row.id : crypto.randomUUID(),
@@ -315,6 +317,10 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
   const [firstName, setFirstName] = useState<string | undefined>();
   const [awaitingAccountEmail, setAwaitingAccountEmail] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [liveState, setLiveState] = useState<LiveState>("off");
+  const [emailingTranscript, setEmailingTranscript] = useState(false);
+  const [transcriptEmail, setTranscriptEmail] = useState("");
+  const pollSince = useRef<string>(new Date().toISOString());
   const sessionId = useRef(getSessionId());
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -323,6 +329,10 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
 
   const addAssistant = useCallback((content: string, agent: "ollie" | "human" = "ollie") => {
     setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", content: redactForChat(content), createdAt: new Date().toISOString(), agent }]);
+  }, []);
+
+  const addSystem = useCallback((content: string) => {
+    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "system", content, createdAt: new Date().toISOString() }]);
   }, []);
 
   useEffect(() => {
@@ -350,17 +360,42 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // While a human session is open (waiting or live) poll for advisor activity and
+  // status changes. Polling works for both signed-in and guest visitors.
   useEffect(() => {
     if (!conversationId) return;
-    const channel = supabase
-      .channel(`ollie-live-${conversationId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
-        const row = payload.new as { role?: string; content?: string };
-        if (row.role === "admin" && row.content) addAssistant(row.content, "human");
-      })
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [conversationId, addAssistant]);
+    if (liveState !== "waiting" && liveState !== "live") return;
+    let cancelled = false;
+
+    const tick = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("chat-handoff", {
+          body: { sessionId: sessionId.current, mode: "poll", since: pollSince.current },
+        });
+        if (error || cancelled || !data) return;
+        const rows = Array.isArray(data.messages) ? data.messages as Array<{ role?: string; content?: string; created_at?: string }> : [];
+        if (typeof data.serverTime === "string") pollSince.current = data.serverTime;
+        const advisorJoined = data.status === "live" || data.assigned === true;
+        if (advisorJoined && liveState === "waiting") {
+          setLiveState("live");
+          addSystem("An OCCTA advisor has joined the chat. Ollie has stepped aside.");
+        }
+        rows.forEach((row) => {
+          if (!row.content) return;
+          if (row.role === "admin") addAssistant(row.content, "human");
+          else if (row.role === "system") addSystem(row.content);
+        });
+        if (data.status === "resolved" || data.status === "closed") {
+          setLiveState("ended");
+          addSystem("The advisor has ended this chat. You can download or email a copy of the transcript below.");
+        }
+      } catch { /* transient network issue — retry on next tick */ }
+    };
+
+    void tick();
+    const timer = window.setInterval(() => { void tick(); }, 4000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [conversationId, liveState, addAssistant, addSystem]);
 
   const handoff = useCallback(async () => {
     setLoading(true);
@@ -376,13 +411,67 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
       });
       if (error) throw error;
       if (data?.conversationId) setConversationId(String(data.conversationId));
-      addAssistant(`I've passed this conversation to an OCCTA advisor with the sensitive details redacted, so you shouldn't need to start again. For an urgent service-impacting issue, call ${CONTACT_PHONE_DISPLAY}.`);
+      pollSince.current = new Date().toISOString();
+      setLiveState("waiting");
+      addSystem(`We're assigning an OCCTA advisor to your chat. Ollie has stopped replying so nothing crosses over — your conversation has been passed across with sensitive details redacted. For an urgent service-impacting issue, call ${CONTACT_PHONE_DISPLAY}.`);
     } catch {
       addAssistant(`I couldn't open the live handoff just now. Please call ${CONTACT_PHONE_DISPLAY} and the team will help.`);
     } finally {
       setLoading(false);
     }
-  }, [messages, addAssistant]);
+  }, [messages, addAssistant, addSystem]);
+
+  const endChat = useCallback(async () => {
+    setLoading(true);
+    try {
+      await supabase.functions.invoke("chat-handoff", { body: { sessionId: sessionId.current, mode: "end" } });
+      setLiveState("ended");
+      addSystem("You ended the chat. You can download or email a copy of the transcript below.");
+    } catch {
+      toast({ title: "Couldn't end the chat", description: "Please try again in a moment.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [addSystem, toast]);
+
+  const transcriptText = useCallback(() => (
+    messages
+      .map((message) => {
+        const who = message.role === "user" ? "You" : message.role === "system" ? "System" : message.agent === "human" ? "OCCTA advisor" : "Ollie (OCCTA Assist)";
+        return `[${new Date(message.createdAt).toLocaleString("en-GB")}] ${who}: ${extractOptions(message.content).body}`;
+      })
+      .join("\n\n")
+  ), [messages]);
+
+  const downloadTranscript = useCallback(() => {
+    const blob = new Blob([`OCCTA chat transcript\nSession ${sessionId.current}\n\n${transcriptText()}\n`], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `occta-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [transcriptText]);
+
+  const emailTranscript = useCallback(async () => {
+    const email = transcriptEmail.trim();
+    if (!signedIn && !EMAIL_RE.test(email)) {
+      toast({ title: "Enter a valid email", description: "We need a valid email address to send your transcript.", variant: "destructive" });
+      return;
+    }
+    setEmailingTranscript(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("chat-handoff", {
+        body: { sessionId: sessionId.current, mode: "email_transcript", customerEmail: email || undefined },
+      });
+      if (error || data?.error) throw new Error(String(data?.error ?? "email_failed"));
+      toast({ title: "Transcript sent", description: "Check your inbox for a copy of this chat." });
+    } catch {
+      toast({ title: "Couldn't email the transcript", description: "Please download it instead, or contact support.", variant: "destructive" });
+    } finally {
+      setEmailingTranscript(false);
+    }
+  }, [transcriptEmail, signedIn, toast]);
 
   const claimAccount = useCallback(async (email: string) => {
     setLoading(true);
@@ -445,7 +534,9 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
       return;
     }
 
-    const coreMessages: CoreMessage[] = conversation.map((message) => ({ role: message.role, content: message.content }));
+    const coreMessages: CoreMessage[] = conversation
+      .filter((message): message is ChatMessage & { role: "user" | "assistant" } => message.role === "user" || message.role === "assistant")
+      .map((message) => ({ role: message.role, content: message.content }));
     const accountIntent = detectAccountIntent(coreMessages);
 
     if (accountIntent) {
@@ -476,6 +567,21 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
   const send = useCallback(async (value: string) => {
     const raw = value.trim();
     if (!raw || loading) return;
+
+    // A human advisor owns this conversation (or one is being assigned):
+    // relay the message to the advisor and never let Ollie answer.
+    if (liveState === "waiting" || liveState === "live") {
+      const safe = redactForChat(raw);
+      setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", content: safe, createdAt: new Date().toISOString() }]);
+      setInput("");
+      try {
+        await supabase.functions.invoke("chat-handoff", { body: { sessionId: sessionId.current, mode: "customer_message", message: safe } });
+      } catch {
+        toast({ title: "Message not delivered", description: "Please try sending that again.", variant: "destructive" });
+      }
+      return;
+    }
+
     const route = actionRoutes[raw.toLowerCase()];
     if (route) {
       window.location.assign(route);
@@ -499,7 +605,7 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, answer, addAssistant, handoff]);
+  }, [loading, messages, answer, addAssistant, handoff, liveState, toast]);
 
   const close = () => {
     setOpen(false);
@@ -533,6 +639,13 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
             {messages.map((message) => {
               const parsed = extractOptions(message.content);
               const isUser = message.role === "user";
+              if (message.role === "system") {
+                return (
+                  <div key={message.id} className="mx-auto max-w-[92%] rounded-md border border-dashed border-foreground/40 bg-background px-3 py-2 text-center text-xs text-muted-foreground">
+                    {parsed.body}
+                  </div>
+                );
+              }
               return (
                 <div key={message.id} className={`flex gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
                   {!isUser && <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/30 bg-background">{message.agent === "human" ? <UserRound className="h-4 w-4" /> : <Bot className="h-4 w-4" />}</div>}
@@ -547,23 +660,66 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
                 </div>
               );
             })}
-            {loading && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Ollie is checking the verified source…</div>}
+            {liveState === "waiting" && (
+              <div className="rounded-lg border-2 border-foreground bg-background p-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Assigning a human advisor…
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  You're in the queue and your chat stays open. Keep typing if you'd like — the advisor will see everything when they join.
+                </p>
+              </div>
+            )}
+            {loading && liveState === "off" && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Ollie is checking the verified source…</div>}
             <div ref={endRef} />
           </div>
         </ScrollArea>
 
         <div className="border-t-2 border-foreground bg-background p-3">
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-            {quickActions.map((action) => <button key={action} onClick={() => void send(action)} className="whitespace-nowrap rounded-full border border-foreground/30 px-3 py-1.5 text-xs hover:bg-muted">{action}</button>)}
-          </div>
-          <div className="flex gap-2">
-            <Input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(input); } }} placeholder={signedIn ? `Ask about your OCCTA account${firstName ? `, ${firstName}` : ""}…` : "Ask Ollie about OCCTA…"} disabled={loading} aria-label="Message Ollie" />
-            <Button onClick={() => void send(input)} disabled={loading || !input.trim()} size="icon" aria-label="Send message"><Send className="h-4 w-4" /></Button>
-          </div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><LifeBuoy className="h-3 w-3" /> Human handoff available</span>
-            <a href="/help" className="flex items-center gap-1 hover:text-foreground">Help Centre <ExternalLink className="h-3 w-3" /></a>
-          </div>
+          {liveState === "ended" ? (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide">This chat has ended</p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={downloadTranscript}><Download className="mr-1 h-4 w-4" /> Download transcript</Button>
+                {signedIn ? (
+                  <Button size="sm" variant="outline" onClick={() => void emailTranscript()} disabled={emailingTranscript}>
+                    {emailingTranscript ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Mail className="mr-1 h-4 w-4" />} Email it to me
+                  </Button>
+                ) : null}
+              </div>
+              {!signedIn && (
+                <div className="flex gap-2">
+                  <Input value={transcriptEmail} onChange={(event) => setTranscriptEmail(event.target.value)} placeholder="Email address for your copy" aria-label="Email address for transcript" />
+                  <Button size="sm" onClick={() => void emailTranscript()} disabled={emailingTranscript}>
+                    {emailingTranscript ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  </Button>
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">Need more help? Call {CONTACT_PHONE_DISPLAY} or reopen a new chat from the button.</p>
+            </div>
+          ) : (
+            <>
+              {liveState === "off" && (
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                  {quickActions.map((action) => <button key={action} onClick={() => void send(action)} className="whitespace-nowrap rounded-full border border-foreground/30 px-3 py-1.5 text-xs hover:bg-muted">{action}</button>)}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(input); } }} placeholder={liveState === "live" ? "Message your OCCTA advisor…" : liveState === "waiting" ? "Type while we connect an advisor…" : signedIn ? `Ask about your OCCTA account${firstName ? `, ${firstName}` : ""}…` : "Ask Ollie about OCCTA…"} disabled={loading && liveState === "off"} aria-label="Message Ollie" />
+                <Button onClick={() => void send(input)} disabled={!input.trim() || (loading && liveState === "off")} size="icon" aria-label="Send message"><Send className="h-4 w-4" /></Button>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                {liveState === "off" ? (
+                  <span className="flex items-center gap-1"><LifeBuoy className="h-3 w-3" /> Human handoff available</span>
+                ) : (
+                  <button onClick={() => void endChat()} className="flex items-center gap-1 font-semibold text-foreground hover:underline">
+                    <PhoneOff className="h-3 w-3" /> End chat
+                  </button>
+                )}
+                <a href="/help" className="flex items-center gap-1 hover:text-foreground">Help Centre <ExternalLink className="h-3 w-3" /></a>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

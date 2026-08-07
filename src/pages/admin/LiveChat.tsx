@@ -188,6 +188,14 @@ export default function AdminLiveChat() {
       const attachments = attachmentPath
         ? [{ path: attachmentPath, name: attachmentName ?? attachmentPath.split("/").pop() }]
         : [];
+      // Announce the advisor joining the first time we reply on this conversation.
+      if (active && active.status !== "live") {
+        await supabase.from("chat_messages").insert({
+          conversation_id: activeId,
+          role: "system",
+          content: "An OCCTA advisor has joined the chat.",
+        });
+      }
       const { error } = await supabase.from("chat_messages").insert({
         conversation_id: activeId,
         role: "admin",
@@ -226,8 +234,13 @@ export default function AdminLiveChat() {
 
   const resolveConversation = async () => {
     if (!activeId) return;
+    await supabase.from("chat_messages").insert({
+      conversation_id: activeId,
+      role: "system",
+      content: "The OCCTA advisor has ended this chat. A transcript can be downloaded or emailed.",
+    });
     await supabase.from("chat_conversations").update({ status: "resolved" }).eq("id", activeId);
-    toast({ title: "Conversation resolved" });
+    toast({ title: "Chat ended", description: "The customer has been told the chat is closed." });
   };
 
   const [exporting, setExporting] = useState(false);
@@ -448,7 +461,7 @@ export default function AdminLiveChat() {
                     {exporting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <FileDown className="w-4 h-4 mr-1" />}
                     Export transcript
                   </Button>
-                  <Button size="sm" variant="outline" onClick={resolveConversation}>Resolve</Button>
+                  <Button size="sm" variant="outline" onClick={resolveConversation}>End chat</Button>
                 </div>
               </div>
 

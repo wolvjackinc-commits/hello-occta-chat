@@ -13,14 +13,22 @@ const corsHeaders = {
 
 interface HandoffPayload {
   sessionId: string;
-  mode?: "handoff" | "log";
+  mode?: "handoff" | "log" | "customer_message" | "poll" | "end" | "email_transcript";
   reason?: string;
   summary?: string;
   lastMessage?: string;
   customerName?: string;
   customerEmail?: string;
+  message?: string;
+  since?: string;
   transcript?: Array<{ role: string; content: string }>;
 }
+
+const jsonOut = (status: number, data: unknown) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -66,6 +74,86 @@ Deno.serve(async (req) => {
   const summary = String(body.summary || body.lastMessage || "Customer requested a human advisor").slice(0, 2000);
   const reason = String(body.reason || "requested_human").slice(0, 120);
   const isLogOnly = body.mode === "log";
+
+  // ---- Live-session modes (customer side) ----
+  if (body.mode === "customer_message" || body.mode === "poll" || body.mode === "end" || body.mode === "email_transcript") {
+    const { data: conv } = await svc
+      .from("chat_conversations")
+      .select("id, status, assigned_admin_id, customer_email, customer_name, user_id")
+      .eq("session_id", sessionId)
+      .maybeSingle();
+    if (!conv) return jsonOut(404, { error: "conversation_not_found" });
+    const convId = conv.id as string;
+
+    if (body.mode === "customer_message") {
+      const content = String(body.message || "").slice(0, 4000).trim();
+      if (!content) return jsonOut(400, { error: "message_required" });
+      await svc.from("chat_messages").insert({ conversation_id: convId, role: "user", content, attachments: [] });
+      await svc.from("chat_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", convId);
+      return jsonOut(200, { ok: true });
+    }
+
+    if (body.mode === "poll") {
+      const since = body.since && !Number.isNaN(Date.parse(body.since)) ? body.since : new Date(Date.now() - 60_000).toISOString();
+      const { data: rows } = await svc
+        .from("chat_messages")
+        .select("id, role, content, created_at")
+        .eq("conversation_id", convId)
+        .in("role", ["admin", "system"])
+        .gt("created_at", since)
+        .order("created_at", { ascending: true })
+        .limit(50);
+      return jsonOut(200, {
+        ok: true,
+        status: conv.status,
+        assigned: Boolean(conv.assigned_admin_id),
+        messages: rows ?? [],
+        serverTime: new Date().toISOString(),
+      });
+    }
+
+    if (body.mode === "end") {
+      await svc.from("chat_conversations").update({ status: "resolved" }).eq("id", convId);
+      await svc.from("chat_messages").insert({
+        conversation_id: convId,
+        role: "system",
+        content: "Customer ended the chat.",
+        attachments: [],
+      });
+      return jsonOut(200, { ok: true });
+    }
+
+    // email_transcript
+    const to = String(body.customerEmail || conv.customer_email || "").trim();
+    if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return jsonOut(400, { error: "valid_email_required" });
+    const { data: rows } = await svc
+      .from("chat_messages")
+      .select("role, content, created_at")
+      .eq("conversation_id", convId)
+      .order("created_at", { ascending: true })
+      .limit(500);
+    const transcriptText = (rows ?? [])
+      .map((r) => {
+        const who = r.role === "user" ? "You" : r.role === "admin" ? "OCCTA advisor" : r.role === "assistant" ? "Ollie (OCCTA Assist)" : "System";
+        return `[${new Date(r.created_at as string).toLocaleString("en-GB", { timeZone: "Europe/London" })}] ${who}: ${r.content}`;
+      })
+      .join("\n\n");
+    const emailResp = await svc.functions.invoke("send-email", {
+      body: {
+        type: "custom_admin",
+        to,
+        data: {
+          subject: "Your OCCTA chat transcript",
+          message: `Hi ${conv.customer_name ?? "there"},\n\nHere is a copy of your recent OCCTA chat.\n\n----- TRANSCRIPT -----\n${transcriptText}\n----- END -----\n\nIf anything still needs attention, just reply to this email.`,
+          customer_name: conv.customer_name ?? "",
+        },
+        logToCommunications: Boolean(conv.user_id),
+        userId: conv.user_id ?? undefined,
+      },
+    });
+    if (emailResp.error) return jsonOut(500, { error: "email_failed", details: emailResp.error.message });
+    return jsonOut(200, { ok: true });
+  }
 
   // Enrich with profile if signed in.
   let customerName = body.customerName?.slice(0, 200) || null;

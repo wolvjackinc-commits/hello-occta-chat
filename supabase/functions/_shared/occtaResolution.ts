@@ -35,7 +35,7 @@ export const OCCTA_GUIDES: OcctaGuide[] = [
   {
     slug: "billing",
     title: "Billing Explained: When and How You'll Be Charged",
-    keywords: ["billing", "bill", "invoice", "charge", "payment", "amount due", "owe", "balance", "refund", "vat"],
+    keywords: ["billing", "bill", "invoice", "charge", "payment", "amount due", "owe", "own", "balance", "refund", "vat"],
   },
   {
     slug: "direct-debit-setup-help",
@@ -58,7 +58,7 @@ export function normaliseOcctaText(value: string): string {
   return value
     .toLowerCase()
     .replace(/[’']/g, "'")
-    .replace(/\b(?:occrta|occcta|occtta|occta|ooccta|occta)\b/g, "occta")
+    .replace(/\b(?:occrta|occcta|occtta|ooccta|occta)\b/g, "occta")
     .replace(/[^a-z0-9£.%@+\-\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -68,7 +68,7 @@ export function expandedAccountIntent(text: string): AccountIntent | null {
   const value = normaliseOcctaText(text);
 
   if (
-    /\b(?:do i owe|owe you|owe occta|money i owe|how much i owe|how much do i owe|amount due|outstanding balance|outstanding amount|account balance|arrears|money due|what do i owe)\b/.test(value)
+    /\b(?:do i owe|do i own|owe you|own you|owe occta|own occta|money i owe|money i own|how much i owe|how much i own|how much do i owe|how much do i own|amount due|outstanding balance|outstanding amount|account balance|arrears|money due|what do i owe|what do i own)\b/.test(value)
   ) return "invoices";
 
   if (/\b(?:my bill|my invoice|my invoices|my billing|latest invoice|latest bill|show.*bill|want.*bill)\b/.test(value)) return "invoices";

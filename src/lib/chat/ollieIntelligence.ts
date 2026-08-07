@@ -125,10 +125,6 @@ function verificationLoopReply(): string {
   );
 }
 
-/**
- * High-level, human-style resolver for public/support conversations.
- * Personal account data still goes to the secure server-side companion.
- */
 export function resolveIntelligentPublicReply(messages: CompanionMessage[]): string | null {
   const latest = latestUser(messages);
   if (!latest) return null;
@@ -136,15 +132,11 @@ export function resolveIntelligentPublicReply(messages: CompanionMessage[]): str
   const context = recentText(messages);
   const priorAssistant = normalise(previousAssistant(messages));
 
-  // Correct a failed verification loop before the older account intent in the
-  // conversation can drag the customer back into the same impossible prompt.
   if (/couldn't verify those details|could not verify those details/.test(priorAssistant)
-    && (/try verification again|details.*correct|date of birth|dob|^\d{1,2}[/.\-]\d{1,2}[/.\-](?:19|20)\d{2}$/.test(value))) {
+    && (/try verification again|details.*correct|date of birth|dob|^\d{1,2}[./-]\d{1,2}[./-](?:19|20)\d{2}$/.test(value))) {
     return verificationLoopReply();
   }
 
-  // If the customer clarifies there is no order yet, answer the general
-  // pre-order timescale question instead of carrying forward an old account intent.
   if (/\b(?:not placed|haven't placed|have not placed|no order|before i order|if i order)\b/.test(value)
     && /\border\b/.test(`${value}\n${context}`)) return orderTimescaleReply();
 
@@ -190,10 +182,8 @@ export function resolveIntelligentPublicReply(messages: CompanionMessage[]): str
 
   if (/\b(?:refund|money back)\b/.test(value) && /\b(?:policy|rules?|terms?|how does|cancellation)\b/.test(value)) return refundPolicyReply();
 
-  // Account-specific requests are deliberately not answered from public text.
   if (detectAccountIntent(messages)) return null;
 
-  // Short answers continue the question Ollie just asked.
   if (/^(?:yes|yeah|yep|no|nope|it is|it's on|its on|yes it on|still|same|not yet|i did|done)$/.test(value)) {
     if (/light|router|ont|internet|wan|los|pon|power/.test(priorAssistant)) return resolvePublicConversationReply(messages);
     if (/postcode|address|availability/.test(priorAssistant)) return resolvePublicConversationReply(messages);

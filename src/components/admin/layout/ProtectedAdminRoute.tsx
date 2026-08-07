@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -52,30 +52,52 @@ interface Props {
 export const ProtectedAdminRoute = ({ requiredRoles }: Props = {}) => {
   const location = useLocation();
   const roles = requiredRoles && requiredRoles.length > 0 ? requiredRoles : ["admin", "super_admin"];
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-access", roles.join(",")],
-    queryFn: async () => {
-      // Re-validate with the Auth server rather than trusting a cached session token.
-      const { data: userData, error: userErr } = await supabase.auth.getUser();
-      if (userErr || !userData?.user) {
-        return { status: "no-session" } as const;
-      }
-      // Check each accepted role; any match grants access.
-      for (const r of roles) {
-        const { data: ok } = await supabase.rpc("has_role", {
-          _user_id: userData.user.id,
-          _role: r as any,
-        });
-        if (ok) return { status: "admin" } as const;
-      }
-      return { status: "denied" } as const;
-    },
-    staleTime: 30_000,
-    refetchOnWindowFocus: true,
-    retry: false,
-  });
+  const rolesKey = roles.join(",");
+  const [status, setStatus] = useState<"loading" | "no-session" | "denied" | "admin">("loading");
 
-  if (isLoading) {
+  useEffect(() => {
+    let active = true;
+
+    const validate = async () => {
+      // Never share admin approval through a query cache: every mount and auth
+      // change must be checked against the current server-validated identity.
+      if (active) setStatus("loading");
+      const { data: userData, error: userErr } = await supabase.auth.getUser();
+      if (!active) return;
+      if (userErr || !userData.user) {
+        setStatus("no-session");
+        return;
+      }
+
+      for (const role of roles) {
+        const { data: allowed, error } = await supabase.rpc("has_role", {
+          _user_id: userData.user.id,
+          _role: role as any,
+        });
+        if (!active) return;
+        if (!error && allowed) {
+          setStatus("admin");
+          return;
+        }
+      }
+      setStatus("denied");
+    };
+
+    void validate();
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      void validate();
+    });
+    const revalidate = () => void validate();
+    window.addEventListener("focus", revalidate);
+
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+      window.removeEventListener("focus", revalidate);
+    };
+  }, [rolesKey]);
+
+  if (status === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin" />
@@ -85,14 +107,14 @@ export const ProtectedAdminRoute = ({ requiredRoles }: Props = {}) => {
 
   // Redirect to auth with ?next= preserving the deep-linked admin path so
   // the user returns exactly where they tried to go after signing in.
-  if (data?.status === "no-session") {
+  if (status === "no-session") {
     const target = `${location.pathname}${location.search}${location.hash}` || "/admin/overview";
     const next = target.startsWith("/admin") ? target : "/admin/overview";
     return <Navigate to={`/auth?next=${encodeURIComponent(next)}`} replace />;
   }
 
   // Show access denied page instead of silent redirect
-  if (data?.status === "denied") {
+  if (status === "denied") {
     return <AdminAccessDenied />;
   }
 

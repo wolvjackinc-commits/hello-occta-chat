@@ -317,6 +317,10 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
   const [firstName, setFirstName] = useState<string | undefined>();
   const [awaitingAccountEmail, setAwaitingAccountEmail] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [liveState, setLiveState] = useState<LiveState>("off");
+  const [emailingTranscript, setEmailingTranscript] = useState(false);
+  const [transcriptEmail, setTranscriptEmail] = useState("");
+  const pollSince = useRef<string>(new Date().toISOString());
   const sessionId = useRef(getSessionId());
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -325,6 +329,10 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
 
   const addAssistant = useCallback((content: string, agent: "ollie" | "human" = "ollie") => {
     setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", content: redactForChat(content), createdAt: new Date().toISOString(), agent }]);
+  }, []);
+
+  const addSystem = useCallback((content: string) => {
+    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "system", content, createdAt: new Date().toISOString() }]);
   }, []);
 
   useEffect(() => {
@@ -352,17 +360,42 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // While a human session is open (waiting or live) poll for advisor activity and
+  // status changes. Polling works for both signed-in and guest visitors.
   useEffect(() => {
     if (!conversationId) return;
-    const channel = supabase
-      .channel(`ollie-live-${conversationId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
-        const row = payload.new as { role?: string; content?: string };
-        if (row.role === "admin" && row.content) addAssistant(row.content, "human");
-      })
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [conversationId, addAssistant]);
+    if (liveState !== "waiting" && liveState !== "live") return;
+    let cancelled = false;
+
+    const tick = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("chat-handoff", {
+          body: { sessionId: sessionId.current, mode: "poll", since: pollSince.current },
+        });
+        if (error || cancelled || !data) return;
+        const rows = Array.isArray(data.messages) ? data.messages as Array<{ role?: string; content?: string; created_at?: string }> : [];
+        if (typeof data.serverTime === "string") pollSince.current = data.serverTime;
+        const advisorJoined = data.status === "live" || data.assigned === true;
+        if (advisorJoined && liveState === "waiting") {
+          setLiveState("live");
+          addSystem("An OCCTA advisor has joined the chat. Ollie has stepped aside.");
+        }
+        rows.forEach((row) => {
+          if (!row.content) return;
+          if (row.role === "admin") addAssistant(row.content, "human");
+          else if (row.role === "system") addSystem(row.content);
+        });
+        if (data.status === "resolved" || data.status === "closed") {
+          setLiveState("ended");
+          addSystem("The advisor has ended this chat. You can download or email a copy of the transcript below.");
+        }
+      } catch { /* transient network issue — retry on next tick */ }
+    };
+
+    void tick();
+    const timer = window.setInterval(() => { void tick(); }, 4000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [conversationId, liveState, addAssistant, addSystem]);
 
   const handoff = useCallback(async () => {
     setLoading(true);
@@ -378,13 +411,67 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
       });
       if (error) throw error;
       if (data?.conversationId) setConversationId(String(data.conversationId));
-      addAssistant(`I've passed this conversation to an OCCTA advisor with the sensitive details redacted, so you shouldn't need to start again. For an urgent service-impacting issue, call ${CONTACT_PHONE_DISPLAY}.`);
+      pollSince.current = new Date().toISOString();
+      setLiveState("waiting");
+      addSystem(`We're assigning an OCCTA advisor to your chat. Ollie has stopped replying so nothing crosses over — your conversation has been passed across with sensitive details redacted. For an urgent service-impacting issue, call ${CONTACT_PHONE_DISPLAY}.`);
     } catch {
       addAssistant(`I couldn't open the live handoff just now. Please call ${CONTACT_PHONE_DISPLAY} and the team will help.`);
     } finally {
       setLoading(false);
     }
-  }, [messages, addAssistant]);
+  }, [messages, addAssistant, addSystem]);
+
+  const endChat = useCallback(async () => {
+    setLoading(true);
+    try {
+      await supabase.functions.invoke("chat-handoff", { body: { sessionId: sessionId.current, mode: "end" } });
+      setLiveState("ended");
+      addSystem("You ended the chat. You can download or email a copy of the transcript below.");
+    } catch {
+      toast({ title: "Couldn't end the chat", description: "Please try again in a moment.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [addSystem, toast]);
+
+  const transcriptText = useCallback(() => (
+    messages
+      .map((message) => {
+        const who = message.role === "user" ? "You" : message.role === "system" ? "System" : message.agent === "human" ? "OCCTA advisor" : "Ollie (OCCTA Assist)";
+        return `[${new Date(message.createdAt).toLocaleString("en-GB")}] ${who}: ${extractOptions(message.content).body}`;
+      })
+      .join("\n\n")
+  ), [messages]);
+
+  const downloadTranscript = useCallback(() => {
+    const blob = new Blob([`OCCTA chat transcript\nSession ${sessionId.current}\n\n${transcriptText()}\n`], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `occta-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [transcriptText]);
+
+  const emailTranscript = useCallback(async () => {
+    const email = transcriptEmail.trim();
+    if (!signedIn && !EMAIL_RE.test(email)) {
+      toast({ title: "Enter a valid email", description: "We need a valid email address to send your transcript.", variant: "destructive" });
+      return;
+    }
+    setEmailingTranscript(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("chat-handoff", {
+        body: { sessionId: sessionId.current, mode: "email_transcript", customerEmail: email || undefined },
+      });
+      if (error || data?.error) throw new Error(String(data?.error ?? "email_failed"));
+      toast({ title: "Transcript sent", description: "Check your inbox for a copy of this chat." });
+    } catch {
+      toast({ title: "Couldn't email the transcript", description: "Please download it instead, or contact support.", variant: "destructive" });
+    } finally {
+      setEmailingTranscript(false);
+    }
+  }, [transcriptEmail, signedIn, toast]);
 
   const claimAccount = useCallback(async (email: string) => {
     setLoading(true);
@@ -447,7 +534,9 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
       return;
     }
 
-    const coreMessages: CoreMessage[] = conversation.map((message) => ({ role: message.role, content: message.content }));
+    const coreMessages: CoreMessage[] = conversation
+      .filter((message): message is ChatMessage & { role: "user" | "assistant" } => message.role === "user" || message.role === "assistant")
+      .map((message) => ({ role: message.role, content: message.content }));
     const accountIntent = detectAccountIntent(coreMessages);
 
     if (accountIntent) {
@@ -478,6 +567,21 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
   const send = useCallback(async (value: string) => {
     const raw = value.trim();
     if (!raw || loading) return;
+
+    // A human advisor owns this conversation (or one is being assigned):
+    // relay the message to the advisor and never let Ollie answer.
+    if (liveState === "waiting" || liveState === "live") {
+      const safe = redactForChat(raw);
+      setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", content: safe, createdAt: new Date().toISOString() }]);
+      setInput("");
+      try {
+        await supabase.functions.invoke("chat-handoff", { body: { sessionId: sessionId.current, mode: "customer_message", message: safe } });
+      } catch {
+        toast({ title: "Message not delivered", description: "Please try sending that again.", variant: "destructive" });
+      }
+      return;
+    }
+
     const route = actionRoutes[raw.toLowerCase()];
     if (route) {
       window.location.assign(route);
@@ -501,7 +605,7 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, answer, addAssistant, handoff]);
+  }, [loading, messages, answer, addAssistant, handoff, liveState, toast]);
 
   const close = () => {
     setOpen(false);

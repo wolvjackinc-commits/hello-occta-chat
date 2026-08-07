@@ -15,7 +15,7 @@ type ChatRow = {
 function renderTranscriptText(rows: ChatRow[]): string {
   return rows
     .map((r) => {
-      const who = r.message_type === "user" ? "Customer" : "IRA";
+      const who = r.message_type === "user" ? "Customer" : "Ollie";
       return `[${r.created_at}] ${who}: ${r.message_content}`;
     })
     .join("\n\n");
@@ -55,9 +55,9 @@ Deno.serve(async (req) => {
         type: "custom_admin",
         to: prof.email,
         data: {
-          subject: "Your chat transcript with Occta",
+          subject: "Your chat transcript with OCCTA",
           message:
-            `Hi ${prof.full_name ?? ""},\n\nAs requested, here is the full transcript of your recent chat with our assistant (IRA).\n\n----- TRANSCRIPT -----\n${transcript}\n----- END -----\n\nIf anything still needs attention, just reply to this email.`,
+            `Hi ${prof.full_name ?? ""},\n\nAs requested, here is the full transcript of your recent chat with Ollie, OCCTA Assist.\n\n----- TRANSCRIPT -----\n${transcript}\n----- END -----\n\nIf anything still needs attention, just reply to this email.`,
           customer_name: prof.full_name ?? "",
         },
         logToCommunications: true,

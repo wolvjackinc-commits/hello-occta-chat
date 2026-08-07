@@ -23,6 +23,8 @@ project_id = "oexgjmuvgdndizsufipe"
 [functions]
   [functions.admin-send-email]
     verify_jwt = false
+  [functions.journey2-resume-email]
+    verify_jwt = false
   [functions.admin-create-customer]
     verify_jwt = false
   [functions.admin-notify]

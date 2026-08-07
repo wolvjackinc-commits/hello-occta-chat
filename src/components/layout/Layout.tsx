@@ -1,6 +1,7 @@
 import { ReactNode, lazy, Suspense, useState, useEffect, useCallback } from "react";
 import Header from "./Header";
 import { MessageCircle } from "lucide-react";
+import CheckoutJourneyTracker from "@/components/checkout/CheckoutJourneyTracker";
 
 const Footer = lazy(() => import("./Footer"));
 const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanionLive"));
@@ -21,6 +22,7 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <CheckoutJourneyTracker />
       <Header />
       <main className="flex-1">{children}</main>
       <Suspense fallback={null}>

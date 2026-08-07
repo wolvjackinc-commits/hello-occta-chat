@@ -71,7 +71,7 @@ function fastInternetReply(): string {
 
 function reputationReply(): string {
   return withOptions(
-    `I'm OCCTA's own assistant, so I shouldn't pretend to be an independent reviewer and tell you we're “good” just because I work here.\n\nWhat I *can* do is help you judge us on things that are checkable: the service available at your address, the exact price and term before ordering, our published policies, support routes, and any independent reviews you choose to look at. If you tell me what matters most — price, speed, flexibility or support — I'll show you the relevant OCCTA information.`,
+    `I'm OCCTA's own assistant, so I shouldn't pretend to be an independent reviewer and tell you we're “good” just because I work here.\n\nWhat I *can* do is help you judge us on things that are checkable: the service available at your address, the exact price and term before ordering, our published policies, support routes, and independent sources when relevant. If you tell me what matters most — price, speed, flexibility or support — I'll show you the relevant information.`,
     ["Compare broadband options", "Check availability", "Read OCCTA policies"],
   );
 }
@@ -92,7 +92,7 @@ function supportHoursReply(): string {
 
 function callChargesReply(): string {
   return withOptions(
-    `Call setup fees and per-minute charges are commercial tariff details, so I won't make up a “no setup fee” answer. The correct figure depends on the actual Digital Home Phone/call package and the current tariff.\n\nI can help you find the relevant published tariff or explain how Digital Home Phone works, but the final charge must come from the current OCCTA price information for that service.`,
+    `Call setup fees and per-minute charges are commercial tariff details, so I won't make up a “no setup fee” answer. The correct figure depends on the actual Digital Home Phone/call package and current tariff.\n\nI can help you find the relevant published tariff or explain how Digital Home Phone works, but the final charge must come from current OCCTA price information for that service.`,
     ["Digital Voice information", "Open pricing", "Search Help Centre"],
   );
 }
@@ -113,24 +113,40 @@ function loginHelpReply(): string {
 
 function refundPolicyReply(): string {
   return withOptions(
-    `For a **refund or final-bill policy** question, the safest route is the published cancellation/final-bill guidance rather than a made-up timescale.\n\n[**Cancellation information →**](${BASE_URL}/cancellation)\n[**Help Centre →**](${BASE_URL}/help)\n\nIf you're asking about a refund that OCCTA already owes *you*, that becomes an account-specific query and I should check the signed-in account/ticket history instead of giving generic policy text.`,
+    `For a **refund or final-bill policy** question, the safest route is the published cancellation/final-bill guidance rather than a made-up timescale.\n\n[**Cancellation information →**](${BASE_URL}/cancellation)\n[**Help Centre →**](${BASE_URL}/help)\n\nIf you're asking about a refund that OCCTA already owes *you*, that is account-specific and should be checked against the signed-in account/support history rather than generic policy text.`,
     ["I am waiting for my refund", "Open cancellation information", "Open Help Centre"],
   );
 }
 
+function verificationLoopReply(): string {
+  return withOptions(
+    `I can see the previous verification attempt didn't work. **I'm not going to keep asking you for the same date of birth.**\n\nUse secure account sign-in instead. If you cannot sign in, enter the **email registered on the OCCTA account** and I can request a secure account-access link without exposing whether that email exists in our records.`,
+    ["I'll enter my registered email", "Open sign in"],
+  );
+}
+
 /**
- * High-level, human-style resolver for public support conversations.
- * It deliberately refuses to answer personal account questions locally; those
- * must go to the secure server-side companion.
+ * High-level, human-style resolver for public/support conversations.
+ * Personal account data still goes to the secure server-side companion.
  */
 export function resolveIntelligentPublicReply(messages: CompanionMessage[]): string | null {
-  if (detectAccountIntent(messages)) return null;
-
   const latest = latestUser(messages);
   if (!latest) return null;
   const value = normalise(latest);
   const context = recentText(messages);
   const priorAssistant = normalise(previousAssistant(messages));
+
+  // Correct a failed verification loop before the older account intent in the
+  // conversation can drag the customer back into the same impossible prompt.
+  if (/couldn't verify those details|could not verify those details/.test(priorAssistant)
+    && (/try verification again|details.*correct|date of birth|dob|^\d{1,2}[/.\-]\d{1,2}[/.\-](?:19|20)\d{2}$/.test(value))) {
+    return verificationLoopReply();
+  }
+
+  // If the customer clarifies there is no order yet, answer the general
+  // pre-order timescale question instead of carrying forward an old account intent.
+  if (/\b(?:not placed|haven't placed|have not placed|no order|before i order|if i order)\b/.test(value)
+    && /\border\b/.test(`${value}\n${context}`)) return orderTimescaleReply();
 
   if (/^(?:hi|hello|hey|hiya|good morning|good afternoon|good evening|hello there)[!. ]*$/.test(value)) {
     return withOptions(
@@ -174,23 +190,21 @@ export function resolveIntelligentPublicReply(messages: CompanionMessage[]): str
 
   if (/\b(?:refund|money back)\b/.test(value) && /\b(?:policy|rules?|terms?|how does|cancellation)\b/.test(value)) return refundPolicyReply();
 
-  // Short answers should continue the topic the assistant just asked about.
+  // Account-specific requests are deliberately not answered from public text.
+  if (detectAccountIntent(messages)) return null;
+
+  // Short answers continue the question Ollie just asked.
   if (/^(?:yes|yeah|yep|no|nope|it is|it's on|its on|yes it on|still|same|not yet|i did|done)$/.test(value)) {
-    if (/light|router|ont|internet|wan|los|pon|power/.test(priorAssistant)) {
-      return resolvePublicConversationReply(messages);
-    }
-    if (/postcode|address|availability/.test(priorAssistant)) {
-      return resolvePublicConversationReply(messages);
-    }
+    if (/light|router|ont|internet|wan|los|pon|power/.test(priorAssistant)) return resolvePublicConversationReply(messages);
+    if (/postcode|address|availability/.test(priorAssistant)) return resolvePublicConversationReply(messages);
   }
 
-  // Reuse the detailed stateful fault/switching/speed playbooks already tested.
   return resolvePublicConversationReply(messages);
 }
 
 export function verificationFailureFallback(): string {
   return withOptions(
-    `I couldn't complete date-of-birth verification. **I won't keep asking you to repeat the same details.** Some older OCCTA customer profiles do not have a date of birth stored, which means that method cannot work for that account.\n\nFor private billing/account information, enter the **email address registered on the OCCTA account** and I can request a secure sign-in/reset link. The response is deliberately generic so chat cannot be used to discover whether an email has an account.`,
+    `I couldn't complete date-of-birth verification. **I won't keep asking you to repeat the same details.** Some older OCCTA customer profiles do not have a date of birth stored, which means that verification method cannot work for those records.\n\nFor private billing/account information, enter the **email address registered on the OCCTA account** and I can request a secure sign-in/reset link. The response is deliberately generic so chat cannot be used to discover whether an email has an account.`,
     ["I'll enter my registered email", "Open sign in"],
   );
 }

@@ -1092,10 +1092,10 @@ const isAdmin = async (supabase: any, userId: string): Promise<boolean> => {
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
-    .eq("role", "admin")
-    .maybeSingle();
+    .in("role", ["admin", "super_admin"])
+    .limit(1);
   
-  return !error && data !== null;
+  return !error && Array.isArray(data) && data.length > 0;
 };
 
 // Helper to validate email format

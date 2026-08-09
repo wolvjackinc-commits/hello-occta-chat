@@ -60,7 +60,7 @@ export const SPEED_BUCKET_META: Record<SpeedBucket, {
   },
   superfast: {
     title: 'Superfast Fibre',
-    speedRange: '150–330Mbps options',
+    speedRange: 'Up to 330Mbps',
     tagline: 'Great for streaming, home working and busy households.',
     badges: [
       'Price Lock or Flex 30',
@@ -72,7 +72,7 @@ export const SPEED_BUCKET_META: Record<SpeedBucket, {
   },
   ultrafast: {
     title: 'Ultrafast Fibre',
-    speedRange: '500Mbps–1Gbps where available',
+    speedRange: 'Up to 550Mbps',
     tagline: 'Built for busy homes and businesses that need headroom.',
     badges: [
       'Bring your own router or add premium WiFi',
@@ -84,7 +84,7 @@ export const SPEED_BUCKET_META: Record<SpeedBucket, {
   },
   gigabit: {
     title: 'Gigabit Fibre',
-    speedRange: 'Up to 1Gbps where available',
+    speedRange: 'Up to 1000Mbps',
     tagline: 'Top-tier full fibre for large households and small businesses.',
     badges: [
       'Gigabit speeds where available',

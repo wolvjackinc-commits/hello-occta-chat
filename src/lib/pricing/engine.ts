@@ -8,9 +8,9 @@ import { FAIR_PRICING_DEFAULTS } from './fairPricing';
 // The server-side resolver remains authoritative for the final price.
 const FAIR_DISPLAY: Record<string, { lock24: number; flex30: number; speedLabel: string }> = {
   essential: { lock24: FAIR_PRICING_DEFAULTS.headline.essential.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.essential.flex30, speedLabel: 'Up to 80Mbps' },
-  superfast: { lock24: FAIR_PRICING_DEFAULTS.headline.superfast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.superfast.flex30, speedLabel: '150–330Mbps options' },
-  ultrafast: { lock24: FAIR_PRICING_DEFAULTS.headline.ultrafast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.ultrafast.flex30, speedLabel: '500Mbps–1Gbps where available' },
-  gigabit:   { lock24: FAIR_PRICING_DEFAULTS.headline.gigabit.lock24,   flex30: FAIR_PRICING_DEFAULTS.headline.gigabit.flex30,   speedLabel: 'Up to 1Gbps where available' },
+  superfast: { lock24: FAIR_PRICING_DEFAULTS.headline.superfast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.superfast.flex30, speedLabel: 'Up to 330Mbps' },
+  ultrafast: { lock24: FAIR_PRICING_DEFAULTS.headline.ultrafast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.ultrafast.flex30, speedLabel: 'Up to 550Mbps' },
+  gigabit:   { lock24: FAIR_PRICING_DEFAULTS.headline.gigabit.lock24,   flex30: FAIR_PRICING_DEFAULTS.headline.gigabit.flex30,   speedLabel: 'Up to 1000Mbps' },
 };
 
 // ── Resolve cheapest eligible product for a broadband card ──

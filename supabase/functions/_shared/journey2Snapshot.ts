@@ -104,10 +104,10 @@ export const SNAPSHOT_VERSION = "journey2-snapshot-v2";
 
 /** Estimated line speeds per speed bucket — estimates, never guarantees. */
 export const SNAPSHOT_SPEED_ESTIMATES: Record<string, { download: number; upload: number }> = {
-  essential: { download: 74, upload: 20 },
-  superfast: { download: 150, upload: 30 },
-  ultrafast: { download: 500, upload: 75 },
-  gigabit: { download: 900, upload: 110 },
+  essential: { download: 80, upload: 20 },
+  superfast: { download: 330, upload: 50 },
+  ultrafast: { download: 550, upload: 75 },
+  gigabit: { download: 1000, upload: 115 },
 };
 
 /**

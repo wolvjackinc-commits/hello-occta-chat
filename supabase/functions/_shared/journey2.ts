@@ -33,10 +33,10 @@ export const JOURNEY2_SETUP: SetupChoice = "remote";
  * the Contract Summary and Contract Information.
  */
 export const SPEED_ESTIMATES: Record<SpeedBucket, { download: number; upload: number }> = {
-  essential: { download: 74, upload: 20 },
-  superfast: { download: 150, upload: 30 },
-  ultrafast: { download: 500, upload: 75 },
-  gigabit: { download: 900, upload: 110 },
+  essential: { download: 80, upload: 20 },
+  superfast: { download: 330, upload: 50 },
+  ultrafast: { download: 550, upload: 75 },
+  gigabit: { download: 1000, upload: 115 },
 };
 export function speedEstimate(b: SpeedBucket) {
   return SPEED_ESTIMATES[b] ?? { download: 0, upload: 0 };

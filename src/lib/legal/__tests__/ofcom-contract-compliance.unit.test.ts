@@ -184,3 +184,23 @@ describe("OTP path unchanged", () => {
     expect(fs.existsSync(path.join(root, "supabase/functions/verify-contract-otp/index.ts"))).toBe(true);
   });
 });
+
+describe("admin CustomerDetail treats information updates as records-only", () => {
+  const src = () => read("src/pages/admin/CustomerDetail.tsx");
+  it("selects is_information_update and supersedes metadata", () => {
+    expect(src()).toMatch(/is_information_update, supersedes_id/);
+  });
+  it("stage logic uses the latest ordinary contractual Contract Summary", () => {
+    const s = src();
+    expect(s).toMatch(/find\(\(c: any\) => c\?\.is_information_update !== true\)/);
+    expect(s).toMatch(/const contractualCs = cs && cs\.is_information_update !== true \? cs : null/);
+    expect(s).toMatch(/!contractualCs\s*\n?\s*\?\s*"Quote issued"/);
+    expect(s).toMatch(/contractualCs\.status !== "accepted"/);
+  });
+  it("unified documents label info updates as Current Contract Information", () => {
+    expect(src()).toMatch(/is_information_update === true \? "Current Contract Information" : "Contract Summary"/);
+  });
+  it("info update rows never render a pending Accepted date", () => {
+    expect(src()).toMatch(/isInfoUpdate \? "N\/A — information update"/);
+  });
+});

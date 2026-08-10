@@ -27,6 +27,20 @@ Deno.serve(async (req) => {
 
   const ua = req.headers.get("user-agent")?.slice(0, 400) ?? "";
 
+  // Hard block: information-refresh documents are records-only and can never be
+  // accepted or signed. Mirrors the DB trigger trg_cs_info_update_never_accepted.
+  {
+    const { data: guard } = await supabase.from("contract_summaries")
+      .select("id, is_information_update")
+      .eq("id", parsed.data.contract_summary_id).maybeSingle();
+    if (guard?.is_information_update === true) {
+      return jsonResponse({
+        error: "information_update_not_acceptable",
+        message: "This document is a current-information refresh for your records only. It cannot be signed and does not require acceptance.",
+      }, 409);
+    }
+  }
+
   // Call the SECURITY DEFINER RPC under the user's JWT so auth.uid() == userId
   const userClient = (await import("https://esm.sh/@supabase/supabase-js@2")).createClient(
     Deno.env.get("SUPABASE_URL")!,

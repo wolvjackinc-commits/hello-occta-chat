@@ -150,7 +150,7 @@ const CustomerDetailContent = ({
 
       const { data: contractSummaries } = await supabase
         .from("contract_summaries")
-        .select("id, cs_number, status, version, quote_id, plan_name, monthly_price_incl_vat, emailed_at, accepted_at, pdf_storage_key, pdf_sha256, created_at, updated_at")
+        .select("id, cs_number, status, version, quote_id, plan_name, monthly_price_incl_vat, emailed_at, accepted_at, pdf_storage_key, pdf_sha256, is_information_update, supersedes_id, created_at, updated_at")
         .eq("customer_id", userId)
         .order("created_at", { ascending: false });
 
@@ -1169,7 +1169,8 @@ function DisabledAutomationButton({ label }: { label: string }) {
 function AdminCsRow({ cs }: { cs: any }) {
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
-  const accepted = cs.status === "accepted";
+  const isInfoUpdate = cs.is_information_update === true;
+  const accepted = !isInfoUpdate && cs.status === "accepted";
 
   const download = async () => {
     setDownloading(true);
@@ -1198,13 +1199,24 @@ function AdminCsRow({ cs }: { cs: any }) {
         <div>
           <div className="flex items-center gap-2">
             <span className="font-display text-sm">{cs.cs_number}</span>
-            <Badge variant="outline" className="border-2 border-foreground capitalize">v{cs.version} · {cs.status}</Badge>
+            {isInfoUpdate ? (
+              <Badge variant="outline" className="border-2 border-foreground">v{cs.version} · information update</Badge>
+            ) : (
+              <Badge variant="outline" className="border-2 border-foreground capitalize">v{cs.version} · {cs.status}</Badge>
+            )}
             {accepted && (
               <Badge className="border-2 border-primary bg-primary/10 text-primary gap-1">
                 <Lock className="h-3 w-3" /> Locked
               </Badge>
             )}
           </div>
+          {isInfoUpdate && (
+            <div className="text-xs mt-1 border-2 border-foreground bg-muted/40 px-2 py-1 max-w-[560px]">
+              <span className="font-semibold">Current Contract Information — information update only / no reacceptance required.</span>{" "}
+              Records-only refresh. Not pending signature. The customer's original accepted Contract Summary remains the
+              binding agreement and stays on file unchanged.
+            </div>
+          )}
           <div className="text-sm text-muted-foreground mt-1">{cs.plan_name} — £{Number(cs.monthly_price_incl_vat ?? 0).toFixed(2)}/mo (incl VAT)</div>
         </div>
         <Button variant="outline" size="sm" className="border-2 border-foreground" onClick={download} disabled={downloading}>
@@ -1221,7 +1233,7 @@ function AdminCsRow({ cs }: { cs: any }) {
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
           <span className="text-muted-foreground">Accepted:</span>
-          <span className="font-medium">{fmt(cs.accepted_at)}</span>
+          <span className="font-medium">{isInfoUpdate ? "N/A — information update" : fmt(cs.accepted_at)}</span>
         </div>
         <div className="sm:col-span-2 flex items-start gap-2 break-all">
           <span className="text-muted-foreground">SHA-256:</span>

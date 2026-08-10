@@ -69,7 +69,7 @@ export function ContractSummariesTab({ userId }: { userId: string }) {
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="font-display uppercase">{r.plan_name}</h4>
               {r.is_information_update ? (
-                <Badge className="bg-secondary text-secondary-foreground border-2 border-foreground"><Info className="w-3 h-3 mr-1" /> Information update</Badge>
+                <Badge className="bg-secondary text-secondary-foreground border-2 border-foreground"><Info className="w-3 h-3 mr-1" /> Current Contract Information</Badge>
               ) : (
                 <Badge className="border-2 border-foreground capitalize">{r.status}</Badge>
               )}
@@ -78,7 +78,13 @@ export function ContractSummariesTab({ userId }: { userId: string }) {
               )}
               <span className="text-xs text-muted-foreground">v{r.version}</span>
             </div>
-            {r.is_information_update && <p className="text-xs mt-1"><strong>No action required.</strong> Your original accepted agreement remains on file.</p>}
+            {r.is_information_update && (
+              <p className="text-xs mt-1">
+                <strong>Information update only — no reacceptance required.</strong>{" "}
+                Your original accepted agreement remains on file and is unchanged. This document does not
+                change your price, service, billing, minimum term, notice period or cancellation rights.
+              </p>
+            )}
             <p className="text-xs text-muted-foreground mt-1">
               {r.cs_number ? `${r.cs_number} · ` : ""}{r.service_address}
               {r.issued_at && ` · Issued ${format(new Date(r.issued_at), "dd MMM yyyy")}`}

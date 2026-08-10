@@ -1,5 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -69,12 +67,11 @@ const BODY_HTML = `<p class="text">Thank you for coming back to us, and for taki
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
-  const { data, error } = await supabase.functions.invoke("send-email", {
-    body: {
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, apikey: key },
+    body: JSON.stringify({
       type: "custom_admin",
       to: "sidhutt78@outlook.com",
       userId: "74809d45-1e85-4fc2-b4a1-14340c60d2f3",
@@ -87,8 +84,11 @@ Deno.serve(async (req) => {
         title: "Your Account & Payment Details",
         html_body: BODY_HTML,
       },
-    },
+    }),
   });
+  const text = await res.text();
+  const error = res.ok ? null : { message: `send-email ${res.status}: ${text}` };
+  const data = res.ok ? text : null;
   return new Response(JSON.stringify({ ok: !error, data, error: error ? String(error.message ?? error) : null }), {
     status: error ? 502 : 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

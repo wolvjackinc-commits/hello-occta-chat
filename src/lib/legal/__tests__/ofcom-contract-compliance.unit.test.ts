@@ -138,7 +138,9 @@ describe("legal text cleanup (new documents only)", () => {
     ["transparency report claim", /annual transparency report/i],
   ];
   for (const file of [TERMS_APP, TERMS_EDGE]) {
-    const src = read(file);
+    // Only assert on the customer-facing sections, not the file's own header comments.
+    const whole = read(file);
+    const src = whole.slice(whole.indexOf("FULL_CONTRACT_SECTIONS"));
     it.each(banned)(`${file} no longer promises %s`, (_label, re) => {
       expect(re.test(src)).toBe(false);
     });
@@ -173,9 +175,11 @@ describe("no supplier / internal cost leakage in customer documents", () => {
 
 describe("OTP path unchanged", () => {
   it("contract signing still enforces server-side SMS OTP", () => {
-    const step = read("src/pages/order/steps/AgreementStep.tsx");
-    expect(step).toMatch(/send-contract-otp/);
-    expect(step).toMatch(/verify-contract-otp/);
+    const step = read("src/pages/quote/journey/AgreementStep.tsx");
+    expect(step).toMatch(/ContractSmsVerification/);
+    const otpUi = read("src/components/contract/ContractSmsVerification.tsx");
+    expect(otpUi).toMatch(/send-contract-otp/);
+    expect(otpUi).toMatch(/verify-contract-otp/);
     expect(fs.existsSync(path.join(root, "supabase/functions/send-contract-otp/index.ts"))).toBe(true);
     expect(fs.existsSync(path.join(root, "supabase/functions/verify-contract-otp/index.ts"))).toBe(true);
   });

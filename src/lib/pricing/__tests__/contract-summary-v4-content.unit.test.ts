@@ -37,7 +37,7 @@ describe("Contract Summary V4 content gates", () => {
   it("ships the V4 supplier source and current safe future headline values", () => {
     const migration = read("supabase/migrations/20260810144000_contract_summary_v4_ratecard.sql");
     expect(migration).toContain("giacom_broadband_ratecard_v4.0");
-    expect(migration).toContain("'95.00'").or.toContain("95.00");
+    expect(migration).toContain("95.00");
     expect(migration).toContain("43.99");
     expect(migration).toContain("58.99");
   });

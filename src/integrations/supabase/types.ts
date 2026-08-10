@@ -3769,6 +3769,7 @@ export type Database = {
           enc_key_id: string | null
           enc_nonce: string | null
           id: string
+          intake_request_id: string | null
           is_test: boolean
           mandate_reference: string | null
           masked_account_last4: string | null
@@ -3800,6 +3801,7 @@ export type Database = {
           enc_key_id?: string | null
           enc_nonce?: string | null
           id?: string
+          intake_request_id?: string | null
           is_test?: boolean
           mandate_reference?: string | null
           masked_account_last4?: string | null
@@ -3831,6 +3833,7 @@ export type Database = {
           enc_key_id?: string | null
           enc_nonce?: string | null
           id?: string
+          intake_request_id?: string | null
           is_test?: boolean
           mandate_reference?: string | null
           masked_account_last4?: string | null
@@ -3848,6 +3851,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "dd_mandates_intake_request_id_fkey"
+            columns: ["intake_request_id"]
+            isOneToOne: false
+            referencedRelation: "dd_intake_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "dd_mandates_payment_request_id_fkey"
             columns: ["payment_request_id"]
@@ -12729,6 +12739,10 @@ export type Database = {
       dd_normalise_status: { Args: { _status: string }; Returns: string }
       dd_status_customer_label: { Args: { _status: string }; Returns: string }
       dd_status_subject: { Args: { _status: string }; Returns: string }
+      dd_sync_mandate_from_intake: {
+        Args: { _intake_id: string }
+        Returns: string
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

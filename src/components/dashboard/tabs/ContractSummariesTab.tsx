@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { FileCheck2, Download, Lock, Eye, Loader2 } from "lucide-react";
+import { FileCheck2, Download, Lock, Eye, Loader2, Info } from "lucide-react";
 import { EmptyState } from "./EmptyState";
 import { logClientEvent } from "@/lib/activityLog";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ type CSRow = {
   issued_at: string | null;
   accepted_at: string | null;
   pdf_storage_key: string | null;
+  is_information_update: boolean;
 };
 
 export function ContractSummariesTab({ userId }: { userId: string }) {
@@ -32,9 +33,9 @@ export function ContractSummariesTab({ userId }: { userId: string }) {
   useEffect(() => {
     logClientEvent({ event_type: "tab_view", title: "dashboard:contract_summaries", source_module: "dashboard" });
     (async () => {
-      const { data } = await supabase
-        .from("customer_contract_summaries" as any)
-        .select("id,cs_number,plan_name,service_address,status,version,monthly_price_incl_vat,contract_length,issued_at,accepted_at,pdf_storage_key")
+      const { data } = await (supabase as any)
+        .from("customer_contract_summaries")
+        .select("id,cs_number,plan_name,service_address,status,version,monthly_price_incl_vat,contract_length,issued_at,accepted_at,pdf_storage_key,is_information_update")
         .eq("customer_id", userId)
         .order("issued_at", { ascending: false });
       setRows(((data as unknown) as CSRow[]) || []);
@@ -45,9 +46,7 @@ export function ContractSummariesTab({ userId }: { userId: string }) {
   const downloadPdf = async (csId: string) => {
     setBusy(csId);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-contract-summary-pdf", {
-        body: { contract_summary_id: csId },
-      });
+      const { data, error } = await supabase.functions.invoke("generate-contract-summary-pdf", { body: { contract_summary_id: csId } });
       const err = (data as any)?.error || error?.message;
       if (err) throw new Error(err);
       const url = (data as any)?.signed_url;
@@ -56,15 +55,11 @@ export function ContractSummariesTab({ userId }: { userId: string }) {
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (e) {
       toast({ title: "Couldn't open PDF", description: String((e as Error).message), variant: "destructive" });
-    } finally {
-      setBusy(null);
-    }
+    } finally { setBusy(null); }
   };
 
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
-  if (rows.length === 0) {
-    return <EmptyState icon={<FileCheck2 className="w-8 h-8" />} title="Contract Summary pending" message="Your Contract Summary will appear here once we've finalised your quote. Nothing is committed until you review and accept it." />;
-  }
+  if (rows.length === 0) return <EmptyState icon={<FileCheck2 className="w-8 h-8" />} title="Contract Summary pending" message="Your Contract Summary will appear here once we've finalised your quote. Nothing is committed until you review and accept it." />;
 
   return (
     <div className="space-y-3">
@@ -73,24 +68,28 @@ export function ContractSummariesTab({ userId }: { userId: string }) {
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="font-display uppercase">{r.plan_name}</h4>
-              <Badge className="border-2 border-foreground capitalize">{r.status}</Badge>
-              {r.status === "accepted" && (
+              {r.is_information_update ? (
+                <Badge className="bg-secondary text-secondary-foreground border-2 border-foreground"><Info className="w-3 h-3 mr-1" /> Information update</Badge>
+              ) : (
+                <Badge className="border-2 border-foreground capitalize">{r.status}</Badge>
+              )}
+              {!r.is_information_update && r.status === "accepted" && (
                 <Badge className="bg-primary border-2 border-foreground"><Lock className="w-3 h-3 mr-1" /> Locked</Badge>
               )}
               <span className="text-xs text-muted-foreground">v{r.version}</span>
             </div>
+            {r.is_information_update && <p className="text-xs mt-1"><strong>No action required.</strong> Your original accepted agreement remains on file.</p>}
             <p className="text-xs text-muted-foreground mt-1">
-              {r.cs_number ? `${r.cs_number} · ` : ""}
-              {r.service_address}
+              {r.cs_number ? `${r.cs_number} · ` : ""}{r.service_address}
               {r.issued_at && ` · Issued ${format(new Date(r.issued_at), "dd MMM yyyy")}`}
-              {r.accepted_at && ` · Accepted ${format(new Date(r.accepted_at), "dd MMM yyyy")}`}
+              {!r.is_information_update && r.accepted_at && ` · Accepted ${format(new Date(r.accepted_at), "dd MMM yyyy")}`}
               {r.contract_length && ` · ${r.contract_length}`}
             </p>
           </div>
           <div className="text-right flex items-center gap-2 flex-wrap justify-end">
             <p className="font-display text-lg">£{Number(r.monthly_price_incl_vat || 0).toFixed(2)}<span className="text-xs">/mo</span></p>
             <Link to={`/dashboard/contract/${r.id}`}>
-              <Button size="sm" variant="outline" className="border-2 border-foreground"><Eye className="w-4 h-4 mr-1" /> Review</Button>
+              <Button size="sm" variant="outline" className="border-2 border-foreground"><Eye className="w-4 h-4 mr-1" /> View</Button>
             </Link>
             <Button size="sm" variant="outline" className="border-2 border-foreground" disabled={busy === r.id || !r.pdf_storage_key} onClick={() => downloadPdf(r.id)}>
               {busy === r.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />} PDF

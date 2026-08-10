@@ -193,6 +193,16 @@ Deno.serve(async (req) => {
       }, 400);
     }
 
+    // Crawler traffic gets the page, never a session row.
+    if (isCrawler(ua)) {
+      return jsonResponse({
+        ok: true,
+        journey_version: null,
+        crawler: true,
+        message: "Order OCCTA broadband online in one go — exact prices including VAT and clear contract terms.",
+      });
+    }
+
     const anonHash = await hashAnon(body.anonymous_session_id);
 
     // Resume the visitor's existing live session before assigning anything, so
@@ -324,8 +334,18 @@ Deno.serve(async (req) => {
   if (body.step === "address") {
     const p = AddressPayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);
-    patch.postcode = p.data.postcode.toUpperCase();
-    patch.service_address = p.data;
+    const { contact_email, contact_first_name, ...address } = p.data;
+    patch.postcode = address.postcode.toUpperCase();
+    patch.service_address = address;
+    // Merge, never replace — the details step owns the full contact record.
+    if (contact_email || contact_first_name) {
+      const existing = (session.customer_details ?? {}) as Record<string, unknown>;
+      patch.customer_details = {
+        ...existing,
+        ...(contact_email ? { email: contact_email } : {}),
+        ...(contact_first_name && !existing.full_name ? { full_name: contact_first_name } : {}),
+      };
+    }
   } else if (body.step === "plan") {
     const p = PlanPayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);

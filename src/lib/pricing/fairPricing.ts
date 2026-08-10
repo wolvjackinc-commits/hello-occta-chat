@@ -22,15 +22,15 @@ export interface AddonChoice {
 export const FAIR_PRICING_DEFAULTS = {
   headline: {
     essential: { lock24: 34.99, flex30: 37.99 },
-    superfast: { lock24: 39.99, flex30: 42.99 },
-    ultrafast: { lock24: 49.99, flex30: 52.99 },
-    gigabit:   { lock24: 52.99, flex30: 54.99 },
+    superfast: { lock24: 43.99, flex30: 45.99 },
+    ultrafast: { lock24: 51.99, flex30: 52.99 },
+    gigabit:   { lock24: 57.99, flex30: 58.99 },
   },
   router: {
-    standardOneOff: 79.99, standardMonthly: 4.99,
+    standardOneOff: 94.99, standardMonthly: 4.99,
     premiumOneOff: 129.99, premiumMonthly: 7.99,
   },
-  setup: { remote: 0, standard: 49.99, engineer: 99.99 },
+  setup: { remote: 0, standard: 49.99, engineer: 134.99 },
   addons: {
     priorityMonthly: 6.99,
     staticIpMonthly: 5.00,

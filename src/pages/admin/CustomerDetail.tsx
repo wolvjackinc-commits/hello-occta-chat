@@ -863,8 +863,10 @@ const CustomerDetailContent = ({
 
 function Customer360Header({ profile, cs, pr, quotes, altPostcode, altDob }: { profile: any; cs: any; pr: any; quotes: any[]; altPostcode?: string | null; altDob?: string | null }) {
   const warnings: string[] = [];
-  if (!cs) warnings.push("No Contract Summary issued");
-  else if (cs.status !== "accepted") warnings.push("Contract Summary not yet accepted");
+  // Information-update refreshes are records-only and must never drive stage/warnings.
+  const contractualCs = cs && cs.is_information_update !== true ? cs : null;
+  if (!contractualCs) warnings.push("No Contract Summary issued");
+  else if (contractualCs.status !== "accepted") warnings.push("Contract Summary not yet accepted");
   if (pr && pr.status !== "paid" && pr.status !== "completed") {
     const ageDays = (Date.now() - new Date(pr.created_at).getTime()) / 86400000;
     if (ageDays > 7) warnings.push(`Payment request ${pr.payment_request_number} unpaid > 7 days`);
@@ -874,9 +876,9 @@ function Customer360Header({ profile, cs, pr, quotes, altPostcode, altDob }: { p
 
   const stage = !quotes.length
     ? "Lead"
-    : !cs
+    : !contractualCs
       ? "Quote issued"
-      : cs.status !== "accepted"
+      : contractualCs.status !== "accepted"
         ? "Contract Summary pending"
         : !pr
           ? "Awaiting payment request"

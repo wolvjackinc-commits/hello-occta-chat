@@ -2,7 +2,6 @@
 // Server re-resolves price (never trusts client numbers) and either:
 //   - Creates a quote_request + customer-ready quote (token returned), or
 //   - Creates a quote_request only (quote-only fallback) for manual quoting.
-//
 // NEVER returns supplier cost, supplier product IDs, margin numbers, internal notes.
 
 import {
@@ -18,7 +17,6 @@ import {
 } from "../_shared/buildPlanResolver.ts";
 
 const Schema = z.object({
-  // selections
   speed_bucket: z.enum(["essential","superfast","ultrafast","gigabit"]),
   plan_term: z.enum(["price_lock_24","flex_30"]),
   router_option: z.enum(["own","standard","premium","business"]),
@@ -28,16 +26,13 @@ const Schema = z.object({
   customer_type: z.enum(["residential","business"]).default("residential"),
   max_download: z.number().int().min(0).max(100000).optional(),
   primary_technology: z.string().max(40).optional(),
-  // Admin-only test fixture. Server verifies role.
   test_availability: z.object({
     max_download: z.number().int().min(0).max(100000),
     primary_technology: z.string().max(40).optional(),
   }).optional(),
   test_mode: z.boolean().optional(),
-  // Fallback mode (availability API unavailable). Forces manual quote_request only.
   force_quote_only: z.boolean().optional(),
   availability_mode: z.enum(["live","fallback"]).optional(),
-  // contact
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email().max(180),
   phone: z.string().trim().min(7).max(30),
@@ -49,10 +44,8 @@ const Schema = z.object({
   county: z.string().trim().max(80).optional().nullable(),
   preferred_contact_method: z.enum(["email","phone","whatsapp"]).default("email"),
   marketing_consent: z.boolean().default(false),
-  // Switcher context (optional)
   in_contract: z.enum(["yes","no","unsure"]).optional().nullable(),
   current_provider: z.string().trim().max(80).optional().nullable(),
-  // Attribution
   gclid: z.string().trim().max(200).optional().nullable(),
   utm_source: z.string().trim().max(200).optional().nullable(),
   utm_campaign: z.string().trim().max(200).optional().nullable(),
@@ -77,13 +70,9 @@ Deno.serve(async (req) => {
   const i = parsed.data;
 
   const ip = getRequestIp(req);
-  if (!(await checkRateLimit(`${ip ?? "noip"}:${i.email}`, "submit_build_plan", 5, 60))) {
-    return jsonResponse({ error: "rate_limited" }, 429);
-  }
+  if (!(await checkRateLimit(`${ip ?? "noip"}:${i.email}`, "submit_build_plan", 5, 60))) return jsonResponse({ error: "rate_limited" }, 429);
 
   const supabase = getServiceClient();
-
-  // Link to logged-in user if present
   let customer_id: string | null = null;
   let isAdmin = false;
   const authHeader = req.headers.get("Authorization");
@@ -97,13 +86,9 @@ Deno.serve(async (req) => {
   }
   const inTestMode = !!(i.test_mode && isAdmin);
   const isFallback = !!(i.force_quote_only || i.availability_mode === "fallback");
-  // Honour test_availability override only for admins
-  const effectiveMaxDownload = (isAdmin && i.test_availability?.max_download != null)
-    ? i.test_availability.max_download : i.max_download;
-  const effectivePrimaryTech = (isAdmin && i.test_availability?.primary_technology)
-    ? i.test_availability.primary_technology : i.primary_technology;
+  const effectiveMaxDownload = (isAdmin && i.test_availability?.max_download != null) ? i.test_availability.max_download : i.max_download;
+  const effectivePrimaryTech = (isAdmin && i.test_availability?.primary_technology) ? i.test_availability.primary_technology : i.primary_technology;
 
-  // ── Always create a quote_request ──
   const { data: qr, error: qrErr } = await supabase.from("quote_requests").insert({
     customer_id,
     full_name: i.full_name,
@@ -134,57 +119,37 @@ Deno.serve(async (req) => {
   }).select("id, reference").single();
   if (qrErr || !qr) return jsonResponse({ error: "create_failed" }, 500);
 
-  // If a signed-in customer supplied their DOB, sync it to their profile so
-  // it appears everywhere (dashboard, admin views) across sessions.
   if (customer_id && i.date_of_birth) {
-    try {
-      await supabase.from("profiles")
-        .update({ date_of_birth: i.date_of_birth })
-        .eq("id", customer_id);
-    } catch (_e) { /* non-fatal */ }
+    try { await supabase.from("profiles").update({ date_of_birth: i.date_of_birth }).eq("id", customer_id); } catch (_e) { /* non-fatal */ }
   }
 
-  // ── Re-resolve server-side ──
-  const { data: settings } = await supabase
-    .from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();
+  const { data: settings } = await supabase.from("platform_settings").select("fair_pricing").eq("singleton", true).maybeSingle();
   let candidates;
-  try {
-    candidates = await loadGiacomCandidates(supabase, i.speed_bucket);
-  } catch (_e) {
-    candidates = null;
-  }
+  try { candidates = await loadGiacomCandidates(supabase, i.speed_bucket); } catch (_e) { candidates = null; }
   const resolved = isFallback
     ? { ok: true as const, quote_only: true as const, message: "Availability not confirmed online — we'll verify and send your final quote before order." }
     : candidates === null
     ? { ok: true as const, quote_only: true as const, message: "Final price needs manual confirmation for this address." }
     : resolveBuildPlanPrice({
-    speed_bucket: i.speed_bucket,
-    plan_term: i.plan_term,
-    router_option: i.router_option,
-    router_payment_type: i.router_payment_type,
-    setup_option: i.setup_option,
-    addons: i.addons as any,
-    customer_type: i.customer_type,
-    max_download: effectiveMaxDownload,
-    primary_technology: effectivePrimaryTech,
-  }, settings?.fair_pricing ?? {}, candidates);
+        speed_bucket: i.speed_bucket,
+        plan_term: i.plan_term,
+        router_option: i.router_option,
+        router_payment_type: i.router_payment_type,
+        setup_option: i.setup_option,
+        addons: i.addons as any,
+        customer_type: i.customer_type,
+        max_download: effectiveMaxDownload,
+        primary_technology: effectivePrimaryTech,
+      }, settings?.fair_pricing ?? {}, candidates);
 
   await supabase.rpc("log_event", {
     _actor_type: "public",
     _event_type: inTestMode ? "build_plan_submitted_test" : "build_plan_submitted",
     _title: `${inTestMode ? "[TEST] " : ""}Build Plan ${qr.reference}`,
-    _details: {
-      reference: qr.reference,
-      speed_bucket: i.speed_bucket,
-      plan_term: i.plan_term,
-      quote_only: resolved.quote_only,
-      email_masked: maskEmail(i.email),
-      test_mode: inTestMode,
-    },
+    _details: { reference: qr.reference, speed_bucket: i.speed_bucket, plan_term: i.plan_term, quote_only: resolved.quote_only, email_masked: maskEmail(i.email), test_mode: inTestMode },
     _source_module: "quote",
   });
 
-  // Admin notification (suppressed in test mode unless tagged)
   const adminEmail = getAdminNotificationEmail();
   if (!inTestMode) {
     const adminSend = await sendResendEmail({
@@ -214,7 +179,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // ── Quote-only path: just a request, manual quote will follow ──
   if (resolved.quote_only) {
     if (!inTestMode) {
       const customerSend = await sendResendEmail({
@@ -236,46 +200,28 @@ Deno.serve(async (req) => {
         metadata: { quote_request_id: qr.id, reference: qr.reference },
       });
     }
-    return jsonResponse({
-      ok: true,
-      mode: "quote_only",
-      test_mode: inTestMode,
-      reference: qr.reference,
-      quote_request_id: qr.id,
-      message: resolved.message,
-    });
+    return jsonResponse({ ok: true, mode: "quote_only", test_mode: inTestMode, reference: qr.reference, quote_request_id: qr.id, message: resolved.message });
   }
 
-  // ── Test mode: do NOT create a quote, no emails, no payment link ──
   if (inTestMode) {
     return jsonResponse({
-      ok: true,
-      mode: "test",
-      test_mode: true,
-      reference: qr.reference,
-      quote_request_id: qr.id,
-      preview: {
-        monthly_total_incl_vat: (resolved as any).monthly_total_incl_vat,
-        first_bill_incl_vat: (resolved as any).first_bill_incl_vat,
-        bumped: (resolved as any).bumped,
-      },
+      ok: true, mode: "test", test_mode: true, reference: qr.reference, quote_request_id: qr.id,
+      preview: { monthly_total_incl_vat: (resolved as any).monthly_total_incl_vat, first_bill_incl_vat: (resolved as any).first_bill_incl_vat, bumped: (resolved as any).bumped },
     });
   }
 
-  // ── Priced path: create customer-ready quote with re-resolved pricing ──
-  const r = resolved; // ResolvedPriced
+  const r = resolved;
   const VAT = 0.20;
   const round2 = (n: number) => Math.round(n * 100) / 100;
-
-  const monthly_net   = r.internal.monthly_broadband_ex_vat + r.internal.router_monthly_ex_vat + r.internal.addons_monthly_ex_vat;
+  const monthly_net = r.internal.monthly_broadband_ex_vat + r.internal.router_monthly_ex_vat + r.internal.addons_monthly_ex_vat;
   const monthly_gross = r.monthly_total_incl_vat;
-  const monthly_vat   = round2(monthly_gross - monthly_net);
-  const router_net    = r.internal.router_one_off_ex_vat;
-  const router_gross  = r.router.oneOff;
-  const router_vat    = round2(router_gross - router_net);
-  const setup_net     = r.internal.setup_one_off_ex_vat;
-  const setup_gross   = r.setup.oneOff;
-  const setup_vat     = round2(setup_gross - setup_net);
+  const monthly_vat = round2(monthly_gross - monthly_net);
+  const router_net = r.internal.router_one_off_ex_vat;
+  const router_gross = r.router.oneOff;
+  const router_vat = round2(router_gross - router_net);
+  const setup_net = r.internal.setup_one_off_ex_vat;
+  const setup_gross = r.setup.oneOff;
+  const setup_vat = round2(setup_gross - setup_net);
   const totalDueToday = round2(router_gross + setup_gross);
 
   const { raw: tokenRaw, hash: tokenHash } = await generateTokenPair();
@@ -284,6 +230,7 @@ Deno.serve(async (req) => {
   const { data: quote, error: qErr } = await supabase.from("quotes").insert({
     quote_request_id: qr.id,
     customer_id,
+    supplier_product_id: r.internal.supplier_product_id,
     plan_name: planNameFor(i.speed_bucket, i.plan_term),
     service_type: "broadband",
     plan_type: i.plan_term === "flex_30" ? "flex" : "contract_saver",
@@ -296,6 +243,9 @@ Deno.serve(async (req) => {
     setup_net, setup_vat_amount: setup_vat, setup_gross,
     router_net, router_vat_amount: router_vat, router_gross,
     total_due_today_gross: totalDueToday,
+    estimated_download_speed: r.estimated_download_mbps,
+    estimated_upload_speed: r.estimated_upload_mbps,
+    speed_notes: `Estimated download up to ${r.estimated_download_mbps} Mbps and upload up to ${r.estimated_upload_mbps} Mbps for the selected wholesale product. Speeds are estimates, not guarantees.`,
     expires_at: expiresAt,
     token_expires_at: expiresAt,
     public_token_hash: tokenHash,
@@ -303,17 +253,13 @@ Deno.serve(async (req) => {
     speed_bucket: i.speed_bucket,
     plan_term: i.plan_term,
     router_option: { option: r.router.option, label: r.router.label, monthly: r.router.monthly, oneOff: r.router.oneOff, payment_type: r.router.payment_type },
-    setup_option:  { option: r.setup.option,  label: r.setup.label,  oneOff: r.setup.oneOff },
+    setup_option: { option: r.setup.option, label: r.setup.label, oneOff: r.setup.oneOff },
     selected_addons: r.addons,
     customer_notes: r.bumped ? "Price adjusted based on availability at your address." : null,
   }).select("id, quote_number").single();
 
   if (qErr || !quote) {
-    // Quote create failed — fall back to quote-only path so customer is still served
-    return jsonResponse({
-      ok: true, mode: "quote_only", reference: qr.reference, quote_request_id: qr.id,
-      message: "Manual quote required.",
-    });
+    return jsonResponse({ ok: true, mode: "quote_only", reference: qr.reference, quote_request_id: qr.id, message: "Manual quote required." });
   }
 
   await supabase.from("quote_requests").update({ status: "quoted" }).eq("id", qr.id);
@@ -324,7 +270,6 @@ Deno.serve(async (req) => {
     actor_type: "public",
   });
 
-  // Customer email with quote link
   const quoteUrl = `https://www.occta.co.uk/quote/${encodeURIComponent(tokenRaw)}`;
   const quoteSend = await sendResendEmail({
     to: i.email,

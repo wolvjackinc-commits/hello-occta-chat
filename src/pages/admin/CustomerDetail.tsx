@@ -428,7 +428,7 @@ const CustomerDetailContent = ({
           <div className="space-y-4">
             <Customer360Header
               profile={overview}
-              cs={(data?.contractSummaries ?? [])[0] ?? null}
+              cs={(data?.contractSummaries ?? []).find((c: any) => c?.is_information_update !== true) ?? null}
               pr={(data?.paymentRequests ?? [])[0] ?? null}
               quotes={data?.quotes ?? []}
               altPostcode={altPostcode}

@@ -4,7 +4,12 @@
 // Mirror this file at: supabase/functions/_shared/fullContractTerms.ts
 // If you change one, change the other. Bump FULL_CONTRACT_TERMS_VERSION.
 
-export const FULL_CONTRACT_TERMS_VERSION = "2026-06-a";
+// 2026-08-a: removed unsupported generic commitments (named ADR provider,
+// voluntary speeds-code membership, compensation-scheme thresholds, blanket
+// IPv4 / router-ownership / warranty promises, fixed late-fee and suspension
+// timings, 24/7 support claims, exact liability cap). Applies to NEW document
+// generation only — historic accepted PDFs and hashes are never regenerated.
+export const FULL_CONTRACT_TERMS_VERSION = "2026-08-a";
 
 export type ContractSection = {
   heading: string;
@@ -26,15 +31,15 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
     paragraphs: [
       "We will provide you with the service(s) described in the \"Plan\" and \"Speed Estimate\" sections above, delivered over the underlying access network identified during your address check (typically Openreach FTTC, SOGEA or FTTP, or in some cases CityFibre or another wholesale partner).",
       "Service activation is subject to a successful line check, a successful credit check (where applicable for post-pay services), the availability of the underlying network on your activation date, and your acceptance of this Agreement. If activation is not possible we will tell you in writing and refund any sums you have paid.",
-      "Your service includes: (a) the broadband connection at the headline access type stated above; (b) a unique public IPv4 address (dynamically allocated unless a static IP add-on is purchased); (c) access to OCCTA's UK customer support; (d) an online account at occta.co.uk where you can manage billing, raise tickets, view invoices and download this Contract Summary; (e) any add-ons listed on your itemised order (router, Digital Voice, static IP, enhanced care, etc.).",
+      "Your service includes: (a) the broadband connection at the headline access type stated above; (b) internet addressing appropriate to the product supplied (a static IP address is provided only where a static IP add-on appears on your order); (c) access to OCCTA customer support; (d) an online account at occta.co.uk where you can manage billing, raise tickets, view invoices and download this Contract Summary; (e) any add-ons listed on your itemised order.",
     ],
   },
   {
     heading: "3. Equipment, router and ownership",
     paragraphs: [
-      "Where a router or other equipment is supplied by OCCTA it remains your property once delivered, unless your order expressly states the equipment is provided on loan. You are responsible for the safekeeping of equipment from the point of delivery.",
-      "We will provide reasonable setup guidance and a pre-configured device where possible. You must not tamper with, modify, resell or use OCCTA-supplied equipment on another provider's network in a way that breaches that provider's terms.",
-      "If equipment is faulty on arrival we will replace it free of charge within the manufacturer's warranty period. After that period, repair or replacement is chargeable at the rates published in our Price Transparency document.",
+      "A router is not included as standard. You may use your own compatible router, and we will provide the connection settings you need. Where equipment is supplied by OCCTA, your order states whether it is sold to you or provided on loan, and any charge for it. You are responsible for the safekeeping of equipment from the point of delivery.",
+      "We will provide reasonable setup guidance. You must not tamper with, modify, resell or use OCCTA-supplied equipment on another provider's network in a way that breaches that provider's terms.",
+      "Where OCCTA supplies equipment, your statutory rights under the Consumer Rights Act 2015 apply, together with any manufacturer warranty provided with the equipment. Charges for repair or replacement outside those rights are set out in your order or notified to you before any work is carried out.",
     ],
   },
   {
@@ -50,7 +55,7 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
     paragraphs: [
       "The estimated download and upload speeds shown above are personalised to your address based on data from the access-network operator. They include a normal-range estimate and, where available, a minimum guaranteed speed. They are not a maximum theoretical figure.",
       "Real-world performance depends on factors outside our control: your in-home wiring, the router position, the device(s) being used, Wi-Fi interference, the number of concurrent users, the website or service you are connecting to, and the underlying network's contention at the time.",
-      "If your achieved download speed remains below the minimum guaranteed speed for a continuous period of more than 30 days, after we have had a fair opportunity to diagnose and resolve the issue, you may exit the contract without penalty in line with Ofcom's Voluntary Code of Practice on Broadband Speeds, to which OCCTA voluntarily subscribes.",
+      "If your speed falls persistently below the estimate shown for your address, contact OCCTA. We will investigate with the access-network operator and set out the remedies then available to you, including your statutory rights under the Consumer Rights Act 2015 and any regulatory rights that apply to your service.",
     ],
   },
   {
@@ -58,7 +63,7 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
     paragraphs: [
       "Residential prices are quoted inclusive of VAT at the prevailing standard rate. Business prices are quoted exclusive of VAT; VAT is added on the invoice. The exact monthly price, any one-off charges and your billing cycle (monthly or quarterly) are shown above.",
       "Charges are taken in advance via the payment method you have set up (typically Direct Debit under the Direct Debit Guarantee, or card-on-file via Worldpay). One-off charges shown above are taken before service activation unless agreed otherwise in writing.",
-      "If a Direct Debit or card payment fails we will retry once, notify you, and give you a reasonable opportunity to settle the invoice before any late-payment action. A late-payment fee of £5 applies after 7 days of non-payment; service may be suspended after 30 days of non-payment in line with our published policy. Reconnection after suspension is free, provided the outstanding balance is paid in full.",
+      "If a Direct Debit or card payment fails we will notify you and give you a reasonable opportunity to settle the invoice before any further action. Any late-payment charge, and the point at which service may be restricted or suspended for non-payment, are set out in your order documentation and in our published Price Transparency document; we will tell you before any such charge or restriction applies.",
       "All bank-transfer, manual and phone payments are receipted and reflected in your online account within one working day.",
     ],
   },
@@ -121,9 +126,9 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
   {
     heading: "14. Faults, support & service credits",
     paragraphs: [
-      "If you experience a fault, raise a ticket in your dashboard or call/email OCCTA support. Our standard UK support hours are 09:00–18:00 Monday to Friday and 10:00–16:00 Saturdays (excluding English bank holidays). Critical-impact incidents are monitored 24/7 by our on-call team.",
-      "Care levels (Standard, Priority, Enhanced) determine our target fix-time SLAs and any service-credit entitlement. The care level applicable to your service is shown in the \"Plan\" section above and on each invoice.",
-      "Where a confirmed fault on OCCTA's side, or on the underlying access network, exceeds the published SLA, we will credit your account in line with our published Compensation Scheme (which meets or exceeds the Ofcom Automatic Compensation Scheme thresholds for total loss of service, delayed repair after total loss of service, missed appointments, and delayed provision).",
+      "If you experience a fault, raise a ticket in your dashboard or contact OCCTA support. Our current support contact details and opening hours are published at www.occta.co.uk/contact.",
+      "Where your order includes a care level (for example Standard, Priority or Enhanced), it determines the target fix times that apply to your service. The care level applicable to your service is shown in the \"Plan\" section above.",
+      "Where a confirmed fault on OCCTA's side, or on the underlying access network, is not repaired within the target time that applies to your service, contact us and we will set out the remedies and any credit available to you, together with your statutory and regulatory rights.",
     ],
   },
   {
@@ -138,7 +143,7 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
     heading: "16. Liability — what we are and aren't responsible for",
     paragraphs: [
       "Nothing in this Agreement limits or excludes our liability for: (a) death or personal injury caused by our negligence; (b) fraud or fraudulent misrepresentation; (c) any liability that cannot be limited or excluded by UK law (including under the Consumer Rights Act 2015).",
-      "Subject to that, our total aggregate liability to you arising out of or in connection with the service in any 12-month period is limited to the total charges you have paid OCCTA for that service in that 12-month period. We are not liable for indirect or consequential losses, loss of profit, loss of business, loss of data (other than where we have failed to take reasonable security measures), or losses caused by events outside our reasonable control.",
+      "Subject to that, our liability to you is limited as set out in the OCCTA Terms of Service published at www.occta.co.uk/legal. Nothing in those terms limits liability in a way that is not permitted by UK law, and your statutory rights as a consumer are unaffected.",
       "We will not be in breach of this Agreement, and not liable for any failure or delay in performing it, due to a Force Majeure Event — including (without limitation) acts of God, war, terrorism, riot, fire, flood, pandemic, government action, industry-wide industrial action, or failure of a third-party network or utility. Where a Force Majeure Event lasts more than 30 consecutive days you may terminate the affected service free of charge.",
     ],
   },
@@ -147,7 +152,7 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
     paragraphs: [
       "OCCTA is the data controller for the personal data you provide to take and use our services. We process personal data in accordance with the UK GDPR, the Data Protection Act 2018 and the Privacy and Electronic Communications Regulations (PECR). Our full Privacy Policy at www.occta.co.uk/privacy describes what we collect, why, the lawful basis, retention periods, your rights and how to contact our Data Protection contact.",
       "We retain billing records for at least 6 years to meet HMRC and accounting obligations; service-usage telemetry is retained for the minimum period required to operate the network securely; and tickets and complaint correspondence are retained for at least 2 years from closure. After the applicable retention period your personal data is deleted or anonymised in accordance with our published Data Retention Schedule.",
-      "We may be required, under the Investigatory Powers Act 2016, to disclose specific traffic data, subscriber data or content to a designated authority under a lawful warrant or authorisation. We will only do so where we are legally obliged to, and we publish an annual transparency report describing the number and type of requests received.",
+      "We may be required, under the Investigatory Powers Act 2016, to disclose specific traffic data, subscriber data or content to a designated authority under a lawful warrant or authorisation. We will only do so where we are legally obliged to.",
     ],
   },
   {
@@ -162,7 +167,7 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
     heading: "19. Complaints, ADR & how to escalate",
     paragraphs: [
       "If something goes wrong, please raise a complaint in your dashboard, email complaints@occta.co.uk or write to the registered office. Our Complaints Code (www.occta.co.uk/legal/complaints-code) sets out our internal escalation, target response times and senior-management review steps.",
-      "If we have not resolved your complaint within 6 weeks, or if we issue a deadlock letter sooner, you have the right — free of charge — to refer your complaint to our Alternative Dispute Resolution (ADR) provider: Ombudsman Services: Communications, P.O. Box 730, Warrington, WA4 6WU; phone 0330 440 1614; www.ombudsman-services.org/sectors/communications. The ADR decision is binding on OCCTA but not on you.",
+      "If we have not resolved your complaint within 6 weeks, or if we issue a deadlock letter sooner, you have the right — free of charge — to refer your complaint to an Alternative Dispute Resolution (ADR) scheme. We will confirm the ADR scheme that applies to your service, and how to contact it, in our deadlock letter and in our published Complaints Code.",
       "You can also contact Ofcom (the industry regulator) at www.ofcom.org.uk for general information about your rights as a communications customer, though Ofcom does not handle individual disputes.",
     ],
   },

@@ -2997,6 +2997,7 @@ export type Database = {
           etf_policy_snapshot: Json | null
           id: string
           installation_charge: number
+          is_information_update: boolean
           issued_at: string | null
           issued_at_utc: string | null
           legacy_compliance_status:
@@ -3092,6 +3093,7 @@ export type Database = {
           etf_policy_snapshot?: Json | null
           id?: string
           installation_charge?: number
+          is_information_update?: boolean
           issued_at?: string | null
           issued_at_utc?: string | null
           legacy_compliance_status?:
@@ -3187,6 +3189,7 @@ export type Database = {
           etf_policy_snapshot?: Json | null
           id?: string
           installation_charge?: number
+          is_information_update?: boolean
           issued_at?: string | null
           issued_at_utc?: string | null
           legacy_compliance_status?:
@@ -10853,6 +10856,7 @@ export type Database = {
           estimated_upload_speed: number | null
           id: string | null
           installation_charge: number | null
+          is_information_update: boolean | null
           issued_at: string | null
           monthly_price_incl_vat: number | null
           notice_period: string | null
@@ -10910,6 +10914,7 @@ export type Database = {
           estimated_upload_speed?: number | null
           id?: string | null
           installation_charge?: number | null
+          is_information_update?: boolean | null
           issued_at?: string | null
           monthly_price_incl_vat?: number | null
           notice_period?: string | null
@@ -10967,6 +10972,7 @@ export type Database = {
           estimated_upload_speed?: number | null
           id?: string | null
           installation_charge?: number | null
+          is_information_update?: boolean | null
           issued_at?: string | null
           monthly_price_incl_vat?: number | null
           notice_period?: string | null

@@ -204,3 +204,27 @@ describe("admin CustomerDetail treats information updates as records-only", () =
     expect(src()).toMatch(/isInfoUpdate \? "N\/A — information update"/);
   });
 });
+
+describe("Customer360Header receives only contractual contract summaries", () => {
+  it("the header prop filters out information-update rows before picking newest", () => {
+    const s = read("src/pages/admin/CustomerDetail.tsx");
+    expect(s).toMatch(
+      /cs=\{\(data\?\.contractSummaries \?\? \[\]\)\.find\(\(c: any\) => c\?\.is_information_update !== true\) \?\? null\}/
+    );
+    expect(s).not.toMatch(/cs=\{\(data\?\.contractSummaries \?\? \[\]\)\[0\]/);
+  });
+  it("UnifiedDocuments keeps a PDF download for every contract summary row", () => {
+    expect(read("src/pages/admin/CustomerDetail.tsx")).toMatch(
+      /kind: c\.is_information_update === true \? "Current Contract Information" : "Contract Summary",[\s\S]{0,200}AdminCsDownloadButton csId=\{c\.id\}/
+    );
+  });
+});
+
+describe("authoritative OCCTA support number", () => {
+  it("is 0800 260 6626 across contact configuration", () => {
+    const c = read("src/lib/constants.ts");
+    expect(c).toMatch(/CONTACT_PHONE_DISPLAY = "0800 260 6626"/);
+    expect(c).toMatch(/tel:08002606626/);
+    expect(c).not.toMatch(/6453/);
+  });
+});

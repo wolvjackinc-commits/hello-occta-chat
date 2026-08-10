@@ -108,6 +108,13 @@ Deno.serve(async (req) => {
   const { data: cs } = await supabase.from("contract_summaries").select("*").eq("public_token_hash", hash).maybeSingle();
   if (!cs) return jsonResponse({ error: "not_found" }, 404);
   if (cs.token_expires_at && new Date(cs.token_expires_at) < new Date()) return jsonResponse({ error: "expired" }, 410);
+  // HARD BLOCK: information-refresh documents are records-only and unsignable.
+  if (cs.is_information_update === true) {
+    return jsonResponse({
+      error: "information_update_not_acceptable",
+      message: "This document is a current-information refresh for your records only. It cannot be signed and does not require acceptance.",
+    }, 409);
+  }
   if (cs.status === "accepted") {
     return jsonResponse({ error: "already_accepted", contract_summary_id: cs.id }, 409);
   }

@@ -6,123 +6,163 @@ const BUCKET = "contract-pdfs";
 const SIGNED_URL_TTL = 60 * 60 * 24 * 7;
 const fmtMoney = (n: unknown) => `£${Number(n ?? 0).toFixed(2)}`;
 
+// Statutory intro sentences — these three sentences must never be altered.
+export const CS_STATUTORY_INTRO: readonly string[] = [
+  "This contract summary provides the main elements of this service offer as required by EU law.",
+  "It helps to make a comparison between service offers.",
+  "Complete information about the service is provided in other documents.",
+];
+
+// Prescribed Ofcom contract-summary section order.
+export const CS_SECTION_ORDER: readonly string[] = [
+  "Services and equipment",
+  "Speeds of the internet service and remedies",
+  "Price",
+  "Duration, renewal and termination",
+  "Features for end-users with disabilities",
+  "Other relevant information",
+];
+
+const BODY_PT = 10;      // normal body text — never below 10pt
+const LABEL_PT = 10;
+const HEADING_PT = 10.5;
+
 function renderPdf(cs: any): Uint8Array {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const doc = new jsPDF({ unit: "pt", format: "a4" }); // portrait A4
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
-  const M = 38;
+  const M = 40;
   const usable = W - M * 2;
-  let y = 32;
+  let y = 0;
 
-  const setNormal = (size = 8.4) => { doc.setFont("helvetica", "normal"); doc.setFontSize(size); doc.setTextColor(15, 15, 15); };
-  const setBold = (size = 8.4) => { doc.setFont("helvetica", "bold"); doc.setFontSize(size); doc.setTextColor(15, 15, 15); };
-  const textBlock = (text: unknown, width = usable, size = 8.4, gap = 2) => {
+  const setNormal = (size = BODY_PT) => { doc.setFont("helvetica", "normal"); doc.setFontSize(size); doc.setTextColor(17, 17, 17); };
+  const setBold = (size = BODY_PT) => { doc.setFont("helvetica", "bold"); doc.setFontSize(size); doc.setTextColor(17, 17, 17); };
+  const ensureSpace = (needed: number) => {
+    if (y + needed > H - 58) { doc.addPage(); y = M + 8; }
+  };
+  const textBlock = (text: unknown, size = BODY_PT, gap = 2.2, indent = 0) => {
+    const str = String(text ?? "").trim();
+    if (!str) return;
     setNormal(size);
-    const wrapped = doc.splitTextToSize(String(text ?? ""), width) as string[];
-    for (const ln of wrapped) { doc.text(ln, M, y); y += size + gap; }
+    const wrapped = doc.splitTextToSize(str, usable - indent) as string[];
+    for (const ln of wrapped) { ensureSpace(size + gap); doc.text(ln, M + indent, y); y += size + gap; }
   };
   const row = (label: string, value: unknown) => {
-    setBold(8.2); doc.text(label, M, y);
-    setNormal(8.2);
-    const lines = doc.splitTextToSize(String(value ?? "—"), usable - 132) as string[];
-    doc.text(lines, M + 132, y);
-    y += Math.max(1, lines.length) * 10.1;
+    const str = String(value ?? "—");
+    setNormal(BODY_PT);
+    const lines = doc.splitTextToSize(str, usable - 150) as string[];
+    ensureSpace(Math.max(1, lines.length) * (BODY_PT + 2.4));
+    setBold(LABEL_PT); doc.text(label, M, y);
+    setNormal(BODY_PT); doc.text(lines, M + 150, y);
+    y += Math.max(1, lines.length) * (BODY_PT + 2.4);
   };
-  const section = (title: string) => {
-    y += 4;
-    doc.setFillColor(245, 245, 245);
-    doc.rect(M, y - 9, usable, 16, "F");
-    setBold(8.2);
-    doc.text(title.toUpperCase(), M + 6, y + 2);
-    y += 13;
+  const section = (index: number, title: string) => {
+    y += 6;
+    ensureSpace(26);
+    doc.setFillColor(246, 246, 244);
+    doc.rect(M, y - 10, usable, 18, "F");
+    doc.setDrawColor(0); doc.setLineWidth(0.8);
+    doc.line(M, y + 8, M + usable, y + 8);
+    setBold(HEADING_PT);
+    doc.text(`${index}. ${title}`, M + 6, y + 3);
+    y += 20;
   };
 
-  // OCCTA brand header.
+  // OCCTA brand header — restrained, single band.
   doc.setFillColor(255, 226, 0);
-  doc.rect(0, 0, W, 72, "F");
+  doc.rect(0, 0, W, 62, "F");
   doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(21); doc.text("OCCTA", M, 30);
-  doc.setFontSize(8.5); doc.text("SIMPLE TELECOM. CLEAR TERMS.", M, 45);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.text("www.occta.co.uk  ·  hello@occta.co.uk  ·  0800 260 6626", M, 58);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.text("OCCTA", M, 26);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  doc.text("OCCTA LIMITED  ·  www.occta.co.uk  ·  hello@occta.co.uk  ·  0800 260 6626", M, 44);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11.5);
   const title = cs.is_information_update ? "CURRENT CONTRACT INFORMATION" : "CONTRACT SUMMARY";
-  doc.text(title, W - M, 30, { align: "right" });
-  doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-  doc.text(`${cs.cs_number}  ·  v${cs.version}`, W - M, 45, { align: "right" });
-  doc.text(String(cs.issued_at ?? cs.created_at ?? "").slice(0, 10), W - M, 58, { align: "right" });
-  y = 91;
+  doc.text(title, W - M, 26, { align: "right" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  doc.text(`${cs.cs_number ?? "—"} · v${cs.version ?? 1}`, W - M, 40, { align: "right" });
+  doc.text(`Issued ${String(cs.issued_at ?? cs.created_at ?? "").slice(0, 10) || "—"}`, W - M, 53, { align: "right" });
+  y = 82;
 
   if (cs.is_information_update) {
-    doc.setDrawColor(0); doc.setLineWidth(1.2); doc.rect(M, y - 10, usable, 43);
-    setBold(9); doc.text("FOR YOUR RECORDS — NO RE-ACCEPTANCE REQUIRED", M + 8, y + 3);
-    y += 15;
-    setNormal(7.8);
-    const info = doc.splitTextToSize("This is a current-information refresh. It does not replace your original accepted agreement, change your price, or remove any existing customer rights.", usable - 16) as string[];
-    doc.text(info, M + 8, y);
-    y += info.length * 9 + 9;
+    const info = doc.splitTextToSize("This is a current-information refresh for your records only. No re-acceptance is required. It does not replace your original accepted agreement and does not change your price, service, billing, minimum term, notice period or cancellation rights.", usable - 16) as string[];
+    const boxH = 22 + info.length * 12;
+    doc.setDrawColor(0); doc.setLineWidth(1.2); doc.rect(M, y - 12, usable, boxH);
+    setBold(10.5); doc.text("FOR YOUR RECORDS — NO RE-ACCEPTANCE REQUIRED", M + 8, y + 2);
+    setNormal(BODY_PT);
+    let iy = y + 18;
+    for (const ln of info) { doc.text(ln, M + 8, iy); iy += 12; }
+    y = y - 12 + boxH + 12;
   } else {
-    setNormal(7.7);
-    textBlock("Provided before you agree to the service. It summarises the key price, service, duration and cancellation information. Detailed Contract Information is provided separately before acceptance.", usable, 7.7, 1.7);
-    y += 3;
+    // Statutory intro sentences — verbatim, unaltered.
+    for (const s of CS_STATUTORY_INTRO) textBlock(s, BODY_PT, 2.2);
+    y += 2;
   }
 
-  section("Customer & service");
-  row("Customer", cs.customer_name_snapshot);
-  if (cs.account_number) row("Account number", cs.account_number);
+  setBold(BODY_PT); ensureSpace(16);
+  doc.text(`${cs.customer_name_snapshot ?? "—"}${cs.account_number ? `  ·  Account ${cs.account_number}` : ""}`, M, y);
+  y += 14;
+
+  // 1. Services and equipment
+  section(1, CS_SECTION_ORDER[0]);
+  row("Service provider", "OCCTA LIMITED");
+  row("Service", cs.plan_name);
   row("Service address", cs.service_address);
-  row("Plan", cs.plan_name);
-
-  section("Price & one-off charges");
-  if (cs.customer_type === "business") {
-    row("Monthly ex VAT", fmtMoney(cs.business_monthly_ex_vat));
-    row("Monthly incl VAT", fmtMoney(cs.business_monthly_incl_vat));
-  } else row("Monthly incl VAT", fmtMoney(cs.monthly_price_incl_vat));
+  const equipmentLines: string[] = [];
   const oneOff = Array.isArray(cs.one_off_charges_json) ? cs.one_off_charges_json : [];
-  if (oneOff.length) {
-    row("One-off charges", oneOff.map((c: any) => `${c.label}: ${fmtMoney(c.amount)}`).join("  ·  "));
-  } else row("One-off charges", "£0.00");
+  const routerCharge = Number(cs.router_charge ?? 0);
+  equipmentLines.push(routerCharge > 0
+    ? `Router supplied by OCCTA — one-off charge ${fmtMoney(routerCharge)} incl. VAT.`
+    : "No router is included. You may use your own compatible router; we provide the connection settings needed.");
+  row("Equipment", equipmentLines.join(" "));
+  if (cs.digital_voice_warning) row("Digital Voice", String(cs.digital_voice_warning));
 
-  section("Service, speed & duration");
-  row("Estimated speed", `${cs.estimated_download_speed ?? "—"} Mbps download / ${cs.estimated_upload_speed ?? "—"} Mbps upload`);
-  row("Contract", cs.contract_length);
-  row("Notice", cs.notice_period);
-  if (cs.speed_notes) {
-    const firstSentence = String(cs.speed_notes).split(/\n\n|\n/)[0].trim();
-    if (firstSentence) row("Speed note", firstSentence.slice(0, 420));
+  // 2. Speeds of the internet service and remedies
+  section(2, CS_SECTION_ORDER[1]);
+  const isInternet = cs.service_type === "broadband" || cs.estimated_download_speed != null;
+  if (!isInternet) {
+    textBlock("Not applicable — this service is not an internet access service.");
+  } else {
+    row("Estimated speed", `Up to ${cs.estimated_download_speed ?? "—"} Mbps download / up to ${cs.estimated_upload_speed ?? "—"} Mbps upload (estimate, not a guarantee).`);
+    const note = String(cs.speed_notes ?? "").split(/\n\n/)[0].trim();
+    if (note) textBlock(note.slice(0, 700));
+    textBlock("If your speed falls persistently below the estimate shown, contact OCCTA. We will investigate with the access network and set out the remedies available to you, including your statutory and regulatory rights.");
   }
 
-  section("Ending or switching the service");
-  textBlock(cs.cease_cancellation_charges || "Any applicable ending charges are shown in your service-specific Contract Information.", usable, 7.9, 1.8);
-
-  section("Price changes & payment");
-  textBlock(cs.price_rise_policy || "Any price-change rights are set out in the Contract Information.", usable, 7.7, 1.6);
-  y += 2;
-  textBlock(cs.payment_schedule || "Billing and collection timing is confirmed before service starts.", usable, 7.7, 1.6);
-
-  if (cs.digital_voice_warning) {
-    section("Digital Voice — important");
-    textBlock(cs.digital_voice_warning, usable, 7.4, 1.4);
+  // 3. Price
+  section(3, CS_SECTION_ORDER[2]);
+  if (cs.customer_type === "business") {
+    row("Recurring price", `${fmtMoney(cs.business_monthly_ex_vat)} per month excl. VAT (${fmtMoney(cs.business_monthly_incl_vat)} incl. VAT)`);
+  } else {
+    row("Recurring price", `${fmtMoney(cs.monthly_price_incl_vat)} per month (incl. VAT)`);
   }
+  row("One-off charges", oneOff.length
+    ? oneOff.map((c: any) => `${c.label}: ${fmtMoney(c.amount)}`).join("  ·  ")
+    : "None");
+  if (cs.price_rise_policy) row("Price changes", String(cs.price_rise_policy));
+  if (cs.payment_schedule) row("Billing", String(cs.payment_schedule));
 
-  section("Help, complaints & your rights");
-  const complaint = String(cs.complaints_adr_info ?? "Contact OCCTA if you need help or wish to complain.");
-  textBlock(complaint, usable, 7.3, 1.4);
+  // 4. Duration, renewal and termination
+  section(4, CS_SECTION_ORDER[3]);
+  row("Duration", cs.contract_length);
+  row("Notice period", cs.notice_period);
+  row("Ending or switching", cs.cease_cancellation_charges);
 
-  // Keep a normal single-service summary to one page. If exceptionally long
-  // legacy text reaches the footer area, use compact continuation rather than
-  // truncating contractual wording.
-  if (y > H - 72) {
-    doc.addPage();
-    y = M;
-    setBold(10); doc.text("CONTRACT SUMMARY — CONTINUED", M, y); y += 18;
-    setNormal(8); doc.text("Continuation created only because the stored service information exceeded the standard summary layout.", M, y);
-  }
+  // 5. Features for end-users with disabilities
+  section(5, CS_SECTION_ORDER[4]);
+  textBlock(String(cs.vulnerable_customer_note ?? "").trim() ||
+    "If you or someone in your household has additional accessibility, medical or vulnerability needs, tell OCCTA and we will discuss the accessibility options and support arrangements available for your service.");
+
+  // 6. Other relevant information
+  section(6, CS_SECTION_ORDER[5]);
+  textBlock(String(cs.complaints_adr_info ?? "").trim() ||
+    "If you have a complaint, contact complaints@occta.co.uk. If we have not resolved it within 6 weeks, or we issue a deadlock letter sooner, you can refer it free of charge to an Alternative Dispute Resolution scheme.");
+  textBlock("Complete information about the service, including the detailed terms, is provided in your OCCTA Contract Information & Customer Agreement Pack.");
 
   const pages = doc.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
     doc.setDrawColor(0); doc.setLineWidth(0.5); doc.line(M, H - 38, W - M, H - 38);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(7.2); doc.setTextColor(80, 80, 80);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(70, 70, 70);
     doc.text(`OCCTA LIMITED · ${cs.cs_number} v${cs.version} · Terms ${cs.terms_version ?? "current"}`, M, H - 24);
     doc.text(cs.is_information_update ? "Information update — original accepted agreement retained" : "Keep this summary with your detailed Contract Information", M, H - 13);
     doc.text(`Page ${i} of ${pages}`, W - M, H - 24, { align: "right" });

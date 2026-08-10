@@ -949,7 +949,7 @@ function UnifiedDocuments({ cs, prs, invoices, files }: { cs: any[]; prs: any[];
   cs.forEach((c) => {
     rows.push({
       key: `cs-${c.id}`,
-      kind: "Contract Summary",
+      kind: c.is_information_update === true ? "Current Contract Information" : "Contract Summary",
       label: `${c.cs_number} · ${c.plan_name}`,
       ts: c.accepted_at ?? c.emailed_at ?? c.created_at,
       action: <AdminCsDownloadButton csId={c.id} />,

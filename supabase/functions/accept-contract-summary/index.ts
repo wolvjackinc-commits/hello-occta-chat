@@ -273,6 +273,44 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   await supabase.from("quotes").update({ status: "contract_summary_accepted" }).eq("id", cs.quote_id);
   await supabase.from("quote_requests").update({ status: "contract_summary_accepted", updated_at: acceptedAt }).eq("id", cs.quote_request_id);
 
+  // ── Superseding revision: the signed revision replaces the earlier version ──
+  // The earlier accepted Contract Summary is legally immutable, so it is never
+  // rewritten — it is archived with a reason and every live pointer (order,
+  // journey) is moved to the newly signed version.
+  if (cs.supersedes_id) {
+    try {
+      await supabase.from("contract_summaries").update({
+        archived_at: acceptedAt,
+        archived_reason: `Replaced by ${cs.cs_number} v${cs.version}, signed by the customer on ${acceptedAtLocal}.`,
+      }).eq("id", cs.supersedes_id);
+
+      await supabase.from("orders").update({
+        contract_summary_id: cs.id,
+        contract_acceptance_id: acceptanceId,
+        plan_name: cs.plan_name,
+        plan_price: cs.monthly_price_incl_vat,
+      }).eq("contract_summary_id", cs.supersedes_id);
+
+      await supabase.from("order_journeys").update({
+        contract_summary_id: cs.id,
+        contract_acceptance_id: acceptanceId,
+      }).eq("contract_summary_id", cs.supersedes_id);
+
+      await supabase.rpc("log_event", {
+        _actor_type: "anon",
+        _event_type: "contract_summary_superseded",
+        _title: `CS ${cs.cs_number} v${cs.version} replaced the previous version`,
+        _details: { contract_summary_id: cs.id, superseded_id: cs.supersedes_id },
+        _source_module: "contract_summary",
+        _quote_id: cs.quote_id,
+        _contract_summary_id: cs.id,
+        _customer_id: cs.customer_id,
+      });
+    } catch (e) {
+      console.warn("[accept-contract-summary] supersede bookkeeping failed", (e as Error).message);
+    }
+  }
+
   if (journey) {
     // Best-effort: propagate DOB to the linked customer profile if not already set.
     if (i.date_of_birth && cs.customer_id) {
@@ -357,7 +395,27 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     .select("legacy_onboarding_emails_suppressed")
     .limit(1)
     .maybeSingle();
-  const suppressEmail = !!i.journey_mode || !!ps?.legacy_onboarding_emails_suppressed;
+  // A signed revision never triggers the onboarding welcome again — the customer
+  // is already onboarded; they get a short confirmation instead.
+  const suppressEmail = !!i.journey_mode || !!ps?.legacy_onboarding_emails_suppressed || !!cs.supersedes_id;
+  if (cs.supersedes_id) {
+    try {
+      await sendResendEmail({
+        to: i.accepted_by_email,
+        subject: `Signed — your revised OCCTA contract is now in place`,
+        replyTo: "hello@occta.co.uk",
+        html: brutalistEmailShell(
+          "Revised contract signed",
+          `<p>Hi ${escapeHtml(String(i.accepted_by_name).split(" ")[0])},</p>
+           <p>Thank you — your revised Contract Summary <strong>${escapeHtml(cs.cs_number)}</strong> (v${cs.version}) was signed on ${escapeHtml(acceptedAtLocal)} and now replaces your previous version. Nothing else about your order has changed.</p>
+           <p>Your plan: <strong>${escapeHtml(cs.plan_name)}</strong> — up to ${escapeHtml(String(cs.estimated_download_speed))}Mbps down / up to ${escapeHtml(String(cs.estimated_upload_speed))}Mbps up, £${Number(cs.monthly_price_incl_vat ?? 0).toFixed(2)}/mo incl. VAT.</p>
+           <p>A copy is saved in your OCCTA account. If anything looks wrong, reply to this email or call 0800 260 6626 and we'll fix it.</p>`,
+        ),
+      });
+    } catch (e) {
+      console.warn("[accept-contract-summary] revision confirmation failed", (e as Error).message);
+    }
+  }
   if (!suppressEmail) {
     await sendAcceptanceWelcome(supabase, cs, i.accepted_by_email, i.accepted_by_name);
   }

@@ -18,6 +18,7 @@ export default function OrderStart() {
   const [params] = useSearchParams();
   const [message, setMessage] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const [crawler, setCrawler] = useState(false);
   const started = useRef(false);
 
   useEffect(() => {
@@ -32,6 +33,10 @@ export default function OrderStart() {
         }
         if (res?.redirect) {
           navigate(res.redirect, { replace: true });
+          return;
+        }
+        if (res?.crawler) {
+          setCrawler(true);
           return;
         }
         setMessage(res?.message ?? "Online ordering is briefly unavailable. Call 0800 260 6626 and we'll complete your order with you.");
@@ -51,7 +56,19 @@ export default function OrderStart() {
         canonical="/order"
       />
       <section className="container mx-auto px-4 py-16 max-w-xl text-center">
-        {!failed ? (
+        {crawler ? (
+          <div className="border-4 border-foreground p-8 text-left">
+            <h1 className="font-display uppercase text-2xl mb-3">Order OCCTA broadband online</h1>
+            <p className="text-sm text-muted-foreground mb-4">
+              Check availability at your address, pick your speed and term, and complete your order in one go — exact prices
+              including VAT, clear contract terms, and Direct Debit set up before your order is placed.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild><a href="/broadband/flex">See broadband plans</a></Button>
+              <Button asChild variant="outline"><a href="tel:08002606626">Call 0800 260 6626</a></Button>
+            </div>
+          </div>
+        ) : !failed ? (
           <>
             <Loader2 className="w-6 h-6 animate-spin mx-auto mb-4" aria-hidden="true" />
             <h1 className="font-display uppercase text-2xl mb-2">Setting up your order</h1>

@@ -3,6 +3,7 @@ import {
   resolveBuildPlanPrice,
   stripInternal,
   type SupplierProductCandidate,
+  type ResolvedPriced,
 } from "../../../../supabase/functions/_shared/buildPlanResolver";
 
 const fp = {
@@ -58,6 +59,12 @@ const baseInput = {
   primary_technology: "FTTP",
 };
 
+const priced = (r: ReturnType<typeof resolveBuildPlanPrice>): ResolvedPriced => {
+  expect(r.quote_only).toBe(false);
+  if (r.quote_only) throw new Error("expected priced result");
+  return r as ResolvedPriced;
+};
+
 describe("Giacom V4 contract pricing guard", () => {
   it("fails closed when a supplier connection fee is unknown", () => {
     const r = resolveBuildPlanPrice(baseInput, fp, [candidate({ connection_fee_net: null })]);
@@ -72,18 +79,14 @@ describe("Giacom V4 contract pricing guard", () => {
   it("uses the fastest eligible product in the selected tier, not the cheapest slower row", () => {
     const slow = candidate({ id: "slow", product_name: "Vodafone FTTP 115/20", download_speed_mbps: 115, upload_speed_mbps: 20, supplier_monthly_net: 24.5 });
     const fast = candidate({ id: "fast", product_name: "Sky FTTP 330/50", network: "Sky", supplier_router_net: null, supplier_monthly_net: 31, disconnect_fee_in_12m_net: 95, disconnect_fee_after_12m_net: 50 });
-    const r = resolveBuildPlanPrice(baseInput, fp, [slow, fast]);
-    expect(r.quote_only).toBe(false);
-    if (r.quote_only) return;
+    const r = priced(resolveBuildPlanPrice(baseInput, fp, [slow, fast]));
     expect(r.internal.supplier_product_id).toBe("fast");
     expect(r.estimated_download_mbps).toBe(330);
     expect(r.monthly_broadband_incl_vat).toBeGreaterThanOrEqual(45.99);
   });
 
   it("recovers the V4 standard new-connection cost instead of treating remote setup as free", () => {
-    const r = resolveBuildPlanPrice(baseInput, fp, [candidate()]);
-    expect(r.quote_only).toBe(false);
-    if (r.quote_only) return;
+    const r = priced(resolveBuildPlanPrice(baseInput, fp, [candidate()]));
     expect(r.setup.oneOff).toBeGreaterThanOrEqual(84.99);
   });
 
@@ -93,9 +96,7 @@ describe("Giacom V4 contract pricing guard", () => {
   });
 
   it("prices a one-off standard router above the V4 £72 ex-VAT supplier cost", () => {
-    const r = resolveBuildPlanPrice({ ...baseInput, router_option: "standard", router_payment_type: "one_off" }, fp, [candidate()]);
-    expect(r.quote_only).toBe(false);
-    if (r.quote_only) return;
+    const r = priced(resolveBuildPlanPrice({ ...baseInput, router_option: "standard", router_payment_type: "one_off" }, fp, [candidate()]));
     expect(r.router.oneOff).toBeGreaterThanOrEqual(94.99);
   });
 
@@ -105,9 +106,7 @@ describe("Giacom V4 contract pricing guard", () => {
   });
 
   it("never leaks supplier economics through the public result", () => {
-    const r = resolveBuildPlanPrice(baseInput, fp, [candidate()]);
-    expect(r.quote_only).toBe(false);
-    if (r.quote_only) return;
+    const r = priced(resolveBuildPlanPrice(baseInput, fp, [candidate()]));
     const safe = stripInternal(r as unknown as Record<string, unknown>);
     expect(safe.internal).toBeUndefined();
     expect(JSON.stringify(safe)).not.toContain("supplier_monthly");

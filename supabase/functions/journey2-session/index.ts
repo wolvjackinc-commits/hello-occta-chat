@@ -39,6 +39,12 @@ const AddressPayload = z.object({
   address_line_2: z.string().trim().max(160).optional().nullable(),
   town: z.string().trim().min(2).max(80),
   county: z.string().trim().max(80).optional().nullable(),
+  /**
+   * Early contact capture. Almost every abandonment happens before the details
+   * step, so an email here is the only way an abandoned order can be recovered.
+   */
+  contact_email: z.string().trim().toLowerCase().email().max(180).optional().nullable(),
+  contact_first_name: z.string().trim().max(80).optional().nullable(),
 });
 const PlanPayload = z.object({
   speed_bucket: z.enum(["essential", "superfast", "ultrafast", "gigabit"]),
@@ -148,6 +154,15 @@ function addDays(ymd: string, days: number): string {
   const d = new Date(ymd + "T00:00:00Z");
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Crawlers must never create journey sessions — they are not customers, and
+ * counting them wrecks abandonment and conversion reporting.
+ */
+const BOT_UA = /(bot|crawl|spider|slurp|bingpreview|adsbot|mediapartners|headlesschrome|phantomjs|python-requests|curl\/|wget|scrapy|facebookexternalhit|whatsapp|telegrambot|semrush|ahrefs|mj12|dotbot|petalbot|yandex|baidu|duckduckbot|applebot|gptbot|claudebot|ccbot|perplexity|lighthouse|pagespeed|monitoring|uptime)/i;
+function isCrawler(ua: string): boolean {
+  return !ua || ua.length < 15 || BOT_UA.test(ua);
 }
 
 Deno.serve(async (req) => {

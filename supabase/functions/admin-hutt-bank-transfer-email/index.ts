@@ -62,7 +62,7 @@ const BODY_HTML = `<p class="text">Thank you for coming back to us, and for taki
 
 <p class="text">Whatever you decide, we appreciate you having chosen OCCTA. If there is any chance of keeping you, just reply and tell us what would make the difference.</p>
 
-<p class="text">Kind regards,<br><strong>OCCTA Support</strong><br>hello@occta.co.uk &middot; 020 3393 0829</p>
+<p class="text">Kind regards,<br><strong>OCCTA Support</strong><br>hello@occta.co.uk &middot; 0800 260 6626</p>
 `;
 
 Deno.serve(async (req) => {

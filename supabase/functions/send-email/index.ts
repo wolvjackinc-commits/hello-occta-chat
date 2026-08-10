@@ -940,7 +940,7 @@ const getInvoiceExternalPaymentHtml = (data: Record<string, unknown>) => {
         
         <p class="text" style="text-align: center; color: #666; font-size: 13px;">
           Questions about your invoice? Contact <a href="mailto:${escapeHtml(data.support_email) || 'support@occtatele.com'}" style="color: #3b82f6;">${escapeHtml(data.support_email) || 'support@occtatele.com'}</a><br>
-          Or call <strong>${escapeHtml(data.support_phone) || '020 3393 0829'}</strong>
+          Or call <strong>${escapeHtml(data.support_phone) || '0800 260 6626'}</strong>
         </p>
       </div>
       

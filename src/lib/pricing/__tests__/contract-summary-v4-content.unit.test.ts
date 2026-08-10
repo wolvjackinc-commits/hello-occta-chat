@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
-import path from "node:path";
 
-const root = process.cwd();
-const read = (p: string) => fs.readFileSync(path.join(root, p), "utf8");
+const read = (p: string) => fs.readFileSync(p, "utf8");
 
 describe("Contract Summary V4 content gates", () => {
   it("never falls back from an unknown broadband cease fee to a claim that no fee applies", () => {

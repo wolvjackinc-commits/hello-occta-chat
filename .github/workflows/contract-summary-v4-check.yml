@@ -1,0 +1,46 @@
+name: Contract Summary V4 Check
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/pricing/**'
+      - 'src/lib/legal/contractInformation.ts'
+      - 'src/components/legal/FullContractTermsBlock.tsx'
+      - 'src/components/dashboard/tabs/ContractSummariesTab.tsx'
+      - 'src/pages/dashboard/ContractSummaryAuthedView.tsx'
+      - 'supabase/functions/_shared/buildPlanResolver.ts'
+      - 'supabase/functions/create-quote/index.ts'
+      - 'supabase/functions/submit-build-plan/index.ts'
+      - 'supabase/functions/generate-contract-summary/index.ts'
+      - 'supabase/functions/generate-contract-summary-pdf/index.ts'
+      - 'supabase/migrations/20260810144000_contract_summary_v4_ratecard.sql'
+      - '.github/workflows/contract-summary-v4-check.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Typecheck application
+        run: npm run typecheck
+      - name: Lint changed frontend and tests
+        run: npx eslint src/lib/pricing/fairPricing.ts src/lib/pricing/__tests__/giacom-v4-contract-pricing.unit.test.ts src/lib/pricing/__tests__/contract-summary-v4-content.unit.test.ts src/lib/legal/contractInformation.ts src/components/legal/FullContractTermsBlock.tsx src/components/dashboard/tabs/ContractSummariesTab.tsx src/pages/dashboard/ContractSummaryAuthedView.tsx
+      - name: Contract and pricing regression tests
+        run: npx vitest run src/lib/pricing/__tests__/giacom-v4-contract-pricing.unit.test.ts src/lib/pricing/__tests__/contract-summary-v4-content.unit.test.ts
+      - name: Production build
+        run: npm run build
+      - name: Static legal/commercial guardrails
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -q "No cease or early termination charges apply to this plan beyond statutory notice" supabase/functions/generate-contract-summary/index.ts
+          grep -q "termination_charges_unresolved" supabase/functions/generate-contract-summary/index.ts
+          grep -q "giacom_broadband_ratecard_v4.0" supabase/migrations/20260810144000_contract_summary_v4_ratecard.sql
+          grep -q "is_information_update" src/pages/dashboard/ContractSummaryAuthedView.tsx

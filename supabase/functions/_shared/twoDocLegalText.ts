@@ -60,7 +60,7 @@ export const COMPLAINTS_ADR_SAFE =
 
 // ─── Speeds ──────────────────────────────────────────────────────────────────
 export const SPEED_ESTIMATE_DISCLAIMER =
-  "Estimated speeds depend on your address and line check. Actual speeds may vary. If your line consistently underperforms the guaranteed minimum download speed shown, contact us — you may be entitled to leave penalty-free under Ofcom's voluntary code.";
+  "Estimated speeds depend on your address and line check. Actual speeds may vary. If your line consistently underperforms the estimate shown, contact us — we will investigate with the access network and set out the remedies available to you, including any statutory or regulatory rights that apply.";
 
 // ─── SIM-only fields (defaults; individual plans should override) ────────────
 export const SIM_ROAMING_DEFAULT =

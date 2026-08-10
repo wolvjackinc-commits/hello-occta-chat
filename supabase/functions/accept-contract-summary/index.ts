@@ -143,6 +143,16 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     if (i.checkbox_confirmed !== true) return jsonResponse({ error: "checkbox_required" }, 400);
   }
 
+  // HARD BLOCK: an information refresh is records-only and can never be
+  // accepted, signed or turned into a contract. No cooling-off, order,
+  // payment, provisioning or billing effect may follow from it.
+  if (cs.is_information_update === true) {
+    return jsonResponse({
+      error: "information_update_not_acceptable",
+      message: "This document is a current-information refresh for your records only. It cannot be signed and does not require acceptance. Your original accepted agreement remains in force.",
+    }, 409);
+  }
+
   // Idempotency: already accepted — return existing acceptance + cert ref.
   if (cs.status === "accepted") {
     const { data: existingAcc } = await supabase
@@ -172,6 +182,53 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
 
   if (!["issued", "viewed", "draft"].includes(cs.status)) return jsonResponse({ error: "not_acceptable", status: cs.status }, 409);
   if (cs.token_expires_at && new Date(cs.token_expires_at) < new Date()) return jsonResponse({ error: "expired" }, 410);
+
+  // FAIL CLOSED: never let a customer accept a contract whose critical
+  // monetary / duration / ending terms are missing. Unknown is never £0.
+  {
+    const missing: string[] = [];
+    const monthly = cs.customer_type === "business" ? cs.business_monthly_incl_vat : cs.monthly_price_incl_vat;
+    if (monthly == null || Number(monthly) <= 0) missing.push("recurring_price");
+    if (!cs.contract_length) missing.push("contract_duration");
+    if (!cs.notice_period) missing.push("notice_period");
+    if (!cs.cease_cancellation_charges) missing.push("termination_cease_migration_charges");
+    if (!cs.price_rise_policy) missing.push("price_change_terms");
+    if (cs.service_type === "broadband" && !cs.etf_policy_snapshot) missing.push("etf_policy_snapshot");
+    if (missing.length) {
+      return jsonResponse({
+        error: "critical_terms_missing",
+        missing,
+        message: "This Contract Summary is missing required price or contract-ending information. OCCTA must review and reissue it before it can be accepted.",
+      }, 409);
+    }
+  }
+
+  // Snapshot integrity: if a Contract Information Pack exists for this quote it
+  // must be linked to THIS Contract Summary, so acceptance can never mix
+  // mismatched document versions.
+  {
+    const { data: cip } = await supabase
+      .from("contract_information_packs")
+      .select("id, cip_number, contract_summary_id, document_status, template_version")
+      .eq("quote_id", cs.quote_id)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (cip && cip.contract_summary_id && cip.contract_summary_id !== cs.id) {
+      return jsonResponse({
+        error: "contract_information_mismatch",
+        message: "The Contract Information for this order does not match this Contract Summary version. OCCTA must reissue both documents together before acceptance.",
+        details: { cip_number: cip.cip_number },
+      }, 409);
+    }
+    if (cip && ["superseded", "cancelled", "void_manual_review"].includes(String(cip.document_status))) {
+      return jsonResponse({
+        error: "contract_information_mismatch",
+        message: "The Contract Information for this order is no longer current. OCCTA must reissue both documents together before acceptance.",
+        details: { cip_number: cip.cip_number, document_status: cip.document_status },
+      }, 409);
+    }
+  }
 
   if (i.accepted_by_email.toLowerCase() !== cs.customer_email_snapshot.toLowerCase()) {
     return jsonResponse({ error: "email_mismatch" }, 400);

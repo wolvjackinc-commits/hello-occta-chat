@@ -34,8 +34,6 @@ const Schema = z.object({
   expires_in_days: z.number().int().min(1).max(60).default(14),
   admin_notes: z.string().max(2000).nullable().optional(),
   customer_notes: z.string().max(2000).nullable().optional(),
-  // Build Plan re-resolve mode: when present, server recalculates pricing
-  // from selections — ignoring all *_net fields above. Selections only.
   build_plan: z.object({
     speed_bucket: z.enum(["essential","superfast","ultrafast","gigabit"]),
     plan_term: z.enum(["price_lock_24","flex_30"]),
@@ -74,7 +72,6 @@ Deno.serve(async (req) => {
     return { net: round2(net), vat, gross: round2(net + vat) };
   };
 
-  // ── Build Plan re-resolve path ──
   let bpFields: Record<string, unknown> = {};
   let bpAdminNote = "";
   let m, s, r, d, ins;
@@ -83,6 +80,9 @@ Deno.serve(async (req) => {
   let resolvedPlanType: string | undefined;
   let resolvedCustomerType: string | undefined;
   let resolvedContractMonths: number | null | undefined;
+  let resolvedSupplierProductId: string | null = null;
+  let resolvedEstimatedDownload: number | null = null;
+  let resolvedEstimatedUpload: number | null = null;
   let bumped = false;
 
   if (i.build_plan) {
@@ -90,10 +90,7 @@ Deno.serve(async (req) => {
     try {
       candidates = await loadGiacomCandidates(supabase, i.build_plan.speed_bucket);
     } catch (_e) {
-      return jsonResponse({
-        error: "quote_only",
-        message: "Final price needs manual confirmation for this address.",
-      }, 409);
+      return jsonResponse({ error: "quote_only", message: "Final price needs manual confirmation for this address." }, 409);
     }
     const resolved = resolveBuildPlanPrice(i.build_plan as any, settings?.fair_pricing ?? {}, candidates);
     if (resolved.quote_only) {
@@ -105,42 +102,47 @@ Deno.serve(async (req) => {
     }
     bumped = resolved.bumped;
     const monthlyExVat = resolved.internal.monthly_broadband_ex_vat + resolved.internal.router_monthly_ex_vat + resolved.internal.addons_monthly_ex_vat;
-    m   = compute(monthlyExVat);
-    s   = compute(resolved.internal.setup_one_off_ex_vat);
-    r   = compute(resolved.internal.router_one_off_ex_vat);
-    d   = compute(0);
+    m = compute(monthlyExVat);
+    s = compute(resolved.internal.setup_one_off_ex_vat);
+    r = compute(resolved.internal.router_one_off_ex_vat);
+    d = compute(0);
     ins = compute(0);
-    resolvedPlanName     = i.plan_name ?? `${speedBucketLabel(i.build_plan.speed_bucket)} — ${planTermLabel(i.build_plan.plan_term)}`;
-    resolvedServiceType  = "broadband";
-    resolvedPlanType     = i.build_plan.plan_term === "flex_30" ? "flex" : "contract_saver";
+    resolvedPlanName = i.plan_name ?? `${speedBucketLabel(i.build_plan.speed_bucket)} — ${planTermLabel(i.build_plan.plan_term)}`;
+    resolvedServiceType = "broadband";
+    resolvedPlanType = i.build_plan.plan_term === "flex_30" ? "flex" : "contract_saver";
     resolvedCustomerType = i.build_plan.customer_type;
     resolvedContractMonths = i.build_plan.plan_term === "price_lock_24" ? 24 : null;
+    resolvedSupplierProductId = resolved.internal.supplier_product_id;
+    resolvedEstimatedDownload = resolved.estimated_download_mbps;
+    resolvedEstimatedUpload = resolved.estimated_upload_mbps;
     bpFields = {
       speed_bucket: i.build_plan.speed_bucket,
       plan_term: i.build_plan.plan_term,
       router_option: { option: resolved.router.option, label: resolved.router.label, monthly: resolved.router.monthly, oneOff: resolved.router.oneOff, payment_type: resolved.router.payment_type },
-      setup_option:  { option: resolved.setup.option,  label: resolved.setup.label,  oneOff: resolved.setup.oneOff },
+      setup_option: { option: resolved.setup.option, label: resolved.setup.label, oneOff: resolved.setup.oneOff },
       selected_addons: resolved.addons,
     };
-    if (bumped) bpAdminNote = "[Build Plan: price auto-bumped to safe amount]\n";
+    if (bumped) bpAdminNote = "[Build Plan: price auto-bumped to safe V4 amount]\n";
   } else {
     if (i.monthly_net == null || !i.plan_name || !i.service_type || !i.plan_type || !i.customer_type) {
       return jsonResponse({ error: "validation", message: "monthly_net, plan_name, service_type, plan_type, customer_type are required when build_plan is not provided" }, 400);
     }
-    m   = compute(i.monthly_net);
-    s   = compute(i.setup_net ?? 0);
-    r   = compute(i.router_net ?? 0);
-    d   = compute(i.delivery_net ?? 0);
+    m = compute(i.monthly_net);
+    s = compute(i.setup_net ?? 0);
+    r = compute(i.router_net ?? 0);
+    d = compute(i.delivery_net ?? 0);
     ins = compute(i.installation_net ?? 0);
-    resolvedPlanName     = i.plan_name;
-    resolvedServiceType  = i.service_type;
-    resolvedPlanType     = i.plan_type;
+    resolvedPlanName = i.plan_name;
+    resolvedServiceType = i.service_type;
+    resolvedPlanType = i.plan_type;
     resolvedCustomerType = i.customer_type;
     resolvedContractMonths = i.contract_length_months ?? null;
+    resolvedSupplierProductId = i.supplier_product_id ?? null;
+    resolvedEstimatedDownload = i.estimated_download_speed ?? null;
+    resolvedEstimatedUpload = i.estimated_upload_speed ?? null;
   }
   const totalDueToday = round2(s.gross + r.gross + d.gross + ins.gross);
 
-  // Extras: collapse one-off extras into total due today; monthly extras into monthly.
   const extras = (i.extra_line_items ?? []).map((x) => ({
     description: x.description,
     kind: x.kind ?? "one_off",
@@ -149,7 +151,7 @@ Deno.serve(async (req) => {
     gross_amount: round2(x.net_amount * (1 + rate)),
   }));
   const extrasOneOffGross = round2(extras.filter((x) => x.kind === "one_off").reduce((sum, x) => sum + x.gross_amount, 0));
-  const extrasMonthlyNet  = round2(extras.filter((x) => x.kind === "monthly").reduce((sum, x) => sum + x.net_amount, 0));
+  const extrasMonthlyNet = round2(extras.filter((x) => x.kind === "monthly").reduce((sum, x) => sum + x.net_amount, 0));
   if (extrasMonthlyNet > 0) {
     const ex = compute(m.net + extrasMonthlyNet);
     m.net = ex.net; m.vat = ex.vat; m.gross = ex.gross;
@@ -158,18 +160,13 @@ Deno.serve(async (req) => {
 
   const { raw, hash } = await generateTokenPair();
   const expiresAt = new Date(Date.now() + i.expires_in_days * 86400_000).toISOString();
-
-  // Resolve customer_id from quote_request
-  const { data: qr } = await supabase
-    .from("quote_requests")
-    .select("customer_id")
-    .eq("id", i.quote_request_id).maybeSingle();
+  const { data: qr } = await supabase.from("quote_requests").select("customer_id").eq("id", i.quote_request_id).maybeSingle();
 
   const { data: quote, error } = await supabase.from("quotes").insert({
     quote_request_id: i.quote_request_id,
     customer_id: qr?.customer_id ?? null,
-    supplier_name: i.supplier_name ?? null,
-    supplier_product_id: i.supplier_product_id ?? null,
+    supplier_name: i.build_plan ? null : (i.supplier_name ?? null),
+    supplier_product_id: resolvedSupplierProductId,
     supplier_reference: i.supplier_reference ?? null,
     plan_name: resolvedPlanName,
     service_type: resolvedServiceType,
@@ -183,8 +180,8 @@ Deno.serve(async (req) => {
     installation_net: ins.net, installation_vat_amount: ins.vat, installation_gross: ins.gross,
     cease_fee_gross: i.cease_fee_gross ?? null,
     total_due_today_gross: totalDueTodayWithExtras,
-    estimated_download_speed: i.estimated_download_speed ?? null,
-    estimated_upload_speed: i.estimated_upload_speed ?? null,
+    estimated_download_speed: resolvedEstimatedDownload,
+    estimated_upload_speed: resolvedEstimatedUpload,
     speed_notes: i.speed_notes ?? null,
     speed_disclaimer: i.speed_disclaimer ?? null,
     extra_line_items: extras,
@@ -214,6 +211,5 @@ Deno.serve(async (req) => {
     actor_type: "admin", actor_id: auth.userId,
   });
 
-  // Return raw token ONCE so admin UI can show the customer link and copy to clipboard if needed.
   return jsonResponse({ ok: true, quote_id: quote.id, quote_number: quote.quote_number, public_token: raw, bumped });
 });

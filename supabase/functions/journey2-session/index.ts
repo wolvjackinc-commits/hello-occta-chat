@@ -39,6 +39,12 @@ const AddressPayload = z.object({
   address_line_2: z.string().trim().max(160).optional().nullable(),
   town: z.string().trim().min(2).max(80),
   county: z.string().trim().max(80).optional().nullable(),
+  /**
+   * Early contact capture. Almost every abandonment happens before the details
+   * step, so an email here is the only way an abandoned order can be recovered.
+   */
+  contact_email: z.string().trim().toLowerCase().email().max(180).optional().nullable(),
+  contact_first_name: z.string().trim().max(80).optional().nullable(),
 });
 const PlanPayload = z.object({
   speed_bucket: z.enum(["essential", "superfast", "ultrafast", "gigabit"]),
@@ -150,6 +156,15 @@ function addDays(ymd: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Crawlers must never create journey sessions — they are not customers, and
+ * counting them wrecks abandonment and conversion reporting.
+ */
+const BOT_UA = /(bot|crawl|spider|slurp|bingpreview|adsbot|mediapartners|headlesschrome|phantomjs|python-requests|curl\/|wget|scrapy|facebookexternalhit|whatsapp|telegrambot|semrush|ahrefs|mj12|dotbot|petalbot|yandex|baidu|duckduckbot|applebot|gptbot|claudebot|ccbot|perplexity|lighthouse|pagespeed|monitoring|uptime)/i;
+function isCrawler(ua: string): boolean {
+  return !ua || ua.length < 15 || BOT_UA.test(ua);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
@@ -176,6 +191,16 @@ Deno.serve(async (req) => {
         error: "use_isolated_test_runner",
         message: "Isolated Journey 2 tests run through journey2-test-runner, never through the public session path.",
       }, 400);
+    }
+
+    // Crawler traffic gets the page, never a session row.
+    if (isCrawler(ua)) {
+      return jsonResponse({
+        ok: true,
+        journey_version: null,
+        crawler: true,
+        message: "Order OCCTA broadband online in one go — exact prices including VAT and clear contract terms.",
+      });
     }
 
     const anonHash = await hashAnon(body.anonymous_session_id);
@@ -309,8 +334,18 @@ Deno.serve(async (req) => {
   if (body.step === "address") {
     const p = AddressPayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);
-    patch.postcode = p.data.postcode.toUpperCase();
-    patch.service_address = p.data;
+    const { contact_email, contact_first_name, ...address } = p.data;
+    patch.postcode = address.postcode.toUpperCase();
+    patch.service_address = address;
+    // Merge, never replace — the details step owns the full contact record.
+    if (contact_email || contact_first_name) {
+      const existing = (session.customer_details ?? {}) as Record<string, unknown>;
+      patch.customer_details = {
+        ...existing,
+        ...(contact_email ? { email: contact_email } : {}),
+        ...(contact_first_name && !existing.full_name ? { full_name: contact_first_name } : {}),
+      };
+    }
   } else if (body.step === "plan") {
     const p = PlanPayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);

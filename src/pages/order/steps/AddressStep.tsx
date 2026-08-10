@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import type { Journey2Session } from "@/lib/journey2/client";
 import { getAvailabilityPrefill } from "@/lib/journey2/prefill";
 
@@ -21,12 +22,19 @@ export default function AddressStep({
   const [line2, setLine2] = useState(a?.address_line_2 ?? prefill?.line2 ?? "");
   const [town, setTown] = useState(a?.town ?? prefill?.town ?? "");
   const [county, setCounty] = useState(a?.county ?? prefill?.county ?? "");
+  const d = session.customer_details;
+  const [email, setEmail] = useState(d?.email ?? "");
+  const [firstName, setFirstName] = useState((d?.full_name ?? "").split(" ")[0] ?? "");
   const [err, setErr] = useState<string | null>(null);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (postcode.trim().length < 5 || line1.trim().length < 3 || town.trim().length < 2) {
       setErr("Please enter your postcode, first address line and town.");
+      return;
+    }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      setErr("That email doesn't look right — please check it.");
       return;
     }
     setErr(null);
@@ -36,8 +44,18 @@ export default function AddressStep({
       address_line_2: line2.trim() || null,
       town: town.trim(),
       county: county.trim() || null,
+      contact_email: email.trim().toLowerCase() || null,
+      contact_first_name: firstName.trim() || null,
     });
   };
+
+  const applyLookup = useCallback((addr: { line1: string; line2?: string; city: string; postcode: string }) => {
+    setLine1(addr.line1);
+    setLine2(addr.line2 ?? "");
+    setTown(addr.city);
+    setPostcode(addr.postcode.toUpperCase());
+    setErr(null);
+  }, []);
 
   return (
     <form onSubmit={submit} className="border-4 border-foreground p-6 space-y-4">
@@ -52,6 +70,13 @@ export default function AddressStep({
           </p>
         )}
       </div>
+
+      <AddressAutocomplete
+        onSelect={applyLookup}
+        initialQuery={postcode}
+        label="Find your address"
+        helperText="Pick your address and we'll fill the rest in — or type it below yourself."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-1">
@@ -82,6 +107,26 @@ export default function AddressStep({
       </div>
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
+
+      <div className="border-2 border-foreground/20 p-4 space-y-3">
+        <p className="font-display uppercase text-sm">Keep your order safe</p>
+        <p className="text-xs text-muted-foreground">
+          Give us your email now and we'll send you a link so you can come back to this exact order — same prices, nothing lost.
+          No marketing unless you ask for it later.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="j2-first-name">First name (optional)</Label>
+            <Input id="j2-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)}
+              autoComplete="given-name" maxLength={80} />
+          </div>
+          <div>
+            <Label htmlFor="j2-early-email">Email (optional)</Label>
+            <Input id="j2-early-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email" maxLength={180} placeholder="you@example.com" />
+          </div>
+        </div>
+      </div>
 
       <Button type="submit" disabled={saving} className="w-full sm:w-auto">
         {saving ? "Saving…" : "Continue to plans"}

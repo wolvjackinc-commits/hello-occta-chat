@@ -144,6 +144,7 @@ export type StartResult = {
   token?: string;
   redirect?: string;
   unavailable?: boolean;
+  crawler?: boolean;
   message?: string;
   resumed?: boolean;
   session?: Journey2Session;

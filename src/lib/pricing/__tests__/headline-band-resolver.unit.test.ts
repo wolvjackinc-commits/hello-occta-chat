@@ -59,7 +59,7 @@ const priced = (r: ReturnType<typeof resolveBuildPlanPrice>): ResolvedPriced => 
 
 describe("public headline bands survive supplier economics", () => {
   it("keeps 330 Mbps Superfast at 39.99 PL24 / 44.99 Flex", () => {
-    const pl = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "superfast", plan_term: "price_lock_24" }, fp, [candidate()]));
+    const pl = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "superfast", plan_term: "price_lock_24" }, fp, [candidate({ min_term_months: 24 })]));
     const flex = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "superfast", plan_term: "flex_30" }, fp, [candidate()]));
     expect(pl.monthly_broadband_incl_vat).toBe(39.99);
     expect(pl.bumped).toBe(false);
@@ -69,7 +69,7 @@ describe("public headline bands survive supplier economics", () => {
 
   it("keeps 1000 Mbps Ultrafast at 49.99 PL24 / 52.99 Flex with no fourth band", () => {
     const giga = candidate({ product_name: "Giacom FTTP 1000/115", download_speed_mbps: 1000, upload_speed_mbps: 115, supplier_monthly_net: 33, bucket_hint: "ultrafast" });
-    const pl = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "ultrafast", plan_term: "price_lock_24" }, fp, [giga]));
+    const pl = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "ultrafast", plan_term: "price_lock_24" }, fp, [{ ...giga, min_term_months: 24 }]));
     const flex = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "ultrafast", plan_term: "flex_30" }, fp, [giga]));
     expect(pl.monthly_broadband_incl_vat).toBe(49.99);
     expect(flex.monthly_broadband_incl_vat).toBe(52.99);
@@ -79,12 +79,12 @@ describe("public headline bands survive supplier economics", () => {
   it("keeps Essential at 34.99 PL24 / 37.99 Flex", () => {
     const ess = candidate({ product_name: "Giacom SOGEA 80/20", download_speed_mbps: 80, upload_speed_mbps: 20, technology: "SOGEA", supplier_monthly_net: 19, bucket_hint: "essential" });
     const input = { ...base, primary_technology: "SOGEA", max_download: 80 };
-    expect(priced(resolveBuildPlanPrice({ ...input, speed_bucket: "essential", plan_term: "price_lock_24" }, fp, [ess])).monthly_broadband_incl_vat).toBe(34.99);
+    expect(priced(resolveBuildPlanPrice({ ...input, speed_bucket: "essential", plan_term: "price_lock_24" }, fp, [{ ...ess, min_term_months: 24 }])).monthly_broadband_incl_vat).toBe(34.99);
     expect(priced(resolveBuildPlanPrice({ ...input, speed_bucket: "essential", plan_term: "flex_30" }, fp, [ess])).monthly_broadband_incl_vat).toBe(37.99);
   });
 
   it("auto-bumps only the individual quote when an exact product is too expensive", () => {
-    const pricey = candidate({ supplier_monthly_net: 40 });
+    const pricey = candidate({ supplier_monthly_net: 40, min_term_months: 24 });
     const r = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "superfast", plan_term: "price_lock_24" }, fp, [pricey]));
     expect(r.bumped).toBe(true);
     expect(r.monthly_broadband_incl_vat).toBeGreaterThan(39.99);
@@ -96,7 +96,7 @@ describe("public headline bands survive supplier economics", () => {
     const r = resolveBuildPlanPrice(
       { ...base, speed_bucket: "superfast", plan_term: "price_lock_24" },
       { ...fp, fallback: "quote_only" },
-      [candidate({ supplier_monthly_net: 40 })],
+      [candidate({ supplier_monthly_net: 40, min_term_months: 24 })],
     );
     expect(r.quote_only).toBe(true);
   });

@@ -158,6 +158,9 @@ const AppDashboard = () => {
           .from("contract_summaries" as any)
           .select("id, cs_number, status, plan_name, monthly_total, created_at")
           .eq("customer_id", userId)
+          // Information updates are records-only: never counted as the active
+          // or needs-acceptance contract summary.
+          .eq("is_information_update", false)
           .order("created_at", { ascending: false })
           .limit(1),
         supabase

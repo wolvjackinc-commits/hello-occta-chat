@@ -8,7 +8,7 @@ import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { motion } from "framer-motion";
 
 const providers = [
-  { name: "OCCTA", price: "£22.99", term: "30 days rolling", midRise: "No", credit: "No check", exit: "£0", highlight: true },
+  { name: "OCCTA", price: "£37.99", term: "30 days rolling", midRise: "No", credit: "No check", exit: "£0", highlight: true },
   { name: "Cuckoo", price: "£28.00", term: "30 days rolling", midRise: "No", credit: "Soft check", exit: "£0", highlight: false },
   { name: "NOW Broadband", price: "£25.00", term: "1 month rolling", midRise: "Possible", credit: "Hard check", exit: "£0", highlight: false },
   { name: "BT (12m)", price: "£32.99", term: "12-month contract", midRise: "Yes (CPI+3.9%)", credit: "Hard check", exit: "Up to £400+", highlight: false },
@@ -17,7 +17,7 @@ const providers = [
 
 const faqs = [
   { question: "What counts as a no-contract broadband deal?", answer: "A no-contract (or rolling) broadband deal lets you cancel any time with no exit fee, usually after a 30-day notice period. There's no 12, 18 or 24-month lock-in." },
-  { question: "Is no-contract broadband more expensive?", answer: "Historically yes, but not with OCCTA. Our rolling plans start at £22.99/mo — cheaper than most 12-month deals from BT, Sky and Virgin Media." },
+  { question: "Is no-contract broadband more expensive?", answer: "Historically yes, but not with OCCTA. Our Flex 30 rolling plans start at £37.99/mo, and Price Lock 24 starts at £34.99/mo — with no mid-contract price rises and no exit fee on Flex 30." },
   { question: "Do I need a credit check for no-contract broadband?", answer: "Some providers (BT, Sky, NOW) run a hard credit check. OCCTA does not run a credit check on any broadband plan." },
   { question: "Will my price go up mid-contract?", answer: "Most big providers raise prices every April by CPI+3.9% or RPI+3.9%. OCCTA has no mid-contract price hikes — what you sign up for is what you pay." },
   { question: "Can I keep my phone number if I switch?", answer: "Yes. The One Touch Switch process (UK-wide) lets you keep your number and switches you with no downtime." },
@@ -62,7 +62,7 @@ const NoContractBroadbandComparison = () => {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
               <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
                 <Zap className="w-4 h-4 inline mr-2" />
-                From £22.99/mo · No contract
+                From £37.99/mo · No minimum term
               </div>
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
                 No-Contract Broadband
@@ -139,7 +139,7 @@ const NoContractBroadbandComparison = () => {
             {[
               "BT and Sky bake CPI/RPI+3.9% into 12-24 month contracts — bills rise every April",
               "NOW Broadband runs a hard credit check that shows on your file",
-              "Cuckoo's headline price is fair, but starts higher than OCCTA at £22.99",
+              "Cuckoo's headline price is low, but their speeds and add-on pricing are less flexible than OCCTA's three-band range",
               "Most 'no-contract' deals on price comparison sites still tie you in for 30 days notice",
             ].map((b) => (
               <li key={b} className="flex items-start gap-3">

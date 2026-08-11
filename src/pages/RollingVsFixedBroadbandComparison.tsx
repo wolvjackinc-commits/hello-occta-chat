@@ -13,7 +13,7 @@ const rows = [
   { feature: "Mid-contract price rises", rolling: "No (OCCTA Flex 30)", fixed: "Usually CPI/RPI + 3.9% every April" },
   { feature: "Price certainty", rolling: "Month by month", fixed: "Locked for term (OCCTA Price Lock 24)" },
   { feature: "Best for", rolling: "Renters, students, short lets, movers", fixed: "Long-term homes wanting the lowest headline price" },
-  { feature: "Typical starting price", rolling: "From £22.99/mo (OCCTA)", fixed: "From £22.99/mo (OCCTA Price Lock 24)" },
+  { feature: "Typical starting price", rolling: "From £37.99/mo (OCCTA Flex 30)", fixed: "From £34.99/mo (OCCTA Price Lock 24)" },
 ];
 
 const rollingPros = [
@@ -39,7 +39,7 @@ const fixedCons = [
 
 const faqs = [
   { question: "What is no contract broadband in the UK?", answer: "No contract broadband uk plans are rolling monthly deals — typically 30 days — that you can cancel any time without paying an early-exit fee. OCCTA's Flex 30 is a no-contract plan available on full-fibre lines where eligible." },
-  { question: "Is rolling broadband more expensive than a fixed contract?", answer: "Not with OCCTA. Flex 30 starts at £22.99/mo, the same headline price as our 24-month Price Lock plan. With most big providers, no contract broadband uk deals are £3–£8 more per month than their 18–24 month equivalents." },
+  { question: "Is rolling broadband more expensive than a fixed contract?", answer: "Flex 30 starts at £37.99/mo and Price Lock 24 starts at £34.99/mo, so the flexibility premium is small. With most big providers, no contract broadband uk deals are £3–£8 more per month than their 18–24 month equivalents." },
   { question: "When should I pick a fixed-term contract instead?", answer: "Pick Price Lock 24 if you know you're staying put for at least two years and want the certainty of a locked monthly price with no April CPI/RPI hikes. Pick Flex 30 if you might move, are renting, or just want the freedom to leave." },
   { question: "Do I still get full fibre on a rolling plan?", answer: "Yes. OCCTA Flex 30 uses the same full-fibre lines as our fixed plans — same speeds, same router, same UK support. The only difference is the contract length." },
   { question: "Are there mid-contract price rises on OCCTA Flex 30?", answer: "No. OCCTA does not apply CPI or RPI mid-contract price rises to Flex 30 or Price Lock 24. If we ever change a price on a rolling plan, you're free to leave with no exit fee." },

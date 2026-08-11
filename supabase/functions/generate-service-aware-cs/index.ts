@@ -44,7 +44,16 @@ Deno.serve(async (req) => {
   const segment: CustomerSegment = (body.customer_segment ??
     ((q as any).customer_type === "business" ? "small_business" : "residential")) as CustomerSegment;
 
-  const components = buildServiceComponentsSnapshot(q as any);
+  let components;
+  try {
+    components = buildServiceComponentsSnapshot(q as any);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.startsWith("notice_period_unresolved")) {
+      return jsonResponse({ error: "notice_period_unresolved", message: "This quote has no resolvable notice period. Confirm the exact notice period on the final quote before issuing (manual review required)." }, 409);
+    }
+    throw e;
+  }
   const validation = validateTwoDocIssue({ customer_segment: segment, components });
   if (!validation.ok) {
     return jsonResponse({ error: "hard_block", blocks: validation.blocks }, 422);

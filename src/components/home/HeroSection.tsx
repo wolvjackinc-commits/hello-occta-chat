@@ -361,7 +361,7 @@ const HeroSection = () => {
                   {[
                     { name: "Essential", tagline: "Everyday browsing" },
                     { name: "Superfast", tagline: "Streaming & busy homes" },
-                    { name: "Gigabit", tagline: "Serious speed" },
+                    { name: "Ultrafast", tagline: "Serious speed" },
                   ].map(cat => (
                      <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/15 bg-background">
                        <span className="font-sans text-sm uppercase font-extrabold tracking-wide text-foreground min-w-[78px]">{cat.name}</span>

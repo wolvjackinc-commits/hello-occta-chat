@@ -4,6 +4,9 @@ import type { RetailCardDef } from './types';
 // Maps to catalogue products by eligibleProductIds.
 // The UI renders these cards — never raw catalogue data.
 
+// Exactly THREE public broadband bands: Essential (80), Superfast (330),
+// Ultrafast (up to 1000). The internal `gigabit` supplier bucket sells inside
+// the Ultrafast band — there is no public Gigabit card.
 export const broadbandRetailCards: RetailCardDef[] = [
   {
     id: 'essential',
@@ -74,56 +77,25 @@ export const broadbandRetailCards: RetailCardDef[] = [
     tagline: 'Built for busy homes and businesses that need headroom.',
     description: 'Built for busy homes and businesses that need headroom.',
     features: [
-      'Up to 550Mbps download',
+      'Up to 1000Mbps download',
       'Bring your own router or add premium WiFi',
-      'Gigabit options where available',
+      'Full fibre speeds up to 1000Mbps where available',
       'Static IP available on selected services',
       'Clear setup and add-on pricing',
       'Final price confirmed before order',
     ],
-    speedLabel: 'Up to 550Mbps download',
-    eligibleProductIds: ['fttp-500-tt', 'fttp-550-cf'],
+    speedLabel: 'Up to 1000Mbps download',
+    eligibleProductIds: ['fttp-500-tt', 'fttp-550-cf', 'fttp-1000-tt', 'fttp-1000-cf'],
     popular: false,
     serviceType: 'broadband',
     publicPricePrefix: 'From',
     publicSetupText: '',
     publicTagline: 'Built for busy homes and businesses that need headroom.',
     publicFeatures: [
-      'Up to 550Mbps download',
+      'Up to 1000Mbps download',
       'Bring your own router or add premium WiFi',
-      'Gigabit options where available',
+      'Full fibre speeds up to 1000Mbps where available',
       'Static IP available on selected services',
-      'Clear setup and add-on pricing',
-      'Final price confirmed before order',
-    ],
-    publicDisclaimer: 'Final price depends on address, plan type, router and setup.',
-  },
-  {
-    id: 'gigabit',
-    publicTitle: 'GIGABIT FIBRE',
-    category: 'Gigabit Fibre',
-    tagline: 'Top-tier full fibre for large households and small businesses.',
-    description: 'Top-tier full fibre for large households and small businesses.',
-    features: [
-      'Up to 1000Mbps download',
-      'Bring your own router for £0',
-      'Static IP available',
-      'Price Lock or Flex 30',
-      'Clear setup and add-on pricing',
-      'Final price confirmed before order',
-    ],
-    speedLabel: 'Up to 1000Mbps download',
-    eligibleProductIds: ['fttp-1000-tt', 'fttp-1000-cf'],
-    popular: false,
-    serviceType: 'broadband',
-    publicPricePrefix: 'From',
-    publicSetupText: '',
-    publicTagline: 'Top-tier full fibre for large households and small businesses.',
-    publicFeatures: [
-      'Up to 1000Mbps download',
-      'Bring your own router for £0',
-      'Static IP available',
-      'Price Lock or Flex 30',
       'Clear setup and add-on pricing',
       'Final price confirmed before order',
     ],

@@ -1,16 +1,17 @@
 import type { FromPrices, OrderSummary, ServiceFamily, VatMode } from './types';
 import { catalogueProducts, voiceProducts, installScenarios, careLevels, bundleConfigs, addonCatalogue, portingOptions, numberTypes, smsTiers, callTariffs, GLOBAL_CEASE_FEE } from './catalogue';
 import { broadbandRetailCards, landlineRetailCard, simRetailCards } from './retailCards';
-import { FAIR_PRICING_DEFAULTS } from './fairPricing';
+import { FAIR_PRICING_DEFAULTS, PUBLIC_SPEED_BUCKETS } from './fairPricing';
 
 // ── Fair Pricing display map (Price Lock 24 / Flex 30) ──
 // This is the public source of truth for "from" prices on cards.
 // The server-side resolver remains authoritative for the final price.
+// Exactly three public bands — the internal `gigabit` supplier bucket sells
+// inside the public Ultrafast band and must never appear as a fourth card.
 const FAIR_DISPLAY: Record<string, { lock24: number; flex30: number; speedLabel: string }> = {
   essential: { lock24: FAIR_PRICING_DEFAULTS.headline.essential.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.essential.flex30, speedLabel: 'Up to 80Mbps' },
   superfast: { lock24: FAIR_PRICING_DEFAULTS.headline.superfast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.superfast.flex30, speedLabel: 'Up to 330Mbps' },
-  ultrafast: { lock24: FAIR_PRICING_DEFAULTS.headline.ultrafast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.ultrafast.flex30, speedLabel: 'Up to 550Mbps' },
-  gigabit:   { lock24: FAIR_PRICING_DEFAULTS.headline.gigabit.lock24,   flex30: FAIR_PRICING_DEFAULTS.headline.gigabit.flex30,   speedLabel: 'Up to 1000Mbps' },
+  ultrafast: { lock24: FAIR_PRICING_DEFAULTS.headline.ultrafast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.ultrafast.flex30, speedLabel: 'Up to 1000Mbps' },
 };
 
 // ── Resolve cheapest eligible product for a broadband card ──
@@ -51,7 +52,9 @@ export function getFromPrices(): FromPrices {
 
 // ── Retail broadband cards with resolved "from" prices ──
 export function getRetailBroadbandCards() {
-  return broadbandRetailCards.map(card => {
+  return broadbandRetailCards
+    .filter(card => (PUBLIC_SPEED_BUCKETS as readonly string[]).includes(card.id))
+    .map(card => {
     const fair = FAIR_DISPLAY[card.id];
     const fromPrice = fair?.lock24 ?? getCheapestForCard(card.eligibleProductIds) ?? 0;
     const flex30Price = fair?.flex30 ?? null;

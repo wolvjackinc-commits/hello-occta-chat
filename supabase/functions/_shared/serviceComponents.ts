@@ -62,12 +62,16 @@ function parseTermMonths(q: QuoteLike): number {
   return 0;
 }
 
+/**
+ * Broadband notice period, derived from the quote only. Throws when legacy data
+ * cannot be resolved so the document is never built with an invented 30 days.
+ */
 function parseNoticeDays(q: QuoteLike): number {
-  const ov = twoDocOverrides(q);
-  if (typeof ov.broadband?.notice_period_days === "number") return ov.broadband.notice_period_days;
-  const s = String(q.notice_period ?? "30 days").toLowerCase();
-  const m = s.match(/(\d+)/);
-  return m ? parseInt(m[1], 10) : 30;
+  const resolved = resolveNoticePeriod(q as any);
+  if (!resolved) {
+    throw new Error("notice_period_unresolved: quote has no resolvable notice period — manual review required");
+  }
+  return resolved.days;
 }
 
 function defaultPriceChange(): PriceChangeSnapshot {
@@ -77,9 +81,13 @@ function defaultPriceChange(): PriceChangeSnapshot {
 function broadbandComponent(q: QuoteLike): ServiceComponent {
   const ov = twoDocOverrides(q);
   const isFixed = isFixedPlan(q);
+  const noticeDays = parseNoticeDays(q);
+  const noticeLabel = noticeText(noticeDays);
   const cancelDefault = isFixed
-    ? "Cancel by giving notice — an early termination charge applies during the minimum term. See the Contract Information Pack for the exact ETF calculation."
-    : "Cancel with 30 days' notice at any time. No early termination charge.";
+    ? `Cancel by giving ${noticeLabel} notice — an early termination charge applies during the minimum term. See the Contract Information Pack for the exact ETF calculation.`
+    : noticeDays > 0
+      ? `Cancel with ${noticeLabel} notice at any time. No early termination charge.`
+      : "Cancel at any time with no notice period. No early termination charge.";
   return {
     id: `broadband-${q.id}`,
     kind: "broadband",
@@ -87,7 +95,7 @@ function broadbandComponent(q: QuoteLike): ServiceComponent {
     monthly_price_incl_vat: Number(ov.broadband?.monthly_price_incl_vat ?? q.monthly_gross ?? 0),
     contract_kind: isFixed ? "fixed_term" : "flex_30_rolling",
     minimum_term_months: parseTermMonths(q),
-    notice_period_days: parseNoticeDays(q),
+    notice_period_days: noticeDays,
     price_change: ov.price_change ?? defaultPriceChange(),
     cancellation_wording: ov.broadband?.cancellation_wording ?? cancelDefault,
     etf: isFixed ? ov.broadband_etf : undefined,
@@ -96,6 +104,8 @@ function broadbandComponent(q: QuoteLike): ServiceComponent {
 
 function digitalVoiceComponent(q: QuoteLike): ServiceComponent {
   const ov = twoDocOverrides(q);
+  // Digital Voice cancels with the broadband service, so it inherits its notice.
+  const noticeDays = parseNoticeDays(q);
   return {
     id: `digital-voice-${q.id}`,
     kind: "digital_voice",
@@ -103,7 +113,7 @@ function digitalVoiceComponent(q: QuoteLike): ServiceComponent {
     monthly_price_incl_vat: Number(ov.digital_voice?.monthly_price_incl_vat ?? 0),
     contract_kind: "flex_30_rolling",
     minimum_term_months: 0,
-    notice_period_days: 30,
+    notice_period_days: noticeDays,
     price_change: defaultPriceChange(),
     cancellation_wording:
       "Cancels with the associated broadband service. Digital Voice cannot continue as a standalone product on this account.",

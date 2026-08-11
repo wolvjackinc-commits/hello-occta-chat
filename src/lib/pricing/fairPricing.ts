@@ -8,6 +8,19 @@
  */
 
 export type SpeedBucket = 'essential' | 'superfast' | 'ultrafast' | 'gigabit';
+
+/**
+ * Public broadband bands. The site sells exactly THREE bands.
+ * `gigabit` remains an INTERNAL supplier bucket only (1000/115 rows) and always
+ * presents to customers as Ultrafast Fibre. Never render a fourth public plan.
+ */
+export const PUBLIC_SPEED_BUCKETS = ['essential', 'superfast', 'ultrafast'] as const;
+export type PublicSpeedBucket = typeof PUBLIC_SPEED_BUCKETS[number];
+
+/** Maps any internal bucket onto the public band a customer may see. */
+export function toPublicBucket(b: SpeedBucket): PublicSpeedBucket {
+  return b === 'gigabit' ? 'ultrafast' : b;
+}
 export type PlanTerm = 'price_lock_24' | 'flex_30';
 export type RouterChoice = 'own' | 'standard' | 'premium' | 'business';
 export type RouterPaymentType = 'none' | 'one_off' | 'monthly';
@@ -18,13 +31,21 @@ export interface AddonChoice {
   enabled: boolean;
 }
 
-/** Defaults shown before the server resolver responds. */
+/**
+ * Defaults shown before the server resolver responds.
+ * Governed customer-facing headline prices (incl. VAT, residential):
+ *   Essential up to 80    — PL24 £34.99 / Flex £37.99
+ *   Superfast up to 330   — PL24 £39.99 / Flex £44.99
+ *   Ultrafast up to 1000  — PL24 £49.99 / Flex £52.99
+ * `gigabit` mirrors Ultrafast because 1000/115 supplier rows sell inside the
+ * public Ultrafast band; the margin resolver auto-bumps where cost requires it.
+ */
 export const FAIR_PRICING_DEFAULTS = {
   headline: {
     essential: { lock24: 34.99, flex30: 37.99 },
-    superfast: { lock24: 43.99, flex30: 45.99 },
-    ultrafast: { lock24: 51.99, flex30: 52.99 },
-    gigabit:   { lock24: 57.99, flex30: 58.99 },
+    superfast: { lock24: 39.99, flex30: 44.99 },
+    ultrafast: { lock24: 49.99, flex30: 52.99 },
+    gigabit:   { lock24: 49.99, flex30: 52.99 },
   },
   router: {
     standardOneOff: 94.99, standardMonthly: 4.99,
@@ -72,22 +93,23 @@ export const SPEED_BUCKET_META: Record<SpeedBucket, {
   },
   ultrafast: {
     title: 'Ultrafast Fibre',
-    speedRange: 'Up to 550Mbps',
+    speedRange: 'Up to 1000Mbps',
     tagline: 'Built for busy homes and businesses that need headroom.',
     badges: [
       'Bring your own router or add premium WiFi',
-      'Gigabit options where available',
+      'Full fibre speeds up to 1000Mbps where available',
       'Static IP available on selected services',
       'Clear setup and add-on pricing',
       'Final price confirmed before order',
     ],
   },
   gigabit: {
-    title: 'Gigabit Fibre',
+    // Internal supplier bucket only — always presented as Ultrafast Fibre.
+    title: 'Ultrafast Fibre',
     speedRange: 'Up to 1000Mbps',
-    tagline: 'Top-tier full fibre for large households and small businesses.',
+    tagline: 'Built for busy homes and businesses that need headroom.',
     badges: [
-      'Gigabit speeds where available',
+      'Full fibre speeds up to 1000Mbps where available',
       'Static IP available',
       'Bring your own router for £0',
       'Final price confirmed before order',

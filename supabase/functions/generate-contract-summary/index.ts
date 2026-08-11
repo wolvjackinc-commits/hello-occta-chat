@@ -9,30 +9,34 @@ import {
   loadGiacomCandidates,
 } from "../_shared/buildPlanResolver.ts";
 import { speedEstimatesFor, speedStatementFor } from "../_shared/journey2Snapshot.ts";
+import { resolveNoticePeriod } from "../_shared/noticePeriod.ts";
 
 const CONTRACT_TERMS_VERSION = "2026-08-10-v4";
 const money = (n: number) => `£${Number(n).toFixed(2)}`;
 
-function buildExitTerms(planTerm: string, in12: number, after12: number) {
+function buildExitTerms(planTerm: string, in12: number, after12: number, noticeDays: number, noticeLabel: string) {
   const networkCharge = `A network cease/migration-away charge applies when the broadband service is ceased or transferred: ${money(in12)} incl. VAT if it ends within 12 months of going live, or ${money(after12)} incl. VAT after 12 months.`;
+  const noticeSentence = noticeDays > 0
+    ? `You can end the broadband service by giving ${noticeLabel} notice.`
+    : `No notice period applies to ending the broadband service.`;
   if (planTerm === "flex_30") {
     return {
-      text: `Flex 30 has no remaining-month early termination charge. ${networkCharge} This is separate from any unpaid usage or account balance. It will not be charged where a statutory or regulatory penalty-free exit right applies, or where OCCTA confirms a waiver in writing.`,
+      text: `Flex 30 has no remaining-month early termination charge. ${noticeSentence} ${networkCharge} This is separate from any unpaid usage or account balance. It will not be charged where a statutory or regulatory penalty-free exit right applies, or where OCCTA confirms a waiver in writing.`,
       snapshot: {
         kind: "flex_30",
         minimum_term_months: 0,
-        notice_period_days: 30,
+        notice_period_days: noticeDays,
         early_termination_charge: "None — no remaining-month ETF on Flex 30",
         network_cease_migration_charge: { within_12_months_incl_vat: in12, after_12_months_incl_vat: after12 },
       },
     };
   }
   return {
-    text: `Price Lock 24 has a 24-month minimum term. If you choose to end the broadband service during that minimum term and no penalty-free exit right applies, an Early Termination Charge may apply. It is calculated from the recurring broadband charges remaining to the end of the minimum term, less VAT that no longer becomes due and less costs OCCTA reasonably saves because the service ends early. It will never exceed the remaining contracted broadband charges. ${networkCharge} After the minimum term there is no remaining-month ETF; the stated notice period still applies.`,
+    text: `Price Lock 24 has a 24-month minimum term. If you choose to end the broadband service during that minimum term and no penalty-free exit right applies, an Early Termination Charge may apply. It is calculated from the recurring broadband charges remaining to the end of the minimum term, less VAT that no longer becomes due and less costs OCCTA reasonably saves because the service ends early. It will never exceed the remaining contracted broadband charges. ${networkCharge} After the minimum term there is no remaining-month ETF; the stated notice period of ${noticeLabel} still applies.`,
     snapshot: {
       kind: "fixed_term_fair_loss",
       minimum_term_months: 24,
-      notice_period_days: 30,
+      notice_period_days: noticeDays,
       calculation_method: "Remaining recurring broadband charges to end of minimum term, less VAT no longer due and direct costs OCCTA reasonably saves because the service ends early",
       cap_or_formula: "Never more than the remaining contracted broadband charges; no double recovery of the same loss",
       network_cease_migration_charge: { within_12_months_incl_vat: in12, after_12_months_incl_vat: after12 },
@@ -79,6 +83,16 @@ Deno.serve(async (req) => {
 
   let bpAddendum = "";
   let bpFields: Record<string, unknown> = {};
+
+  // Notice period is derived from the quote — never hardcoded. Legacy quotes with
+  // unresolvable notice data go to manual review instead of assuming 30 days.
+  const notice = resolveNoticePeriod(q as any);
+  if (!notice) {
+    return jsonResponse({
+      error: "notice_period_unresolved",
+      message: "This quote does not contain a resolvable notice period. Confirm the exact notice period on the final quote before issuing the Contract Summary (manual review required).",
+    }, 409);
+  }
   let exitText: string | null = null;
   let etfPolicySnapshot: Record<string, unknown> | null = null;
   let exactDown: number | null = q.estimated_download_speed ?? null;
@@ -117,7 +131,7 @@ Deno.serve(async (req) => {
 
     exactDown = resolved.estimated_download_mbps;
     exactUp = resolved.estimated_upload_mbps;
-    const exit = buildExitTerms(q.plan_term, resolved.internal.disconnect_fee_in_12m_incl_vat, resolved.internal.disconnect_fee_after_12m_incl_vat);
+    const exit = buildExitTerms(q.plan_term, resolved.internal.disconnect_fee_in_12m_incl_vat, resolved.internal.disconnect_fee_after_12m_incl_vat, notice.days, notice.text);
     exitText = exit.text;
     etfPolicySnapshot = exit.snapshot;
 
@@ -172,10 +186,10 @@ Deno.serve(async (req) => {
   const isVoice = q.service_type === "digital_voice" || selectedAddonIds.includes("digital_voice");
 
   const contractLength = q.plan_term === "price_lock_24"
-    ? "Price Lock 24 — 24 months minimum term."
+    ? `Price Lock 24 — 24 months minimum term. Notice period: ${notice.text}.`
     : q.plan_term === "flex_30"
-      ? "Flex 30 — 30-day rolling. Cancel with 30 days' notice."
-      : q.plan_type === "flex" ? "30-day rolling. Cancel with 30 days' notice." : `${q.contract_length_months} months minimum term.`;
+      ? `Flex 30 — rolling monthly. Cancel with ${notice.text} notice.`
+      : q.plan_type === "flex" ? `Rolling monthly. Cancel with ${notice.text} notice.` : `${q.contract_length_months} months minimum term. Notice period: ${notice.text}.`;
 
   const { data: cs, error: csErr } = await supabase.from("contract_summaries").insert({
     quote_id: q.id,
@@ -203,8 +217,8 @@ Deno.serve(async (req) => {
     cease_cancellation_charges: exitText ?? (q.service_type === "broadband" ? null : "See the service-specific terms for any cancellation charges."),
     contract_length: contractLength,
     minimum_term_months: q.plan_term === "price_lock_24" ? 24 : (q.plan_term === "flex_30" ? 0 : (q.contract_length_months ?? null)),
-    notice_period: q.notice_period ?? "30 days",
-    notice_period_days: 30,
+    notice_period: notice.text,
+    notice_period_days: notice.days,
     etf_policy_snapshot: etfPolicySnapshot,
     estimated_download_speed: exactDown ?? speedEstimatesFor(q.speed_bucket)?.download ?? null,
     estimated_upload_speed: exactUp ?? speedEstimatesFor(q.speed_bucket)?.upload ?? null,

@@ -143,6 +143,8 @@ export const AdminQuotes = () => {
           .from("contract_summaries")
           .select("id, quote_id, cs_number, status, version")
           .in("quote_id", quoteIds)
+          // Information updates are records-only — never the active/pending CS.
+          .eq("is_information_update", false)
           .order("version", { ascending: false });
         (cs ?? []).forEach((c: any) => { if (!csMap.has(c.quote_id)) csMap.set(c.quote_id, c); });
       }
@@ -328,7 +330,7 @@ export const AdminQuotes = () => {
 
   const openPdf = async (id: string) => {
     try {
-      const { data: cs } = await (supabase as any).from("contract_summaries").select("id").eq("quote_id", id).neq("status","superseded").order("version",{ascending:false}).limit(1).maybeSingle();
+      const { data: cs } = await (supabase as any).from("contract_summaries").select("id").eq("quote_id", id).eq("is_information_update", false).neq("status","superseded").order("version",{ascending:false}).limit(1).maybeSingle();
       if (!cs?.id) { toast({ title: "No contract summary yet", variant: "destructive" }); return; }
       const { data, error } = await supabase.functions.invoke("generate-contract-summary-pdf", { body: { contract_summary_id: cs.id } });
       if (error) throw error;

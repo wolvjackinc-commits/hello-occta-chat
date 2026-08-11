@@ -4,6 +4,9 @@
 // returned to a customer browser; callers must use stripInternal().
 
 export type SpeedBucket   = "essential" | "superfast" | "ultrafast" | "gigabit";
+// `gigabit` is an INTERNAL supplier bucket only (1000/115 rows). Customers see
+// exactly three public bands: Essential, Superfast, Ultrafast.
+export const PUBLIC_SPEED_BUCKETS = ["essential", "superfast", "ultrafast"] as const;
 export type PlanTerm      = "price_lock_24" | "flex_30";
 export type RouterChoice  = "own" | "standard" | "premium" | "business";
 export type RouterPayType = "none" | "one_off" | "monthly";
@@ -148,7 +151,8 @@ export const SETUP_CONFIRMED_BEFORE_ORDER =
   "Final setup and activation charges are confirmed before order.";
 
 export function speedBucketLabel(b: SpeedBucket): string {
-  return ({ essential: "Essential Fibre", superfast: "Superfast Fibre", ultrafast: "Ultrafast Fibre", gigabit: "Gigabit Fibre" } as const)[b];
+  // Internal gigabit rows are always presented as the public Ultrafast band.
+  return ({ essential: "Essential Fibre", superfast: "Superfast Fibre", ultrafast: "Ultrafast Fibre", gigabit: "Ultrafast Fibre" } as const)[b];
 }
 export function planTermLabel(t: PlanTerm): string {
   return t === "price_lock_24" ? "Price Lock 24" : "Flex 30";
@@ -158,9 +162,9 @@ export function readFairPricing(fp: any) {
   return {
     headline: fp?.headline ?? {
       essential: { lock24: 34.99, flex30: 37.99 },
-      superfast: { lock24: 43.99, flex30: 45.99 },
-      ultrafast: { lock24: 51.99, flex30: 52.99 },
-      gigabit:   { lock24: 57.99, flex30: 58.99 },
+      superfast: { lock24: 39.99, flex30: 44.99 },
+      ultrafast: { lock24: 49.99, flex30: 52.99 },
+      gigabit:   { lock24: 49.99, flex30: 52.99 },
     },
     router: fp?.router ?? { standardOneOff: 94.99, standardMonthly: 4.99, premiumOneOff: 129.99, premiumMonthly: 7.99 },
     setup:  fp?.setup ?? { remote: 0, standard: 49.99, engineer: 134.99 },

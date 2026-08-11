@@ -14,6 +14,7 @@ import {
   SpeedBucket, PlanTerm, RouterChoice, RouterPaymentType, SetupChoice,
   SPEED_BUCKET_META, PRICE_LOCK_WORDING, FLEX_30_WORDING, FROM_PRICE_DISCLOSURE,
   FIRST_BILL_PROMISE, FAIR_PRICING_DEFAULTS,
+  PUBLIC_SPEED_BUCKETS, toPublicBucket,
 } from "@/lib/pricing/fairPricing";
 import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import {
@@ -63,7 +64,8 @@ const SPEED_LABELS: Record<SpeedBucket, string> = {
   essential: "Essential Fibre",
   superfast: "Superfast Fibre",
   ultrafast: "Ultrafast Fibre",
-  gigabit:   "Gigabit Fibre",
+  // Internal bucket only — never a separate public plan.
+  gigabit:   "Ultrafast Fibre",
 };
 const TERM_LABELS: Record<PlanTerm, string> = {
   price_lock_24: "Price Lock 24",
@@ -130,9 +132,11 @@ function BuildPlanInner() {
   const testTech = searchParams.get("primary_technology") || undefined;
   const { toast } = useToast();
   const { status, result, selectedAddress } = useAvailability();
-  const validBuckets: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
+  // Public site offers exactly three bands; a legacy ?plan=gigabit link maps to Ultrafast.
+  const validBuckets: SpeedBucket[] = [...PUBLIC_SPEED_BUCKETS];
+  const normalisedPrefill = prefillPlan ? toPublicBucket(prefillPlan) : null;
   const initialBucket: SpeedBucket | null =
-    prefillPlan && validBuckets.includes(prefillPlan) ? prefillPlan : null;
+    normalisedPrefill && validBuckets.includes(normalisedPrefill) ? normalisedPrefill : null;
   const [step, setStep] = useState(initialBucket ? 2 : 1);
   const [bucket, setBucket] = useState<SpeedBucket | null>(initialBucket);
   const [term, setTerm] = useState<PlanTerm | null>(null);
@@ -208,13 +212,13 @@ function BuildPlanInner() {
   }, [step, router, routerPay]);
 
   const eligibleBuckets = useMemo<SpeedBucket[]>(() => {
-    const all: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
+    const all: SpeedBucket[] = [...PUBLIC_SPEED_BUCKETS];
     // National policy: every valid UK postcode sees all main buckets.
     // Live availability data, when present, only personalises confirmation copy.
     if (isFallback) return all;
     const plans = result?.eligibleOcctaPlans ?? [];
     if (!plans.length) return all;
-    return all.filter((b) => plans.includes(b));
+    return all.filter((b) => plans.includes(b) || (b === "ultrafast" && plans.includes("gigabit")));
   }, [result, isFallback]);
 
   // True when we have not personalised plans for this address.
@@ -380,7 +384,7 @@ function BuildPlanInner() {
             {step === 1 && (
               <Step title="Choose your speed" headingRef={headingRef}>
                 <div className="grid gap-3">
-                  {(["essential","superfast","ultrafast","gigabit"] as SpeedBucket[]).map((b) => {
+                  {([...PUBLIC_SPEED_BUCKETS] as SpeedBucket[]).map((b) => {
                     const meta = SPEED_BUCKET_META[b];
                     const isEligible = eligibleBuckets.includes(b);
                     const selected = bucket === b;

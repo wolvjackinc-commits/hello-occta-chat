@@ -54,10 +54,12 @@ export async function hasAcceptedContractSummary(
     if (ctx.contractSummaryId) {
       const { data, error } = await (supabase as any)
         .from("customer_contract_summaries")
-        .select("id, status")
+        .select("id, status, is_information_update")
         .eq("id", ctx.contractSummaryId)
         .maybeSingle();
       if (error || !data) return { accepted: false, contractSummaryId: null };
+      // Information updates are records-only and can never satisfy acceptance.
+      if (data.is_information_update === true) return { accepted: false, contractSummaryId: null };
       return { accepted: data.status === "accepted", contractSummaryId: data.id };
     }
     return { accepted: false, contractSummaryId: null };

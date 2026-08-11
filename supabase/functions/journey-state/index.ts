@@ -194,6 +194,8 @@ Deno.serve(perfServe("journey-state", async (req) => {
     .from("contract_summaries")
     .select("id, public_token_hash, status, version")
     .eq("quote_id", q.id)
+    // Information updates are records-only and never need acceptance.
+    .eq("is_information_update", false)
     .neq("status", "superseded")
     .order("version", { ascending: false })
     .limit(1)

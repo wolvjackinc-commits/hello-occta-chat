@@ -14,13 +14,15 @@ const DEFAULTS: FP = {
   priceLockEnabled: true,
   flex30Enabled: true,
   headline: {
-    essential: { lock24: 29.99, flex30: 32.99 },
-    superfast: { lock24: 34.99, flex30: 37.99 },
-    ultrafast: { lock24: 39.99, flex30: 44.99 },
-    gigabit:   { lock24: 44.99, flex30: 49.99 },
+    // Governed customer-facing headline prices (incl. VAT).
+    essential: { lock24: 34.99, flex30: 37.99 },
+    superfast: { lock24: 39.99, flex30: 44.99 },
+    ultrafast: { lock24: 49.99, flex30: 52.99 },
+    // Internal supplier bucket only — mirrors Ultrafast, never a public band.
+    gigabit:   { lock24: 49.99, flex30: 52.99 },
   },
-  router: { standardOneOff: 79.99, standardMonthly: 4.99, premiumOneOff: 129.99, premiumMonthly: 7.99 },
-  setup:  { remote: 0, standard: 49.99, engineer: 99.99 },
+  router: { standardOneOff: 94.99, standardMonthly: 4.99, premiumOneOff: 129.99, premiumMonthly: 7.99 },
+  setup:  { remote: 0, standard: 49.99, engineer: 134.99 },
   addons: { priorityMonthly: 6.99, staticIpMonthly: 5.00, digitalVoiceMonthly: 5.99, paperBillingMonthly: 2.50 },
   buffers: { support: 1.00, paymentFailure: 0.50, lockRisk: 1.00, flexRisk: 2.00, rewards: 0.00 },
   floors:  { essentialLockByo: 1.50, essentialFlex: 3.50, superfast: 3.50, ultrafast: 4.50, gigabit: 4.50 },
@@ -80,9 +82,13 @@ export function AdminFairPricing() {
       </Section>
 
       <Section title="Headline monthly prices (incl. VAT)">
+        <p className="text-xs text-muted-foreground">
+          Three public bands: Essential (up to 80), Superfast (up to 330), Ultrafast (up to 1000).
+          “Gigabit” is an internal supplier bucket only and must mirror Ultrafast — it is never shown as a fourth public plan.
+        </p>
         {(["essential","superfast","ultrafast","gigabit"] as const).map((b) => (
           <div key={b} className="grid grid-cols-3 gap-3 items-center">
-            <Label className="capitalize">{b}</Label>
+            <Label className="capitalize">{b === "gigabit" ? "gigabit (internal → Ultrafast)" : b}</Label>
             <Field label="Price Lock 24 £" value={fp.headline?.[b]?.lock24} onChange={(v) => num(["headline", b, "lock24"], v)} />
             <Field label="Flex 30 £" value={fp.headline?.[b]?.flex30} onChange={(v) => num(["headline", b, "flex30"], v)} />
           </div>

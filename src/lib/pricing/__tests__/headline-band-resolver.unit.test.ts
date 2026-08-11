@@ -67,13 +67,18 @@ describe("public headline bands survive supplier economics", () => {
     expect(flex.bumped).toBe(false);
   });
 
-  it("keeps 1000 Mbps Ultrafast at 49.99 PL24 / 52.99 Flex with no fourth band", () => {
-    const giga = candidate({ product_name: "Giacom FTTP 1000/115", download_speed_mbps: 1000, upload_speed_mbps: 115, supplier_monthly_net: 33, bucket_hint: "ultrafast" });
-    const pl = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "ultrafast", plan_term: "price_lock_24" }, fp, [{ ...giga, min_term_months: 24 }]));
-    const flex = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "ultrafast", plan_term: "flex_30" }, fp, [giga]));
+  it("keeps 1000 Mbps traffic on the public Ultrafast band at 49.99 PL24 / 52.99 Flex", () => {
+    // A 1000 Mbps line resolves through the internal gigabit supplier bucket, which
+    // must price and label as the public Ultrafast band — never a fourth plan.
+    const giga = candidate({ product_name: "Giacom FTTP 1000/115", download_speed_mbps: 1000, upload_speed_mbps: 115, supplier_monthly_net: 33, bucket_hint: "gigabit" });
+    const pl = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "gigabit", plan_term: "price_lock_24" }, fp, [{ ...giga, min_term_months: 24 }]));
+    const flex = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "gigabit", plan_term: "flex_30" }, fp, [giga]));
     expect(pl.monthly_broadband_incl_vat).toBe(49.99);
     expect(flex.monthly_broadband_incl_vat).toBe(52.99);
-    expect(pl.plan_label ?? "").not.toMatch(/gigabit/i);
+    expect(JSON.stringify(pl)).not.toMatch(/gigabit fibre/i);
+    // The internal 550 bucket prices identically, so no fourth public price exists.
+    const mid = candidate({ product_name: "Giacom FTTP 500/70", download_speed_mbps: 500, upload_speed_mbps: 70, supplier_monthly_net: 30, bucket_hint: "ultrafast" });
+    expect(priced(resolveBuildPlanPrice({ ...base, speed_bucket: "ultrafast", plan_term: "flex_30" }, fp, [mid])).monthly_broadband_incl_vat).toBe(52.99);
   });
 
   it("keeps Essential at 34.99 PL24 / 37.99 Flex", () => {
@@ -84,7 +89,7 @@ describe("public headline bands survive supplier economics", () => {
   });
 
   it("auto-bumps only the individual quote when an exact product is too expensive", () => {
-    const pricey = candidate({ supplier_monthly_net: 40, min_term_months: 24 });
+    const pricey = candidate({ supplier_monthly_net: 34, min_term_months: 24 });
     const r = priced(resolveBuildPlanPrice({ ...base, speed_bucket: "superfast", plan_term: "price_lock_24" }, fp, [pricey]));
     expect(r.bumped).toBe(true);
     expect(r.monthly_broadband_incl_vat).toBeGreaterThan(39.99);
@@ -96,7 +101,7 @@ describe("public headline bands survive supplier economics", () => {
     const r = resolveBuildPlanPrice(
       { ...base, speed_bucket: "superfast", plan_term: "price_lock_24" },
       { ...fp, fallback: "quote_only" },
-      [candidate({ supplier_monthly_net: 40, min_term_months: 24 })],
+      [candidate({ supplier_monthly_net: 34, min_term_months: 24 })],
     );
     expect(r.quote_only).toBe(true);
   });

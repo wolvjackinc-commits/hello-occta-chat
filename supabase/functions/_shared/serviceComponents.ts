@@ -5,6 +5,7 @@
 
 import type { ServiceComponent, PriceChangeSnapshot } from "./twoDocValidators.ts";
 import { PRICE_CHANGE_NONE } from "./twoDocLegalText.ts";
+import { resolveNoticePeriod, noticeText } from "./noticePeriod.ts";
 
 interface QuoteLike {
   id: string;

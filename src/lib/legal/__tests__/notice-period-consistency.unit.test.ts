@@ -10,7 +10,7 @@ const read = (p: string) => fs.readFileSync(p, "utf8");
 
 describe("notice period is derived, never invented", () => {
   it("keeps normal 30-day quotes at 30 days", () => {
-    expect(resolveNoticePeriod({ id: "q", notice_period: "30 days", plan_term: "flex_30" })).toEqual({
+    expect(resolveNoticePeriod({ notice_period: "30 days", plan_term: "flex_30" })).toEqual({
       days: 30,
       text: "30 days",
       source: "quote_text",

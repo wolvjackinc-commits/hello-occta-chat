@@ -82,7 +82,7 @@ export const learnPages: LearnPage[] = [
       { question: "Will FTTP work in a power cut?", answer: "The fibre itself is unaffected, but your router needs mains power. Most people use a mobile phone as a backup during outages. If you rely on a landline for medical alarms, ask us about a battery back-up unit." },
       { question: "How fast is FTTP with OCCTA?", answer: "Speeds range from around 100Mbps up to 900Mbps depending on the plan you choose and what your line can deliver. Check availability by postcode to see what's on offer at your address." },
     ],
-    related: [BROADBAND, CHECK, { label: "Fibre broadband explained", to: "/fibre-broadband" }, { label: "Broadband speed guide", to: "/learn/broadband-speed-guide" }],
+    related: [BROADBAND, CHECK, { label: "Fibre broadband explained", to: "/fibre-broadband" }, { label: "Coverage areas", to: "/coverage-areas", description: "See what full fibre is live near you." }, { label: "Broadband speed guide", to: "/learn/broadband-speed-guide" }],
     keywords: "FTTP, full fibre broadband UK, FTTP vs FTTC, what is FTTP, fibre to the premises",
   },
   {
@@ -224,7 +224,7 @@ export const learnPages: LearnPage[] = [
       { question: "What if I'm still in contract?", answer: "The new provider must tell you about any early-termination fees your old provider will charge before the switch goes ahead. You can cancel the switch at that point if you don't want to pay." },
       { question: "Can I keep my phone number?", answer: "Yes — number porting is handled as part of the OTS process." },
     ],
-    related: [SWITCH, BROADBAND, CHECK, { label: "Leaving BT?", to: "/learn/leaving-bt" }],
+    related: [SWITCH, BROADBAND, CHECK, { label: "Business broadband", to: "/business/broadband", description: "Switching a business line instead." }, { label: "Leaving BT?", to: "/learn/leaving-bt" }],
     keywords: "how to switch broadband UK, one touch switch, changing broadband providers, switch ISP UK",
   },
   {
@@ -333,7 +333,7 @@ export const learnPages: LearnPage[] = [
       { question: "Can I leave without a fee if my price goes up?", answer: "Only if the increase wasn't clearly stated at sign-up. Under the new rules that's rare." },
       { question: "Does OCCTA raise prices mid-contract?", answer: "No. Our Price Lock plans are fixed for the term, and Flex plans are rolling monthly — you're notified 30 days before any change." },
     ],
-    related: [{ label: "No-contract broadband", to: "/no-contract-broadband-uk" }, { label: "How to switch", to: "/learn/how-to-switch-broadband" }, BROADBAND, CHECK],
+    related: [{ label: "Price Lock 24 broadband", to: "/broadband/contract-saver", description: "Fixed monthly price for 24 months." }, { label: "Flex 30 rolling monthly", to: "/broadband/flex", description: "Rolling monthly where eligible." }, { label: "How to switch", to: "/learn/how-to-switch-broadband" }, BROADBAND, CHECK],
     keywords: "broadband price rise, CPI + 3.9% broadband, mid-contract price rise, Ofcom price rise rules",
   },
   /* ─── SIM & voice ─── */

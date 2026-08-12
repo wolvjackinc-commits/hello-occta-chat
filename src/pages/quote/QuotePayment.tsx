@@ -7,7 +7,7 @@ export default function QuotePayment() {
   const { token } = useParams();
   return (
     <Layout>
-      <SEO title="Next step — payment" description="OCCTA will issue your secure payment link." canonical={`/quote/payment/${token}`} />
+      <SEO title="Next step — payment" description="OCCTA will issue your secure payment link." canonical={`/quote/payment/${token}`} noIndex />
       <section className="container mx-auto px-4 py-16 max-w-xl text-center">
         <div className="w-14 h-14 mx-auto mb-6 border-4 border-foreground bg-primary text-primary-foreground flex items-center justify-center">
           <Check className="w-7 h-7" />

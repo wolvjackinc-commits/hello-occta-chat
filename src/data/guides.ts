@@ -86,7 +86,7 @@ export const guides: Guide[] = [
     ],
     faqs: [
       { question: 'Is no contract broadband slower than contract broadband?', answer: 'No. At OCCTA, you get the same speeds regardless of contract type — up to 900Mbps on our fastest plan.' },
-      { question: 'Can I cancel at any time?', answer: 'Yes. Give us 30 days notice and you can leave whenever you like, no exit fees.' },
+      { question: 'Can I cancel at any time?', answer: 'On Flex 30 (rolling monthly, where eligible) yes — 30 days notice and no exit fee. On Price Lock 24 the 24-month term applies and your Contract Summary sets out any early-exit charge.' },
       { question: 'Is there a setup fee?', answer: 'Setup from £0 where available during promotional periods. Check our broadband page for the latest offers.' },
       { question: 'Do I need to return the router?', answer: 'Yes, the router should be returned if you cancel within the first 12 months.' },
     ],
@@ -141,7 +141,7 @@ export const guides: Guide[] = [
       },
     ],
     faqs: [
-      { question: 'What is the cheapest broadband in the UK?', answer: 'OCCTA offers broadband from £34.99 per month with no hidden fees, no contracts, and speeds up to 900Mbps.' },
+      { question: 'What is the cheapest broadband in the UK?', answer: 'OCCTA broadband starts at £34.99 per month with no hidden fees and no mid-contract price rises, with speeds up to 1000Mbps where full fibre is available.' },
       { question: 'Are there any hidden fees?', answer: 'Not with OCCTA. The price advertised is the price you pay, including router and unlimited data.' },
       { question: 'Is cheap broadband reliable?', answer: 'Yes. Our network delivers the same fibre infrastructure used by larger providers. Speed and reliability are not compromised.' },
     ],
@@ -318,7 +318,7 @@ export const guides: Guide[] = [
     slug: 'cheap-sim-only-deals',
     title: 'Cheap SIM Only Deals UK: Best Budget Plans',
     metaTitle: 'Cheap SIM Only Deals UK — Budget Mobile Plans',
-    description: 'Find the best cheap SIM only deals in the UK. No credit check, no contracts, 5G included. Compare what matters and avoid overpaying for mobile.',
+    description: 'How to compare cheap SIM only deals in the UK: data, 5G, roaming and minimum term. OCCTA SIM plans are rolling monthly with no credit check.',
     keywords: 'cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only no contract, best SIM deals UK, no credit check SIM',
     category: 'sim',
     categoryLabel: 'SIM Plans',
@@ -401,7 +401,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Gaming',
         paragraphs: [
-          'OCCTA offers speeds up to 900Mbps on the Openreach fibre network with unlimited data and no throttling. There are no contracts, so you can upgrade your speed tier anytime as your gaming needs change.',
+          'OCCTA offers speeds up to 1000Mbps on the Openreach fibre network with unlimited data and no throttling. Flex 30 rolling monthly is available where eligible if you want to stay flexible.',
         ],
       },
     ],
@@ -452,7 +452,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Home Workers',
         paragraphs: [
-          'OCCTA fibre broadband offers speeds up to 900Mbps with unlimited data and no throttling. With no contracts, you can upgrade your speed tier as your work demands change. UK-based support is available if you need help.',
+          'OCCTA fibre broadband offers speeds up to 1000Mbps with unlimited data and no throttling. Choose Price Lock 24 for a fixed price or Flex 30 rolling monthly where eligible. UK-based support is available if you need help.',
         ],
       },
     ],
@@ -556,7 +556,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Students',
         paragraphs: [
-          'OCCTA broadband starts from £34.99/mo with no contract, no credit check, and Setup from £0 where available. Perfect for student accommodation of any length. When you move out, give us 30 days notice and that is it — no exit fees.',
+          'OCCTA broadband starts from £34.99/mo with no hard credit check and setup from £0 where available. On Flex 30 (rolling monthly, where eligible) you give 30 days notice when you move out and there is no exit fee.',
         ],
       },
     ],

@@ -97,7 +97,7 @@ export default function ContractSummaryAuthedView() {
 
   return (
     <Layout>
-      <SEO title={`${infoUpdate ? "Contract Information" : "Contract Summary"} ${cs.cs_number}`} description="OCCTA contract information — review and download." canonical={`/dashboard/contract/${cs.id}`} />
+      <SEO title={`${infoUpdate ? "Contract Information" : "Contract Summary"} ${cs.cs_number}`} description="OCCTA contract information — review and download." canonical={`/dashboard/contract/${cs.id}`} noIndex />
       <section className="container mx-auto px-4 py-10 max-w-2xl">
         <button onClick={() => navigate("/dashboard")} className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground mb-4"><ArrowLeft className="w-3 h-3" /> Back to dashboard</button>
 

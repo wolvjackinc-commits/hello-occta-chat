@@ -31,7 +31,7 @@ export default function QuoteThankYou() {
   const refQS = ref ? `&ref=${encodeURIComponent(ref)}` : "";
   return (
     <Layout>
-      <SEO title="Quote request received" description="Thanks — OCCTA will check the best available option for your address." canonical="/quote/thank-you" />
+      <SEO title="Quote request received" description="Thanks — OCCTA will check the best available option for your address." canonical="/quote/thank-you" noIndex />
       <section className="container mx-auto px-4 py-12 max-w-2xl">
         <div className="text-center">
           <div className="w-14 h-14 mx-auto mb-6 border-4 border-foreground bg-primary text-primary-foreground flex items-center justify-center">

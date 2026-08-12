@@ -18,6 +18,12 @@ const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
 const SITE_NAME = 'OCCTA';
 const DEFAULT_KEYWORDS = 'UK broadband, price lock broadband, 30 day rolling broadband, flexible broadband, fibre broadband UK, 5G SIM UK, SIM only deals UK, OCCTA';
 
+const toAbsoluteUrl = (value: string) => {
+  if (/^https?:\/\//i.test(value)) return value;
+  const path = value.startsWith('/') ? value : `/${value}`;
+  return `${BASE_URL}${path}`;
+};
+
 export const SEO = ({
   title,
   description = `UK fibre broadband from £${getFromPrices().broadband}/mo. Price Lock 24 or Flex 30 where eligible. Clear first bill. UK-based support.`,
@@ -32,7 +38,16 @@ export const SEO = ({
   const fullTitle = title
     ? `${title} | ${SITE_NAME}`
     : `${SITE_NAME} — UK Broadband, 5G SIM & Digital Home Phone`;
-  const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : undefined;
+
+  const browserPath = typeof window !== 'undefined'
+    ? window.location.pathname
+    : '/';
+  const canonicalPath = canonical || browserPath || '/';
+  const canonicalUrl = toAbsoluteUrl(canonicalPath);
+  const socialImage = toAbsoluteUrl(image);
+  const robotsContent = noIndex
+    ? 'noindex, nofollow'
+    : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
 
   return (
     <Helmet>
@@ -41,35 +56,35 @@ export const SEO = ({
       <meta name="title" content={fullTitle} />
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
-      
+
       {/* Canonical URL */}
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
-      
+      <link rel="canonical" href={canonicalUrl} />
+
       {/* Robots */}
-      {noIndex && <meta name="robots" content="noindex, nofollow" />}
-      
+      <meta name="robots" content={robotsContent} />
+
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
-      <meta property="og:image:alt" content="OCCTA - Affordable UK Broadband and SIM Plans" />
+      <meta property="og:image" content={socialImage} />
+      <meta property="og:image:alt" content="OCCTA UK broadband, SIM and Digital Voice" />
       <meta property="og:site_name" content={SITE_NAME} />
       <meta property="og:locale" content="en_GB" />
-      {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
-      
+      <meta property="og:url" content={canonicalUrl} />
+
       {/* Price Tags for Products */}
       {price && <meta property="product:price:amount" content={price} />}
       {price && <meta property="product:price:currency" content={priceCurrency} />}
-      
+
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@OCCTA" />
       <meta name="twitter:creator" content="@OCCTA" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
-      <meta name="twitter:image:alt" content="OCCTA - Affordable UK Broadband and SIM Plans" />
+      <meta name="twitter:image" content={socialImage} />
+      <meta name="twitter:image:alt" content="OCCTA UK broadband, SIM and Digital Voice" />
     </Helmet>
   );
 };

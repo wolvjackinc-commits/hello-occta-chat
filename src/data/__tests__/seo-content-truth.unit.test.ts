@@ -21,7 +21,8 @@ const FILES = [
   "src/pages/seo/BroadbandPlans.tsx",
 ];
 
-const read = (f: string) => fs.readFileSync(path.resolve(process.cwd(), f), "utf-8");
+const ROOT = path.resolve(__dirname, "../../..");
+const read = (f: string) => fs.readFileSync(path.resolve(ROOT, f), "utf-8");
 
 const FORBIDDEN: RegExp[] = [
   /£22\.99/,

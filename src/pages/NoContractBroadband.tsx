@@ -38,14 +38,14 @@ const itemVariants = {
 };
 
 const trustBadges = [
-  { icon: Shield, text: "No Contracts" },
+  { icon: Shield, text: "Flex 30 Rolling" },
   { icon: Check, text: "No Hidden Fees" },
   { icon: MapPin, text: "UK-Wide Coverage" },
   { icon: Phone, text: "UK-Based Support" },
 ];
 
 const whySwitchReasons = [
-  "No 12, 18, or 24-month contracts",
+  "Flex 30: no 12, 18 or 24-month term where eligible",
   "No CPI-linked annual price rises",
   "No 'intro price then shock bill'",
   "30-day rolling options available where eligible without penalties",

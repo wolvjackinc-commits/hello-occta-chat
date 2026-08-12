@@ -12,8 +12,8 @@ import { Helmet } from "react-helmet-async";
  *  - /quote/contract-summary/*, /quote/payment/*, /quote/:token (single segment)
  *  - /dashboard/contract/*, /dashboard/receipt/*, /receipt/*
  *
- * Public funnel pages (KEEP indexable):
- *  - /quote/start, /quote/thank-you, /build-plan
+ * Transactional funnel pages are also noindex (/quote/start, /quote/thank-you).
+ * Public commercial/informational pages (e.g. /build-plan) stay indexable.
  */
 const EXACT_PRIVATE = new Set<string>([
   "/auth",
@@ -30,6 +30,8 @@ const EXACT_PRIVATE = new Set<string>([
   "/payment-result",
   "/dd/setup",
   "/pay/_internal",
+  "/quote/start",
+  "/quote/thank-you",
 ]);
 
 const PRIVATE_PREFIXES = [
@@ -44,9 +46,9 @@ const PRIVATE_PREFIXES = [
 /** Tokenised Journey 2 order links (/order/:token) must never be indexed. */
 const PRIVATE_TOKEN_ROOTS = ["/order/"];
 
-const PUBLIC_QUOTE_PATHS = new Set<string>(["/quote/start", "/quote/thank-you"]);
+const PUBLIC_QUOTE_PATHS = new Set<string>([]);
 
-function isPrivate(pathname: string): boolean {
+export function isPrivateRoutePath(pathname: string): boolean {
   if (EXACT_PRIVATE.has(pathname)) return true;
   for (const prefix of PRIVATE_PREFIXES) {
     if (pathname === prefix.replace(/\/$/, "") || pathname.startsWith(prefix)) return true;
@@ -65,7 +67,7 @@ function isPrivate(pathname: string): boolean {
 
 export default function PrivateRouteNoIndex() {
   const { pathname } = useLocation();
-  if (!isPrivate(pathname)) return null;
+  if (!isPrivateRoutePath(pathname)) return null;
   return (
     <Helmet>
       <meta name="robots" content="noindex, nofollow" />

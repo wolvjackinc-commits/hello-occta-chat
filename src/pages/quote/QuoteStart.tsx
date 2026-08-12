@@ -187,6 +187,7 @@ export default function QuoteStart() {
         title="Request a quote — OCCTA"
         description="Tell us what you need and we'll prepare a confirmed quote and Contract Summary before you pay. No commitment until you accept your Contract Summary."
         canonical="/quote/start"
+        noIndex
       />
       <section className="container mx-auto px-4 py-12 max-w-3xl">
         <p className="font-display text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">

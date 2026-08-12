@@ -26,7 +26,7 @@ export default function BroadbandPlansSeo() {
           { question: "How long does installation take?", answer: "Most switches complete in 10–14 days with no engineer visit needed. New FTTP installs take 2–4 weeks and include an engineer." },
         ]}
         relatedLinks={[
-          { label: "Flex 30 broadband", to: "/broadband/flex", description: "Rolling monthly, cancel anytime." },
+          { label: "Flex 30 broadband", to: "/broadband/flex", description: "Rolling monthly with 30 days’ notice where eligible." },
           { label: "Price Lock 24", to: "/broadband/contract-saver", description: "Fixed price for 24 months." },
           { label: "Coverage check", to: "/coverage-areas", description: "See what's live in your area." },
           { label: "Router options", to: "/routers", description: "Buy ours one-off or monthly, or bring your own." },

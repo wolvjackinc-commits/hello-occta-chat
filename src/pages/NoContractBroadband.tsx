@@ -64,7 +64,7 @@ const comparisonData = [
 const faqs = [
   {
     question: "Is there really no contract?",
-    answer: "Yes, genuinely. You pay monthly and can cancel whenever you like. No minimum term, no exit fees, no catches. We believe if our service is good enough, you'll stay because you want to — not because you're trapped.",
+    answer: "Flex 30 is genuinely rolling monthly where your address is eligible: you pay monthly, give 30 days’ notice and there is no exit fee. If you would rather fix your price, Price Lock 24 is a 24-month plan instead — your Contract Summary always states which applies.",
   },
   {
     question: "Can I 30-day rolling options available where eligible?",
@@ -95,7 +95,7 @@ const NoContractBroadband = () => {
   const faqSchema = createFAQSchema(faqs.slice(0, 6));
   const offerSchema = createOfferSchema({
     name: "No Contract Broadband",
-    description: "Flexible UK broadband with no contracts, no hidden fees, and no price rises.",
+    description: "Flex 30 rolling monthly UK broadband where eligible — 30 days’ notice, no hidden fees, no mid-contract price rises.",
     price: prices.broadband,
     url: "/no-contract-broadband-uk",
     category: "Broadband",
@@ -107,7 +107,7 @@ const NoContractBroadband = () => {
         title="No-Contract Broadband UK | Cheap & Flexible"
         description="Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband with no lock-ins, no hidden fees, and no surprise price rises."
         canonical="/no-contract-broadband-uk"
-        keywords="no contract broadband UK, flexible broadband, 30-day rolling options available where eligible broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
+        keywords="no contract broadband UK, flex 30 broadband, rolling monthly broadband, flexible broadband UK, 30 day notice broadband"
         price={prices.broadband}
       />
       <JsonLd data={offerSchema} />

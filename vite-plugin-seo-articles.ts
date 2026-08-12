@@ -68,6 +68,11 @@ function renderArticleHtml(template: string, article: AuthorityArticle): string 
   );
   html = replaceOrInsert(
     html,
+    /<meta name="robots" content="[^"]*" ?\/?>/,
+    '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />',
+  );
+  html = replaceOrInsert(
+    html,
     /<meta property="og:type" content="[^"]*" ?\/?>/,
     '<meta property="og:type" content="article" />',
   );

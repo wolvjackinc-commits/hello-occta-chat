@@ -201,7 +201,7 @@ export const helpArticles: HelpArticle[] = [
     sections: [
       { heading: "Tell us early", paragraphs: ["Give us at least 14 days' notice with the new address and move-in date. We'll check availability at the new property and book activation for the day you arrive."] },
       { heading: "What if speed at the new address is slower?", paragraphs: ["You can downgrade to a cheaper plan, free of charge. No lock-in, no penalty."] },
-      { heading: "What if it's not available?", paragraphs: ["We'll cancel without a fee. Genuinely — no contracts means no contracts."] },
+      { heading: "What if it's not available?", paragraphs: ["We'll cancel the order without a fee — you are only charged once your service is activated."] },
     ],
     faqs: [
       { question: "Will I keep my landline number?", answer: "Yes, Digital Voice numbers travel with you — they don't depend on the address." },

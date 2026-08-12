@@ -40,7 +40,7 @@ const NoContractBroadbandComparison = () => {
     <Layout>
       <SEO
         title="Compare No-Contract Broadband UK 2026"
-        description="Compare no-contract broadband from OCCTA, Cuckoo, NOW, BT & Sky. Rolling plans, no exit fees, no credit check. Pick the best flexible UK broadband."
+        description="Compare rolling monthly broadband from OCCTA Flex 30, Cuckoo, NOW, BT and Sky — notice periods, exit fees and real monthly costs side by side."
         canonical="/compare/no-contract-broadband"
         keywords="no contract broadband uk, rolling broadband, 30 day broadband, flexible broadband uk, broadband no exit fee, compare no contract broadband"
       />
@@ -116,7 +116,7 @@ const NoContractBroadbandComparison = () => {
           <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">Why OCCTA wins on flexibility</h2>
           <ul className="space-y-2">
             {[
-              "30-day rolling plans where eligible — cancel anytime",
+              "Flex 30 rolling monthly where eligible — 30 days’ notice",
               "No mid-contract price rises — ever",
               "No credit check on any broadband plan",
               "£0 exit fees, no penalty if you switch away",

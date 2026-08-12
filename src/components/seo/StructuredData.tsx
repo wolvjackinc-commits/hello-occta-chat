@@ -65,7 +65,7 @@ const localBusinessSchema = {
   areaServed: 'GB',
 };
 
-// Website Schema with SearchAction
+// Website Schema (no SearchAction — the site has no dedicated site-search results page)
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
@@ -80,11 +80,6 @@ const websiteSchema = {
       '@type': 'ImageObject',
       url: `${BASE_URL}/pwa-512x512.png`,
     },
-  },
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: `${BASE_URL}/broadband?search={search_term_string}`,
-    'query-input': 'required name=search_term_string',
   },
 };
 

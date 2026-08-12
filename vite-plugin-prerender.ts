@@ -44,7 +44,7 @@ const organizationSchema = {
   logo: `${BASE_URL}/pwa-512x512.png`,
   image: `${BASE_URL}/og-image.png`,
   description:
-    "Cheap UK broadband, SIM plans, and digital home phone services with no contracts. Affordable internet from £22.99/month.",
+    "UK fibre broadband, 5G SIM plans and digital home phone. Broadband from £34.99/month on Price Lock 24 or Flex 30 where eligible.",
   address: {
     "@type": "PostalAddress",
     streetAddress: "22 Pavilion View",
@@ -75,16 +75,11 @@ const websiteSchema = {
   name: "OCCTA LIMITED",
   url: BASE_URL,
   description:
-    "Cheap UK broadband, SIM plans, and digital home phone services with no contracts.",
+    "UK fibre broadband, 5G SIM plans and digital home phone. Simple telecom, clear terms.",
   publisher: {
     "@type": "Organization",
     name: "OCCTA LIMITED",
     logo: { "@type": "ImageObject", url: `${BASE_URL}/pwa-512x512.png` },
-  },
-  potentialAction: {
-    "@type": "SearchAction",
-    target: `${BASE_URL}/broadband?search={search_term_string}`,
-    "query-input": "required name=search_term_string",
   },
 };
 
@@ -94,7 +89,7 @@ const localBusinessSchema = {
   "@id": `${BASE_URL}/#localbusiness`,
   name: "OCCTA LIMITED",
   description:
-    "Cheap UK broadband, SIM plans, and digital home phone services. No contracts, no hidden fees, cancel anytime.",
+    "UK fibre broadband, 5G SIM plans and digital home phone. Clear terms, no mid-contract price rises, UK-based support.",
   url: BASE_URL,
   email: "hello@occta.co.uk",
   priceRange: "£",
@@ -117,24 +112,24 @@ const globalSchemas = [organizationSchema, websiteSchema, localBusinessSchema];
 const routes: RouteSEO[] = [
   {
     path: "/",
-    title: "OCCTA — Cheap UK Broadband & SIM, No Contracts",
+    title: "OCCTA — UK Broadband, SIM & Digital Voice",
     description:
-      "Cheap UK broadband from £22.99/mo. No contracts, 900Mbps fibre, 5G SIMs from £7.99 and digital home phone. Cancel anytime.",
+      "UK full fibre broadband from £34.99/mo on Price Lock 24 or Flex 30 where eligible. 5G SIMs from £7.99 and digital home phone. Clear terms, UK support.",
     canonical: "/",
     keywords:
-      "cheap broadband UK, no contract broadband, cancel anytime broadband, affordable internet UK, 5G SIM no credit check, cheap SIM deals UK, budget broadband 2025, fibre broadband no contract, unlimited broadband UK, OCCTA broadband",
-    price: "22.99",
+      "UK broadband, fibre broadband UK, price lock broadband, flexible broadband, 5G SIM UK, SIM only deals UK, digital home phone UK, OCCTA broadband",
+    price: "34.99",
     jsonLd: globalSchemas,
   },
   {
     path: "/broadband",
-    title: "Cheap Broadband UK - No Contract Fibre | OCCTA - Cheap UK Broadband & SIM",
+    title: "UK Fibre Broadband Deals from £34.99/mo | OCCTA",
     description:
-      "Cheap broadband UK from £22.99/mo. No contract fibre broadband with 900Mbps speeds. No price rises, no hidden fees, cancel anytime. Best budget broadband 2025.",
+      "UK fibre broadband from £34.99/mo, up to 1000Mbps. Choose Price Lock 24 or Flex 30 where eligible — no mid-contract price rises, clear first bill.",
     canonical: "/broadband",
     keywords:
-      "cheap broadband UK, no contract broadband, cancel anytime broadband, fibre broadband no contract, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK",
-    price: "22.99",
+      "UK fibre broadband, broadband deals UK, price lock broadband, flexible broadband, full fibre UK, 1000Mbps broadband, FTTP broadband UK",
+    price: "34.99",
     jsonLd: [
       localBusinessSchema,
       {
@@ -142,13 +137,13 @@ const routes: RouteSEO[] = [
         "@type": "Service",
         name: "OCCTA Broadband",
         description:
-          "Fast, reliable fibre broadband with speeds up to 900Mbps. No contracts, no price rises.",
+          "UK fibre broadband with speeds up to 1000Mbps on Price Lock 24 or Flex 30 where eligible. No mid-contract price rises.",
         url: `${BASE_URL}/broadband`,
         provider: { "@type": "Organization", name: "OCCTA LIMITED", url: BASE_URL },
         areaServed: { "@type": "Country", name: "United Kingdom" },
         offers: {
           "@type": "Offer",
-          price: "22.99",
+          price: "34.99",
           priceCurrency: "GBP",
           availability: "https://schema.org/InStock",
         },
@@ -157,12 +152,12 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/sim-plans",
-    title: "Cheap SIM Only Deals UK - 5G No Contract | OCCTA - Cheap UK Broadband & SIM",
+    title: "SIM Only Deals UK — 5G SIMs from £7.99 | OCCTA",
     description:
-      "Cheap SIM deals UK from £7.99/mo. 5G SIM no credit check, no contracts, EU roaming included. Best budget SIM plans 2025. Unlimited calls & texts.",
+      "UK 5G SIM only plans from £7.99/mo with EU roaming, unlimited calls and texts, and no minimum term on our rolling SIM plans.",
     canonical: "/sim-plans",
     keywords:
-      "cheap SIM deals UK, 5G SIM no credit check, no contract SIM, cheap mobile plans UK, SIM only deals, budget SIM UK, unlimited SIM UK, PAYG SIM cheap, best SIM deals 2025",
+      "cheap SIM deals UK, 5G SIM no credit check, no contract SIM, cheap mobile plans UK, SIM only deals, budget SIM UK, unlimited SIM UK, PAYG SIM cheap, best SIM only deals UK",
     price: "7.99",
     jsonLd: [
       localBusinessSchema,
@@ -171,7 +166,7 @@ const routes: RouteSEO[] = [
         "@type": "Service",
         name: "OCCTA SIM Plans",
         description:
-          "UK SIM-only mobile plans with 5G, EU roaming, and no contracts.",
+          "UK SIM-only mobile plans with 5G, EU roaming and no minimum term.",
         url: `${BASE_URL}/sim-plans`,
         provider: { "@type": "Organization", name: "OCCTA LIMITED", url: BASE_URL },
         areaServed: { "@type": "Country", name: "United Kingdom" },
@@ -186,9 +181,9 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/landline",
-    title: "Digital Home Phone UK - Add to Broadband | OCCTA - Cheap UK Broadband & SIM",
+    title: "Digital Home Phone UK - Add to Broadband | OCCTA",
     description:
-      "Add Digital Home Phone from £4.95/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. No contracts.",
+      "Add Digital Home Phone from £4.95/mo to your OCCTA broadband. Clear digital voice calls and keep your existing number.",
     canonical: "/landline",
     keywords:
       "digital home phone, digital voice UK, VoIP home phone, home phone broadband, cheap home phone UK, no contract home phone, digital home phone UK",
@@ -215,13 +210,13 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/no-contract-broadband-uk",
-    title: "No Contract Broadband UK | Cheap & Flexible Broadband | OCCTA - Cheap UK Broadband & SIM",
+    title: "No Contract Broadband UK — Flex 30 Rolling Monthly | OCCTA",
     description:
-      "Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband with no lock-ins, no hidden fees, and no surprise price rises.",
+      "Want broadband without a long contract? OCCTA Flex 30 is rolling monthly with 30 days' notice where eligible — no lock-in and no mid-contract price rises.",
     canonical: "/no-contract-broadband-uk",
     keywords:
-      "no contract broadband UK, flexible broadband, cancel anytime broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband",
-    price: "22.99",
+      "no contract broadband UK, flex 30 broadband, rolling monthly broadband, flexible broadband UK, 30 day notice broadband",
+    price: "34.99",
     jsonLd: [
       localBusinessSchema,
       {
@@ -229,8 +224,8 @@ const routes: RouteSEO[] = [
         "@type": "Offer",
         name: "No Contract Broadband",
         description:
-          "Flexible UK broadband with no contracts, no hidden fees, and no price rises.",
-        price: "22.99",
+          "Flex 30 rolling monthly UK broadband where eligible — 30 days' notice, no mid-contract price rises.",
+        price: "34.99",
         priceCurrency: "GBP",
         url: `${BASE_URL}/no-contract-broadband-uk`,
         availability: "https://schema.org/InStock",
@@ -240,9 +235,9 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/support",
-    title: "Help & Support - 24/7 Customer Service | OCCTA - Cheap UK Broadband & SIM",
+    title: "Help & Support - 24/7 Customer Service | OCCTA",
     description:
-      "OCCTA Support Hub – UK-based help for broadband, SIM and home phone. AI chat, FAQs, ticket system. Fast resolution guaranteed.",
+      "OCCTA Support Hub — UK-based help for broadband, SIM and home phone. Live chat, FAQs and ticket tracking in one place.",
     canonical: "/support",
     keywords:
       "OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, home phone help",
@@ -250,9 +245,9 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/about",
-    title: "About OCCTA - UK Telecom Company | OCCTA - Cheap UK Broadband & SIM",
+    title: "About OCCTA - UK Telecom Company | OCCTA",
     description:
-      "OCCTA is a UK telecom company providing cheap broadband, SIM, and digital home phone services. No hidden fees, real UK-based customer support. 5,000+ happy customers.",
+      "OCCTA LIMITED is a UK telecom provider offering fibre broadband, 5G SIM plans and digital home phone, with clear terms and UK-based customer support.",
     canonical: "/about",
     keywords:
       "OCCTA, UK telecom company, cheap broadband provider, affordable internet UK, honest broadband, UK internet provider",
@@ -260,7 +255,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/faq",
-    title: "FAQs - Broadband, SIM & Home Phone | OCCTA - Cheap UK Broadband & SIM",
+    title: "FAQs - Broadband, SIM & Home Phone | OCCTA",
     description:
       "Answers to common questions about OCCTA broadband, SIM plans, and digital home phone services. Installation, billing, contracts, and more.",
     canonical: "/faq",
@@ -271,7 +266,7 @@ const routes: RouteSEO[] = [
   /* ─── Guide pages ─── */
   {
     path: "/guides",
-    title: "Guides — Broadband, Home Phone & SIM | OCCTA - Cheap UK Broadband & SIM",
+    title: "Guides — Broadband, Home Phone & SIM | OCCTA",
     description: "Helpful guides on UK broadband, Digital Home Phone, and SIM plans. No-contract options, switching tips, and money-saving advice from OCCTA.",
     canonical: "/guides",
     keywords: "broadband guide UK, home phone guide, SIM guide, internet tips, switching broadband, digital voice guide",
@@ -279,15 +274,15 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/guides/no-contract-broadband-uk",
-    title: "No Contract Broadband UK — Flexible Internet | OCCTA - Cheap UK Broadband & SIM",
-    description: "Looking for no contract broadband in the UK? Learn how rolling monthly broadband works, who it suits, and how to get connected without lock-ins or exit fees.",
+    title: "How No Contract Broadband Works in the UK | OCCTA",
+    description: "How no-contract broadband works in the UK, who rolling monthly suits, and how OCCTA Flex 30 compares with fixed-term Price Lock 24.",
     canonical: "/guides/no-contract-broadband-uk",
-    keywords: "no contract broadband UK, flexible broadband, cancel anytime broadband, rolling monthly broadband, no lock-in broadband",
+    keywords: "no contract broadband UK, flexible broadband, rolling monthly broadband, 30 day notice broadband",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/guides/cheap-broadband-uk",
-    title: "Cheap Broadband UK — Affordable Internet Plans | OCCTA - Cheap UK Broadband & SIM",
+    title: "Cheap Broadband UK — How to Cut Your Bill | OCCTA",
     description: "Find genuinely cheap broadband in the UK without sacrificing speed or reliability. Compare what matters and avoid hidden costs.",
     canonical: "/guides/cheap-broadband-uk",
     keywords: "cheap broadband UK, affordable broadband, budget broadband, cheapest internet UK, low cost broadband",
@@ -295,7 +290,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/guides/how-to-switch-broadband",
-    title: "How to Switch Broadband — Step by Step Guide | OCCTA - Cheap UK Broadband & SIM",
+    title: "How to Switch Broadband — Step by Step Guide | OCCTA",
     description: "A step-by-step guide to switching broadband provider in the UK. Learn about the One Touch Switch process and how to avoid downtime.",
     canonical: "/guides/how-to-switch-broadband",
     keywords: "switch broadband UK, change broadband provider, how to switch internet, One Touch Switch",
@@ -303,7 +298,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/guides/digital-voice-uk",
-    title: "Digital Voice UK — Home Phone Over Broadband | OCCTA - Cheap UK Broadband & SIM",
+    title: "Digital Voice UK — Home Phone Over Broadband | OCCTA",
     description: "Everything you need to know about Digital Voice — the new way home phones work over broadband in the UK.",
     canonical: "/guides/digital-voice-uk",
     keywords: "digital voice UK, digital home phone, VoIP home phone, home phone broadband, landline over broadband",
@@ -311,7 +306,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/guides/pstn-switch-off-uk",
-    title: "UK PSTN Switch-Off — Copper Line Shutdown | OCCTA - Cheap UK Broadband & SIM",
+    title: "UK PSTN Switch-Off — Copper Line Shutdown | OCCTA",
     description: "The UK PSTN copper phone network is shutting down by 2027. Find out what this means for your home phone and how Digital Voice replaces it.",
     canonical: "/guides/pstn-switch-off-uk",
     keywords: "PSTN switch off UK, copper line shutdown, BT landline switch off, digital switchover UK",
@@ -319,10 +314,10 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/guides/cheap-sim-only-deals",
-    title: "Cheap SIM Only Deals UK — Budget Mobile Plans | OCCTA - Cheap UK Broadband & SIM",
-    description: "Find the best cheap SIM only deals in the UK. No credit check, no contracts, 5G included.",
+    title: "How to Compare Cheap SIM Only Deals in the UK | OCCTA",
+    description: "How to compare cheap SIM only deals in the UK: data, 5G, roaming and minimum term — plus what OCCTA rolling SIM plans include.",
     canonical: "/guides/cheap-sim-only-deals",
-    keywords: "cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only no contract, best SIM deals UK",
+    keywords: "cheap SIM only UK, SIM only deals UK, 5G SIM UK, rolling SIM plans",
     jsonLd: [localBusinessSchema],
   },
   {
@@ -397,66 +392,66 @@ const routes: RouteSEO[] = [
     { slug: "cheltenham", city: "Cheltenham", region: "Gloucestershire" },
   ].map(({ slug, city, region }): RouteSEO => ({
     path: `/broadband-${slug}`,
-    title: `Cheap Broadband in ${city} - No Contract Fibre | OCCTA - Cheap UK Broadband & SIM`,
-    description: `Cheap broadband in ${city} from \u00A322.99/mo. No contract fibre up to 900Mbps in ${region}. No price rises, cancel anytime.`,
+    title: `Fibre Broadband in ${city} — Plans from £34.99 | OCCTA`,
+    description: `Fibre broadband in ${city} from \u00A334.99/mo, up to 1000Mbps across ${region}. Price Lock 24 or Flex 30 where eligible, with no mid-contract price rises.`,
     canonical: `/broadband-${slug}`,
-    keywords: `cheap broadband ${city}, broadband ${city}, fibre broadband ${city}, no contract broadband ${city}, internet ${city}, ${region} broadband`,
-    price: "22.99",
+    keywords: `broadband ${city}, fibre broadband ${city}, full fibre ${city}, broadband deals ${city}, ${region} broadband`,
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   }))),
   /* ─── Keyword landing pages ─── */
   {
     path: "/cheap-broadband-near-me",
     title: "Cheap Broadband Near Me — Find Affordable Internet | OCCTA",
-    description: "Looking for cheap broadband near you? OCCTA offers affordable fibre broadband from £22.99/mo with no contracts across the UK.",
+    description: "Looking for cheap broadband near you? Check your postcode for OCCTA fibre broadband from £34.99/mo, on Price Lock 24 or Flex 30 where eligible.",
     canonical: "/cheap-broadband-near-me",
     keywords: "cheap broadband near me, affordable broadband near me, broadband deals near me, internet near me cheap",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/broadband-no-credit-check",
     title: "Broadband No Credit Check — Get Connected Today | OCCTA",
-    description: "Need broadband with no credit check? OCCTA offers fast fibre broadband from £22.99/mo with no credit check, no contract.",
+    description: "Need broadband with no credit check? OCCTA runs no hard credit check and offers fibre broadband from £34.99/mo, including Flex 30 rolling monthly where eligible.",
     canonical: "/broadband-no-credit-check",
     keywords: "broadband no credit check, internet no credit check, wifi no credit check, broadband without credit check UK",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/broadband-for-students",
-    title: "Student Broadband — No Contract Internet for Students | OCCTA",
-    description: "Best broadband for students in the UK. No contract, no credit check, cancel anytime. From £22.99/mo.",
+    title: "Student Broadband UK — Rolling Monthly Plans | OCCTA",
+    description: "Student broadband in the UK from £34.99/mo. Flex 30 rolling monthly where eligible, so you can end it with 30 days' notice when term ends.",
     canonical: "/broadband-for-students",
-    keywords: "student broadband, broadband for students UK, student internet deals, no contract broadband students",
-    price: "22.99",
+    keywords: "student broadband UK, broadband for students, student internet deals, rolling monthly student broadband",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/best-broadband-deals-uk",
     title: "Best Broadband Deals UK 2026 — Compare & Save | OCCTA",
-    description: "Find the best broadband deals in the UK for 2026. No-contract plans from £22.99/mo. No hidden fees.",
+    description: "Compare UK broadband deals in 2026: OCCTA full fibre from £34.99/mo on Price Lock 24 or Flex 30 where eligible, with no mid-contract price rises.",
     canonical: "/best-broadband-deals-uk",
     keywords: "best broadband deals UK, best broadband deals 2026, cheapest broadband UK, broadband deals comparison",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/broadband-for-gaming",
     title: "Best Broadband for Gaming UK — Low Latency Internet | OCCTA",
-    description: "Best broadband for gaming in the UK. Low latency, fast speeds up to 900Mbps, no contracts. From £22.99/mo.",
+    description: "Broadband for gaming in the UK: low latency full fibre up to 1000Mbps from £34.99/mo, with upload speeds that hold up during streaming.",
     canonical: "/broadband-for-gaming",
     keywords: "broadband for gaming, gaming broadband UK, best internet for gaming, low latency broadband",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
     path: "/broadband-for-working-from-home",
     title: "Best Broadband for Working from Home — Reliable WFH Internet | OCCTA",
-    description: "Best broadband for working from home. Reliable fibre, fast speeds, no contracts. From £22.99/mo.",
+    description: "Broadband for working from home: reliable UK full fibre from £34.99/mo with the upload headroom video calls need.",
     canonical: "/broadband-for-working-from-home",
     keywords: "broadband for working from home, WFH broadband, remote working internet, home office broadband",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
@@ -519,8 +514,8 @@ const routes: RouteSEO[] = [
     { slug: "occta-vs-ee", competitor: "EE" },
   ].map(({ slug, competitor }): RouteSEO => ({
     path: `/compare/${slug}`,
-    title: `OCCTA vs ${competitor} — Honest Comparison | OCCTA - Cheap UK Broadband & SIM`,
-    description: `Compare OCCTA vs ${competitor} broadband. See how OCCTA offers cheaper prices, no contracts, and no mid-contract price rises.`,
+    title: `OCCTA vs ${competitor} — Honest Comparison | OCCTA`,
+    description: `OCCTA vs ${competitor} broadband compared on price, speed, contract terms and price rises — so you can see which suits your address.`,
     canonical: `/compare/${slug}`,
     keywords: `OCCTA vs ${competitor}, ${competitor} broadband alternative, cheaper than ${competitor}, ${competitor} broadband comparison`,
     jsonLd: [localBusinessSchema],
@@ -552,10 +547,10 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/guides/broadband-for-students",
-    title: "Student Broadband UK — No Contract Internet | OCCTA",
-    description: "Best broadband for students in the UK. No contract, no credit check, cancel when you move.",
+    title: "Student Broadband Guide — What to Check Before You Sign | OCCTA",
+    description: "A student guide to UK broadband: term-time contracts, rolling monthly options and what to check before you sign at a shared address.",
     canonical: "/guides/broadband-for-students",
-    keywords: "student broadband, broadband for students, student internet UK, no contract student broadband",
+    keywords: "student broadband guide, broadband for students UK, student internet, rolling monthly broadband students",
     jsonLd: [localBusinessSchema],
   },
   /* ─── SEO content pages (Pricing, Coverage, Billing, etc.) ─── */
@@ -665,8 +660,25 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+const ROBOTS_INDEXABLE =
+  "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+
+/**
+ * Replace a head tag when it already exists in the template, otherwise insert it
+ * before </head>. The shipped index.html intentionally omits canonical/og:url
+ * (they are per-route), so a plain .replace() would silently no-op.
+ */
+function replaceOrInsert(html: string, pattern: RegExp, replacement: string): string {
+  if (pattern.test(html)) return html.replace(pattern, replacement);
+  return html.replace("</head>", `    ${replacement}\n  </head>`);
+}
+
 function injectSEO(template: string, route: RouteSEO): string {
   let html = template;
+  const url = `${BASE_URL}${route.canonical}`;
+  // The root document doubles as the SPA fallback for every non-prerendered
+  // route, so it must not carry a hardcoded canonical/og:url of "/".
+  const isRootFallback = route.path === "/";
 
   // ── Title ──
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(route.title)}</title>`);
@@ -689,17 +701,33 @@ function injectSEO(template: string, route: RouteSEO): string {
     `<meta name="keywords" content="${escapeHtml(route.keywords)}" />`
   );
 
-  // ── Canonical ──
-  html = html.replace(
-    /<link rel="canonical" href="[^"]*" ?\/?>/,
-    `<link rel="canonical" href="${BASE_URL}${route.canonical}" />`
+  // ── Robots (always explicit) ──
+  html = replaceOrInsert(
+    html,
+    /<meta name="robots" content="[^"]*" ?\/?>/,
+    `<meta name="robots" content="${ROBOTS_INDEXABLE}" />`
   );
 
+  // ── Canonical + og:url / twitter:url ──
+  if (!isRootFallback) {
+    html = replaceOrInsert(
+      html,
+      /<link rel="canonical" href="[^"]*" ?\/?>/,
+      `<link rel="canonical" href="${url}" />`
+    );
+    html = replaceOrInsert(
+      html,
+      /<meta property="og:url" content="[^"]*" ?\/?>/,
+      `<meta property="og:url" content="${url}" />`
+    );
+    html = replaceOrInsert(
+      html,
+      /<meta name="twitter:url" content="[^"]*" ?\/?>/,
+      `<meta name="twitter:url" content="${url}" />`
+    );
+  }
+
   // ── Open Graph ──
-  html = html.replace(
-    /<meta property="og:url" content="[^"]*" ?\/?>/,
-    `<meta property="og:url" content="${BASE_URL}${route.canonical}" />`
-  );
   html = html.replace(
     /<meta property="og:title" content="[^"]*" ?\/?>/,
     `<meta property="og:title" content="${escapeHtml(route.title)}" />`
@@ -710,10 +738,6 @@ function injectSEO(template: string, route: RouteSEO): string {
   );
 
   // ── Twitter ──
-  html = html.replace(
-    /<meta name="twitter:url" content="[^"]*" ?\/?>/,
-    `<meta name="twitter:url" content="${BASE_URL}${route.canonical}" />`
-  );
   html = html.replace(
     /<meta name="twitter:title" content="[^"]*" ?\/?>/,
     `<meta name="twitter:title" content="${escapeHtml(route.title)}" />`

@@ -101,6 +101,13 @@ export default function ContractSummaryView() {
           <p className="text-sm text-muted-foreground mt-1">{cs.service_address}</p>
         </div>
 
+        {cs.authorised_signatory_note && (
+          <div className="border-4 border-primary p-5 mb-5">
+            <h2 className="font-display uppercase text-sm mb-2">Signing as authorised representative</h2>
+            <p className="text-sm">{cs.authorised_signatory_note}</p>
+          </div>
+        )}
+
         <div className="border-4 border-foreground p-5 mb-5">
           <h2 className="font-display uppercase text-sm mb-2">Price</h2>
           {isBusiness ? (
@@ -176,7 +183,14 @@ export default function ContractSummaryView() {
           <div className="border-4 border-primary p-5">
             <h2 className="font-display uppercase text-sm mb-3">Confirm and accept</h2>
             <div className="space-y-3 mb-4">
-              <div><Label htmlFor="cs-name">Your full name</Label><Input id="cs-name" value={name} onChange={(e) => setName(e.target.value)} /></div>
+              <div>
+                <Label htmlFor="cs-name">
+                  {cs.authorised_signatory_note
+                    ? "Your full name (the authorised representative signing this agreement)"
+                    : "Your full name"}
+                </Label>
+                <Input id="cs-name" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
               <div><Label htmlFor="cs-email">Your email (must match Contract Summary)</Label><Input id="cs-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
             </div>
             <label className="flex items-start gap-2 text-sm mb-4">

@@ -321,7 +321,6 @@ Deno.serve(async (req) => {
           address_line1: ADDR_LINE1,
           city: CITY,
           postcode: POSTCODE,
-          marketing_consent: false,
           admin_notes:
             `[${TAG}] Account holder ${HOLDER_NAME} (${ACCOUNT_NUMBER}), CLI ${CLI}. ` +
             `Authorised representative: ${DEPUTY_NAME} — ${DEPUTY_ROLE}. Co-deputy: ${CO_DEPUTY}. ` +

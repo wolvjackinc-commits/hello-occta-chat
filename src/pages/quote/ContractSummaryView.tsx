@@ -32,9 +32,12 @@ export default function ContractSummaryView() {
         if (cancelled) return;
         if (error || (data as any)?.error) setError((data as any)?.error || error?.message || "not_found");
         else {
-          setCs((data as any).contract_summary);
-          setEmail((data as any).contract_summary.customer_email_snapshot);
-          setName((data as any).contract_summary.customer_name_snapshot);
+          const summary = (data as any).contract_summary;
+          setCs(summary);
+          setEmail(summary.customer_email_snapshot);
+          // When an authorised representative is signing, they must type
+          // their own name rather than the account holder's.
+          setName(summary.authorised_signatory_note ? "" : summary.customer_name_snapshot);
         }
       } finally { if (!cancelled) setLoading(false); }
     })();

@@ -502,11 +502,20 @@ Deno.serve(async (req) => {
     }
 
     // Deputy signing + care wording on the document, then refresh the PDF.
+    const { data: csRow } = await supabase
+      .from("contract_summaries")
+      .select("vulnerable_customer_note")
+      .eq("id", csId)
+      .maybeSingle();
+    const baseVulnerable = String(csRow?.vulnerable_customer_note ?? "").trim();
+    const vulnerableNote = baseVulnerable.includes("Court of Protection")
+      ? baseVulnerable
+      : `${baseVulnerable}${baseVulnerable ? " " : ""}${CARE_NOTE}`;
     await supabase
       .from("contract_summaries")
       .update({
         authorised_signatory_note: SIGNATORY_NOTE,
-        vulnerable_customer_note: CARE_NOTE,
+        vulnerable_customer_note: vulnerableNote,
         cease_cancellation_charges: CEASE_TEXT,
         service_address: SERVICE_ADDRESS_TEXT,
         account_number: ACCOUNT_NUMBER,

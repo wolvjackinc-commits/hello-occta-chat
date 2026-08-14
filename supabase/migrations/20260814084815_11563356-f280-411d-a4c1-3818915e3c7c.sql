@@ -1,0 +1,1 @@
+ALTER TABLE public.contract_summaries ADD COLUMN IF NOT EXISTS authorised_signatory_note text;

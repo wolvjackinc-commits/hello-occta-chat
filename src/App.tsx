@@ -30,6 +30,7 @@ const AdminBillingReconciliation = lazy(() => import("./pages/admin/BillingRecon
 const AdminBillingChainCheck = lazy(() => import("./pages/admin/BillingChainCheck").then(m => ({ default: m.AdminBillingChainCheck })));
 const AdminLegacyRemediation = lazy(() => import("./pages/admin/LegacyRemediation").then(m => ({ default: m.AdminLegacyRemediation })));
 const AdminAbhayRemediation = lazy(() => import("./pages/admin/AbhayRemediation").then(m => ({ default: m.AdminAbhayRemediation })));
+const AdminBanksRemediation = lazy(() => import("./pages/admin/BanksRemediation").then(m => ({ default: m.AdminBanksRemediation })));
 const AdminServices = lazy(() => import("./pages/admin/Services").then(m => ({ default: m.AdminServices })));
 const AdminPaymentsDD = lazy(() => import("./pages/admin/PaymentsDD").then(m => ({ default: m.AdminPaymentsDD })));
 const AdminInstallations = lazy(() => import("./pages/admin/Installations").then(m => ({ default: m.AdminInstallations })));
@@ -228,6 +229,7 @@ const AnimatedRoutes = () => {
             <Route path="billing/chain-check" element={<Suspense fallback={<AdminRouteFallback />}><AdminBillingChainCheck /></Suspense>} />
             <Route path="legacy-remediation" element={<Suspense fallback={<AdminRouteFallback />}><AdminLegacyRemediation /></Suspense>} />
             <Route path="abhay-remediation" element={<Suspense fallback={<AdminRouteFallback />}><AdminAbhayRemediation /></Suspense>} />
+            <Route path="banks-remediation" element={<Suspense fallback={<AdminRouteFallback />}><AdminBanksRemediation /></Suspense>} />
             <Route path="services" element={<Suspense fallback={<AdminRouteFallback />}><AdminServices /></Suspense>} />
             <Route path="payments-dd" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentsDD /></Suspense>} />
             <Route path="installations" element={<Suspense fallback={<AdminRouteFallback />}><AdminInstallations /></Suspense>} />

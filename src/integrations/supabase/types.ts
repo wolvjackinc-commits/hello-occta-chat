@@ -2964,6 +2964,7 @@ export type Database = {
           activation_fee_snapshot: Json | null
           archived_at: string | null
           archived_reason: string | null
+          authorised_signatory_note: string | null
           billing_start_rule: string | null
           business_monthly_ex_vat: number | null
           business_monthly_incl_vat: number | null
@@ -3060,6 +3061,7 @@ export type Database = {
           activation_fee_snapshot?: Json | null
           archived_at?: string | null
           archived_reason?: string | null
+          authorised_signatory_note?: string | null
           billing_start_rule?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null
@@ -3156,6 +3158,7 @@ export type Database = {
           activation_fee_snapshot?: Json | null
           archived_at?: string | null
           archived_reason?: string | null
+          authorised_signatory_note?: string | null
           billing_start_rule?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null

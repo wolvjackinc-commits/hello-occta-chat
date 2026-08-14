@@ -21,6 +21,7 @@ Deno.serve(async (req) => {
   const CS_PUBLIC_COLUMNS =
     "id,cs_number,quote_id,quote_request_id,customer_id,version,status," +
     "customer_email_snapshot,customer_name_snapshot,service_address," +
+    "authorised_signatory_note," +
     "plan_name,service_type,plan_type,customer_type,monthly_price_incl_vat," +
     "business_monthly_ex_vat,business_monthly_incl_vat,one_off_charges_json," +
     "setup_charge,router_charge,delivery_charge,installation_charge," +

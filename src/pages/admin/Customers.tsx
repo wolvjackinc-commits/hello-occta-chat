@@ -46,9 +46,9 @@ const defaultFilters: AdvancedSearchFilters = {
   matchMode: "all",
 };
 
-// Check if input looks like an account number (OCC followed by digits)
+// Check if input looks like an account number (OCC or legacy prefix followed by digits)
 const isAccountNumberSearch = (term: string): boolean => {
-  return /^OCC\d+$/i.test(term.trim());
+  return /^[A-Za-z]{1,4}\d{4,10}$/.test(term.trim());
 };
 
 // Check if input looks like a phone number (digits, possibly with spaces/dashes)
@@ -59,7 +59,7 @@ const isPhoneSearch = (term: string): boolean => {
 
 // Check if input looks like an email
 const isEmailSearch = (term: string): boolean => {
-  return term.includes('@') || /^[a-zA-Z0-9._]+$/.test(term);
+  return term.includes('@');
 };
 
 export const AdminCustomers = () => {

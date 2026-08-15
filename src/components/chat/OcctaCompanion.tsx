@@ -218,8 +218,8 @@ function welcomeMessage(signedIn: boolean, name?: string): CompanionMessage {
     id: crypto.randomUUID(),
     role: "assistant",
     content: signedIn
-      ? `Welcome back${name ? `, ${name}` : ""}. I'm Ollie from OCCTA. I can check your account, troubleshoot a service problem, find the right guide or bring in a human advisor without making you start again.`
-      : `Hi, I'm Ollie from OCCTA. Tell me what you need in normal words — I can help with broadband, SIMs, switching, billing questions and faults, remember the conversation as we troubleshoot, and bring in an advisor when needed.`,
+      ? `Welcome back${name ? `, ${name}` : ""}. I'm Ollie from OCCTA. I can check your account, troubleshoot a service problem or find the right guide without making you start again.`
+      : `Hi, I'm Ollie from OCCTA. Tell me what you need in normal words — I can help with broadband, SIMs, switching, billing questions and faults, and remember the conversation as we troubleshoot.`,
     createdAt: new Date().toISOString(),
     agent: "ollie",
   };

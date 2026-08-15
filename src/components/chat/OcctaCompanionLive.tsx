@@ -539,7 +539,7 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
       try {
         addAssistant(directDebitReply(await loadOverview()));
       } catch {
-        addAssistant(withOptions("I couldn't load your Direct Debit status safely just now.", ["Open my dashboard", "Talk to a human"]));
+        addAssistant(withOptions("I couldn't load your Direct Debit status safely just now.", ["Open my dashboard"]));
       }
       return;
     }
@@ -557,13 +557,13 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     if (accountIntent) {
       if (!signedIn) {
         setAwaitingAccountEmail(true);
-        addAssistant(withOptions("For personal account information, I use secure account access rather than asking for date of birth or payment details in chat. Enter the **email address used with OCCTA** and I'll send the secure sign-in link if it matches our records.", ["Sign in", "Talk to a human"]));
+        addAssistant(withOptions("For personal account information, I use secure account access rather than asking for date of birth or payment details in chat. Enter the **email address used with OCCTA** and I'll send the secure sign-in link if it matches our records.", ["Sign in"]));
         return;
       }
       try {
         addAssistant(accountReply(accountIntent, await loadOverview()));
       } catch {
-        addAssistant(withOptions("I securely recognised your sign-in, but I couldn't load the account section just now. I won't substitute stale or guessed information.", ["Open my dashboard", "Talk to a human"]));
+        addAssistant(withOptions("I securely recognised your sign-in, but I couldn't load the account section just now. I won't substitute stale or guessed information.", ["Open my dashboard"]));
       }
       return;
     }
@@ -576,7 +576,7 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     }
 
     const kb = await searchKnowledge(raw);
-    addAssistant(kb || withOptions("I couldn't match that question confidently yet. I can still help — tell me whether this is about **availability, a broadband fault, price/plan choice, switching, SIM, billing or an existing order**, and I'll take the shortest route from there.", ["Check availability", "Fix my internet", "Open Help Centre", "Talk to a human"]));
+    addAssistant(kb || withOptions("I couldn't match that question confidently yet. I can still help — tell me whether this is about **availability, a broadband fault, price/plan choice, switching, SIM, billing or an existing order**, and I'll take the shortest route from there.", ["Check availability", "Fix my internet", "Open Help Centre"]));
   }, [awaitingAccountEmail, signedIn, addAssistant, claimAccount, handoff, loadOverview, loadTickets]);
 
   const send = useCallback(async (value: string) => {
@@ -614,7 +614,7 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     try {
       await answer(raw, next);
     } catch {
-      addAssistant(withOptions(`Something went wrong while checking that. I haven't guessed an answer. Please try again or call ${CONTACT_PHONE_DISPLAY}.`, ["Try again", "Talk to a human"]));
+      addAssistant(withOptions(`Something went wrong while checking that. I haven't guessed an answer. Please try again or call ${CONTACT_PHONE_DISPLAY}.`, ["Try again"]));
     } finally {
       setLoading(false);
     }

@@ -587,10 +587,6 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       openTicket();
       return;
     }
-    if (/connect me to a human|talk to a human|speak to (a )?(human|advisor|agent)/i.test(raw)) {
-      void requestHuman();
-      return;
-    }
 
     const display = redactForDisplay(raw);
     const userMessage: CompanionMessage = {

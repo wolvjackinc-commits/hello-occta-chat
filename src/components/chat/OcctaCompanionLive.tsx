@@ -222,7 +222,7 @@ function publicReply(intent: string, raw = ""): string | null {
       );
     case "complaints":
       return withOptions(
-        "OCCTA will try to resolve a complaint directly first. The Complaints Code explains the escalation process and independent ADR route. I can also pass this conversation to an advisor so you don't need to repeat the issue.",
+        "OCCTA will try to resolve a complaint directly first. The Complaints Code explains the escalation process and independent ADR route.",
         ["Read the Complaints Code", "Open Help Centre"],
       );
     case "service_status":

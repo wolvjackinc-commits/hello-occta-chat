@@ -726,10 +726,8 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
                 <Input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(input); } }} placeholder={liveState === "live" ? "Message your OCCTA advisor…" : liveState === "waiting" ? "Type while we connect an advisor…" : signedIn ? `Ask about your OCCTA account${firstName ? `, ${firstName}` : ""}…` : "Ask Ollie about OCCTA…"} disabled={loading && liveState === "off"} aria-label="Message Ollie" />
                 <Button onClick={() => void send(input)} disabled={!input.trim() || (loading && liveState === "off")} size="icon" aria-label="Send message"><Send className="h-4 w-4" /></Button>
               </div>
-              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                {liveState === "off" ? (
-                  <span className="flex items-center gap-1"><LifeBuoy className="h-3 w-3" /> Human handoff available</span>
-                ) : (
+              <div className="mt-2 flex items-center justify-end text-[11px] text-muted-foreground">
+                {liveState !== "off" && (
                   <button onClick={() => void endChat()} className="flex items-center gap-1 font-semibold text-foreground hover:underline">
                     <PhoneOff className="h-3 w-3" /> End chat
                   </button>

@@ -745,7 +745,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
               {humanLive ? "OCCTA Advisor" : "Ollie — OCCTA Assist"}
             </div>
             <div className="truncate text-[11px] text-primary-foreground/85">
-              {humanLive ? "Human advisor connected · conversation retained" : signedIn ? "Account-aware support · guides · human handoff" : "Human-style support · guides · secure handoff"}
+              {humanLive ? "Human advisor connected · conversation retained" : signedIn ? "Account-aware support · guides" : "Human-style support · guides"}
             </div>
           </div>
         </div>

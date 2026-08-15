@@ -856,7 +856,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
         <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <button type="button" onClick={clearChat} className="inline-flex items-center gap-1 hover:text-foreground"><RefreshCw className="h-3 w-3" /> New chat</button>
           <span className="hidden sm:inline">Attachments up to 15 MB · safety scanned</span>
-          <a href="/support" className="inline-flex items-center gap-1 hover:text-foreground">Support <ExternalLink className="h-3 w-3" /></a>
+          
         </div>
       </form>
 

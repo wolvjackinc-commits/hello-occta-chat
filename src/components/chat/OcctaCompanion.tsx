@@ -467,7 +467,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       setMessages((current) => [...current, {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: `To protect your account, the secure ticket form requires sign-in. You can sign in now, ask me to connect a human advisor, or call ${CONTACT_PHONE_DISPLAY}.\n\n<<<OPTIONS:["Sign in","Connect me to a human","Keep troubleshooting"]>>>`,
+        content: `To protect your account, the secure ticket form requires sign-in. You can sign in now or call ${CONTACT_PHONE_DISPLAY}.\n\n<<<OPTIONS:["Sign in","Keep troubleshooting"]>>>`,
         createdAt: new Date().toISOString(),
         agent: "ollie",
       }]);

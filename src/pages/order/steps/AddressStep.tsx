@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import type { Journey2Session } from "@/lib/journey2/client";
 import { getAvailabilityPrefill } from "@/lib/journey2/prefill";

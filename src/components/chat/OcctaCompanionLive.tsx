@@ -230,11 +230,6 @@ function publicReply(intent: string, raw = ""): string | null {
         "The service-status page is the right place for a current network notice. For a fault affecting only your line, sign in and I can check the service/order information linked to your account.",
         ["Open service status", "Check my services"],
       );
-    case "human":
-      return withOptions(
-        `Of course. I can pass the conversation to an OCCTA advisor with the chat context attached. For an urgent service-impacting issue you can also call **${CONTACT_PHONE_DISPLAY}**.`,
-        ["Talk to a human", "Keep troubleshooting"],
-      );
     default:
       return null;
   }

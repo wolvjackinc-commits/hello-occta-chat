@@ -24,7 +24,8 @@ export default function AddressStep({
   const [county, setCounty] = useState(a?.county ?? prefill?.county ?? "");
   const d = session.customer_details;
   const [email, setEmail] = useState(d?.email ?? "");
-  const [firstName, setFirstName] = useState((d?.full_name ?? "").split(" ")[0] ?? "");
+  const [firstName, setFirstName] = useState(d?.full_name ?? "");
+  const [privacyAck, setPrivacyAck] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const submit = (e: React.FormEvent) => {
@@ -33,8 +34,16 @@ export default function AddressStep({
       setErr("Please enter your postcode, first address line and town.");
       return;
     }
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
-      setErr("That email doesn't look right — please check it.");
+    if (!firstName.trim() || firstName.trim().length < 2) {
+      setErr("Please enter your full name.");
+      return;
+    }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      setErr("Please enter a valid email address.");
+      return;
+    }
+    if (!privacyAck) {
+      setErr("Please agree to the T&Cs and order journey conditions to continue.");
       return;
     }
     setErr(null);
@@ -109,21 +118,42 @@ export default function AddressStep({
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 
       <div className="border-2 border-foreground/20 p-4 space-y-3">
-        <p className="font-display uppercase text-sm">Keep your order safe</p>
-        <p className="text-xs text-muted-foreground">
-          Give us your email now and we'll send you a link so you can come back to this exact order — same prices, nothing lost.
-          No marketing unless you ask for it later.
-        </p>
+        <p className="font-display uppercase text-sm">Your contact details</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="j2-first-name">First name (optional)</Label>
+            <Label htmlFor="j2-first-name">Full name</Label>
             <Input id="j2-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)}
-              autoComplete="given-name" maxLength={80} />
+              autoComplete="name" required maxLength={120} />
           </div>
           <div>
-            <Label htmlFor="j2-early-email">Email (optional)</Label>
+            <Label htmlFor="j2-early-email">Email address</Label>
             <Input id="j2-early-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email" maxLength={180} placeholder="you@example.com" />
+              autoComplete="email" required maxLength={180} placeholder="you@example.com" />
+          </div>
+        </div>
+        <div className="pt-2">
+          <div className="flex items-start gap-3">
+            <Checkbox 
+              id="j2-terms-ack" 
+              checked={privacyAck} 
+              onCheckedChange={(v) => setPrivacyAck(v === true)} 
+              className="mt-0.5" 
+            />
+            <Label htmlFor="j2-terms-ack" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+              By moving forward, I agree to OCCTA's{" "}
+              <button 
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("open-ai-chat"));
+                  setTimeout(() => window.dispatchEvent(new CustomEvent("ai-chat-seed", {
+                    detail: { message: "How will my email be used and what are the order journey conditions?" },
+                  })), 250);
+                }}
+                className="underline hover:text-foreground transition-colors"
+              >
+                T&Cs and order journey conditions
+              </button>.
+            </Label>
           </div>
         </div>
       </div>

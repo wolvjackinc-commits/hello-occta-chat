@@ -54,8 +54,8 @@ export default function AddressStep({
       address_line_2: line2.trim() || null,
       town: town.trim(),
       county: county.trim() || null,
-      contact_email: email.trim().toLowerCase() || null,
-      contact_first_name: firstName.trim() || null,
+      contact_email: email.trim().toLowerCase(),
+      contact_full_name: firstName.trim(),
     });
   };
 

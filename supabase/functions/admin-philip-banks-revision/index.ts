@@ -299,6 +299,54 @@ Deno.serve(async (req) => {
     replyTo: "hello@occta.co.uk",
   });
 
+  // ── SMS with the same signing link (The SMS Works) ──
+  let smsResult: { ok: boolean; detail: string } = { ok: false, detail: "not_attempted" };
+  const smsJwt = Deno.env.get("SMS_WORKS_JWT");
+  const mobile = normaliseUkMobile(
+    String((src.customer_phone_snapshot as string | null) ?? "") || "07541960865",
+  );
+  if (!smsJwt) {
+    smsResult = { ok: false, detail: "sms_works_jwt_missing" };
+  } else if (!mobile) {
+    smsResult = { ok: false, detail: "invalid_mobile" };
+  } else {
+    try {
+      const smsRes = await fetch("https://api.thesmsworks.co.uk/v1/message/send", {
+        method: "POST",
+        headers: { Authorization: smsJwt, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sender: "OCCTA",
+          destination: mobile,
+          content:
+            `OCCTA: Hi ${firstName}, we're sorry - the speed you ordered isn't available at your address. ` +
+            `We've moved you to SOGEA 80/20 and cut your price to £${newPrice}/mo incl VAT. ` +
+            `Read and sign your revised contract: ${csUrl} . Questions? 0800 260 6626`,
+        }),
+      });
+      const smsBody = await smsRes.text();
+      smsResult = { ok: smsRes.ok, detail: smsRes.ok ? "sent" : `sms_${smsRes.status}: ${smsBody.slice(0, 200)}` };
+    } catch (e) {
+      smsResult = { ok: false, detail: `sms_error: ${String(e).slice(0, 200)}` };
+    }
+  }
+
+  await supabase.from("communications_log").insert({
+    user_id: created.customer_id,
+    template_name: "contract_summary_revised_speed_apology_sms",
+    recipient_email: recipient,
+    status: smsResult.ok ? "sent" : "failed",
+    sent_at: smsResult.ok ? new Date().toISOString() : null,
+    error_message: smsResult.ok ? null : smsResult.detail,
+    metadata: {
+      channel: "sms",
+      account_number: ACCOUNT,
+      contract_summary_id: created.id,
+      cs_number: created.cs_number,
+      mobile_masked: mobile ? maskMobile(mobile) : null,
+      sent_by_admin: actorId,
+    },
+  });
+
   await supabase.from("communications_log").insert({
     user_id: created.customer_id,
     template_name: "contract_summary_revised_speed_apology",
@@ -336,6 +384,8 @@ Deno.serve(async (req) => {
 
   return jsonResponse({
     ok: true, action: "send", email_sent: true,
+    sms_sent: smsResult.ok,
+    sms_detail: smsResult.detail,
     contract_summary_id: created.id,
     cs_number: created.cs_number,
     version: created.version,

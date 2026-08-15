@@ -723,7 +723,7 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
                     <PhoneOff className="h-3 w-3" /> End chat
                   </button>
                 )}
-                <a href="/help" className="flex items-center gap-1 hover:text-foreground">Help Centre <ExternalLink className="h-3 w-3" /></a>
+                
               </div>
             </>
           )}

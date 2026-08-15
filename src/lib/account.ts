@@ -17,7 +17,10 @@ export function normalizeAccountNumber(value: string | null | undefined): string
 export function isAccountNumberValid(value: string | null | undefined): boolean {
   if (!value) return false;
   const normalized = normalizeAccountNumber(value);
-  return /^OCC\d{8}$/.test(normalized);
+  // Canonical modern format.
+  if (/^OCC\d{8}$/.test(normalized)) return true;
+  // Legacy/migrated accounts (e.g. A00001) remain addressable in Customer 360.
+  return /^[A-Z]{1,4}\d{4,10}$/.test(normalized);
 }
 
 /**

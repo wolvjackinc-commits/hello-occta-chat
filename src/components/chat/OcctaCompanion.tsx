@@ -218,8 +218,8 @@ function welcomeMessage(signedIn: boolean, name?: string): CompanionMessage {
     id: crypto.randomUUID(),
     role: "assistant",
     content: signedIn
-      ? `Welcome back${name ? `, ${name}` : ""}. I'm Ollie from OCCTA. I can check your account, troubleshoot a service problem or find the right guide without making you start again.`
-      : `Hi, I'm Ollie from OCCTA. Tell me what you need in normal words — I can help with broadband, SIMs, switching, billing questions and faults, and remember the conversation as we troubleshoot.`,
+      ? `Welcome back${name ? `, ${name}` : ""}. I'm Ollie from OCCTA. I can check your account, troubleshoot a service problem, find the right guide or bring in a human advisor without making you start again.`
+      : `Hi, I'm Ollie from OCCTA. Tell me what you need in normal words — I can help with broadband, SIMs, switching, billing questions and faults, remember the conversation as we troubleshoot, and bring in an advisor when needed.`,
     createdAt: new Date().toISOString(),
     agent: "ollie",
   };
@@ -467,7 +467,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
       setMessages((current) => [...current, {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: `To protect your account, the secure ticket form requires sign-in. You can sign in now or call ${CONTACT_PHONE_DISPLAY}.\n\n<<<OPTIONS:["Sign in","Keep troubleshooting"]>>>`,
+        content: `To protect your account, the secure ticket form requires sign-in. You can sign in now, ask me to connect a human advisor, or call ${CONTACT_PHONE_DISPLAY}.\n\n<<<OPTIONS:["Sign in","Connect me to a human","Keep troubleshooting"]>>>`,
         createdAt: new Date().toISOString(),
         agent: "ollie",
       }]);
@@ -585,6 +585,10 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
     }
     if (/raise .*ticket|raise a ticket|billing ticket/i.test(raw)) {
       openTicket();
+      return;
+    }
+    if (/connect me to a human|talk to a human|speak to (a )?(human|advisor|agent)/i.test(raw)) {
+      void requestHuman();
       return;
     }
 
@@ -741,7 +745,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
               {humanLive ? "OCCTA Advisor" : "Ollie — OCCTA Assist"}
             </div>
             <div className="truncate text-[11px] text-primary-foreground/85">
-              {humanLive ? "Human advisor connected · conversation retained" : signedIn ? "Account-aware support · guides" : "Human-style support · guides"}
+              {humanLive ? "Human advisor connected · conversation retained" : signedIn ? "Account-aware support · guides · human handoff" : "Human-style support · guides · secure handoff"}
             </div>
           </div>
         </div>
@@ -856,7 +860,7 @@ export default function OcctaCompanion({ embedded = false, className = "", initi
         <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <button type="button" onClick={clearChat} className="inline-flex items-center gap-1 hover:text-foreground"><RefreshCw className="h-3 w-3" /> New chat</button>
           <span className="hidden sm:inline">Attachments up to 15 MB · safety scanned</span>
-          
+          <a href="/support" className="inline-flex items-center gap-1 hover:text-foreground">Support <ExternalLink className="h-3 w-3" /></a>
         </div>
       </form>
 

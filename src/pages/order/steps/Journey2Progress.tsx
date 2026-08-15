@@ -18,11 +18,7 @@ export default function Journey2Progress({ current }: { current: string }) {
     <div className="mb-6">
       <div className="flex items-baseline justify-between mb-2">
         <p className="font-display uppercase text-xs tracking-widest text-muted-foreground">
-          {idx === 1 ? (
-            <span>Step 2 of {STEPS.length} · WHY ALL THE OCCTA PLANS ARE NOT SHOWING IN STEP 2 on JOUNEY CONTROL</span>
-          ) : (
-            <span>Step {idx + 1} of {STEPS.length} · {STEPS[idx]?.label}</span>
-          )}
+          Step {idx + 1} of {STEPS.length} · {STEPS[idx]?.label}
         </p>
         <p className="text-xs text-muted-foreground">{pct}%</p>
       </div>

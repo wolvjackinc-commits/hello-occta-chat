@@ -25,21 +25,21 @@ function routerLightReply(latest: string): string {
   if (/\b(los|optical)\b.*\bred\b|\bred\b.*\b(los|optical)\b/.test(lower)) {
     return withOptions(
       `That helps — a **red LOS/Optical light on the ONT** normally points to loss of the fibre signal rather than a Wi‑Fi problem.\n\nPlease do these checks only:\n1. Make sure the ONT has power.\n2. Check the Ethernet lead between the ONT and router is firmly seated.\n3. If the thin fibre lead is visible, check it has not been sharply bent, crushed or pulled — **do not remove the fibre connector**.\n4. Restart the ONT/router once if you have not already done so.\n\nIf LOS stays red after that, this needs a line/fibre fault check rather than repeated resets.`,
-      ["Open service status", "I already restarted it"],
+      ["Open service status", "Talk to a human", "I already restarted it"],
     );
   }
 
   if (/\binternet\b.*\bred\b|\bred\b.*\binternet\b|\bwan\b.*\bred\b|\bred\b.*\bwan\b/.test(lower)) {
     return withOptions(
       `Got it — the **Internet/WAN light is red**. That usually means the router has power but has not established the broadband session.\n\nCheck the cable from the ONT/modem to the router's WAN/Internet port, restart the router once, and wait several minutes. If you're using your own router, don't post PPPoE credentials here.\n\nIf the light stays red, I can guide you through the next check or pass the fault context to support.`,
-      ["The ONT lights are green", "I use my own router"],
+      ["The ONT lights are green", "I use my own router", "Talk to a human"],
     );
   }
 
   if (/\b(no|none)\b.*\b(light|lights|power)\b|\bpower\b.*\b(off|red)\b/.test(lower)) {
     return withOptions(
       `If the router or ONT has **no power lights**, start with power rather than broadband settings. Check the power adapter is fully seated, try the wall socket directly if safe to do so, and make sure any power switch on the device is on.\n\nIf the ONT itself will not power up, tell me that and I’ll point you to the right support route.`,
-      ["ONT has no power", "Router has no power"],
+      ["ONT has no power", "Router has no power", "Talk to a human"],
     );
   }
 
@@ -59,7 +59,7 @@ function routerLightReply(latest: string): string {
 
   return withOptions(
     `Tell me the **device** (router or ONT/fibre box), the **light label**, and its colour or whether it is flashing. I’ll use that to continue the same fault check rather than restarting the conversation.`,
-    ["LOS is red", "Internet light is red", "All lights are green"],
+    ["LOS is red", "Internet light is red", "All lights are green", "Talk to a human"],
   );
 }
 
@@ -74,13 +74,13 @@ export function resolvePublicConversationReply(messages: CompanionMessage[]): st
       if (!postcode) {
         return withOptions(
           `Yes — I can help check availability. Send the **postcode** first. I’ll then take you to the live property selector because availability can differ between addresses in the same postcode.`,
-          ["Open availability checker", "View broadband plans"],
+          ["Open availability checker", "View broadband plans", "Talk to a human"],
         );
       }
       const compact = postcode.replace(/\s+/g, "");
       return withOptions(
         `I’ve got **${postcode}**. A postcode can contain several properties, so the next step is to choose the exact address — that is what confirms technology, estimated speed, setup and final price.\n\n[**Check ${postcode} now →**](${BASE_URL}/build-plan?postcode=${encodeURIComponent(compact)})`,
-        ["Open availability checker", "View broadband plans"],
+        ["Open availability checker", "View broadband plans", "Talk to a human"],
       );
     }
 
@@ -131,20 +131,20 @@ export function resolvePublicConversationReply(messages: CompanionMessage[]): st
     case "number_porting":
       return withOptions(
         `For an eligible UK fixed-line switch, the new provider normally manages the One Touch Switch process. If keeping a number matters, tell me that before the order is finalised — number transfer is checked against the actual services and cannot be promised blindly.`,
-        ["I want to keep my number", "Start a switch", "Check availability"],
+        ["I want to keep my number", "Start a switch", "Check availability", "Talk to a human"],
       );
 
     case "service_status":
       return withOptions(
         `You can check current OCCTA notices on the [**service-status page →**](${BASE_URL}/status). If nothing is listed and only your line is affected, come back here and we’ll continue with the router/ONT checks.`,
-        ["My internet is not working", "Open service status"],
+        ["My internet is not working", "Open service status", "Talk to a human"],
       );
 
     case "router":
     case "pppoe_missing":
       return withOptions(
         `On full fibre, the ONT connects to the router's **WAN/Internet** port by Ethernet. If you use your own router, never paste PPPoE usernames or passwords into chat. If the issue is a light or a connection fault, tell me the exact light label and colour and I’ll continue from there.`,
-        ["My router has a red light", "I can't find PPPoE details", "Open own-router guide"],
+        ["My router has a red light", "I can't find PPPoE details", "Open own-router guide", "Talk to a human"],
       );
 
     case "broadband":
@@ -157,7 +157,7 @@ export function resolvePublicConversationReply(messages: CompanionMessage[]): st
     case "esim":
       return withOptions(
         `For SIMs, I’ll point you to the **current live catalogue** rather than repeat an old allowance or offer. Data, roaming, network and eSIM availability can vary by plan. [**View current SIM plans →**](${BASE_URL}/sim).`,
-        ["View SIM plans", "Explain eSIM"],
+        ["View SIM plans", "Explain eSIM", "Talk to a human"],
       );
 
     case "voice":
@@ -169,7 +169,7 @@ export function resolvePublicConversationReply(messages: CompanionMessage[]): st
     case "direct_debit":
       return withOptions(
         `Never put bank details into this chat. Direct Debit setup is handled through OCCTA's secure flow. If you’re signed in I can help you get to the account/billing area, or the billing team can check a pending mandate.`,
-        ["Set up Direct Debit", "Check my latest invoice"],
+        ["Set up Direct Debit", "Check my latest invoice", "Talk to a human"],
       );
 
     case "first_invoice":
@@ -182,15 +182,20 @@ export function resolvePublicConversationReply(messages: CompanionMessage[]): st
     case "cancellation":
       return withOptions(
         `Cancellation depends on the plan you actually chose. Flex 30 follows its flexible notice terms; Price Lock 24 has a fixed minimum term and early termination charges may apply. [**Read the cancellation information →**](${BASE_URL}/cancellation).`,
-        ["Check my account", "Read cancellation terms"],
+        ["Check my account", "Read cancellation terms", "Talk to a human"],
       );
 
     case "complaints":
       return withOptions(
         `I can help you get the issue recorded without making you repeat everything. OCCTA's Complaints Code explains the escalation route and independent ADR process. [**Read the Complaints Code →**](${BASE_URL}/legal/complaints-code).`,
-        ["Read the Complaints Code", "Open Help Centre"],
+        ["Talk to a human", "Read the Complaints Code", "Open Help Centre"],
       );
 
+    case "human":
+      return withOptions(
+        `Of course. I can pass this conversation to an OCCTA advisor with the context attached, so you don’t have to start again.`,
+        ["Connect me to a human", "Keep troubleshooting"],
+      );
 
     default:
       return null;

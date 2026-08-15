@@ -139,13 +139,13 @@ function publicReply(intent: string, raw = ""): string | null {
       if (!postcode) {
         return withOptions(
           "I can check OCCTA broadband availability. Send me the **postcode** and I’ll take you to the live property check — I don’t need bank details or an account number for that.",
-          ["Check availability", "View broadband plans", "Talk to a human"],
+          ["Check availability", "View broadband plans"],
         );
       }
       const compact = postcode.replace(/\s+/g, "");
       return withOptions(
         `I can start the live check for **${postcode}**. A postcode can contain several properties, so I shouldn’t say “available” or “not available” until you choose the exact address.\n\n[**Check ${postcode} now →**](/build-plan?postcode=${encodeURIComponent(compact)})\n\nThe checker will confirm the property, available technology, estimated speed, setup and final price before you order.`,
-        ["Check availability", "View broadband plans", "Talk to a human"],
+        ["Check availability", "View broadband plans"],
       );
     }
     case "provider_comparison": {
@@ -174,7 +174,7 @@ function publicReply(intent: string, raw = ""): string | null {
     case "esim":
       return withOptions(
         "For SIMs I use OCCTA's current catalogue rather than quoting an old allowance or offer. Network, data, roaming and eSIM availability can vary by plan, so the live SIM page is the source of truth.",
-        ["View SIM plans", "Open Help Centre", "Talk to a human"],
+        ["View SIM plans", "Open Help Centre"],
       );
     case "voice":
       return withOptions(
@@ -185,50 +185,50 @@ function publicReply(intent: string, raw = ""): string | null {
     case "number_porting":
       return withOptions(
         "For eligible UK fixed-line switches, the new provider normally manages the One Touch Switch process. Number transfer depends on the services involved, so OCCTA confirms it against the actual order rather than promising it blindly.",
-        ["Start a switch", "Check availability", "Talk to a human"],
+        ["Start a switch", "Check availability"],
       );
     case "no_internet":
       return withOptions(
         "Let’s diagnose this rather than send you in circles.\n\n**1.** Check the router and, if you have full fibre, the ONT box both have power.\n**2.** Look for a **red/LOS** light on the ONT or a red Internet light on the router.\n**3.** Reseat the power/Ethernet cables, restart the equipment **once**, then allow several minutes to reconnect.\n**4.** If possible, try one device by Ethernet — that tells us whether the problem is Wi‑Fi or the broadband line.\n\nTell me what lights you can see and I’ll give you the next step. If the whole service is down, I can also pass the fault context to support.",
-        ["My router has a red light", "Wi-Fi connected but no internet", "Open service status", "Talk to a human"],
+        ["My router has a red light", "Wi-Fi connected but no internet", "Open service status"],
       );
     case "slow_wifi":
       return withOptions(
         "Slow Wi‑Fi is often a coverage problem rather than a slow line. Test by Ethernet first, keep the router in the open, use 5GHz near the router, and pause large downloads or cloud backups during the test. That tells us whether the issue is the line or the wireless signal.",
-        ["Open Help Centre", "Check my services", "Talk to a human"],
+        ["Open Help Centre", "Check my services"],
       );
     case "router":
     case "router_lights":
     case "pppoe_missing":
       return withOptions(
         "On full fibre, the ONT connects by Ethernet to the router's **WAN/Internet** port. If you use your own router, never paste PPPoE credentials into chat. If a red/LOS light remains after one restart and checking cables, treat it as a possible service fault and contact support.",
-        ["Open Help Centre", "Open service status", "Talk to a human"],
+        ["Open Help Centre", "Open service status"],
       );
     case "direct_debit":
       return withOptions(
         "Direct Debit details should only be entered through OCCTA's secure payment flow — never in chat. If you're signed in, I can check the **masked mandate status** shown on your account; I will never display a full sort code or bank account number.",
-        ["Check my Direct Debit", "Check my latest invoice", "Talk to a human"],
+        ["Check my Direct Debit", "Check my latest invoice"],
       );
     case "first_invoice":
     case "vat":
       return withOptions(
         "A first invoice can include the first full billing period, a part-month amount from activation to the regular billing date, and any clearly disclosed one-off items. I won't calculate it from a guessed plan price. If you're signed in, I can read the actual invoice on your account.",
-        ["Check my latest invoice", "Open my dashboard", "Talk to a human"],
+        ["Check my latest invoice", "Open my dashboard"],
       );
     case "cancellation":
       return withOptions(
         "Cancellation depends on the plan you actually chose. Flex 30 uses its stated flexible notice terms; Price Lock 24 has a fixed minimum term and early termination charges may apply. For an account-specific answer, sign in so I can use the contract data rather than guess.",
-        ["Read cancellation terms", "Check my account", "Talk to a human"],
+        ["Read cancellation terms", "Check my account"],
       );
     case "complaints":
       return withOptions(
         "OCCTA will try to resolve a complaint directly first. The Complaints Code explains the escalation process and independent ADR route. I can also pass this conversation to an advisor so you don't need to repeat the issue.",
-        ["Read the Complaints Code", "Talk to a human", "Open Help Centre"],
+        ["Read the Complaints Code", "Open Help Centre"],
       );
     case "service_status":
       return withOptions(
         "The service-status page is the right place for a current network notice. For a fault affecting only your line, sign in and I can check the service/order information linked to your account.",
-        ["Open service status", "Check my services", "Talk to a human"],
+        ["Open service status", "Check my services"],
       );
     case "human":
       return withOptions(
@@ -261,24 +261,24 @@ function accountReply(intent: AccountIntent, overviewValue: unknown): string {
   }
 
   if (intent === "invoices") {
-    if (!invoices.length) return withOptions("I checked your signed-in account and there isn't an invoice available yet.", ["Track my order", "Open my dashboard", "Talk to a human"]);
+    if (!invoices.length) return withOptions("I checked your signed-in account and there isn't an invoice available yet.", ["Track my order", "Open my dashboard"]);
     const lines = invoices.slice(0, 5).map((invoice) => `• **${textValue(invoice.invoice_number) ?? "Invoice"}** — ${formatMoney(invoice.total)} — ${textValue(invoice.status) ?? "status unavailable"} — due ${formatDate(invoice.due_date)}`);
-    return withOptions(`Here are the latest invoices on your account:\n\n${lines.join("\n")}\n\nFor the complete document, open **Dashboard → Billing**.${partialWarning}`, ["Open my dashboard", "Explain my first invoice", "Talk to a human"]);
+    return withOptions(`Here are the latest invoices on your account:\n\n${lines.join("\n")}\n\nFor the complete document, open **Dashboard → Billing**.${partialWarning}`, ["Open my dashboard", "Explain my first invoice"]);
   }
 
   if (intent === "orders" || intent === "installation") {
-    if (!Object.keys(order).length) return withOptions("I checked your account but there isn't an order record available yet.", ["Check my services", "Open my dashboard", "Talk to a human"]);
+    if (!Object.keys(order).length) return withOptions("I checked your account but there isn't an order record available yet.", ["Check my services", "Open my dashboard"]);
     const ref = textValue(order.occta_order_number);
     const maskedRef = ref && ref.length > 7 ? `${ref.slice(0, 3)}••••${ref.slice(-4)}` : "reference available in your dashboard";
     const start = textValue(order.actual_activation_date) ?? textValue(order.preferred_start_date) ?? textValue(order.expected_activation_date);
     return withOptions(
       `Your latest order is **${maskedRef}**.\n\n**Plan:** ${textValue(order.plan_name) ?? textValue(order.service_type) ?? "not shown"}\n**Status:** ${textValue(order.lifecycle_status) ?? textValue(order.status) ?? "not shown"}\n**Activation/start:** ${start ? formatDate(start) : "not confirmed yet"}${partialWarning}`,
-      ["Check my services", "Open my dashboard", "Talk to a human"],
+      ["Check my services", "Open my dashboard"],
     );
   }
 
   if (intent === "services") {
-    if (!Object.keys(service).length) return withOptions("I can't see a live service record on the account yet. If you've just ordered, check the order status instead.", ["Track my order", "Open my dashboard", "Talk to a human"]);
+    if (!Object.keys(service).length) return withOptions("I can't see a live service record on the account yet. If you've just ordered, check the order status instead.", ["Track my order", "Open my dashboard"]);
     return withOptions(
       `Your latest service record shows:\n\n**Service:** ${textValue(service.plan_name) ?? textValue(service.service_type) ?? "not shown"}\n**Status:** ${textValue(service.status) ?? "not shown"}\n**Monthly price:** ${service.monthly_price != null ? formatMoney(service.monthly_price) : "not shown"}\n**Activation:** ${textValue(service.activation_date) ? formatDate(service.activation_date) : "not shown"}${partialWarning}`,
       ["Track my order", "Check my latest invoice", "Open my dashboard"],
@@ -292,7 +292,7 @@ function accountReply(intent: AccountIntent, overviewValue: unknown): string {
     if (Object.keys(summary).length) lines.push(`• Contract Summary **${textValue(summary.cs_number) ?? "on file"}** — ${textValue(summary.plan_name) ?? "service"}`);
     if (Object.keys(certificate).length) lines.push(`• Acceptance certificate **${textValue(certificate.certificate_number) ?? "on file"}**`);
     receipts.slice(0, 3).forEach((receipt) => lines.push(`• Receipt — ${formatMoney(receipt.amount)} — ${formatDate(receipt.paid_at)}`));
-    return withOptions(lines.length ? `These secure records are listed on your account:\n\n${lines.join("\n")}\n\nOpen your dashboard to view the actual files.` : "I can't see a contract document or receipt on the account yet.", ["Open my dashboard", "Check my latest invoice", "Talk to a human"]);
+    return withOptions(lines.length ? `These secure records are listed on your account:\n\n${lines.join("\n")}\n\nOpen your dashboard to view the actual files.` : "I can't see a contract document or receipt on the account yet.", ["Open my dashboard", "Check my latest invoice"]);
   }
 
   return withOptions("Your account is securely signed in. Tell me whether you want me to check the invoice, order, service, Direct Debit or documents.", ["Check my latest invoice", "Track my order", "Check my services", "Check my Direct Debit"]);
@@ -303,11 +303,11 @@ function directDebitReply(overviewValue: unknown): string {
   const dd = asObject(overview.direct_debit);
   const method = asObject(overview.payment_method);
   if (!Object.keys(dd).length && !Object.keys(method).length) {
-    return withOptions("I checked your account and there isn't a Direct Debit mandate status available yet. I won't infer one from an order or invoice.", ["Open my dashboard", "Check my latest invoice", "Talk to a human"]);
+    return withOptions("I checked your account and there isn't a Direct Debit mandate status available yet. I won't infer one from an order or invoice.", ["Open my dashboard", "Check my latest invoice"]);
   }
   const status = textValue(dd.status) ?? textValue(method.dd_setup_status) ?? "status unavailable";
   const last4 = textValue(dd.masked_account_last4) ?? textValue(method.last4);
-  return withOptions(`Your **masked Direct Debit status** is **${status.replace(/_/g, " ")}**${last4 ? `, for the account ending **${last4}**` : ""}. I do not display or request full bank details in chat.`, ["Check my latest invoice", "Open my dashboard", "Talk to a human"]);
+  return withOptions(`Your **masked Direct Debit status** is **${status.replace(/_/g, " ")}**${last4 ? `, for the account ending **${last4}**` : ""}. I do not display or request full bank details in chat.`, ["Check my latest invoice", "Open my dashboard"]);
 }
 
 async function searchKnowledge(query: string): Promise<string> {
@@ -323,7 +323,7 @@ async function searchKnowledge(query: string): Promise<string> {
       const summary = textValue(item.summary) ?? "Approved OCCTA help article";
       return `• **${textValue(item.title) ?? "OCCTA help"}** — ${summary.slice(0, 220)} [Open](${route})`;
     });
-    return withOptions(`I found these approved OCCTA resources that match your question:\n\n${lines.join("\n")}\n\nI haven't filled in any missing commercial or account detail.`, ["Open Help Centre", "Talk to a human"]);
+    return withOptions(`I found these approved OCCTA resources that match your question:\n\n${lines.join("\n")}\n\nI haven't filled in any missing commercial or account detail.`, ["Open Help Centre"]);
   } catch {
     return "";
   }
@@ -498,9 +498,9 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
     try {
       const { error } = await supabase.functions.invoke("claim-dashboard-link", { body: { email } });
       if (error) throw error;
-      addAssistant(withOptions(`If **${maskEmail(email)}** matches an OCCTA customer record, we've sent a secure account-access email. For privacy, I won't confirm here whether that email exists in our records.`, ["Sign in", "Open Help Centre", "Talk to a human"]));
+      addAssistant(withOptions(`If **${maskEmail(email)}** matches an OCCTA customer record, we've sent a secure account-access email. For privacy, I won't confirm here whether that email exists in our records.`, ["Sign in", "Open Help Centre"]));
     } catch {
-      addAssistant(withOptions("I couldn't send the secure account-access email just now. Please try again later or speak to an advisor.", ["Talk to a human", "Open Help Centre"]));
+      addAssistant(withOptions("I couldn't send the secure account-access email just now. Please try again later or speak to an advisor.", ["Open Help Centre"]));
     } finally {
       setAwaitingAccountEmail(false);
       setLoading(false);

@@ -21,6 +21,7 @@ import {
   corsHeaders, jsonResponse, getServiceClient, requireStaff,
   generateTokenPair, sendResendEmail, brutalistEmailShell, escapeHtml,
 } from "../_shared/quoteHelpers.ts";
+import { maskMobile, normaliseUkMobile } from "../_shared/otpPhone.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({

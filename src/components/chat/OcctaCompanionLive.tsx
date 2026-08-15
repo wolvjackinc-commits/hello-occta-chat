@@ -600,10 +600,6 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
       window.location.assign(route);
       return;
     }
-    if (/^(talk to a human|connect me to a human)$/i.test(raw)) {
-      await handoff();
-      return;
-    }
 
     const safeDisplay = redactForChat(raw);
     const userMessage: ChatMessage = { id: crypto.randomUUID(), role: "user", content: safeDisplay, createdAt: new Date().toISOString() };

@@ -515,10 +515,10 @@ export default function OcctaCompanionLive({ embedded = false, className = "", i
   }, []);
 
   const loadTickets = useCallback(async () => {
-    if (!userId) return withOptions("Support-case details require sign-in.", ["Sign in", "Talk to a human"]);
+    if (!userId) return withOptions("Support-case details require sign-in.", ["Sign in"]);
     const { data, error } = await supabase.from("support_tickets").select("subject,status,priority,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(6);
-    if (error) return withOptions("I couldn't load the support-case list just now, so I won't guess its status.", ["Open my dashboard", "Talk to a human"]);
-    if (!data?.length) return withOptions("There are no support cases on your account at the moment.", ["Open my dashboard", "Talk to a human"]);
+    if (error) return withOptions("I couldn't load the support-case list just now, so I won't guess its status.", ["Open my dashboard"]);
+    if (!data?.length) return withOptions("There are no support cases on your account at the moment.", ["Open my dashboard"]);
     const lines = data.map((ticket) => `• **${ticket.subject}** — ${String(ticket.status).replace(/_/g, " ")} — opened ${formatDate(ticket.created_at)}`);
     return withOptions(`Here are your recent support cases:\n\n${lines.join("\n")}`, ["Open my dashboard", "Talk to a human"]);
   }, [userId]);

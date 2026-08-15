@@ -112,11 +112,12 @@ export default function DetailsStep({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <Label htmlFor="j2-name">Full name</Label>
-          <Input id="j2-name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required maxLength={120} />
+          <Input id="j2-name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required maxLength={120} readOnly className="bg-muted" />
+          <p className="text-[10px] text-muted-foreground mt-1">Contact details are locked to this order session.</p>
         </div>
         <div>
           <Label htmlFor="j2-email">Email address</Label>
-          <Input id="j2-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required maxLength={180} />
+          <Input id="j2-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required maxLength={180} readOnly className="bg-muted" />
         </div>
         <div>
           <Label htmlFor="j2-phone">Mobile or phone number</Label>

@@ -113,8 +113,10 @@ function buildEmail(opts: {
      <p style="font-size:13px;">Helpful reading while you decide:</p>
      <ul style="font-size:13px;line-height:1.7;margin:0 0 16px 18px;padding:0;">
        <li><a href="https://www.occta.co.uk/help" style="color:#111;">Help &amp; support centre</a></li>
-       <li><a href="https://www.occta.co.uk/learn/what-is-sogea" style="color:#111;">What is SOGEA broadband?</a></li>
-       <li><a href="https://www.occta.co.uk/learn/broadband-speeds-explained" style="color:#111;">Broadband speeds explained — what "up to" really means</a></li>
+       <li><a href="https://www.occta.co.uk/learn/broadband-speed-guide" style="color:#111;">Broadband speeds explained — what "up to" really means</a></li>
+       <li><a href="https://www.occta.co.uk/learn/upload-speed-explained" style="color:#111;">Upload speed explained</a></li>
+       <li><a href="https://www.occta.co.uk/learn/slow-broadband-fixes" style="color:#111;">Getting the best out of your line</a></li>
+       <li><a href="https://www.occta.co.uk/learn/router-buying-guide" style="color:#111;">Router &amp; WiFi setup guide</a></li>
        <li><a href="https://www.occta.co.uk/install" style="color:#111;">What happens on install day</a></li>
        <li><a href="https://www.occta.co.uk/legal/price-transparency" style="color:#111;">Our price transparency promise</a></li>
        <li><a href="https://www.occta.co.uk/dashboard" style="color:#111;">Your OCCTA dashboard</a></li>

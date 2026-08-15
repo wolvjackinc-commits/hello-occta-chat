@@ -141,10 +141,7 @@ export default function AddressStep({
               className="mt-0.5" 
             />
             <Label htmlFor="j2-terms-ack" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-              '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-                                        
-                                            
-                                            By moving forward, I agree to OCCTA's{" "}
+              By moving forward, I agree to OCCTA's{" "}
               <button 
                 type="button"
                 onClick={() => {

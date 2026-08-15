@@ -18,11 +18,7 @@ export default function Journey2Progress({ current }: { current: string }) {
     <div className="mb-6">
       <div className="flex items-baseline justify-between mb-2">
         <p className="font-display uppercase text-xs tracking-widest text-muted-foreground">
-          {idx === 1 ? (
-            <span>Step 2 of {STEPS.length} · why all the plans are not showing step 2 of journey comtrol.</span>
-          ) : (
-            <span>Step {idx + 1} of {STEPS.length} · {STEPS[idx]?.label}</span>
-          )}
+          <span>Step {idx + 1} of {STEPS.length} · {STEPS[idx]?.label}</span>
         </p>
         <p className="text-xs text-muted-foreground">{pct}%</p>
       </div>

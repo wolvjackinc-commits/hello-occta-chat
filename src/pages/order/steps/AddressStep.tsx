@@ -160,7 +160,7 @@ export default function AddressStep({
       </div>
 
       <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-        {saving ? "Saving…" : "Continue to plans"}
+        {saving ? "Saving…" : "Continue to pick your speed"}
       </Button>
     </form>
   );

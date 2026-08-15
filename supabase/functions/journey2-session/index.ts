@@ -43,8 +43,8 @@ const AddressPayload = z.object({
    * Early contact capture. Almost every abandonment happens before the details
    * step, so an email here is the only way an abandoned order can be recovered.
    */
-  contact_email: z.string().trim().toLowerCase().email().max(180).optional().nullable(),
-  contact_first_name: z.string().trim().max(80).optional().nullable(),
+  contact_email: z.string().trim().toLowerCase().email().max(180),
+  contact_full_name: z.string().trim().min(2).max(120),
 });
 const PlanPayload = z.object({
   speed_bucket: z.enum(["essential", "superfast", "ultrafast", "gigabit"]),
@@ -334,18 +334,16 @@ Deno.serve(async (req) => {
   if (body.step === "address") {
     const p = AddressPayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);
-    const { contact_email, contact_first_name, ...address } = p.data;
+    const { contact_email, contact_full_name, ...address } = p.data;
     patch.postcode = address.postcode.toUpperCase();
     patch.service_address = address;
-    // Merge, never replace — the details step owns the full contact record.
-    if (contact_email || contact_first_name) {
-      const existing = (session.customer_details ?? {}) as Record<string, unknown>;
-      patch.customer_details = {
-        ...existing,
-        ...(contact_email ? { email: contact_email } : {}),
-        ...(contact_first_name && !existing.full_name ? { full_name: contact_first_name } : {}),
-      };
-    }
+    
+    const existing = (session.customer_details ?? {}) as Record<string, unknown>;
+    patch.customer_details = {
+      ...existing,
+      email: contact_email,
+      full_name: contact_full_name,
+    };
   } else if (body.step === "plan") {
     const p = PlanPayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);

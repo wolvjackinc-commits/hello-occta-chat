@@ -17,6 +17,7 @@ import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import { getFromPrices } from "@/lib/pricing/engine";
 import { AvailabilityProvider, useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 import { startAssignedJourney } from "@/lib/journey2/route";
+import { startAssignedJourney } from "@/lib/journey2/route";
 
 const BroadbandInner = () => {
   const [isReady, setIsReady] = useState(false);

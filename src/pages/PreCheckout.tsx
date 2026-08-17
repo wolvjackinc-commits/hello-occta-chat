@@ -29,6 +29,7 @@ import { getAddonsByService, Addon, ukProviders } from "@/lib/addons";
 import { getFromPrices, buildOrderSummary, getSOGEANote, VAT_RATE } from "@/lib/pricing/engine";
 import { installScenarios, careLevels, catalogueProducts } from "@/lib/pricing/catalogue";
 import { startAssignedJourney } from "@/lib/journey2/route";
+import { startAssignedJourney } from "@/lib/journey2/route";
 import type { CatalogueProduct } from "@/lib/pricing/types";
 import { format, addDays } from "date-fns";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";

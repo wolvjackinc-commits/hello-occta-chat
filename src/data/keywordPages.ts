@@ -30,7 +30,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "cheap-broadband-near-me",
     metaTitle: "Cheap Broadband Near Me — Find Affordable Internet",
-    metaDescription: "Looking for cheap broadband near you? OCCTA offers affordable fibre broadband from \u00A334.99/mo with 30-day rolling options where eligibles across the UK. Check your postcode now.",
+    metaDescription: "Looking for cheap broadband near you? OCCTA offers affordable fibre broadband from \u00A334.99/mo with 30-day rolling options where eligible across the UK. Check your postcode now.",
     keywords: "cheap broadband near me, affordable broadband near me, broadband deals near me, internet near me cheap, best broadband near me, local broadband deals",
     heroTitle: "CHEAP BROADBAND",
     heroHighlight: "NEAR YOU",
@@ -63,7 +63,7 @@ export const keywordPages: KeywordPage[] = [
       },
     ],
     faqs: [
-      { question: "How do I find the cheapest broadband near me?", answer: "Enter your postcode on our broadband page to see exact pricing and speeds available at your address. OCCTA plans start from \u00A334.99/mo with 30-day rolling options where eligibles." },
+      { question: "How do I find the cheapest broadband near me?", answer: "Enter your postcode on our broadband page to see exact pricing and speeds available at your address. OCCTA plans start from \u00A334.99/mo with 30-day rolling options where eligible." },
       { question: "Is cheap broadband reliable?", answer: "Yes. OCCTA uses the same Openreach fibre network as BT, Sky, and Plusnet. You get the same infrastructure at a lower price." },
       { question: "Do I need a credit check for broadband?", answer: "Not with OCCTA. We don\u2019t run credit checks on any of our broadband plans." },
       { question: "Can I get broadband without a contract near me?", answer: "Yes. All OCCTA plans are rolling monthly with no lock-in and no exit fees." },
@@ -204,7 +204,7 @@ export const keywordPages: KeywordPage[] = [
       },
     ],
     faqs: [
-      { question: "What is the cheapest broadband deal in the UK?", answer: "OCCTA offers broadband from \u00A334.99/mo with no surprise price rises, 30-day rolling options where eligibles, and no mid-contract price hikes \u2014 making it one of the best-value deals available." },
+      { question: "What is the cheapest broadband deal in the UK?", answer: "OCCTA offers broadband from \u00A334.99/mo with no surprise price rises, 30-day rolling options where eligible, and no mid-contract price hikes \u2014 making it one of the best-value deals available." },
       { question: "Which broadband provider has the best deals?", answer: "For no-contract, fixed-price broadband, OCCTA consistently offers the best value compared to BT, Sky, Virgin Media, and TalkTalk." },
       { question: "Are cheap broadband deals any good?", answer: "Yes. OCCTA uses the same Openreach network as the major providers. Cheap doesn\u2019t mean slow or unreliable." },
       { question: "Should I get a contract or no-contract broadband?", answer: "No-contract gives you flexibility to switch or 30-day rolling options available where eligible. With OCCTA, you don\u2019t pay more for this freedom." },
@@ -218,7 +218,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "broadband-for-gaming",
     metaTitle: "Best Broadband for Gaming UK — Low Latency Internet",
-    metaDescription: "Find the best broadband for gaming in the UK. Low latency, fast speeds up to 900Mbps, 30-day rolling options where eligibles. OCCTA gaming broadband from \u00A334.99/mo.",
+    metaDescription: "Find the best broadband for gaming in the UK. Low latency, fast speeds up to 900Mbps, 30-day rolling options where eligible. OCCTA gaming broadband from \u00A334.99/mo.",
     keywords: "broadband for gaming, gaming broadband UK, best internet for gaming, low latency broadband, fast broadband gaming, gaming internet UK",
     heroTitle: "BROADBAND FOR",
     heroHighlight: "GAMING",
@@ -265,7 +265,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "broadband-for-working-from-home",
     metaTitle: "Best Broadband for Working from Home — Reliable WFH Internet",
-    metaDescription: "Best broadband for working from home. Reliable fibre, fast speeds, 30-day rolling options where eligibles. OCCTA WFH broadband from \u00A334.99/mo. Video calls without buffering.",
+    metaDescription: "Best broadband for working from home. Reliable fibre, fast speeds, 30-day rolling options where eligible. OCCTA WFH broadband from \u00A334.99/mo. Video calls without buffering.",
     keywords: "broadband for working from home, WFH broadband, remote working internet, home office broadband, reliable broadband working from home",
     heroTitle: "BROADBAND FOR",
     heroHighlight: "WORKING FROM HOME",

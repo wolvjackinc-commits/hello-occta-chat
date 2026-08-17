@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +71,12 @@ export const LeadForm = ({ source = "business_hub", interest, compact = false, h
       toast({ title: "Something went wrong. Please try again.", description: error.message, variant: "destructive" });
       return;
     }
+    // Trigger Google Ads conversion tracking for the lead form
+    window.gtag?.('event', 'conversion', {
+      'send_to': 'AW-18222446720/YOuSCLXKzMQcEIDxkfFD',
+      'value': 1.0,
+      'currency': 'GBP'
+    });
     setDone(true);
     onSuccess?.();
   };

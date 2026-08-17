@@ -326,7 +326,7 @@ const NoContractBroadband = () => {
                 View All Plans
               </Button>
             </Link>
-            <Link to="/sim-plans">
+            <Link to="/sim">
               <Button
                 size="lg"
                 variant="outline"
@@ -414,7 +414,7 @@ const NoContractBroadband = () => {
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              <Link to="/sim-plans">
+              <Link to="/sim">
                 <Card className="p-6 border-2 border-border hover:border-accent transition-colors group">
                   <Phone className="h-10 w-10 text-accent mb-4" />
                   <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">

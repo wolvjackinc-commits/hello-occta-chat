@@ -154,8 +154,8 @@ const BroadbandInner = () => {
   return (
     <LayoutComponent>
       <SEO 
-        title="Affordable Broadband UK - Flexible Fibre"
-        description={`Affordable UK fibre broadband from £${getFromPrices().broadband}/mo. Speeds to 900Mbps, flexible monthly options available, no price rises, no hidden fees.`}
+        title="Affordable Broadband UK - Flexible Fibre & Price Lock"
+        description={`Affordable UK fibre broadband from £${getFromPrices().broadband}/mo. Price Lock 24 or Flex 30 where eligible. No hidden mid-contract hikes. Simple telecom.`}
         canonical="/broadband"
         keywords="affordable broadband UK, flexible monthly broadband, flexible broadband, fibre broadband flexible monthly, budget broadband, affordable fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
         price={getFromPrices().broadband}

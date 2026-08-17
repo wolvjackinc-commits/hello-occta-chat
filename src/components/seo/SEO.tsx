@@ -21,12 +21,13 @@ const DEFAULT_KEYWORDS = 'UK broadband, price lock broadband, 30 day rolling bro
 const toAbsoluteUrl = (value: string) => {
   if (/^https?:\/\//i.test(value)) return value;
   const path = value.startsWith('/') ? value : `/${value}`;
-  return `${BASE_URL}${path}`;
+  // Ensure we use the www version as the primary canonical
+  return `https://www.occta.co.uk${path}`;
 };
 
 export const SEO = ({
   title,
-  description = `UK fibre broadband from £${getFromPrices().broadband}/mo. Price Lock 24 or Flex 30 where eligible. Clear first bill. UK-based support.`,
+  description,
   canonical,
   type = 'website',
   image = DEFAULT_IMAGE,
@@ -35,6 +36,9 @@ export const SEO = ({
   price,
   priceCurrency = 'GBP',
 }: SEOProps) => {
+  const currentPrices = getFromPrices();
+  const defaultDesc = `UK fibre broadband from £${currentPrices.broadband}/mo. Price Lock 24 or Flex 30 where eligible. Clear first bill. UK-based support.`;
+  
   const fullTitle = title
     ? `${title} | ${SITE_NAME}`
     : `${SITE_NAME} — UK Broadband, 5G SIM & Digital Home Phone`;
@@ -42,9 +46,17 @@ export const SEO = ({
   const browserPath = typeof window !== 'undefined'
     ? window.location.pathname
     : '/';
-  const canonicalPath = canonical || browserPath || '/';
+  
+  // Clean up the canonical path - remove trailing slashes except for root
+  let canonicalPath = (canonical || browserPath || '/').split('?')[0];
+  if (canonicalPath.length > 1 && canonicalPath.endsWith('/')) {
+    canonicalPath = canonicalPath.slice(0, -1);
+  }
+  
   const canonicalUrl = toAbsoluteUrl(canonicalPath);
   const socialImage = toAbsoluteUrl(image);
+  const metaDescription = description || defaultDesc;
+  
   const robotsContent = noIndex
     ? 'noindex, nofollow'
     : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
@@ -54,7 +66,7 @@ export const SEO = ({
       {/* Primary Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="title" content={fullTitle} />
-      <meta name="description" content={description} />
+      <meta name="description" content={metaDescription} />
       <meta name="keywords" content={keywords} />
 
       {/* Canonical URL */}
@@ -66,7 +78,7 @@ export const SEO = ({
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />
       <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
+      <meta property="og:description" content={metaDescription} />
       <meta property="og:image" content={socialImage} />
       <meta property="og:image:alt" content="OCCTA UK broadband, SIM and Digital Voice" />
       <meta property="og:site_name" content={SITE_NAME} />
@@ -82,7 +94,7 @@ export const SEO = ({
       <meta name="twitter:site" content="@OCCTA" />
       <meta name="twitter:creator" content="@OCCTA" />
       <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
+      <meta name="twitter:description" content={metaDescription} />
       <meta name="twitter:image" content={socialImage} />
       <meta name="twitter:image:alt" content="OCCTA UK broadband, SIM and Digital Voice" />
     </Helmet>

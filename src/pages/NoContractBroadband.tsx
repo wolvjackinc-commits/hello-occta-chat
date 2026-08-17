@@ -48,7 +48,7 @@ const whySwitchReasons = [
   "No 12, 18, or 24-month contracts",
   "No CPI-linked annual price rises",
   "No 'intro price then shock bill'",
-  "30-day rolling options available where eligible without penalties",
+  "30-day rolling options where eligible",
   "Clear monthly pricing",
   "Human UK-based support",
 ];
@@ -58,7 +58,7 @@ const comparisonData = [
   { feature: "Price rises", occta: "None", others: "Annual CPI increases" },
   { feature: "Exit fees", occta: "None", others: "Up to £200+" },
   { feature: "Transparency", occta: "Clear pricing", others: "Complex bundles" },
-  { feature: "Flexibility", occta: "30-day rolling options available where eligible", others: "Locked in" },
+  { feature: "Flexibility", occta: "Rolling monthly where eligible", others: "Locked in" },
 ];
 
 const faqs = [
@@ -67,7 +67,7 @@ const faqs = [
     answer: "Yes, genuinely. You pay monthly and can cancel whenever you like. No minimum term, no exit fees, no catches. We believe if our service is good enough, you'll stay because you want to — not because you're trapped.",
   },
   {
-    question: "Can I 30-day rolling options available where eligible?",
+    question: "Can I cancel whenever I want?",
     answer: "Absolutely. Give us 30 days notice and you're free to go. No penalties, no hassle, no 'retention team' trying to convince you otherwise. We make leaving as easy as joining.",
   },
   {
@@ -137,7 +137,7 @@ const NoContractBroadband = () => {
             >
               Broadband from{" "}
               <span className="text-foreground">£{prices.broadband}/month</span>. No
-              contracts, no hidden fees, 30-day rolling options available where eligible.
+              contracts, no hidden fees, rolling monthly where eligible.
             </motion.p>
 
             <motion.p

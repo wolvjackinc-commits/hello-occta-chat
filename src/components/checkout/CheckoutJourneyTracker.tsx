@@ -12,7 +12,7 @@ type RouteState = { stage: string; progress: number | null; complete?: boolean }
 
 function routeState(pathname: string): RouteState {
   const route = normalizeCheckoutRoute(pathname);
-  if (route === "/build-plan") return { stage: "build_plan", progress: 5 };
+  if (route === "/order") return { stage: "build_plan", progress: 5 };
   if (route === "/quote/start") return { stage: "quote_start", progress: 10 };
   if (route === "/quote/contract-summary/:token") return { stage: "contract_summary", progress: 70 };
   if (route === "/quote/two-doc/:token") return { stage: "agreement", progress: 80 };

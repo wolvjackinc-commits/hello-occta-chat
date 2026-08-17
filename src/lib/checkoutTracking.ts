@@ -70,7 +70,7 @@ export function journeyTokenFromCheckoutPath(pathname: string): string | null {
 
 export function isCheckoutRoute(pathname: string): boolean {
   const p = normalizeCheckoutRoute(pathname);
-  return p === "/build-plan"
+  return p === "/order"
     || p === "/pre-checkout"
     || p === "/checkout"
     || p === "/thank-you"

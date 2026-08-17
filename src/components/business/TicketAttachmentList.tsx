@@ -145,7 +145,7 @@ export const TicketAttachmentList = ({ ticketId, ticketOwnerId }: Props) => {
             <DialogTitle className="truncate">{preview?.name}</DialogTitle>
           </DialogHeader>
           {preview?.kind === "image" && (
-            <img src={preview.url} alt={preview.name} className="max-h-[70vh] mx-auto" />
+            <img src={preview.url} alt="" className="max-h-[70vh] mx-auto" />
           )}
           {preview?.kind === "pdf" && (
             <iframe src={preview.url} title={preview.name} className="w-full h-[70vh] border-2 border-foreground" />

@@ -137,6 +137,13 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted, prefill }: 
       setTicketId(payload.ticket_id ?? null);
       toast.success("Ticket raised — we'll reply within 24 hours");
       onSubmitted?.({ ticketId: payload.ticket_id, ref });
+      // Trigger Google Ads conversion tracking for the ticket purchase (support contact)
+      window.gtag?.('event', 'conversion', {
+        'send_to': 'AW-18222446720/T6yqCJrD--IcEIDxkfFD',
+        'value': 1.0,
+        'currency': 'GBP',
+        'transaction_id': payload.ticket_id
+      });
     } catch (err) {
       logError("RaiseTicketDialog.submit", err);
       toast.error("Couldn't raise ticket. Please try again.");

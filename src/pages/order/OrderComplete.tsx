@@ -42,7 +42,22 @@ export default function OrderComplete() {
   useEffect(() => {
     if (!token) return;
     journey2.completion(token)
-      .then((r) => (r?.ok && r.completion ? setState(r.completion) : setError(r?.error ?? "not_completed")))
+      .then((r) => {
+        if (r?.ok && r.completion) {
+          setState(r.completion);
+          // Trigger Google Ads conversion tracking for the purchase
+          if (!r.completion.test_session) {
+            window.gtag?.('event', 'conversion', {
+              'send_to': 'AW-18222446720/T6yqCJrD--IcEIDxkfFD',
+              'value': r.completion.monthly_incl_vat,
+              'currency': 'GBP',
+              'transaction_id': r.completion.order_number
+            });
+          }
+        } else {
+          setError(r?.error ?? "not_completed");
+        }
+      })
       .catch(() => setError("network_error"));
   }, [token]);
 

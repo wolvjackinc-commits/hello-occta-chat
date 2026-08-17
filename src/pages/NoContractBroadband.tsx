@@ -104,10 +104,10 @@ const NoContractBroadband = () => {
   return (
     <LayoutComponent>
       <SEO
-        title="No-Contract Broadband UK | Cheap & Flexible"
-        description="Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband with no lock-ins, no hidden fees, and no surprise price rises."
+        title="No-Contract Broadband UK | Cheap & Flexible Fibre"
+        description={`Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband from £${prices.broadband}/mo with no lock-ins, no mid-contract price hikes, and 30-day rolling options where eligible.`}
         canonical="/no-contract-broadband-uk"
-        keywords="no contract broadband UK, flexible broadband, 30-day rolling options available where eligible broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
+        keywords="no contract broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
         price={prices.broadband}
       />
       <JsonLd data={offerSchema} />

@@ -5,6 +5,12 @@ const STORAGE_KEY = "occta.cookie-consent.v1";
 const GA_ID = "G-T5376TR31J";
 const ADS_ID = "AW-18222446720";
 
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
 export type ConsentState = "granted" | "denied" | null;
 
 export function getConsent(): ConsentState {

@@ -58,7 +58,7 @@ export default function BillingExplainedPage() {
         { label: "Cancellation", to: "/cancellation" },
       ]}
       primaryCta={{ label: "Contact support", to: "/support" }}
-      secondaryCta={{ label: "Get a quote", to: "/quote/start" }}
+      secondaryCta={{ label: "Check Availability", to: "/broadband" }}
       compliance={
         <p>Your accepted agreement and the Price Transparency page contain the binding details of charges, late fees and notice periods. See <a href="/legal/price-transparency" className="underline">Price Transparency</a>.</p>
       }

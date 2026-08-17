@@ -51,8 +51,8 @@ export default function SwitchingPage() {
             Ready to see what's available at your address? Final price, contract length, fees, speed and key
             terms will be confirmed in your Contract Summary before you pay.
           </p>
-          <Link to="/quote/start?interest=switch">
-            <Button variant="hero" className="font-display uppercase">Start a switch enquiry</Button>
+          <Link to="/broadband">
+            <Button variant="hero" className="font-display uppercase">Check Availability</Button>
           </Link>
         </div>
       </section>

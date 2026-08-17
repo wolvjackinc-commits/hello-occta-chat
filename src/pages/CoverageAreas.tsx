@@ -83,7 +83,7 @@ export default function CoverageAreas() {
             className="flex flex-col sm:flex-row gap-2 max-w-xl"
             onSubmit={(e) => {
               e.preventDefault();
-              window.location.href = `/build-plan?postcode=${encodeURIComponent(q)}`;
+              window.location.href = `/order`;
             }}
           >
             <div className="relative flex-1">
@@ -131,7 +131,7 @@ export default function CoverageAreas() {
                 <>
                   <p className="text-sm mb-3">We don't have a dedicated page for the <strong>{postcodeMatch.area}</strong> area yet, but coverage is likely — Openreach fibre reaches most UK postcodes.</p>
                   <Button asChild size="sm" className="font-display uppercase">
-                    <Link to={`/build-plan?postcode=${encodeURIComponent(q)}`}>Run a full check</Link>
+                    <Link to={`/order`}>Run a full check</Link>
                   </Button>
                 </>
               )}

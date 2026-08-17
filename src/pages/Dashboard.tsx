@@ -429,8 +429,8 @@ const Dashboard = () => {
             <p className="text-muted-foreground">
               You need to be signed in to view your account. Taking you to the customer login…
             </p>
-            <Link to="/auth?claim=1&next=/dashboard">
-              <Button variant="hero" className="w-full">Go to customer login</Button>
+            <Link to="/order">
+              <Button variant="hero" className="w-full">Go to broadband check</Button>
             </Link>
           </div>
         </div>

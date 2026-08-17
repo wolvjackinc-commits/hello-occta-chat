@@ -45,7 +45,6 @@ import {
   type CheckoutContext,
 } from "@/lib/requireContractSummary";
 import { startAssignedJourney } from "@/lib/journey2/route";
-import { startAssignedJourney } from "@/lib/journey2/route";
 
 const addressSchema = z.object({
   postcode: z.string().min(5, "Enter a valid postcode").max(10, "Postcode too long"),

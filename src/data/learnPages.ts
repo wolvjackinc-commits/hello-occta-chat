@@ -54,7 +54,7 @@ export const learnCategoryLabels: Record<LearnCategory, string> = {
 };
 
 // Related-link presets so every page cross-links to money pages.
-const CHECK = { label: "Check availability at your address", to: "/build-plan", description: "Free postcode check — no signup needed." };
+const CHECK = { label: "Check availability at your address", to: "/order", description: "Free postcode check — no signup needed." };
 const BROADBAND = { label: "OCCTA Broadband plans", to: "/broadband" };
 const SIM = { label: "OCCTA SIM plans", to: "/sim" };
 const VOICE = { label: "Digital Home Phone", to: "/landline" };

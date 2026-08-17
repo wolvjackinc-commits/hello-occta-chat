@@ -54,8 +54,8 @@ const guestActions = ["Compare broadband plans", "Fix my internet", "How switchi
 const signedInActions = ["Check my latest invoice", "Track my order", "Check my services", "Show my support tickets"];
 
 const actionRoutes: Record<string, string> = {
-  "check availability": "/build-plan",
-  "start an availability check": "/build-plan",
+  "check availability": "/order",
+  "start an availability check": "/order",
   "view broadband plans": "/broadband",
   "view sim plans": "/sim",
   "open help centre": "/help",
@@ -144,7 +144,7 @@ function publicReply(intent: string, raw = ""): string | null {
       }
       const compact = postcode.replace(/\s+/g, "");
       return withOptions(
-        `I can start the live check for **${postcode}**. A postcode can contain several properties, so I shouldn’t say “available” or “not available” until you choose the exact address.\n\n[**Check ${postcode} now →**](/build-plan?postcode=${encodeURIComponent(compact)})\n\nThe checker will confirm the property, available technology, estimated speed, setup and final price before you order.`,
+        `I can start the live check for **${postcode}**. A postcode can contain several properties, so I shouldn’t say “available” or “not available” until you choose the exact address.\n\n[**Check ${postcode} now →**](/order?postcode=${encodeURIComponent(compact)})\n\nThe checker will confirm the property, available technology, estimated speed, setup and final price before you order.`,
         ["Check availability", "View broadband plans", "Talk to a human"],
       );
     }

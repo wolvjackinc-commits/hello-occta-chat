@@ -81,7 +81,7 @@ export function OverviewTab(p: Props) {
                 You don't have any active services yet. Request a quick quote — no payment, no pressure.
               </p>
               <div className="flex flex-wrap gap-2">
-                <Link to="/build-plan?availability=fallback"><Button variant="hero" size="sm">Request a quote</Button></Link>
+                <Link to="/order"><Button variant="hero" size="sm">Request a quote</Button></Link>
                 <Link to="/support"><Button variant="outline" size="sm" className="border-2 border-foreground"><LifeBuoy className="w-4 h-4 mr-1" /> Need help?</Button></Link>
               </div>
             </div>
@@ -102,7 +102,7 @@ export function OverviewTab(p: Props) {
                 variant="hero"
               />
             ) : (
-              <QuickAction icon={Plus} label="Add a service" href="/build-plan?availability=fallback" variant="hero" />
+              <QuickAction icon={Plus} label="Add a service" href="/order" variant="hero" />
             )}
             <QuickAction icon={Receipt} label="View invoices" href="/dashboard?tab=invoices" />
             <QuickAction icon={LifeBuoy} label="Open support" href="/support" />

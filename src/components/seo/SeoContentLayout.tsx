@@ -59,7 +59,7 @@ export default function SeoContentLayout({
   faqs = [],
   relatedLinks = [],
   compliance,
-  primaryCta = { label: "Check availability", to: "/build-plan" },
+  primaryCta = { label: "Check availability", to: "/order" },
   secondaryCta = { label: "Check Availability", to: "/broadband" },
 }: SeoContentPageProps) {
   const faqSchema = faqs.length > 0 ? createFAQSchema(faqs.map(f => ({ question: f.question, answer: f.answer }))) : null;

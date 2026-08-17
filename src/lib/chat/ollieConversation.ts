@@ -79,7 +79,7 @@ export function resolvePublicConversationReply(messages: CompanionMessage[]): st
       }
       const compact = postcode.replace(/\s+/g, "");
       return withOptions(
-        `I’ve got **${postcode}**. A postcode can contain several properties, so the next step is to choose the exact address — that is what confirms technology, estimated speed, setup and final price.\n\n[**Check ${postcode} now →**](${BASE_URL}/build-plan?postcode=${encodeURIComponent(compact)})`,
+        `I’ve got **${postcode}**. A postcode can contain several properties, so the next step is to choose the exact address — that is what confirms technology, estimated speed, setup and final price.\n\n[**Check ${postcode} now →**](${BASE_URL}/order?postcode=${encodeURIComponent(compact)})`,
         ["Open availability checker", "View broadband plans", "Talk to a human"],
       );
     }

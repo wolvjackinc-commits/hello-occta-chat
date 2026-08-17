@@ -369,7 +369,7 @@ function BuildPlanInner() {
 
   return (
     <Layout>
-      <SEO title="Build Your Plan — OCCTA Fair Broadband" canonical="/build-plan" />
+      <SEO title="Build Your Plan — OCCTA Fair Broadband" canonical="/order" />
       <div className="container mx-auto px-4 py-10 md:py-14 pb-40 lg:pb-14">
         <div className="mb-6">
           <p className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>

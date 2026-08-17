@@ -2,7 +2,7 @@ import type { SeoArticle } from "@/data/seoArticles";
 
 const CHECK = {
   label: "Check broadband at your address",
-  to: "/build-plan",
+  to: "/order",
   description: "Choose the exact property to confirm availability, estimated speed and order-specific pricing.",
 };
 

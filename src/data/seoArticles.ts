@@ -15,7 +15,7 @@ export interface SeoArticle extends LearnPage {
 
 const CHECK = {
   label: "Check availability at your address",
-  to: "/build-plan",
+  to: "/order",
   description: "See the broadband options available at your postcode.",
 };
 

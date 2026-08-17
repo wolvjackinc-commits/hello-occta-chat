@@ -319,7 +319,7 @@ const HeroSection = () => {
                 <Button
                   onClick={() => {
                     triggerFallback(postcode);
-                    navigate(`/build-plan?availability=fallback${postcode ? `&postcode=${encodeURIComponent(postcode)}` : ""}`);
+                    navigate(`/order`);
                   }}
                   size="lg"
                   className="mt-4 w-full h-12 font-display uppercase tracking-wider"

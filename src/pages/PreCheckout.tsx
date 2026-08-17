@@ -229,10 +229,10 @@ const PreCheckout = () => {
     const hasBroadband = plans.some(p => p.serviceType === 'broadband');
     if (hasBroadband) {
       toast({
-        title: "Broadband now uses Build Plan",
-        description: "Broadband orders require an address check, first bill preview and Contract Summary before payment.",
+        title: "Broadband now uses the order journey",
+        description: "Broadband orders require an address check and Contract Summary before payment.",
       });
-      navigate("/build-plan", { replace: true });
+      startAssignedJourney((path) => navigate(path, { replace: true }));
       return;
     }
     

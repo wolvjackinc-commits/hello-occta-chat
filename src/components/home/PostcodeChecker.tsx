@@ -51,7 +51,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
 
   const goToFallbackPlans = () => {
     triggerFallback(localPostcode);
-    navigate(`/build-plan?availability=fallback${localPostcode ? `&postcode=${encodeURIComponent(localPostcode)}` : ""}`);
+    navigate(`/order`);
   };
 
   return (

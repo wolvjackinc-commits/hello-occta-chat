@@ -84,11 +84,11 @@ const signedInActions = [
 
 const actionRoutes: Record<string, string> = {
   "open help centre": "/help",
-  "check availability": "/build-plan",
-  "check broadband availability": "/build-plan",
-  "open availability checker": "/build-plan",
-  "check my address": "/build-plan",
-  "start an availability check": "/build-plan",
+  "check availability": "/order",
+  "check broadband availability": "/order",
+  "open availability checker": "/order",
+  "check my address": "/order",
+  "start an availability check": "/order",
   "view broadband plans": "/broadband",
   "view sim plans": "/sim",
   "open own-router guide": "/help/own-router-setup",

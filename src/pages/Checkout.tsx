@@ -44,6 +44,7 @@ import {
   hasAcceptedContractSummary,
   type CheckoutContext,
 } from "@/lib/requireContractSummary";
+import { startAssignedJourney } from "@/lib/journey2/route";
 
 const addressSchema = z.object({
   postcode: z.string().min(5, "Enter a valid postcode").max(10, "Postcode too long"),
@@ -98,10 +99,10 @@ const Checkout = () => {
         // Broadband orders must go through Build Plan → First Bill Preview → Contract Summary.
         if (foundPlan.serviceType === 'broadband') {
           toast({
-            title: "Broadband now uses Build Plan",
-            description: "Broadband orders require an address check, first bill preview and Contract Summary before payment.",
+            title: "Broadband now uses the order journey",
+            description: "Broadband orders require an address check and Contract Summary before payment.",
           });
-          navigate("/build-plan", { replace: true });
+          startAssignedJourney((path) => navigate(path, { replace: true }));
           return;
         }
         setPlan(foundPlan);

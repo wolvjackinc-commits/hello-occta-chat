@@ -528,7 +528,7 @@ function approvedPublicReply(intent: string): string | null {
   switch (intent) {
     case "broadband":
       return withOptions(
-        `OCCTA has three public broadband tiers, subject to what is available at your address:\n\n• **Essential Fibre** — up to 80Mbps\n• **Superfast Fibre** — up to 330Mbps\n• **Ultrafast Fibre** — up to 1,000Mbps where available\n\nYou can choose a flexible **Flex 30** option or a fixed-term **Price Lock 24** option where eligible. Final speed, monthly price, setup and router choices are confirmed before you order. [Check your address](${BASE_URL}/build-plan).`,
+        `OCCTA has three public broadband tiers, subject to what is available at your address:\n\n• **Essential Fibre** — up to 80Mbps\n• **Superfast Fibre** — up to 330Mbps\n• **Ultrafast Fibre** — up to 1,000Mbps where available\n\nYou can choose a flexible **Flex 30** option or a fixed-term **Price Lock 24** option where eligible. Final speed, monthly price, setup and router choices are confirmed before you order. [Check your address](${BASE_URL}/order).`,
         ["Check availability", "Compare Flex and Price Lock", "Which speed do I need?"],
       );
     case "contract_choice":

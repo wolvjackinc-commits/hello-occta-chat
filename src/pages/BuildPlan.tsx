@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import { startAssignedJourney } from "@/lib/journey2/route";
+import { useEffect as useOnce } from "react";
 
 const UK_TELECOM_PROVIDERS = [
   "BT", "Sky", "TalkTalk", "Virgin Media", "Vodafone", "Plusnet",
@@ -124,6 +125,15 @@ const getClientEstimate = (
 
 function BuildPlanInner() {
   const nav = useNavigate();
+
+  // /build-plan is the Legacy Journey 1 entry point.
+  // We automatically attempt to upgrade new visitors to Journey 2.
+  useOnce(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("force_v1") === "1") return;
+    startAssignedJourney((path) => nav(path, { replace: true }));
+  }, []);
+
   const [searchParams] = useSearchParams();
   const isTestMode = searchParams.get("test") === "1";
   const isFallback = searchParams.get("availability") === "fallback";
@@ -359,7 +369,7 @@ function BuildPlanInner() {
 
   return (
     <Layout>
-      <SEO title="Build Your Plan — OCCTA Fair Broadband" canonical="/build-plan" />
+      <SEO title="Build Your Plan — OCCTA Fair Broadband" canonical="/order" />
       <div className="container mx-auto px-4 py-10 md:py-14 pb-40 lg:pb-14">
         <div className="mb-6">
           <p className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>

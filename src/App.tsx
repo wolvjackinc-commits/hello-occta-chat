@@ -275,7 +275,7 @@ const AnimatedRoutes = () => {
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />
-        <Route path="/build-plan" element={<BuildPlan />} />
+        <Route path="/order" element={<Suspense fallback={<AdminRouteFallback />}><OrderStart /></Suspense>} />
         <Route path="/broadband/flex" element={<FlexBroadband />} />
         <Route path="/broadband/contract-saver" element={<ContractSaverBroadband />} />
         <Route path="/switching" element={<SwitchingPage />} />

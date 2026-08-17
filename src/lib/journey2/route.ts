@@ -17,7 +17,7 @@ export async function startAssignedJourney(
     if (res?.token) return navigate(`/order/${res.token}`);
     // The server explicitly assigned Journey 1 (quote-led).
     if (res?.redirect) return navigate(res.redirect);
-    if (res?.journey_version === "v1") return navigate("/build-plan");
+    if (res?.journey_version === "v1") return navigate("/order");
     throw new Error(res?.message ?? "assignment_unavailable");
   } catch (e) {
     onError?.(

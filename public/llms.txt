@@ -15,7 +15,7 @@ Canonical website: https://www.occta.co.uk/
 - [SIM plans](https://www.occta.co.uk/sim): Current SIM-only information.
 - [Digital Home Phone](https://www.occta.co.uk/landline): Digital Voice as a broadband add-on or bundle.
 - [Switching](https://www.occta.co.uk/switching): Switching and One Touch Switch information.
-- [Address availability check](https://www.occta.co.uk/build-plan): Address-specific broadband enquiry.
+- [Address availability check](https://www.occta.co.uk/order): Address-specific broadband enquiry.
 - [Learning hub](https://www.occta.co.uk/learn): Plain-English telecom guides.
 - [Blog and guides](https://www.occta.co.uk/blog): Current public articles and buying guides.
 - [Help and support](https://www.occta.co.uk/support): Public support and contact routes.

@@ -16,6 +16,7 @@ import { SEO, StructuredData, createServiceSchema, createOfferSchema, createBrea
 import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import { getFromPrices } from "@/lib/pricing/engine";
 import { AvailabilityProvider, useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
+import { startAssignedJourney } from "@/lib/journey2/route";
 
 const BroadbandInner = () => {
   const [isReady, setIsReady] = useState(false);
@@ -70,9 +71,8 @@ const BroadbandInner = () => {
   ];
 
   const handleChoosePlan = (planId: string) => {
-    // Broadband now routes via Build Plan → First Bill Preview → Contract Summary.
-    const bucket = planId.replace("broadband-", "");
-    navigate(`/build-plan?bucket=${bucket}`);
+    // Every broadband CTA now routes through the Journey 2 assignment router.
+    startAssignedJourney((path) => navigate(path));
   };
 
   const toggleCallPlan = (id: string) => {

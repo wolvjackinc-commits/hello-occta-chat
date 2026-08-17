@@ -87,10 +87,10 @@ const routes: Record<string, string> = {
   "open help centre": "/help",
   "search help centre": "/help",
   "browse occta guides": "/help",
-  "check availability": "/build-plan",
-  "check broadband availability": "/build-plan",
-  "open availability checker": "/build-plan",
-  "check my address": "/build-plan",
+  "check availability": "/order",
+  "check broadband availability": "/order",
+  "open availability checker": "/order",
+  "check my address": "/order",
   "view broadband plans": "/broadband",
   "compare broadband options": "/broadband",
   "view sim plans": "/sim",
@@ -277,13 +277,13 @@ function internalFallback(query: string, intent: string): string {
 
 function availabilityReply(query: string): string {
   const place = /huddersfield/i.test(query) ? " in Huddersfield" : "";
-  return `OCCTA broadband availability${place} is checked **address by address**. I don’t want to tell you an entire town is covered when one street can differ from another.\n\n[**Check your postcode and address on OCCTA →**](https://www.occta.co.uk/build-plan)\n\nIf you enter your postcode there, the availability journey can show what can actually be supplied at that property.\n\n<<<OPTIONS:["Check broadband availability","View broadband plans"]>>>`;
+  return `OCCTA broadband availability${place} is checked **address by address**. I don’t want to tell you an entire town is covered when one street can differ from another.\n\n[**Check your postcode and address on OCCTA →**](https://www.occta.co.uk/order)\n\nIf you enter your postcode there, the availability journey can show what can actually be supplied at that property.\n\n<<<OPTIONS:["Check broadband availability","View broadband plans"]>>>`;
 }
 
 function providerComparisonReply(query: string): string {
   const value = normaliseOcctaText(query);
   const provider = value.match(/\b(bt|sky|virgin(?: media)?|talktalk|plusnet|vodafone|ee|zen)\b/)?.[0]?.toUpperCase() || "another provider";
-  return `OCCTA is **not automatically faster or slower than ${provider} everywhere**. The useful comparison is the actual broadband technology and speed available at your address, not the company name alone.\n\nOCCTA offers broadband tiers up to **1,000Mbps where available**, but your address check is what confirms the real option.\n\n[**Check your OCCTA availability →**](https://www.occta.co.uk/build-plan)\n[**See OCCTA broadband options →**](https://www.occta.co.uk/broadband)\n\n<<<OPTIONS:["Check broadband availability","Help me choose a speed"]>>>`;
+  return `OCCTA is **not automatically faster or slower than ${provider} everywhere**. The useful comparison is the actual broadband technology and speed available at your address, not the company name alone.\n\nOCCTA offers broadband tiers up to **1,000Mbps where available**, but your address check is what confirms the real option.\n\n[**Check your OCCTA availability →**](https://www.occta.co.uk/order)\n[**See OCCTA broadband options →**](https://www.occta.co.uk/broadband)\n\n<<<OPTIONS:["Check broadband availability","Help me choose a speed"]>>>`;
 }
 
 function buildTicketPrefill(messages: Message[]): TicketPrefill {

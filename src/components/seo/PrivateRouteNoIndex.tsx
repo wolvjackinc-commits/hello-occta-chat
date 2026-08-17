@@ -13,7 +13,7 @@ import { Helmet } from "react-helmet-async";
  *  - /dashboard/contract/*, /dashboard/receipt/*, /receipt/*
  *
  * Public funnel pages (KEEP indexable):
- *  - /quote/start, /quote/thank-you, /build-plan
+ *  - /quote/start, /quote/thank-you, /order
  */
 const EXACT_PRIVATE = new Set<string>([
   "/auth",

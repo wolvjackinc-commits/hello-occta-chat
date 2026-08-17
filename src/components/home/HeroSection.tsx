@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/AvailabilityContext";
+import { startAssignedJourney } from "@/lib/journey2/route";
 
 const HeroSection = () => {
   const prices = getFromPrices();
@@ -35,7 +36,7 @@ const HeroSection = () => {
   const getSpeedLabel = (speed: number) => speed >= 1000 ? "1Gbps" : `${speed}Mbps`;
 
   const handleChoosePlan = (planId: string) => {
-    navigate(`/build-plan?plan=${planId}`);
+    startAssignedJourney((path) => navigate(path));
   };
 
   const getHeroPlanCards = () => {
@@ -318,7 +319,7 @@ const HeroSection = () => {
                 <Button
                   onClick={() => {
                     triggerFallback(postcode);
-                    navigate(`/build-plan?availability=fallback${postcode ? `&postcode=${encodeURIComponent(postcode)}` : ""}`);
+                    navigate(`/order`);
                   }}
                   size="lg"
                   className="mt-4 w-full h-12 font-display uppercase tracking-wider"

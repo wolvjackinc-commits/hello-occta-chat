@@ -161,7 +161,7 @@ const NoContractBroadband = () => {
               variants={itemVariants}
               className="flex flex-wrap justify-center gap-4"
             >
-              <Link to="/broadband">
+              <Link to="/order">
                 <Button variant="outline" size="lg" className="font-bold">
                   Compare Plans
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -317,7 +317,7 @@ const NoContractBroadband = () => {
             variants={itemVariants}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Link to="/broadband">
+            <Link to="/order">
               <Button
                 size="lg"
                 className="bg-background text-foreground hover:bg-background/90 font-bold"
@@ -400,7 +400,7 @@ const NoContractBroadband = () => {
 
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             <motion.div variants={itemVariants}>
-              <Link to="/broadband">
+              <Link to="/order">
                 <Card className="p-6 border-2 border-border hover:border-accent transition-colors group">
                   <Zap className="h-10 w-10 text-accent mb-4" />
                   <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">

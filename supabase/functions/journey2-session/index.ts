@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
       });
     }
     if (assignment.version === "v1") {
-      return jsonResponse({ ok: true, journey_version: "v1", reason: assignment.reason, redirect: "/build-plan" });
+      return jsonResponse({ ok: true, journey_version: "v1", reason: assignment.reason, redirect: "/order" });
     }
 
     const { raw, hash } = await generateTokenPair();

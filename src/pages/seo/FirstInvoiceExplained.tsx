@@ -52,7 +52,7 @@ export default function FirstInvoiceExplainedPage() {
         { label: "Pricing", to: "/pricing" },
         { label: "Contact support", to: "/contact" },
       ]}
-      primaryCta={{ label: "Get a quote", to: "/quote/start" }}
+      primaryCta={{ label: "Check Availability", to: "/broadband" }}
       secondaryCta={{ label: "Contact support", to: "/contact" }}
     />
   );

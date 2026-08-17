@@ -85,8 +85,8 @@ export default function RewardsPage() {
             Rewards are now enabled — see your dashboard for live reward status.
           </p>
         ) : (
-          <Link to="/quote/start?interest=rewards">
-            <Button variant="outline" className="font-display uppercase">Be first to know — start a quote</Button>
+          <Link to="/broadband">
+            <Button variant="outline" className="font-display uppercase">Check Availability</Button>
           </Link>
         )}
       </section>

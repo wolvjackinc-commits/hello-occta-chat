@@ -75,9 +75,9 @@ export default function ContractSaverBroadband() {
                 Flex Broadband <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>
-            <Link to="/quote/start?interest=broadband_contract_saver">
+            <Link to="/broadband">
               <Button variant="hero" className="font-display uppercase">
-                Request a confirmed quote
+                Check Availability
               </Button>
             </Link>
           </div>

@@ -30,7 +30,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "cheap-broadband-near-me",
     metaTitle: "Cheap Broadband Near Me — Find Affordable Internet",
-    metaDescription: "Looking for cheap broadband near you? OCCTA offers affordable fibre broadband from \u00A334.99/mo with no contracts across the UK. Check your postcode now.",
+    metaDescription: "Looking for cheap broadband near you? OCCTA offers affordable fibre broadband from \u00A334.99/mo with 30-day rolling options where eligible across the UK. Check your postcode now.",
     keywords: "cheap broadband near me, affordable broadband near me, broadband deals near me, internet near me cheap, best broadband near me, local broadband deals",
     heroTitle: "CHEAP BROADBAND",
     heroHighlight: "NEAR YOU",
@@ -40,7 +40,7 @@ export const keywordPages: KeywordPage[] = [
         heading: "Find Cheap Broadband at Your Address",
         paragraphs: [
           "When you search for \u201Ccheap broadband near me\u201D, you want to know exactly what\u2019s available at your address \u2014 not a generic price list. OCCTA uses the Openreach fibre network, which covers around 97% of UK homes, so there\u2019s a strong chance we can connect you.",
-          "Simply enter your postcode above to check what speeds and plans are available. You\u2019ll see real pricing with no hidden fees.",
+          "Simply enter your postcode above to check what speeds and plans are available. You\u2019ll see real pricing with no surprise price rises.",
         ],
       },
       {
@@ -63,7 +63,7 @@ export const keywordPages: KeywordPage[] = [
       },
     ],
     faqs: [
-      { question: "How do I find the cheapest broadband near me?", answer: "Enter your postcode on our broadband page to see exact pricing and speeds available at your address. OCCTA plans start from \u00A334.99/mo with no contracts." },
+      { question: "How do I find the cheapest broadband near me?", answer: "Enter your postcode on our broadband page to see exact pricing and speeds available at your address. OCCTA plans start from \u00A334.99/mo with 30-day rolling options where eligible." },
       { question: "Is cheap broadband reliable?", answer: "Yes. OCCTA uses the same Openreach fibre network as BT, Sky, and Plusnet. You get the same infrastructure at a lower price." },
       { question: "Do I need a credit check for broadband?", answer: "Not with OCCTA. We don\u2019t run credit checks on any of our broadband plans." },
       { question: "Can I get broadband without a contract near me?", answer: "Yes. All OCCTA plans are rolling monthly with no lock-in and no exit fees." },
@@ -77,7 +77,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "broadband-no-credit-check",
     metaTitle: "Broadband No Credit Check — Get Connected Today",
-    metaDescription: "Need broadband with no credit check? OCCTA offers fast fibre broadband from \u00A334.99/mo with no credit check, no contract, and no hidden fees.",
+    metaDescription: "Need broadband with no credit check? OCCTA offers fast fibre broadband from \u00A334.99/mo with no credit check, 30-day rolling options where eligible, and no surprise price rises.",
     keywords: "broadband no credit check, internet no credit check, wifi no credit check, broadband without credit check UK, no credit check broadband deals",
     heroTitle: "BROADBAND",
     heroHighlight: "NO CREDIT CHECK",
@@ -112,10 +112,10 @@ export const keywordPages: KeywordPage[] = [
       { question: "Can I really get broadband without a credit check?", answer: "Yes. OCCTA does not run any credit checks \u2014 hard or soft \u2014 on any broadband plan." },
       { question: "Will no credit check broadband affect my credit score?", answer: "No. Since we don\u2019t check your credit, signing up with OCCTA has zero impact on your credit score." },
       { question: "Is no credit check broadband slower?", answer: "No. You get the same Openreach fibre speeds as any other provider \u2014 up to 900Mbps." },
-      { question: "Do I need to pay a deposit?", answer: "No. There\u2019s no deposit, no upfront cost, and no hidden fees." },
+      { question: "Do I need to pay a deposit?", answer: "No. There\u2019s no deposit, no upfront cost, and no surprise price rises." },
     ],
     ctaTitle: "Get Connected Today",
-    ctaText: "No credit check, no contract, no hassle. Enter your postcode to get started.",
+    ctaText: "No credit check, 30-day rolling options where eligible, no hassle. Enter your postcode to get started.",
     ctaLink: "/broadband",
     ctaButton: "Check Availability",
     price: "34.99",
@@ -124,7 +124,7 @@ export const keywordPages: KeywordPage[] = [
     slug: "broadband-for-students",
     metaTitle: "Student Broadband — No Contract Internet for Students",
     metaDescription: "Best broadband for students in the UK. No contract, no credit check, 30-day rolling options available where eligible. OCCTA student-friendly internet from \u00A334.99/mo.",
-    keywords: "student broadband, broadband for students UK, student internet deals, no contract broadband students, cheap broadband students, university broadband",
+    keywords: "student broadband, broadband for students UK, student internet deals, 30-day rolling options where eligible broadband students, cheap broadband students, university broadband",
     heroTitle: "BROADBAND FOR",
     heroHighlight: "STUDENTS",
     heroSubtitle: "No contract. No credit check. Cancel when you move out.",
@@ -159,7 +159,7 @@ export const keywordPages: KeywordPage[] = [
       { question: "Can students get broadband without a credit check?", answer: "Yes. OCCTA doesn\u2019t run credit checks, making it ideal for students with no credit history." },
       { question: "Can I cancel my student broadband when I move out?", answer: "Yes. All OCCTA plans are rolling monthly. Give us 30 days notice and you can cancel with no fees." },
       { question: "What speed do students need?", answer: "For a shared student house, we recommend at least 100Mbps. Our 300Mbps or 500Mbps plans are ideal for 4+ people." },
-      { question: "Is there a student discount?", answer: "OCCTA\u2019s prices are already the lowest available, starting from \u00A334.99/mo with no price rises." },
+      { question: "Is there a student discount?", answer: "OCCTA\u2019s prices are already the lowest available, starting from \u00A334.99/mo with no mid-contract price hikes." },
     ],
     ctaTitle: "Get Student Broadband",
     ctaText: "Enter your student house postcode to check what\u2019s available.",
@@ -170,7 +170,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "best-broadband-deals-uk",
     metaTitle: "Best Broadband Deals UK 2026 — Compare & Save",
-    metaDescription: "Find the best broadband deals in the UK for 2026. Compare no-contract plans from \u00A334.99/mo. No hidden fees, no price rises, speeds up to 900Mbps.",
+    metaDescription: "Find the best broadband deals in the UK for 2026. Compare no-contract plans from \u00A334.99/mo. No hidden fees, no mid-contract price hikes, speeds up to 900Mbps.",
     keywords: "best broadband deals UK, best broadband deals 2026, cheapest broadband UK, broadband deals comparison, best internet deals, affordable broadband UK",
     heroTitle: "BEST BROADBAND",
     heroHighlight: "DEALS UK",
@@ -204,7 +204,7 @@ export const keywordPages: KeywordPage[] = [
       },
     ],
     faqs: [
-      { question: "What is the cheapest broadband deal in the UK?", answer: "OCCTA offers broadband from \u00A334.99/mo with no hidden fees, no contracts, and no price rises \u2014 making it one of the best-value deals available." },
+      { question: "What is the cheapest broadband deal in the UK?", answer: "OCCTA offers broadband from \u00A334.99/mo with no surprise price rises, 30-day rolling options where eligible, and no mid-contract price hikes \u2014 making it one of the best-value deals available." },
       { question: "Which broadband provider has the best deals?", answer: "For no-contract, fixed-price broadband, OCCTA consistently offers the best value compared to BT, Sky, Virgin Media, and TalkTalk." },
       { question: "Are cheap broadband deals any good?", answer: "Yes. OCCTA uses the same Openreach network as the major providers. Cheap doesn\u2019t mean slow or unreliable." },
       { question: "Should I get a contract or no-contract broadband?", answer: "No-contract gives you flexibility to switch or 30-day rolling options available where eligible. With OCCTA, you don\u2019t pay more for this freedom." },
@@ -218,7 +218,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "broadband-for-gaming",
     metaTitle: "Best Broadband for Gaming UK — Low Latency Internet",
-    metaDescription: "Find the best broadband for gaming in the UK. Low latency, fast speeds up to 900Mbps, no contracts. OCCTA gaming broadband from \u00A334.99/mo.",
+    metaDescription: "Find the best broadband for gaming in the UK. Low latency, fast speeds up to 900Mbps, 30-day rolling options where eligible. OCCTA gaming broadband from \u00A334.99/mo.",
     keywords: "broadband for gaming, gaming broadband UK, best internet for gaming, low latency broadband, fast broadband gaming, gaming internet UK",
     heroTitle: "BROADBAND FOR",
     heroHighlight: "GAMING",
@@ -265,7 +265,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "broadband-for-working-from-home",
     metaTitle: "Best Broadband for Working from Home — Reliable WFH Internet",
-    metaDescription: "Best broadband for working from home. Reliable fibre, fast speeds, no contracts. OCCTA WFH broadband from \u00A334.99/mo. Video calls without buffering.",
+    metaDescription: "Best broadband for working from home. Reliable fibre, fast speeds, 30-day rolling options where eligible. OCCTA WFH broadband from \u00A334.99/mo. Video calls without buffering.",
     keywords: "broadband for working from home, WFH broadband, remote working internet, home office broadband, reliable broadband working from home",
     heroTitle: "BROADBAND FOR",
     heroHighlight: "WORKING FROM HOME",

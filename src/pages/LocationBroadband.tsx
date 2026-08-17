@@ -181,7 +181,7 @@ const LocationBroadband = () => {
                       </li>
                     ))}
                   </ul>
-                  <Link to={`/pre-checkout?plans=${plan.id}`}>
+                  <Link to={`/build-plan?bucket=${plan.id.replace("broadband-", "")}`}>
                     <Button variant={plan.popular ? "hero" : "outline"} className="w-full" size="sm">
                       Choose Plan
                       <ArrowRight className="w-4 h-4" />

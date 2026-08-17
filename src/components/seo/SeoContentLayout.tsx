@@ -60,7 +60,7 @@ export default function SeoContentLayout({
   relatedLinks = [],
   compliance,
   primaryCta = { label: "Check availability", to: "/build-plan" },
-  secondaryCta = { label: "Get a quote", to: "/quote/start" },
+  secondaryCta = { label: "Check Availability", to: "/broadband" },
 }: SeoContentPageProps) {
   const faqSchema = faqs.length > 0 ? createFAQSchema(faqs.map(f => ({ question: f.question, answer: f.answer }))) : null;
   const breadcrumb = createBreadcrumbSchema([

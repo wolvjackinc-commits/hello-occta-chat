@@ -49,9 +49,9 @@ export default function CoveragePage() {
         { label: "Fibre broadband", to: "/fibre-broadband" },
         { label: "Broadband + Digital Voice", to: "/broadband-and-digital-voice" },
         { label: "Pricing", to: "/pricing" },
-        { label: "Build your plan", to: "/build-plan" },
+        { label: "Build your plan", to: "/order" },
       ]}
-      primaryCta={{ label: "Check my address", to: "/build-plan" }}
+      primaryCta={{ label: "Check my address", to: "/order" }}
       compliance={
         <p>Speeds shown during the availability check are indicative wholesale estimates and are not a guarantee. Final speeds depend on your installation, equipment and how the line performs in service.</p>
       }

@@ -102,7 +102,7 @@ export default function LearnHub() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="font-display uppercase">
-                <Link to="/build-plan">Check my address</Link>
+                <Link to="/order">Check my address</Link>
               </Button>
               <Button asChild variant="outline" className="font-display uppercase">
                 <Link to="/landline">Digital Home Phone</Link>

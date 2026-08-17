@@ -45,7 +45,7 @@ export default function FibreBroadbandPage() {
         { label: "Broadband + Digital Voice", to: "/broadband-and-digital-voice" },
         { label: "Pricing", to: "/pricing" },
         { label: "Billing explained", to: "/billing-explained" },
-        { label: "Build your plan", to: "/build-plan" },
+        { label: "Build your plan", to: "/order" },
       ]}
       compliance={
         <p>Speeds are estimates from the underlying wholesale network and are not guaranteed. Your accepted agreement is the binding source of truth on price, term and cancellation.</p>

@@ -76,7 +76,7 @@ const BusinessCheckout = () => {
         title: "Contract Summary required",
         description: "We'll confirm your price and terms before any payment is taken.",
       });
-      navigate("/quote/start?interest=business", { replace: true });
+      navigate("/business-sales", { replace: true });
     });
     return () => { cancelled = true; };
   }, [selectedPlanId, navigate, toast, quoteIdParam, csTokenParam]);

@@ -38,12 +38,12 @@ export const comparisons: Comparison[] = [
       { feature: "Contract length", occta: "No contract \u2014 rolling monthly", competitor: "24-month contract" },
       { feature: "Mid-contract price rises", occta: "None \u2014 price fixed", competitor: "CPI + 3.9% annual increase" },
       { feature: "Setup fees", occta: "Setup from £0 where available. Bring your own router for £0, or choose a router at checkout", competitor: "\u00A39.99\u2013\u00A359.99 setup fee" },
-      { feature: "Exit fees", occta: "None \u2014 30-day rolling options available where eligible", competitor: "Up to \u00A3230+ early termination" },
+      { feature: "Exit fees", occta: "None on Flex", competitor: "Up to \u00A3230+ early termination" },
       { feature: "Credit check required", occta: "No", competitor: "Yes" },
       { feature: "Network used", occta: "Openreach", competitor: "Openreach" },
       { feature: "Speeds available", occta: "Up to 900Mbps", competitor: "Up to 900Mbps" },
     ],
-    summary: "BT and OCCTA use the same Openreach network, so speeds and reliability are comparable. The difference is price and flexibility. With OCCTA, you pay less, keep the same price every month, and can leave whenever you want \u2014 no penalties, no hassle.",
+    summary: "BT and OCCTA use the same Openreach network, so speeds and reliability are comparable. The difference is price and flexibility. With OCCTA, you pay less, keep the same price every month, and can leave whenever you want \u2014 no hassle.",
     faqs: [
       { question: "Is OCCTA as fast as BT?", answer: "Yes. Both use the same Openreach fibre network, so speeds are comparable \u2014 up to 900Mbps on full fibre." },
       { question: "Why is OCCTA cheaper than BT?", answer: "OCCTA has lower overheads \u2014 no TV bundles, no high-street shops, no expensive sponsorship deals. We pass those savings directly to customers." },
@@ -124,7 +124,7 @@ export const comparisons: Comparison[] = [
       { feature: "Network used", occta: "Openreach", competitor: "Openreach" },
       { feature: "Speeds available", occta: "Up to 900Mbps", competitor: "Up to 500Mbps" },
     ],
-    summary: "TalkTalk competes on price but still locks you into contracts with annual increases. OCCTA gives you the same budget pricing with more speed options and complete flexibility.",
+    summary: "TalkTalk competes on price but still locks you into contracts with annual increases. OCCTA gives you the same budget pricing with more speed options and flexibility.",
     faqs: [
       { question: "Is OCCTA cheaper than TalkTalk?", answer: "OCCTA starts from \u00A334.99/mo. When you factor in TalkTalk\u2019s annual price rises, OCCTA is often cheaper over 12 months." },
       { question: "Does OCCTA have faster speeds than TalkTalk?", answer: "Yes. OCCTA offers speeds up to 900Mbps, while TalkTalk tops out at around 500Mbps." },
@@ -150,7 +150,7 @@ export const comparisons: Comparison[] = [
       { feature: "Network used", occta: "Openreach", competitor: "Openreach" },
       { feature: "Speeds available", occta: "Up to 900Mbps", competitor: "Up to 500Mbps" },
     ],
-    summary: "Plusnet offers decent value but still ties you into contracts with annual increases. OCCTA delivers the same Openreach broadband with faster speed options, no lock-in, and a price that never changes.",
+    summary: "Plusnet offers decent value but still ties you into contracts with annual increases. OCCTA delivers the same Openreach broadband with faster speed options, no lock-in, and a fixed price.",
     faqs: [
       { question: "Is OCCTA better value than Plusnet?", answer: "Yes. OCCTA is cheaper, has faster top speeds, and doesn\u2019t increase your price mid-contract." },
       { question: "Does OCCTA use the same network as Plusnet?", answer: "Yes. Both use the Openreach fibre network." },

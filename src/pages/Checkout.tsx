@@ -140,7 +140,7 @@ const Checkout = () => {
           : plan?.serviceType === "landline"
             ? "voice"
             : "broadband";
-        navigate(`/quote/start?interest=${interest}`, { replace: true });
+        navigate(interest === "broadband" ? "/broadband" : interest === "sim" ? "/sim" : "/landline", { replace: true });
       } else {
         setGateChecked(true);
       }

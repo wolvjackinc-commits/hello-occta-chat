@@ -179,7 +179,7 @@ export default function KbArticleView({ article }: { article: KbArticle }) {
           <p className="text-base mb-5">Check availability at your address, or talk to a human.</p>
           <div className="flex flex-wrap gap-3">
             <Button asChild className="font-display uppercase">
-              <Link to="/build-plan">Check availability <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Link to="/order">Check availability <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
             <Button asChild variant="outline" className="font-display uppercase">
               <Link to="/support">Contact support</Link>

@@ -427,7 +427,7 @@ const BroadbandInner = () => {
                           )}
                           <div className={`flex items-center justify-between mb-3 ${isRecommended || (!hasPersonalisedResult && plan.popular) ? "pt-1" : ""}`}>
                             <div>
-                              <h3 className="font-display text-lg uppercase text-foreground">{plan.name}</h3>
+                              <h2 className="font-display text-lg uppercase text-foreground">{plan.name}</h2>
                               <p className="text-xs text-muted-foreground">Up to {plan.speed}Mbps</p>
                             </div>
                             <div className="text-right flex items-center gap-3">
@@ -552,7 +552,7 @@ const BroadbandInner = () => {
                   )}
                   
                   <div className={(isRecommended || isUpgrade || (!hasPersonalisedResult && plan.popular)) ? "pt-2" : ""}>
-                    <h3 className="font-display text-2xl mb-1">{plan.name}</h3>
+                    <h2 className="font-display text-2xl mb-1">{plan.name}</h2>
                     
                     <div className="flex items-baseline gap-1 mb-2">
                       <span className="font-display text-4xl">£{plan.price}</span>

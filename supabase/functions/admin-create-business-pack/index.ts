@@ -230,6 +230,17 @@ function buildEmail(opts: { csNumber: string; csUrl: string; daysValid: number }
        ${row("Installation address", escapeHtml(SERVICE_ADDRESS))}
        ${row("Payment", "Direct Debit — set up straight after signing")}
      </table>
+     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0;border-collapse:collapse;border:3px solid #000;">
+       <tr><td colspan="2" style="padding:10px 14px;background:#000;color:#facc15;font-size:11px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;">Your first payment, itemised</td></tr>
+       ${row("First month broadband", `${f(ORDER.broadband_inc)} inc VAT`)}
+       ${row("First month router charge", `${f(ORDER.router_month_inc)} inc VAT`)}
+       ${row("Router one-off charge", `${f(ORDER.router_oneoff_inc)} inc VAT`)}
+       ${row("Standard installation / activation", `${f(ORDER.install_inc)} inc VAT`)}
+       ${row("Total first payment", `<strong>${f(ORDER.first_payment_inc)} inc VAT</strong>`)}
+       ${row("Every month after that", `<strong>${f(ORDER.monthly_inc)} inc VAT</strong> per month`)}
+     </table>
+     <p>Every figure above is explainable line by line — nothing is bundled or hidden. The one-off router and installation charges are paid once, with your first payment only; from month two you pay ${f(ORDER.monthly_inc)} inc VAT and nothing else unless you ask us for extra equipment or work.</p>
+     <p style="margin:18px 0;padding:12px 14px;border:3px solid #000;background:#facc15;font-size:13px;font-weight:700;">Appointment slot: if you sign today before 6:00pm, we can hold your ${escapeHtml(ORDER.install_window)} appointment on 1 September 2026. If it's signed after 6:00pm, we'll book you the next available slot instead and confirm the new date with you.</p>
      <p><strong>Wi-Fi across three floors.</strong> The speeds above are delivered to the router. One router cannot be guaranteed to cover three floors evenly — boosters, mesh Wi-Fi or access points may be needed and are chargeable extra. This is set out in full in your Contract Summary so there are no surprises.</p>
      <p><strong>What happens next.</strong> Sign the Contract Summary, then complete your Direct Debit Instruction on the next screen. Once both are done we place the order and confirm your appointment.</p>
      <p style="font-size:12px;color:#555;">This signing link is private to you and expires in ${daysValid} days.</p>

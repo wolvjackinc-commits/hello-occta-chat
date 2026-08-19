@@ -36,6 +36,11 @@ const Schema = z.object({
   session_id: z.string().max(120).optional(),
   // Phase 3 — date of birth captured at acceptance (18+ confirmation)
   date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // Business/bespoke pack: per-order acknowledgement checkboxes defined in
+  // contract_summaries.pack_sections.acknowledgements, plus the trading name of
+  // the business entering the agreement.
+  pack_acknowledgements: z.record(z.boolean()).optional(),
+  business_name: z.string().trim().max(200).optional(),
   // Fraud / identity-theft prevention signals collected in the browser at the
   // moment of signing. Everything is optional and best-effort: a missing signal
   // must never stop a genuine customer signing.
@@ -141,6 +146,23 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     otpChallengeRowId = (otpGate.challenge?.id as string | undefined) ?? null;
   } else {
     if (i.checkbox_confirmed !== true) return jsonResponse({ error: "checkbox_required" }, 400);
+  }
+
+  // Bespoke pack acknowledgements — every acknowledgement defined on the pack
+  // must be individually ticked. Server-side; frontend state is never trusted.
+  const packAcks: Array<{ key: string; text: string }> = Array.isArray(cs.pack_sections?.acknowledgements)
+    ? cs.pack_sections.acknowledgements
+    : [];
+  if (packAcks.length) {
+    const given = i.pack_acknowledgements ?? {};
+    const missingAcks = packAcks.filter((a) => given[a.key] !== true).map((a) => a.key);
+    if (missingAcks.length) {
+      return jsonResponse({
+        error: "pack_acknowledgements_required",
+        missing: missingAcks,
+        message: "Please confirm every acknowledgement before signing.",
+      }, 400);
+    }
   }
 
   // HARD BLOCK: an information refresh is records-only and can never be
@@ -288,6 +310,13 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     accepted_at_europe_london: acceptedAtLocal,
     acceptance_text_hash: acceptanceTextHash,
     date_of_birth: i.date_of_birth ?? null,
+    business_name: i.business_name ?? null,
+    pack_acknowledgements: packAcks.length
+      ? {
+          confirmed_at: acceptedAt,
+          items: packAcks.map((a) => ({ key: a.key, text: a.text, confirmed: true })),
+        }
+      : null,
   }).select("id").single();
   if (aErr) return jsonResponse({ error: "accept_failed", details: aErr.message }, 500);
   const acceptanceId = accInsert?.id;

@@ -32,9 +32,13 @@ Deno.serve(async (req) => {
     "token_expires_at,issued_at,accepted_at,pdf_url,emailed_at," +
     "created_at,updated_at,speed_bucket,plan_term,router_option,setup_option," +
     "selected_addons,pdf_generated_at,account_number";
+  // pack_sections holds the extra customer-facing pack content (charges tables,
+  // installation, router/Wi-Fi, cancellation, acknowledgements). internal_pack
+  // (supplier route, cost, margin) is deliberately NOT in this allow-list.
+  const CS_PUBLIC_COLUMNS_FULL = CS_PUBLIC_COLUMNS + ",pack_sections";
   const { data: cs, error } = await supabase
     .from("contract_summaries")
-    .select(CS_PUBLIC_COLUMNS)
+    .select(CS_PUBLIC_COLUMNS_FULL)
     .eq("public_token_hash", hash)
     .maybeSingle();
 

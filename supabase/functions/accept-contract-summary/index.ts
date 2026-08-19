@@ -364,7 +364,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   if (cs.pack_sections?.mark_ready_for_supplier === true) {
     try {
       await supabase.from("orders").update({
-        lifecycle_status: "ready_to_order",
+        lifecycle_status: "committed",
         contract_acceptance_id: acceptanceId,
         updated_at: acceptedAt,
       }).eq("contract_summary_id", cs.id);

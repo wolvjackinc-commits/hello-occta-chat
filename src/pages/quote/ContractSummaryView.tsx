@@ -12,6 +12,22 @@ import { ACCEPTANCE_CHECKBOX_TEXT } from "@/lib/legal/contractSummaryCopy";
 import { AlertTriangle, Loader2, Check } from "lucide-react";
 import FullContractTermsBlock from "@/components/legal/FullContractTermsBlock";
 
+type PackRow = { label: string; value: string };
+type PackSection = {
+  title: string;
+  intro?: string;
+  rows?: PackRow[];
+  bullets?: string[];
+  note?: string;
+};
+type PackAck = { key: string; text: string };
+type PackSections = {
+  sections?: PackSection[];
+  acknowledgements?: PackAck[];
+  business_name_label?: string;
+  dd_setup_path?: string;
+};
+
 export default function ContractSummaryView() {
   const { token } = useParams();
   const navigate = useNavigate();
@@ -22,6 +38,9 @@ export default function ContractSummaryView() {
   const [confirm, setConfirm] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [packAcks, setPackAcks] = useState<Record<string, boolean>>({});
+  const [ddPath, setDdPath] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -46,13 +65,31 @@ export default function ContractSummaryView() {
 
   const handleAccept = async () => {
     if (!confirm) { toast({ title: "Please tick the confirmation checkbox", variant: "destructive" }); return; }
+    const requiredAcks: PackAck[] = pack?.acknowledgements ?? [];
+    const missing = requiredAcks.filter((a) => packAcks[a.key] !== true);
+    if (missing.length) {
+      toast({ title: "Please confirm every acknowledgement", description: `${missing.length} still to confirm.`, variant: "destructive" });
+      return;
+    }
+    if (pack?.business_name_label && !businessName.trim()) {
+      toast({ title: `${pack.business_name_label} is required`, variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("accept-contract-summary", {
-        body: { token, accepted_by_name: name, accepted_by_email: email, checkbox_confirmed: true },
+        body: {
+          token,
+          accepted_by_name: name,
+          accepted_by_email: email,
+          checkbox_confirmed: true,
+          ...(requiredAcks.length ? { pack_acknowledgements: packAcks } : {}),
+          ...(businessName.trim() ? { business_name: businessName.trim() } : {}),
+        },
       });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
       toast({ title: "Contract Summary accepted" });
+      if ((data as any)?.dd_setup_path) setDdPath(String((data as any).dd_setup_path));
       // Phase D: do NOT redirect to payment. Show in-place accepted state by reloading the CS view.
       const { data: fresh } = await supabase.functions.invoke("get-contract-summary-by-token", { body: { token } });
       if ((fresh as any)?.contract_summary) setCs((fresh as any).contract_summary);
@@ -67,6 +104,10 @@ export default function ContractSummaryView() {
   const accepted = cs.status === "accepted";
   const isBusiness = cs.customer_type === "business";
   const oneOff = (cs.one_off_charges_json as Array<{label: string; amount: number}>) ?? [];
+  const pack = (cs.pack_sections ?? null) as PackSections | null;
+  const packSections = pack?.sections ?? [];
+  const packAckList = pack?.acknowledgements ?? [];
+  const ddLink = ddPath ?? pack?.dd_setup_path ?? null;
 
   return (
     <Layout>
@@ -170,17 +211,53 @@ export default function ContractSummaryView() {
           <p>{cs.payment_schedule}</p>
         </div>
 
+        {packSections.map((s, idx) => (
+          <div key={idx} className="border-4 border-foreground p-5 mb-5 text-sm">
+            <h2 className="font-display uppercase text-sm mb-2">{s.title}</h2>
+            {s.intro && <p className="text-muted-foreground mb-3 whitespace-pre-line">{s.intro}</p>}
+            {s.rows && s.rows.length > 0 && (
+              <ul className="space-y-1 mb-3">
+                {s.rows.map((r, ri) => (
+                  <li key={ri} className="flex justify-between gap-4 border-b border-border pb-1">
+                    <span className="text-muted-foreground">{r.label}</span>
+                    <span className="font-medium text-right">{r.value}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {s.bullets && s.bullets.length > 0 && (
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                {s.bullets.map((b, bi) => <li key={bi}>{b}</li>)}
+              </ul>
+            )}
+            {s.note && <p className="text-xs text-muted-foreground mt-3 whitespace-pre-line">{s.note}</p>}
+          </div>
+        ))}
+
         <div className="mb-5">
           <FullContractTermsBlock collapsibleHeading={false} />
         </div>
 
         {accepted ? (
-          <div className="border-4 border-primary bg-primary/5 p-5 flex items-center gap-3">
-            <Check className="w-6 h-6 text-primary" />
-            <div>
-              <p className="font-display uppercase text-sm">Accepted</p>
-              <p className="text-xs text-muted-foreground">Accepted at {new Date(cs.accepted_at).toLocaleString("en-GB")}.</p>
+          <div className="border-4 border-primary bg-primary/5 p-5">
+            <div className="flex items-center gap-3">
+              <Check className="w-6 h-6 text-primary" />
+              <div>
+                <p className="font-display uppercase text-sm">Accepted</p>
+                <p className="text-xs text-muted-foreground">Accepted at {new Date(cs.accepted_at).toLocaleString("en-GB")}.</p>
+              </div>
             </div>
+            {ddLink && (
+              <div className="mt-4 border-t-4 border-primary pt-4">
+                <p className="font-display uppercase text-sm mb-1">Next step — set up your Direct Debit</p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Complete your Direct Debit Instruction so we can collect your first payment and place the order.
+                </p>
+                <Button variant="hero" className="w-full font-display uppercase" onClick={() => navigate(ddLink)}>
+                  Set up Direct Debit
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="border-4 border-primary p-5">
@@ -195,7 +272,27 @@ export default function ContractSummaryView() {
                 <Input id="cs-name" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div><Label htmlFor="cs-email">Your email (must match Contract Summary)</Label><Input id="cs-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              {pack?.business_name_label && (
+                <div>
+                  <Label htmlFor="cs-business">{pack.business_name_label}</Label>
+                  <Input id="cs-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+                </div>
+              )}
             </div>
+            {packAckList.length > 0 && (
+              <div className="border-4 border-foreground p-4 mb-4 space-y-3">
+                <h3 className="font-display uppercase text-xs">Your acknowledgements</h3>
+                {packAckList.map((a) => (
+                  <label key={a.key} className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      checked={packAcks[a.key] === true}
+                      onCheckedChange={(v) => setPackAcks((prev) => ({ ...prev, [a.key]: v === true }))}
+                    />
+                    <span>{a.text}</span>
+                  </label>
+                ))}
+              </div>
+            )}
             <label className="flex items-start gap-2 text-sm mb-4">
               <Checkbox checked={confirm} onCheckedChange={(v) => setConfirm(v === true)} />
               <span>{ACCEPTANCE_CHECKBOX_TEXT}</span>

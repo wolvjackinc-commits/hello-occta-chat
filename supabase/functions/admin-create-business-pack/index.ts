@@ -311,6 +311,8 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, 600));
       await supabase.from("profiles").update({
         full_name: ORDER.contact_name,
+        account_type: "business",
+        business_trading_name: ORDER.business_name,
         address_line1: ORDER.address_line_1,
         city: ORDER.town,
         postcode: ORDER.postcode,

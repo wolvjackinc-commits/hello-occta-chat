@@ -2516,6 +2516,7 @@ export type Database = {
           billing_policy_version: string | null
           broadband_terms_version: string | null
           bundle_terms_version: string | null
+          business_name: string | null
           cancellation_policy_version: string | null
           checkbox_confirmed: boolean
           checkbox_consent: boolean
@@ -2549,6 +2550,7 @@ export type Database = {
           mobile_roaming_policy_version: string | null
           mobile_snapshot: string | null
           number_porting_policy_version: string | null
+          pack_acknowledgements: Json | null
           pdf_sha256: string | null
           pdf_storage_key: string | null
           price_guide_version: string | null
@@ -2579,6 +2581,7 @@ export type Database = {
           billing_policy_version?: string | null
           broadband_terms_version?: string | null
           bundle_terms_version?: string | null
+          business_name?: string | null
           cancellation_policy_version?: string | null
           checkbox_confirmed: boolean
           checkbox_consent?: boolean
@@ -2612,6 +2615,7 @@ export type Database = {
           mobile_roaming_policy_version?: string | null
           mobile_snapshot?: string | null
           number_porting_policy_version?: string | null
+          pack_acknowledgements?: Json | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
           price_guide_version?: string | null
@@ -2642,6 +2646,7 @@ export type Database = {
           billing_policy_version?: string | null
           broadband_terms_version?: string | null
           bundle_terms_version?: string | null
+          business_name?: string | null
           cancellation_policy_version?: string | null
           checkbox_confirmed?: boolean
           checkbox_consent?: boolean
@@ -2675,6 +2680,7 @@ export type Database = {
           mobile_roaming_policy_version?: string | null
           mobile_snapshot?: string | null
           number_porting_policy_version?: string | null
+          pack_acknowledgements?: Json | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
           price_guide_version?: string | null
@@ -2998,6 +3004,7 @@ export type Database = {
           etf_policy_snapshot: Json | null
           id: string
           installation_charge: number
+          internal_pack: Json | null
           is_information_update: boolean
           issued_at: string | null
           issued_at_utc: string | null
@@ -3010,6 +3017,7 @@ export type Database = {
           notice_period_days: number | null
           one_off_charges_json: Json
           one_off_charges_snapshot: Json | null
+          pack_sections: Json | null
           payment_method_snapshot:
             | Database["public"]["Enums"]["payment_method_snapshot_enum"]
             | null
@@ -3095,6 +3103,7 @@ export type Database = {
           etf_policy_snapshot?: Json | null
           id?: string
           installation_charge?: number
+          internal_pack?: Json | null
           is_information_update?: boolean
           issued_at?: string | null
           issued_at_utc?: string | null
@@ -3107,6 +3116,7 @@ export type Database = {
           notice_period_days?: number | null
           one_off_charges_json?: Json
           one_off_charges_snapshot?: Json | null
+          pack_sections?: Json | null
           payment_method_snapshot?:
             | Database["public"]["Enums"]["payment_method_snapshot_enum"]
             | null
@@ -3192,6 +3202,7 @@ export type Database = {
           etf_policy_snapshot?: Json | null
           id?: string
           installation_charge?: number
+          internal_pack?: Json | null
           is_information_update?: boolean
           issued_at?: string | null
           issued_at_utc?: string | null
@@ -3204,6 +3215,7 @@ export type Database = {
           notice_period_days?: number | null
           one_off_charges_json?: Json
           one_off_charges_snapshot?: Json | null
+          pack_sections?: Json | null
           payment_method_snapshot?:
             | Database["public"]["Enums"]["payment_method_snapshot_enum"]
             | null

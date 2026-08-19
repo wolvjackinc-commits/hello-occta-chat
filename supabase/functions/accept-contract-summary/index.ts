@@ -359,6 +359,20 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   await supabase.from("quotes").update({ status: "contract_summary_accepted" }).eq("id", cs.quote_id);
   await supabase.from("quote_requests").update({ status: "contract_summary_accepted", updated_at: acceptedAt }).eq("id", cs.quote_request_id);
 
+  // Bespoke pack: move the linked order into the supplier-submission queue so
+  // provisioning only ever starts from a signed agreement.
+  if (cs.pack_sections?.mark_ready_for_supplier === true) {
+    try {
+      await supabase.from("orders").update({
+        lifecycle_status: "ready_to_order",
+        contract_acceptance_id: acceptanceId,
+        updated_at: acceptedAt,
+      }).eq("contract_summary_id", cs.id);
+    } catch (e) {
+      console.warn("[accept-contract-summary] pack order status update failed", (e as Error).message);
+    }
+  }
+
   // ── Superseding revision: the signed revision replaces the earlier version ──
   // The earlier accepted Contract Summary is legally immutable, so it is never
   // rewritten — it is archived with a reason and every live pointer (order,
@@ -513,6 +527,8 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     contract_acceptance_id: acceptanceId,
     certificate_number,
     journey_advanced_to: journey ? "start_date" : null,
+    // Bespoke packs carry the customer straight into Direct Debit setup.
+    dd_setup_path: typeof cs.pack_sections?.dd_setup_path === "string" ? cs.pack_sections.dd_setup_path : null,
   });
 }));
 

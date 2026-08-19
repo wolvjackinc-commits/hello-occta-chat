@@ -475,6 +475,12 @@ Deno.serve(async (req) => {
   }
 
   // ── Direct Debit setup link, carried into the pack for post-signature ──────
+  // Superseded links are archived so only the newest one is live.
+  await supabase.from("payment_requests").update({
+    archived_at: nowIso,
+    archived_reason: "Superseded by a fresh Direct Debit setup link issued with the signature pack.",
+  }).eq("user_id", customerId).eq("type", "dd_setup").is("archived_at", null);
+
   const ddPair = await generateTokenPair();
   const ddIns = await supabase.from("payment_requests").insert({
     user_id: customerId,
@@ -489,7 +495,9 @@ Deno.serve(async (req) => {
     token_hash: ddPair.hash,
     expires_at: new Date(Date.now() + 60 * 86_400_000).toISOString(),
     created_by: actorId,
-    contract_summary_id: cs.id,
+    // contract_summary_id is deliberately not set: CS-linked payment requests
+    // are only permitted once the Contract Summary has been signed.
+    metadata: { contract_summary_id: cs.id, cs_number: cs.cs_number, purpose: "business_signature_pack" },
   }).select("id, payment_request_number").single();
   if (ddIns.error) return jsonResponse({ error: "dd_link_failed", details: ddIns.error.message }, 500);
 

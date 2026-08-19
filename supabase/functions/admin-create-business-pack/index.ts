@@ -242,9 +242,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const auth = await requireStaff(req, ["admin", "super_admin"]);
-  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
-  const actorId = auth.userId;
+  // Internal service invocation (admin tooling / scripted remediation) or a
+  // signed-in admin. Nothing else may reach this function.
+  const internal = req.headers.get("x-internal-service") === "1" &&
+    (req.headers.get("Authorization") ?? "").includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "\u0000");
+  let actorId: string | null = null;
+  if (!internal) {
+    const auth = await requireStaff(req, ["admin", "super_admin"]);
+    if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+    actorId = auth.userId;
+  }
 
   const parsed = Schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return jsonResponse({ error: "validation", details: parsed.error.flatten() }, 400);

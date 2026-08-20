@@ -1,0 +1,1 @@
+UPDATE public.invoices SET status = 'issued', issue_date = CURRENT_DATE WHERE id = '0324ab8c-8758-4493-b564-0c93ebb02ff2';

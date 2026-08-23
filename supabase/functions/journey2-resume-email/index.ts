@@ -112,36 +112,46 @@ Deno.serve(async (req) => {
     .gt("expires_at", nowIso)
     .lt("last_activity_at", stage1Cutoff)
     .lt("reminder_count", MAX_REMINDERS)
+    // Only fetch contactable sessions. Without this, batches fill up with
+    // sessions abandoned before the email was captured (address step), which
+    // starves genuine candidates and nothing ever sends.
+    .not("customer_details->>email", "is", null)
+    .neq("customer_details->>email", "")
+    // Exclude sessions still inside their spacing window, so they don't occupy
+    // the batch (and starve other candidates) for the next 24h.
+    .or(`reminder_last_queued_at.is.null,reminder_last_queued_at.lt.${stage2Cutoff}`)
     .order("last_activity_at", { ascending: true })
     .limit(BATCH);
 
   if (loadErr) return jsonResponse({ ok: false, error: "load_failed", detail: loadErr.message }, 500);
 
   let sent = 0, failed = 0, skipped = 0;
+  const reasons: Record<string, number> = {};
+  const skip = (r: string) => { skipped++; reasons[r] = (reasons[r] ?? 0) + 1; };
 
   for (const raw of (sessions ?? []) as SessionRow[]) {
     const s = raw;
     const count = Number(s.reminder_count ?? 0);
     const next = count + 1;
-    if (next > MAX_REMINDERS) { skipped++; continue; }
+    if (next > MAX_REMINDERS) { skip("max_reached"); continue; }
 
     // Spacing: #1 after the abandonment delay, #2 ~24h later, #3 ~48h after that.
     if (count > 0) {
       const last = s.reminder_last_queued_at;
-      if (!last) { skipped++; continue; }
+      if (!last) { skip("no_last_queued"); continue; }
       const gate = count === 1 ? stage2Cutoff : stage3Cutoff;
-      if (last >= gate) { skipped++; continue; }
+      if (last >= gate) { skip("spacing_gate"); continue; }
     }
 
     const email = (s.customer_details?.email ?? "").trim().toLowerCase();
-    if (!email) { skipped++; continue; }
+    if (!email) { skip("no_email"); continue; }
 
     const { data: suppressed } = await supabase
       .from("suppressed_emails")
       .select("email")
       .ilike("email", email)
       .maybeSingle();
-    if (suppressed) { skipped++; continue; }
+    if (suppressed) { skip("suppressed"); continue; }
 
     const { data: existing } = await supabase
       .from("checkout_reminders")
@@ -149,7 +159,7 @@ Deno.serve(async (req) => {
       .eq("journey_session_id", s.id)
       .eq("reminder_number", next)
       .maybeSingle();
-    if (existing && existing.status === "sent") { skipped++; continue; }
+    if (existing && existing.status === "sent") { skip("already_sent"); continue; }
 
     const firstName = (s.customer_details?.full_name ?? "there").trim().split(" ")[0] || "there";
     const { subject, title, html } = copyFor(next, usefulFact(s), firstName);
@@ -169,7 +179,7 @@ Deno.serve(async (req) => {
       .is("submitted_at", null)
       .select("id")
       .maybeSingle();
-    if (!claim.data) { skipped++; continue; } // resumed, completed or already claimed
+    if (!claim.data) { skip("claim_failed:" + (claim.error?.message ?? "no_row")); continue; } // resumed, completed or already claimed
 
     const reminderRow = {
       journey_session_id: s.id,
@@ -233,5 +243,5 @@ Deno.serve(async (req) => {
     });
   }
 
-  return jsonResponse({ ok: true, considered: (sessions ?? []).length, sent, failed, skipped });
+  return jsonResponse({ ok: true, considered: (sessions ?? []).length, sent, failed, skipped, reasons });
 });

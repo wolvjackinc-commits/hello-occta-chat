@@ -112,6 +112,11 @@ Deno.serve(async (req) => {
     .gt("expires_at", nowIso)
     .lt("last_activity_at", stage1Cutoff)
     .lt("reminder_count", MAX_REMINDERS)
+    // Only fetch contactable sessions. Without this, batches fill up with
+    // sessions abandoned before the email was captured (address step), which
+    // starves genuine candidates and nothing ever sends.
+    .not("customer_details->>email", "is", null)
+    .neq("customer_details->>email", "")
     .order("last_activity_at", { ascending: true })
     .limit(BATCH);
 

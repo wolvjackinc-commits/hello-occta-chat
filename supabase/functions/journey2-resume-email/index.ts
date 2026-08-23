@@ -117,6 +117,9 @@ Deno.serve(async (req) => {
     // starves genuine candidates and nothing ever sends.
     .not("customer_details->>email", "is", null)
     .neq("customer_details->>email", "")
+    // Exclude sessions still inside their spacing window, so they don't occupy
+    // the batch (and starve other candidates) for the next 24h.
+    .or(`reminder_last_queued_at.is.null,reminder_last_queued_at.lt.${stage2Cutoff}`)
     .order("last_activity_at", { ascending: true })
     .limit(BATCH);
 

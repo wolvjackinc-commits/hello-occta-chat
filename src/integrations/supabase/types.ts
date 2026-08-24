@@ -950,9 +950,11 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          interest: string | null
           internal_notes: string | null
           message: string | null
           phone: string | null
+          postcode: string | null
           secondary_contact_email: string | null
           secondary_contact_name: string | null
           secondary_contact_phone: string | null
@@ -965,6 +967,7 @@ export type Database = {
           sla_preference: string | null
           source: string | null
           status: string
+          team_size: string | null
           updated_at: string
           utm: Json | null
         }
@@ -979,9 +982,11 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          interest?: string | null
           internal_notes?: string | null
           message?: string | null
           phone?: string | null
+          postcode?: string | null
           secondary_contact_email?: string | null
           secondary_contact_name?: string | null
           secondary_contact_phone?: string | null
@@ -994,6 +999,7 @@ export type Database = {
           sla_preference?: string | null
           source?: string | null
           status?: string
+          team_size?: string | null
           updated_at?: string
           utm?: Json | null
         }
@@ -1008,9 +1014,11 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          interest?: string | null
           internal_notes?: string | null
           message?: string | null
           phone?: string | null
+          postcode?: string | null
           secondary_contact_email?: string | null
           secondary_contact_name?: string | null
           secondary_contact_phone?: string | null
@@ -1023,6 +1031,7 @@ export type Database = {
           sla_preference?: string | null
           source?: string | null
           status?: string
+          team_size?: string | null
           updated_at?: string
           utm?: Json | null
         }

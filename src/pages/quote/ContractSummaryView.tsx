@@ -122,7 +122,10 @@ export default function ContractSummaryView() {
             <div className="flex flex-col">
               <span className="font-display text-2xl tracking-tight leading-none">OCCTA</span>
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-1">
-                Telecom That Gets It
+                '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
+                                        
+                                            
+                                            CHECK THE FULL WEBSITE MAKE SURE EVERYTHING WORKING PROPERLY.
               </span>
             </div>
             <div className="ml-auto text-right">

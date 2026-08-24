@@ -165,13 +165,9 @@ export default function AdminJourneyControl() {
     <div className="space-y-6 p-4 md:p-6 max-w-7xl">
       <header>
         <h1 className="font-display uppercase text-2xl">Customer journey control</h1>
-        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-          '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-                                        
-                                            
-                                            Make sure all the email are being sent and automated in everywhere not just logged and they are being sent and once open the status updates in the admin panel.
-
-DONOT MAKE ANY OTHER CHANGES.
+        <p className="text-sm text-muted-foreground mt-1">
+          Journey 1 is the quote-led route. Journey 2 is the immediate online order. Both can run at the same time; switching
+          only affects new sessions — customers already mid-journey always finish on the version they started.
         </p>
       </header>
 

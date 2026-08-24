@@ -169,7 +169,9 @@ export default function AdminJourneyControl() {
           '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
                                         
                                             
-                                            what did you do? i have asked you for the give me the details of journey control to make sure everything is working end to end, revert the test changes you just made on journey control.
+                                            Make sure all the email are being sent and automated in everywhere not just logged and they are being sent and once open the status updates in the admin panel.
+
+DONOT MAKE ANY OTHER CHANGES.
         </p>
       </header>
 

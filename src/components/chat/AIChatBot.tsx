@@ -1253,6 +1253,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                         variant="outline"
                         size="icon"
                         className="shrink-0 border-2 border-foreground shadow-[4px_4px_0_hsl(var(--foreground))]"
+                        aria-label="Attach files"
                         onClick={() => fileInputRef.current?.click()}
                         aria-label="Add attachment"
                       >

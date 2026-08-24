@@ -170,7 +170,7 @@ const BusinessLeads = () => {
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={exportCsv}><Download className="w-4 h-4 mr-1" /> CSV</Button>
-          <Button variant="outline" size="icon" onClick={load}><RefreshCw className={loading ? "animate-spin w-4 h-4" : "w-4 h-4"} /></Button>
+          <Button variant="outline" size="icon" onClick={load} aria-label="Refresh leads"><RefreshCw className={loading ? "animate-spin w-4 h-4" : "w-4 h-4"} /></Button>
         </div>
       </div>
       <div className="border-4 border-foreground bg-background shadow-brutal overflow-x-auto">

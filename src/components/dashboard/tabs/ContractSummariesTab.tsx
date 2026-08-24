@@ -97,7 +97,7 @@ export function ContractSummariesTab({ userId }: { userId: string }) {
             <Link to={`/dashboard/contract/${r.id}`}>
               <Button size="sm" variant="outline" className="border-2 border-foreground"><Eye className="w-4 h-4 mr-1" /> View</Button>
             </Link>
-            <Button size="sm" variant="outline" className="border-2 border-foreground" disabled={busy === r.id || !r.pdf_storage_key} onClick={() => downloadPdf(r.id)}>
+            <Button size="sm" variant="outline" className="border-2 border-foreground" disabled={busy === r.id || !r.pdf_storage_key} onClick={() => downloadPdf(r.id)} aria-label={`Download contract summary ${r.cs_number || r.plan_name}`}>
               {busy === r.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />} PDF
             </Button>
           </div>

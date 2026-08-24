@@ -92,10 +92,7 @@ const HeroSection = () => {
 
             {/* H1 renders without motion opacity fade so it paints immediately as the LCP element */}
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-gradient">
-              '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-                                        
-                                            
-                                            CHECK THE FULL WEBSITE MAKE SURE EVERYTHING WORKING PROPERLY.
+              Finally. Broadband without the price-rise nonsense.
             </h1>
 
             <motion.p variants={itemVariants} className="text-base text-muted-foreground max-w-[580px]">

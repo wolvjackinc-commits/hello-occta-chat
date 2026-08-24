@@ -57,38 +57,53 @@ export const ProtectedAdminRoute = ({ requiredRoles }: Props = {}) => {
 
   useEffect(() => {
     let active = true;
+    let running = false;
+    let authorised = false;
     const acceptedRoles = rolesKey.split(",") as Role[];
 
-    const validate = async () => {
+    const validate = async (silent = false) => {
       // Never share admin approval through a query cache: every mount and auth
       // change must be checked against the current server-validated identity.
-      if (active) setStatus("loading");
-      const { data: userData, error: userErr } = await supabase.auth.getUser();
-      if (!active) return;
-      if (userErr || !userData.user) {
-        setStatus("no-session");
-        return;
-      }
-
-      for (const role of acceptedRoles) {
-        const { data: allowed, error } = await supabase.rpc("has_role", {
-          _user_id: userData.user.id,
-          _role: role as any,
-        });
+      if (running) return;
+      running = true;
+      try {
+        // Only show the blocking loader when we have nothing authorised on
+        // screen yet — background revalidation must not unmount the Outlet.
+        if (active && !silent && !authorised) setStatus("loading");
+        const { data: userData, error: userErr } = await supabase.auth.getUser();
         if (!active) return;
-        if (!error && allowed) {
-          setStatus("admin");
+        if (userErr || !userData.user) {
+          authorised = false;
+          setStatus("no-session");
           return;
         }
+
+        for (const role of acceptedRoles) {
+          const { data: allowed, error } = await supabase.rpc("has_role", {
+            _user_id: userData.user.id,
+            _role: role as any,
+          });
+          if (!active) return;
+          if (!error && allowed) {
+            authorised = true;
+            setStatus("admin");
+            return;
+          }
+        }
+        authorised = false;
+        setStatus("denied");
+      } finally {
+        running = false;
       }
-      setStatus("denied");
     };
 
     void validate();
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      void validate();
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      // Token refreshes and tab-focus session reads must not blank the console.
+      const silent = event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION" || authorised;
+      void validate(silent);
     });
-    const revalidate = () => void validate();
+    const revalidate = () => void validate(true);
     window.addEventListener("focus", revalidate);
 
     return () => {
@@ -97,6 +112,7 @@ export const ProtectedAdminRoute = ({ requiredRoles }: Props = {}) => {
       window.removeEventListener("focus", revalidate);
     };
   }, [rolesKey]);
+
 
   if (status === "loading") {
     return (

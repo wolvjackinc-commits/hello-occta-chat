@@ -1253,7 +1253,6 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                         variant="outline"
                         size="icon"
                         className="shrink-0 border-2 border-foreground shadow-[4px_4px_0_hsl(var(--foreground))]"
-                        aria-label="Attach files"
                         onClick={() => fileInputRef.current?.click()}
                         aria-label="Add attachment"
                       >
@@ -1273,6 +1272,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                         variant="hero"
                         disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading}
                         className="shrink-0 h-11 w-11 border-2 border-foreground shadow-[4px_4px_0_hsl(var(--foreground))]"
+                        aria-label="Send message"
                       >
                         <Send className="w-4 h-4" />
                       </Button>

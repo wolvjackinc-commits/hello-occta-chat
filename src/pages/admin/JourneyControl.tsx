@@ -169,8 +169,7 @@ export default function AdminJourneyControl() {
           '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
                                         
                                             
-                                            
-                                            Check journey control,,amke sure everythign is workign properly.end t o end
+                                            what did you do? i have asked you for the give me the details of journey control to make sure everything is working end to end, revert the test changes you just made on journey control.
         </p>
       </header>
 

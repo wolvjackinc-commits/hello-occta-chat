@@ -108,7 +108,7 @@ export function DocumentsTab({ userId }: { userId: string }) {
               {busyId === d.csId ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             </Button>
           ) : d.href ? (
-            <a href={d.href} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="outline" className="border-2 border-foreground"><Download className="w-4 h-4" /></Button></a>
+            <a href={d.href} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="outline" className="border-2 border-foreground" aria-label="Download Document"><Download className="w-4 h-4" /></Button></a>
           ) : (
             <span className="text-xs text-muted-foreground">Contact OCCTA</span>
           )}

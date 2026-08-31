@@ -124,6 +124,7 @@ function eventSummary(event: TimelineEvent) {
 
 export default function CheckoutJourneyMonitor() {
   const [sessions, setSessions] = useState<CheckoutSession[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
@@ -131,14 +132,17 @@ export default function CheckoutJourneyMonitor() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<Record<string, TimelineEvent[]>>({});
   const [timelineLoading, setTimelineLoading] = useState<string | null>(null);
+  const [timelineError, setTimelineError] = useState<Record<string, string>>({});
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
     const { data, error } = await (supabase as any).rpc("admin_checkout_session_list", { _limit: 250 });
     if (error) {
-      setLoadError(error.message ?? "Could not load checkout sessions");
+      // A failed read must never be shown as an empty funnel.
+      setLoadError(dbErrorText(error, "Could not load checkout sessions"));
     } else {
       setSessions((data ?? []) as CheckoutSession[]);
+      setLoaded(true);
       setLoadError(null);
     }
     if (!silent) setLoading(false);
@@ -150,21 +154,13 @@ export default function CheckoutJourneyMonitor() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const totals = useMemo(() => {
-    const total = sessions.length;
-    const completed = sessions.filter((s) => s.status === "completed").length;
-    const abandoned = sessions.filter((s) => s.status === "abandoned").length;
-    const active = sessions.filter((s) => !["completed", "cancelled", "abandoned"].includes(s.status)).length;
-    const errors = sessions.filter((s) => s.error_count > 0).length;
-    const eligible = sessions.filter((s) => s.status !== "cancelled").length;
-    const conversion = eligible ? Math.round((completed / eligible) * 100) : 0;
-    return { total, completed, abandoned, active, errors, conversion };
-  }, [sessions]);
+  const totals = useMemo(() => summariseCheckoutFunnel(sessions), [sessions]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return sessions.filter((s) => {
-      if (filter === "active" && ["completed", "cancelled", "abandoned"].includes(s.status)) return false;
+      if (filter === "active" && !isRecentlyActive(s)) return false;
+      if (filter === "stale" && (isTerminal(s.status) || isRecentlyActive(s))) return false;
       if (filter === "abandoned" && s.status !== "abandoned") return false;
       if (filter === "completed" && s.status !== "completed") return false;
       if (filter === "errors" && s.error_count < 1) return false;
@@ -175,6 +171,25 @@ export default function CheckoutJourneyMonitor() {
     });
   }, [sessions, filter, search]);
 
+  const loadTimeline = async (row: CheckoutSession, key: string) => {
+    setTimelineLoading(key);
+    const { data, error } = await (supabase as any).rpc("admin_checkout_timeline", {
+      _source: row.source,
+      _session_id: row.session_id,
+    });
+    setTimelineLoading(null);
+    if (error) {
+      setTimelineError((current) => ({ ...current, [key]: dbErrorText(error, "Could not load this timeline") }));
+      return;
+    }
+    setTimelineError((current) => {
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+    setTimeline((current) => ({ ...current, [key]: (data ?? []) as TimelineEvent[] }));
+  };
+
   const toggle = async (row: CheckoutSession) => {
     const key = `${row.source}:${row.session_id}`;
     if (expanded === key) {
@@ -183,14 +198,9 @@ export default function CheckoutJourneyMonitor() {
     }
     setExpanded(key);
     if (timeline[key]) return;
-    setTimelineLoading(key);
-    const { data, error } = await (supabase as any).rpc("admin_checkout_timeline", {
-      _source: row.source,
-      _session_id: row.session_id,
-    });
-    setTimelineLoading(null);
-    if (!error) setTimeline((current) => ({ ...current, [key]: (data ?? []) as TimelineEvent[] }));
+    await loadTimeline(row, key);
   };
+
 
   return (
     <section className="border-4 border-foreground bg-background p-4 md:p-5 space-y-5">

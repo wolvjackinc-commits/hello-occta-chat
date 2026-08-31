@@ -8,6 +8,15 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import CheckoutJourneyMonitor from "@/components/admin/CheckoutJourneyMonitor";
+import {
+  ACTIVE_RECENCY_HOURS,
+  CONVERSION_DENOMINATOR_LABEL,
+  FUNNEL_WINDOW_DAYS,
+  FUNNEL_WINDOW_LABEL,
+  summariseCheckoutFunnel,
+  type FunnelSummary,
+} from "@/lib/journey/checkoutFunnel";
+import { dbErrorText } from "@/lib/dbErrorText";
 
 type Settings = {
   customer_journey_v1_enabled: boolean;

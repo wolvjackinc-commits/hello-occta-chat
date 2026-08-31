@@ -166,21 +166,25 @@ export default function AdminJourneyControl() {
     return <div className="p-10 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>;
   }
   if (!s) {
+    // Settings are admin-write only, so other staff roles can legitimately fail
+    // this read. The monitoring list and timelines must still be available.
     return (
-      <div className="p-6 max-w-2xl">
+      <div className="p-4 md:p-6 space-y-6 max-w-7xl">
         <div className="border-4 border-destructive p-5">
           <h1 className="font-display uppercase text-lg mb-2">Journey settings could not be loaded</h1>
           <p className="text-sm text-muted-foreground mb-3">
-            The switches are hidden because the settings read failed. The exact reason is below.
+            The switches are hidden because the settings read failed. The exact reason is below. Journey monitoring below is unaffected.
           </p>
           <pre className="text-xs whitespace-pre-wrap border-2 border-border p-3 mb-3">{loadError ?? "Unknown error"}</pre>
           <Button onClick={() => { setLoading(true); load(); }}>
             <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />Try again
           </Button>
         </div>
+        <CheckoutJourneyMonitor />
       </div>
     );
   }
+
 
   const checks = s.customer_journey_v2_last_preflight_result?.checks ?? [];
 

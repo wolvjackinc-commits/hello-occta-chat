@@ -361,8 +361,17 @@ export default function CheckoutJourneyMonitor() {
                       <h3 className="font-display uppercase tracking-wider mb-3">Journey timeline</h3>
                       {timelineLoading === key ? (
                         <p className="text-xs text-muted-foreground">Loading timeline…</p>
+                      ) : timelineError[key] ? (
+                        <div className="border-2 border-destructive p-3 space-y-2">
+                          <p className="text-xs text-destructive">This timeline failed to load — it is not empty.</p>
+                          <pre className="text-xs whitespace-pre-wrap border-2 border-border p-2">{timelineError[key]}</pre>
+                          <Button type="button" size="sm" onClick={() => void loadTimeline(row, key)}>
+                            <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />Retry
+                          </Button>
+                        </div>
                       ) : (timeline[key] ?? []).length === 0 ? (
                         <p className="text-xs text-muted-foreground">No detailed events recorded yet.</p>
+
                       ) : (
                         <ol className="space-y-0">
                           {(timeline[key] ?? []).map((event, index, all) => (

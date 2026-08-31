@@ -316,17 +316,42 @@ export default function AdminJourneyControl() {
         )}
       </section>
 
-      <section className="border-4 border-foreground p-5">
-        <h2 className="font-display uppercase text-sm tracking-widest mb-3">Journey 2 sessions</h2>
-        <dl className="grid grid-cols-3 gap-4 text-sm">
-          {([["Active", counts.active], ["Completed", counts.completed], ["Cancelled", counts.cancelled]] as const).map(([label, v]) => (
-            <div key={label} className="border-2 border-border p-3">
-              <dt className="text-xs uppercase tracking-widest text-muted-foreground">{label}</dt>
-              <dd className="font-display text-2xl">{v}</dd>
-            </div>
-          ))}
-        </dl>
+      <section className="border-4 border-foreground p-5 space-y-3">
+        <div>
+          <h2 className="font-display uppercase text-sm tracking-widest">Journey 2 sessions</h2>
+          <p className="text-xs text-muted-foreground mt-1">{FUNNEL_WINDOW_LABEL}.</p>
+        </div>
+        {summaryError ? (
+          <div className="border-2 border-destructive p-3 space-y-2 text-sm">
+            <p className="text-destructive"><strong>Session figures could not be read.</strong> No counts are shown rather than showing zero.</p>
+            <pre className="text-xs whitespace-pre-wrap border-2 border-border p-2">{summaryError}</pre>
+            <Button size="sm" onClick={() => { setLoading(true); void load(); }}>
+              <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />Retry
+            </Button>
+          </div>
+        ) : summary ? (
+          <>
+            <dl className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              {([
+                [`Started (${FUNNEL_WINDOW_DAYS}d)`, summary.started],
+                [`Active (<${ACTIVE_RECENCY_HOURS}h)`, summary.activeRecent],
+                ["Stale in progress", summary.activeStale],
+                ["Abandoned", summary.abandoned],
+                ["Completed", summary.completed],
+              ] as const).map(([label, v]) => (
+                <div key={label} className="border-2 border-border p-3">
+                  <dt className="text-xs uppercase tracking-widest text-muted-foreground">{label}</dt>
+                  <dd className="font-display text-2xl">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-xs text-muted-foreground">
+              Conversion {summary.conversionRate === null ? "not available (no eligible sessions)" : `${summary.conversionRate}%`} · {CONVERSION_DENOMINATOR_LABEL} ({summary.completed} of {summary.eligibleStarted}). Cancelled in window: {summary.cancelled}.
+            </p>
+          </>
+        ) : null}
       </section>
+
 
       <CheckoutJourneyMonitor />
     </div>

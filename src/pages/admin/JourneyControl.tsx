@@ -50,30 +50,44 @@ export default function AdminJourneyControl() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestRun | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [counts, setCounts] = useState<{ active: number; completed: number; cancelled: number }>({ active: 0, completed: 0, cancelled: 0 });
+  const [summary, setSummary] = useState<FunnelSummary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const load = async () => {
     const { data, error } = await supabase
       .from("platform_settings").select(COLS).eq("singleton", true).maybeSingle();
-    if (error) setLoadError(`${error.message}${error.hint ? ` — ${error.hint}` : ""}`);
+    if (error) setLoadError(dbErrorText(error, "Platform settings could not be read."));
     else if (!data) setLoadError("No platform settings row was found (expected one row with singleton = true).");
     else setLoadError(null);
     setS((data ?? null) as Settings | null);
-    const statuses: [string, "active" | "completed" | "cancelled"][] = [
-      ["active", "active"], ["completed", "completed"], ["cancelled", "cancelled"],
-    ];
-    const next = { active: 0, completed: 0, cancelled: 0 };
-    for (const [db, key] of statuses) {
-      const { count } = await supabase
-        .from("customer_journey_sessions")
-        .select("id", { count: "exact", head: true })
-        .eq("journey_version", "v2")
-        .eq("status", db);
-      next[key] = count ?? 0;
+
+    // Recent production activity only: last 30 days, live (non-test) sessions.
+    const since = new Date(Date.now() - FUNNEL_WINDOW_DAYS * 86_400_000).toISOString();
+    const { data: rows, error: sessErr } = await supabase
+      .from("customer_journey_sessions")
+      .select("status,last_activity_at,completed_at,abandoned_at")
+      .eq("journey_version", "v2")
+      .not("test_session", "is", true)
+      .gte("created_at", since)
+      .limit(5000);
+    if (sessErr) {
+      // Never present a failed count query as zero sessions.
+      setSummary(null);
+      setSummaryError(dbErrorText(sessErr, "Journey 2 session figures could not be read."));
+    } else {
+      setSummaryError(null);
+      setSummary(
+        summariseCheckoutFunnel(
+          (rows ?? []).map((r: any) => ({
+            status: r.abandoned_at && !r.completed_at ? "abandoned" : String(r.status),
+            last_activity_at: r.last_activity_at,
+          })),
+        ),
+      );
     }
-    setCounts(next);
     setLoading(false);
   };
+
 
   useEffect(() => { load(); }, []);
 

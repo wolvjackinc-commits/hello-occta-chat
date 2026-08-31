@@ -218,7 +218,8 @@ export default function CheckoutJourneyMonitor() {
         <div>
           <h2 className="font-display uppercase text-lg tracking-wide">Checkout journey monitor</h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-3xl">
-            Start-to-finish checkout progress, inactivity, recovery reminders and technical failures. Refreshes every 30 seconds.
+            Start-to-finish checkout progress, inactivity, recovery reminders and technical failures. {FUNNEL_WINDOW_LABEL}.
+            Journey 2 sessions are reported once — duplicate generic web-tracking rows are excluded. Refreshes every 30 seconds.
           </p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
@@ -227,27 +228,47 @@ export default function CheckoutJourneyMonitor() {
       </div>
 
       {loadError && (
-        <div className="border-2 border-destructive p-3 text-sm text-destructive">
-          Journey monitoring could not be loaded: {loadError}
+        <div className="border-2 border-destructive p-3 text-sm space-y-2">
+          <p className="text-destructive">
+            <strong>Journey monitoring could not be loaded.</strong> Figures below are not shown because the read failed.
+          </p>
+          <pre className="text-xs whitespace-pre-wrap border-2 border-border p-2">{loadError}</pre>
+          <Button type="button" size="sm" onClick={() => void load()} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />Retry
+          </Button>
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        {([
-          ["Started", totals.total, "all" as Filter],
-          ["Active", totals.active, "active" as Filter],
-          ["Abandoned", totals.abandoned, "abandoned" as Filter],
-          ["Completed", totals.completed, "completed" as Filter],
-          ["With errors", totals.errors, "errors" as Filter],
-          ["Conversion", `${totals.conversion}%`, "all" as Filter],
-        ] as Array<[string, string | number, Filter]>).map(([label, value, target]) => (
-          <button key={label} type="button" onClick={() => setFilter(target)}
-            className="border-2 border-foreground/30 p-3 text-left hover:border-foreground transition-colors">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-            <div className="font-display text-2xl mt-1">{value}</div>
-          </button>
-        ))}
-      </div>
+      {loaded && (
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+          {([
+            [`Started (${FUNNEL_WINDOW_DAYS}d)`, totals.started, "all" as Filter],
+            [`Active (<${ACTIVE_RECENCY_HOURS}h)`, totals.activeRecent, "active" as Filter],
+            ["Stale in progress", totals.activeStale, "stale" as Filter],
+            ["Abandoned", totals.abandoned, "abandoned" as Filter],
+            ["Completed", totals.completed, "completed" as Filter],
+            ["With errors", totals.withErrors, "errors" as Filter],
+          ] as Array<[string, string | number, Filter]>).map(([label, value, target]) => (
+            <button key={label} type="button" onClick={() => setFilter(target)}
+              className="border-2 border-foreground/30 p-3 text-left hover:border-foreground transition-colors">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+              <div className="font-display text-2xl mt-1">{value}</div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {loaded && (
+        <div className="border-2 border-border p-3">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Conversion rate</div>
+          <div className="font-display text-2xl mt-1">
+            {totals.conversionRate === null ? "No eligible sessions" : `${totals.conversionRate}%`}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {CONVERSION_DENOMINATOR_LABEL} · {totals.completed} of {totals.eligibleStarted} eligible started sessions.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
         <div className="relative max-w-md flex-1">
@@ -255,9 +276,9 @@ export default function CheckoutJourneyMonitor() {
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customer, email, postcode or stage" className="pl-9" />
         </div>
         <div className="flex flex-wrap gap-2">
-          {(["all", "active", "abandoned", "completed", "errors"] as Filter[]).map((value) => (
+          {(["all", "active", "stale", "abandoned", "completed", "errors"] as Filter[]).map((value) => (
             <Button key={value} type="button" size="sm" variant={filter === value ? "default" : "outline"} onClick={() => setFilter(value)}>
-              {value === "all" ? "All" : value === "errors" ? "Errors" : statusLabel(value)}
+              {value === "all" ? "All" : value === "errors" ? "Errors" : value === "stale" ? "Stale" : statusLabel(value)}
             </Button>
           ))}
         </div>
@@ -265,9 +286,10 @@ export default function CheckoutJourneyMonitor() {
 
       {loading && sessions.length === 0 ? (
         <div className="p-8 text-center text-sm text-muted-foreground">Loading checkout journeys…</div>
-      ) : visible.length === 0 ? (
+      ) : loadError && !loaded ? null : visible.length === 0 ? (
         <div className="p-8 text-center text-sm text-muted-foreground">No checkout sessions match this view.</div>
       ) : (
+
         <div className="space-y-3">
           {visible.map((row) => {
             const key = `${row.source}:${row.session_id}`;

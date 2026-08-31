@@ -8,6 +8,15 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import CheckoutJourneyMonitor from "@/components/admin/CheckoutJourneyMonitor";
+import {
+  ACTIVE_RECENCY_HOURS,
+  CONVERSION_DENOMINATOR_LABEL,
+  FUNNEL_WINDOW_DAYS,
+  FUNNEL_WINDOW_LABEL,
+  summariseCheckoutFunnel,
+  type FunnelSummary,
+} from "@/lib/journey/checkoutFunnel";
+import { dbErrorText } from "@/lib/dbErrorText";
 
 type Settings = {
   customer_journey_v1_enabled: boolean;
@@ -50,30 +59,44 @@ export default function AdminJourneyControl() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestRun | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [counts, setCounts] = useState<{ active: number; completed: number; cancelled: number }>({ active: 0, completed: 0, cancelled: 0 });
+  const [summary, setSummary] = useState<FunnelSummary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const load = async () => {
     const { data, error } = await supabase
       .from("platform_settings").select(COLS).eq("singleton", true).maybeSingle();
-    if (error) setLoadError(`${error.message}${error.hint ? ` — ${error.hint}` : ""}`);
+    if (error) setLoadError(dbErrorText(error, "Platform settings could not be read."));
     else if (!data) setLoadError("No platform settings row was found (expected one row with singleton = true).");
     else setLoadError(null);
     setS((data ?? null) as Settings | null);
-    const statuses: [string, "active" | "completed" | "cancelled"][] = [
-      ["active", "active"], ["completed", "completed"], ["cancelled", "cancelled"],
-    ];
-    const next = { active: 0, completed: 0, cancelled: 0 };
-    for (const [db, key] of statuses) {
-      const { count } = await supabase
-        .from("customer_journey_sessions")
-        .select("id", { count: "exact", head: true })
-        .eq("journey_version", "v2")
-        .eq("status", db);
-      next[key] = count ?? 0;
+
+    // Recent production activity only: last 30 days, live (non-test) sessions.
+    const since = new Date(Date.now() - FUNNEL_WINDOW_DAYS * 86_400_000).toISOString();
+    const { data: rows, error: sessErr } = await supabase
+      .from("customer_journey_sessions")
+      .select("status,last_activity_at,completed_at,abandoned_at")
+      .eq("journey_version", "v2")
+      .not("test_session", "is", true)
+      .gte("created_at", since)
+      .limit(5000);
+    if (sessErr) {
+      // Never present a failed count query as zero sessions.
+      setSummary(null);
+      setSummaryError(dbErrorText(sessErr, "Journey 2 session figures could not be read."));
+    } else {
+      setSummaryError(null);
+      setSummary(
+        summariseCheckoutFunnel(
+          (rows ?? []).map((r: any) => ({
+            status: r.abandoned_at && !r.completed_at ? "abandoned" : String(r.status),
+            last_activity_at: r.last_activity_at,
+          })),
+        ),
+      );
     }
-    setCounts(next);
     setLoading(false);
   };
+
 
   useEffect(() => { load(); }, []);
 
@@ -143,21 +166,25 @@ export default function AdminJourneyControl() {
     return <div className="p-10 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>;
   }
   if (!s) {
+    // Settings are admin-write only, so other staff roles can legitimately fail
+    // this read. The monitoring list and timelines must still be available.
     return (
-      <div className="p-6 max-w-2xl">
+      <div className="p-4 md:p-6 space-y-6 max-w-7xl">
         <div className="border-4 border-destructive p-5">
           <h1 className="font-display uppercase text-lg mb-2">Journey settings could not be loaded</h1>
           <p className="text-sm text-muted-foreground mb-3">
-            The switches are hidden because the settings read failed. The exact reason is below.
+            The switches are hidden because the settings read failed. The exact reason is below. Journey monitoring below is unaffected.
           </p>
           <pre className="text-xs whitespace-pre-wrap border-2 border-border p-3 mb-3">{loadError ?? "Unknown error"}</pre>
           <Button onClick={() => { setLoading(true); load(); }}>
             <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />Try again
           </Button>
         </div>
+        <CheckoutJourneyMonitor />
       </div>
     );
   }
+
 
   const checks = s.customer_journey_v2_last_preflight_result?.checks ?? [];
 
@@ -302,17 +329,42 @@ export default function AdminJourneyControl() {
         )}
       </section>
 
-      <section className="border-4 border-foreground p-5">
-        <h2 className="font-display uppercase text-sm tracking-widest mb-3">Journey 2 sessions</h2>
-        <dl className="grid grid-cols-3 gap-4 text-sm">
-          {([["Active", counts.active], ["Completed", counts.completed], ["Cancelled", counts.cancelled]] as const).map(([label, v]) => (
-            <div key={label} className="border-2 border-border p-3">
-              <dt className="text-xs uppercase tracking-widest text-muted-foreground">{label}</dt>
-              <dd className="font-display text-2xl">{v}</dd>
-            </div>
-          ))}
-        </dl>
+      <section className="border-4 border-foreground p-5 space-y-3">
+        <div>
+          <h2 className="font-display uppercase text-sm tracking-widest">Journey 2 sessions</h2>
+          <p className="text-xs text-muted-foreground mt-1">{FUNNEL_WINDOW_LABEL}.</p>
+        </div>
+        {summaryError ? (
+          <div className="border-2 border-destructive p-3 space-y-2 text-sm">
+            <p className="text-destructive"><strong>Session figures could not be read.</strong> No counts are shown rather than showing zero.</p>
+            <pre className="text-xs whitespace-pre-wrap border-2 border-border p-2">{summaryError}</pre>
+            <Button size="sm" onClick={() => { setLoading(true); void load(); }}>
+              <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />Retry
+            </Button>
+          </div>
+        ) : summary ? (
+          <>
+            <dl className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              {([
+                [`Started (${FUNNEL_WINDOW_DAYS}d)`, summary.started],
+                [`Active (<${ACTIVE_RECENCY_HOURS}h)`, summary.activeRecent],
+                ["Stale in progress", summary.activeStale],
+                ["Abandoned", summary.abandoned],
+                ["Completed", summary.completed],
+              ] as const).map(([label, v]) => (
+                <div key={label} className="border-2 border-border p-3">
+                  <dt className="text-xs uppercase tracking-widest text-muted-foreground">{label}</dt>
+                  <dd className="font-display text-2xl">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-xs text-muted-foreground">
+              Conversion {summary.conversionRate === null ? "not available (no eligible sessions)" : `${summary.conversionRate}%`} · {CONVERSION_DENOMINATOR_LABEL} ({summary.completed} of {summary.eligibleStarted}). Cancelled in window: {summary.cancelled}.
+            </p>
+          </>
+        ) : null}
       </section>
+
 
       <CheckoutJourneyMonitor />
     </div>

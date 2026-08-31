@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   ACTIVE_RECENCY_HOURS,
   CONVERSION_DENOMINATOR_LABEL,
+  FUNNEL_WINDOW_DAYS,
   FUNNEL_WINDOW_LABEL,
   isRecentlyActive,
   isTerminal,
@@ -51,7 +52,7 @@ type TimelineEvent = {
   created_at: string;
 };
 
-type Filter = "all" | "active" | "abandoned" | "completed" | "errors";
+type Filter = "all" | "active" | "stale" | "abandoned" | "completed" | "errors";
 
 const stageLabel = (value: string | null) => {
   if (!value) return "Started";

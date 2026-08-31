@@ -4,6 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  ACTIVE_RECENCY_HOURS,
+  CONVERSION_DENOMINATOR_LABEL,
+  FUNNEL_WINDOW_LABEL,
+  isRecentlyActive,
+  isTerminal,
+  summariseCheckoutFunnel,
+} from "@/lib/journey/checkoutFunnel";
+import { dbErrorText } from "@/lib/dbErrorText";
+
 
 type CheckoutSession = {
   source: "journey2" | "web";

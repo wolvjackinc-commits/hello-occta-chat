@@ -9,7 +9,7 @@
  */
 import {
   corsHeaders, jsonResponse, getServiceClient, generateTokenPair,
-  sendResendEmail, brutalistEmailShell, escapeHtml, recordEmailCommunication,
+  sendTrackedCommunication, brutalistEmailShell, escapeHtml,
 } from "../_shared/quoteHelpers.ts";
 import { loadJourneySettings } from "../_shared/journey2.ts";
 
@@ -80,7 +80,6 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  // Service-to-service / cron only — same convention as the other deployed cron workers.
   const provided = req.headers.get("x-cron-secret");
   const expected = Deno.env.get("CRON_JOB_SECRET") || Deno.env.get("CRON_SECRET");
   if (!expected || !provided || provided !== expected) {
@@ -112,13 +111,8 @@ Deno.serve(async (req) => {
     .gt("expires_at", nowIso)
     .lt("last_activity_at", stage1Cutoff)
     .lt("reminder_count", MAX_REMINDERS)
-    // Only fetch contactable sessions. Without this, batches fill up with
-    // sessions abandoned before the email was captured (address step), which
-    // starves genuine candidates and nothing ever sends.
     .not("customer_details->>email", "is", null)
     .neq("customer_details->>email", "")
-    // Exclude sessions still inside their spacing window, so they don't occupy
-    // the batch (and starve other candidates) for the next 24h.
     .or(`reminder_last_queued_at.is.null,reminder_last_queued_at.lt.${stage2Cutoff}`)
     .order("last_activity_at", { ascending: true })
     .limit(BATCH);
@@ -135,7 +129,6 @@ Deno.serve(async (req) => {
     const next = count + 1;
     if (next > MAX_REMINDERS) { skip("max_reached"); continue; }
 
-    // Spacing: #1 after the abandonment delay, #2 ~24h later, #3 ~48h after that.
     if (count > 0) {
       const last = s.reminder_last_queued_at;
       if (!last) { skip("no_last_queued"); continue; }
@@ -164,8 +157,6 @@ Deno.serve(async (req) => {
     const firstName = (s.customer_details?.full_name ?? "there").trim().split(" ")[0] || "there";
     const { subject, title, html } = copyFor(next, usefulFact(s), firstName);
 
-    // Fresh secure token for this reminder. If delivery fails we restore the
-    // previous hash so an existing browser session is never broken.
     const previousHash = s.public_token_hash;
     const { raw: token, hash } = await generateTokenPair();
 
@@ -179,7 +170,7 @@ Deno.serve(async (req) => {
       .is("submitted_at", null)
       .select("id")
       .maybeSingle();
-    if (!claim.data) { skip("claim_failed:" + (claim.error?.message ?? "no_row")); continue; } // resumed, completed or already claimed
+    if (!claim.data) { skip("claim_failed:" + (claim.error?.message ?? "no_row")); continue; }
 
     const reminderRow = {
       journey_session_id: s.id,
@@ -196,10 +187,13 @@ Deno.serve(async (req) => {
     }
 
     const url = `${SITE}/order/${encodeURIComponent(token)}`;
-    const result = await sendResendEmail({
-      to: email,
+    const renderedHtml = brutalistEmailShell(title, html, { label: "Finish your order", url });
+    const result = await sendTrackedCommunication(supabase, {
+      template_name: `journey2_checkout_reminder_${next}`,
+      recipient_email: email,
       subject,
-      html: brutalistEmailShell(title, html, { label: "Finish your order", url }),
+      html: renderedHtml,
+      metadata: { session_id: s.id, reminder_number: next, stage: s.current_step },
     });
 
     if (result.ok) {
@@ -218,7 +212,6 @@ Deno.serve(async (req) => {
         .eq("reminder_number", next);
       sent++;
     } else {
-      // Restore the prior browser token; do not advance the reminder counters.
       await supabase
         .from("customer_journey_sessions")
         .update({ public_token_hash: previousHash })
@@ -234,13 +227,6 @@ Deno.serve(async (req) => {
         .eq("reminder_number", next);
       failed++;
     }
-
-    await recordEmailCommunication(supabase, {
-      template_name: `journey2_checkout_reminder_${next}`,
-      recipient_email: email,
-      sendResult: result,
-      metadata: { session_id: s.id, reminder_number: next, stage: s.current_step },
-    });
   }
 
   return jsonResponse({ ok: true, considered: (sessions ?? []).length, sent, failed, skipped, reasons });

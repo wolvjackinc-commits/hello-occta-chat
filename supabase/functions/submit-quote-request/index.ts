@@ -1,7 +1,7 @@
 import {
   corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp,
-  maskEmail, sendResendEmail, brutalistEmailShell, escapeHtml,
-  getAdminNotificationEmail, recordEmailCommunication,
+  maskEmail, sendTrackedCommunication, brutalistEmailShell, escapeHtml,
+  getAdminNotificationEmail,
 } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
@@ -24,7 +24,6 @@ const Schema = z.object({
   message: z.string().trim().max(2000).optional().nullable(),
   marketing_consent: z.boolean().default(false),
   source: z.string().trim().max(40).optional(),
-  // Attribution
   gclid: z.string().trim().max(200).optional().nullable(),
   utm_source: z.string().trim().max(200).optional().nullable(),
   utm_campaign: z.string().trim().max(200).optional().nullable(),
@@ -51,8 +50,6 @@ Deno.serve(async (req) => {
   }
 
   const supabase = getServiceClient();
-
-  // Link to logged-in user if present
   let customer_id: string | null = null;
   const authHeader = req.headers.get("Authorization");
   if (authHeader?.startsWith("Bearer ")) {
@@ -97,7 +94,6 @@ Deno.serve(async (req) => {
 
   if (error || !row) return jsonResponse({ error: "create_failed" }, 500);
 
-  // PII-safe activity log
   await supabase.rpc("log_event", {
     _actor_type: "public",
     _event_type: "quote_request_submitted",
@@ -113,7 +109,7 @@ Deno.serve(async (req) => {
     actor_type: "public",
   });
 
-  // Fire-and-forget emails
+  const customerSubject = `OCCTA quote request ${row.reference}`;
   const customerHtml = brutalistEmailShell(
     "We've got your quote request",
     `<p>Hi ${escapeHtml(input.full_name.split(" ")[0])},</p>
@@ -121,36 +117,34 @@ Deno.serve(async (req) => {
      <p>OCCTA will check the best available option for your address and confirm speed, price, installation and switching details before you pay.</p>
      <p style="font-size:12px;color:#555;">Your final price, speed estimate, contract length, one-off charges, installation details, cancellation/cease charges and key terms will be confirmed in your Contract Summary before you pay.</p>`,
   );
-  const customerSend = await sendResendEmail({ to: input.email, subject: `OCCTA quote request ${row.reference}`, html: customerHtml });
-  await recordEmailCommunication(supabase, {
+  await sendTrackedCommunication(supabase, {
     template_name: "quote_request_customer_acknowledgement",
     recipient_email: input.email,
-    sendResult: customerSend,
+    subject: customerSubject,
+    html: customerHtml,
     user_id: customer_id,
     metadata: { quote_request_id: row.id, reference: row.reference, service_interest: input.service_interest },
   });
 
   const adminEmail = getAdminNotificationEmail();
-  const adminSend = await sendResendEmail({
-    to: adminEmail,
-    subject: `[Quote Request] ${row.reference} — ${input.service_interest}`,
-    html: brutalistEmailShell(
-      `New quote request: ${row.reference}`,
-      `<p><strong>Name:</strong> ${escapeHtml(input.full_name)}</p>
-       <p><strong>Email:</strong> <a href="mailto:${escapeHtml(input.email)}" style="color:#111;">${escapeHtml(input.email)}</a></p>
-       <p><strong>Phone:</strong> ${escapeHtml(input.phone)}</p>
-       <p><strong>Service:</strong> ${escapeHtml(input.service_interest)} · ${escapeHtml(input.customer_type)}</p>
-       <p><strong>Postcode:</strong> ${escapeHtml(input.postcode.toUpperCase())}</p>
-       <p><strong>Preferred contact:</strong> ${escapeHtml(input.preferred_contact_method)}</p>
-       ${input.message ? `<p><strong>Message:</strong> ${escapeHtml(input.message)}</p>` : ""}
-       <p>Open the admin Quote Requests queue to action.</p>`,
-      { label: "Open admin", url: "https://www.occta.co.uk/admin/quote-requests" },
-    ),
-  });
-  await recordEmailCommunication(supabase, {
+  const adminSubject = `[Quote Request] ${row.reference} — ${input.service_interest}`;
+  const adminHtml = brutalistEmailShell(
+    `New quote request: ${row.reference}`,
+    `<p><strong>Name:</strong> ${escapeHtml(input.full_name)}</p>
+     <p><strong>Email:</strong> <a href="mailto:${escapeHtml(input.email)}" style="color:#111;">${escapeHtml(input.email)}</a></p>
+     <p><strong>Phone:</strong> ${escapeHtml(input.phone)}</p>
+     <p><strong>Service:</strong> ${escapeHtml(input.service_interest)} · ${escapeHtml(input.customer_type)}</p>
+     <p><strong>Postcode:</strong> ${escapeHtml(input.postcode.toUpperCase())}</p>
+     <p><strong>Preferred contact:</strong> ${escapeHtml(input.preferred_contact_method)}</p>
+     ${input.message ? `<p><strong>Message:</strong> ${escapeHtml(input.message)}</p>` : ""}
+     <p>Open the admin Quote Requests queue to action.</p>`,
+    { label: "Open admin", url: "https://www.occta.co.uk/admin/quote-requests" },
+  );
+  await sendTrackedCommunication(supabase, {
     template_name: "quote_request_admin_notification",
     recipient_email: adminEmail,
-    sendResult: adminSend,
+    subject: adminSubject,
+    html: adminHtml,
     metadata: { quote_request_id: row.id, reference: row.reference, customer_email_masked: maskEmail(input.email) },
   });
 

@@ -80,6 +80,19 @@ export async function checkRateLimit(identifier: string, action: string, maxReq 
   return data === true;
 }
 
+export type EmailSendResult =
+  | { ok: true; messageId: string | null; trackingLogId?: string | null }
+  | { ok: false; error: string; trackingLogId?: string | null };
+
+/**
+ * Send through Resend and make single-recipient sends trackable by default.
+ *
+ * If the caller has already created a communications_log row it can pass
+ * trackingLogId. Otherwise this helper creates a generic queued row before
+ * sending, injects that row's open-tracking pixel, and updates the row with
+ * the provider result. Callers that later add richer audit metadata are
+ * merged onto the same row by recordEmailCommunication / the DB merge trigger.
+ */
 export async function sendResendEmail(opts: {
   to: string | string[];
   subject: string;
@@ -87,28 +100,59 @@ export async function sendResendEmail(opts: {
   replyTo?: string;
   attachments?: Array<{ filename: string; content: string; contentType?: string }>;
   trackingLogId?: string | null;
-}): Promise<{ ok: true; messageId: string | null } | { ok: false; error: string }> {
+}): Promise<EmailSendResult> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
     console.error("[quote-email] RESEND_API_KEY missing");
-    return { ok: false, error: "RESEND_API_KEY missing" };
+    return { ok: false, error: "RESEND_API_KEY missing", trackingLogId: opts.trackingLogId ?? null };
   }
+
+  const recipients = (Array.isArray(opts.to) ? opts.to : [opts.to])
+    .map((v) => String(v).trim().toLowerCase())
+    .filter(Boolean);
+  let effectiveTrackingLogId = opts.trackingLogId ?? null;
+
+  // A shared pixel cannot identify which recipient opened a multi-recipient
+  // message, so automatic tracking is created only for exactly one recipient.
+  if (!effectiveTrackingLogId && recipients.length === 1) {
+    try {
+      const supabase = getServiceClient();
+      const { data, error } = await supabase
+        .from("communications_log")
+        .insert({
+          template_name: "auto_tracked_email",
+          recipient_email: recipients[0],
+          subject: opts.subject,
+          body_html: opts.html,
+          status: "queued",
+          metadata: { auto_tracked: true },
+        })
+        .select("id")
+        .maybeSingle();
+      if (error) console.error("[quote-email] automatic tracking pre-log failed", error.message);
+      else effectiveTrackingLogId = data?.id ?? null;
+    } catch (e) {
+      console.error("[quote-email] automatic tracking pre-log exception", (e as Error)?.message ?? String(e));
+    }
+  }
+
   const rawFrom = (Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk").trim();
   const addrMatch = rawFrom.match(/<([^>]+)>/);
   const address = (addrMatch ? addrMatch[1] : rawFrom).trim();
   const from = `OCCTA <${address}>`;
   let html = opts.html;
-  if (opts.trackingLogId) {
-    const trackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/email-open-track?id=${opts.trackingLogId}`;
+  if (effectiveTrackingLogId) {
+    const trackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/email-open-track?id=${effectiveTrackingLogId}`;
     const pixel = `<img src="${trackUrl}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;opacity:0;" />`;
     html = html.includes("</body>") ? html.replace("</body>", `${pixel}</body>`) : `${html}${pixel}`;
   }
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       from,
-      to: Array.isArray(opts.to) ? opts.to : [opts.to],
+      to: recipients,
       subject: opts.subject,
       html,
       reply_to: opts.replyTo,
@@ -119,13 +163,38 @@ export async function sendResendEmail(opts: {
       })),
     }),
   });
+
   if (!res.ok) {
     const text = await res.text();
+    const error = `resend_${res.status}: ${text.slice(0, 200)}`;
     console.error(`[quote-email] send failed ${res.status}: ${text.slice(0, 500)}`);
-    return { ok: false, error: `resend_${res.status}: ${text.slice(0, 200)}` };
+    if (effectiveTrackingLogId) {
+      try {
+        await getServiceClient()
+          .from("communications_log")
+          .update({ status: "failed", error_message: error })
+          .eq("id", effectiveTrackingLogId);
+      } catch (_e) { /* logging must never mask the send result */ }
+    }
+    return { ok: false, error, trackingLogId: effectiveTrackingLogId };
   }
+
   const json = await res.json().catch(() => null) as { id?: string } | null;
-  return { ok: true, messageId: json?.id ?? null };
+  const messageId = json?.id ?? null;
+  if (effectiveTrackingLogId) {
+    try {
+      await getServiceClient()
+        .from("communications_log")
+        .update({
+          status: "sent",
+          provider_message_id: messageId,
+          error_message: null,
+          sent_at: new Date().toISOString(),
+        })
+        .eq("id", effectiveTrackingLogId);
+    } catch (_e) { /* logging must never mask successful delivery to provider */ }
+  }
+  return { ok: true, messageId, trackingLogId: effectiveTrackingLogId };
 }
 
 export function getAdminNotificationEmail(): string {
@@ -135,12 +204,34 @@ export function getAdminNotificationEmail(): string {
 export async function recordEmailCommunication(supabase: any, entry: {
   template_name: string;
   recipient_email: string;
-  sendResult: { ok: true; messageId: string | null } | { ok: false; error: string };
+  sendResult: EmailSendResult;
   metadata?: Record<string, unknown>;
   user_id?: string | null;
   subject?: string | null;
   body_html?: string | null;
 }) {
+  // sendResendEmail now creates a trackable row before a single-recipient
+  // send. Enrich that same row rather than inserting a duplicate afterward.
+  if (entry.sendResult.trackingLogId) {
+    const { error } = await supabase
+      .from("communications_log")
+      .update({
+        user_id: entry.user_id ?? null,
+        template_name: entry.template_name,
+        recipient_email: entry.recipient_email,
+        subject: entry.subject ?? undefined,
+        body_html: entry.body_html ?? undefined,
+        status: entry.sendResult.ok ? "sent" : "failed",
+        provider_message_id: entry.sendResult.ok ? entry.sendResult.messageId : null,
+        error_message: entry.sendResult.ok ? null : entry.sendResult.error,
+        sent_at: entry.sendResult.ok ? new Date().toISOString() : null,
+        metadata: entry.metadata ?? {},
+      })
+      .eq("id", entry.sendResult.trackingLogId);
+    if (!error) return;
+    console.error("[quote-email] tracked communications_log enrich failed", error.message);
+  }
+
   const { error } = await supabase.from("communications_log").insert({
     user_id: entry.user_id ?? null,
     template_name: entry.template_name,

@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,8 @@ type CommunicationLog = {
   sent_at: string | null;
   delivered_at: string | null;
   opened_at: string | null;
+  last_opened_at: string | null;
+  open_count: number | null;
   error_message: string | null;
   provider_message_id: string | null;
   metadata: Json;
@@ -45,60 +47,79 @@ type CommunicationLog = {
 };
 
 const TEMPLATE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  // DD status emails
   dd_status_pending: { label: "DD Received", icon: <Building2 className="w-3 h-3" />, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500" },
   dd_status_verified: { label: "DD Verified", icon: <Building2 className="w-3 h-3" />, color: "bg-blue-500/10 text-blue-600 border-blue-500" },
   dd_status_submitted_to_provider: { label: "DD Submitted", icon: <Building2 className="w-3 h-3" />, color: "bg-purple-500/10 text-purple-600 border-purple-500" },
   dd_status_active: { label: "DD Active", icon: <Building2 className="w-3 h-3" />, color: "bg-green-500/10 text-green-600 border-green-500" },
   dd_status_failed: { label: "DD Failed", icon: <AlertTriangle className="w-3 h-3" />, color: "bg-red-500/10 text-red-600 border-red-500" },
   dd_status_cancelled: { label: "DD Cancelled", icon: <XCircle className="w-3 h-3" />, color: "bg-red-500/10 text-red-600 border-red-500" },
-  
-  // Invoice emails
   due_soon: { label: "Due Soon Reminder", icon: <FileText className="w-3 h-3" />, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500" },
   due_today: { label: "Due Today", icon: <FileText className="w-3 h-3" />, color: "bg-orange-500/10 text-orange-600 border-orange-500" },
   overdue_7: { label: "Overdue (7 days)", icon: <AlertTriangle className="w-3 h-3" />, color: "bg-red-500/10 text-red-600 border-red-500" },
   invoice_sent: { label: "Invoice Sent", icon: <FileText className="w-3 h-3" />, color: "bg-blue-500/10 text-blue-600 border-blue-500" },
   invoice_paid: { label: "Payment Received", icon: <CheckCircle className="w-3 h-3" />, color: "bg-green-500/10 text-green-600 border-green-500" },
-  
-  // Payment requests
   payment_link: { label: "Payment Link", icon: <CreditCard className="w-3 h-3" />, color: "bg-primary/10 text-primary border-primary" },
   dd_setup_link: { label: "DD Setup Link", icon: <Building2 className="w-3 h-3" />, color: "bg-primary/10 text-primary border-primary" },
-  
-  // Order/ticket emails
   order_confirmation: { label: "Order Confirmation", icon: <Bell className="w-3 h-3" />, color: "bg-green-500/10 text-green-600 border-green-500" },
   status_update: { label: "Status Update", icon: <Bell className="w-3 h-3" />, color: "bg-blue-500/10 text-blue-600 border-blue-500" },
   ticket_reply: { label: "Ticket Reply", icon: <Mail className="w-3 h-3" />, color: "bg-blue-500/10 text-blue-600 border-blue-500" },
 };
 
+const effectiveStatus = (comm: CommunicationLog) => {
+  if (comm.opened_at) return "opened";
+  if (comm.delivered_at) return "delivered";
+  return comm.status || "pending";
+};
+
 export function CustomerCommunicationsTimeline({ userId }: CustomerCommunicationsTimelineProps) {
   const [previewComm, setPreviewComm] = useState<CommunicationLog | null>(null);
-  const { data: communications, isLoading } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data: communications, isLoading, error } = useQuery({
     queryKey: ["customer-communications", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error: queryError } = await supabase
         .from("communications_log")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(100);
 
-      if (error) throw error;
+      if (queryError) throw queryError;
       return (data || []) as unknown as CommunicationLog[];
     },
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`customer-communications-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "communications_log", filter: `user_id=eq.${userId}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["customer-communications", userId] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient, userId]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ReactNode; className: string }> = {
       sent: { icon: <CheckCircle className="w-3 h-3" />, className: "bg-green-500/10 text-green-600 border-green-500" },
       delivered: { icon: <CheckCircle className="w-3 h-3" />, className: "bg-green-500/10 text-green-600 border-green-500" },
-      opened: { icon: <Mail className="w-3 h-3" />, className: "bg-blue-500/10 text-blue-600 border-blue-500" },
+      opened: { icon: <Eye className="w-3 h-3" />, className: "bg-blue-500/10 text-blue-600 border-blue-500" },
       pending: { icon: <Clock className="w-3 h-3" />, className: "bg-yellow-500/10 text-yellow-600 border-yellow-500" },
+      queued: { icon: <Clock className="w-3 h-3" />, className: "bg-yellow-500/10 text-yellow-600 border-yellow-500" },
       failed: { icon: <XCircle className="w-3 h-3" />, className: "bg-red-500/10 text-red-600 border-red-500" },
     };
 
     const config = statusConfig[status] || statusConfig.pending;
     return (
-      <Badge className={`${config.className} border gap-1 text-[10px]`}>
+      <Badge className={`${config.className} border gap-1 text-[10px] capitalize`}>
         {config.icon}
         {status}
       </Badge>
@@ -135,6 +156,9 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
         <div className="flex items-center gap-2">
           <Mail className="w-5 h-5" />
           <h3 className="font-display text-lg">Communications</h3>
+          <Badge variant="outline" className="border-green-600 text-green-700 text-[10px]">
+            <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-600" /> Live
+          </Badge>
         </div>
         {communications && communications.length > 0 && (
           <Badge variant="outline" className="border-2 border-foreground">
@@ -143,6 +167,12 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
         )}
       </div>
 
+      {error && (
+        <div className="mb-3 border-2 border-destructive p-3 text-xs text-destructive">
+          Communications could not be loaded: {error instanceof Error ? error.message : "Unknown error"}
+        </div>
+      )}
+
       {(!communications || communications.length === 0) ? (
         <div className="py-6 text-center text-muted-foreground">
           <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -150,24 +180,22 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
           <p className="text-xs mt-1">Emails sent to this customer will appear here</p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div className="space-y-2 max-h-[32rem] overflow-y-auto">
           {communications.map((comm) => {
             const templateInfo = getTemplateInfo(comm.template_name);
             const metadata = comm.metadata as Record<string, unknown> | null;
             const subject = comm.subject || (metadata?.subject ? String(metadata.subject) : null);
-            
+            const displayStatus = effectiveStatus(comm);
+
             return (
-              <div
-                key={comm.id}
-                className="border-2 border-foreground/10 p-3 hover:border-foreground/30 transition-colors"
-              >
+              <div key={comm.id} className="border-2 border-foreground/10 p-3 hover:border-foreground/30 transition-colors">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge className={`${templateInfo.color} border gap-1`}>
                       {templateInfo.icon}
                       {templateInfo.label}
                     </Badge>
-                    {getStatusBadge(comm.status)}
+                    {getStatusBadge(displayStatus)}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -185,18 +213,20 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
                   </div>
                 </div>
 
-                <div className="mt-2 text-xs text-muted-foreground">
-                  <span>To: {comm.recipient_email}</span>
-                  {comm.sent_at && (
-                    <span className="ml-3">Sent: {format(new Date(comm.sent_at), "HH:mm:ss")}</span>
+                <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                  <div>To: <span className="font-mono text-foreground">{comm.recipient_email}</span></div>
+                  <div>Sent: {comm.sent_at ? format(new Date(comm.sent_at), "dd MMM yyyy HH:mm:ss") : "Not sent"}</div>
+                  <div>
+                    Opened: {comm.opened_at ? format(new Date(comm.opened_at), "dd MMM yyyy HH:mm:ss") : "Not opened"}
+                  </div>
+                  {comm.opened_at && (
+                    <div>
+                      Opens: {comm.open_count ?? 1} · Last: {format(new Date(comm.last_opened_at || comm.opened_at), "dd MMM yyyy HH:mm:ss")}
+                    </div>
                   )}
                 </div>
 
-                {subject && (
-                  <div className="mt-1 text-xs font-medium truncate">
-                    Subject: {subject}
-                  </div>
-                )}
+                {subject && <div className="mt-1 text-xs font-medium truncate">Subject: {subject}</div>}
 
                 {comm.error_message && (
                   <div className="mt-2 text-xs text-destructive bg-destructive/10 p-2 rounded">
@@ -206,20 +236,10 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
 
                 {metadata && (
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {metadata.mandate_reference && (
-                      <Badge variant="outline" className="text-[10px]">
-                        Ref: {String(metadata.mandate_reference)}
-                      </Badge>
-                    )}
-                    {metadata.invoice_number && (
-                      <Badge variant="outline" className="text-[10px]">
-                        Inv: {String(metadata.invoice_number)}
-                      </Badge>
-                    )}
+                    {metadata.mandate_reference && <Badge variant="outline" className="text-[10px]">Ref: {String(metadata.mandate_reference)}</Badge>}
+                    {metadata.invoice_number && <Badge variant="outline" className="text-[10px]">Inv: {String(metadata.invoice_number)}</Badge>}
                     {metadata.old_status && metadata.new_status && (
-                      <Badge variant="outline" className="text-[10px]">
-                        {String(metadata.old_status)} → {String(metadata.new_status)}
-                      </Badge>
+                      <Badge variant="outline" className="text-[10px]">{String(metadata.old_status)} → {String(metadata.new_status)}</Badge>
                     )}
                   </div>
                 )}
@@ -235,11 +255,14 @@ export function CustomerCommunicationsTimeline({ userId }: CustomerCommunication
             <DialogTitle className="font-display uppercase">
               {previewComm?.subject || previewComm?.template_name || "Email preview"}
             </DialogTitle>
-            <DialogDescription className="text-xs">
-              To <span className="font-mono">{previewComm?.recipient_email}</span>
-              {previewComm?.sent_at && (
-                <> · sent {format(new Date(previewComm.sent_at), "dd MMM yyyy HH:mm:ss")}</>
-              )}
+            <DialogDescription className="space-y-1 text-xs">
+              <div>To <span className="font-mono text-foreground">{previewComm?.recipient_email}</span></div>
+              <div>Sent {previewComm?.sent_at ? format(new Date(previewComm.sent_at), "dd MMM yyyy HH:mm:ss") : "—"}</div>
+              <div>
+                Opened {previewComm?.opened_at ? format(new Date(previewComm.opened_at), "dd MMM yyyy HH:mm:ss") : "—"}
+                {previewComm?.opened_at ? ` · ${previewComm.open_count ?? 1} open${(previewComm.open_count ?? 1) === 1 ? "" : "s"}` : ""}
+              </div>
+              {previewComm?.provider_message_id && <div>Provider ID <span className="font-mono">{previewComm.provider_message_id}</span></div>}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-4 bg-muted/20">

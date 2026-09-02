@@ -93,16 +93,10 @@ export async function sendResendEmail(opts: {
     console.error("[quote-email] RESEND_API_KEY missing");
     return { ok: false, error: "RESEND_API_KEY missing" };
   }
-  // Always present as "OCCTA Limited" in the recipient's inbox, regardless of
-  // what the RESEND_FROM_EMAIL env var contains. If the env var already has a
-  // display name ("Name <addr@x>"), we still force the display name to
-  // "OCCTA Limited" so the sender column never shows the bare mailbox
-  // local-part (e.g. "hello").
   const rawFrom = (Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk").trim();
   const addrMatch = rawFrom.match(/<([^>]+)>/);
   const address = (addrMatch ? addrMatch[1] : rawFrom).trim();
   const from = `OCCTA <${address}>`;
-  // Inject a 1x1 tracking pixel referencing communications_log id when provided
   let html = opts.html;
   if (opts.trackingLogId) {
     const trackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/email-open-track?id=${opts.trackingLogId}`;
@@ -144,11 +138,15 @@ export async function recordEmailCommunication(supabase: any, entry: {
   sendResult: { ok: true; messageId: string | null } | { ok: false; error: string };
   metadata?: Record<string, unknown>;
   user_id?: string | null;
+  subject?: string | null;
+  body_html?: string | null;
 }) {
   const { error } = await supabase.from("communications_log").insert({
     user_id: entry.user_id ?? null,
     template_name: entry.template_name,
     recipient_email: entry.recipient_email,
+    subject: entry.subject ?? null,
+    body_html: entry.body_html ?? null,
     status: entry.sendResult.ok ? "sent" : "failed",
     provider_message_id: entry.sendResult.ok ? entry.sendResult.messageId : null,
     error_message: entry.sendResult.ok ? null : entry.sendResult.error,
@@ -156,6 +154,76 @@ export async function recordEmailCommunication(supabase: any, entry: {
     metadata: entry.metadata ?? {},
   });
   if (error) console.error("[quote-email] communications_log insert failed", error.message);
+}
+
+/**
+ * Sends an email with a pre-created communications_log row so the message can
+ * carry its own open-tracking pixel. The row is updated after the provider
+ * responds, which also makes sent/failed/opened changes visible over Supabase
+ * Realtime. If the pre-log insert fails, delivery is still attempted and a
+ * normal post-send log is written as a fallback.
+ */
+export async function sendTrackedCommunication(supabase: any, entry: {
+  template_name: string;
+  recipient_email: string;
+  subject: string;
+  html: string;
+  metadata?: Record<string, unknown>;
+  user_id?: string | null;
+  replyTo?: string;
+  attachments?: Array<{ filename: string; content: string; contentType?: string }>;
+}) {
+  let logId: string | null = null;
+  const { data: logRow, error: logError } = await supabase
+    .from("communications_log")
+    .insert({
+      user_id: entry.user_id ?? null,
+      template_name: entry.template_name,
+      recipient_email: entry.recipient_email,
+      subject: entry.subject,
+      body_html: entry.html,
+      status: "queued",
+      metadata: entry.metadata ?? {},
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (logError) console.error("[quote-email] tracked pre-log insert failed", logError.message);
+  else logId = logRow?.id ?? null;
+
+  const sendResult = await sendResendEmail({
+    to: entry.recipient_email,
+    subject: entry.subject,
+    html: entry.html,
+    replyTo: entry.replyTo,
+    attachments: entry.attachments,
+    trackingLogId: logId,
+  });
+
+  if (logId) {
+    const { error: updateError } = await supabase
+      .from("communications_log")
+      .update({
+        status: sendResult.ok ? "sent" : "failed",
+        provider_message_id: sendResult.ok ? sendResult.messageId : null,
+        error_message: sendResult.ok ? null : sendResult.error,
+        sent_at: sendResult.ok ? new Date().toISOString() : null,
+      })
+      .eq("id", logId);
+    if (updateError) console.error("[quote-email] tracked log update failed", updateError.message);
+  } else {
+    await recordEmailCommunication(supabase, {
+      template_name: entry.template_name,
+      recipient_email: entry.recipient_email,
+      sendResult,
+      metadata: entry.metadata,
+      user_id: entry.user_id,
+      subject: entry.subject,
+      body_html: entry.html,
+    });
+  }
+
+  return sendResult;
 }
 
 export function escapeHtml(s: string | null | undefined): string {

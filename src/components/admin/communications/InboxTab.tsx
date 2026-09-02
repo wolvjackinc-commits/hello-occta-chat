@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lock, Inbox as InboxIcon } from "lucide-react";
+import { Lock, Inbox as InboxIcon, Mail } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { AdminStatusBadge, AdminEmptyState } from "@/components/admin/primitives";
 import {
@@ -25,6 +25,8 @@ type Thread = {
   channel: string;
   status: string;
   customer_id: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
   related_ticket_id: string | null;
   related_complaint_id: string | null;
   related_quote_id: string | null;
@@ -49,48 +51,102 @@ export function InboxTab() {
   const [filterLink, setFilterLink] = useState("all");
   const [search, setSearch] = useState("");
   const [openThread, setOpenThread] = useState<Thread | null>(null);
+  const queryClient = useQueryClient();
 
-  const { data: threads } = useQuery({
+  const { data: threads, error: threadsError } = useQuery({
     queryKey: ["admin-comm-threads"],
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("communication_threads")
         .select("id, subject, channel, status, customer_id, related_ticket_id, related_complaint_id, related_quote_id, related_order_id, related_invoice_id, updated_at")
         .order("updated_at", { ascending: false })
         .limit(200);
-      return (data ?? []) as Thread[];
+      if (error) throw error;
+
+      const raw = (data ?? []) as Omit<Thread, "customer_name" | "customer_email">[];
+      const customerIds = Array.from(new Set(raw.map((t) => t.customer_id).filter(Boolean))) as string[];
+      const profilesById = new Map<string, { full_name: string | null; email: string | null }>();
+
+      if (customerIds.length > 0) {
+        const { data: profiles, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", customerIds);
+        if (profileError) throw profileError;
+        (profiles ?? []).forEach((p) => profilesById.set(p.id, { full_name: p.full_name, email: p.email }));
+      }
+
+      return raw.map((t) => {
+        const profile = t.customer_id ? profilesById.get(t.customer_id) : undefined;
+        return {
+          ...t,
+          customer_name: profile?.full_name ?? null,
+          customer_email: profile?.email ?? null,
+        } as Thread;
+      });
     },
   });
 
-  const { data: messages } = useQuery({
+  const { data: messages, error: messagesError } = useQuery({
     queryKey: ["admin-comm-messages", openThread?.id],
     enabled: !!openThread,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("communication_messages")
         .select("id, direction, channel, sender_type, subject, body, created_at")
         .eq("thread_id", openThread!.id)
         .order("created_at", { ascending: true });
+      if (error) throw error;
       return (data ?? []) as Message[];
     },
   });
 
+  useEffect(() => {
+    const channel = supabase
+      .channel(`admin-communications-inbox-${openThread?.id ?? "all"}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "communication_threads" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["admin-comm-threads"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "communication_messages" },
+        (payload: any) => {
+          void queryClient.invalidateQueries({ queryKey: ["admin-comm-threads"] });
+          const threadId = payload?.new?.thread_id ?? payload?.old?.thread_id;
+          if (openThread?.id && threadId === openThread.id) {
+            void queryClient.invalidateQueries({ queryKey: ["admin-comm-messages", openThread.id] });
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [openThread?.id, queryClient]);
+
   const channels = useMemo(() => {
     const s = new Set<string>();
-    threads?.forEach(t => s.add(t.channel));
+    threads?.forEach((t) => s.add(t.channel));
     return Array.from(s);
   }, [threads]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (threads ?? []).filter(t => {
+    return (threads ?? []).filter((t) => {
       if (filterChannel !== "all" && t.channel !== filterChannel) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterLink === "ticket" && !t.related_ticket_id) return false;
       if (filterLink === "complaint" && !t.related_complaint_id) return false;
       if (filterLink === "order" && !t.related_order_id) return false;
       if (filterLink === "invoice" && !t.related_invoice_id) return false;
-      if (q && !t.subject.toLowerCase().includes(q)) return false;
+      if (q && ![t.subject, t.customer_name, t.customer_email, t.channel, t.status]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(q))) return false;
       return true;
     });
   }, [threads, filterChannel, filterStatus, filterLink, search]);
@@ -98,12 +154,17 @@ export function InboxTab() {
   return (
     <div className="space-y-4">
       <Card className="border-2 border-foreground p-3 flex flex-wrap items-center gap-2">
-        <Input placeholder="Search subject…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-56 border-2 border-foreground" />
+        <Input
+          placeholder="Search subject, name or email…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-72 border-2 border-foreground"
+        />
         <Select value={filterChannel} onValueChange={setFilterChannel}>
           <SelectTrigger className="w-36 border-2 border-foreground"><SelectValue placeholder="Channel" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All channels</SelectItem>
-            {channels.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            {channels.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -124,73 +185,91 @@ export function InboxTab() {
             <SelectItem value="invoice">Linked to invoice</SelectItem>
           </SelectContent>
         </Select>
+        <Badge variant="outline" className="ml-auto border-green-600 text-green-700">
+          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-600" /> Live
+        </Badge>
       </Card>
+
+      {threadsError && (
+        <Card className="border-2 border-destructive p-3 text-sm text-destructive">
+          Inbox could not be loaded: {threadsError instanceof Error ? threadsError.message : "Unknown error"}
+        </Card>
+      )}
 
       <div className="space-y-2">
         {filtered.length === 0 ? (
           <AdminEmptyState
             icon={<InboxIcon className="h-8 w-8" />}
             title="No threads match"
-            message="Try clearing filters or searching a different subject. Threads appear here when customers reply to tickets, complaints, or invoices."
+            message="Try clearing filters or searching a different subject, customer name or email address."
           />
         ) : (
           <Card className="border-2 border-foreground overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b-2 border-foreground bg-muted/40">
-                  <TableHead className="w-[45%]">Subject</TableHead>
-                  <TableHead>Channel</TableHead>
-                  <TableHead>Linked to</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((t) => {
-                  const links: string[] = [];
-                  if (t.related_ticket_id) links.push("ticket");
-                  if (t.related_complaint_id) links.push("complaint");
-                  if (t.related_order_id) links.push("order");
-                  if (t.related_invoice_id) links.push("invoice");
-                  if (t.related_quote_id) links.push("quote");
-                  return (
-                    <TableRow
-                      key={t.id}
-                      onClick={() => setOpenThread(t)}
-                      className="cursor-pointer hover:bg-muted/30 border-b border-foreground/10"
-                    >
-                      <TableCell className="font-medium truncate max-w-[420px]">
-                        {t.subject || <span className="text-muted-foreground italic">(no subject)</span>}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="border-2 border-foreground capitalize">
-                          {t.channel}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {links.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {links.map((l) => (
-                              <Badge key={l} variant="outline" className="text-[10px] capitalize">
-                                {l}
-                              </Badge>
-                            ))}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b-2 border-foreground bg-muted/40">
+                    <TableHead className="min-w-[260px]">Subject</TableHead>
+                    <TableHead className="min-w-[230px]">Customer / email</TableHead>
+                    <TableHead>Channel</TableHead>
+                    <TableHead>Linked to</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Updated</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((t) => {
+                    const links: string[] = [];
+                    if (t.related_ticket_id) links.push("ticket");
+                    if (t.related_complaint_id) links.push("complaint");
+                    if (t.related_order_id) links.push("order");
+                    if (t.related_invoice_id) links.push("invoice");
+                    if (t.related_quote_id) links.push("quote");
+                    return (
+                      <TableRow
+                        key={t.id}
+                        onClick={() => setOpenThread(t)}
+                        className="cursor-pointer hover:bg-muted/30 border-b border-foreground/10"
+                      >
+                        <TableCell className="font-medium truncate max-w-[420px]">
+                          {t.subject || <span className="text-muted-foreground italic">(no subject)</span>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm font-medium">{t.customer_name || "Customer"}</div>
+                          <div className="text-xs font-mono text-muted-foreground flex items-center gap-1">
+                            <Mail className="h-3 w-3" /> {t.customer_email || "Email unavailable"}
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <AdminStatusBadge status={t.status} />
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDistanceToNow(new Date(t.updated_at), { addSuffix: true })}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="border-2 border-foreground capitalize">
+                            {t.channel}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {links.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {links.map((l) => (
+                                <Badge key={l} variant="outline" className="text-[10px] capitalize">
+                                  {l}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <AdminStatusBadge status={t.status} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDistanceToNow(new Date(t.updated_at), { addSuffix: true })}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
         )}
       </div>
@@ -199,13 +278,27 @@ export function InboxTab() {
         <DialogContent className="border-4 border-foreground max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{openThread?.subject}</DialogTitle>
+            {openThread && (
+              <div className="text-xs text-muted-foreground">
+                {openThread.customer_name || "Customer"} · <span className="font-mono text-foreground">{openThread.customer_email || "Email unavailable"}</span>
+              </div>
+            )}
           </DialogHeader>
+          {messagesError && (
+            <div className="border-2 border-destructive p-2 text-xs text-destructive">
+              Messages could not be loaded: {messagesError instanceof Error ? messagesError.message : "Unknown error"}
+            </div>
+          )}
           <div className="overflow-y-auto space-y-3 pr-2">
-            {messages?.map(m => (
+            {messages?.map((m) => (
               <div key={m.id} className={`p-3 border-2 ${m.direction === "internal" ? "border-warning bg-warning/10" : "border-foreground bg-background"}`}>
                 <div className="flex items-center gap-2 flex-wrap mb-1 text-xs">
                   <Badge variant="outline" className="border-2 border-foreground">{m.direction}</Badge>
-                  <span className="text-muted-foreground">{m.sender_type} · {m.channel}</span>
+                  <span className="text-muted-foreground">
+                    {m.sender_type === "customer" && openThread?.customer_email
+                      ? `${m.sender_type} · ${openThread.customer_email} · ${m.channel}`
+                      : `${m.sender_type} · ${m.channel}`}
+                  </span>
                   {m.direction === "internal" && (
                     <span className="flex items-center gap-1 text-warning"><Lock className="w-3 h-3" /> Internal — not visible to customer</span>
                   )}

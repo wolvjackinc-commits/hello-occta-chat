@@ -9,12 +9,15 @@
 import { sha256Hex } from "./quoteHelpers.ts";
 import {
   resolveBuildPlanPrice, loadGiacomCandidates, RESOLVER_VERSION,
-  speedBucketLabel, planTermLabel,
+  speedBucketLabel, planTermLabel, PUBLIC_SPEED_BUCKETS,
   type SpeedBucket, type PlanTerm, type RouterChoice, type RouterPayType,
   type SetupChoice, type AddonId, type ResolvedPriced,
 } from "./buildPlanResolver.ts";
 
-export const SPEED_BUCKETS: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
+// Journey 2 follows the same public-band governance as the rest of the site:
+// exactly Essential, Superfast and Ultrafast. `gigabit` remains an internal
+// supplier bucket and must never render as a fourth public card.
+export const SPEED_BUCKETS: SpeedBucket[] = [...PUBLIC_SPEED_BUCKETS];
 export const PLAN_TERMS: PlanTerm[] = ["price_lock_24", "flex_30"];
 export const ROUTER_CHOICES: { option: RouterChoice; payment_type: RouterPayType }[] = [
   { option: "own", payment_type: "none" },
@@ -229,7 +232,9 @@ export async function resolveJourney2Price(
 /**
  * Builds the Journey 2 catalogue from the authoritative resolver. Anything
  * that cannot be priced exactly is omitted, so Journey 2 never shows a
- * "from" price or an unconfirmed charge.
+ * "from" price or an unconfirmed charge. A resolver auto-bump is still an
+ * exact customer price, so it must be published instead of hiding a whole
+ * public speed band.
  */
 export async function buildCatalogue(
   supabase: any,
@@ -258,7 +263,6 @@ export async function buildCatalogue(
       );
       if (r.quote_only) continue;
       if (r.internal.setup_unknown) continue;
-      if (r.bumped) continue; // only publish the exact selected bucket
       terms[term] = {
         monthly_incl_vat: r.monthly_total_incl_vat,
         monthly_ex_vat: r.monthly_total_ex_vat,

@@ -68,12 +68,15 @@ export default function AgreementStep({
   quote,
   onAccepted,
   onEditStep,
+  dateOfBirth,
 }: {
   token: string;
   quote: any;
   onAccepted: () => void;
   /** Journey 2 only — lets the customer go back and change details before signing. */
   onEditStep?: (step: "address" | "plan" | "router" | "extras" | "details" | "start_date" | "billing") => void;
+  /** Journey 2 already captured and age-validated this at Your details. */
+  dateOfBirth?: string | null;
 }) {
   const { toast } = useToast();
   const [generating, setGenerating] = useState(true);
@@ -81,6 +84,9 @@ export default function AgreementStep({
   const [cs, setCs] = useState<any>(null);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [pdfReady, setPdfReady] = useState(false);
+  const [contractInformationRequired, setContractInformationRequired] = useState(false);
+  const [contractInformationReady, setContractInformationReady] = useState(true);
+  const [contractInformation, setContractInformation] = useState<{ number: string; signed_url: string; version: number } | null>(null);
   const [acceptedAt, setAcceptedAt] = useState<string | null>(null);
   const [certificate, setCertificate] = useState<{ number: string; signed_url: string } | null>(null);
 
@@ -88,11 +94,15 @@ export default function AgreementStep({
   const [emailConfirm, setEmailConfirm] = useState("");
   const [phoneMasked, setPhoneMasked] = useState<string | null>(null);
   const [mobileVerified, setMobileVerified] = useState(false);
-  const [dob, setDob] = useState("");
+  const [dob, setDob] = useState(dateOfBirth ?? "");
   const [addressConfirmed, setAddressConfirmed] = useState(false);
   const [checks, setChecks] = useState<Record<CbKey, boolean>>({ received_read: false, details_correct: false, understand_charges: false, consent: false });
   const [submitting, setSubmitting] = useState(false);
   const [startedAt] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (dateOfBirth) setDob(dateOfBirth);
+  }, [dateOfBirth]);
 
   const loadDetail = useCallback(async () => {
     const { data, error } = await supabase.functions.invoke("journey-cs-detail", { body: { token } });
@@ -103,30 +113,40 @@ export default function AgreementStep({
   const ensureCs = useCallback(async () => {
     setGenerating(true); setGenError(null);
     try {
-      // Trigger (or reuse) CS generation
+      // This now guarantees both the Contract Summary and the paired Contract
+      // Information pack before allowing the signing screen to proceed.
       const { data: gen, error: genErr } = await supabase.functions.invoke("journey-generate-cs", { body: { token } });
       if (genErr || (gen as any)?.error) {
-        setGenError((gen as any)?.error || genErr?.message || "We couldn't prepare your Contract Summary.");
+        setGenError((gen as any)?.error || genErr?.message || "We couldn't prepare your contract documents.");
         return;
       }
-      // Poll once more for the signed detail (waits for PDF)
       let detail = await loadDetail();
       let waited = 0;
-      while (detail && !detail.pdf_ready && waited < 8) {
+      while (
+        detail &&
+        (!detail.pdf_ready || (detail.contract_information_required && !detail.contract_information_ready)) &&
+        waited < 10
+      ) {
         await new Promise((r) => setTimeout(r, 800));
         detail = await loadDetail();
         waited += 1;
       }
       if (!detail) {
-        setGenError("Couldn't load your Contract Summary.");
+        setGenError("Couldn't load your contract documents.");
+        return;
+      }
+      if (!detail.pdf_ready || (detail.contract_information_required && !detail.contract_information_ready)) {
+        setGenError("Your complete contract document pack could not be prepared. Please retry before signing.");
         return;
       }
       setCs(detail.contract_summary);
       setSignedPdfUrl(detail.signed_pdf_url ?? null);
       setPdfReady(!!detail.pdf_ready);
+      setContractInformationRequired(!!detail.contract_information_required);
+      setContractInformationReady(!!detail.contract_information_ready);
+      setContractInformation(detail.contract_information ?? null);
       setAcceptedAt(detail.accepted_at ?? null);
       setCertificate(detail.certificate ? { number: detail.certificate.number, signed_url: detail.certificate.signed_url } : null);
-      // Prefill the form snapshots
       if (detail.contract_summary) {
         setFullName((prev) => prev || detail.contract_summary.customer_name_snapshot || "");
         setEmailConfirm((prev) => prev || detail.contract_summary.customer_email_snapshot || "");
@@ -137,7 +157,6 @@ export default function AgreementStep({
   useEffect(() => { ensureCs(); }, [ensureCs]);
 
   const allChecksTicked = CHECKBOXES.every((c) => checks[c.key]);
-  // Compute age from DOB (YYYY-MM-DD)
   const dobAge = (() => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return -1;
     const d = new Date(dob + "T00:00:00Z");
@@ -149,6 +168,7 @@ export default function AgreementStep({
     return a;
   })();
   const dobValid = dobAge >= 18 && dobAge <= 120;
+  const documentsReady = pdfReady && (!contractInformationRequired || contractInformationReady);
   const formValid =
     fullName.trim().length >= 2 &&
     emailConfirm.trim().length > 4 &&
@@ -156,7 +176,7 @@ export default function AgreementStep({
     dobValid &&
     addressConfirmed &&
     allChecksTicked &&
-    pdfReady;
+    documentsReady;
 
   const submit = async () => {
     if (!formValid || submitting || acceptedAt) return;
@@ -185,13 +205,18 @@ export default function AgreementStep({
       if (error || (data as any)?.error) {
         toast({
           title: "We couldn't record your acceptance",
-          description: (data as any)?.error || error?.message || "Please try again.",
+          description: (data as any)?.message || (data as any)?.error || error?.message || "Please try again.",
           variant: "destructive",
         });
       } else {
-        toast({ title: "Agreement accepted", description: "Your signed certificate is being prepared." });
-        // Refresh detail to pull certificate
-        const detail = await loadDetail();
+        toast({ title: "Agreement accepted", description: "Your signed contract documents are being finalised." });
+        let detail = await loadDetail();
+        let waited = 0;
+        while (detail && !detail.certificate && waited < 10) {
+          await new Promise((r) => setTimeout(r, 800));
+          detail = await loadDetail();
+          waited += 1;
+        }
         if (detail) {
           setAcceptedAt(detail.accepted_at ?? new Date().toISOString());
           setCertificate(detail.certificate ? { number: detail.certificate.number, signed_url: detail.certificate.signed_url } : null);
@@ -207,8 +232,8 @@ export default function AgreementStep({
     return (
       <div className="border-4 border-foreground p-10 text-center">
         <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3" />
-        <p className="font-display uppercase text-sm">Preparing your Contract Summary…</p>
-        <p className="text-xs text-muted-foreground mt-2">No charges are taken. You can review and download before deciding.</p>
+        <p className="font-display uppercase text-sm">Preparing your contract documents…</p>
+        <p className="text-xs text-muted-foreground mt-2">No charges are taken. Both documents will be ready to download before you sign.</p>
       </div>
     );
   }
@@ -219,7 +244,7 @@ export default function AgreementStep({
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-display uppercase text-sm mb-1">We couldn't prepare your Contract Summary</p>
+            <p className="font-display uppercase text-sm mb-1">We couldn't prepare your complete contract document pack</p>
             <p className="text-xs text-muted-foreground mb-3">{genError ?? "Please try again or contact OCCTA support."}</p>
             <Button variant="outline" size="sm" onClick={ensureCs}><RefreshCw className="w-3 h-3 mr-1" /> Retry</Button>
           </div>
@@ -233,7 +258,6 @@ export default function AgreementStep({
 
   return (
     <div className="space-y-5">
-      {/* Branded CS card */}
       <div className="border-4 border-foreground">
         <div className="bg-foreground text-background px-5 py-3 flex items-center justify-between">
           <div>
@@ -244,7 +268,7 @@ export default function AgreementStep({
             {signedPdfUrl ? (
               <a href={signedPdfUrl} target="_blank" rel="noreferrer"><Download className="w-4 h-4 mr-1" /> Download</a>
             ) : (
-              <span><Download className="w-4 h-4 mr-1" /> Preparing…</span>
+              <span><Download className="w-4 h-4 mr-1" /> Unavailable</span>
             )}
           </Button>
         </div>
@@ -297,7 +321,24 @@ export default function AgreementStep({
         </div>
       </div>
 
-      {/* Full multi-page terms — mirrors the downloadable PDF */}
+      {contractInformationRequired && (
+        <div className="border-2 border-foreground p-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-display uppercase text-sm">Contract Information & Customer Agreement Pack</p>
+            <p className="text-xs text-muted-foreground">
+              {contractInformation?.number ? `${contractInformation.number} · v${contractInformation.version}` : "Paired with the Contract Summary above."}
+            </p>
+          </div>
+          <Button asChild={!!contractInformation?.signed_url} variant="outline" size="sm" disabled={!contractInformation?.signed_url}>
+            {contractInformation?.signed_url ? (
+              <a href={contractInformation.signed_url} target="_blank" rel="noreferrer"><Download className="w-4 h-4 mr-1" /> Download Contract Information</a>
+            ) : (
+              <span><Download className="w-4 h-4 mr-1" /> Unavailable</span>
+            )}
+          </Button>
+        </div>
+      )}
+
       <FullContractTermsBlock />
 
       {acceptedAt ? (
@@ -315,7 +356,7 @@ export default function AgreementStep({
                   )}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground mt-2">Next: pick your preferred start date — we'll email you a secure link when that step is ready.</p>
+              <p className="text-xs text-muted-foreground mt-2">Your acceptance is recorded. Continue to finish your order.</p>
             </div>
           </div>
         </div>
@@ -378,21 +419,32 @@ export default function AgreementStep({
               )}
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="ag-dob">Date of birth (you must be 18 or older)</Label>
-              <Input
-                id="ag-dob"
-                type="date"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
-                max={new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
-                autoComplete="bday"
-              />
-              {dob && !dobValid && (
-                <p className="text-xs text-destructive mt-1">
-                  {dobAge >= 0 && dobAge < 18
-                    ? "You must be at least 18 years old to enter into this agreement."
-                    : "Please enter a valid date of birth."}
-                </p>
+              {dateOfBirth ? (
+                <div className="border border-dashed border-foreground/40 p-3 text-xs">
+                  <strong>Age eligibility confirmed from Your details.</strong> Your date of birth was already provided and validated earlier in this order, so we do not ask for it again here.
+                  {onEditStep && (
+                    <> <button type="button" className="underline font-medium" onClick={() => onEditStep("details")}>Edit your details</button>.</>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Label htmlFor="ag-dob">Date of birth (you must be 18 or older)</Label>
+                  <Input
+                    id="ag-dob"
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    max={new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                    autoComplete="bday"
+                  />
+                  {dob && !dobValid && (
+                    <p className="text-xs text-destructive mt-1">
+                      {dobAge >= 0 && dobAge < 18
+                        ? "You must be at least 18 years old to enter into this agreement."
+                        : "Please enter a valid date of birth."}
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -414,9 +466,9 @@ export default function AgreementStep({
             ))}
           </div>
 
-          {!pdfReady && (
-            <p className="text-xs text-muted-foreground flex items-center gap-2">
-              <Loader2 className="w-3 h-3 animate-spin" /> Preparing the downloadable PDF before you can sign…
+          {!documentsReady && (
+            <p className="text-xs text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-3 h-3" /> The complete contract document pack is not ready. Please retry before signing.
             </p>
           )}
 

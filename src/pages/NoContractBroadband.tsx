@@ -127,8 +127,8 @@ const NoContractBroadband = () => {
               variants={itemVariants}
               className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight mb-6"
             >
-              No-Contract UK Broadband.{" "}
-              <span className="text-accent">Finally.</span>
+              No-Contract Broadband UK.{" "}
+              <span className="text-accent">No Credit Check. Rolling Monthly.</span>
             </motion.h1>
 
             <motion.p
@@ -137,17 +137,18 @@ const NoContractBroadband = () => {
             >
               Broadband from{" "}
               <span className="text-foreground">£{prices.broadband}/month</span>. No
-              contracts, no hidden fees, rolling monthly where eligible.
+              credit check, no lock-ins, no exit fees.
             </motion.p>
 
             <motion.p
               variants={itemVariants}
               className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto"
             >
-              OCCTA offers straightforward UK broadband without the long
-              contracts, confusing bundles, or surprise price rises used by big
-              providers. If you want broadband that just works — and lets you
-              leave whenever you want — you're in the right place.
+              Get fast, reliable UK broadband on rolling monthly terms with no
+              credit check and no long-term commitment. Whether you are renting,
+              switching, or just tired of lock-ins, OCCTA gives you the
+              flexibility to leave whenever you want — with clear pricing and no
+              surprise rises.
             </motion.p>
 
             <motion.div

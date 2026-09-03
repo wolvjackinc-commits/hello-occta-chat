@@ -1510,6 +1510,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
             variant="hero"
             disabled={(!inputValue.trim() && pendingAttachments.length === 0) || isLoading}
             className="shrink-0"
+            aria-label="Send message"
           >
             <Send className="w-4 h-4" />
           </Button>

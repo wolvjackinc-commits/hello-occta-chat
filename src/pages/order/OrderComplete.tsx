@@ -10,7 +10,7 @@ import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import {
   Loader2, FileText, CheckCircle2, Check, Copy, Download, Gauge, MapPin, CalendarDays,
-  Landmark, Mail, Phone, ShieldCheck, Sparkles, ArrowRight, Printer,
+  Landmark, Mail, Phone, ShieldCheck, Sparkles, ArrowRight, Printer, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { journey2, money, type Journey2Completion } from "@/lib/journey2/client";
@@ -118,6 +118,8 @@ export default function OrderComplete() {
       : null;
   const addons = state.addons ?? [];
   const readyDocs = state.documents.filter((d) => !!d.url);
+  const missingDocs = state.documents.filter((d) => !d.url);
+  const allDocsReady = state.documents.length > 0 && missingDocs.length === 0;
 
   return (
     <Layout>
@@ -272,9 +274,24 @@ export default function OrderComplete() {
           <div className="lg:col-span-2 space-y-6">
             <div className="border-4 border-foreground p-6">
               <h2 className="font-display uppercase text-xl mb-1">Your documents</h2>
-              <p className="text-xs text-muted-foreground mb-4">
-                {readyDocs.length} of {state.documents.length} ready — the rest arrive by email shortly.
-              </p>
+              {allDocsReady ? (
+                <p className="text-xs text-muted-foreground mb-4">
+                  All {readyDocs.length} documents are ready to view or download now. Your order confirmation email also carries your contractual document pack.
+                </p>
+              ) : (
+                <div className="border-2 border-destructive p-3 mb-4 text-xs" role="alert">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" aria-hidden="true" />
+                    <div>
+                      <p className="font-semibold">One or more documents could not be loaded.</p>
+                      <p className="text-muted-foreground mt-1">Your order remains recorded. Refresh this page to obtain a fresh secure download link; if it still fails, contact OCCTA and quote your order number.</p>
+                    </div>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => window.location.reload()}>
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" aria-hidden="true" /> Refresh document links
+                  </Button>
+                </div>
+              )}
               <ul className="space-y-2.5">
                 {state.documents.map((d) => (
                   <li key={d.label} className="flex items-start gap-2 text-sm">
@@ -293,7 +310,7 @@ export default function OrderComplete() {
                             <Download className="w-3.5 h-3.5" aria-hidden="true" />
                           </a>
                         )
-                      : <span className="text-muted-foreground">{d.label} — being prepared</span>}
+                      : <span className="text-destructive">{d.label} — download unavailable</span>}
                   </li>
                 ))}
               </ul>
@@ -310,7 +327,7 @@ export default function OrderComplete() {
                 {[
                   { t: "Line confirmed", d: "We confirm your line and book activation for your preferred date." },
                   { t: "Direct Debit set up", d: "Your mandate goes to your bank — we confirm when it's active." },
-                  { t: "Welcome pack", d: "Every document lands in your inbox, ready to keep." },
+                  { t: "Document pack", d: "Your contractual documents are available here and are sent with your order confirmation." },
                   { t: "Service live", d: "Billing starts when you go live, on your chosen billing day." },
                 ].map((s, i) => (
                   <li key={s.t} className="flex gap-3">

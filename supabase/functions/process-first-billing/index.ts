@@ -90,14 +90,16 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       // HARD GUARD (Priority 1): never bill an order whose Contract Summary
       // is not accepted. Server-side, no exceptions.
       if (!ord.contract_summary_id) throw new Error("contract_summary_missing");
+      let acceptedCs: { selected_addons?: unknown } | null = null;
       {
         const { data: cs } = await supabase
           .from("contract_summaries")
-          .select("status, accepted_at")
+          .select("status, accepted_at, selected_addons")
           .eq("id", ord.contract_summary_id).maybeSingle();
         if (!cs || cs.status !== "accepted" || !cs.accepted_at) {
           throw new Error("contract_summary_not_accepted");
         }
+        acceptedCs = cs;
       }
 
       const { data: svc } = await supabase.from("services")
@@ -142,15 +144,49 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       );
 
       const rawLines: RawLine[] = [];
+      const billingPeriodLabel = job.is_pro_rata
+        ? `${fmtInclusivePeriod(job.period_start, job.period_end)} · ${job.billable_days} of ${job.full_cycle_days} days`
+        : `${fmtInclusivePeriod(job.period_start, job.period_end)}`;
+
       if (proRataMinor > 0) {
         rawLines.push({
           description: `${svc.plan_name ?? svc.service_type} — ${job.is_pro_rata ? "pro-rata service" : "monthly service"}`,
           amount_minor: proRataMinor,
-          period_label: job.is_pro_rata
-            ? `${fmtInclusivePeriod(job.period_start, job.period_end)} · ${job.billable_days} of ${job.full_cycle_days} days`
-            : `${fmtInclusivePeriod(job.period_start, job.period_end)}`,
+          period_label: billingPeriodLabel,
         });
       }
+
+      // Contract-selected monthly add-ons must follow the same first-period
+      // pro-rata rule as the base service. The accepted CS is authoritative.
+      const contractAddons = Array.isArray(acceptedCs?.selected_addons)
+        ? acceptedCs!.selected_addons as Array<{ id?: string; label?: string; monthly?: number }>
+        : [];
+      const contractAddonSnapshot: Array<{ id: string | null; label: string; monthly_minor: number; amount_minor: number }> = [];
+      for (const addon of contractAddons) {
+        const monthly = Number(addon?.monthly ?? 0);
+        if (!Number.isFinite(monthly) || monthly <= 0) continue;
+        const monthlyMinor = Math.round(monthly * 100);
+        const amountMinor = computeProRataMinor(
+          monthlyMinor,
+          Number(job.billable_days),
+          Number(job.full_cycle_days),
+          !!job.is_pro_rata,
+        );
+        if (amountMinor <= 0) continue;
+        const label = String(addon?.label ?? addon?.id ?? "Monthly add-on");
+        rawLines.push({
+          description: label,
+          amount_minor: amountMinor,
+          period_label: billingPeriodLabel,
+        });
+        contractAddonSnapshot.push({
+          id: addon?.id ? String(addon.id) : null,
+          label,
+          monthly_minor: monthlyMinor,
+          amount_minor: amountMinor,
+        });
+      }
+
       // One-off charges: prefer the itemised `one_off_lines` snapshot when
       // present, otherwise fall back to a single `activation_fee_minor` line.
       // Historically both were populated with the same setup amount, causing
@@ -223,6 +259,8 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           pro_rata: {
             amount_minor: proRataMinor,
             monthly_minor: job.amount_minor,
+            contract_addons: contractAddonSnapshot,
+            contract_addons_minor: contractAddonSnapshot.reduce((sum, a) => sum + a.amount_minor, 0),
             billable_days: job.billable_days,
             full_cycle_days: job.full_cycle_days,
             is_pro_rata: job.is_pro_rata,

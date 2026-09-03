@@ -44,13 +44,13 @@ export interface Guide {
 export const guides: Guide[] = [
   {
     slug: 'no-contract-broadband-uk',
-    title: 'No Contract Broadband UK: The Complete Guide',
-    metaTitle: 'No Contract Broadband UK — Flexible Internet',
-    description: 'Looking for no contract broadband in the UK? Learn how rolling monthly broadband works, who it suits, and how to get connected without lock-ins or exit fees.',
-    keywords: 'no contract broadband UK, flexible broadband, flexible broadband, rolling monthly broadband, no lock-in broadband, no exit fee broadband',
+    title: 'No Contract Broadband UK: No Credit Check, Rolling Monthly',
+    metaTitle: 'No Contract Broadband UK: No Credit Check, Rolling Monthly',
+    description: 'Get no-contract broadband in the UK with no credit check and rolling monthly terms. Learn how flexible broadband works, who it suits, and how to get connected without lock-ins or exit fees.',
+    keywords: 'no contract broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, no lock-in broadband, no exit fee broadband',
     category: 'broadband',
     categoryLabel: 'Broadband',
-    intro: 'Fed up with 18 or 24-month broadband contracts? You are not alone. More UK households are switching to no-contract broadband — rolling monthly plans that let you 30-day rolling options available where eligible without exit fees. Here is everything you need to know.',
+    intro: 'Fed up with 18 or 24-month broadband contracts and credit checks? You are not alone. More UK households are switching to no-contract broadband — rolling monthly plans with no credit check, no lock-ins, and no exit fees. Here is everything you need to know.',
     sections: [
       {
         heading: 'What Is No Contract Broadband?',

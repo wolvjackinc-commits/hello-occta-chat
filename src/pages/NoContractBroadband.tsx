@@ -22,6 +22,7 @@ import {
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, JsonLd, createFAQSchema, createOfferSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 import { getFromPrices } from "@/lib/pricing/engine";
 
 const containerVariants = {
@@ -95,23 +96,24 @@ const NoContractBroadband = () => {
   const faqSchema = createFAQSchema(faqs.slice(0, 6));
   const offerSchema = createOfferSchema({
     name: "No Contract Broadband",
-    description: "Flexible UK broadband with no contracts, no hidden fees, and no price rises.",
+    description: "Flexible UK broadband with no credit check, rolling monthly terms, no hidden fees, and no price rises.",
     price: prices.broadband,
     url: "/no-contract-broadband-uk",
     category: "Broadband",
   });
 
   return (
-    <LayoutComponent>
-      <SEO
-        title="No-Contract Broadband UK | Cheap & Flexible Fibre"
-        description={`Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband from £${prices.broadband}/mo with no lock-ins, no mid-contract price hikes, and 30-day rolling options where eligible.`}
-        canonical="/no-contract-broadband-uk"
-        keywords="no contract broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
-        price={prices.broadband}
-      />
-      <JsonLd data={offerSchema} />
-      <JsonLd data={faqSchema} />
+    <AvailabilityProvider>
+      <LayoutComponent>
+        <SEO
+          title="No-Contract Broadband UK: No Credit Check, Rolling Monthly"
+          description={`Get no-contract broadband in the UK with no credit check and rolling monthly terms. OCCTA fibre from £${prices.broadband}/mo with no lock-ins, no exit fees, and no mid-contract price rises.`}
+          canonical="/no-contract-broadband-uk"
+          keywords="no contract broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, no exit fee broadband"
+          price={prices.broadband}
+        />
+        <JsonLd data={offerSchema} />
+        <JsonLd data={faqSchema} />
 
       {/* Hero Section */}
       <section className="relative bg-background py-16 md:py-24 overflow-hidden">
@@ -127,8 +129,8 @@ const NoContractBroadband = () => {
               variants={itemVariants}
               className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight mb-6"
             >
-              No-Contract UK Broadband.{" "}
-              <span className="text-accent">Finally.</span>
+              No-Contract Broadband UK.{" "}
+              <span className="text-accent">No Credit Check. Rolling Monthly.</span>
             </motion.h1>
 
             <motion.p
@@ -137,17 +139,18 @@ const NoContractBroadband = () => {
             >
               Broadband from{" "}
               <span className="text-foreground">£{prices.broadband}/month</span>. No
-              contracts, no hidden fees, rolling monthly where eligible.
+              credit check, no lock-ins, no exit fees.
             </motion.p>
 
             <motion.p
               variants={itemVariants}
               className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto"
             >
-              OCCTA offers straightforward UK broadband without the long
-              contracts, confusing bundles, or surprise price rises used by big
-              providers. If you want broadband that just works — and lets you
-              leave whenever you want — you're in the right place.
+              Get fast, reliable UK broadband on rolling monthly terms with no
+              credit check and no long-term commitment. Whether you are renting,
+              switching, or just tired of lock-ins, OCCTA gives you the
+              flexibility to leave whenever you want — with clear pricing and no
+              surprise rises.
             </motion.p>
 
             <motion.div
@@ -444,6 +447,7 @@ const NoContractBroadband = () => {
         </motion.div>
       </section>
     </LayoutComponent>
+    </AvailabilityProvider>
   );
 };
 

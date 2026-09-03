@@ -103,16 +103,17 @@ const NoContractBroadband = () => {
   });
 
   return (
-    <LayoutComponent>
-      <SEO
-        title="No-Contract Broadband UK: No Credit Check, Rolling Monthly"
-        description={`Get no-contract broadband in the UK with no credit check and rolling monthly terms. OCCTA fibre from £${prices.broadband}/mo with no lock-ins, no exit fees, and no mid-contract price rises.`}
-        canonical="/no-contract-broadband-uk"
-        keywords="no contract broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, no exit fee broadband"
-        price={prices.broadband}
-      />
-      <JsonLd data={offerSchema} />
-      <JsonLd data={faqSchema} />
+    <AvailabilityProvider>
+      <LayoutComponent>
+        <SEO
+          title="No-Contract Broadband UK: No Credit Check, Rolling Monthly"
+          description={`Get no-contract broadband in the UK with no credit check and rolling monthly terms. OCCTA fibre from £${prices.broadband}/mo with no lock-ins, no exit fees, and no mid-contract price rises.`}
+          canonical="/no-contract-broadband-uk"
+          keywords="no contract broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, no exit fee broadband"
+          price={prices.broadband}
+        />
+        <JsonLd data={offerSchema} />
+        <JsonLd data={faqSchema} />
 
       {/* Hero Section */}
       <section className="relative bg-background py-16 md:py-24 overflow-hidden">

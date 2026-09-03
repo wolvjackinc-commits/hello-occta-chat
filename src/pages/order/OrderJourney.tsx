@@ -332,6 +332,7 @@ export default function OrderJourney() {
                     quote={journeyState.quote}
                     onAccepted={onContractAccepted}
                     onEditStep={journeyState.journey?.contract_accepted_at ? undefined : startEdit}
+                    dateOfBirth={session.customer_details?.date_of_birth ?? null}
                   />
                 )}
                 {(contractStep === "start_date" || contractStep === "payment") && (

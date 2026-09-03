@@ -62,6 +62,7 @@ const RollingVsFixedBroadbandComparison = () => {
         description="No contract broadband uk vs fixed-term contracts, compared honestly. Exit fees, mid-contract price rises, and when Flex 30 or Price Lock 24 wins."
         canonical="/rolling-vs-fixed-broadband-comparison"
         keywords="no contract broadband uk, rolling vs fixed broadband, 30 day broadband uk, flexible broadband, price lock broadband uk, occta flex 30, occta price lock 24"
+        type="article"
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 

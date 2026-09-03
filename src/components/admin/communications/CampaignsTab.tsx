@@ -175,6 +175,7 @@ export const CampaignsTab = () => {
                       size="icon"
                       onClick={() => setSelectedCampaign(campaign)}
                       title="View Details"
+                      aria-label="View campaign details"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>

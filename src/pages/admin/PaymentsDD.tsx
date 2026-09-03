@@ -480,6 +480,7 @@ export const AdminPaymentsDD = () => {
                               size="icon"
                               onClick={() => setViewMandate(mandate)}
                               title="View details"
+                              aria-label="View mandate details"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -489,6 +490,7 @@ export const AdminPaymentsDD = () => {
                                 size="icon"
                                 onClick={() => handleActivateMandate(mandate)}
                                 title="Activate mandate"
+                                aria-label="Activate mandate"
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
@@ -499,6 +501,7 @@ export const AdminPaymentsDD = () => {
                                 size="icon"
                                 onClick={() => setCancelConfirmMandate(mandate)}
                                 title="Cancel mandate"
+                                aria-label="Cancel mandate"
                               >
                                 <Ban className="h-4 w-4" />
                               </Button>

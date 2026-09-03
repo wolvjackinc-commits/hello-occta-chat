@@ -96,6 +96,7 @@ export const RecipientPicker = ({ selectedIds, onChange }: RecipientPickerProps)
                 size="icon"
                 className="h-4 w-4 hover:bg-transparent"
                 onClick={() => handleRemove(customer.id)}
+                aria-label={`Remove ${customer.full_name || customer.email}`}
               >
                 <X className="h-3 w-3" />
               </Button>

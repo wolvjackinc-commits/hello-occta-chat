@@ -191,6 +191,7 @@ export const TemplatesTab = () => {
                         size="icon"
                         onClick={() => handleEdit(template)}
                         title="Edit"
+                        aria-label="Edit template"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -199,6 +200,7 @@ export const TemplatesTab = () => {
                         size="icon"
                         onClick={() => duplicateMutation.mutate(template)}
                         title="Duplicate"
+                        aria-label="Duplicate template"
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
@@ -208,6 +210,7 @@ export const TemplatesTab = () => {
                           size="icon"
                           onClick={() => deleteMutation.mutate(template.id)}
                           title="Deactivate"
+                          aria-label="Deactivate template"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

@@ -670,6 +670,7 @@ export const AdminBilling = () => {
                           size="icon"
                           onClick={() => handleViewInvoice(invoice)}
                           title="View invoice"
+                          aria-label="View invoice"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -680,6 +681,7 @@ export const AdminBilling = () => {
                             onClick={() => handleSendInvoice(invoice)}
                             disabled={isSending}
                             title="Send invoice"
+                            aria-label="Send invoice"
                           >
                             <Send className="h-4 w-4" />
                           </Button>
@@ -698,6 +700,7 @@ export const AdminBilling = () => {
                                 });
                               }}
                               title="Copy payment link"
+                              aria-label="Copy payment link"
                             >
                               <LinkIcon className="h-4 w-4" />
                             </Button>
@@ -706,6 +709,7 @@ export const AdminBilling = () => {
                               size="icon"
                               onClick={() => setReconcileInvoice(invoice)}
                               title="Mark as paid / reconcile"
+                              aria-label="Mark invoice as paid"
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -714,6 +718,7 @@ export const AdminBilling = () => {
                               size="icon"
                               onClick={() => setVoidConfirmInvoice(invoice)}
                               title="Void invoice"
+                              aria-label="Void invoice"
                             >
                               <Ban className="h-4 w-4" />
                             </Button>

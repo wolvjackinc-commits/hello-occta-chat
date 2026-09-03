@@ -63,26 +63,45 @@ Deno.serve(async (req) => {
   const documents: { label: string; url: string | null }[] = [];
   if (session.contract_summary_id) {
     const { data: cs } = await supabase
-      .from("contract_summaries").select("pdf_storage_key").eq("id", session.contract_summary_id).maybeSingle();
-    let url: string | null = null;
+      .from("contract_summaries")
+      .select("pdf_storage_key")
+      .eq("id", session.contract_summary_id)
+      .maybeSingle();
+    let csUrl: string | null = null;
     if (cs?.pdf_storage_key) {
       const signed = await supabase.storage.from("contract-pdfs").createSignedUrl(cs.pdf_storage_key, 3600);
-      url = signed.data?.signedUrl ?? null;
+      csUrl = signed.data?.signedUrl ?? null;
     }
-    documents.push({ label: "Signed Contract Summary", url });
+    documents.push({ label: "Signed Contract Summary", url: csUrl });
+
+    // Contract Information uses pdf_storage_path in the contract-documents
+    // bucket (not the Contract Summary's pdf_storage_key / contract-pdfs bucket).
     const { data: cip } = await supabase
-      .from("contract_information_packs").select("pdf_storage_key").eq("contract_summary_id", session.contract_summary_id).maybeSingle();
+      .from("contract_information_packs")
+      .select("pdf_storage_path")
+      .eq("contract_summary_id", session.contract_summary_id)
+      .neq("document_status", "superseded")
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
     let cipUrl: string | null = null;
-    if (cip?.pdf_storage_key) {
-      const signed = await supabase.storage.from("contract-pdfs").createSignedUrl(cip.pdf_storage_key, 3600);
+    if (cip?.pdf_storage_path) {
+      const signed = await supabase.storage.from("contract-documents").createSignedUrl(cip.pdf_storage_path, 3600);
       cipUrl = signed.data?.signedUrl ?? null;
     }
     documents.push({ label: "Contract Information", url: cipUrl });
+
+    // Acceptance certificates use storage_key in their own private bucket.
     const { data: cert } = await supabase
-      .from("acceptance_certificates").select("pdf_storage_key").eq("contract_summary_id", session.contract_summary_id).maybeSingle();
+      .from("acceptance_certificates")
+      .select("storage_key")
+      .eq("contract_summary_id", session.contract_summary_id)
+      .order("generated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
     let certUrl: string | null = null;
-    if (cert?.pdf_storage_key) {
-      const signed = await supabase.storage.from("contract-pdfs").createSignedUrl(cert.pdf_storage_key, 3600);
+    if (cert?.storage_key) {
+      const signed = await supabase.storage.from("acceptance-certificates").createSignedUrl(cert.storage_key, 3600);
       certUrl = signed.data?.signedUrl ?? null;
     }
     documents.push({ label: "Acceptance certificate", url: certUrl });

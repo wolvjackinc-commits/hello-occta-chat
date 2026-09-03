@@ -447,6 +447,7 @@ const NoContractBroadband = () => {
         </motion.div>
       </section>
     </LayoutComponent>
+    </AvailabilityProvider>
   );
 };
 

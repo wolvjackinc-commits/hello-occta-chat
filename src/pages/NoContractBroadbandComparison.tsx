@@ -43,6 +43,7 @@ const NoContractBroadbandComparison = () => {
         description="Compare no-contract broadband from OCCTA, Cuckoo, NOW, BT & Sky. Rolling plans, no exit fees, no credit check. Pick the best flexible UK broadband."
         canonical="/compare/no-contract-broadband"
         keywords="no contract broadband uk, rolling broadband, 30 day broadband, flexible broadband uk, broadband no exit fee, compare no contract broadband"
+        type="article"
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 

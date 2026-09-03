@@ -110,6 +110,7 @@ const NoContractBroadband = () => {
           description={`Get no-contract broadband in the UK with no credit check and rolling monthly terms. OCCTA fibre from £${prices.broadband}/mo with no lock-ins, no exit fees, and no mid-contract price rises.`}
           canonical="/no-contract-broadband-uk"
           keywords="no contract broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, no exit fee broadband"
+          type="article"
           price={prices.broadband}
         />
         <JsonLd data={offerSchema} />

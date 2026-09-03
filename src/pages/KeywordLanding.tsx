@@ -49,6 +49,7 @@ const KeywordLanding = () => {
         description={page.metaDescription}
         canonical={`/${page.slug}`}
         keywords={page.keywords}
+        type="article"
         price={page.price}
       />
       <StructuredData customOnly customSchema={combinedSchema} />

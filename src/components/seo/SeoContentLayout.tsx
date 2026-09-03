@@ -70,7 +70,7 @@ export default function SeoContentLayout({
 
   return (
     <Layout>
-      <SEO title={title} description={metaDescription} canonical={canonical} />
+      <SEO title={title} description={metaDescription} canonical={canonical} type="article" />
       <JsonLd data={breadcrumb} />
       {faqSchema && <JsonLd data={faqSchema} />}
 

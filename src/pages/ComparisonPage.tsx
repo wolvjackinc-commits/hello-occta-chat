@@ -38,6 +38,7 @@ const ComparisonPage = () => {
         description={comparison.metaDescription}
         canonical={`/compare/${comparison.slug}`}
         keywords={comparison.keywords}
+        type="article"
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 

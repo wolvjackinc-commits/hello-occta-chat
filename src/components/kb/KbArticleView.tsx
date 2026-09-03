@@ -89,6 +89,8 @@ export default function KbArticleView({ article }: { article: KbArticle }) {
         title={article.seo_title || `${article.title} — OCCTA`}
         description={article.seo_description || article.summary || `${article.title} — OCCTA ${kindLabel}.`}
         canonical={canonical}
+        type="article"
+        image={article.hero_image_url || undefined}
       />
       <JsonLd data={breadcrumb} />
       {faqSchema && <JsonLd data={faqSchema} />}

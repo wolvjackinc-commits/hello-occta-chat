@@ -11,8 +11,22 @@ const STEPS: { key: string; label: string }[] = [
   { key: "complete", label: "Done" },
 ];
 
+// After Journey 2 materialises the contract it reuses the shared quote/order
+// journey, whose internal stage names differ. Never let an unknown shared stage
+// fall back to Step 1 / Address.
+const STEP_ALIASES: Record<string, string> = {
+  quote: "contract",
+  agreement: "contract",
+  contract_summary: "contract",
+  payment: "review",
+  submit: "review",
+  completed: "complete",
+};
+
 export default function Journey2Progress({ current }: { current: string }) {
-  const idx = Math.max(0, STEPS.findIndex((s) => s.key === current));
+  const canonical = STEP_ALIASES[current] ?? current;
+  const found = STEPS.findIndex((s) => s.key === canonical);
+  const idx = found >= 0 ? found : Math.max(0, STEPS.findIndex((s) => s.key === "contract"));
   const pct = Math.round(((idx + 1) / STEPS.length) * 100);
   return (
     <div className="mb-6">

@@ -100,13 +100,17 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       })();
       const periodEnd = nextAnchorBillingDate(dayAfterStart, anchor);
 
-      // ── Determine VAT mode from accepted CS snapshot ──
+      // ── Determine VAT mode and recurring add-ons from accepted CS snapshot ──
       let vatMode: VatMode = "inclusive";
       let monthlyMinor = poundsToMinor(svc.price_monthly);
+      let contractAddons: Array<{ id?: string; label?: string; monthly?: number }> = [];
       if (svc.contract_summary_id) {
         const { data: cs } = await supabase.from("contract_summaries")
-          .select("customer_type, monthly_price_incl_vat, business_monthly_ex_vat")
+          .select("customer_type, monthly_price_incl_vat, business_monthly_ex_vat, selected_addons")
           .eq("id", svc.contract_summary_id).maybeSingle();
+        contractAddons = Array.isArray(cs?.selected_addons)
+          ? (cs.selected_addons as Array<{ id?: string; label?: string; monthly?: number }>)
+          : [];
         if (cs?.customer_type === "business") {
           vatMode = "exclusive";
           monthlyMinor = poundsToMinor(cs.business_monthly_ex_vat ?? svc.price_monthly);
@@ -155,13 +159,27 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
         }
       }
 
+      const periodLabel = `${fmtInclusivePeriod(periodStart, periodEnd)} (billed in advance)`;
       const rawLines: RawLine[] = [
         {
           description: `${svc.plan_name ?? svc.service_type} — monthly service`,
           amount_minor: monthlyMinor,
-          period_label: `${fmtInclusivePeriod(periodStart, periodEnd)} (billed in advance)`,
+          period_label: periodLabel,
         },
       ];
+
+      // Contract-selected monthly add-ons are separately itemised and billed.
+      // The accepted Contract Summary is the immutable source of truth.
+      for (const addon of contractAddons) {
+        const monthly = Number(addon?.monthly ?? 0);
+        if (!Number.isFinite(monthly) || monthly <= 0) continue;
+        rawLines.push({
+          description: String(addon?.label ?? addon?.id ?? "Monthly add-on"),
+          amount_minor: poundsToMinor(monthly),
+          period_label: periodLabel,
+        });
+      }
+
       const totals = itemiseInvoice(rawLines, vatMode, 20);
       const total = totals.total_gross_minor / 100;
 

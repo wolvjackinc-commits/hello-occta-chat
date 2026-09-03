@@ -12,11 +12,17 @@ export default function PlanStep({
   onBack: () => void;
 }) {
   const [bucket, setBucket] = useState<SpeedBucket | null>(session.speed_bucket ?? catalogue.plans[0]?.speed_bucket ?? null);
-  const [term, setTerm] = useState<PlanTerm>(session.plan_term ?? "flex_30");
+  // New direct orders prefer the fixed Price Lock option. A customer's existing
+  // saved choice is always preserved when they resume or go back to edit.
+  const [term, setTerm] = useState<PlanTerm>(session.plan_term ?? "price_lock_24");
 
   const plan = catalogue.plans.find((p) => p.speed_bucket === bucket) ?? null;
   const availableTerms = plan ? (Object.keys(plan.terms) as PlanTerm[]) : [];
-  const activeTerm = availableTerms.includes(term) ? term : availableTerms[0];
+  const activeTerm = availableTerms.includes(term)
+    ? term
+    : availableTerms.includes("price_lock_24")
+      ? "price_lock_24"
+      : availableTerms[0];
   const priced = plan && activeTerm ? plan.terms[activeTerm] : null;
 
   const flex = plan?.terms.flex_30?.monthly_incl_vat;

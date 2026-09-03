@@ -22,7 +22,7 @@ const HelpArticlePage = () => {
 
   return (
     <Layout>
-      <SEO title={article.metaTitle} description={article.description} canonical={`/help/${article.slug}`} keywords={article.keywords} />
+      <SEO title={article.metaTitle} description={article.description} canonical={`/help/${article.slug}`} keywords={article.keywords} type="article" />
       <StructuredData customOnly customSchema={breadcrumb} />
 
       <article className="container mx-auto px-4 py-10 max-w-3xl">

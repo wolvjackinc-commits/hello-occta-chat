@@ -2,16 +2,9 @@ import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit,
 import { perfServe } from "../_shared/perfLog.ts";
 
 /**
- * Returns the Contract Summary that is linked to a unified-journey token,
- * together with a short-lived signed download URL for the immutable PDF.
- *
- * The journey token authenticates access — no CS-specific token is required
- * because the journey row already binds the customer's journey to one CS.
- *
- * Body: { token: string }                  -- quote / journey token
- * Returns: { ok, contract_summary, signed_pdf_url, pdf_ready, certificate? }
+ * Returns the Contract Summary linked to a unified-journey token together with
+ * short-lived signed download URLs for the complete two-document pack.
  */
-
 Deno.serve(perfServe("journey-cs-detail", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
@@ -73,19 +66,46 @@ Deno.serve(perfServe("journey-cs-detail", async (req) => {
     }).then(() => {}).catch(() => {});
   }
 
-  // Sign the immutable PDF if it exists. Never generate from this endpoint —
-  // the PDF must already be stored by generate-contract-summary-pdf.
   let signed_pdf_url: string | null = null;
   let pdf_ready = false;
   if (cs.pdf_storage_key) {
-    pdf_ready = true;
     const { data: signed } = await supabase.storage
       .from("contract-pdfs")
       .createSignedUrl(cs.pdf_storage_key, 60 * 60 * 24);
     signed_pdf_url = signed?.signedUrl ?? null;
+    pdf_ready = !!signed_pdf_url;
   }
 
-  // Optional: include certificate signed URL if acceptance already happened
+  const { data: settings } = await supabase
+    .from("platform_settings")
+    .select("two_document_contract_flow_enabled")
+    .eq("singleton", true)
+    .maybeSingle();
+  const contract_information_required = !!settings?.two_document_contract_flow_enabled;
+
+  let contract_information: { number: string; signed_url: string; version: number } | null = null;
+  const { data: cip } = await supabase
+    .from("contract_information_packs")
+    .select("cip_number, version, document_status, pdf_storage_path")
+    .eq("contract_summary_id", cs.id)
+    .neq("document_status", "superseded")
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (cip?.pdf_storage_path && !["cancelled", "void_manual_review"].includes(String(cip.document_status))) {
+    const { data: signed } = await supabase.storage
+      .from("contract-documents")
+      .createSignedUrl(cip.pdf_storage_path, 60 * 60 * 24);
+    if (signed?.signedUrl) {
+      contract_information = {
+        number: cip.cip_number,
+        signed_url: signed.signedUrl,
+        version: cip.version,
+      };
+    }
+  }
+
+  // Optional: include certificate signed URL if acceptance already happened.
   let certificate: { number: string; signed_url: string; sha256: string } | null = null;
   if (journey.contract_acceptance_id) {
     const { data: cert } = await supabase
@@ -94,12 +114,12 @@ Deno.serve(perfServe("journey-cs-detail", async (req) => {
       .eq("contract_acceptance_id", journey.contract_acceptance_id)
       .maybeSingle();
     if (cert) {
-      const { data: cs2 } = await supabase.storage
+      const { data: signed } = await supabase.storage
         .from("acceptance-certificates")
         .createSignedUrl(cert.storage_key, 60 * 60 * 24);
       certificate = {
         number: cert.certificate_number,
-        signed_url: cs2?.signedUrl ?? "",
+        signed_url: signed?.signedUrl ?? "",
         sha256: cert.sha256,
       };
     }
@@ -124,6 +144,9 @@ Deno.serve(perfServe("journey-cs-detail", async (req) => {
     accepted_at: journey.contract_accepted_at,
     signed_pdf_url,
     pdf_ready,
+    contract_information_required,
+    contract_information_ready: !contract_information_required || !!contract_information?.signed_url,
+    contract_information,
     certificate,
   });
 }));

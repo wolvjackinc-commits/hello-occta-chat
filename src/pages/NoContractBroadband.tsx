@@ -95,7 +95,7 @@ const NoContractBroadband = () => {
   const faqSchema = createFAQSchema(faqs.slice(0, 6));
   const offerSchema = createOfferSchema({
     name: "No Contract Broadband",
-    description: "Flexible UK broadband with no contracts, no hidden fees, and no price rises.",
+    description: "Flexible UK broadband with no credit check, rolling monthly terms, no hidden fees, and no price rises.",
     price: prices.broadband,
     url: "/no-contract-broadband-uk",
     category: "Broadband",
@@ -104,10 +104,10 @@ const NoContractBroadband = () => {
   return (
     <LayoutComponent>
       <SEO
-        title="No-Contract Broadband UK | Cheap & Flexible Fibre"
-        description={`Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband from £${prices.broadband}/mo with no lock-ins, no mid-contract price hikes, and 30-day rolling options where eligible.`}
+        title="No-Contract Broadband UK: No Credit Check, Rolling Monthly"
+        description={`Get no-contract broadband in the UK with no credit check and rolling monthly terms. OCCTA fibre from £${prices.broadband}/mo with no lock-ins, no exit fees, and no mid-contract price rises.`}
         canonical="/no-contract-broadband-uk"
-        keywords="no contract broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no exit fee broadband"
+        keywords="no contract broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, no exit fee broadband"
         price={prices.broadband}
       />
       <JsonLd data={offerSchema} />

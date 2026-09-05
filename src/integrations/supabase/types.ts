@@ -8321,6 +8321,48 @@ export type Database = {
           },
         ]
       }
+      quote_submission_receipts: {
+        Row: {
+          client_hash: string | null
+          created_at: string
+          fingerprint: string
+          key_hash: string
+          quote_request_id: string
+          tracking_session_id: string
+        }
+        Insert: {
+          client_hash?: string | null
+          created_at?: string
+          fingerprint: string
+          key_hash: string
+          quote_request_id: string
+          tracking_session_id: string
+        }
+        Update: {
+          client_hash?: string | null
+          created_at?: string
+          fingerprint?: string
+          key_hash?: string
+          quote_request_id?: string
+          tracking_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_submission_receipts_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_submission_receipts_tracking_session_id_fkey"
+            columns: ["tracking_session_id"]
+            isOneToOne: false
+            referencedRelation: "checkout_tracking_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           activation_fee_snapshot: Json | null
@@ -12552,16 +12594,16 @@ export type Database = {
       }
     }
     Functions: {
-      admin_checkout_inspection: {
-        Args: { _source: string; _session_id: string }
-        Returns: Json
-      }
       admin_approve_final_quote: {
         Args: { _quote_id: string }
         Returns: undefined
       }
       admin_archive_customer: {
         Args: { p_action: string; p_customer_id: string; p_reason: string }
+        Returns: Json
+      }
+      admin_checkout_inspection: {
+        Args: { _session_id: string; _source: string }
         Returns: Json
       }
       admin_checkout_session_list: {
@@ -13313,6 +13355,15 @@ export type Database = {
       recompute_reward_balances: {
         Args: { _customer_id: string }
         Returns: undefined
+      }
+      save_quote_submission: {
+        Args: {
+          _client_hash?: string
+          _fingerprint: string
+          _key_hash: string
+          _payload: Json
+        }
+        Returns: Json
       }
       search_kb_for_ai: {
         Args: { _include_customer?: boolean; _limit?: number; _q: string }

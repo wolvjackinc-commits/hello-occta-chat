@@ -4,6 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { receiptKey } from "@/lib/quoteSubmission";
 
 interface QuoteThankYouState {
   bucketLabel?: string;
@@ -29,6 +30,29 @@ export default function QuoteThankYou() {
   }, []);
   const emailQS = s.email ? `&email=${encodeURIComponent(s.email)}` : "";
   const refQS = ref ? `&ref=${encodeURIComponent(ref)}` : "";
+  const [verification, setVerification] = useState<'checking' | 'received' | 'unverified'>('checking');
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setVerification('checking');
+    const key = ref ? receiptKey(ref) : null;
+    if (!key) { setVerification('unverified'); return; }
+    void supabase.functions.invoke('quote-submission-status', { body: { submission_key: key } })
+      .then(({ data, error }) => {
+        if (!cancelled) setVerification(!error && data?.received && data.reference === ref ? 'received' : 'unverified');
+      }).catch(() => { if (!cancelled) setVerification('unverified'); });
+    return () => { cancelled = true; };
+  }, [ref, attempt]);
+  if (verification !== 'received') return <Layout>
+    <SEO title="Check your quote request" description="Verify your OCCTA quote request." canonical="/quote/thank-you" />
+    <section className="container mx-auto px-4 py-12 max-w-2xl space-y-4">
+      <h1 className="font-display text-2xl">{verification === 'checking' ? 'Checking your request…' : 'We cannot verify this request from this page'}</h1>
+      <p role="status">{verification === 'checking' ? 'Please wait while we check your saved receipt.' : 'Opening this page does not submit a quote. If you already submitted one, check your confirmation email or contact us with your reference. Please do not submit again solely because this page cannot verify it.'}</p>
+      {ref && <p>Reference provided: {ref}</p>}
+      {verification === 'unverified' && <button type="button" className="border-2 p-3" onClick={() => setAttempt((value) => value + 1)}>Check again</button>}
+      <p><Link to="/quote/start" className="underline">Return to quote form</Link> · <Link to="/contact" className="underline">Contact OCCTA</Link></p>
+    </section>
+  </Layout>;
   return (
     <Layout>
       <SEO title="Quote request received" description="Thanks — OCCTA will check the best available option for your address." canonical="/quote/thank-you" />

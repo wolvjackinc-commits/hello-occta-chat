@@ -1,0 +1,48 @@
+name: Quote Submission Check
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/lib/quoteSubmission*'
+      - 'src/pages/quote/**'
+      - 'src/pages/BuildPlan.tsx'
+      - 'src/components/checkout/CheckoutJourneyTracker.tsx'
+      - 'src/lib/journey/**'
+      - 'supabase/functions/*quote*/**'
+      - 'supabase/functions/submit-build-plan/**'
+      - 'supabase/functions/_shared/quoteSubmission.ts'
+      - 'supabase/migrations/20260905120*.sql'
+      - '.github/workflows/quote-submission-check.yml'
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bunx vitest run src/lib/quoteSubmission.test.ts src/pages/quote/QuoteThankYou.test.tsx src/lib/journey/__tests__ src/components/admin/CheckoutReminderDetails.test.tsx
+      - run: bun run typecheck
+      - run: bun run build
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: oexgjmuvgdndizsufipe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Check deployment credential
+        run: test -n "$SUPABASE_ACCESS_TOKEN"
+      - name: Deploy receipt verification
+        run: supabase functions deploy quote-submission-status --project-ref "$PROJECT_REF"
+      - name: Deploy quote request submission
+        run: supabase functions deploy submit-quote-request --project-ref "$PROJECT_REF"
+      - name: Deploy Build Plan submission
+        run: supabase functions deploy submit-build-plan --project-ref "$PROJECT_REF"

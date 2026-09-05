@@ -17,7 +17,7 @@ export const FUNNEL_WINDOW_DAYS = 30;
  */
 export const ACTIVE_RECENCY_HOURS = 48;
 
-export const TERMINAL_STATUSES = ["completed", "cancelled", "abandoned"] as const;
+export const TERMINAL_STATUSES = ["completed", "cancelled", "abandoned", "unverified"] as const;
 
 export type FunnelRow = {
   status: string;
@@ -65,9 +65,11 @@ export function summariseCheckoutFunnel(rows: FunnelRow[], now: number = Date.no
   let completed = 0;
   let cancelled = 0;
   let withErrors = 0;
+  let unverified = 0;
 
   for (const row of rows) {
-    if (row.status === "completed") completed += 1;
+    if (row.status === "unverified") unverified += 1;
+    else if (row.status === "completed") completed += 1;
     else if (row.status === "cancelled") cancelled += 1;
     else if (row.status === "abandoned") abandoned += 1;
     else if (isRecentlyActive(row, now)) activeRecent += 1;
@@ -77,7 +79,7 @@ export function summariseCheckoutFunnel(rows: FunnelRow[], now: number = Date.no
   }
 
   const started = rows.length;
-  const eligibleStarted = started - cancelled;
+  const eligibleStarted = started - cancelled - unverified;
 
   return {
     started,
@@ -94,4 +96,4 @@ export function summariseCheckoutFunnel(rows: FunnelRow[], now: number = Date.no
 
 /** Human-readable description of the window and denominator used in reporting. */
 export const FUNNEL_WINDOW_LABEL = `Last ${FUNNEL_WINDOW_DAYS} days · test sessions excluded`;
-export const CONVERSION_DENOMINATOR_LABEL = `Completed ÷ started in last ${FUNNEL_WINDOW_DAYS} days, excluding cancelled`;
+export const CONVERSION_DENOMINATOR_LABEL = `Completed ÷ started in last ${FUNNEL_WINDOW_DAYS} days, excluding cancelled and unverified thank-you views`;

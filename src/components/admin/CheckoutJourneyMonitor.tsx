@@ -81,6 +81,7 @@ const stageLabel = (value: string | null) => {
     payment: "Payment",
     complete: "Completed",
     quote_complete: "Quote submitted",
+    quote_confirmation_view: "Thank-you page viewed — submission unverified",
   };
   return labels[value] ?? value.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 };
@@ -242,6 +243,9 @@ export default function CheckoutJourneyMonitor() {
         </div>
       )}
 
+      {loaded && !loadError && totals.withErrors > 0 && <div role="alert" className="border-2 border-destructive p-3 text-sm">
+        {totals.withErrors} checkout session(s) have recorded errors and need review. <Button type="button" size="sm" variant="outline" onClick={() => setFilter('errors')}>Review failures</Button>
+      </div>}
       {loaded && !loadError && (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
           {([
@@ -341,11 +345,14 @@ export default function CheckoutJourneyMonitor() {
                     <div className="space-y-3 text-sm">
                       <h3 className="font-display uppercase tracking-wider">Session details</h3>
                       <dl className="grid grid-cols-[130px_1fr] gap-x-3 gap-y-2 text-xs">
+                        {row.source === 'web' && row.status === 'completed' && row.current_stage === 'quote_complete' && row.plan_label && <>
+                          <dt>Saved request</dt><dd><a className="underline" href={`/admin/quote-requests?search=${encodeURIComponent(row.plan_label)}`}>{row.plan_label}</a></dd>
+                        </>}
                         <dt className="text-muted-foreground">Current stage</dt><dd>{stageLabel(row.current_stage)}</dd>
                         <dt className="text-muted-foreground">Progress</dt><dd>{row.progress_percent ?? 0}%</dd>
                         <dt className="text-muted-foreground">Activity in stage</dt><dd>{elapsed(row.stage_started_at, row.last_activity_at)}</dd>
                         <dt className="text-muted-foreground">Marked abandoned</dt><dd>{fmtDate(row.abandoned_at)}</dd>
-                        <dt className="text-muted-foreground">Total elapsed</dt><dd>{elapsed(row.started_at, row.completed_at)}</dd>
+                        <dt className="text-muted-foreground">Total elapsed</dt><dd>{elapsed(row.started_at, row.completed_at ?? (row.status === 'unverified' ? row.last_activity_at : null))}</dd>
                         <dt className="text-muted-foreground">Plan</dt><dd>{row.plan_label || "—"}</dd>
                         <dt className="text-muted-foreground">Route</dt><dd className="break-all">{row.current_route || "—"}</dd>
                         <dt className="text-muted-foreground">Reminders</dt><dd>{row.reminder_count}</dd>

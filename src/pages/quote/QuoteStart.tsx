@@ -145,7 +145,8 @@ export default function QuoteStart() {
       // Strip privacy_ack — server doesn't accept it
       delete (body as any).privacy_ack;
 
-      const { data, error } = await supabase.functions.invoke("submit-quote-request", { body });
+      const { submitQuote } = await import("@/lib/quoteSubmission");
+      const { data, error } = await submitQuote("submit-quote-request", body);
       if (error || !data || (data as any).error) {
         throw new Error((data as any)?.error || error?.message || "submit_failed");
       }
@@ -171,7 +172,7 @@ export default function QuoteStart() {
     } catch (err) {
       toast({
         title: "Couldn't send your quote request",
-        description: "Please try again or call us. Your details were not stored.",
+        description: "We could not confirm your request. Your entries are still here. Please retry, or call us if this continues.",
         variant: "destructive",
       });
     } finally {

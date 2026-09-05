@@ -21,6 +21,8 @@ project_id = "oexgjmuvgdndizsufipe"
   schedule = "30 3 * * *"
 
 [functions]
+  [functions.quote-submission-status]
+    verify_jwt = false
   [functions.admin-send-email]
     verify_jwt = false
   [functions.journey2-resume-email]

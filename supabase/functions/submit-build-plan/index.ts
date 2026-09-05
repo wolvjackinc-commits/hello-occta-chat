@@ -10,6 +10,7 @@ import {
   getAdminNotificationEmail,
 } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { saveQuoteSubmission } from "../_shared/quoteSubmission.ts";
 import {
   resolveBuildPlanPrice, planTermLabel, speedBucketLabel,
   PRICE_LOCK_WORDING, FLEX_30_WORDING,
@@ -17,6 +18,8 @@ import {
 } from "../_shared/buildPlanResolver.ts";
 
 const Schema = z.object({
+  submission_key: z.string().uuid().optional(),
+  tracking_client_id: z.string().uuid().optional(),
   speed_bucket: z.enum(["essential","superfast","ultrafast","gigabit"]),
   plan_term: z.enum(["price_lock_24","flex_30"]),
   router_option: z.enum(["own","standard","premium","business"]),
@@ -89,7 +92,7 @@ Deno.serve(async (req) => {
   const effectiveMaxDownload = (isAdmin && i.test_availability?.max_download != null) ? i.test_availability.max_download : i.max_download;
   const effectivePrimaryTech = (isAdmin && i.test_availability?.primary_technology) ? i.test_availability.primary_technology : i.primary_technology;
 
-  const { data: qr, error: qrErr } = await supabase.from("quote_requests").insert({
+  const requestPayload = {
     customer_id,
     full_name: i.full_name,
     email: i.email,
@@ -116,8 +119,12 @@ Deno.serve(async (req) => {
     utm_medium: i.utm_medium ?? null,
     landing_page: i.landing_page ?? null,
     conversion_page: i.conversion_page ?? null,
-  }).select("id, reference").single();
+  };
+  const { data: qr, error: qrErr } = inTestMode
+    ? await supabase.from("quote_requests").insert(requestPayload).select("id, reference").single()
+    : await saveQuoteSubmission(supabase, 'submit-build-plan', i, requestPayload);
   if (qrErr || !qr) return jsonResponse({ error: "create_failed" }, 500);
+  if (qr.replayed) return jsonResponse({ ok: true, mode: "quote_only", reference: qr.reference, quote_request_id: qr.id });
 
   if (customer_id && i.date_of_birth) {
     try { await supabase.from("profiles").update({ date_of_birth: i.date_of_birth }).eq("id", customer_id); } catch (_e) { /* non-fatal */ }

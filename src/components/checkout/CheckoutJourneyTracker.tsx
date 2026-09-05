@@ -18,7 +18,7 @@ function routeState(pathname: string): RouteState {
   if (route === "/quote/two-doc/:token") return { stage: "agreement", progress: 80 };
   if (route === "/quote/payment/:token") return { stage: "payment", progress: 90 };
   if (route === "/quote/:token") return { stage: "quote_journey", progress: 60 };
-  if (route === "/quote/thank-you") return { stage: "quote_complete", progress: 100, complete: true };
+  if (route === "/quote/thank-you") return { stage: "quote_confirmation_view", progress: null };
   if (route === "/order") return { stage: "order_start", progress: 5 };
   if (route === "/order/:token") return { stage: "order_journey", progress: null };
   if (route === "/order/:token/complete") return { stage: "complete", progress: 100, complete: true };
@@ -37,7 +37,7 @@ function routeState(pathname: string): RouteState {
  */
 export default function CheckoutJourneyTracker() {
   const location = useLocation();
-  const tracked = isCheckoutRoute(location.pathname);
+  const tracked = isCheckoutRoute(location.pathname) && location.pathname !== '/quote/thank-you';
   const lastPathRef = useRef<string | null>(null);
 
   useEffect(() => {

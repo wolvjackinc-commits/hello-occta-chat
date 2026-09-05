@@ -4,8 +4,11 @@ import {
   getAdminNotificationEmail,
 } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { saveQuoteSubmission } from "../_shared/quoteSubmission.ts";
 
 const Schema = z.object({
+  submission_key: z.string().uuid().optional(),
+  tracking_client_id: z.string().uuid().optional(),
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email().max(180),
   phone: z.string().trim().min(7).max(30),
@@ -57,9 +60,7 @@ Deno.serve(async (req) => {
     if (data?.user) customer_id = data.user.id;
   }
 
-  const { data: row, error } = await supabase
-    .from("quote_requests")
-    .insert({
+  const { data: row, error } = await saveQuoteSubmission(supabase, 'submit-quote-request', input, {
       customer_id,
       full_name: input.full_name,
       email: input.email,
@@ -88,11 +89,10 @@ Deno.serve(async (req) => {
       utm_medium: input.utm_medium ?? null,
       landing_page: input.landing_page ?? null,
       conversion_page: input.conversion_page ?? null,
-    })
-    .select("id, reference")
-    .single();
+    });
 
   if (error || !row) return jsonResponse({ error: "create_failed" }, 500);
+  if (row.replayed) return jsonResponse({ ok: true, reference: row.reference, quote_request_id: row.id });
 
   await supabase.rpc("log_event", {
     _actor_type: "public",

@@ -300,7 +300,11 @@ function BuildPlanInner() {
       const addr: any = selectedAddress ?? {};
       const { getAttribution } = await import("@/lib/attribution");
       const attribution = getAttribution();
-      const { data, error } = await supabase.functions.invoke("submit-build-plan", {
+      const { submitQuote } = await import("@/lib/quoteSubmission");
+      const submit = isTestMode
+        ? supabase.functions.invoke.bind(supabase.functions)
+        : (endpoint: string, options: { body: Record<string, unknown> }) => submitQuote(endpoint as "submit-build-plan", options.body);
+      const { data, error } = await submit("submit-build-plan", {
         body: {
           speed_bucket: bucket, plan_term: term,
           router_option: router, router_payment_type: routerPay,
@@ -357,7 +361,7 @@ function BuildPlanInner() {
         },
       });
     } catch (_err) {
-      toast({ title: "Couldn't submit your plan", description: "Please try again shortly.", variant: "destructive" });
+      toast({ title: "Couldn't confirm your plan", description: "Your entries are still here. Please retry; the same request will not be saved twice.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }

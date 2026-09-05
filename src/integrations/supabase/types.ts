@@ -12552,6 +12552,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_checkout_inspection: {
+        Args: { _source: string; _session_id: string }
+        Returns: Json
+      }
       admin_approve_final_quote: {
         Args: { _quote_id: string }
         Returns: undefined

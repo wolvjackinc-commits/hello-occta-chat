@@ -14,6 +14,7 @@ import {
   summariseCheckoutFunnel,
 } from "@/lib/journey/checkoutFunnel";
 import { dbErrorText } from "@/lib/dbErrorText";
+import CheckoutReminderDetails from "@/components/admin/CheckoutReminderDetails";
 
 
 type CheckoutSession = {
@@ -222,6 +223,7 @@ export default function CheckoutJourneyMonitor() {
             Start-to-finish checkout progress, inactivity, recovery reminders and technical failures. {FUNNEL_WINDOW_LABEL}.
             Journey 2 sessions are reported once — duplicate generic web-tracking rows are excluded. Refreshes every 30 seconds.
           </p>
+          <p className="text-xs text-muted-foreground mt-2">Abandoned indicates inactivity, not a confirmed lost customer. Anonymous checkout means no customer name was captured. Figures describe the latest 250 returned sessions, not necessarily every visit in the window.</p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />Refresh
@@ -240,7 +242,7 @@ export default function CheckoutJourneyMonitor() {
         </div>
       )}
 
-      {loaded && (
+      {loaded && !loadError && (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
           {([
             [`Started (${FUNNEL_WINDOW_DAYS}d)`, totals.started, "all" as Filter],
@@ -259,7 +261,7 @@ export default function CheckoutJourneyMonitor() {
         </div>
       )}
 
-      {loaded && (
+      {loaded && !loadError && (
         <div className="border-2 border-border p-3">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Conversion rate</div>
           <div className="font-display text-2xl mt-1">
@@ -295,7 +297,6 @@ export default function CheckoutJourneyMonitor() {
           {visible.map((row) => {
             const key = `${row.source}:${row.session_id}`;
             const open = expanded === key;
-            const terminal = row.completed_at ?? (row.status === "abandoned" ? row.abandoned_at : null);
             return (
               <article key={key} className={`border-2 ${row.error_count > 0 ? "border-destructive/60" : "border-border"}`}>
                 <button type="button" onClick={() => void toggle(row)} className="w-full p-4 text-left hover:bg-muted/30 transition-colors">
@@ -304,7 +305,7 @@ export default function CheckoutJourneyMonitor() {
                       <div className="flex flex-wrap items-center gap-2">
                         <strong className="truncate">{row.customer_name || "Anonymous checkout"}</strong>
                         <Badge variant="outline">{row.source === "journey2" ? "Journey 2" : "Web"}</Badge>
-                        {row.utm_source && <Badge variant="outline">{row.utm_source}</Badge>}
+                        <Badge variant="outline">{row.utm_source || "Source not recorded"}</Badge>
                       </div>
                       <div className="text-xs text-muted-foreground truncate mt-1">
                         {row.customer_email || row.current_route || "Browser session"}
@@ -323,7 +324,7 @@ export default function CheckoutJourneyMonitor() {
                       <div className="h-2 border border-foreground/30 bg-muted overflow-hidden">
                         <div className="h-full bg-foreground transition-all" style={{ width: `${Math.max(2, row.progress_percent ?? 2)}%` }} />
                       </div>
-                      <div className="text-[11px] text-muted-foreground mt-1">In this stage {elapsed(row.stage_started_at, terminal)}</div>
+                      <div className="text-[11px] text-muted-foreground mt-1">Recorded activity in stage {elapsed(row.stage_started_at, row.last_activity_at)}</div>
                     </div>
                     <div className="text-xs space-y-1">
                       <div className="flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" /> Started {fmtDate(row.started_at)}</div>
@@ -342,7 +343,8 @@ export default function CheckoutJourneyMonitor() {
                       <dl className="grid grid-cols-[130px_1fr] gap-x-3 gap-y-2 text-xs">
                         <dt className="text-muted-foreground">Current stage</dt><dd>{stageLabel(row.current_stage)}</dd>
                         <dt className="text-muted-foreground">Progress</dt><dd>{row.progress_percent ?? 0}%</dd>
-                        <dt className="text-muted-foreground">Time in stage</dt><dd>{elapsed(row.stage_started_at, terminal)}</dd>
+                        <dt className="text-muted-foreground">Activity in stage</dt><dd>{elapsed(row.stage_started_at, row.last_activity_at)}</dd>
+                        <dt className="text-muted-foreground">Marked abandoned</dt><dd>{fmtDate(row.abandoned_at)}</dd>
                         <dt className="text-muted-foreground">Total elapsed</dt><dd>{elapsed(row.started_at, row.completed_at)}</dd>
                         <dt className="text-muted-foreground">Plan</dt><dd>{row.plan_label || "—"}</dd>
                         <dt className="text-muted-foreground">Route</dt><dd className="break-all">{row.current_route || "—"}</dd>
@@ -357,6 +359,7 @@ export default function CheckoutJourneyMonitor() {
                       )}
                     </div>
 
+                    <CheckoutReminderDetails key={key} source={row.source} sessionId={row.session_id} />
                     <div>
                       <h3 className="font-display uppercase tracking-wider mb-3">Journey timeline</h3>
                       {timelineLoading === key ? (

@@ -1,0 +1,453 @@
+name: OCCTA Journey Attribution Recovery Hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/occta-journey-attribution-recovery-hotfix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: occta-journey-attribution-recovery-hotfix
+  cancel-in-progress: false
+
+jobs:
+  hotfix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: oexgjmuvgdndizsufipe
+    steps:
+      - name: Checkout production main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch attribution, recovery and DD Guarantee journey code
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(path, old, new, label):
+              p = Path(path)
+              s = p.read_text()
+              if old not in s:
+                  if new in s:
+                      return
+                  raise SystemExit(f"{label} target not found in {path}")
+              p.write_text(s.replace(old, new, 1))
+
+          def regex_once(path, pattern, repl, label):
+              p = Path(path)
+              s = p.read_text()
+              ns, n = re.subn(pattern, repl, s, count=1, flags=re.S)
+              if n != 1:
+                  if repl in s:
+                      return
+                  raise SystemExit(f"{label} regex target count={n} in {path}")
+              p.write_text(ns)
+
+          # ------------------------------------------------------------------
+          # Browser: always record a lawful, useful first-touch attribution
+          # snapshot. Click IDs are only persisted where analytics consent exists.
+          # ------------------------------------------------------------------
+          client = 'src/lib/journey2/client.ts'
+          p = Path(client)
+          s = p.read_text()
+          pattern = r'function readUtm\(\): Record<string, string> \| undefined \{.*?\n\}\n\nfunction readOfferCode'
+          replacement = '''function readAttribution(): Record<string, string> {
+            const fallback = () => ({
+              source_type: "direct",
+              landing_path: typeof window !== "undefined" ? window.location.pathname.slice(0, 300) : "/",
+              captured_at: new Date().toISOString(),
+            });
+            try {
+              const p = new URLSearchParams(window.location.search);
+              const out: Record<string, string> = {};
+              const consentGranted = getConsent() === "granted";
+              const campaignKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "offer"];
+              const clickKeys = ["gclid", "fbclid", "msclkid", "ttclid"];
+              for (const k of campaignKeys) {
+                const v = p.get(k);
+                if (v) out[k] = v.slice(0, 300);
+              }
+              if (consentGranted) {
+                for (const k of clickKeys) {
+                  const v = p.get(k);
+                  if (v) out[k] = v.slice(0, 300);
+                }
+              }
+
+              const qrId = p.get("qr") || p.get("qr_id") || p.get("flyer");
+              if (qrId) out.qr_id = qrId.slice(0, 120);
+
+              const safeQuery = new URLSearchParams();
+              for (const k of [...campaignKeys, "qr", "qr_id", "flyer"]) {
+                const v = p.get(k);
+                if (v) safeQuery.set(k, v.slice(0, 160));
+              }
+              out.landing_path = `${window.location.pathname}${safeQuery.size ? `?${safeQuery.toString()}` : ""}`.slice(0, 300);
+
+              if (document.referrer) {
+                try {
+                  const ref = new URL(document.referrer);
+                  if (ref.hostname && ref.hostname !== window.location.hostname) {
+                    out.referrer_host = ref.hostname.slice(0, 200);
+                    out.referrer_path = ref.pathname.slice(0, 300);
+                  }
+                } catch { /* malformed referrer: ignore */ }
+              }
+
+              const medium = (out.utm_medium ?? "").toLowerCase();
+              const source = (out.utm_source ?? "").toLowerCase();
+              if (out.qr_id || ["qr", "qrcode"].includes(medium) || ["flyer", "leaflet", "qr"].includes(source)) {
+                out.source_type = "qr_flyer";
+              } else if (out.gclid) {
+                out.source_type = "google_ads";
+              } else if (out.fbclid) {
+                out.source_type = "meta_ads";
+              } else if (out.msclkid) {
+                out.source_type = "microsoft_ads";
+              } else if (out.ttclid) {
+                out.source_type = "tiktok_ads";
+              } else if (out.utm_source || out.utm_medium || out.utm_campaign) {
+                out.source_type = "campaign";
+              } else if (out.referrer_host) {
+                out.source_type = "referral";
+              } else {
+                out.source_type = "direct";
+              }
+              out.captured_at = new Date().toISOString();
+              return out;
+            } catch {
+              return fallback();
+            }
+          }
+
+          function readOfferCode'''
+          ns, n = re.subn(pattern, replacement, s, count=1, flags=re.S)
+          if n != 1:
+              if 'function readAttribution()' not in s:
+                  raise SystemExit('client attribution function target not found')
+          else:
+              p.write_text(ns)
+
+          replace_once(client, '      utm: readUtm(),', '      utm: readAttribution(),', 'client start attribution')
+          replace_once(client,
+              '      "journey2-session", { action: "get", token },',
+              '      "journey2-session", { action: "get", token, attribution: readAttribution() },',
+              'client get attribution')
+          replace_once(client,
+              '      "journey2-session", { action: "save_step", token, step, payload },',
+              '      "journey2-session", { action: "save_step", token, step, payload, attribution: readAttribution() },',
+              'client save attribution')
+          replace_once(client,
+              '      const refreshed = await refreshCampaign(token);\n      if (refreshed?.campaign_code) result.session.campaign_code = refreshed.campaign_code;',
+              '      const refreshed = await refreshCampaign(token, readOfferCode());\n      if (refreshed?.campaign_code) result.session.campaign_code = refreshed.campaign_code;',
+              'resume offer attachment')
+
+          # ------------------------------------------------------------------
+          # Server session: preserve first touch and record latest touch on resume.
+          # ------------------------------------------------------------------
+          session_path = 'supabase/functions/journey2-session/index.ts'
+          replace_once(session_path,
+              '  last_activity_at, expires_at, completed_at, created_at, campaign_code, campaign_snapshot\n`;',
+              '  last_activity_at, expires_at, completed_at, created_at, campaign_code, campaign_snapshot, utm_snapshot\n`;',
+              'session cols attribution')
+          replace_once(session_path,
+              '  z.object({ action: z.literal("get"), token: z.string().min(16) }),',
+              '  z.object({ action: z.literal("get"), token: z.string().min(16), attribution: z.record(z.string().max(300)).optional() }),',
+              'get schema attribution')
+          replace_once(session_path,
+              '    payload: z.record(z.unknown()),\n  }),',
+              '    payload: z.record(z.unknown()),\n    attribution: z.record(z.string().max(300)).optional(),\n  }),',
+              'save schema attribution')
+          replace_once(session_path,
+              '      .select("id, journey_version, status")',
+              '      .select("id, journey_version, status, utm_snapshot")',
+              'resume select attribution')
+          replace_once(session_path,
+              '        .update({ public_token_hash: hash, last_activity_at: new Date().toISOString() })',
+              '''        .update({
+                  public_token_hash: hash,
+                  last_activity_at: new Date().toISOString(),
+                  utm_snapshot: body.utm
+                    ? { ...(((existing as any).utm_snapshot ?? {}) as Record<string, unknown>), latest_touch: body.utm }
+                    : (existing as any).utm_snapshot,
+                })''',
+              'resume update attribution')
+          replace_once(session_path,
+              '        utm_snapshot: body.utm ?? null,',
+              '        utm_snapshot: body.utm ?? { source_type: "direct", captured_at: new Date().toISOString() },',
+              'new session attribution default')
+          replace_once(session_path,
+              '''  if (body.action === "get") {
+            return jsonResponse({''',
+              '''  if ((body.action === "get" || body.action === "save_step") && body.attribution) {
+            const mergedAttribution = {
+              ...(((session as any).utm_snapshot ?? {}) as Record<string, unknown>),
+              latest_touch: body.attribution,
+            };
+            await supabase.from("customer_journey_sessions").update({ utm_snapshot: mergedAttribution }).eq("id", session.id);
+            (session as any).utm_snapshot = mergedAttribution;
+          }
+
+          if (body.action === "get") {
+            return jsonResponse({''',
+              'token action attribution merge')
+
+          # ------------------------------------------------------------------
+          # Recovery emails: preserve the 3 transactional reminders and allow a
+          # fourth SWITCH50 campaign email only for explicit marketing opt-ins.
+          # ------------------------------------------------------------------
+          resume_path = 'supabase/functions/journey2-resume-email/index.ts'
+          replace_once(resume_path, 'const MAX_REMINDERS = 3;', 'const MAX_REMINDERS = 4;', 'resume max reminders')
+          replace_once(resume_path,
+              '  customer_details: { full_name?: string; email?: string } | null;',
+              '  customer_details: { full_name?: string; email?: string; marketing_consent?: boolean } | null;',
+              'resume marketing consent type')
+
+          rp = Path(resume_path)
+          rs = rp.read_text()
+          copy_pattern = r'function copyFor\(n: number, fact: string, firstName: string\) \{.*?\n\}\n\nDeno\.serve'
+          copy_repl = '''function copyFor(n: number, fact: string, firstName: string, switch50?: Record<string, any> | null) {
+            const hi = `<p>Hi ${escapeHtml(firstName)},</p>`;
+            if (n === 1) {
+              return {
+                subject: "Your OCCTA order is saved — pick up where you left off",
+                title: "Your order is saved",
+                html: `${hi}
+          <p>You were part-way through your OCCTA order, so we've kept the progress you'd already made.</p>
+          <p><strong>Nothing has been charged and no Direct Debit has been set up.</strong> You'll see everything again before the order is placed.</p>
+          <p>${fact}</p>
+          <p>The secure link below returns you to the exact stage you reached. It's personal to you — please don't forward it.</p>`,
+              };
+            }
+            if (n === 2) {
+              return {
+                subject: "A quick note before you finish your OCCTA order",
+                title: "Carry on when you're ready",
+                html: `${hi}
+          <p>Your saved OCCTA order is still incomplete. If you were comparing options or simply got interrupted, there's no need to start again.</p>
+          <p>${fact}</p>
+          <p>You can review your saved choices, the contract information and your billing details before submitting anything.</p>`,
+              };
+            }
+            if (n === 4 && switch50) {
+              const endDate = new Date(String(switch50.ends_at)).toLocaleDateString("en-GB", { timeZone: "Europe/London", day: "numeric", month: "long", year: "numeric" });
+              return {
+                subject: "£50 Switch Cash is available on eligible OCCTA orders",
+                title: "£50 Switch Cash",
+                html: `${hi}
+          <p>You previously started an OCCTA broadband order and asked to receive offers from us.</p>
+          <p><strong>Our £50 Switch Cash offer is now live.</strong> It applies to an eligible new residential <strong>Essential Fibre — Price Lock 24</strong> order placed by ${escapeHtml(endDate)}.</p>
+          <p>The £50 reward is separate from your broadband bill and does not reduce the £34.99 monthly broadband price. The reward becomes eligible 30 days after service activation once the first broadband invoice has been paid and the account remains eligible. One reward per eligible service address. Terms apply.</p>
+          <p>Your secure button below reopens the exact saved checkout. You can review or change your plan before you submit anything.</p>
+          <p style="font-size:12px;opacity:.75">You received this offer because marketing consent is recorded on your saved checkout. If you no longer want marketing messages, contact privacy@occta.co.uk.</p>`,
+              };
+            }
+            return {
+              subject: "Still want to continue your OCCTA order?",
+              title: "Final automatic reminder",
+              html: `${hi}
+          <p>This is our final automatic reminder about this saved order.</p>
+          <p>If you'd still like to continue, use the secure link below. If you'd rather not, no action is needed — nothing has been charged.</p>
+          <p>${fact}</p>
+          <p>If something stopped you finishing, call <strong>0800 260 6626</strong> or email <strong>hello@occta.co.uk</strong> and we'll help.</p>`,
+            };
+          }
+
+          Deno.serve'''
+          nr, n = re.subn(copy_pattern, copy_repl, rs, count=1, flags=re.S)
+          if n != 1:
+              if '£50 Switch Cash is available on eligible OCCTA orders' not in rs:
+                  raise SystemExit('resume copy function target not found')
+          else:
+              rp.write_text(nr)
+
+          replace_once(resume_path,
+              '  const nowIso = new Date().toISOString();\n  const stage1Cutoff',
+              '''  const nowIso = new Date().toISOString();
+            const { data: switch50 } = await supabase
+              .from("offer_campaigns")
+              .select("code, title, reward_amount, reward_currency, starts_at, ends_at, terms_version, terms_text")
+              .eq("code", "SWITCH50")
+              .eq("active", true)
+              .lte("starts_at", nowIso)
+              .gte("ends_at", nowIso)
+              .maybeSingle();
+            const stage1Cutoff''',
+              'resume active campaign lookup')
+          replace_once(resume_path,
+              '    if (next > MAX_REMINDERS) { skip("max_reached"); continue; }\n\n    if (count > 0) {',
+              '''    if (next > MAX_REMINDERS) { skip("max_reached"); continue; }
+              if (next === 4 && (s.customer_details?.marketing_consent !== true || !switch50)) {
+                skip(s.customer_details?.marketing_consent === true ? "switch50_unavailable" : "marketing_consent_required");
+                continue;
+              }
+
+              if (count > 0) {''',
+              'resume campaign consent gate')
+          replace_once(resume_path,
+              '    const { subject, title, html } = copyFor(next, usefulFact(s), firstName);',
+              '    const { subject, title, html } = copyFor(next, usefulFact(s), firstName, switch50 as Record<string, any> | null);',
+              'resume campaign copy call')
+          replace_once(resume_path,
+              '    const url = `${SITE}/order/${encodeURIComponent(token)}`;',
+              '''    const params = new URLSearchParams({
+                utm_source: "occta",
+                utm_medium: "email",
+                utm_campaign: next === 4 ? "SWITCH50" : "abandoned_checkout",
+                utm_content: `reminder_${next}`,
+              });
+              if (next === 4) params.set("offer", "SWITCH50");
+              const url = `${SITE}/order/${encodeURIComponent(token)}?${params.toString()}`;''',
+              'resume tagged secure link')
+          replace_once(resume_path,
+              '      metadata: { session_id: s.id, reminder_number: next, stage: s.current_step },',
+              '      metadata: { session_id: s.id, reminder_number: next, stage: s.current_step, campaign_code: next === 4 ? "SWITCH50" : null },',
+              'resume campaign metadata')
+
+          # ------------------------------------------------------------------
+          # Completion endpoint exposes a real downloadable DD Guarantee PDF.
+          # ------------------------------------------------------------------
+          completion_path = 'supabase/functions/journey2-completion/index.ts'
+          replace_once(completion_path,
+              '  documents.push({ label: "Direct Debit Guarantee", url: "/legal/direct-debit-guarantee" });',
+              '''  const ddGuaranteeUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/journey2-dd-guarantee?token=${encodeURIComponent(parsed.data.token)}`;
+            documents.push({ label: "Direct Debit Guarantee (PDF)", url: ddGuaranteeUrl });''',
+              'completion DD guarantee URL')
+
+          # ------------------------------------------------------------------
+          # Completion UI always surfaces the guarantee even during a stale
+          # backend/frontend deployment window.
+          # ------------------------------------------------------------------
+          complete_ui = 'src/pages/order/OrderComplete.tsx'
+          replace_once(complete_ui,
+              '''  const addons = state.addons ?? [];
+            const readyDocs = state.documents.filter((d) => !!d.url);
+            const missingDocs = state.documents.filter((d) => !d.url);
+            const allDocsReady = state.documents.length > 0 && missingDocs.length === 0;''',
+              '''  const addons = state.addons ?? [];
+            const displayDocuments = [...state.documents];
+            if (!displayDocuments.some((d) => /Direct Debit Guarantee/i.test(d.label))) {
+              displayDocuments.push({ label: "Direct Debit Guarantee", url: "/legal/direct-debit-guarantee" });
+            }
+            if (!displayDocuments.some((d) => /Cooling-off/i.test(d.label))) {
+              displayDocuments.push({ label: "Cooling-off information", url: "/legal/switching-policy" });
+            }
+            const readyDocs = displayDocuments.filter((d) => !!d.url);
+            const missingDocs = displayDocuments.filter((d) => !d.url);
+            const allDocsReady = displayDocuments.length > 0 && missingDocs.length === 0;''',
+              'completion UI fallback docs')
+          replace_once(complete_ui,
+              '{state.documents.map((d) => (',
+              '{displayDocuments.map((d) => (',
+              'completion UI document map')
+
+          # ------------------------------------------------------------------
+          # Admin Journey Control: explain guest checkout and show full source.
+          # ------------------------------------------------------------------
+          monitor = 'src/components/admin/CheckoutJourneyMonitor.tsx'
+          replace_once(monitor,
+              '  utm_source: string | null;\n};',
+              '  utm_source: string | null;\n  attribution: Record<string, unknown> | null;\n};',
+              'monitor attribution type')
+          replace_once(monitor,
+              '      return [s.customer_name, s.customer_email, s.postcode, s.plan_label, s.current_stage, s.status, s.utm_source]',
+              '      return [s.customer_name, s.customer_email, s.postcode, s.plan_label, s.current_stage, s.status, s.utm_source, JSON.stringify(s.attribution ?? {})]',
+              'monitor attribution search')
+          replace_once(monitor,
+              '          <p className="text-xs text-muted-foreground mt-2">Abandoned indicates inactivity, not a confirmed lost customer. Anonymous checkout means no customer name was captured. Figures describe the latest 250 returned sessions, not necessarily every visit in the window.</p>',
+              '          <p className="text-xs text-muted-foreground mt-2">Abandoned indicates inactivity, not a confirmed lost customer. “Guest checkout” means the visitor has not signed in and/or their name has not been captured yet — it does not mean the session is untraceable. Journey Control still records the session, route, activity and available campaign/referrer attribution. Figures describe the latest 250 returned sessions, not necessarily every visit in the window.</p>',
+              'monitor guest explanation')
+          replace_once(monitor,
+              '<strong className="truncate">{row.customer_name || "Anonymous checkout"}</strong>',
+              '<strong className="truncate">{row.customer_name || "Guest checkout — name not captured yet"}</strong>',
+              'monitor guest label')
+          replace_once(monitor,
+              '<Badge variant="outline">{row.utm_source || "Source not recorded"}</Badge>',
+              '<Badge variant="outline">{String(row.attribution?.source_label ?? row.utm_source ?? "Direct / source unavailable")}</Badge>',
+              'monitor source label')
+          replace_once(monitor,
+              '''                        <dt className="text-muted-foreground">Current stage</dt><dd>{stageLabel(row.current_stage)}</dd>''',
+              '''                        <dt className="text-muted-foreground">Source</dt><dd>{String(row.attribution?.source_label ?? row.utm_source ?? "Direct / source unavailable")}</dd>
+                        <dt className="text-muted-foreground">Channel</dt><dd>{String(row.attribution?.channel ?? "unknown").replace(/_/g, " ")}</dd>
+                        <dt className="text-muted-foreground">UTM source</dt><dd>{String(row.attribution?.utm_source ?? "—")}</dd>
+                        <dt className="text-muted-foreground">UTM medium</dt><dd>{String(row.attribution?.utm_medium ?? "—")}</dd>
+                        <dt className="text-muted-foreground">Campaign</dt><dd>{String(row.attribution?.utm_campaign ?? "—")}</dd>
+                        <dt className="text-muted-foreground">Content / creative</dt><dd>{String(row.attribution?.utm_content ?? "—")}</dd>
+                        <dt className="text-muted-foreground">Search term</dt><dd>{String(row.attribution?.utm_term ?? "—")}</dd>
+                        <dt className="text-muted-foreground">Click ID</dt><dd>{String(row.attribution?.click_id_type ?? (row.attribution?.click_id_recorded ? "Recorded" : "—"))}</dd>
+                        <dt className="text-muted-foreground">QR / flyer ID</dt><dd>{String(row.attribution?.qr_id ?? "—")}</dd>
+                        <dt className="text-muted-foreground">Referrer</dt><dd className="break-all">{String(row.attribution?.referrer_host ?? "—")}</dd>
+                        <dt className="text-muted-foreground">Landing page</dt><dd className="break-all">{String(row.attribution?.landing_path ?? "—")}</dd>
+                        <dt className="text-muted-foreground">Current stage</dt><dd>{stageLabel(row.current_stage)}</dd>''',
+              'monitor attribution detail block')
+
+          # Keep the reminder DB contract in source control as well.
+          migration = Path('supabase/migrations/20260906183000_checkout_attribution_and_switch50_recovery.sql')
+          if not migration.exists():
+              migration.write_text('''-- Journey Control attribution display + one explicit-marketing-consent SWITCH50 recovery slot.\n\nALTER TABLE public.checkout_reminders DROP CONSTRAINT IF EXISTS checkout_reminders_reminder_number_check;\nALTER TABLE public.checkout_reminders ADD CONSTRAINT checkout_reminders_reminder_number_check CHECK (reminder_number >= 1 AND reminder_number <= 4);\n\n-- The production admin_checkout_session_list RPC is upgraded in the same release to\n-- return an attribution JSON object. The live function remains staff-gated with\n-- auth.uid()/is_staff and does not expose raw advertising click IDs.\n''')
+          PY
+
+          git diff --check
+          git status --short
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Confirm Supabase deployment credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_ACCESS_TOKEN:-}" || (echo "SUPABASE_ACCESS_TOKEN missing" && exit 1)
+
+      - name: Deploy changed Journey 2 functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase functions deploy journey2-session --project-ref "$PROJECT_REF"
+          supabase functions deploy journey2-resume-email --project-ref "$PROJECT_REF"
+          supabase functions deploy journey2-completion --project-ref "$PROJECT_REF"
+          supabase functions deploy journey2-dd-guarantee --project-ref "$PROJECT_REF"
+
+      - name: Commit and push verified hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'OCCTA Production Hotfix'
+          git config user.email 'actions@users.noreply.github.com'
+          git add src/lib/journey2/client.ts src/components/admin/CheckoutJourneyMonitor.tsx src/pages/order/OrderComplete.tsx supabase/functions/journey2-session/index.ts supabase/functions/journey2-resume-email/index.ts supabase/functions/journey2-completion/index.ts supabase/functions/journey2-dd-guarantee/index.ts supabase/config.toml supabase/migrations/20260906183000_checkout_attribution_and_switch50_recovery.sql
+          if git diff --cached --quiet; then
+            echo 'Journey attribution/recovery hotfix already present.'
+            exit 0
+          fi
+          git commit -m 'fix(journey): attribution recovery links and DD guarantee download'
+          git pull --rebase origin main
+          git push origin HEAD:main

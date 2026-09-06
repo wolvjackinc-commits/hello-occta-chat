@@ -3348,6 +3348,8 @@ export type Database = {
           abandoned_at: string | null
           anonymous_session_id_hash: string | null
           billing_anchor_day: number | null
+          campaign_code: string | null
+          campaign_snapshot: Json | null
           checkout_session_id: string
           checkout_tracking_started_at: string | null
           completed_at: string | null
@@ -3413,6 +3415,8 @@ export type Database = {
           abandoned_at?: string | null
           anonymous_session_id_hash?: string | null
           billing_anchor_day?: number | null
+          campaign_code?: string | null
+          campaign_snapshot?: Json | null
           checkout_session_id?: string
           checkout_tracking_started_at?: string | null
           completed_at?: string | null
@@ -3478,6 +3482,8 @@ export type Database = {
           abandoned_at?: string | null
           anonymous_session_id_hash?: string | null
           billing_anchor_day?: number | null
+          campaign_code?: string | null
+          campaign_snapshot?: Json | null
           checkout_session_id?: string
           checkout_tracking_started_at?: string | null
           completed_at?: string | null
@@ -6495,6 +6501,75 @@ export type Database = {
         }
         Relationships: []
       }
+      offer_campaigns: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          customer_type: string
+          ends_at: string
+          internal_notes: string | null
+          landing_path: string
+          one_per_address: boolean
+          payout_delay_days: number
+          plan_term: string
+          require_first_paid_invoice: boolean
+          reward_amount: number
+          reward_currency: string
+          reward_type: string
+          speed_bucket: string
+          starts_at: string
+          terms_text: string
+          terms_version: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          customer_type?: string
+          ends_at: string
+          internal_notes?: string | null
+          landing_path?: string
+          one_per_address?: boolean
+          payout_delay_days?: number
+          plan_term: string
+          require_first_paid_invoice?: boolean
+          reward_amount: number
+          reward_currency?: string
+          reward_type?: string
+          speed_bucket: string
+          starts_at: string
+          terms_text: string
+          terms_version: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          customer_type?: string
+          ends_at?: string
+          internal_notes?: string | null
+          landing_path?: string
+          one_per_address?: boolean
+          payout_delay_days?: number
+          plan_term?: string
+          require_first_paid_invoice?: boolean
+          reward_amount?: number
+          reward_currency?: string
+          reward_type?: string
+          speed_bucket?: string
+          starts_at?: string
+          terms_text?: string
+          terms_version?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_billing_snapshots: {
         Row: {
           created_at: string
@@ -6859,6 +6934,7 @@ export type Database = {
           business_billing_contact: string | null
           business_po_number: string | null
           business_tech_contact: string | null
+          campaign_code: string | null
           cancellation_preview: Json | null
           cancellation_requested_at: string | null
           cease_date: string | null
@@ -6902,6 +6978,7 @@ export type Database = {
           plan_price: number
           postcode: string
           preferred_start_date: string | null
+          promotion_snapshot: Json | null
           quote_id: string | null
           router_reference: string | null
           seats: number | null
@@ -6923,6 +7000,7 @@ export type Database = {
           business_billing_contact?: string | null
           business_po_number?: string | null
           business_tech_contact?: string | null
+          campaign_code?: string | null
           cancellation_preview?: Json | null
           cancellation_requested_at?: string | null
           cease_date?: string | null
@@ -6966,6 +7044,7 @@ export type Database = {
           plan_price: number
           postcode: string
           preferred_start_date?: string | null
+          promotion_snapshot?: Json | null
           quote_id?: string | null
           router_reference?: string | null
           seats?: number | null
@@ -6987,6 +7066,7 @@ export type Database = {
           business_billing_contact?: string | null
           business_po_number?: string | null
           business_tech_contact?: string | null
+          campaign_code?: string | null
           cancellation_preview?: Json | null
           cancellation_requested_at?: string | null
           cease_date?: string | null
@@ -7030,6 +7110,7 @@ export type Database = {
           plan_price?: number
           postcode?: string
           preferred_start_date?: string | null
+          promotion_snapshot?: Json | null
           quote_id?: string | null
           router_reference?: string | null
           seats?: number | null
@@ -7883,6 +7964,269 @@ export type Database = {
         }
         Relationships: []
       }
+      promotion_message_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          customer_id: string
+          event_id: number
+          first_attempt_at: string | null
+          id: string
+          last_error: string | null
+          lease_token: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          payload: Json
+          provider_message_id: string | null
+          reward_id: string
+          sent_at: string | null
+          status: string
+          template: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          customer_id: string
+          event_id: number
+          first_attempt_at?: string | null
+          id?: string
+          last_error?: string | null
+          lease_token?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          payload: Json
+          provider_message_id?: string | null
+          reward_id: string
+          sent_at?: string | null
+          status?: string
+          template: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          customer_id?: string
+          event_id?: number
+          first_attempt_at?: string | null
+          id?: string
+          last_error?: string | null
+          lease_token?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          provider_message_id?: string | null
+          reward_id?: string
+          sent_at?: string | null
+          status?: string
+          template?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_message_outbox_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "promotion_reward_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_message_outbox_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_reward_events: {
+        Row: {
+          actor_id: string | null
+          campaign_code: string
+          created_at: string
+          details: Json
+          event_type: string
+          from_status: string | null
+          id: number
+          order_id: string | null
+          request_id: string | null
+          reward_id: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          campaign_code?: string
+          created_at?: string
+          details?: Json
+          event_type: string
+          from_status?: string | null
+          id?: never
+          order_id?: string | null
+          request_id?: string | null
+          reward_id?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          campaign_code?: string
+          created_at?: string
+          details?: Json
+          event_type?: string
+          from_status?: string | null
+          id?: never
+          order_id?: string | null
+          request_id?: string | null
+          reward_id?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_reward_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_reward_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "promotion_reward_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_reward_events_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_rewards: {
+        Row: {
+          activation_at: string | null
+          blocked_reason: string | null
+          campaign_code: string
+          campaign_snapshot: Json
+          created_at: string
+          customer_id: string
+          eligibility_due_at: string | null
+          eligible_at: string | null
+          first_paid_invoice_id: string | null
+          id: string
+          issued_at: string | null
+          manual_hold: boolean
+          needs_review: boolean
+          order_id: string
+          payout_method: string | null
+          payout_queued_at: string | null
+          payout_reference: string | null
+          reversal_reason: string | null
+          reward_amount: number
+          reward_currency: string
+          reward_type: string
+          service_address_key: string
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          activation_at?: string | null
+          blocked_reason?: string | null
+          campaign_code: string
+          campaign_snapshot?: Json
+          created_at?: string
+          customer_id: string
+          eligibility_due_at?: string | null
+          eligible_at?: string | null
+          first_paid_invoice_id?: string | null
+          id?: string
+          issued_at?: string | null
+          manual_hold?: boolean
+          needs_review?: boolean
+          order_id: string
+          payout_method?: string | null
+          payout_queued_at?: string | null
+          payout_reference?: string | null
+          reversal_reason?: string | null
+          reward_amount: number
+          reward_currency?: string
+          reward_type?: string
+          service_address_key: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          activation_at?: string | null
+          blocked_reason?: string | null
+          campaign_code?: string
+          campaign_snapshot?: Json
+          created_at?: string
+          customer_id?: string
+          eligibility_due_at?: string | null
+          eligible_at?: string | null
+          first_paid_invoice_id?: string | null
+          id?: string
+          issued_at?: string | null
+          manual_hold?: boolean
+          needs_review?: boolean
+          order_id?: string
+          payout_method?: string | null
+          payout_queued_at?: string | null
+          payout_reference?: string | null
+          reversal_reason?: string | null
+          reward_amount?: number
+          reward_currency?: string
+          reward_type?: string
+          service_address_key?: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_rewards_campaign_code_fkey"
+            columns: ["campaign_code"]
+            isOneToOne: false
+            referencedRelation: "offer_campaigns"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "promotion_rewards_campaign_code_fkey"
+            columns: ["campaign_code"]
+            isOneToOne: false
+            referencedRelation: "switch50_campaign_funnel"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "promotion_rewards_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_rewards_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "promotion_rewards_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provisioning_readiness: {
         Row: {
           admin_review_complete: boolean
@@ -8371,6 +8715,8 @@ export type Database = {
           approved_by: string | null
           billing_start_rule: string | null
           bucket_override_reason: string | null
+          campaign_code: string | null
+          campaign_snapshot: Json | null
           cease_fee_gross: number | null
           checkout_session_id: string | null
           completed_at: string | null
@@ -8467,6 +8813,8 @@ export type Database = {
           approved_by?: string | null
           billing_start_rule?: string | null
           bucket_override_reason?: string | null
+          campaign_code?: string | null
+          campaign_snapshot?: Json | null
           cease_fee_gross?: number | null
           checkout_session_id?: string | null
           completed_at?: string | null
@@ -8563,6 +8911,8 @@ export type Database = {
           approved_by?: string | null
           billing_start_rule?: string | null
           bucket_override_reason?: string | null
+          campaign_code?: string | null
+          campaign_snapshot?: Json | null
           cease_fee_gross?: number | null
           checkout_session_id?: string | null
           completed_at?: string | null
@@ -12592,6 +12942,56 @@ export type Database = {
         }
         Relationships: []
       }
+      switch50_campaign_funnel: {
+        Row: {
+          active: boolean | null
+          code: string | null
+          ends_at: string | null
+          orders: number | null
+          quotes: number | null
+          rewards_eligible: number | null
+          rewards_issued: number | null
+          rewards_paid: number | null
+          rewards_payout_queued: number | null
+          sessions: number | null
+          starts_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          code?: string | null
+          ends_at?: string | null
+          orders?: never
+          quotes?: never
+          rewards_eligible?: never
+          rewards_issued?: never
+          rewards_paid?: never
+          rewards_payout_queued?: never
+          sessions?: never
+          starts_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          code?: string | null
+          ends_at?: string | null
+          orders?: never
+          quotes?: never
+          rewards_eligible?: never
+          rewards_issued?: never
+          rewards_paid?: never
+          rewards_payout_queued?: never
+          sessions?: never
+          starts_at?: string | null
+        }
+        Relationships: []
+      }
+      switch50_campaign_sources: {
+        Row: {
+          orders: number | null
+          sessions: number | null
+          source: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_approve_final_quote: {
@@ -12821,6 +13221,11 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      evaluate_promotion_reward: {
+        Args: { p_reward_id: string }
+        Returns: string
+      }
+      evaluate_promotion_rewards: { Args: never; Returns: number }
       expire_customer_journey_sessions: { Args: never; Returns: number }
       expire_old_quotes: { Args: never; Returns: number }
       finalize_service_cancellation: {
@@ -13128,6 +13533,22 @@ export type Database = {
         }[]
       }
       get_my_customer_overview: { Args: never; Returns: Json }
+      get_my_promotion_rewards: {
+        Args: never
+        Returns: {
+          activation_at: string
+          campaign_code: string
+          created_at: string
+          eligibility_due_at: string
+          eligible_at: string
+          id: string
+          issued_at: string
+          order_id: string
+          reward_amount: number
+          reward_currency: string
+          status: string
+        }[]
+      }
       get_order_journey_by_token: {
         Args: { _token_hash: string }
         Returns: {
@@ -13385,6 +13806,56 @@ export type Database = {
           tags: string[]
           title: string
         }[]
+      }
+      switch50_admin_action: {
+        Args: {
+          p_action: string
+          p_active?: boolean
+          p_actor: string
+          p_expected_version?: number
+          p_reason?: string
+          p_reference?: string
+          p_request_id: string
+          p_reward_id?: string
+        }
+        Returns: Json
+      }
+      switch50_claim_messages: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          customer_id: string
+          event_id: number
+          first_attempt_at: string | null
+          id: string
+          last_error: string | null
+          lease_token: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          payload: Json
+          provider_message_id: string | null
+          reward_id: string
+          sent_at: string | null
+          status: string
+          template: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "promotion_message_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      switch50_dispatch_messages: { Args: never; Returns: boolean }
+      switch50_finish_message: {
+        Args: {
+          p_error?: string
+          p_id: string
+          p_lease: string
+          p_provider_id?: string
+        }
+        Returns: boolean
       }
       track_checkout_event: {
         Args: {

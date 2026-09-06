@@ -5,7 +5,7 @@ export default function Switch50OfferSeo() {
   return (
     <>
       <SeoContentLayout
-        title="£50 broadband switch cashback — SWITCH50 offer | OCCTA"
+        title="£50 broadband switch cashback — SWITCH50 offer"
         metaDescription="Switch to OCCTA Essential Fibre on Price Lock 24 by 31 October 2026 and get £50 cashback. £34.99/mo incl. VAT, price fixed for 24 months. Terms apply."
         canonical="/broadband-cashback-offer"
         h1="£50 cashback when you switch to OCCTA broadband"

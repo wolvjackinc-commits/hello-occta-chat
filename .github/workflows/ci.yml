@@ -74,9 +74,10 @@ jobs:
         run: |
           nohup supabase functions serve --no-verify-jwt > /tmp/functions.log 2>&1 &
           for i in $(seq 1 60); do
-            curl -sf -o /dev/null "$J2_FUNCTIONS_URL/journey2-preflight" && break
+            curl -sf -X OPTIONS -o /dev/null "$J2_FUNCTIONS_URL/journey2-preflight" && break
             sleep 2
           done
+          curl -fsS -X OPTIONS -o /dev/null "$J2_FUNCTIONS_URL/journey2-preflight"
 
       - name: Journey 1 regression tests
         run: npm run test:j1-regression

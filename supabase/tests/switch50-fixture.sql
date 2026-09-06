@@ -1,6 +1,8 @@
 -- Minimal schema fixture, using the real production column names. Campaign
 -- migrations run unchanged on PostgreSQL; full historical replay is a CI gate.
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
+-- Supabase default grants must be explicitly narrowed for finance tables.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
 CREATE SCHEMA auth; CREATE SCHEMA cron;
 CREATE TABLE auth.users(id uuid PRIMARY KEY, email text);
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;

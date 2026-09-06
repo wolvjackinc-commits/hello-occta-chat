@@ -23,7 +23,7 @@ CREATE TABLE public.promotion_reward_events (
 CREATE INDEX promotion_events_reward ON public.promotion_reward_events(reward_id, id);
 CREATE INDEX promotion_events_order ON public.promotion_reward_events(order_id, id);
 ALTER TABLE public.promotion_reward_events ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.promotion_reward_events FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.promotion_reward_events FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT ON public.promotion_reward_events TO service_role;
 
 CREATE TABLE public.promotion_message_outbox (
@@ -47,7 +47,7 @@ CREATE TABLE public.promotion_message_outbox (
 CREATE INDEX promotion_messages_due ON public.promotion_message_outbox(next_attempt_at)
   WHERE status IN ('pending','processing');
 ALTER TABLE public.promotion_message_outbox ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.promotion_message_outbox FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.promotion_message_outbox FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT ON public.promotion_message_outbox TO service_role;
 
 -- Service code mutates finance state only through the transactions below.

@@ -202,3 +202,12 @@ test('customer-safe RPC and no direct finance access',async()=>{
   assert.equal((await rows("SELECT * FROM promotion_rewards")).length,0);
   await assert.rejects(db.exec("SELECT evaluate_promotion_rewards()"),/permission denied/);
 });
+
+test('service role can use audited operations but cannot edit or truncate the audit/outbox directly',async()=>{
+  await seed();await db.exec("SET LOCAL ROLE service_role");
+  assert.ok((await rows("SELECT * FROM switch50_claim_messages(5)")).length>0);
+  for(const table of ['promotion_reward_events','promotion_message_outbox']) {
+    for(const privilege of ['INSERT','UPDATE','DELETE','TRUNCATE'])
+      assert.equal((await one("SELECT has_table_privilege(current_user,$1,$2) allowed",[table,privilege])).allowed,false);
+  }
+});

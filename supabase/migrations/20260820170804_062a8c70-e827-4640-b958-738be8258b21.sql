@@ -10,6 +10,11 @@ DECLARE
     v_vat NUMERIC := 23.50;
     v_body_html TEXT;
 BEGIN
+    -- This is a correction to a preexisting customer invoice, not seed data.
+    IF NOT EXISTS (SELECT 1 FROM public.invoices WHERE id = v_old_inv_id AND user_id = v_user_id)
+      OR NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = v_user_id) THEN
+      RETURN;
+    END IF;
     -- 1. Cancel the incorrect invoice
     UPDATE public.invoices 
     SET status = 'cancelled', notes = 'Cancelled in favour of INV-2608-0004 due to first payment amount correction.'

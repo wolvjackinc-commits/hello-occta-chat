@@ -72,7 +72,11 @@ jobs:
 
       - name: Serve edge functions locally
         run: |
-          nohup supabase functions serve --no-verify-jwt > /tmp/functions.log 2>&1 &
+          # A fresh random test key exercises real encryption without using any
+          # production secret. No provider keys or delivery flags are supplied.
+          umask 077
+          printf 'DD_FIELD_ENC_KEY=%s\n' "$(openssl rand -hex 32)" > /tmp/occta-ci-functions.env
+          nohup supabase functions serve --no-verify-jwt --env-file /tmp/occta-ci-functions.env > /tmp/functions.log 2>&1 &
           for i in $(seq 1 60); do
             curl -sf -X OPTIONS -o /dev/null "$J2_FUNCTIONS_URL/journey2-preflight" && break
             sleep 2

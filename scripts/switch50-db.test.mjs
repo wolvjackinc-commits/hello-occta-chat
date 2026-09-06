@@ -59,9 +59,9 @@ test('later or unrelated paid bill cannot substitute for unpaid first bill',asyn
   assert.equal((await get(f)).status,'pending');
   await db.query("UPDATE invoices SET status='paid' WHERE id=$1",[f.invoice]);assert.equal((await get(f)).status,'eligible');
 });
-test('refund revokes payout queue; payment correction restores eligibility',async()=>{
+test('payment status correction revokes payout queue; paid correction restores eligibility',async()=>{
   const f=await seed();assert.equal((await action(f,'queue_payout')).ok,true);
-  await db.query("UPDATE invoices SET status='refunded' WHERE id=$1",[f.invoice]);assert.equal((await get(f)).status,'pending');
+  await db.query("UPDATE invoices SET status='sent' WHERE id=$1",[f.invoice]);assert.equal((await get(f)).status,'pending');
   assert.equal((await action(f,'mark_issued',{reference:'BANK-123'})).ok,false);
   await db.query("UPDATE invoices SET status='paid' WHERE id=$1",[f.invoice]);assert.equal((await get(f)).status,'eligible');
 });
@@ -153,7 +153,7 @@ test('request replay returns original result; changed payload conflicts',async()
 test('manual hold survives reevaluation; release rechecks payment',async()=>{
   const f=await seed();await action(f,'block',{reason:'Investigation needs review'});
   await db.exec("SELECT evaluate_promotion_rewards()");assert.equal((await get(f)).status,'blocked');
-  await db.query("UPDATE invoices SET status='refunded' WHERE id=$1",[f.invoice]);
+  await db.query("UPDATE invoices SET status='sent' WHERE id=$1",[f.invoice]);
   await action(f,'release',{reason:'Manual investigation complete'});assert.equal((await get(f)).status,'pending');
 });
 test('paid reward is flagged for review after cancellation; recovery preserves transfer reference',async()=>{
@@ -210,4 +210,23 @@ test('service role can use audited operations but cannot edit or truncate the au
     for(const privilege of ['INSERT','UPDATE','DELETE','TRUNCATE'])
       assert.equal((await one("SELECT has_table_privilege(current_user,$1,$2) allowed",[table,privilege])).allowed,false);
   }
+});
+
+test('full first-invoice credit stops a queued payout while unrelated credits do not',async()=>{
+  const f=await seed();await action(f,'queue_payout');
+  await db.query("INSERT INTO credit_notes(invoice_id,user_id,amount) VALUES($1,$2,34.99)",[randomUUID(),uid]);
+  assert.equal((await get(f)).status,'payout_queued');
+  const credit=await one("INSERT INTO credit_notes(invoice_id,user_id,amount) VALUES($1,$2,34.99) RETURNING id",[f.invoice,uid]);
+  assert.equal((await get(f)).blocked_reason,'first_broadband_payment_reversed');
+  assert.equal((await action(f,'mark_issued',{reference:'BLOCKED-CREDIT'})).ok,false);
+  await db.query("DELETE FROM credit_notes WHERE id=$1",[credit.id]);assert.equal((await get(f)).status,'eligible');
+});
+
+test('receipt reversal triggers review even when the invoice is still marked paid',async()=>{
+  const f=await seed();
+  await db.query("INSERT INTO receipts(invoice_id,user_id,amount) VALUES($1,$2,34.99)",[f.invoice,uid]);
+  await action(f,'queue_payout');
+  await db.query("INSERT INTO receipts(invoice_id,user_id,amount) VALUES($1,$2,-34.99)",[f.invoice,uid]);
+  assert.equal((await get(f)).status,'blocked');
+  assert.equal((await get(f)).blocked_reason,'first_broadband_payment_reversed');
 });

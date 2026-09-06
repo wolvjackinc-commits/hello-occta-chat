@@ -23,8 +23,10 @@ CREATE TABLE public.journey2_contract_snapshots(id uuid PRIMARY KEY, session_id 
 CREATE TABLE public.quotes(id uuid PRIMARY KEY, monthly_gross numeric, reward_eligibility text);
 CREATE TABLE public.contract_summaries(id uuid PRIMARY KEY, quote_id uuid, speed_notes text, monthly_price_incl_vat numeric);
 CREATE TABLE public.invoices(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, order_id uuid, service_id uuid,
-  invoice_type text DEFAULT 'monthly', status text DEFAULT 'sent', total numeric DEFAULT 34.99,
+  invoice_type text DEFAULT 'monthly', status text DEFAULT 'sent' CHECK(status IN ('draft','issued','sent','paid','overdue','cancelled')), total numeric DEFAULT 34.99,
   issue_date date DEFAULT current_date, due_date date, created_at timestamptz DEFAULT now());
+CREATE TABLE public.credit_notes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), invoice_id uuid NOT NULL, user_id uuid NOT NULL, amount numeric NOT NULL);
+CREATE TABLE public.receipts(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), invoice_id uuid NOT NULL, user_id uuid NOT NULL, amount numeric NOT NULL);
 CREATE TABLE public.services(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), order_id uuid, user_id uuid,
   service_type text DEFAULT 'broadband', status text DEFAULT 'active', archived_at timestamptz,
   activation_blocked_pending_review boolean DEFAULT false);

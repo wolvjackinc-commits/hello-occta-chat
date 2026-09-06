@@ -240,6 +240,12 @@ BEGIN
       OR prev.lifecycle_status = 'live')) THEN v_reason := 'existing_broadband_customer';
   ELSIF v_activation IS NULL OR NOT v_live OR o.activation_blocked_pending_review THEN v_reason := 'awaiting_live_service';
   ELSIF v_first.id IS NULL OR v_first.status::text <> 'paid' THEN v_reason := 'awaiting_first_broadband_payment';
+  ELSIF (SELECT coalesce(sum(c.amount),0) FROM public.credit_notes c
+      WHERE c.invoice_id=v_first.id AND c.user_id=r.customer_id) >= v_first.total
+    OR (EXISTS(SELECT 1 FROM public.receipts p WHERE p.invoice_id=v_first.id AND p.user_id=r.customer_id)
+      AND (SELECT coalesce(sum(p.amount),0) FROM public.receipts p
+        WHERE p.invoice_id=v_first.id AND p.user_id=r.customer_id) <= 0)
+    THEN v_reason := 'first_broadband_payment_reversed';
   ELSIF EXISTS (SELECT 1 FROM public.invoices i WHERE i.user_id = r.customer_id AND i.total > 0
     AND i.due_date < (now() AT TIME ZONE 'Europe/London')::date
     AND i.status::text NOT IN ('paid','draft','void','voided','cancelled','refunded')) THEN v_reason := 'account_in_arrears';
@@ -253,7 +259,7 @@ BEGIN
     RETURN 'issued';
   END IF;
   v_next := CASE WHEN v_reason IS NULL THEN CASE WHEN r.status = 'payout_queued' THEN 'payout_queued' ELSE 'eligible' END
-    WHEN v_reason IN ('order_evidence_changed','service_cancelled_or_ceased','existing_broadband_customer','account_in_arrears') THEN 'blocked'
+    WHEN v_reason IN ('order_evidence_changed','service_cancelled_or_ceased','existing_broadband_customer','account_in_arrears','first_broadband_payment_reversed') THEN 'blocked'
     ELSE 'pending' END;
   IF (r.status, r.activation_at, r.eligibility_due_at, r.first_paid_invoice_id, r.blocked_reason)
      IS DISTINCT FROM (v_next, v_activation, v_due, CASE WHEN v_first.status::text = 'paid' THEN v_first.id END, v_reason) THEN
@@ -286,7 +292,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE v_customer uuid; v_order uuid; r record;
 BEGIN
   IF TG_TABLE_NAME = 'orders' THEN v_order := NEW.id;
-  ELSIF TG_TABLE_NAME = 'invoices' THEN v_customer := coalesce(NEW.user_id, OLD.user_id);
+  ELSIF TG_TABLE_NAME IN ('invoices','credit_notes','receipts') THEN v_customer := coalesce(NEW.user_id, OLD.user_id);
   ELSIF TG_TABLE_NAME = 'services' THEN v_order := coalesce(NEW.order_id, OLD.order_id);
   ELSE v_order := coalesce(NEW.order_id, OLD.order_id); END IF;
   FOR r IN SELECT id FROM public.promotion_rewards
@@ -299,6 +305,10 @@ CREATE TRIGGER zz_switch50_order_changed AFTER INSERT OR UPDATE OF lifecycle_sta
   actual_activation_date, cancellation_requested_at, cease_date, activation_blocked_pending_review, customer_id
   ON public.orders FOR EACH ROW EXECUTE FUNCTION public.switch50_source_changed();
 CREATE TRIGGER switch50_invoice_changed AFTER INSERT OR DELETE OR UPDATE ON public.invoices
+  FOR EACH ROW EXECUTE FUNCTION public.switch50_source_changed();
+CREATE TRIGGER switch50_credit_changed AFTER INSERT OR DELETE OR UPDATE ON public.credit_notes
+  FOR EACH ROW EXECUTE FUNCTION public.switch50_source_changed();
+CREATE TRIGGER switch50_receipt_changed AFTER INSERT OR DELETE OR UPDATE ON public.receipts
   FOR EACH ROW EXECUTE FUNCTION public.switch50_source_changed();
 CREATE TRIGGER switch50_service_changed AFTER INSERT OR DELETE OR UPDATE OF status, archived_at, activation_blocked_pending_review
   ON public.services FOR EACH ROW EXECUTE FUNCTION public.switch50_source_changed();

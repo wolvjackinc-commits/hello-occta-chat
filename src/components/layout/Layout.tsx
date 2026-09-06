@@ -2,6 +2,7 @@ import { ReactNode, lazy, Suspense, useState, useEffect, useCallback } from "rea
 import Header from "./Header";
 import { MessageCircle } from "lucide-react";
 import CheckoutJourneyTracker from "@/components/checkout/CheckoutJourneyTracker";
+import Switch50CampaignStrip from "@/components/campaigns/Switch50CampaignStrip";
 
 const Footer = lazy(() => import("./Footer"));
 const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanionV4"));
@@ -24,6 +25,7 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen flex flex-col">
       <CheckoutJourneyTracker />
       <Header />
+      <Switch50CampaignStrip />
       <main className="flex-1">{children}</main>
       <Suspense fallback={null}>
         <Footer />

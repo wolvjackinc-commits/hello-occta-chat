@@ -261,7 +261,7 @@ export default function OrderJourney() {
         canonical="/order"
         noIndex
       />
-      <section className="container mx-auto px-4 py-10 max-w-5xl">
+      <section className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         <Journey2Progress current={displayStep} />
         {session.test_session && (
           <p className="mb-4 border-2 border-foreground p-3 text-xs font-display uppercase tracking-widest">
@@ -269,7 +269,7 @@ export default function OrderJourney() {
           </p>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px] items-start">
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-8">
           <div>
             {inSelection && activeStep === "address" && (
               <AddressStep session={session} saving={saving} onSave={(p) => save("address", p)} />

@@ -31,10 +31,21 @@ jobs:
           version: 2.98.0
 
       - name: Start the local Supabase stack
-        run: supabase start
+        # Historical schedules contain production URLs. Bring up the empty
+        # local stack first, then disable cron execution before replaying them.
+        run: |
+          set -euo pipefail
+          mv supabase/migrations /tmp/occta-ci-migrations
+          trap 'mv /tmp/occta-ci-migrations supabase/migrations' EXIT
+          supabase start
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS pg_cron'
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER SYSTEM SET cron.launch_active_jobs = 'off'"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'SELECT pg_reload_conf()'
 
       - name: Apply every migration through Supabase tooling
-        run: supabase db reset --no-seed
+        run: |
+          supabase migration up --local
+          test "$(psql "$DATABASE_URL" -Atc 'SHOW cron.launch_active_jobs')" = off
 
       - name: Seed dedicated TEST settings and catalogue only
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/ci-seed.sql

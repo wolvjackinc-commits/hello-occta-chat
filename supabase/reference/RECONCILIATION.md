@@ -1,0 +1,15 @@
+# OCCTA Cloud migration reconciliation
+
+Read-only database inspection was performed through the existing Lovable connection for project `ea7adb26-38dd-437d-a03d-df03c03f3f22` on 6 September 2026. The direct personal Supabase connector's access error does not prevent Lovable Cloud inspection. No Lovable AI build/chat call was needed, and no live write was performed.
+
+The live database reported PostgreSQL 17.6 and 259 applied migration records. The SWITCH50 campaign/reward tables were absent. The live schema and history establish the following repairs for fresh local/CI replay:
+
+1. The two February alternate admin-console migrations were never applied and conflict with the canonical January billing tables. Their unchanged originals are preserved in `unapplied-admin-console/`, outside the executable migration directory.
+2. Applied migration `20260203075743`, which creates email templates, campaigns, campaign recipients, policies, indexes and timestamp triggers, was missing from Git. Its exact SQL was recovered from the applied migration record and restored under its actual version. No customer/template rows were exported.
+3. Two June migrations operate on a specific preexisting internal-test contract. Their operations now run only if that contract exists, so fresh replay does not manufacture payment requests for nonexistent customer/contract records. Existing deployment-specific operations are otherwise preserved.
+4. CI creates an empty local stack, disables cron execution, and only then applies the migrations using `supabase migration up --local`. Historical schedules include production URLs and must not execute during isolated tests. The workflow verifies cron execution remains off after replay.
+5. The campaign test fixture now reflects the actual invoice status constraint. Full credits and reversed receipts are checked through their real billing tables, with source triggers and regression coverage.
+
+Most historical Git filenames differ from the live applied version by one to five seconds. Do not issue a blanket `db push --include-all` against Lovable Cloud based on this directory: it would attempt to rerun existing historical schema and data operations. A production release must compare the applied versions and apply only the reviewed, genuinely new SWITCH50 migrations in order, with migration tracking recorded through the approved deployment mechanism. Reconciliation changes here are for reproducible fresh environments; they are not instructions to replay old data fixes on production.
+
+One additional live-history entry is a deployment-specific contract-token update with no schema change. It was not copied into the fresh schema replay. No customer tokens, data exports, database passwords or service-role keys are included in this reconciliation.

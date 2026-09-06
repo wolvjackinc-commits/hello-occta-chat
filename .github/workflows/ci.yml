@@ -36,11 +36,20 @@ jobs:
         run: |
           set -euo pipefail
           mv supabase/migrations /tmp/occta-ci-migrations
-          trap 'mv /tmp/occta-ci-migrations supabase/migrations' EXIT
+          trap 'mkdir -p supabase/migrations; mv /tmp/occta-ci-migrations/*.sql supabase/migrations/; rmdir /tmp/occta-ci-migrations' EXIT
           supabase start
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS pg_cron'
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER SYSTEM SET cron.launch_active_jobs = 'off'"
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'SELECT pg_reload_conf()'
+          # Only the ephemeral local database container's administrative role
+          # can set this server parameter; application roles stay unchanged.
+          db_container="$(docker ps --filter publish=54322 --format '{{.ID}}')"
+          [[ "$db_container" =~ ^[a-f0-9]{12}$ ]]
+          docker exec "$db_container" psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "ALTER SYSTEM SET cron.launch_active_jobs = 'off'"
+          docker exec "$db_container" psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c 'SELECT pg_reload_conf()'
+          for i in $(seq 1 10); do
+            test "$(psql "$DATABASE_URL" -Atc 'SHOW cron.launch_active_jobs')" = off && break
+            sleep 1
+          done
+          test "$(psql "$DATABASE_URL" -Atc 'SHOW cron.launch_active_jobs')" = off
 
       - name: Apply every migration through Supabase tooling
         run: |

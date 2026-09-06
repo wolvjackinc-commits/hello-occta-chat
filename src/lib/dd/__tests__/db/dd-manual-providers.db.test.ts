@@ -349,7 +349,7 @@ maybe("Direct Debit manual providers (database-backed)", () => {
         [userId, `TEST-BROWSER-${randomUUID()}`],
       );
       expect(result.rows[0].id).toBeTruthy();
-      expect(result.rows[0].status).toBe("pending");
+      expect(result.rows[0].status).toBe("details_received");
       await expect(db.query(
         "insert into dd_mandates (user_id, mandate_reference, status) values ($1, $2, 'active')",
         [userId, `TEST-FORBIDDEN-${randomUUID()}`],

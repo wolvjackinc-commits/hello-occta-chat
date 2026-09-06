@@ -324,9 +324,9 @@ maybe("Direct Debit manual providers (database-backed)", () => {
   it("forbids browser clients from writing status, history or notifications", async () => {
     const { rows } = await db.query(
       `select table_name, privilege_type from information_schema.role_table_grants
-         where grantee = 'authenticated'
+         where grantee in ('authenticated','anon')
            and table_name in ('dd_mandate_status_history','dd_email_outbox')
-           and privilege_type in ('INSERT','UPDATE','DELETE')`,
+           and privilege_type in ('INSERT','UPDATE','DELETE','TRUNCATE')`,
     );
     expect(rows).toEqual([]);
 
@@ -336,5 +336,26 @@ maybe("Direct Debit manual providers (database-backed)", () => {
            and privilege_type = 'UPDATE' and column_name in ('status','sort_code','account_number_full','bank_details_ciphertext')`,
     );
     expect(upd[0].n).toBe(0);
+  });
+
+  it("preserves masked finance intake while rejecting a browser-supplied active state", async () => {
+    await db.query("savepoint browser_intake");
+    try {
+      await db.query("insert into user_roles (user_id, role) values ($1, 'finance_admin')", [userId]);
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [userId]);
+      await db.query("set local role authenticated");
+      const result = await db.query(
+        "insert into dd_mandates (user_id, mandate_reference, bank_last4, account_holder) values ($1, $2, '1234', 'TEST finance intake') returning id, status",
+        [userId, `TEST-BROWSER-${randomUUID()}`],
+      );
+      expect(result.rows[0].id).toBeTruthy();
+      expect(result.rows[0].status).toBe("pending");
+      await expect(db.query(
+        "insert into dd_mandates (user_id, mandate_reference, status) values ($1, $2, 'active')",
+        [userId, `TEST-FORBIDDEN-${randomUUID()}`],
+      )).rejects.toMatchObject({ code: "42501" });
+    } finally {
+      await db.query("rollback to savepoint browser_intake");
+    }
   });
 });

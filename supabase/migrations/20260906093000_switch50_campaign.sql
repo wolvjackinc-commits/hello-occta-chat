@@ -44,7 +44,7 @@ INSERT INTO public.offer_campaigns (
 ) VALUES (
   'SWITCH50',
   'OCCTA £50 Switch Cash',
-  true,
+  false, -- Finance/admin enables new acquisitions after release verification.
   '2026-09-06 00:00:00 Europe/London',
   '2026-10-31 23:59:59 Europe/London',
   'residential',
@@ -59,7 +59,7 @@ INSERT INTO public.offer_campaigns (
   '/broadband?offer=SWITCH50',
   'switch50-2026-09-06-v1',
   'New residential customers only. SWITCH50 applies only to an eligible Essential Fibre Price Lock 24 order placed by 31 October 2026. The £50 reward is separate from the broadband price and does not reduce the £34.99 monthly price. Availability, estimated speed, setup requirements, router/equipment choices, one-off charges and the final price are confirmed for the customer address before order. One SWITCH50 reward per eligible service address. The service must activate, remain live and not be in arrears or cancellation/cease status when eligibility is checked. The first broadband invoice must have been paid. The reward becomes eligible 30 days after service activation once all eligibility conditions are met. OCCTA may withhold or reverse a reward for duplicate, fraudulent, cancelled, ceased, unpaid or otherwise ineligible orders. Reward payment is recorded against the order and customer account. Statutory rights are unaffected.',
-  'Launch offer approved for Essential Fibre Price Lock 24 only. Do not apply to Flex 30, Superfast, Ultrafast, business orders or expired/inactive campaigns.'
+  'Launch configuration for Essential Fibre Price Lock 24 only. Enable after release verification. Do not apply to Flex 30, Superfast, Ultrafast, business orders or expired/inactive campaigns.'
 )
 ON CONFLICT (code) DO UPDATE SET
   title = EXCLUDED.title,

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-let db;
+let db, installedCampaignActive;
 const uid=randomUUID(),admin=randomUUID(),finance=randomUUID(),outsider=randomUUID();
 const rows=async(sql,params=[]) => (await db.query(sql,params)).rows;
 const one=async(sql,params=[]) => (await rows(sql,params))[0];
@@ -13,6 +13,7 @@ before(async()=>{
   await db.exec(readFileSync('supabase/tests/switch50-fixture.sql','utf8'));
   for(const f of readdirSync('supabase/migrations').filter(f=>/switch50.*\.sql$/.test(f)).sort())
     await db.exec(readFileSync('supabase/migrations/'+f,'utf8'));
+  installedCampaignActive=(await one("SELECT active FROM offer_campaigns WHERE code='SWITCH50'")).active;
   await db.query("INSERT INTO auth.users VALUES($1,'customer@example.test'),($2,'admin@example.test'),($3,'finance@example.test'),($4,'other@example.test')",[uid,admin,finance,outsider]);
   await db.query("INSERT INTO user_roles VALUES($1,'admin'),($2,'finance_admin')",[admin,finance]);
 });
@@ -44,6 +45,10 @@ async function action(f,act,extra={}){
 test('three migrations apply and view column ordering is compatible',async()=>{
   const fields=await rows("SELECT column_name FROM information_schema.columns WHERE table_name='switch50_campaign_funnel' ORDER BY ordinal_position");
   assert.equal(fields[9].column_name,'rewards_paid');assert.equal(fields[10].column_name,'rewards_payout_queued');
+});
+
+test('a fresh campaign stays paused until finance/admin enables acquisitions',()=>{
+  assert.equal(installedCampaignActive,false);
 });
 test('active broadband, first paid bill and D+30 qualify £50',async()=>{
   const f=await seed();assert.equal((await get(f)).status,'eligible');assert.equal((await get(f)).first_paid_invoice_id,f.invoice);assert.equal(Number((await get(f)).reward_amount),50);

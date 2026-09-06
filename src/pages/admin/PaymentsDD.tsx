@@ -272,12 +272,11 @@ export const AdminPaymentsDD = () => {
         .from("dd_mandates")
         .insert({
           user_id: selectedCustomer.id,
-          status: "pending",
           mandate_reference: mandateRef,
           bank_last4: newMandate.bankLast4 || null,
           account_holder: newMandate.accountHolder || selectedCustomer.full_name || null,
         })
-        .select()
+        .select("id")
         .single();
 
       if (error) throw error;

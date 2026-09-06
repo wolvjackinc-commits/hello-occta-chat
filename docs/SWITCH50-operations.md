@@ -16,7 +16,7 @@ OCCTA uses Lovable Cloud's managed Supabase backend. Its database can be inspect
 
 The initial February replay conflict was reconciled against that applied history. Two unapplied alternate admin-schema files are preserved outside the executable directory. A missing, already-applied email-schema migration was restored from the database's own history. Historical internal-test payment operations now require their preexisting test contract. Details and deployment implications are recorded in `supabase/reference/RECONCILIATION.md`. CI disables cron execution before replay so historical production schedules cannot run inside tests.
 
-Local verification includes 210 unit tests and 32 PostgreSQL campaign tests. The real email HTTP handler is exercised with mocked database/provider boundaries. The PostgreSQL fixture includes the live invoice status constraint and tests full credit notes and receipt reversals. These checks send no real messages. Full CI and staging remain mandatory release gates; consult the workflow result for the exact release commit.
+Local verification includes 210 unit tests and 33 PostgreSQL campaign tests. The real email HTTP handler is exercised with mocked database/provider boundaries. The PostgreSQL fixture includes the live invoice status constraint and tests full credit notes and receipt reversals. Fresh installations start with the campaign paused until an administrator enables it through the audited control. These checks send no real messages. Full CI and staging remain mandatory release gates; consult the workflow result for the exact release commit.
 
 ### Minimising Lovable credits
 

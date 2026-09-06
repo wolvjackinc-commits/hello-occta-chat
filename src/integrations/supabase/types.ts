@@ -13010,6 +13010,7 @@ export type Database = {
         Args: { _limit?: number }
         Returns: {
           abandoned_at: string
+          attribution: Json
           completed_at: string
           current_route: string
           current_stage: string

@@ -90,6 +90,7 @@ const RoutersPage = lazy(() => import("./pages/seo/Routers"));
 const BroadbandPlansSeo = lazy(() => import("./pages/seo/BroadbandPlans"));
 const SimOnlyPlansSeo = lazy(() => import("./pages/seo/SimOnlyPlans"));
 const SwitchBroadbandSeo = lazy(() => import("./pages/seo/SwitchBroadband"));
+const Switch50OfferSeo = lazy(() => import("./pages/seo/Switch50Offer"));
 const LandlinePlansSeo = lazy(() => import("./pages/seo/LandlinePlans"));
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
@@ -429,6 +430,7 @@ const AnimatedRoutes = () => {
         <Route path="/broadband-plans" element={<Suspense fallback={null}><BroadbandPlansSeo /></Suspense>} />
         <Route path="/sim-only-plans" element={<Suspense fallback={null}><SimOnlyPlansSeo /></Suspense>} />
         <Route path="/switch-broadband-provider" element={<Suspense fallback={null}><SwitchBroadbandSeo /></Suspense>} />
+        <Route path="/broadband-cashback-offer" element={<Suspense fallback={null}><Switch50OfferSeo /></Suspense>} />
         <Route path="/landline-plans" element={<Suspense fallback={null}><LandlinePlansSeo /></Suspense>} />
         <Route path="/fibre-broadband" element={<FibreBroadbandPage />} />
         <Route path="/broadband-and-digital-voice" element={<BroadbandAndDigitalVoicePage />} />

@@ -90,6 +90,7 @@ const RoutersPage = lazy(() => import("./pages/seo/Routers"));
 const BroadbandPlansSeo = lazy(() => import("./pages/seo/BroadbandPlans"));
 const SimOnlyPlansSeo = lazy(() => import("./pages/seo/SimOnlyPlans"));
 const SwitchBroadbandSeo = lazy(() => import("./pages/seo/SwitchBroadband"));
+const Switch50OfferSeo = lazy(() => import("./pages/seo/Switch50Offer"));
 const LandlinePlansSeo = lazy(() => import("./pages/seo/LandlinePlans"));
 import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";

@@ -64,8 +64,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "hard_block", blocks: check.blocks }, 422);
   }
 
-  // Reuse if an accepted or issued pack already exists for the same body.
-  const bodySnapshot = { components, segment, template_version: TWO_DOC_TEMPLATE_VERSION };
+  // Promotion is part of the logical body. An accepted pack therefore cannot
+  // silently gain or lose SWITCH50 after the customer accepts it.
+  const promotion = ((q as any).campaign_snapshot ?? null) as Record<string, any> | null;
+  const bodySnapshot = { components, segment, promotion, template_version: TWO_DOC_TEMPLATE_VERSION };
   const bodyHash = await sha256Hex(JSON.stringify(bodySnapshot));
 
   const { data: existingRows } = await supabase
@@ -121,7 +123,7 @@ Deno.serve(async (req) => {
       document_status: "issued",
       template_version: TWO_DOC_TEMPLATE_VERSION,
       body_snapshot: bodySnapshot,
-      pdf_hash: bodyHash,             // logical body hash (idempotency)
+      pdf_hash: bodyHash,
       pdf_storage_path: storagePath,
       issued_at_utc: new Date().toISOString(),
       display_timezone: "Europe/London",
@@ -142,7 +144,7 @@ Deno.serve(async (req) => {
 function renderPackPdf(opts: {
   components: ServiceComponent[];
   segment: CustomerSegment;
-  quote: { id: string; plan_name?: string | null };
+  quote: { id: string; plan_name?: string | null; monthly_gross?: number | null; campaign_snapshot?: Record<string, any> | null };
 }): ArrayBuffer {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
@@ -157,7 +159,6 @@ function renderPackPdf(opts: {
     line(4);
   };
 
-  // Title
   doc.setFont("helvetica", "bold"); doc.setFontSize(18);
   doc.text(CONTRACT_INFORMATION_PACK_TITLE, M, y); line(24);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
@@ -203,16 +204,24 @@ function renderPackPdf(opts: {
   heading("5. Speeds");
   para(SPEED_ESTIMATE_DISCLAIMER);
 
-  heading("6. Billing");
+  const promotion = opts.quote.campaign_snapshot;
+  if (promotion?.eligible === true && promotion?.code === "SWITCH50") {
+    heading("6. SWITCH50 — £50 Switch Cash");
+    para(`This order includes the SWITCH50 promotion: £${Number(promotion.reward_amount ?? 50).toFixed(2)} cash reward. The reward is separate from the broadband price and does not reduce the monthly broadband charge of £${Number(opts.quote.monthly_gross ?? 0).toFixed(2)}.`);
+    para(String(promotion.payout_rule ?? "The reward becomes eligible 30 days after service activation once the first broadband invoice has been paid and the account remains eligible."));
+    para(`Promotion terms (${String(promotion.terms_version ?? "switch50")}): ${String(promotion.terms_text ?? "")}`);
+  }
+
+  heading("7. Billing");
   para(PAYMENT_SCHEDULE_SAFE);
 
-  heading("7. Complaints & ADR");
+  heading("8. Complaints & ADR");
   para(COMPLAINTS_ADR_SAFE);
 
-  heading("8. Data protection");
+  heading("9. Data protection");
   para("OCCTA LIMITED is the data controller for your personal information. See our Privacy Policy at occta.co.uk/privacy for lawful bases, retention periods and your rights.");
 
-  heading("9. Vulnerable customers");
+  heading("10. Vulnerable customers");
   para("If you or someone in your household has additional needs — medical, accessibility, financial vulnerability, or reliance on the line for emergency contact — please tell us before accepting this pack so we can support you appropriately.");
 
   return doc.output("arraybuffer") as ArrayBuffer;

@@ -180,7 +180,7 @@ export default function UnifiedJourney() {
         description="Your personalised OCCTA quote and secure order journey."
         canonical={`/quote/${token}`}
       />
-      <section className="container mx-auto px-4 py-10 max-w-2xl">
+      <section className="container mx-auto w-full px-4 py-10 max-w-5xl">
         <JourneyProgress current={step} />
         <div className="flex justify-end -mt-2 mb-4">
           <button

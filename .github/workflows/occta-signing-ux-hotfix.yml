@@ -1,0 +1,206 @@
+name: OCCTA Signing UX Production Hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/occta-signing-ux-hotfix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: occta-signing-ux-production
+  cancel-in-progress: false
+
+jobs:
+  hotfix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout production main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Simplify agreement confirmations and widen order layouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          agreement = Path('src/pages/quote/journey/AgreementStep.tsx')
+          s = agreement.read_text()
+
+          old = '''const CHECKBOXES = [
+            { key: "received_read", text: "I confirm that I have received, read and had the opportunity to download my Contract Summary and Contract Information." },
+            { key: "details_correct", text: "I confirm that my personal details and service address shown above are correct." },
+            { key: "understand_charges", text: "I understand the monthly charges, one-off charges, contract duration, cancellation rights and payment arrangements." },
+            { key: "consent", text: "I expressly consent to enter into the agreement with OCCTA LIMITED on the terms shown in my Contract Summary and Contract Information." },
+          ] as const;
+
+          type CbKey = typeof CHECKBOXES[number]["key"];
+          '''
+          new = '''const REVIEW_CONFIRMATION =
+            "I confirm that I have received and reviewed my Contract Summary and Contract Information, that my personal details and service address are correct, and that I understand the monthly and one-off charges, contract term, cancellation rights and payment arrangements.";
+          const CONSENT_CONFIRMATION =
+            "I agree to enter into this agreement with OCCTA LIMITED on the terms shown in my Contract Summary and Contract Information.";
+          '''
+          if old not in s:
+              raise SystemExit('Agreement checkbox constants target not found')
+          s = s.replace(old, new, 1)
+
+          old = '''  const [addressConfirmed, setAddressConfirmed] = useState(false);
+            const [checks, setChecks] = useState<Record<CbKey, boolean>>({ received_read: false, details_correct: false, understand_charges: false, consent: false });'''
+          new = '''  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+            const [consentConfirmed, setConsentConfirmed] = useState(false);'''
+          if old not in s:
+              raise SystemExit('Agreement state target not found')
+          s = s.replace(old, new, 1)
+
+          old = '  const allChecksTicked = CHECKBOXES.every((c) => checks[c.key]);'
+          new = '  const allChecksTicked = reviewConfirmed && consentConfirmed;'
+          if old not in s:
+              raise SystemExit('allChecksTicked target not found')
+          s = s.replace(old, new, 1)
+
+          old = '''    dobValid &&
+              addressConfirmed &&
+              allChecksTicked &&'''
+          new = '''    dobValid &&
+              allChecksTicked &&'''
+          if old not in s:
+              raise SystemExit('form validation address target not found')
+          s = s.replace(old, new, 1)
+
+          old = '''          address_confirmed: true,
+                    date_of_birth: dob,
+                    checkbox_received_read: checks.received_read,
+                    checkbox_details_correct: checks.details_correct,
+                    checkbox_understand_charges: checks.understand_charges,
+                    checkbox_consent: checks.consent,'''
+          new = '''          // The first customer-facing confirmation consolidates document receipt/review,
+                    // detail/address correctness and understanding of commercial terms. The legacy
+                    // evidence fields remain true individually so existing immutable acceptance
+                    // records and server validation continue to work without weakening the gate.
+                    address_confirmed: reviewConfirmed,
+                    date_of_birth: dob,
+                    checkbox_received_read: reviewConfirmed,
+                    checkbox_details_correct: reviewConfirmed,
+                    checkbox_understand_charges: reviewConfirmed,
+                    checkbox_consent: consentConfirmed,'''
+          if old not in s:
+              raise SystemExit('submit confirmation target not found')
+          s = s.replace(old, new, 1)
+
+          old = '            <p className="text-xs text-muted-foreground">All four confirmations below must be ticked. Nothing is binding until you click the button at the bottom.</p>'
+          new = '            <p className="text-xs text-muted-foreground">Two clear confirmations only. Nothing is binding until you click the button at the bottom.</p>'
+          if old not in s:
+              raise SystemExit('four confirmations copy target not found')
+          s = s.replace(old, new, 1)
+
+          old = '''          <label className="flex items-start gap-2 text-sm border border-dashed border-foreground/40 p-3">
+                    <Checkbox checked={addressConfirmed} onCheckedChange={(v) => setAddressConfirmed(v === true)} />
+                    <span>I confirm the service address shown above (<strong>{cs.service_address}</strong>) is correct.</span>
+                  </label>
+
+                  <div className="space-y-3">
+                    {CHECKBOXES.map((c) => (
+                      <label key={c.key} className="flex items-start gap-2 text-sm">
+                        <Checkbox
+                          checked={checks[c.key]}
+                          onCheckedChange={(v) => setChecks((s) => ({ ...s, [c.key]: v === true }))}
+                        />
+                        <span>{c.text}</span>
+                      </label>
+                    ))}
+                  </div>'''
+          new = '''          <div className="space-y-3 rounded-none border-2 border-foreground/30 p-4">
+                    <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed">
+                      <Checkbox
+                        checked={reviewConfirmed}
+                        onCheckedChange={(v) => setReviewConfirmed(v === true)}
+                        aria-label="Confirm contract review, details and charges"
+                      />
+                      <span>
+                        {REVIEW_CONFIRMATION}
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          Service address: <strong className="text-foreground">{cs.service_address}</strong>
+                        </span>
+                      </span>
+                    </label>
+
+                    <label className="flex cursor-pointer items-start gap-3 border-t border-foreground/20 pt-3 text-sm leading-relaxed">
+                      <Checkbox
+                        checked={consentConfirmed}
+                        onCheckedChange={(v) => setConsentConfirmed(v === true)}
+                        aria-label="Agree to enter into the OCCTA agreement"
+                      />
+                      <span>{CONSENT_CONFIRMATION}</span>
+                    </label>
+                  </div>'''
+          if old not in s:
+              raise SystemExit('checkbox UI block target not found')
+          s = s.replace(old, new, 1)
+
+          agreement.write_text(s)
+
+          order = Path('src/pages/order/OrderJourney.tsx')
+          s = order.read_text()
+          replacements = {
+              'className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10"': 'className="w-full px-4 py-8 sm:px-6 lg:px-8 lg:py-10"',
+              'className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-8"': 'className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:gap-8"',
+              '          <div>\n            {inSelection && activeStep === "address"': '          <div className="min-w-0">\n            {inSelection && activeStep === "address"',
+          }
+          for old, new in replacements.items():
+              if old not in s:
+                  if new in s:
+                      continue
+                  raise SystemExit(f'Order layout target not found: {old}')
+              s = s.replace(old, new, 1)
+          order.write_text(s)
+
+          unified = Path('src/pages/quote/UnifiedJourney.tsx')
+          s = unified.read_text()
+          old = 'className="container mx-auto px-4 py-10 max-w-2xl"'
+          new = 'className="container mx-auto w-full px-4 py-10 max-w-5xl"'
+          if old in s:
+              s = s.replace(old, new, 1)
+          unified.write_text(s)
+          PY
+
+          git diff --check
+          git diff -- src/pages/quote/journey/AgreementStep.tsx src/pages/order/OrderJourney.tsx src/pages/quote/UnifiedJourney.tsx
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
+
+      - name: Commit and push verified production hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/pages/quote/journey/AgreementStep.tsx src/pages/order/OrderJourney.tsx src/pages/quote/UnifiedJourney.tsx; then
+            echo 'Signing UX hotfix already present.'
+            exit 0
+          fi
+          git config user.name 'OCCTA Production Hotfix'
+          git config user.email 'actions@users.noreply.github.com'
+          git add src/pages/quote/journey/AgreementStep.tsx src/pages/order/OrderJourney.tsx src/pages/quote/UnifiedJourney.tsx
+          git commit -m 'fix(order): simplify signing consent and use full desktop width'
+          git pull --rebase origin main
+          git push origin HEAD:main

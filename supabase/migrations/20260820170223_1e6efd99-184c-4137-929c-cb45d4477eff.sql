@@ -1,3 +1,8 @@
+-- Historical billing correction; require its original invoice on fresh replay.
+DO $replay$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.invoices WHERE id='0324ab8c-8758-4493-b564-0c93ebb02ff2')
+    AND EXISTS (SELECT 1 FROM public.profiles WHERE id='67ac9cf4-f5f6-4df3-9e42-523899d71cdf') THEN
 
 UPDATE public.invoices 
 SET 
@@ -35,3 +40,6 @@ INSERT INTO public.communications_log (
     'custom_admin',
     NOW()
 );
+
+  END IF;
+END $replay$;

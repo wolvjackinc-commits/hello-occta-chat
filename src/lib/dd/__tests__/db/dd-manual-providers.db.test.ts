@@ -10,6 +10,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Client } from "pg";
+import { randomUUID } from "node:crypto";
 
 const url = process.env.DATABASE_URL ?? process.env.SUPABASE_DB_URL ?? "";
 const isCi = process.env.CI === "true" || process.env.CI === "1";
@@ -17,6 +18,9 @@ if (isCi && !url) {
   throw new Error("CI requires DATABASE_URL (or SUPABASE_DB_URL) for the Direct Debit database suite. Refusing to skip.");
 }
 const maybe = url ? describe : describe.skip;
+if (url && !["localhost", "127.0.0.1", "[::1]"].includes(new URL(url).hostname)) {
+  throw new Error("The Direct Debit fixture requires an isolated local database; refusing a remote target.");
+}
 
 maybe("Direct Debit manual providers (database-backed)", () => {
   let db: Client;
@@ -64,22 +68,24 @@ maybe("Direct Debit manual providers (database-backed)", () => {
       ssl: /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: false },
     });
     await db.connect();
-    // Resolve a real user id without touching the managed `auth` schema: the
-    // public profiles table mirrors auth.users one-for-one.
-    const { rows } = await db.query("select id from profiles order by created_at limit 1");
-    userId = rows[0]?.id ?? "";
-    if (!userId) throw new Error("No profile row available for the Direct Debit suite");
+    // A fresh local stack has no customers. Create a synthetic identity inside
+    // this transaction; the real auth trigger creates its profile and role.
+    // Rollback also prevents queued pg_net requests from being committed.
+    await db.query("begin");
+    userId = randomUUID();
+    await db.query(
+      `insert into auth.users (id, email, raw_user_meta_data)
+       values ($1, $2, '{"full_name":"TEST Direct Debit fixture"}'::jsonb)`,
+      [userId, `dd-ci-${userId}@example.invalid`],
+    );
   });
 
   afterAll(async () => {
     try {
-      for (const id of created) {
-        await db.query("delete from dd_email_outbox where mandate_id = $1", [id]);
-        await db.query("delete from dd_mandate_status_history where mandate_id = $1", [id]);
-        await db.query("delete from dd_mandates where id = $1", [id]);
-      }
-    } catch { /* read-only role */ }
-    await db.end();
+      await db?.query("rollback");
+    } finally {
+      await db?.end();
+    }
   });
 
   it("configures exactly the two manual providers with their real SUN and notice period", async () => {
@@ -182,9 +188,8 @@ maybe("Direct Debit manual providers (database-backed)", () => {
     expect(o[0].n).toBe(1);
   });
 
-  // Provider-specific end-to-end workflow evidence. These mandates are TEST
-  // mandates and are deliberately RETAINED as the auditable evidence the
-  // production preflight requires for each manual provider.
+  // Provider-specific workflow evidence is asserted in this isolated local
+  // transaction. It is rolled back and is not production preflight evidence.
   for (const p of [
     { code: "fastpay", collector: "FastPay Ltd", sun: "246668", notice: 5 },
     { code: "accesspay", collector: "APS Re OCCTA", sun: "538166", notice: 3 },
@@ -319,9 +324,9 @@ maybe("Direct Debit manual providers (database-backed)", () => {
   it("forbids browser clients from writing status, history or notifications", async () => {
     const { rows } = await db.query(
       `select table_name, privilege_type from information_schema.role_table_grants
-         where grantee = 'authenticated'
+         where grantee in ('authenticated','anon')
            and table_name in ('dd_mandate_status_history','dd_email_outbox')
-           and privilege_type in ('INSERT','UPDATE','DELETE')`,
+           and privilege_type in ('INSERT','UPDATE','DELETE','TRUNCATE')`,
     );
     expect(rows).toEqual([]);
 
@@ -331,5 +336,26 @@ maybe("Direct Debit manual providers (database-backed)", () => {
            and privilege_type = 'UPDATE' and column_name in ('status','sort_code','account_number_full','bank_details_ciphertext')`,
     );
     expect(upd[0].n).toBe(0);
+  });
+
+  it("preserves masked finance intake while rejecting a browser-supplied active state", async () => {
+    await db.query("savepoint browser_intake");
+    try {
+      await db.query("insert into user_roles (user_id, role) values ($1, 'finance_admin')", [userId]);
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [userId]);
+      await db.query("set local role authenticated");
+      const result = await db.query(
+        "insert into dd_mandates (user_id, mandate_reference, bank_last4, account_holder) values ($1, $2, '1234', 'TEST finance intake') returning id, status",
+        [userId, `TEST-BROWSER-${randomUUID()}`],
+      );
+      expect(result.rows[0].id).toBeTruthy();
+      expect(result.rows[0].status).toBe("details_received");
+      await expect(db.query(
+        "insert into dd_mandates (user_id, mandate_reference, status) values ($1, $2, 'active')",
+        [userId, `TEST-FORBIDDEN-${randomUUID()}`],
+      )).rejects.toMatchObject({ code: "42501" });
+    } finally {
+      await db.query("rollback to savepoint browser_intake");
+    }
   });
 });

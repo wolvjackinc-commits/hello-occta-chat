@@ -38,6 +38,24 @@ export async function snapshotFingerprint(snapshot: unknown): Promise<string> {
   return toHex(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
 }
 
+export type Journey2Promotion = {
+  code: string;
+  title: string;
+  eligible: true;
+  reward_type: string;
+  reward_amount: number;
+  reward_currency: string;
+  payout_delay_days: number;
+  require_first_paid_invoice: boolean;
+  one_per_address: boolean;
+  terms_version: string;
+  terms_text: string;
+  starts_at: string;
+  ends_at: string;
+  monthly_price_reduced: false;
+  payout_rule: string;
+};
+
 export type Journey2Snapshot = {
   snapshot_version: string;
   journey_version: "v2";
@@ -70,6 +88,7 @@ export type Journey2Snapshot = {
     estimated_first_bill_incl_vat: number; vat_rate_percent: number;
     one_off_charged_on_first_bill: boolean;
   };
+  promotion: Journey2Promotion | null;
   schedule: {
     preferred_start_date: string; billing_day: number;
     expected_first_collection_rule: string; billing_commencement_rule: string;
@@ -140,6 +159,38 @@ export type SnapshotInput = {
 
 const round2 = (n: number) => Math.round(Number(n) * 100) / 100;
 
+function promotionForSnapshot(session: Record<string, any>, createdAt: string): Journey2Promotion | null {
+  const p = (session.campaign_snapshot ?? null) as Record<string, any> | null;
+  if (!p || p.eligible !== true || String(p.code ?? "") !== "SWITCH50") return null;
+  if (String(session.speed_bucket ?? "") !== "essential" || String(session.plan_term ?? "") !== "price_lock_24") return null;
+
+  // The wrapper re-resolves against the database immediately before contract
+  // preparation. This time check is a second fail-safe for sessions crossing
+  // the advertised order deadline.
+  const created = new Date(createdAt).getTime();
+  const starts = new Date(String(p.starts_at ?? "")).getTime();
+  const ends = new Date(String(p.ends_at ?? "")).getTime();
+  if (!Number.isFinite(created) || !Number.isFinite(starts) || !Number.isFinite(ends) || created < starts || created > ends) return null;
+
+  return {
+    code: "SWITCH50",
+    title: String(p.title ?? "OCCTA £50 Switch Cash"),
+    eligible: true,
+    reward_type: String(p.reward_type ?? "cashback"),
+    reward_amount: round2(Number(p.reward_amount ?? 50)),
+    reward_currency: String(p.reward_currency ?? "GBP"),
+    payout_delay_days: Number(p.payout_delay_days ?? 30),
+    require_first_paid_invoice: p.require_first_paid_invoice !== false,
+    one_per_address: p.one_per_address !== false,
+    terms_version: String(p.terms_version ?? "switch50-2026-09-06-v1"),
+    terms_text: String(p.terms_text ?? ""),
+    starts_at: String(p.starts_at ?? ""),
+    ends_at: String(p.ends_at ?? ""),
+    monthly_price_reduced: false,
+    payout_rule: String(p.payout_rule ?? "£50 cash reward becomes eligible 30 days after service activation once the first broadband invoice has been paid, provided the account remains eligible."),
+  };
+}
+
 /** Builds the canonical snapshot. Used by BOTH the live and the test path. */
 export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
   const { session, priced, vatPercent, pricingVersion, planName, legalVersions } = input;
@@ -157,6 +208,7 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
   const oneOff = round2(priced.router.oneOff + priced.setup.oneOff);
   const dvSelected = ((session.selected_addons ?? []) as string[]).includes("digital_voice");
   const mask = (session.dd_masked ?? {}) as Record<string, any>;
+  const createdAt = input.createdAt ?? new Date().toISOString();
 
   return {
     snapshot_version: SNAPSHOT_VERSION,
@@ -164,7 +216,7 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
     test_session: !!session.test_session,
     checkout_session_id: String(session.checkout_session_id),
     pricing_version: pricingVersion,
-    created_at: input.createdAt ?? new Date().toISOString(),
+    created_at: createdAt,
     customer: {
       full_name: String(d.full_name ?? ""),
       email: String(d.email ?? ""),
@@ -237,6 +289,7 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
       vat_rate_percent: round2(vatPercent),
       one_off_charged_on_first_bill: true,
     },
+    promotion: promotionForSnapshot(session, createdAt),
     schedule: {
       preferred_start_date: String(session.preferred_start_date),
       billing_day: Number(session.billing_anchor_day),
@@ -302,6 +355,9 @@ export function snapshotMatchesSession(
   ];
   for (const [field, a, b] of checks) {
     if (String(a ?? "") !== String(b ?? "")) return { ok: false, field };
+  }
+  if (snapshot.promotion?.code && snapshot.promotion.code !== String(session.campaign_code ?? "")) {
+    return { ok: false, field: "campaign_code" };
   }
   if (Number(snapshot.pricing?.amount_due_today ?? 1) !== 0) return { ok: false, field: "amount_due_today" };
   return { ok: true };

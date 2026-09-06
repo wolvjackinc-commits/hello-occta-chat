@@ -60,6 +60,15 @@ Deno.serve(async (req) => {
   }
   if (!orderNumber) return jsonResponse({ error: "not_completed" }, 409);
 
+  const { data: initialReward, error: rewardError } = await supabase.from("promotion_rewards")
+    .select("status,eligibility_due_at,issued_at").eq("order_id", session.order_id).eq("campaign_code", "SWITCH50").maybeSingle();
+  let promotionReward = initialReward;
+  if (rewardError && snap?.promotion) return jsonResponse({ error: "reward_status_unavailable" }, 503);
+  if (snap?.promotion && !promotionReward) {
+    const duplicate = await supabase.from("promotion_reward_events").select("id").eq("order_id",session.order_id).eq("event_type","duplicate_address_rejected").limit(1);
+    if (duplicate.error) return jsonResponse({ error: "reward_status_unavailable" },503);
+    if (duplicate.data?.length) promotionReward = {status:"blocked",eligibility_due_at:null,issued_at:null};
+  }
   const documents: { label: string; url: string | null }[] = [];
   if (session.contract_summary_id) {
     const { data: cs } = await supabase
@@ -74,8 +83,6 @@ Deno.serve(async (req) => {
     }
     documents.push({ label: "Signed Contract Summary", url: csUrl });
 
-    // Contract Information uses pdf_storage_path in the contract-documents
-    // bucket (not the Contract Summary's pdf_storage_key / contract-pdfs bucket).
     const { data: cip } = await supabase
       .from("contract_information_packs")
       .select("pdf_storage_path")
@@ -91,7 +98,6 @@ Deno.serve(async (req) => {
     }
     documents.push({ label: "Contract Information", url: cipUrl });
 
-    // Acceptance certificates use storage_key in their own private bucket.
     const { data: cert } = await supabase
       .from("acceptance_certificates")
       .select("storage_key")
@@ -115,7 +121,7 @@ Deno.serve(async (req) => {
   const masked = session.dd_masked as Record<string, any> | null;
   const product = snap?.product ?? {};
   const addr = (snap?.service_address ?? {}) as Record<string, string | null>;
-  const addressLine = [addr.line1, addr.line2, addr.city, addr.postcode]
+  const addressLine = [addr.address_line_1, addr.address_line_2, addr.town, addr.county, addr.postcode]
     .filter((x) => !!x && String(x).trim().length > 0).join(", ") || null;
 
   return jsonResponse({
@@ -160,6 +166,8 @@ Deno.serve(async (req) => {
       documents,
       digital_voice_selected: ((session.selected_addons ?? []) as string[]).includes("digital_voice"),
       snapshot_sha256: snapshot.snapshot_sha256,
+      promotion: snap?.promotion ?? null,
+      promotion_reward: promotionReward ?? null,
     },
   });
 });

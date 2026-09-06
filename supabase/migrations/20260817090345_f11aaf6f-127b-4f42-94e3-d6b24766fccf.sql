@@ -5,6 +5,10 @@ DECLARE
   v_recipient_email TEXT := 'phoenixs83@yahoo.com';
   v_full_name TEXT := 'Corrina Marie Hughes';
 BEGIN
+  -- Historical delivery record; a fresh replay must not fabricate its customer.
+  IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = v_customer_id) THEN
+    RETURN;
+  END IF;
   INSERT INTO public.communications_log (
     user_id,
     recipient_email,

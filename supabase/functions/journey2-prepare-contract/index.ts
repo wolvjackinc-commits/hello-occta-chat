@@ -26,6 +26,7 @@ import {
   type Journey2Snapshot,
 } from "../_shared/journey2Snapshot.ts";
 import { buildJourney2DocumentPack } from "../_shared/journey2Docs.ts";
+import { resolveOfferPromotion } from "../_shared/offerCampaign.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16) });
@@ -64,6 +65,22 @@ Deno.serve(async (req) => {
   if (!session) return jsonResponse({ error: "session_not_found" }, 404);
   if (["cancelled", "expired"].includes(session.status)) {
     return jsonResponse({ error: "session_closed", status: session.status }, 409);
+  }
+
+  // Campaign eligibility is resolved here, immediately before the immutable
+  // contractual snapshot is created. Browser state can never decide the reward.
+  if (session.campaign_code && !session.contract_snapshot_id) {
+    const promotion = await resolveOfferPromotion(supabase, session.campaign_code, {
+      customer_type: "residential",
+      speed_bucket: session.speed_bucket,
+      plan_term: session.plan_term,
+    });
+    session.campaign_snapshot = promotion;
+    const campaignSave = await supabase.from("customer_journey_sessions").update({
+      campaign_snapshot: promotion,
+      last_activity_at: new Date().toISOString(),
+    }).eq("id", session.id);
+    if (campaignSave.error) return jsonResponse({ error: "campaign_save_failed" }, 503);
   }
 
   const details = (session.customer_details ?? null) as Record<string, any> | null;
@@ -121,7 +138,7 @@ Deno.serve(async (req) => {
           description: `Journey 2 session ${session.id} (${session.speed_bucket}/${session.plan_term}) has no exact price. The customer is still in Journey 2 and can retry.`,
           priority: "high",
           status: "open",
-        }).then(() => {}).catch(() => {});
+        }).then(() => {}, () => {});
       }
       return jsonResponse({
         error: "price_unavailable",
@@ -228,9 +245,9 @@ Deno.serve(async (req) => {
         customer_type: "residential",
         preferred_contact_method: "email",
         marketing_consent: snapshot.customer.marketing_consent,
-        source: "journey_v2",
+        source: snapshot.promotion ? "journey_v2_switch50" : "journey_v2",
         status: "quoted",
-        message: `Journey 2 order: ${session.speed_bucket} · ${session.plan_term} · router=${snapshot.router.option}/${snapshot.router.payment_type} · addons=${snapshot.addons.map((a) => a.id).join(",") || "none"}`,
+        message: `Journey 2 order: ${session.speed_bucket} · ${session.plan_term} · router=${snapshot.router.option}/${snapshot.router.payment_type} · addons=${snapshot.addons.map((a) => a.id).join(",") || "none"}${snapshot.promotion ? ` · campaign=${snapshot.promotion.code} · reward=${snapshot.promotion.reward_currency} ${snapshot.promotion.reward_amount.toFixed(2)}` : ""}`,
         ip,
         user_agent: ua,
       }).select("id, reference").single();
@@ -271,9 +288,6 @@ Deno.serve(async (req) => {
       speed_bucket: session.speed_bucket,
       plan_term: session.plan_term,
       router_option: snapshot.router,
-      // Snapshots created before the speed fields existed are immutable, so the
-      // estimate is derived from the agreed speed bucket instead. The contract
-      // must always state an estimated speed.
       estimated_download_speed: snapshot.product.estimated_download_mbps
         || speedEstimatesFor(session.speed_bucket)?.download || null,
       estimated_upload_speed: snapshot.product.estimated_upload_mbps
@@ -281,6 +295,11 @@ Deno.serve(async (req) => {
       speed_notes: snapshot.product.speed_statement || speedStatementFor(session.speed_bucket),
       setup_option: { option: JOURNEY2_SETUP, label: snapshot.product.setup.label, oneOff: snapshot.product.setup.one_off_incl_vat },
       selected_addons: snapshot.addons,
+      reward_eligibility: snapshot.promotion
+        ? `${snapshot.promotion.code}: ${moneyForReward(snapshot.promotion.reward_amount)} Switch Cash; separate from monthly broadband price; ${snapshot.promotion.payout_rule}`
+        : null,
+      campaign_code: snapshot.promotion?.code ?? null,
+      campaign_snapshot: snapshot.promotion ?? null,
       journey_version: "v2",
       checkout_session_id: session.checkout_session_id,
     }).select("id, quote_number").single();
@@ -292,7 +311,7 @@ Deno.serve(async (req) => {
     await supabase.from("quote_events").insert({
       quote_id: quoteId, quote_request_id: quoteRequestId,
       event_type: "quote_created",
-      title: `Quote ${qIns.data.quote_number} created by Customer Journey 2`,
+      title: `Quote ${qIns.data.quote_number} created by Customer Journey 2${snapshot.promotion ? ` · ${snapshot.promotion.code}` : ""}`,
       actor_type: "public",
     });
 
@@ -320,10 +339,10 @@ Deno.serve(async (req) => {
       _actor_type: "public",
       _event_type: "journey2_contract_prepared",
       _title: `Journey 2 contract prepared for ${qIns.data.quote_number}`,
-      _details: { session_id: session.id, quote_id: quoteId, snapshot_sha256: snapshotHash },
+      _details: { session_id: session.id, quote_id: quoteId, snapshot_sha256: snapshotHash, campaign_code: snapshot.promotion?.code ?? null },
       _source_module: "journey2",
       _quote_id: quoteId,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
   }
 
   if (!quoteToken) {
@@ -367,3 +386,7 @@ Deno.serve(async (req) => {
     snapshot_sha256: snapshotHash,
   });
 });
+
+function moneyForReward(n: number): string {
+  return `£${Number(n).toFixed(2)}`;
+}

@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
 
     const supabase = getServiceClient();
     const nowIso = new Date().toISOString();
-    let state = await loadState(supabase);
+    const state = await loadState(supabase);
 
     const facts = {
       customer: {
@@ -300,7 +300,7 @@ Deno.serve(async (req) => {
     // ---------------- PREPARE / SEND both need records + fresh links ----------
     // 1. Profile (idempotent).
     let profileId = state.profile?.id ?? null;
-    let created = { profile: false, service: false, quote: false, contract_summary: false, dd_link: false };
+    const created = { profile: false, service: false, quote: false, contract_summary: false, dd_link: false };
     if (!profileId) {
       const { data: newUser, error: cErr } = await supabase.auth.admin.createUser({
         email: CONTACT_EMAIL,

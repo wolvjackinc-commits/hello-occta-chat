@@ -38,7 +38,7 @@ function buildEmailHtml(p: any, dashboardUrl: string, helpfulLinksHtml = "") {
   const isDirectDebit = p.payment_method_label === "Direct Debit";
 
   const intro = `
-    <p style="margin:0 0 12px 0">You did a smart thing. You picked the provider that doesn't believe in 24-month lock-ins, mid-contract price hikes, or chatbots that pretend to be human. Your service is now live and ready to use.</p>
+    <p style="margin:0 0 12px 0">Your OCCTA service is now live and ready to use. Your agreed contract term and monthly price are recorded in your Contract Summary.</p>
     <p style="margin:0">Here's everything you need to manage it — bookmark this email, your account number on it is your reference for anything down the line.</p>
   `;
 

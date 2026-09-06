@@ -1,10 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 import { seoPrerender } from "./vite-plugin-prerender";
 import { seoArticlePrerender } from "./vite-plugin-seo-articles";
-import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 const publicBackendEnv = {
   VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ?? "https://oexgjmuvgdndizsufipe.supabase.co",
@@ -15,7 +13,7 @@ const publicBackendEnv = {
 };
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   define: {
     __BUILD_VERSION__: JSON.stringify(
       `${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`
@@ -32,10 +30,8 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === "development" && componentTagger(),
     seoPrerender(),
     seoArticlePrerender(),
-    mcpPlugin(),
   ].filter(Boolean),
   resolve: {
     alias: {

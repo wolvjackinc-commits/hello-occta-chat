@@ -45,6 +45,24 @@ function pricingBlock(s: Journey2Snapshot) {
   };
 }
 
+function promotionBlock(s: Journey2Snapshot) {
+  if (!s.promotion) return null;
+  return {
+    code: s.promotion.code,
+    title: s.promotion.title,
+    reward_type: s.promotion.reward_type,
+    reward_amount: s.promotion.reward_amount,
+    reward_currency: s.promotion.reward_currency,
+    reward_display: `${money(s.promotion.reward_amount)} Switch Cash`,
+    monthly_price_reduced: false,
+    monthly_price_statement: `The reward is separate from your broadband bill and does not reduce the ${money(s.pricing.monthly_incl_vat)} monthly price.`,
+    payout_rule: s.promotion.payout_rule,
+    terms_version: s.promotion.terms_version,
+    terms_text: s.promotion.terms_text,
+    one_per_address: s.promotion.one_per_address,
+  };
+}
+
 function ddBlock(s: Journey2Snapshot, ddStatus: string) {
   return {
     account_holder_name: s.direct_debit.account_holder_name,
@@ -99,6 +117,7 @@ export function buildJourney2DocumentPack(
     accessibility_needs: s.customer.accessibility_needs,
     vulnerability_support_needs: s.customer.vulnerability_support_needs,
   };
+  const promotion = promotionBlock(s);
 
   const docs: Journey2Doc[] = [
     {
@@ -111,6 +130,7 @@ export function buildJourney2DocumentPack(
         billing_address: s.billing_address,
         product,
         pricing: pricingBlock(s),
+        promotion,
         schedule,
         direct_debit: ddBlock(s, meta.dd_status),
         cooling_off: s.cooling_off,
@@ -127,6 +147,7 @@ export function buildJourney2DocumentPack(
         ...base,
         product,
         pricing: pricingBlock(s),
+        promotion,
         schedule,
         switching: s.switching,
         cooling_off: s.cooling_off,
@@ -146,6 +167,7 @@ export function buildJourney2DocumentPack(
         accepted_email: s.customer.email,
         fingerprint_verified: true,
         cooling_off_days: s.cooling_off.days,
+        accepted_promotion: promotion,
       },
     },
     {
@@ -156,6 +178,7 @@ export function buildJourney2DocumentPack(
         includes: [...REQUIRED_DOC_TYPES],
         product,
         pricing: pricingBlock(s),
+        promotion,
         schedule,
         direct_debit: ddBlock(s, meta.dd_status),
         cooling_off: s.cooling_off,
@@ -168,12 +191,14 @@ export function buildJourney2DocumentPack(
         ...base,
         product,
         pricing: pricingBlock(s),
+        promotion,
         schedule,
         service_address: s.service_address,
         next_steps: [
           "We confirm your order with the network.",
           "We send your advance Direct Debit notice at least 3 working days before your first collection.",
           "We confirm your installation or activation date.",
+          ...(promotion ? [`${money(s.promotion!.reward_amount)} Switch Cash is checked ${s.promotion!.payout_delay_days} days after activation once the first broadband invoice is paid and the account remains eligible.`] : []),
         ],
       },
     },

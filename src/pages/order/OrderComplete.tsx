@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { journey2, money, type Journey2Completion } from "@/lib/journey2/client";
+import { Switch50RewardStatus } from "@/components/campaigns/Switch50RewardStatus";
+import { trackSwitch50Purchase } from "@/lib/switch50Analytics";
 import { companyConfig } from "@/lib/companyConfig";
 
 const TERM_LABEL: Record<string, string> = {
@@ -51,6 +53,7 @@ export default function OrderComplete() {
       .then((r) => {
         if (r?.ok && r.completion) {
           setState(r.completion);
+          trackSwitch50Purchase(r.completion);
           // Trigger Google Ads conversion tracking for the purchase
           if (!r.completion.test_session) {
             window.gtag?.('event', 'conversion', {
@@ -199,6 +202,7 @@ export default function OrderComplete() {
           </div>
         </div>
 
+        {state.promotion?.eligible && <div className="mb-6"><Switch50RewardStatus amount={state.promotion.reward_amount} reward={state.promotion_reward} /></div>}
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Left column */}
           <div className="lg:col-span-3 space-y-6">

@@ -18,23 +18,51 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: 22
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci --no-audit --no-fund
 
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.98.0
 
       - name: Start the local Supabase stack
-        run: supabase start
+        # Historical schedules contain production URLs. Bring up the empty
+        # local stack first, then disable cron execution before replaying them.
+        run: |
+          set -euo pipefail
+          mv supabase/migrations /tmp/occta-ci-migrations
+          trap 'mkdir -p supabase/migrations; mv /tmp/occta-ci-migrations/*.sql supabase/migrations/; rmdir /tmp/occta-ci-migrations' EXIT
+          supabase start
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS pg_cron'
+          # Only the ephemeral local database container's administrative role
+          # can set this server parameter; application roles stay unchanged.
+          db_container="$(docker ps --filter publish=54322 --format '{{.ID}}')"
+          [[ "$db_container" =~ ^[a-f0-9]{12}$ ]]
+          # Historical row triggers also contain production callbacks. Prevent
+          # new outbound connections from the test database, retaining replies
+          # to incoming test connections. Fail closed if topology changes.
+          db_ip="$(docker inspect "$db_container" --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')"
+          [[ "$db_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]
+          test -z "$(docker inspect "$db_container" --format '{{range .NetworkSettings.Networks}}{{.GlobalIPv6Address}}{{end}}')"
+          sudo iptables -I DOCKER-USER -s "$db_ip" -m conntrack --ctstate NEW -j REJECT
+          sudo iptables -C DOCKER-USER -s "$db_ip" -m conntrack --ctstate NEW -j REJECT
+          docker exec -e PGPASSWORD=postgres "$db_container" psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "ALTER SYSTEM SET cron.launch_active_jobs = 'off'"
+          docker exec -e PGPASSWORD=postgres "$db_container" psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c 'SELECT pg_reload_conf()'
+          for i in $(seq 1 10); do
+            test "$(psql "$DATABASE_URL" -Atc 'SHOW cron.launch_active_jobs')" = off && break
+            sleep 1
+          done
+          test "$(psql "$DATABASE_URL" -Atc 'SHOW cron.launch_active_jobs')" = off
 
       - name: Apply every migration through Supabase tooling
-        run: supabase db reset --no-seed
+        run: |
+          supabase migration up --local
+          test "$(psql "$DATABASE_URL" -Atc 'SHOW cron.launch_active_jobs')" = off
 
       - name: Seed dedicated TEST settings and catalogue only
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/ci-seed.sql
@@ -44,41 +72,49 @@ jobs:
 
       - name: Serve edge functions locally
         run: |
-          nohup supabase functions serve --no-verify-jwt > /tmp/functions.log 2>&1 &
+          # A fresh random test key exercises real encryption without using any
+          # production secret. No provider keys or delivery flags are supplied.
+          umask 077
+          printf 'DD_FIELD_ENC_KEY=%s\n' "$(openssl rand -hex 32)" > /tmp/occta-ci-functions.env
+          nohup supabase functions serve --no-verify-jwt --env-file /tmp/occta-ci-functions.env > /tmp/functions.log 2>&1 &
           for i in $(seq 1 60); do
-            curl -sf -o /dev/null "$J2_FUNCTIONS_URL/journey2-preflight" && break
+            curl -sf -X OPTIONS -o /dev/null "$J2_FUNCTIONS_URL/journey2-preflight" && break
             sleep 2
           done
+          curl -fsS -X OPTIONS -o /dev/null "$J2_FUNCTIONS_URL/journey2-preflight"
 
       - name: Journey 1 regression tests
-        run: bun run test:j1-regression
+        run: npm run test:j1-regression
 
       - name: Journey 2 database-backed integration tests (real engine)
-        run: bun run test:j2-integration
+        run: npm run test:j2-integration
 
       - name: Pricing and VAT tests
-        run: bun run test:pricing-vat
+        run: npm run test:pricing-vat
 
       - name: Duplicate-submission tests
-        run: bun run test:duplicate
+        run: npm run test:duplicate
 
       - name: Test-mode isolation tests
-        run: bun run test:isolation
+        run: npm run test:isolation
 
       - name: Direct Debit manual-provider database tests
-        run: bun run test:dd
+        run: npm run test:dd
 
       - name: TypeScript typecheck
-        run: bun run typecheck
+        run: npm run typecheck
 
       - name: Lint
-        run: bun run lint
+        run: npm run lint
 
       - name: Unit tests (mocked — explicitly unit only)
-        run: bun run test:unit
+        run: npm run test:unit
+
+      - name: SWITCH50 PostgreSQL lifecycle tests
+        run: npm run test:switch50-db
 
       - name: Production build
-        run: bun run build
+        run: npm run build
 
       - name: Edge function logs on failure
         if: failure()

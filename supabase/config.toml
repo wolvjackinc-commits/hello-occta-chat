@@ -1,29 +1,7 @@
 project_id = "oexgjmuvgdndizsufipe"
 
-[[cron_jobs]]
-  command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/payment-reminders"
-  name = "daily-payment-reminders"
-  schedule = "0 9 * * *"
-
-[[cron_jobs]]
-  command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/process-late-fees"
-  name = "daily-late-fee-processing"
-  schedule = "0 2 * * *"
-
-[[cron_jobs]]
-  command = "curl -X POST https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/generate-invoices"
-  name = "daily-invoice-generation"
-  schedule = "0 6 * * *"
-
-[[cron_jobs]]
-  command = "curl -X POST -H 'x-cron-secret: ${CRON_JOB_SECRET}' https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/verify-live-billing-chain -d '{\"mode\":\"fix\",\"lookback_days\":120}'"
-  name = "daily-billing-chain-verify"
-  schedule = "30 3 * * *"
-
 [functions]
   [functions.quote-submission-status]
-    verify_jwt = false
-  [functions.admin-send-email]
     verify_jwt = false
   [functions.journey2-resume-email]
     verify_jwt = false
@@ -101,3 +79,6 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = true
   [functions.process-email-queue]
     verify_jwt = true
+
+[functions.switch50-message-worker]
+verify_jwt = false

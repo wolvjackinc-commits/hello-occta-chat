@@ -14,6 +14,26 @@ export type AddonId = "priority_support" | "static_ip" | "digital_voice" | "pape
 
 export type CatalogueTerm = { monthly_incl_vat: number; monthly_ex_vat: number; vat_amount: number };
 
+export type CampaignPromotion = {
+  code: string;
+  title: string;
+  eligible: boolean;
+  eligibility_reason: string;
+  reward_type: string;
+  reward_amount: number;
+  reward_currency: string;
+  payout_delay_days: number;
+  require_first_paid_invoice: boolean;
+  one_per_address: boolean;
+  starts_at: string;
+  ends_at: string;
+  terms_version: string;
+  terms_text: string;
+  landing_path: string;
+  monthly_price_reduced: false;
+  payout_rule: string;
+};
+
 /**
  * Estimated line speeds per speed bucket. Mirrors the server catalogue so the
  * same estimates appear in the journey, the order summary and the contract.
@@ -81,6 +101,8 @@ export type Journey2Session = {
     vulnerability_support_needs?: string | null;
   } | null;
   price_snapshot: PriceSnapshot | null;
+  campaign_code?: string | null;
+  campaign_snapshot?: CampaignPromotion | null;
   preferred_start_date: string | null;
   cooling_off_acknowledged: boolean | null;
   billing_anchor_day: number | null;
@@ -112,13 +134,25 @@ function readUtm(): Record<string, string> | undefined {
   try {
     const p = new URLSearchParams(window.location.search);
     const out: Record<string, string> = {};
-    for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid"]) {
+    for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid", "msclkid", "ttclid", "offer"]) {
       const v = p.get(k);
       if (v) out[k] = v.slice(0, 300);
     }
     return Object.keys(out).length ? out : undefined;
   } catch {
     return undefined;
+  }
+}
+
+function readOfferCode(): string | null {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const direct = p.get("offer")?.trim().toUpperCase();
+    if (direct) return direct.slice(0, 40);
+    const campaign = p.get("utm_campaign")?.trim().toUpperCase();
+    return campaign === "SWITCH50" ? campaign : null;
+  } catch {
+    return null;
   }
 }
 
@@ -152,27 +186,51 @@ export type StartResult = {
 };
 
 export const journey2 = {
-  start: (opts: { adminTest?: boolean } = {}) =>
-    call<StartResult>("journey2-session", {
+  start: async (opts: { adminTest?: boolean } = {}) => {
+    const result = await call<StartResult>("journey2-session", {
       action: "start",
       anonymous_session_id: getAnonymousSessionId(),
       admin_test: opts.adminTest || undefined,
       utm: readUtm(),
-    }),
+    });
+    const offerCode = readOfferCode();
+    if (result?.token && offerCode === "SWITCH50") {
+      const attached = await call<{ ok: boolean; campaign_code?: string | null; promotion?: CampaignPromotion | null }>(
+        "switch50-session",
+        { token: result.token, offer_code: offerCode },
+      ).catch(() => null);
+      if (attached?.promotion && result.session) {
+        result.session.campaign_code = attached.campaign_code ?? offerCode;
+        result.session.campaign_snapshot = attached.promotion;
+      }
+    }
+    return result;
+  },
 
   get: (token: string) =>
     call<{ ok: boolean; session: Journey2Session; quote_token_available: boolean; v2_test_mode: boolean; error?: string }>(
       "journey2-session", { action: "get", token },
     ),
 
-  saveStep: (
+  saveStep: async (
     token: string,
     step: "address" | "plan" | "router" | "extras" | "details" | "start_date" | "billing",
     payload: Record<string, unknown>,
-  ) =>
-    call<{ ok: boolean; session?: Journey2Session; error?: string; message?: string; redirect?: string; details?: unknown }>(
+  ) => {
+    const result = await call<{ ok: boolean; session?: Journey2Session; error?: string; message?: string; redirect?: string; details?: unknown }>(
       "journey2-session", { action: "save_step", token, step, payload },
-    ),
+    );
+    // Product/term selection can change SWITCH50 eligibility. Re-resolve the
+    // reward on the server immediately and keep the browser copy in sync.
+    if (result?.ok && result.session?.campaign_code && step === "plan") {
+      const refreshed = await call<{ ok: boolean; campaign_code?: string | null; promotion?: CampaignPromotion | null }>(
+        "switch50-session",
+        { token, offer_code: result.session.campaign_code },
+      ).catch(() => null);
+      if (refreshed?.promotion) result.session.campaign_snapshot = refreshed.promotion;
+    }
+    return result;
+  },
 
   cancel: (token: string) => call<{ ok: boolean }>("journey2-session", { action: "cancel", token }),
 
@@ -181,7 +239,7 @@ export const journey2 = {
 
   prepareContract: (token: string) =>
     call<{ ok: boolean; quote_token?: string; contract_ready?: boolean; contract_error?: string; error?: string; message?: string }>(
-      "journey2-prepare-contract", { token },
+      "switch50-prepare-contract", { token },
     ),
 
   /**
@@ -244,6 +302,7 @@ export type Journey2Completion = {
   documents: { label: string; url: string | null }[];
   digital_voice_selected: boolean;
   snapshot_sha256: string;
+  promotion?: CampaignPromotion | null;
 };
 
 export const money = (n: number | null | undefined) =>

@@ -30,7 +30,7 @@ const SESSION_COLS = `
   preferred_start_date, cooling_off_acknowledged, billing_anchor_day, dd_masked, dd_status,
   digital_voice_acknowledged, checkout_session_id, contract_snapshot_id,
   quote_id, order_journey_id, order_id, guest_order_id, manual_review_reason,
-  last_activity_at, expires_at, completed_at, created_at, campaign_code, campaign_snapshot
+  last_activity_at, expires_at, completed_at, created_at, campaign_code, campaign_snapshot, utm_snapshot
 `;
 
 const AddressPayload = z.object({
@@ -118,12 +118,13 @@ const Schema = z.discriminatedUnion("action", [
     admin_test: z.boolean().optional(),
     utm: z.record(z.string().max(300)).optional(),
   }),
-  z.object({ action: z.literal("get"), token: z.string().min(16) }),
+  z.object({ action: z.literal("get"), token: z.string().min(16), attribution: z.record(z.string().max(300)).optional() }),
   z.object({
     action: z.literal("save_step"),
     token: z.string().min(16),
     step: z.enum(["address", "plan", "router", "extras", "details", "start_date", "billing"]),
     payload: z.record(z.unknown()),
+    attribution: z.record(z.string().max(300)).optional(),
   }),
   z.object({ action: z.literal("cancel"), token: z.string().min(16) }),
 ]);
@@ -209,7 +210,7 @@ Deno.serve(async (req) => {
     // a customer already in flight never changes journey version.
     const { data: existing } = await supabase
       .from("customer_journey_sessions")
-      .select("id, journey_version, status")
+      .select("id, journey_version, status, utm_snapshot")
       .eq("anonymous_session_id_hash", anonHash)
       .in("status", ["active", "contract_prepared", "contract_accepted", "order_submitted"])
       .order("created_at", { ascending: false })
@@ -222,7 +223,13 @@ Deno.serve(async (req) => {
       const { raw, hash } = await generateTokenPair();
       await supabase
         .from("customer_journey_sessions")
-        .update({ public_token_hash: hash, last_activity_at: new Date().toISOString() })
+        .update({
+        public_token_hash: hash,
+        last_activity_at: new Date().toISOString(),
+        utm_snapshot: body.utm
+          ? { ...(((existing as any).utm_snapshot ?? {}) as Record<string, unknown>), latest_touch: body.utm }
+          : ((existing as any).utm_snapshot ?? { source_type: "direct", captured_at: new Date().toISOString() }),
+      })
         .eq("id", existing.id);
       return jsonResponse({ ok: true, journey_version: existing.journey_version, resumed: true, token: raw });
     }
@@ -256,7 +263,7 @@ Deno.serve(async (req) => {
         journey_assigned_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + expiryDays * 86400_000).toISOString(),
         ip, user_agent: ua,
-        utm_snapshot: body.utm ?? null,
+        utm_snapshot: body.utm ?? { source_type: "direct", captured_at: new Date().toISOString() },
       })
       .select(SESSION_COLS)
       .single();
@@ -287,8 +294,17 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "session_expired" }, 410);
   }
 
-  if (body.action === "get") {
-    return jsonResponse({
+  if ((body.action === "get" || body.action === "save_step") && body.attribution) {
+  const mergedAttribution = {
+    ...(((session as any).utm_snapshot ?? { source_type: "direct", captured_at: new Date().toISOString() }) as Record<string, unknown>),
+    latest_touch: body.attribution,
+  };
+  await supabase.from("customer_journey_sessions").update({ utm_snapshot: mergedAttribution }).eq("id", session.id);
+  (session as any).utm_snapshot = mergedAttribution;
+}
+
+if (body.action === "get") {
+  return jsonResponse({
       ok: true,
       session,
       quote_token_available: !!session.quote_id,

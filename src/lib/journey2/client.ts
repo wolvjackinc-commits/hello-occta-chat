@@ -126,19 +126,57 @@ export function getAnonymousSessionId(): string {
   }
 }
 
-function readUtm(): Record<string, string> | undefined {
+function readAttribution(): Record<string, string> {
+  const fallback = () => ({
+    source_type: "direct",
+    landing_path: typeof window !== "undefined" ? window.location.pathname.slice(0, 300) : "/",
+    captured_at: new Date().toISOString(),
+  });
   try {
     const p = new URLSearchParams(window.location.search);
     const out: Record<string, string> = {};
-    for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid", "msclkid", "ttclid", "offer"]) {
-      if (["gclid", "fbclid", "msclkid", "ttclid"].includes(k) && getConsent() !== "granted") continue;
+    const campaignKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "offer"];
+    const clickKeys = ["gclid", "fbclid", "msclkid", "ttclid"];
+    for (const k of campaignKeys) {
       const v = p.get(k);
       if (v) out[k] = v.slice(0, 300);
     }
-    return Object.keys(out).length ? out : undefined;
-  } catch {
-    return undefined;
-  }
+    if (getConsent() === "granted") {
+      for (const k of clickKeys) {
+        const v = p.get(k);
+        if (v) out[k] = v.slice(0, 300);
+      }
+    }
+    const qrId = p.get("qr") || p.get("qr_id") || p.get("flyer");
+    if (qrId) out.qr_id = qrId.slice(0, 120);
+    const safeQuery = new URLSearchParams();
+    for (const k of [...campaignKeys, "qr", "qr_id", "flyer"]) {
+      const v = p.get(k);
+      if (v) safeQuery.set(k, v.slice(0, 160));
+    }
+    out.landing_path = `${window.location.pathname}${safeQuery.size ? `?${safeQuery.toString()}` : ""}`.slice(0, 300);
+    if (document.referrer) {
+      try {
+        const ref = new URL(document.referrer);
+        if (ref.hostname && ref.hostname !== window.location.hostname) {
+          out.referrer_host = ref.hostname.slice(0, 200);
+          out.referrer_path = ref.pathname.slice(0, 300);
+        }
+      } catch { /* ignore malformed referrer */ }
+    }
+    const medium = (out.utm_medium ?? "").toLowerCase();
+    const source = (out.utm_source ?? "").toLowerCase();
+    if (out.qr_id || ["qr", "qrcode"].includes(medium) || ["flyer", "leaflet", "qr"].includes(source)) out.source_type = "qr_flyer";
+    else if (out.gclid) out.source_type = "google_ads";
+    else if (out.fbclid) out.source_type = "meta_ads";
+    else if (out.msclkid) out.source_type = "microsoft_ads";
+    else if (out.ttclid) out.source_type = "tiktok_ads";
+    else if (out.utm_source || out.utm_medium || out.utm_campaign) out.source_type = "campaign";
+    else if (out.referrer_host) out.source_type = "referral";
+    else out.source_type = "direct";
+    out.captured_at = new Date().toISOString();
+    return out;
+  } catch { return fallback(); }
 }
 
 function readOfferCode(): string | null {
@@ -192,7 +230,7 @@ export const journey2 = {
       action: "start",
       anonymous_session_id: getAnonymousSessionId(),
       admin_test: opts.adminTest || undefined,
-      utm: readUtm(),
+      utm: readAttribution(),
     });
     const offerCode = readOfferCode();
     if (result?.token && offerCode === "SWITCH50") {
@@ -207,10 +245,10 @@ export const journey2 = {
 
   get: async (token: string) => {
     const result = await call<{ ok: boolean; session: Journey2Session; quote_token_available: boolean; v2_test_mode: boolean; error?: string }>(
-      "journey2-session", { action: "get", token },
+      "journey2-session", { action: "get", token, attribution: readAttribution() },
     );
     if (result?.ok && result.session) {
-      const refreshed = await refreshCampaign(token);
+      const refreshed = await refreshCampaign(token, readOfferCode());
       if (refreshed?.campaign_code) result.session.campaign_code = refreshed.campaign_code;
       if (refreshed?.promotion) result.session.campaign_snapshot = refreshed.promotion;
     }
@@ -223,7 +261,7 @@ export const journey2 = {
     payload: Record<string, unknown>,
   ) => {
     const result = await call<{ ok: boolean; session?: Journey2Session; error?: string; message?: string; redirect?: string; details?: unknown }>(
-      "journey2-session", { action: "save_step", token, step, payload },
+      "journey2-session", { action: "save_step", token, step, payload, attribution: readAttribution() },
     );
     if (result?.ok && result.session && step === "plan") {
       const refreshed = await refreshCampaign(token);

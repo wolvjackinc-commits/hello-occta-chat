@@ -14,12 +14,12 @@ import {
 import { loadJourneySettings } from "../_shared/journey2.ts";
 
 const SITE = "https://www.occta.co.uk";
-const MAX_REMINDERS = 3;
+const MAX_REMINDERS = 4;
 const BATCH = 25;
 
 type SessionRow = {
   id: string;
-  customer_details: { full_name?: string; email?: string } | null;
+  customer_details: { full_name?: string; email?: string; marketing_consent?: boolean } | null;
   current_step: string | null;
   plan_term: string | null;
   selected_addons: unknown;
@@ -42,37 +42,26 @@ function usefulFact(s: SessionRow): string {
   return "Useful to know: OCCTA confirms final availability, estimated speed, setup and order details with you before the order is placed.";
 }
 
-function copyFor(n: number, fact: string, firstName: string) {
+function copyFor(n: number, fact: string, firstName: string, switch50?: Record<string, any> | null) {
   const hi = `<p>Hi ${escapeHtml(firstName)},</p>`;
-  if (n === 1) {
+  if (n === 1) return {
+    subject: "Your OCCTA order is saved — pick up where you left off", title: "Your order is saved",
+    html: `${hi}<p>You were part-way through your OCCTA order, so we've kept the progress you'd already made.</p><p><strong>Nothing has been charged and no Direct Debit has been set up.</strong> You'll see everything again before the order is placed.</p><p>${fact}</p><p>The secure link below returns you to the exact stage you reached. It's personal to you — please don't forward it.</p>`,
+  };
+  if (n === 2) return {
+    subject: "A quick note before you finish your OCCTA order", title: "Carry on when you're ready",
+    html: `${hi}<p>Your saved OCCTA order is still incomplete. If you were comparing options or simply got interrupted, there's no need to start again.</p><p>${fact}</p><p>You can review your saved choices, the contract information and your billing details before submitting anything.</p>`,
+  };
+  if (n === 4 && switch50) {
+    const endDate = new Date(String(switch50.ends_at)).toLocaleDateString("en-GB", { timeZone: "Europe/London", day: "numeric", month: "long", year: "numeric" });
     return {
-      subject: "Your OCCTA order is saved — pick up where you left off",
-      title: "Your order is saved",
-      html: `${hi}
-<p>You were part-way through your OCCTA order, so we've kept the progress you'd already made.</p>
-<p><strong>Nothing has been charged and no Direct Debit has been set up.</strong> You'll see everything again before the order is placed.</p>
-<p>${fact}</p>
-<p>The secure link below returns you to the exact stage you reached. It's personal to you — please don't forward it.</p>`,
-    };
-  }
-  if (n === 2) {
-    return {
-      subject: "A quick note before you finish your OCCTA order",
-      title: "Carry on when you're ready",
-      html: `${hi}
-<p>Your saved OCCTA order is still incomplete. If you were comparing options or simply got interrupted, there's no need to start again.</p>
-<p>${fact}</p>
-<p>You can review your saved choices, the contract information and your billing details before submitting anything.</p>`,
+      subject: "£50 Switch Cash is available on eligible OCCTA orders", title: "£50 Switch Cash",
+      html: `${hi}<p>You previously started an OCCTA broadband order and asked to receive offers from us.</p><p><strong>Our £50 Switch Cash offer is now live.</strong> It applies to an eligible new residential <strong>Essential Fibre — Price Lock 24</strong> order placed by ${escapeHtml(endDate)}.</p><p>The £50 reward is separate from your broadband bill and does not reduce the £34.99 monthly broadband price. It becomes eligible 30 days after service activation once the first broadband invoice has been paid and the account remains eligible. One reward per eligible service address. Terms apply.</p><p>Your secure button below reopens the exact saved checkout. You can review or change your plan before submitting anything.</p><p style="font-size:12px;opacity:.75">You received this offer because marketing consent is recorded on your saved checkout. If you no longer want marketing messages, contact privacy@occta.co.uk.</p>`,
     };
   }
   return {
-    subject: "Still want to continue your OCCTA order?",
-    title: "Final automatic reminder",
-    html: `${hi}
-<p>This is our final automatic reminder about this saved order.</p>
-<p>If you'd still like to continue, use the secure link below. If you'd rather not, no action is needed — nothing has been charged.</p>
-<p>${fact}</p>
-<p>If something stopped you finishing, call <strong>0800 260 6626</strong> or email <strong>hello@occta.co.uk</strong> and we'll help.</p>`,
+    subject: "Still want to continue your OCCTA order?", title: "Final automatic reminder",
+    html: `${hi}<p>This is our final automatic reminder about this saved order.</p><p>If you'd still like to continue, use the secure link below. If you'd rather not, no action is needed — nothing has been charged.</p><p>${fact}</p><p>If something stopped you finishing, call <strong>0800 260 6626</strong> or email <strong>hello@occta.co.uk</strong> and we'll help.</p>`,
   };
 }
 
@@ -94,6 +83,14 @@ Deno.serve(async (req) => {
 
   const delayMin = Math.max(5, Number(settings.customer_journey_v2_resume_delay_minutes ?? 60));
   const nowIso = new Date().toISOString();
+  const { data: switch50 } = await supabase
+    .from("offer_campaigns")
+    .select("code, title, reward_amount, reward_currency, starts_at, ends_at, terms_version, terms_text")
+    .eq("code", "SWITCH50")
+    .eq("active", true)
+    .lte("starts_at", nowIso)
+    .gte("ends_at", nowIso)
+    .maybeSingle();
   const stage1Cutoff = new Date(Date.now() - delayMin * 60_000).toISOString();
   const stage2Cutoff = new Date(Date.now() - 23 * 3_600_000).toISOString();
   const stage3Cutoff = new Date(Date.now() - 47 * 3_600_000).toISOString();
@@ -128,6 +125,10 @@ Deno.serve(async (req) => {
     const count = Number(s.reminder_count ?? 0);
     const next = count + 1;
     if (next > MAX_REMINDERS) { skip("max_reached"); continue; }
+    if (next === 4 && (s.customer_details?.marketing_consent !== true || !switch50)) {
+      skip(s.customer_details?.marketing_consent === true ? "switch50_unavailable" : "marketing_consent_required");
+      continue;
+    }
 
     if (count > 0) {
       const last = s.reminder_last_queued_at;
@@ -155,7 +156,7 @@ Deno.serve(async (req) => {
     if (existing && existing.status === "sent") { skip("already_sent"); continue; }
 
     const firstName = (s.customer_details?.full_name ?? "there").trim().split(" ")[0] || "there";
-    const { subject, title, html } = copyFor(next, usefulFact(s), firstName);
+    const { subject, title, html } = copyFor(next, usefulFact(s), firstName, switch50 as Record<string, any> | null);
 
     const previousHash = s.public_token_hash;
     const { raw: token, hash } = await generateTokenPair();
@@ -186,14 +187,21 @@ Deno.serve(async (req) => {
       await supabase.from("checkout_reminders").insert(reminderRow);
     }
 
-    const url = `${SITE}/order/${encodeURIComponent(token)}`;
+    const params = new URLSearchParams({
+      utm_source: "occta",
+      utm_medium: "email",
+      utm_campaign: next === 4 ? "SWITCH50" : "abandoned_checkout",
+      utm_content: `reminder_${next}`,
+    });
+    if (next === 4) params.set("offer", "SWITCH50");
+    const url = `${SITE}/order/${encodeURIComponent(token)}?${params.toString()}`;
     const renderedHtml = brutalistEmailShell(title, html, { label: "Finish your order", url });
     const result = await sendTrackedCommunication(supabase, {
       template_name: `journey2_checkout_reminder_${next}`,
       recipient_email: email,
       subject,
       html: renderedHtml,
-      metadata: { session_id: s.id, reminder_number: next, stage: s.current_step },
+      metadata: { session_id: s.id, reminder_number: next, stage: s.current_step, campaign_code: next === 4 ? "SWITCH50" : null },
     });
 
     if (result.ok) {

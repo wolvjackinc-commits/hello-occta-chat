@@ -112,7 +112,8 @@ Deno.serve(async (req) => {
     }
     documents.push({ label: "Acceptance certificate", url: certUrl });
   }
-  documents.push({ label: "Direct Debit Guarantee", url: "/legal/direct-debit-guarantee" });
+  const ddGuaranteeUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/journey2-dd-guarantee?token=${encodeURIComponent(parsed.data.token)}`;
+  documents.push({ label: "Direct Debit Guarantee (PDF)", url: ddGuaranteeUrl });
   documents.push({ label: "Cooling-off information", url: "/legal/switching-policy" });
   if (((session.selected_addons ?? []) as string[]).includes("digital_voice")) {
     documents.push({ label: "Digital Voice information", url: "/landline" });

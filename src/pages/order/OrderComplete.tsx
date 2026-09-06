@@ -120,9 +120,16 @@ export default function OrderComplete() {
       ? `${state.estimated_download_mbps} / ${state.estimated_upload_mbps} Mbps`
       : null;
   const addons = state.addons ?? [];
-  const readyDocs = state.documents.filter((d) => !!d.url);
-  const missingDocs = state.documents.filter((d) => !d.url);
-  const allDocsReady = state.documents.length > 0 && missingDocs.length === 0;
+  const displayDocuments = [...state.documents];
+  if (!displayDocuments.some((d) => /Direct Debit Guarantee/i.test(d.label))) {
+    displayDocuments.push({ label: "Direct Debit Guarantee", url: "/learn/direct-debit-guarantee" });
+  }
+  if (!displayDocuments.some((d) => /Cooling-off/i.test(d.label))) {
+    displayDocuments.push({ label: "Cooling-off information", url: "/legal/switching-policy" });
+  }
+  const readyDocs = displayDocuments.filter((d) => !!d.url);
+  const missingDocs = displayDocuments.filter((d) => !d.url);
+  const allDocsReady = displayDocuments.length > 0 && missingDocs.length === 0;
 
   return (
     <Layout>
@@ -297,7 +304,7 @@ export default function OrderComplete() {
                 </div>
               )}
               <ul className="space-y-2.5">
-                {state.documents.map((d) => (
+                {displayDocuments.map((d) => (
                   <li key={d.label} className="flex items-start gap-2 text-sm">
                     <FileText className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                     {d.url

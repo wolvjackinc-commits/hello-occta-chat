@@ -41,6 +41,7 @@ type CheckoutSession = {
   order_id: string | null;
   quote_id: string | null;
   utm_source: string | null;
+  attribution: Record<string, unknown> | null;
 };
 
 type TimelineEvent = {
@@ -178,7 +179,7 @@ export default function CheckoutJourneyMonitor() {
       if (filter === "completed" && s.status !== "completed") return false;
       if (filter === "errors" && s.error_count < 1) return false;
       if (!q) return true;
-      return [s.customer_name, s.customer_email, s.postcode, s.plan_label, s.current_stage, s.status, s.utm_source]
+      return [s.customer_name, s.customer_email, s.postcode, s.plan_label, s.current_stage, s.status, s.utm_source, JSON.stringify(s.attribution ?? {})]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q));
     });
@@ -224,7 +225,7 @@ export default function CheckoutJourneyMonitor() {
             Start-to-finish checkout progress, inactivity, recovery reminders and technical failures. {FUNNEL_WINDOW_LABEL}.
             Journey 2 sessions are reported once — duplicate generic web-tracking rows are excluded. Refreshes every 30 seconds.
           </p>
-          <p className="text-xs text-muted-foreground mt-2">Abandoned indicates inactivity, not a confirmed lost customer. Anonymous checkout means no customer name was captured. Figures describe the latest 250 returned sessions, not necessarily every visit in the window.</p>
+          <p className="text-xs text-muted-foreground mt-2">Abandoned indicates inactivity, not a confirmed lost customer. “Guest checkout” means the visitor has not signed in and/or their name has not been captured yet — it does not mean the session is untraceable. Journey Control still records the session, route, activity and available campaign/referrer attribution. Figures describe the latest 250 returned sessions, not necessarily every visit in the window.</p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />Refresh
@@ -307,9 +308,9 @@ export default function CheckoutJourneyMonitor() {
                   <div className="grid gap-4 lg:grid-cols-[1.35fr_0.8fr_1.2fr_0.8fr_auto] lg:items-center">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <strong className="truncate">{row.customer_name || "Anonymous checkout"}</strong>
+                        <strong className="truncate">{row.customer_name || "Guest checkout — name not captured yet"}</strong>
                         <Badge variant="outline">{row.source === "journey2" ? "Journey 2" : "Web"}</Badge>
-                        <Badge variant="outline">{row.utm_source || "Source not recorded"}</Badge>
+                        <Badge variant="outline">{String(row.attribution?.source_label ?? row.utm_source ?? "Direct / source unavailable")}</Badge>
                       </div>
                       <div className="text-xs text-muted-foreground truncate mt-1">
                         {row.customer_email || row.current_route || "Browser session"}
@@ -348,7 +349,18 @@ export default function CheckoutJourneyMonitor() {
                         {row.source === 'web' && row.status === 'completed' && row.current_stage === 'quote_complete' && row.plan_label && <>
                           <dt>Saved request</dt><dd><a className="underline" href={`/admin/quote-requests?search=${encodeURIComponent(row.plan_label)}`}>{row.plan_label}</a></dd>
                         </>}
-                        <dt className="text-muted-foreground">Current stage</dt><dd>{stageLabel(row.current_stage)}</dd>
+                        <dt className="text-muted-foreground">Source</dt><dd>{String(row.attribution?.source_label ?? row.utm_source ?? "Direct / source unavailable")}</dd>
+                <dt className="text-muted-foreground">Channel</dt><dd>{String(row.attribution?.channel ?? "unknown").replace(/_/g, " ")}</dd>
+                <dt className="text-muted-foreground">UTM source</dt><dd>{String(row.attribution?.utm_source ?? "—")}</dd>
+                <dt className="text-muted-foreground">UTM medium</dt><dd>{String(row.attribution?.utm_medium ?? "—")}</dd>
+                <dt className="text-muted-foreground">Campaign</dt><dd>{String(row.attribution?.utm_campaign ?? "—")}</dd>
+                <dt className="text-muted-foreground">Content / creative</dt><dd>{String(row.attribution?.utm_content ?? "—")}</dd>
+                <dt className="text-muted-foreground">Search term</dt><dd>{String(row.attribution?.utm_term ?? "—")}</dd>
+                <dt className="text-muted-foreground">Click ID</dt><dd>{String(row.attribution?.click_id_type ?? (row.attribution?.click_id_recorded ? "Recorded" : "—"))}</dd>
+                <dt className="text-muted-foreground">QR / flyer ID</dt><dd>{String(row.attribution?.qr_id ?? "—")}</dd>
+                <dt className="text-muted-foreground">Referrer</dt><dd className="break-all">{String(row.attribution?.referrer_host ?? "—")}</dd>
+                <dt className="text-muted-foreground">Landing page</dt><dd className="break-all">{String(row.attribution?.landing_path ?? "—")}</dd>
+                <dt className="text-muted-foreground">Current stage</dt><dd>{stageLabel(row.current_stage)}</dd>
                         <dt className="text-muted-foreground">Progress</dt><dd>{row.progress_percent ?? 0}%</dd>
                         <dt className="text-muted-foreground">Activity in stage</dt><dd>{elapsed(row.stage_started_at, row.last_activity_at)}</dd>
                         <dt className="text-muted-foreground">Marked abandoned</dt><dd>{fmtDate(row.abandoned_at)}</dd>

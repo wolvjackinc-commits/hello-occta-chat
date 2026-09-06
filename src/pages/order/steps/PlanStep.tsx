@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Catalogue, type Journey2Session, type PlanTerm, type SpeedBucket } from "@/lib/journey2/client";
 
@@ -12,8 +13,6 @@ export default function PlanStep({
   onBack: () => void;
 }) {
   const [bucket, setBucket] = useState<SpeedBucket | null>(session.speed_bucket ?? catalogue.plans[0]?.speed_bucket ?? null);
-  // New direct orders prefer the fixed Price Lock option. A customer's existing
-  // saved choice is always preserved when they resume or go back to edit.
   const [term, setTerm] = useState<PlanTerm>(session.plan_term ?? "price_lock_24");
 
   const plan = catalogue.plans.find((p) => p.speed_bucket === bucket) ?? null;
@@ -34,6 +33,7 @@ export default function PlanStep({
         upload: plan.estimated_upload_mbps ?? SPEED_ESTIMATES[plan.speed_bucket]?.upload ?? 0,
       }
     : null;
+  const switch50 = session.campaign_code === "SWITCH50";
 
   return (
     <div className="border-4 border-foreground p-6 space-y-5">
@@ -44,6 +44,13 @@ export default function PlanStep({
         </p>
       </div>
 
+      {switch50 && (
+        <div className="border-4 border-primary bg-primary/10 p-4 text-sm">
+          <div className="flex items-center gap-2 font-display uppercase"><Gift className="h-4 w-4" /> Your SWITCH50 offer</div>
+          <p className="mt-1">Choose <strong>Essential Fibre + Price Lock 24</strong> where available to receive <strong>£50 Switch Cash</strong>. The reward is separate from the monthly broadband price.</p>
+        </div>
+      )}
+
       <fieldset className="space-y-3">
         <legend className="font-display uppercase text-xs tracking-widest mb-2">Speed</legend>
         {catalogue.plans.map((p) => {
@@ -51,10 +58,12 @@ export default function PlanStep({
           const cheapest = Math.min(...Object.values(p.terms).map((t) => t!.monthly_incl_vat));
           const down = p.estimated_download_mbps ?? SPEED_ESTIMATES[p.speed_bucket]?.download ?? 0;
           const up = p.estimated_upload_mbps ?? SPEED_ESTIMATES[p.speed_bucket]?.upload ?? 0;
+          const rewardPlan = switch50 && p.speed_bucket === "essential";
           return (
             <label key={p.speed_bucket}
-              className={`flex items-center justify-between gap-4 border-2 p-4 cursor-pointer ${selected ? "border-foreground bg-muted" : "border-border"}`}>
-              <span className="flex items-center gap-3">
+              className={`relative flex items-center justify-between gap-4 border-2 p-4 cursor-pointer ${selected ? "border-foreground bg-muted" : rewardPlan ? "border-primary" : "border-border"}`}>
+              {rewardPlan && <span className="absolute right-2 top-2 bg-primary px-2 py-0.5 font-display text-[10px] uppercase text-primary-foreground">£50 Switch Cash eligible</span>}
+              <span className="flex items-center gap-3 pr-24 sm:pr-32">
                 <input type="radio" name="j2-speed" checked={selected}
                   onChange={() => setBucket(p.speed_bucket)} className="h-4 w-4" />
                 <span>
@@ -90,17 +99,19 @@ export default function PlanStep({
           {availableTerms.map((t) => {
             const selected = t === activeTerm;
             const info = plan.terms[t]!;
+            const rewardTerm = switch50 && bucket === "essential" && t === "price_lock_24";
             return (
               <label key={t}
-                className={`flex items-center justify-between gap-4 border-2 p-4 cursor-pointer ${selected ? "border-foreground bg-muted" : "border-border"}`}>
-                <span className="flex items-center gap-3">
+                className={`relative flex items-center justify-between gap-4 border-2 p-4 cursor-pointer ${selected ? "border-foreground bg-muted" : rewardTerm ? "border-primary" : "border-border"}`}>
+                {rewardTerm && <span className="absolute right-2 top-2 bg-primary px-2 py-0.5 font-display text-[10px] uppercase text-primary-foreground">SWITCH50</span>}
+                <span className="flex items-center gap-3 pr-20">
                   <input type="radio" name="j2-term" checked={selected} onChange={() => setTerm(t)} className="h-4 w-4" />
                   <span>
                     <span className="block font-display uppercase">{PLAN_TERM_LABEL[t]}</span>
                     <span className="block text-xs text-muted-foreground">
                       {t === "flex_30"
                         ? "No minimum term — 30 days' notice to leave."
-                        : "Your price is fixed for 24 months. Early exit fees apply if you leave early."}
+                        : "Your price is fixed for 24 months. Early exit fees may apply if you leave during the minimum term."}
                     </span>
                   </span>
                 </span>

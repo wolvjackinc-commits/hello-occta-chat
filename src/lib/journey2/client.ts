@@ -34,11 +34,6 @@ export type CampaignPromotion = {
   payout_rule: string;
 };
 
-/**
- * Estimated line speeds per speed bucket. Mirrors the server catalogue so the
- * same estimates appear in the journey, the order summary and the contract.
- * Estimates only — never presented as guaranteed speeds.
- */
 export const SPEED_ESTIMATES: Record<SpeedBucket, { download: number; upload: number }> = {
   essential: { download: 80, upload: 20 },
   superfast: { download: 330, upload: 50 },
@@ -159,9 +154,6 @@ function readOfferCode(): string | null {
 async function call<T>(fn: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(fn, { body });
   if (error && !data) {
-    // Non-2xx responses arrive as an error with the JSON body on the attached
-    // Response. Surfacing that body means the customer sees the real, actionable
-    // reason instead of a generic "we couldn't reach our ordering service".
     const ctx = (error as { context?: Response }).context;
     if (ctx && typeof ctx.json === "function") {
       const parsed = await ctx.json().catch(() => null);
@@ -170,6 +162,13 @@ async function call<T>(fn: string, body: Record<string, unknown>): Promise<T> {
     throw new Error(error.message ?? "network_error");
   }
   return data as T;
+}
+
+async function refreshCampaign(token: string, offerCode?: string | null) {
+  return call<{ ok: boolean; campaign_code?: string | null; promotion?: CampaignPromotion | null }>(
+    "switch50-session",
+    { token, offer_code: offerCode ?? undefined },
+  ).catch(() => null);
 }
 
 export type StartResult = {
@@ -195,10 +194,7 @@ export const journey2 = {
     });
     const offerCode = readOfferCode();
     if (result?.token && offerCode === "SWITCH50") {
-      const attached = await call<{ ok: boolean; campaign_code?: string | null; promotion?: CampaignPromotion | null }>(
-        "switch50-session",
-        { token: result.token, offer_code: offerCode },
-      ).catch(() => null);
+      const attached = await refreshCampaign(result.token, offerCode);
       if (attached?.promotion && result.session) {
         result.session.campaign_code = attached.campaign_code ?? offerCode;
         result.session.campaign_snapshot = attached.promotion;
@@ -207,10 +203,17 @@ export const journey2 = {
     return result;
   },
 
-  get: (token: string) =>
-    call<{ ok: boolean; session: Journey2Session; quote_token_available: boolean; v2_test_mode: boolean; error?: string }>(
+  get: async (token: string) => {
+    const result = await call<{ ok: boolean; session: Journey2Session; quote_token_available: boolean; v2_test_mode: boolean; error?: string }>(
       "journey2-session", { action: "get", token },
-    ),
+    );
+    if (result?.ok && result.session) {
+      const refreshed = await refreshCampaign(token);
+      if (refreshed?.campaign_code) result.session.campaign_code = refreshed.campaign_code;
+      if (refreshed?.promotion) result.session.campaign_snapshot = refreshed.promotion;
+    }
+    return result;
+  },
 
   saveStep: async (
     token: string,
@@ -220,13 +223,9 @@ export const journey2 = {
     const result = await call<{ ok: boolean; session?: Journey2Session; error?: string; message?: string; redirect?: string; details?: unknown }>(
       "journey2-session", { action: "save_step", token, step, payload },
     );
-    // Product/term selection can change SWITCH50 eligibility. Re-resolve the
-    // reward on the server immediately and keep the browser copy in sync.
-    if (result?.ok && result.session?.campaign_code && step === "plan") {
-      const refreshed = await call<{ ok: boolean; campaign_code?: string | null; promotion?: CampaignPromotion | null }>(
-        "switch50-session",
-        { token, offer_code: result.session.campaign_code },
-      ).catch(() => null);
+    if (result?.ok && result.session && step === "plan") {
+      const refreshed = await refreshCampaign(token);
+      if (refreshed?.campaign_code) result.session.campaign_code = refreshed.campaign_code;
       if (refreshed?.promotion) result.session.campaign_snapshot = refreshed.promotion;
     }
     return result;
@@ -242,10 +241,6 @@ export const journey2 = {
       "switch50-prepare-contract", { token },
     ),
 
-  /**
-   * Replays the already captured start date and Direct Debit into the shared
-   * production services once the contract has been accepted.
-   */
   applyPostContract: (token: string, quote_token: string) =>
     call<{ ok: boolean; applied?: boolean; retryable?: boolean; failures?: { step: string; error: string }[]; error?: string; message?: string }>(
       "journey2-apply-postcontract", { token, quote_token },
@@ -256,10 +251,6 @@ export const journey2 = {
       "journey2-finalise", { token },
     ),
 
-  /**
-   * Transactional final submission. Success is only returned once the server
-   * has committed the order, its links and the welcome-pack outbox record.
-   */
   submit: (token: string) =>
     call<{ ok: boolean; test_session?: boolean; order_id?: string; order_number?: string; error?: string; message?: string; retryable?: boolean }>(
       "journey2-submit", { token, final_consent: true },
@@ -313,7 +304,6 @@ export const PLAN_TERM_LABEL: Record<PlanTerm, string> = {
   price_lock_24: "Price Lock 24 (fixed 24 months)",
 };
 
-/** Journey 2 quote-token handoff is per-browser; keep it out of the URL. */
 const QT_KEY = (sessionId: string) => `occta_j2_qt_${sessionId}`;
 export const quoteTokenStore = {
   get(sessionId: string): string | null {

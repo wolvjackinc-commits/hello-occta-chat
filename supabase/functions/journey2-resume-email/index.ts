@@ -108,6 +108,10 @@ Deno.serve(async (req) => {
     .gt("expires_at", nowIso)
     .lt("last_activity_at", stage1Cutoff)
     .lt("reminder_count", MAX_REMINDERS)
+    // Stage 4 is marketing-only. Sessions that have exhausted the three
+    // service reminders and carry no marketing consent can never receive
+    // another email, so they must not occupy the batch forever.
+    .or("reminder_count.lt.3,customer_details->>marketing_consent.eq.true")
     .not("customer_details->>email", "is", null)
     .neq("customer_details->>email", "")
     .or(`reminder_last_queued_at.is.null,reminder_last_queued_at.lt.${stage2Cutoff}`)

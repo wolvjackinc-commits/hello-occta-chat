@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Switch50PayoutPanel } from "@/components/campaigns/Switch50PayoutPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,9 +63,10 @@ export const AdminRewards = () => {
 
   return (
     <div className="space-y-4 p-2">
+      <Switch50PayoutPanel />
       <div>
         <h1 className="font-display uppercase text-3xl">Rewards</h1>
-        <p className="text-sm text-muted-foreground">No cash withdrawal. All reward values are admin-controlled and margin-gated.</p>
+        <p className="text-sm text-muted-foreground">Points and bill-credit rewards. SWITCH50 cash payments are managed above.</p>
       </div>
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (

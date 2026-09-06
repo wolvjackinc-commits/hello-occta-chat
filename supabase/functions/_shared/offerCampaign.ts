@@ -38,11 +38,12 @@ export async function resolveOfferPromotion(
   const code = normaliseCode(requestedCode);
   if (!code) return null;
 
-  const { data: campaign } = await supabase
+  const { data: campaign, error } = await supabase
     .from("offer_campaigns")
     .select("*")
     .eq("code", code)
     .maybeSingle();
+  if (error) throw new Error("campaign_unavailable");
   if (!campaign) return null;
 
   const now = Date.now();

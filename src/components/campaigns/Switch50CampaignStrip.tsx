@@ -1,3 +1,4 @@
+import { trackSwitch50 } from "@/lib/switch50Analytics";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Gift, ShieldCheck } from "lucide-react";
@@ -31,18 +32,14 @@ function landingUrl(content: string) {
     utm_campaign: "SWITCH50",
     utm_content: content,
   });
+  const incoming = new URLSearchParams(window.location.search);
+  for (const key of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"]) {
+    const value = incoming.get(key); if (value) p.set(key, value.slice(0,300));
+  }
   return `/broadband?${p.toString()}`;
 }
 
-function track(event: string, extra: Record<string, unknown> = {}) {
-  try {
-    (window as any).gtag?.("event", event, {
-      promotion_id: "SWITCH50",
-      promotion_name: "OCCTA £50 Switch Cash",
-      ...extra,
-    });
-  } catch { /* analytics must never block the customer */ }
-}
+function track(event: string, extra: Record<string, unknown> = {}) { trackSwitch50(event, extra); }
 
 export default function Switch50CampaignStrip() {
   const [campaign, setCampaign] = useState<PublicCampaign | null>(null);
@@ -56,30 +53,41 @@ export default function Switch50CampaignStrip() {
         if (cached) {
           const parsed = JSON.parse(cached) as { at: number; value: PublicStatus };
           if (Date.now() - parsed.at < CACHE_MS) {
-            if (!cancelled && parsed.value.active) setCampaign(parsed.value.campaign ?? null);
+            if (!cancelled) setCampaign(parsed.value.active ? parsed.value.campaign ?? null : null);
             return;
           }
         }
       } catch { /* ignore cache */ }
 
       const { data, error } = await supabase.functions.invoke("switch50-public", { body: {} });
-      if (error || !data) return;
+      if (error || !data) { if (!cancelled) setCampaign(null); return; }
       const value: PublicStatus = { active: !!(data as any).active, campaign: (data as any).campaign ?? null };
       try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), value })); } catch { /* ignore */ }
-      if (!cancelled && value.active) {
-        setCampaign(value.campaign ?? null);
-        track("view_promotion", { creative_name: "global_switch50_strip" });
+      if (!cancelled) {
+        setCampaign(value.active ? value.campaign ?? null : null);
+        if (value.active) track("view_promotion", { creative_name: "global_switch50_strip" });
       }
     };
     load();
-    return () => { cancelled = true; };
+    const refresh = window.setInterval(load, CACHE_MS);
+    return () => { cancelled = true; window.clearInterval(refresh); };
   }, []);
+
+  useEffect(() => {
+    if (!campaign) return;
+    const remaining = Date.parse(campaign.ends_at) - Date.now();
+    if (remaining <= 0) { setCampaign(null); return; }
+    // Avoid the signed 32-bit timeout overflow for offers several weeks away.
+    if (remaining > 2_147_483_647) return;
+    const expiry = window.setTimeout(() => setCampaign(null), remaining + 1);
+    return () => window.clearTimeout(expiry);
+  }, [campaign]);
 
   const endDate = useMemo(() => campaign?.ends_at
     ? new Date(campaign.ends_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" })
     : "31 October 2026", [campaign?.ends_at]);
 
-  if (!campaign) return null;
+  if (!campaign || Date.now() > Date.parse(campaign.ends_at)) return null;
 
   return (
     <>

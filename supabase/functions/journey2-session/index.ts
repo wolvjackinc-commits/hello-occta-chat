@@ -30,7 +30,7 @@ const SESSION_COLS = `
   preferred_start_date, cooling_off_acknowledged, billing_anchor_day, dd_masked, dd_status,
   digital_voice_acknowledged, checkout_session_id, contract_snapshot_id,
   quote_id, order_journey_id, order_id, guest_order_id, manual_review_reason,
-  last_activity_at, expires_at, completed_at, created_at
+  last_activity_at, expires_at, completed_at, created_at, campaign_code, campaign_snapshot
 `;
 
 const AddressPayload = z.object({

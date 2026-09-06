@@ -31,6 +31,7 @@ export const AdminCampaigns = () => {
   const [active, setActive] = useState<Draft | null>(null);
   const [draft, setDraft] = useState<any>({ campaign_type: "homepage_banner", title: "" });
   const [switchCampaign, setSwitchCampaign] = useState<LiveCampaign | null>(null);
+  const [sources, setSources] = useState<{ source: string; sessions: number; orders: number }[]>([]);
   const [funnel, setFunnel] = useState<Funnel | null>(null);
   const [switchLoading, setSwitchLoading] = useState(false);
   const [reasonOpen, setReasonOpen] = useState(false);
@@ -40,6 +41,7 @@ export const AdminCampaigns = () => {
   async function loadSwitch50() {
     const { data, error } = await supabase.functions.invoke("switch50-admin", { body: { action: "status" } });
     if (error || (data as any)?.error) return;
+    setSources((data as any).sources ?? []);
     setSwitchCampaign((data as any).campaign ?? null);
     setFunnel((data as any).funnel ?? null);
   }
@@ -70,7 +72,7 @@ export const AdminCampaigns = () => {
     }
     setSwitchLoading(true);
     try {
-      const ok = await run("switch50-admin", { action: "set_active", active: nextActive, reason: reason.trim() });
+      const ok = await run("switch50-admin", { action: "set_active", active: nextActive, reason: reason.trim(), request_id: crypto.randomUUID() });
       if (ok) {
         setReasonOpen(false); setReason(""); await loadSwitch50();
       }
@@ -105,7 +107,7 @@ export const AdminCampaigns = () => {
             <p className="mt-1 text-sm text-muted-foreground">Server-controlled offer used by the website, checkout, contracts and reward ledger. Pausing this is the campaign kill switch.</p>
           </div>
           {switchCampaign ? (
-            <Badge className="w-fit text-sm" variant={switchCampaign.active ? "default" : "outline"}>{switchCampaign.active ? "LIVE" : "PAUSED"}</Badge>
+            <Badge className="w-fit text-sm" variant={switchCampaign.active ? "default" : "outline"}>{Date.now() > Date.parse(switchCampaign.ends_at) ? "EXPIRED" : Date.now() < Date.parse(switchCampaign.starts_at) ? "SCHEDULED" : switchCampaign.active ? "LIVE" : "PAUSED"}</Badge>
           ) : <Badge variant="outline">Unavailable</Badge>}
         </div>
 
@@ -121,6 +123,7 @@ export const AdminCampaigns = () => {
               <Metric label="Rewards issued" value={funnel?.rewards_issued ?? 0} />
               <Metric label="Reward / order" value={`£${Number(switchCampaign.reward_amount).toFixed(2)}`} />
             </div>
+            {sources.length > 0 && <div className="overflow-x-auto"><table className="w-full text-sm"><caption className="text-left font-semibold">Campaign sources</caption><thead><tr><th className="text-left">Source</th><th>Sessions</th><th>Orders</th></tr></thead><tbody>{sources.map(s => <tr key={s.source}><td>{s.source}</td><td className="text-center">{s.sessions}</td><td className="text-center">{s.orders}</td></tr>)}</tbody></table></div>}
             <div className="grid gap-3 md:grid-cols-2 text-sm">
               <div className="border-2 border-foreground bg-background p-3"><b>Order window:</b> {new Date(switchCampaign.starts_at).toLocaleString("en-GB")} → {new Date(switchCampaign.ends_at).toLocaleString("en-GB")}</div>
               <div className="border-2 border-foreground bg-background p-3"><b>Terms version:</b> {switchCampaign.terms_version}</div>

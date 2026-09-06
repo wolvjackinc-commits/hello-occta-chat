@@ -76,10 +76,11 @@ Deno.serve(async (req) => {
       plan_term: session.plan_term,
     });
     session.campaign_snapshot = promotion;
-    await supabase.from("customer_journey_sessions").update({
+    const campaignSave = await supabase.from("customer_journey_sessions").update({
       campaign_snapshot: promotion,
       last_activity_at: new Date().toISOString(),
     }).eq("id", session.id);
+    if (campaignSave.error) return jsonResponse({ error: "campaign_save_failed" }, 503);
   }
 
   const details = (session.customer_details ?? null) as Record<string, any> | null;
@@ -137,7 +138,7 @@ Deno.serve(async (req) => {
           description: `Journey 2 session ${session.id} (${session.speed_bucket}/${session.plan_term}) has no exact price. The customer is still in Journey 2 and can retry.`,
           priority: "high",
           status: "open",
-        }).then(() => {}).catch(() => {});
+        }).then(() => {}, () => {});
       }
       return jsonResponse({
         error: "price_unavailable",
@@ -341,7 +342,7 @@ Deno.serve(async (req) => {
       _details: { session_id: session.id, quote_id: quoteId, snapshot_sha256: snapshotHash, campaign_code: snapshot.promotion?.code ?? null },
       _source_module: "journey2",
       _quote_id: quoteId,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
   }
 
   if (!quoteToken) {

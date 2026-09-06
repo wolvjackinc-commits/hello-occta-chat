@@ -1,0 +1,32 @@
+name: SWITCH50 verification
+on:
+  push:
+    branches: [feature/switch50-campaign]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: switch50-check-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  campaign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:unit
+      - run: npm run test:switch50-db
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.2.6
+      - name: Check campaign server functions
+        run: deno check --no-lock supabase/functions/switch50-admin/index.ts supabase/functions/switch50-message-worker/index.ts supabase/functions/switch50-session/index.ts supabase/functions/journey2-completion/index.ts supabase/functions/journey2-prepare-contract/index.ts
+      - run: npm run build

@@ -40,6 +40,7 @@ export function RewardsTab() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [account, setAccount] = useState<Account>(null);
   const [codes, setCodes] = useState<Code[]>([]);
   const [ledger, setLedger] = useState<Ledger[]>([]);
@@ -48,10 +49,12 @@ export function RewardsTab() {
 
   async function loadAll() {
     setLoading(true);
+    setLoadError("");
     try {
       const promoPromise = (supabase as any).rpc("get_my_promotion_rewards");
       if (!rewardsEnabled) {
         const promo = await promoPromise;
+        if (promo.error) throw promo.error;
         setPromotionRewards((promo.data ?? []) as PromotionReward[]);
         return;
       }
@@ -62,11 +65,14 @@ export function RewardsTab() {
         (supabase as any).rpc("get_public_contract_benefits"),
         promoPromise,
       ]);
+      if (promo.error) throw promo.error;
       setAccount((acc.data?.[0] ?? null) as Account);
       setCodes((cods.data ?? []) as Code[]);
       setLedger((led.data ?? []) as Ledger[]);
       setBenefits((ben.data ?? []) as Benefit[]);
       setPromotionRewards((promo.data ?? []) as PromotionReward[]);
+    } catch {
+      setLoadError("Your reward status could not be loaded. Please retry.");
     } finally {
       setLoading(false);
     }
@@ -102,6 +108,8 @@ export function RewardsTab() {
   if (settingsLoading || loading) {
     return <div className="p-6 text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading rewards…</div>;
   }
+
+  if (loadError) return <div role="alert" className="p-6 space-y-3"><p>{loadError}</p><Button onClick={() => void loadAll()}>Retry</Button></div>;
 
   const switchCashSection = promotionRewards.length > 0 ? (
     <div className="space-y-3">

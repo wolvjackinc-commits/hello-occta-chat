@@ -17,11 +17,11 @@ SELECT
   (SELECT count(*) FROM public.quotes q WHERE q.campaign_code = c.code) AS quotes,
   (SELECT count(*) FROM public.orders o WHERE o.campaign_code = c.code) AS orders,
   (SELECT count(*) FROM public.promotion_rewards pr WHERE pr.campaign_code = c.code AND pr.status = 'eligible') AS rewards_eligible,
-  (SELECT count(*) FROM public.promotion_rewards pr WHERE pr.campaign_code = c.code AND pr.status = 'payout_queued') AS rewards_payout_queued,
   (SELECT count(*) FROM public.promotion_rewards pr WHERE pr.campaign_code = c.code AND pr.status = 'issued') AS rewards_issued,
   (SELECT coalesce(sum(pr.reward_amount), 0)::numeric(12,2)
      FROM public.promotion_rewards pr
-    WHERE pr.campaign_code = c.code AND pr.status = 'issued') AS rewards_paid
+    WHERE pr.campaign_code = c.code AND pr.status = 'issued') AS rewards_paid,
+  (SELECT count(*) FROM public.promotion_rewards pr WHERE pr.campaign_code = c.code AND pr.status = 'payout_queued') AS rewards_payout_queued
 FROM public.offer_campaigns c
 WHERE c.code = 'SWITCH50';
 REVOKE ALL ON public.switch50_campaign_funnel FROM PUBLIC, anon, authenticated;

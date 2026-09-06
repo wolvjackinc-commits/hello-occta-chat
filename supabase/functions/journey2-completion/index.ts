@@ -60,6 +60,15 @@ Deno.serve(async (req) => {
   }
   if (!orderNumber) return jsonResponse({ error: "not_completed" }, 409);
 
+  const { data: initialReward, error: rewardError } = await supabase.from("promotion_rewards")
+    .select("status,eligibility_due_at,issued_at").eq("order_id", session.order_id).eq("campaign_code", "SWITCH50").maybeSingle();
+  let promotionReward = initialReward;
+  if (rewardError && snap?.promotion) return jsonResponse({ error: "reward_status_unavailable" }, 503);
+  if (snap?.promotion && !promotionReward) {
+    const duplicate = await supabase.from("promotion_reward_events").select("id").eq("order_id",session.order_id).eq("event_type","duplicate_address_rejected").limit(1);
+    if (duplicate.error) return jsonResponse({ error: "reward_status_unavailable" },503);
+    if (duplicate.data?.length) promotionReward = {status:"blocked",eligibility_due_at:null,issued_at:null};
+  }
   const documents: { label: string; url: string | null }[] = [];
   if (session.contract_summary_id) {
     const { data: cs } = await supabase
@@ -158,6 +167,7 @@ Deno.serve(async (req) => {
       digital_voice_selected: ((session.selected_addons ?? []) as string[]).includes("digital_voice"),
       snapshot_sha256: snapshot.snapshot_sha256,
       promotion: snap?.promotion ?? null,
+      promotion_reward: promotionReward ?? null,
     },
   });
 });

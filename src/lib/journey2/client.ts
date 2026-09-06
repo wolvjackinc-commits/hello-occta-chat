@@ -1,3 +1,4 @@
+import { getConsent } from "@/lib/consent";
 /**
  * Customer Journey 2.0 — browser client.
  *
@@ -130,6 +131,7 @@ function readUtm(): Record<string, string> | undefined {
     const p = new URLSearchParams(window.location.search);
     const out: Record<string, string> = {};
     for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid", "msclkid", "ttclid", "offer"]) {
+      if (["gclid", "fbclid", "msclkid", "ttclid"].includes(k) && getConsent() !== "granted") continue;
       const v = p.get(k);
       if (v) out[k] = v.slice(0, 300);
     }
@@ -293,6 +295,7 @@ export type Journey2Completion = {
   documents: { label: string; url: string | null }[];
   digital_voice_selected: boolean;
   snapshot_sha256: string;
+  promotion_reward?: { status: string; eligibility_due_at: string | null; issued_at: string | null } | null;
   promotion?: CampaignPromotion | null;
 };
 

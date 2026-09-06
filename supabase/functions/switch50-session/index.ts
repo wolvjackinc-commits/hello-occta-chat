@@ -25,11 +25,18 @@ Deno.serve(async (req) => {
   const tokenHash = await sha256Hex(parsed.data.token);
   const { data: session } = await svc
     .from("customer_journey_sessions")
-    .select("id,status,current_step,campaign_code,speed_bucket,plan_term,contract_snapshot_id,completed_at,expires_at")
+    .select("id,status,current_step,campaign_code,campaign_snapshot,speed_bucket,plan_term,contract_snapshot_id,completed_at,expires_at,test_session")
     .eq("public_token_hash", tokenHash)
     .maybeSingle();
 
   if (!session) return jsonResponse({ error: "session_not_found" }, 404);
+  if (session.test_session) return jsonResponse({ error: "use_isolated_test_runner" }, 409);
+  if (new Date(session.expires_at).getTime() <= Date.now()) return jsonResponse({ error: "session_expired" }, 409);
+  if (session.contract_snapshot_id) {
+    const { data: snap, error } = await svc.from("journey2_contract_snapshots").select("snapshot").eq("id", session.contract_snapshot_id).single();
+    if (error) return jsonResponse({ error: "snapshot_unavailable" }, 503);
+    return jsonResponse({ ok: true, campaign_code: snap.snapshot?.promotion?.code ?? session.campaign_code, promotion: snap.snapshot?.promotion ?? null });
+  }
   if (["cancelled", "expired", "completed"].includes(String(session.status))) {
     return jsonResponse({ error: "session_closed", status: session.status }, 409);
   }
@@ -50,11 +57,12 @@ Deno.serve(async (req) => {
   });
   if (!promotion) return jsonResponse({ ok: true, campaign_code: null, promotion: null });
 
-  await svc.from("customer_journey_sessions").update({
+  const { data: saved, error: saveError } = await svc.from("customer_journey_sessions").update({
     campaign_code: requested,
     campaign_snapshot: promotion,
     last_activity_at: new Date().toISOString(),
-  }).eq("id", session.id);
+  }).eq("id", session.id).is("contract_snapshot_id", null).select("id").maybeSingle();
+  if (saveError || !saved) return jsonResponse({ error: "campaign_save_conflict" }, 409);
 
   await svc.rpc("log_event", {
     _actor_type: "public",
@@ -67,7 +75,7 @@ Deno.serve(async (req) => {
       reason: promotion.eligibility_reason,
     },
     _source_module: "campaigns",
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   return jsonResponse({ ok: true, campaign_code: requested, promotion });
 });

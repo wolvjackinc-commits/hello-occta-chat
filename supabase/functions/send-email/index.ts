@@ -1211,7 +1211,42 @@ const getSimLifecycleHtml = (data: Record<string, unknown>): { html: string; sub
   return { html, subject: t.subject };
 };
 
+// Read the `role` claim from a Supabase API key/JWT without trusting it.
+// Used only to decide whether a service-role verification probe is worthwhile.
+const getJwtRole = (token: string): string | null => {
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const claims = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, "=")));
+    return typeof claims?.role === "string" ? claims.role : null;
+  } catch {
+    return null;
+  }
+};
+
+// Prove the presented key really carries service-role privileges by using it
+// for a read that anon/authenticated keys are not granted. Anything forged or
+// downgraded fails here, so this is not a public relay.
+const verifyServiceRoleKey = async (token: string): Promise<boolean> => {
+  try {
+    const probe = createClient(Deno.env.get("SUPABASE_URL") ?? "", token, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await probe.from("user_roles").select("user_id").limit(1);
+    if (error) {
+      console.error("Service-role key verification failed:", error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("Service-role key verification error:", e);
+    return false;
+  }
+};
+
 const handler = async (req: Request): Promise<Response> => {
+
   console.log("Email function called");
   
   if (req.method === "OPTIONS") {

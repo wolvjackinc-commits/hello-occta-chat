@@ -1276,7 +1276,7 @@ const handler = async (req: Request): Promise<Response> => {
       // copy is stale), which surfaced as spurious 401s on internal sends.
       // Fall back to validating the presented key as a genuine service_role
       // credential: the role claim must say service_role AND the key must
-      // actually授 authorise a privileged read that anon/authenticated keys
+      // actually authorise a privileged read that anon/authenticated keys
       // cannot perform. That keeps the endpoint non-public.
       const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
       const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";

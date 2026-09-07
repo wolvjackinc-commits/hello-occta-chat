@@ -1211,7 +1211,42 @@ const getSimLifecycleHtml = (data: Record<string, unknown>): { html: string; sub
   return { html, subject: t.subject };
 };
 
+// Read the `role` claim from a Supabase API key/JWT without trusting it.
+// Used only to decide whether a service-role verification probe is worthwhile.
+const getJwtRole = (token: string): string | null => {
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const claims = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, "=")));
+    return typeof claims?.role === "string" ? claims.role : null;
+  } catch {
+    return null;
+  }
+};
+
+// Prove the presented key really carries service-role privileges by using it
+// for a read that anon/authenticated keys are not granted. Anything forged or
+// downgraded fails here, so this is not a public relay.
+const verifyServiceRoleKey = async (token: string): Promise<boolean> => {
+  try {
+    const probe = createClient(Deno.env.get("SUPABASE_URL") ?? "", token, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await probe.from("user_roles").select("user_id").limit(1);
+    if (error) {
+      console.error("Service-role key verification failed:", error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("Service-role key verification error:", e);
+    return false;
+  }
+};
+
 const handler = async (req: Request): Promise<Response> => {
+
   console.log("Email function called");
   
   if (req.method === "OPTIONS") {
@@ -1269,17 +1304,29 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`Verified guest order confirmation for ${orderNumber}`);
     } else {
       const authHeader = req.headers.get("Authorization");
-      
-      // Check for service role key authentication (for internal/admin calls)
+
+      // Check for service role key authentication (for internal/admin calls).
+      // The exact-match fast path breaks whenever the project's service role
+      // key is rotated (the caller holds the current key, this function's env
+      // copy is stale), which surfaced as spurious 401s on internal sends.
+      // Fall back to validating the presented key as a genuine service_role
+      // credential: the role claim must say service_role AND the key must
+      // actually authorise a privileged read that anon/authenticated keys
+      // cannot perform. That keeps the endpoint non-public.
       const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-      const isServiceRoleAuth = authHeader === `Bearer ${serviceRoleKey}`;
-      
+      const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+      let isServiceRoleAuth = Boolean(serviceRoleKey) && authHeader === `Bearer ${serviceRoleKey}`;
+      if (!isServiceRoleAuth && bearer && getJwtRole(bearer) === "service_role") {
+        isServiceRoleAuth = await verifyServiceRoleKey(bearer);
+      }
+
       // Check for internal secret authentication (for programmatic/cron calls)
       const internalSecret = req.headers.get("x-internal-secret");
       const cronJobSecret = Deno.env.get("CRON_JOB_SECRET");
       const isInternalAuth = internalSecret && cronJobSecret && internalSecret === cronJobSecret;
-      
+
       if (isServiceRoleAuth || isInternalAuth) {
+
         console.log(isServiceRoleAuth ? "Authenticated via service role key" : "Authenticated via internal secret");
         // Service role / internal secret can send any email type
       } else if (!authHeader?.startsWith("Bearer ")) {

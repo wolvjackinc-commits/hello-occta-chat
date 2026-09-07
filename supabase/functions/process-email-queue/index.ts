@@ -249,9 +249,17 @@ Deno.serve(async (req) => {
       }
 
       try {
+        // Transactional (app) emails do not require a pre-existing run: the API
+        // creates one inline from purpose + idempotency_key. Passing a caller
+        // supplied run_id that the API does not know (or that has expired)
+        // makes every attempt fail with 404 run_not_found until the message is
+        // dead-lettered, so only auth emails — whose run_id comes from the auth
+        // hook payload — forward it.
+        const runId = queue === 'auth_emails' ? payload.run_id : undefined
         await sendLovableEmail(
           {
-            run_id: payload.run_id,
+            run_id: runId,
+
             to: payload.to,
             from: payload.from,
             sender_domain: payload.sender_domain,

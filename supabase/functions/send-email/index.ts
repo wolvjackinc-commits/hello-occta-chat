@@ -1269,17 +1269,29 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`Verified guest order confirmation for ${orderNumber}`);
     } else {
       const authHeader = req.headers.get("Authorization");
-      
-      // Check for service role key authentication (for internal/admin calls)
+
+      // Check for service role key authentication (for internal/admin calls).
+      // The exact-match fast path breaks whenever the project's service role
+      // key is rotated (the caller holds the current key, this function's env
+      // copy is stale), which surfaced as spurious 401s on internal sends.
+      // Fall back to validating the presented key as a genuine service_role
+      // credential: the role claim must say service_role AND the key must
+      // actually授 authorise a privileged read that anon/authenticated keys
+      // cannot perform. That keeps the endpoint non-public.
       const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-      const isServiceRoleAuth = authHeader === `Bearer ${serviceRoleKey}`;
-      
+      const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+      let isServiceRoleAuth = Boolean(serviceRoleKey) && authHeader === `Bearer ${serviceRoleKey}`;
+      if (!isServiceRoleAuth && bearer && getJwtRole(bearer) === "service_role") {
+        isServiceRoleAuth = await verifyServiceRoleKey(bearer);
+      }
+
       // Check for internal secret authentication (for programmatic/cron calls)
       const internalSecret = req.headers.get("x-internal-secret");
       const cronJobSecret = Deno.env.get("CRON_JOB_SECRET");
       const isInternalAuth = internalSecret && cronJobSecret && internalSecret === cronJobSecret;
-      
+
       if (isServiceRoleAuth || isInternalAuth) {
+
         console.log(isServiceRoleAuth ? "Authenticated via service role key" : "Authenticated via internal secret");
         // Service role / internal secret can send any email type
       } else if (!authHeader?.startsWith("Bearer ")) {

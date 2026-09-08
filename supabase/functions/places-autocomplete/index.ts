@@ -92,14 +92,19 @@ Deno.serve(async (req) => {
       const input = String(body?.input || '').trim();
       if (input.length < 3) return ok({ suggestions: [] });
       const sessionToken = String(body?.sessionToken || '');
+      // The checked postcode is used only as hidden bias, never shown/prefilled.
+      const expectedPostcode = String(body?.expectedPostcode || '').trim();
       const res = await fetch(`${base}/places:autocomplete`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          input,
+          input: expectedPostcode && !input.toUpperCase().includes(expectedPostcode.toUpperCase().replace(/\s+/g, ''))
+            ? `${input}, ${expectedPostcode}`
+            : input,
           regionCode: 'gb',
           languageCode: 'en-GB',
           includedRegionCodes: ['gb'],
+          includedPrimaryTypes: ['street_address', 'premise', 'subpremise'],
           ...(sessionToken ? { sessionToken } : {}),
         }),
       });
@@ -109,7 +114,7 @@ Deno.serve(async (req) => {
       }
       const data = await res.json();
       const suggestions = (data?.suggestions || [])
-        .filter((s: any) => s?.placePrediction)
+        .filter((s: any) => s?.placePrediction && isPropertySuggestion(s.placePrediction))
         .map((s: any) => ({
           placeId: s.placePrediction.placeId,
           mainText: s.placePrediction.structuredFormat?.mainText?.text || s.placePrediction.text?.text || '',

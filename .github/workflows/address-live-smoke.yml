@@ -1,0 +1,32 @@
+name: Address Live Smoke
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/address-live-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probe public check-address function
+        shell: bash
+        run: |
+          set -euo pipefail
+          body='{"postcode":"AA1 1AA"}'
+          response="$(curl --fail-with-body --silent --show-error --max-time 8 \
+            -H 'Content-Type: application/json' \
+            -X POST \
+            -d "$body" \
+            'https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/check-address')"
+          echo "$response"
+          if printf '%s' "$response" | grep -q 'Use this postcode'; then
+            echo 'Old postcode-only fallback is still deployed.' >&2
+            exit 1
+          fi
+          if ! printf '%s' "$response" | grep -q '"addresses":\[\]'; then
+            echo 'Expected the corrected empty-address response for the synthetic postcode.' >&2
+            exit 1
+          fi

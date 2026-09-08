@@ -35,6 +35,7 @@ import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsT
 import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
 import { PaidStateBanner } from "@/components/dashboard/PaidStateBanner";
 import { logClientEvent } from "@/lib/activityLog";
+import OcctaLoader from "@/components/loading/OcctaLoader";
 import { getReadMap, isTicketUnread, TICKETS_READ_EVENT } from "@/lib/ticketRead";
 import { 
   Wifi, 
@@ -411,11 +412,7 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <LayoutComponent>
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <div className="p-4 border-4 border-foreground bg-background">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
-        </div>
+        <OcctaLoader context="account" variant="page" />
       </LayoutComponent>
     );
   }

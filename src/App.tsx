@@ -11,6 +11,7 @@ import { StructuredData } from "@/components/seo";
 import { CookieConsent } from "@/components/legal/CookieConsent";
 import PrivateRouteNoIndex from "@/components/seo/PrivateRouteNoIndex";
 import { captureReferralFromUrl } from "@/lib/referral";
+import OcctaLoader from "@/components/loading/OcctaLoader";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import OAuthConsent from "./pages/OAuthConsent";
@@ -177,11 +178,7 @@ import NetworkManagement from "./pages/legal/NetworkManagement";
 
 const queryClient = new QueryClient();
 
-const AdminRouteFallback = () => (
-  <div className="p-8 flex items-center justify-center">
-    <div className="p-4 border-4 border-foreground bg-background animate-pulse text-sm font-display uppercase">Loading…</div>
-  </div>
-);
+const AdminRouteFallback = () => <OcctaLoader context="admin" variant="page" delayMs={200} showTips={false} />;
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -284,7 +281,7 @@ const AnimatedRoutes = () => {
         <Route path="/quote/start" element={<QuoteStart />} />
         <Route path="/quote/thank-you" element={<QuoteThankYou />} />
         <Route path="/quote/contract-summary/:token" element={<ContractSummaryView />} />
-        <Route path="/quote/two-doc/:token" element={<Suspense fallback={<div className="p-12 text-center">Loading…</div>}><TwoDocAcceptance /></Suspense>} />
+        <Route path="/quote/two-doc/:token" element={<Suspense fallback={<OcctaLoader context="documents" variant="page" />}><TwoDocAcceptance /></Suspense>} />
         <Route path="/dashboard/contract/:csId" element={<ContractSummaryAuthedView />} />
         <Route path="/dashboard/receipt/:id" element={<ReceiptView mode="auth" />} />
         <Route path="/receipt/:token" element={<ReceiptView mode="token" />} />

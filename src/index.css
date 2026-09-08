@@ -365,3 +365,27 @@
 .admin-dense table tbody tr { transition: background-color 120ms; }
 .admin-dense table tbody tr:hover { background-color: hsl(var(--muted) / 0.4); }
 .admin-dense [data-slot="card"] { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+
+/* ── OCCTA branded loader (presentation only) ───────────────────────── */
+@keyframes occta-loader-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+@keyframes occta-loader-node {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+@keyframes occta-loader-dash {
+  0% { stroke-dashoffset: 160; }
+  100% { stroke-dashoffset: 0; }
+}
+.occta-loader-bar { animation: occta-loader-bar 1.4s ease-in-out infinite; }
+.occta-loader-node { transform-box: fill-box; transform-origin: center; animation: occta-loader-node 1.6s ease-in-out infinite; }
+.occta-loader-line { stroke-dasharray: 160; animation: occta-loader-dash 1.8s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .occta-loader-bar,
+  .occta-loader-node,
+  .occta-loader-line { animation: none; }
+  .occta-loader-bar { width: 100%; opacity: 0.5; }
+  .occta-loader-node { opacity: 0.8; }
+}

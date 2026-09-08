@@ -158,6 +158,27 @@ Deno.serve(async (req) => {
       const line2 = subpremise ? `Flat ${subpremise}` : '';
       const city = longOf(get('postal_town')) || longOf(get('locality')) || longOf(get('administrative_area_level_2')) || '';
       const postcode = (shortOf(get('postal_code')) || longOf(get('postal_code')) || '').toUpperCase();
+
+      // Only a real premise/street address may be returned to checkout.
+      if (!(streetNumber || premise || subpremise) || !route && !premise && !subpremise) {
+        return err(422, 'not_a_property');
+      }
+      if (!postcode) return err(422, 'not_a_property');
+
+      const expectedPostcode = String(body?.expectedPostcode || '').trim();
+      if (expectedPostcode && !samePostcode(expectedPostcode, postcode)) {
+        return new Response(
+          JSON.stringify({
+            error: 'postcode_mismatch',
+            expectedPostcode,
+            postcode,
+            address: null,
+            suggestions: [],
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
       return ok({
         address: { line1, line2, city, postcode, formattedAddress: place?.formattedAddress || '' },
       });

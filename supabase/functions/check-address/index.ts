@@ -26,7 +26,9 @@ function isRealAddress(addr: any, postcode: string) {
 
   const normalizedAddress = normalizeForCompare(formatted)
   const normalizedPostcode = normalizeForCompare(postcode)
+  const normalizedPremises = normalizeForCompare(addr?.premises_name)
   if (!normalizedAddress.includes(normalizedPostcode)) return false
+  if (normalizedPremises === normalizedPostcode) return false
 
   // Never present the postcode itself as if it were an individual property.
   const withoutPostcode = normalizedAddress.replace(normalizedPostcode, '')

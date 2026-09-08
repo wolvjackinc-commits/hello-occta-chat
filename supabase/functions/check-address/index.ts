@@ -5,6 +5,7 @@ const corsHeaders = {
 
 const GOOGLE_MAPS_GATEWAY = 'https://connector-gateway.lovable.dev/google_maps'
 const ALL_PLANS_NOTE = "Select your exact address and we'll show the available plans in this same panel."
+const LOOKUP_TIMEOUT_MS = 3000
 
 function formatPostcode(postcode: string) {
   const normalized = postcode.trim().toUpperCase().replace(/\s+/g, '')
@@ -15,14 +16,42 @@ function compact(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function uniqueAddresses(addresses: any[]) {
+function normalizeForCompare(value: unknown) {
+  return compact(value).toUpperCase().replace(/[^A-Z0-9]/g, '')
+}
+
+function isRealAddress(addr: any, postcode: string) {
+  const formatted = compact(addr?.formatted_address || addr?.premises_name)
+  if (!formatted) return false
+
+  const normalizedAddress = normalizeForCompare(formatted)
+  const normalizedPostcode = normalizeForCompare(postcode)
+  if (!normalizedAddress.includes(normalizedPostcode)) return false
+
+  // Never present the postcode itself as if it were an individual property.
+  const withoutPostcode = normalizedAddress.replace(normalizedPostcode, '')
+  return withoutPostcode.length >= 3
+}
+
+function uniqueAddresses(addresses: any[], postcode: string) {
   const seen = new Set<string>()
   return addresses.filter((addr) => {
-    const key = compact(addr.formatted_address || addr.premises_name).toLowerCase()
+    if (!isRealAddress(addr, postcode)) return false
+    const key = normalizeForCompare(addr.formatted_address || addr.premises_name)
     if (!key || seen.has(key)) return false
     seen.add(key)
     return true
   })
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = LOOKUP_TIMEOUT_MS) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 function toGoogleAddress(candidate: any, postcode: string) {
@@ -52,74 +81,83 @@ function toGooglePlaceAddress(place: any, postcode: string) {
   }
 }
 
+function googleHeaders(lovableApiKey: string, googleMapsKey: string) {
+  return {
+    'Authorization': `Bearer ${lovableApiKey}`,
+    'X-Connection-Api-Key': googleMapsKey,
+    'Content-Type': 'application/json',
+    'Referer': 'https://www.occta.co.uk/',
+  }
+}
+
 async function getGoogleTextSearchAddresses(postcode: string) {
   const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
-  const googleMapsKey =
-    Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
+  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
   if (!lovableApiKey || !googleMapsKey) return []
 
-  const res = await fetch(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:searchText`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${lovableApiKey}`,
-      'X-Connection-Api-Key': googleMapsKey,
-      'Content-Type': 'application/json',
-      'Referer': 'https://www.occta.co.uk/',
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.shortFormattedAddress',
-    },
-    body: JSON.stringify({
-      textQuery: `addresses near ${postcode}, UK`,
-      regionCode: 'gb',
-      languageCode: 'en-GB',
-    }),
-  })
+  try {
+    const res = await fetchWithTimeout(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:searchText`, {
+      method: 'POST',
+      headers: {
+        ...googleHeaders(lovableApiKey, googleMapsKey),
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.shortFormattedAddress',
+      },
+      body: JSON.stringify({
+        // A direct postcode query is both faster and less noisy than "addresses near ...".
+        textQuery: `${postcode}, UK`,
+        regionCode: 'gb',
+        languageCode: 'en-GB',
+      }),
+    })
 
-  if (!res.ok) {
-    console.error(`Google text address lookup failed (${res.status}):`, await res.text())
+    if (!res.ok) {
+      console.error(`Google text address lookup failed (${res.status}):`, await res.text())
+      return []
+    }
+
+    const data = await res.json()
+    return (Array.isArray(data?.places) ? data.places : [])
+      .map((place: any) => toGooglePlaceAddress(place, postcode))
+      .filter((addr: any) => isRealAddress(addr, postcode))
+  } catch (err) {
+    console.error('Google text address lookup timed out or failed:', err)
     return []
   }
-
-  const data = await res.json()
-  return (Array.isArray(data?.places) ? data.places : [])
-    .map((place: any) => toGooglePlaceAddress(place, postcode))
-    .filter((addr: any) => {
-      const norm = (addr.formatted_address || '').toUpperCase().replace(/\s+/g, '')
-      return norm.includes(postcode.replace(/\s+/g, ''))
-    })
 }
 
 async function getGoogleAddressFallback(postcode: string) {
   const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
-  const googleMapsKey =
-    Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
+  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
   if (!lovableApiKey || !googleMapsKey) return []
 
-  const res = await fetch(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:autocomplete`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${lovableApiKey}`,
-      'X-Connection-Api-Key': googleMapsKey,
-      'Content-Type': 'application/json',
-      'Referer': 'https://www.occta.co.uk/',
-      'X-Goog-FieldMask': 'suggestions.placePrediction.placeId,suggestions.placePrediction.text,suggestions.placePrediction.structuredFormat',
-    },
-    body: JSON.stringify({
-      input: postcode,
-      includedPrimaryTypes: ['street_address', 'premise', 'subpremise'],
-      includedRegionCodes: ['gb'],
-      languageCode: 'en-GB',
-    }),
-  })
+  try {
+    const res = await fetchWithTimeout(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:autocomplete`, {
+      method: 'POST',
+      headers: {
+        ...googleHeaders(lovableApiKey, googleMapsKey),
+        'X-Goog-FieldMask': 'suggestions.placePrediction.placeId,suggestions.placePrediction.text,suggestions.placePrediction.structuredFormat',
+      },
+      body: JSON.stringify({
+        input: postcode,
+        includedPrimaryTypes: ['street_address', 'premise', 'subpremise'],
+        includedRegionCodes: ['gb'],
+        languageCode: 'en-GB',
+      }),
+    })
 
-  if (!res.ok) {
-    console.error(`Google address fallback failed (${res.status}):`, await res.text())
+    if (!res.ok) {
+      console.error(`Google address autocomplete failed (${res.status}):`, await res.text())
+      return []
+    }
+
+    const data = await res.json()
+    return (Array.isArray(data?.suggestions) ? data.suggestions : [])
+      .map((suggestion: any) => toGoogleAddress(suggestion, postcode))
+      .filter((addr: any) => isRealAddress(addr, postcode))
+  } catch (err) {
+    console.error('Google address autocomplete timed out or failed:', err)
     return []
   }
-
-  const data = await res.json()
-  return (Array.isArray(data?.suggestions) ? data.suggestions : [])
-    .map((suggestion: any) => toGoogleAddress(suggestion, postcode))
-    .filter((addr: any) => addr.premises_name || addr.formatted_address)
 }
 
 Deno.serve(async (req) => {
@@ -148,25 +186,26 @@ Deno.serve(async (req) => {
       )
     }
 
-    const addresses = uniqueAddresses([
-      ...await getGoogleTextSearchAddresses(displayPostcode),
-      ...await getGoogleAddressFallback(displayPostcode),
+    // Run the independent provider calls concurrently. Previously these ran one
+    // after the other, so a slow provider doubled the customer's wait time.
+    const [textResult, autocompleteResult] = await Promise.allSettled([
+      getGoogleTextSearchAddresses(displayPostcode),
+      getGoogleAddressFallback(displayPostcode),
     ])
 
+    const addresses = uniqueAddresses([
+      ...(textResult.status === 'fulfilled' ? textResult.value : []),
+      ...(autocompleteResult.status === 'fulfilled' ? autocompleteResult.value : []),
+    ], displayPostcode)
+
     if (addresses.length === 0) {
-      const fallback = [{
-        source: 'postcode_only',
-        google_place_id: '',
-        premises_name: displayPostcode,
-        post_town: '',
-        postcode: displayPostcode,
-        formatted_address: `Use this postcode (${displayPostcode})`,
-      }]
+      // Do not fabricate a "Use this postcode" row. It is not an address and it
+      // made the UI say "1 address found" even when no property was returned.
       return new Response(
         JSON.stringify({
-          addresses: fallback,
-          source: 'postcode_only',
-          message: "We couldn't list individual addresses for this postcode. Continue with the postcode and we'll confirm your address before activation.",
+          addresses: [],
+          source: 'no_property_addresses',
+          message: "We couldn't list individual properties for this postcode. Search for your full address or enter it manually and we'll confirm availability before activation.",
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )

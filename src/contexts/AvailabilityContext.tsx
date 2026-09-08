@@ -53,7 +53,7 @@ interface AvailabilityActions {
 type AvailabilityContextValue = AvailabilityState & AvailabilityActions;
 
 const SESSION_KEY = "occta_availability";
-const ADDRESS_LOOKUP_TIMEOUT_MS = 3500;
+const ADDRESS_LOOKUP_TIMEOUT_MS = 3000;
 const ADDRESS_LOOKUP_TIMEOUT = "address_lookup_timeout";
 
 // ── Recommendation logic ──
@@ -97,14 +97,14 @@ function isPostcodeOnlyAddress(addr: AvailabilityAddress): boolean {
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timeout = window.setTimeout(() => reject(new Error(ADDRESS_LOOKUP_TIMEOUT)), ms);
+    const timeout = globalThis.setTimeout(() => reject(new Error(ADDRESS_LOOKUP_TIMEOUT)), ms);
     promise.then(
       (value) => {
-        window.clearTimeout(timeout);
+        globalThis.clearTimeout(timeout);
         resolve(value);
       },
       (error) => {
-        window.clearTimeout(timeout);
+        globalThis.clearTimeout(timeout);
         reject(error);
       }
     );
@@ -248,9 +248,7 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
           status: "error",
           addresses: [],
           errorType: "no-addresses",
-          errorMessage:
-            data?.message ||
-            "We couldn't list individual properties for that postcode. Search for your full address instead.",
+          errorMessage: "We couldn't list individual properties for that postcode. Search for your full address instead.",
         }));
         return;
       }

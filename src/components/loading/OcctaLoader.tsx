@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 /**
  * OCCTA branded loading experience.
@@ -129,7 +129,6 @@ export const OcctaLoader = ({
   const [visible, setVisible] = useState(delayMs <= 0);
   const [slow, setSlow] = useState(false);
   const [tipIndex, setTipIndex] = useState(0);
-  const startedAt = useRef(Date.now());
 
   const tips = useMemo(() => {
     const specific = CONTEXT_TIPS[context] ?? [];
@@ -164,8 +163,6 @@ export const OcctaLoader = ({
   if (!visible) {
     return <div className={`${shell} ${className}`} aria-hidden="true" />;
   }
-
-  void startedAt;
 
   return (
     <div className={`${shell} ${className}`}>

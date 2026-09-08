@@ -199,8 +199,17 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
       // Send via existing send-email function (custom_admin renders any html_body
       // inside the OCCTA branded shell). Service role bypasses admin role check.
       const subjectLine = `Your OCCTA service is live${payload.occta_order_number ? " — " + payload.occta_order_number : ""}`.trim();
-      const sendResp = await supabase.functions.invoke("send-email", {
-        body: {
+      // Send via existing send-email function (service_live_welcome renders any
+      // html_body inside the OCCTA branded shell). We call it over HTTP with the
+      // internal shared secret header, which is the auth path send-email accepts
+      // for machine-to-machine calls.
+      const sendRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-internal-secret": Deno.env.get("CRON_JOB_SECRET") ?? "",
+        },
+        body: JSON.stringify({
           type: "service_live_welcome",
           to: payload.recipient_email,
           userId: payload.user_id ?? undefined,
@@ -214,10 +223,14 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
             html_body: html,
             use_raw_html: true,
           },
-        },
+        }),
       });
+      const sendBody = await sendRes.json().catch(() => ({}));
+      if (!sendRes.ok || (sendBody as any)?.error) {
+        throw new Error(`send_failed_${sendRes.status}: ${JSON.stringify(sendBody).slice(0, 300)}`);
+      }
+      const sendResp = { data: sendBody as any };
 
-      if (sendResp.error) throw new Error(sendResp.error.message || "send_failed");
 
       await supabase.from("service_activation_outbox")
         .update({

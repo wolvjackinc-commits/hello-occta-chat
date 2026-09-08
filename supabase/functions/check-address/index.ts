@@ -148,15 +148,14 @@ async function getGoogleTextSearchAddresses(postcode: string) {
 }
 
 async function getGoogleAddressFallback(postcode: string) {
-  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
-  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
-  if (!lovableApiKey || !googleMapsKey) return []
+  const transport = resolveGoogleTransport()
+  if (!transport) return []
 
   try {
-    const res = await fetchWithTimeout(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:autocomplete`, {
+    const res = await fetchWithTimeout(`${transport.base}/places/v1/places:autocomplete`, {
       method: 'POST',
       headers: {
-        ...googleHeaders(lovableApiKey, googleMapsKey),
+        ...transport.headers,
         'X-Goog-FieldMask': 'suggestions.placePrediction.placeId,suggestions.placePrediction.text,suggestions.placePrediction.structuredFormat',
       },
       body: JSON.stringify({

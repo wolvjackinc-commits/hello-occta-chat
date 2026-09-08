@@ -21,25 +21,38 @@ function err(status: number, message: string) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
+    // Prefer OCCTA's own Google Maps Platform key when configured: it is valid
+    // for every OCCTA domain (including occta.co.uk). Otherwise fall back to
+    // the managed connector gateway.
+    const ownKey = Deno.env.get('GOOGLE_API_KEY');
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     const googleMapsKey =
       Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1');
-    if (!lovableApiKey || !googleMapsKey) return err(500, 'Address lookup not configured');
+    if (!ownKey && (!lovableApiKey || !googleMapsKey)) return err(500, 'Address lookup not configured');
+
+    const base = ownKey ? 'https://places.googleapis.com/v1' : `${GATEWAY}/places/v1`;
+    const headers: Record<string, string> = ownKey
+      ? {
+          'X-Goog-Api-Key': ownKey,
+          'Content-Type': 'application/json',
+          // OCCTA's key is website-restricted, so identify the calling site.
+          'Referer': 'https://www.occta.co.uk/',
+        }
+      : {
+          'Authorization': `Bearer ${lovableApiKey}`,
+          'X-Connection-Api-Key': googleMapsKey!,
+          'Content-Type': 'application/json',
+          'Referer': 'https://www.occta.co.uk/',
+        };
 
     const body = await req.json().catch(() => ({}));
     const action = String(body?.action || 'suggest');
-    const headers = {
-      'Authorization': `Bearer ${lovableApiKey}`,
-      'X-Connection-Api-Key': googleMapsKey,
-      'Content-Type': 'application/json',
-      'Referer': 'https://www.occta.co.uk/',
-    };
 
     if (action === 'suggest') {
       const input = String(body?.input || '').trim();
       if (input.length < 3) return ok({ suggestions: [] });
       const sessionToken = String(body?.sessionToken || '');
-      const res = await fetch(`${GATEWAY}/places/v1/places:autocomplete`, {
+      const res = await fetch(`${base}/places:autocomplete`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -69,7 +82,7 @@ Deno.serve(async (req) => {
     if (action === 'details') {
       const placeId = String(body?.placeId || '').trim();
       if (!placeId) return err(400, 'Missing placeId');
-      const res = await fetch(`${GATEWAY}/places/v1/places/${encodeURIComponent(placeId)}?languageCode=en-GB&regionCode=gb`, {
+      const res = await fetch(`${base}/places/${encodeURIComponent(placeId)}?languageCode=en-GB&regionCode=gb`, {
         method: 'GET',
         headers: { ...headers, 'X-Goog-FieldMask': 'id,formattedAddress,addressComponents,displayName' },
       });

@@ -118,10 +118,10 @@ async function getGoogleTextSearchAddresses(postcode: string) {
   if (!transport) return []
 
   try {
-    const res = await fetchWithTimeout(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:searchText`, {
+    const res = await fetchWithTimeout(`${transport.base}/places/v1/places:searchText`, {
       method: 'POST',
       headers: {
-        ...googleHeaders(lovableApiKey, googleMapsKey),
+        ...transport.headers,
         'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.shortFormattedAddress',
       },
       body: JSON.stringify({

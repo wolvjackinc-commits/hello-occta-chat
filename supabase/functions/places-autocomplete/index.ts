@@ -46,11 +46,21 @@ const PROPERTY_TYPES = new Set([
   'point_of_interest',
 ]);
 
-function isPropertySuggestion(prediction: any) {
+const UK_POSTCODE_ONLY = /^[A-Z]{1,2}[0-9][0-9A-Z]?(\s?[0-9][A-Z]{2})?$/i;
+
+export function isPropertySuggestion(prediction: any) {
   const types: string[] = Array.isArray(prediction?.types) ? prediction.types : [];
-  if (types.length === 0) return false;
   if (types.some((t) => BANNED_TYPES.has(t))) return false;
-  return types.some((t) => PROPERTY_TYPES.has(t));
+
+  const mainText: string = prediction?.structuredFormat?.mainText?.text || prediction?.text?.text || '';
+  const main = mainText.trim();
+  if (!main) return false;
+  // "HD3 3WU" or "HD3 3WU, Huddersfield" is a postcode, not a property.
+  if (UK_POSTCODE_ONLY.test(main)) return false;
+
+  if (types.length > 0) return types.some((t) => PROPERTY_TYPES.has(t));
+  // Some responses omit types; a property line carries a number or unit.
+  return /\d/.test(main);
 }
 
 function samePostcode(a: string, b: string) {

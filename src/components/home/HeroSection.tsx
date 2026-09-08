@@ -4,13 +4,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/AvailabilityContext";
 import { startAssignedJourney } from "@/lib/journey2/route";
 
 const HeroSection = () => {
   const prices = getFromPrices();
   const navigate = useNavigate();
-  const { status, result, postcode, selectedAddress, addresses, errorType, reset, selectAddress, triggerFallback } = useAvailability();
+  const { status, result, postcode, selectedAddress, addresses, errorType, errorMessage, reset, selectAddress, triggerFallback } = useAvailability();
   const retailCards = getRetailBroadbandCards();
 
   const hasResult = status === "success" && result;
@@ -77,6 +78,8 @@ const HeroSection = () => {
   const isLoadingPostcode = status === "loading-postcode";
   const isCheckingAddress = status === "checking-address";
   const isLoadingState = isLoadingPostcode || isCheckingAddress;
+  const showAddressRecovery = status === "error" && !selectedAddress &&
+    (errorType === "no-addresses" || errorType === "backend-unavailable");
 
   return (
     <section className="relative flex items-center bg-gradient-to-br from-background via-background to-muted/30">
@@ -203,6 +206,63 @@ const HeroSection = () => {
               </motion.div>
             )}
 
+            {/* If the postcode provider is slow/incomplete, keep the customer in the
+                same panel and fall back to the already-live full-address search. */}
+            {showAddressRecovery && (
+              <motion.div
+                key="address-recovery-right"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card p-5"
+              >
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <p className="font-display text-sm uppercase tracking-wider text-foreground">Find your full address</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {errorMessage || "We couldn't load a complete property list for that postcode."}
+                    </p>
+                  </div>
+                  <button onClick={reset} className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap">
+                    Change postcode
+                  </button>
+                </div>
+
+                <AddressAutocomplete
+                  initialQuery={postcode}
+                  label="Search house number or street"
+                  helperText="Your postcode is already filled in. If the list doesn't appear, add your house number or street name."
+                  onSelect={(addr) => {
+                    if (!addr.line1.trim()) {
+                      triggerFallback(postcode);
+                      navigate("/order");
+                      return;
+                    }
+                    selectAddress({
+                      premises_name: addr.line1,
+                      sub_premises: addr.line2,
+                      post_town: addr.city,
+                      postcode: addr.postcode || postcode,
+                      formatted_address: [addr.line1, addr.line2, addr.city, addr.postcode || postcode].filter(Boolean).join(", "),
+                    });
+                  }}
+                />
+
+                <div className="mt-4 pt-3 border-t-2 border-foreground/10 flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
+                  <p className="text-xs text-muted-foreground">Still can't find it? You can enter the address during the order.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerFallback(postcode);
+                      navigate("/order");
+                    }}
+                    className="text-xs text-primary hover:underline font-medium text-left sm:text-right"
+                  >
+                    Enter manually
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
             {/* RESULT STATE — personalised plans stay in the same right-hand frame */}
             {hasResult && (
               <motion.div
@@ -300,7 +360,7 @@ const HeroSection = () => {
             )}
 
             {/* ERROR / FALLBACK STATE — right panel */}
-            {status === "error" && errorType !== "invalid-postcode" && (
+            {status === "error" && errorType !== "invalid-postcode" && !showAddressRecovery && (
               <motion.div
                 key="error-right"
                 initial={{ opacity: 0, y: 8 }}

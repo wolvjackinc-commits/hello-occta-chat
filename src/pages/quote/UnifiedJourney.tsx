@@ -4,7 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import OcctaLoader from "@/components/loading/OcctaLoader";
 import JourneyProgress, { type JourneyStepKey } from "./journey/JourneyProgress";
 import QuoteStep from "./journey/QuoteStep";
 import DeclineDialog from "./journey/DeclineDialog";
@@ -153,9 +153,7 @@ export default function UnifiedJourney() {
   if (loading) {
     return (
       <Layout>
-        <div className="container mx-auto p-12 text-center">
-          <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-        </div>
+        <OcctaLoader context="checkout" variant="page" label="Loading your order…" />
       </Layout>
     );
   }

@@ -159,10 +159,11 @@ const HeroSection = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="card-brutal bg-card p-6 flex flex-col items-center justify-center min-h-[320px]"
               >
-                <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
-                <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                  {isLoadingPostcode ? "Checking your address…" : "Finding available speeds…"}
-                </p>
+                <OcctaLoader
+                  context={isLoadingPostcode ? "address" : "availability"}
+                  delayMs={200}
+                  className="w-full"
+                />
               </motion.div>
             )}
 

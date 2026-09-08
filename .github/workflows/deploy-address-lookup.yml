@@ -1,6 +1,10 @@
-name: Deploy Address Lookup Function
+name: Address Lookup Verification and Deploy
 
 on:
+  pull_request:
+    paths:
+      - 'supabase/functions/check-address/**'
+      - '.github/workflows/deploy-address-lookup.yml'
   push:
     branches: [main]
     paths:
@@ -9,7 +13,20 @@ on:
   workflow_dispatch:
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check address edge function
+        run: deno check supabase/functions/check-address/index.ts
+
   deploy:
+    if: github.event_name != 'pull_request'
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

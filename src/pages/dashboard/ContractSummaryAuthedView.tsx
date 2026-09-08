@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
+import OcctaLoader from "@/components/loading/OcctaLoader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -81,7 +82,7 @@ export default function ContractSummaryAuthedView() {
     } finally { setSubmitting(false); }
   };
 
-  if (loading) return <Layout><div className="container mx-auto p-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div></Layout>;
+  if (loading) return <Layout><OcctaLoader context="documents" variant="page" /></Layout>;
   if (!cs) return (
     <Layout><section className="container mx-auto p-12 max-w-xl text-center">
       <h1 className="font-display uppercase text-2xl">Contract Summary not found</h1>

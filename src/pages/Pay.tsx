@@ -11,6 +11,7 @@ import { getPaymentReturnOrigin } from "@/lib/appOrigin";
 import { redirectToExternal } from "@/lib/externalRedirect";
 import { generateReceiptPdf } from "@/lib/generateReceiptPdf";
 import ConfettiEffect from "@/components/thankyou/ConfettiEffect";
+import OcctaLoader from "@/components/loading/OcctaLoader";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 
@@ -279,7 +280,7 @@ export default function Pay() {
       }
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <OcctaLoader context="payment" />
         </div>
       );
     }

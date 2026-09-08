@@ -144,7 +144,8 @@ export function AddressAutocomplete({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => suggestions.length && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder="Start typing your postcode or street…"
+          placeholder="e.g. 22 Pavilion View"
+          autoFocus={autoFocus}
           className="h-12 border-4 border-foreground focus:ring-0 focus:border-foreground bg-background pr-9 rounded-none"
           autoComplete="off"
         />

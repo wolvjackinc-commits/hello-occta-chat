@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       const input = String(body?.input || '').trim();
       if (input.length < 3) return ok({ suggestions: [] });
       const sessionToken = String(body?.sessionToken || '');
-      const res = await fetch(`${GATEWAY}/places/v1/places:autocomplete`, {
+      const res = await fetch(`${base}/places/v1/places:autocomplete`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     if (action === 'details') {
       const placeId = String(body?.placeId || '').trim();
       if (!placeId) return err(400, 'Missing placeId');
-      const res = await fetch(`${GATEWAY}/places/v1/places/${encodeURIComponent(placeId)}?languageCode=en-GB&regionCode=gb`, {
+      const res = await fetch(`${base}/places/v1/places/${encodeURIComponent(placeId)}?languageCode=en-GB&regionCode=gb`, {
         method: 'GET',
         headers: { ...headers, 'X-Goog-FieldMask': 'id,formattedAddress,addressComponents,displayName' },
       });

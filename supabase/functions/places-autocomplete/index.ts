@@ -18,6 +18,56 @@ function err(status: number, message: string) {
   });
 }
 
+// A customer-selectable row must be an actual property, never a postcode,
+// town, locality or bare street.
+const BANNED_TYPES = new Set([
+  'postal_code',
+  'postal_code_prefix',
+  'postal_code_suffix',
+  'postal_town',
+  'locality',
+  'sublocality',
+  'neighborhood',
+  'administrative_area_level_1',
+  'administrative_area_level_2',
+  'administrative_area_level_3',
+  'country',
+  'political',
+  'route',
+  'intersection',
+]);
+
+const PROPERTY_TYPES = new Set([
+  'street_address',
+  'premise',
+  'subpremise',
+  'street_number',
+  'establishment',
+  'point_of_interest',
+]);
+
+const UK_POSTCODE_ONLY = /^[A-Z]{1,2}[0-9][0-9A-Z]?(\s?[0-9][A-Z]{2})?$/i;
+
+export function isPropertySuggestion(prediction: any) {
+  const types: string[] = Array.isArray(prediction?.types) ? prediction.types : [];
+  if (types.some((t) => BANNED_TYPES.has(t))) return false;
+
+  const mainText: string = prediction?.structuredFormat?.mainText?.text || prediction?.text?.text || '';
+  const main = mainText.trim();
+  if (!main) return false;
+  // "HD3 3WU" or "HD3 3WU, Huddersfield" is a postcode, not a property.
+  if (UK_POSTCODE_ONLY.test(main)) return false;
+
+  if (types.length > 0) return types.some((t) => PROPERTY_TYPES.has(t));
+  // Some responses omit types; a property line carries a number or unit.
+  return /\d/.test(main);
+}
+
+function samePostcode(a: string, b: string) {
+  const norm = (v: string) => v.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return norm(a) === norm(b);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
@@ -52,14 +102,19 @@ Deno.serve(async (req) => {
       const input = String(body?.input || '').trim();
       if (input.length < 3) return ok({ suggestions: [] });
       const sessionToken = String(body?.sessionToken || '');
+      // The checked postcode is used only as hidden bias, never shown/prefilled.
+      const expectedPostcode = String(body?.expectedPostcode || '').trim();
       const res = await fetch(`${base}/places:autocomplete`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          input,
+          input: expectedPostcode && !input.toUpperCase().includes(expectedPostcode.toUpperCase().replace(/\s+/g, ''))
+            ? `${input}, ${expectedPostcode}`
+            : input,
           regionCode: 'gb',
           languageCode: 'en-GB',
           includedRegionCodes: ['gb'],
+          includedPrimaryTypes: ['street_address', 'premise', 'subpremise'],
           ...(sessionToken ? { sessionToken } : {}),
         }),
       });
@@ -69,7 +124,7 @@ Deno.serve(async (req) => {
       }
       const data = await res.json();
       const suggestions = (data?.suggestions || [])
-        .filter((s: any) => s?.placePrediction)
+        .filter((s: any) => s?.placePrediction && isPropertySuggestion(s.placePrediction))
         .map((s: any) => ({
           placeId: s.placePrediction.placeId,
           mainText: s.placePrediction.structuredFormat?.mainText?.text || s.placePrediction.text?.text || '',
@@ -103,6 +158,27 @@ Deno.serve(async (req) => {
       const line2 = subpremise ? `Flat ${subpremise}` : '';
       const city = longOf(get('postal_town')) || longOf(get('locality')) || longOf(get('administrative_area_level_2')) || '';
       const postcode = (shortOf(get('postal_code')) || longOf(get('postal_code')) || '').toUpperCase();
+
+      // Only a real premise/street address may be returned to checkout.
+      if (!(streetNumber || premise || subpremise) || !route && !premise && !subpremise) {
+        return err(422, 'not_a_property');
+      }
+      if (!postcode) return err(422, 'not_a_property');
+
+      const expectedPostcode = String(body?.expectedPostcode || '').trim();
+      if (expectedPostcode && !samePostcode(expectedPostcode, postcode)) {
+        return new Response(
+          JSON.stringify({
+            error: 'postcode_mismatch',
+            expectedPostcode,
+            postcode,
+            address: null,
+            suggestions: [],
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
       return ok({
         address: { line1, line2, city, postcode, formattedAddress: place?.formattedAddress || '' },
       });

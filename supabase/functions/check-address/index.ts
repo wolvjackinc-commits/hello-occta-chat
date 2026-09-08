@@ -183,6 +183,48 @@ async function getGoogleAddressFallback(postcode: string) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Preferred provider: a PAF-capable exact-postcode address list.
+// Only used when IDEAL_POSTCODES_API_KEY is configured; never hard-coded.
+// ---------------------------------------------------------------------------
+async function getPafAddresses(displayPostcode: string) {
+  const key = Deno.env.get('IDEAL_POSTCODES_API_KEY')
+  if (!key) return []
+
+  const lookup = displayPostcode.replace(/\s+/g, '')
+  try {
+    const res = await fetchWithTimeout(
+      `https://api.ideal-postcodes.co.uk/v1/postcodes/${encodeURIComponent(lookup)}?api_key=${encodeURIComponent(key)}`,
+      { method: 'GET', headers: { 'Accept': 'application/json' } },
+      2500,
+    )
+    if (!res.ok) {
+      console.error(`PAF postcode lookup failed (${res.status})`)
+      return []
+    }
+    const data = await res.json()
+    const rows: any[] = Array.isArray(data?.result) ? data.result : []
+    return rows.map((row) => {
+      const line1 = compact(row?.line_1)
+      const line2 = compact(row?.line_2)
+      const town = compact(row?.post_town)
+      const pc = compact(row?.postcode) || displayPostcode
+      return {
+        source: 'paf',
+        udprn: compact(row?.udprn),
+        premises_name: line1,
+        sub_premises: line2 || undefined,
+        post_town: town,
+        postcode: pc,
+        formatted_address: [line1, line2, town, pc].filter(Boolean).join(', '),
+      }
+    }).filter((addr: any) => compact(addr.premises_name).length > 0)
+  } catch (e) {
+    console.error('PAF postcode lookup timed out or failed:', e)
+    return []
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -206,6 +248,15 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Invalid UK postcode format' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Exact Royal Mail / PAF postcode list first when a provider key exists.
+    const pafAddresses = await getPafAddresses(displayPostcode)
+    if (pafAddresses.length > 0) {
+      return new Response(
+        JSON.stringify({ addresses: pafAddresses, source: 'paf', message: ALL_PLANS_NOTE }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 

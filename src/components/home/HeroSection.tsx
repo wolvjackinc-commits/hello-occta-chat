@@ -228,9 +228,10 @@ const HeroSection = () => {
                 </div>
 
                 <AddressAutocomplete
-                  initialQuery={postcode}
+                  expectedPostcode={postcode}
+                  autoFocus
                   label="Search house number or street"
-                  helperText="Your postcode is already filled in. If the list doesn't appear, add your house number or street name."
+                  helperText={`Start typing house number and street, e.g. 22 Pavilion View. We'll only show addresses in ${postcode}.`}
                   onSelect={(addr) => {
                     if (!addr.line1.trim()) {
                       triggerFallback(postcode);

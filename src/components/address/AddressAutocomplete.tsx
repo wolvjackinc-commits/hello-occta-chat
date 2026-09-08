@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { isSelectableAddressSuggestion, samePostcode } from "@/lib/address/suggestionFilter";
 
 export interface ParsedAddress {
   line1: string;
@@ -14,9 +15,11 @@ export interface ParsedAddress {
 interface Props {
   onSelect: (addr: ParsedAddress) => void;
   onManualFallback?: () => void;
-  initialQuery?: string;
+  /** Checked postcode: used only as hidden bias/validation, never prefilled. */
+  expectedPostcode?: string;
   label?: string;
   helperText?: string;
+  autoFocus?: boolean;
 }
 
 type Suggestion = {
@@ -24,6 +27,7 @@ type Suggestion = {
   mainText: string;
   secondaryText: string;
   fullText: string;
+  types?: string[];
 };
 
 function newToken() {
@@ -35,23 +39,20 @@ function newToken() {
 export function AddressAutocomplete({
   onSelect,
   onManualFallback,
-  initialQuery = "",
+  expectedPostcode = "",
   label = "Search your address",
-  helperText = "Can't find it? Just type your address in the fields below.",
+  helperText = "Start typing house number and street, e.g. 22 Pavilion View.",
+  autoFocus = false,
 }: Props) {
-  const [query, setQuery] = useState(initialQuery);
+  // Never prefill the visible field with the postcode: the postcode alone is
+  // not an address and Google only offers the locality back.
+  const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<number | null>(null);
   const sessionTokenRef = useRef<string>(newToken());
-
-  useEffect(() => {
-    if (initialQuery) {
-      setQuery((current) => (current === initialQuery ? current : initialQuery));
-    }
-  }, [initialQuery]);
 
   useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
@@ -63,12 +64,18 @@ export function AddressAutocomplete({
       try {
         setLoading(true);
         const { data, error: invokeErr } = await supabase.functions.invoke("places-autocomplete", {
-          body: { action: "suggest", input: query, sessionToken: sessionTokenRef.current },
+          body: {
+            action: "suggest",
+            input: query,
+            expectedPostcode: expectedPostcode || undefined,
+            sessionToken: sessionTokenRef.current,
+          },
         });
         if (invokeErr || (data as any)?.error) {
           throw new Error((data as any)?.error || invokeErr?.message || "lookup_failed");
         }
-        const list: Suggestion[] = (data as any)?.suggestions || [];
+        const raw: Suggestion[] = (data as any)?.suggestions || [];
+        const list = raw.filter(isSelectableAddressSuggestion);
         setSuggestions(list);
         setOpen(list.length > 0);
         setError(null);
@@ -80,18 +87,39 @@ export function AddressAutocomplete({
         setLoading(false);
       }
     }, 250);
-  }, [query, onManualFallback]);
+  }, [query, expectedPostcode, onManualFallback]);
 
   const choose = async (s: Suggestion) => {
     try {
       setLoading(true);
       const { data, error: invokeErr } = await supabase.functions.invoke("places-autocomplete", {
-        body: { action: "details", placeId: s.placeId, sessionToken: sessionTokenRef.current },
+        body: {
+          action: "details",
+          placeId: s.placeId,
+          expectedPostcode: expectedPostcode || undefined,
+          sessionToken: sessionTokenRef.current,
+        },
       });
-      if (invokeErr || (data as any)?.error || !(data as any)?.address) {
-        throw new Error((data as any)?.error || invokeErr?.message || "details_failed");
+      const errorCode = (data as any)?.error;
+      if (errorCode === "postcode_mismatch") {
+        setError(
+          `That address is in ${(data as any)?.postcode || "another postcode"}, not ${expectedPostcode}. Pick another address or change your postcode.`,
+        );
+        setOpen(false);
+        return;
+      }
+      if (invokeErr || errorCode || !(data as any)?.address) {
+        throw new Error(errorCode || invokeErr?.message || "details_failed");
       }
       const addr = (data as any).address as ParsedAddress & { formattedAddress?: string };
+      if (!addr.line1?.trim()) throw new Error("not_a_property");
+      if (expectedPostcode && addr.postcode && !samePostcode(expectedPostcode, addr.postcode)) {
+        setError(
+          `That address is in ${addr.postcode}, not ${expectedPostcode}. Pick another address or change your postcode.`,
+        );
+        setOpen(false);
+        return;
+      }
       onSelect({ line1: addr.line1, line2: addr.line2, city: addr.city, postcode: addr.postcode });
       setQuery(addr.formattedAddress || [s.mainText, s.secondaryText].filter(Boolean).join(", "));
       setOpen(false);
@@ -116,7 +144,8 @@ export function AddressAutocomplete({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => suggestions.length && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder="Start typing your postcode or street…"
+          placeholder="e.g. 22 Pavilion View"
+          autoFocus={autoFocus}
           className="h-12 border-4 border-foreground focus:ring-0 focus:border-foreground bg-background pr-9 rounded-none"
           autoComplete="off"
         />

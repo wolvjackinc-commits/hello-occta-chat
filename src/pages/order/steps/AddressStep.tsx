@@ -83,9 +83,9 @@ export default function AddressStep({
 
       <AddressAutocomplete
         onSelect={applyLookup}
-        initialQuery={postcode}
+        expectedPostcode={postcode}
         label="Find your address"
-        helperText="Pick your address and we'll fill the rest in — or type it below yourself."
+        helperText="Start typing house number and street, e.g. 22 Pavilion View — or type it in below yourself."
       />
 
       <div className="grid gap-4 sm:grid-cols-2">

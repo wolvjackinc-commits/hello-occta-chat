@@ -97,9 +97,10 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
       {showManualAddressLookup && (
         <div className="mt-4 border-4 border-foreground bg-card p-4">
           <AddressAutocomplete
-            initialQuery={localPostcode || ctxPostcode}
+            expectedPostcode={localPostcode || ctxPostcode}
+            autoFocus
             label="Choose your full address"
-            helperText="If your address appears here, pick it and we'll check the available plans for that property."
+            helperText="Start typing house number and street, e.g. 22 Pavilion View — then pick your property."
             onSelect={(addr) => {
               selectAddress({
                 sub_premises: addr.line2,

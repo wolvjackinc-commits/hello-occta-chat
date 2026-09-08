@@ -18,6 +18,46 @@ function err(status: number, message: string) {
   });
 }
 
+// A customer-selectable row must be an actual property, never a postcode,
+// town, locality or bare street.
+const BANNED_TYPES = new Set([
+  'postal_code',
+  'postal_code_prefix',
+  'postal_code_suffix',
+  'postal_town',
+  'locality',
+  'sublocality',
+  'neighborhood',
+  'administrative_area_level_1',
+  'administrative_area_level_2',
+  'administrative_area_level_3',
+  'country',
+  'political',
+  'route',
+  'intersection',
+]);
+
+const PROPERTY_TYPES = new Set([
+  'street_address',
+  'premise',
+  'subpremise',
+  'street_number',
+  'establishment',
+  'point_of_interest',
+]);
+
+function isPropertySuggestion(prediction: any) {
+  const types: string[] = Array.isArray(prediction?.types) ? prediction.types : [];
+  if (types.length === 0) return false;
+  if (types.some((t) => BANNED_TYPES.has(t))) return false;
+  return types.some((t) => PROPERTY_TYPES.has(t));
+}
+
+function samePostcode(a: string, b: string) {
+  const norm = (v: string) => v.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return norm(a) === norm(b);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {

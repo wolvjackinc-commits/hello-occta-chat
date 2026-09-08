@@ -83,19 +83,39 @@ function toGooglePlaceAddress(place: any, postcode: string) {
   }
 }
 
-function googleHeaders(lovableApiKey: string, googleMapsKey: string) {
+// Prefer OCCTA's own Google Maps Platform key when configured: it works for
+// every OCCTA domain (including occta.co.uk). Otherwise fall back to the
+// managed connector gateway.
+function resolveGoogleTransport() {
+  const ownKey = Deno.env.get('GOOGLE_API_KEY')
+  if (ownKey) {
+    return {
+      base: 'https://places.googleapis.com',
+      headers: {
+        'X-Goog-Api-Key': ownKey,
+        'Content-Type': 'application/json',
+      } as Record<string, string>,
+    }
+  }
+
+  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
+  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
+  if (!lovableApiKey || !googleMapsKey) return null
+
   return {
-    'Authorization': `Bearer ${lovableApiKey}`,
-    'X-Connection-Api-Key': googleMapsKey,
-    'Content-Type': 'application/json',
-    'Referer': 'https://www.occta.co.uk/',
+    base: GOOGLE_MAPS_GATEWAY,
+    headers: {
+      'Authorization': `Bearer ${lovableApiKey}`,
+      'X-Connection-Api-Key': googleMapsKey,
+      'Content-Type': 'application/json',
+      'Referer': 'https://www.occta.co.uk/',
+    } as Record<string, string>,
   }
 }
 
 async function getGoogleTextSearchAddresses(postcode: string) {
-  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
-  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
-  if (!lovableApiKey || !googleMapsKey) return []
+  const transport = resolveGoogleTransport()
+  if (!transport) return []
 
   try {
     const res = await fetchWithTimeout(`${GOOGLE_MAPS_GATEWAY}/places/v1/places:searchText`, {

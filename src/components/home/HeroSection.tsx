@@ -7,6 +7,7 @@ import PostcodeChecker from "@/components/home/PostcodeChecker";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/AvailabilityContext";
 import { startAssignedJourney } from "@/lib/journey2/route";
+import OcctaLoader from "@/components/loading/OcctaLoader";
 
 const HeroSection = () => {
   const prices = getFromPrices();

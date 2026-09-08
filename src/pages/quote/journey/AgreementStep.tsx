@@ -118,12 +118,15 @@ export default function AgreementStep({
       }
       let detail = await loadDetail();
       let waited = 0;
+      // Poll quickly first, then back off: the documents are usually ready in
+      // well under a second, so a flat 800ms wait added avoidable latency.
+      const backoff = [200, 300, 400, 600, 800, 800, 1000, 1200, 1400, 1500];
       while (
         detail &&
         (!detail.pdf_ready || (detail.contract_information_required && !detail.contract_information_ready)) &&
         waited < 10
       ) {
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, backoff[Math.min(waited, backoff.length - 1)]));
         detail = await loadDetail();
         waited += 1;
       }

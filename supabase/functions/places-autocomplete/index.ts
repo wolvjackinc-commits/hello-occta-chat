@@ -21,19 +21,30 @@ function err(status: number, message: string) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
+    // Prefer OCCTA's own Google Maps Platform key when configured: it is valid
+    // for every OCCTA domain (including occta.co.uk). Otherwise fall back to
+    // the managed connector gateway.
+    const ownKey = Deno.env.get('GOOGLE_API_KEY');
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     const googleMapsKey =
       Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1');
-    if (!lovableApiKey || !googleMapsKey) return err(500, 'Address lookup not configured');
+    if (!ownKey && (!lovableApiKey || !googleMapsKey)) return err(500, 'Address lookup not configured');
+
+    const base = ownKey ? 'https://places.googleapis.com' : GATEWAY;
+    const headers: Record<string, string> = ownKey
+      ? {
+          'X-Goog-Api-Key': ownKey,
+          'Content-Type': 'application/json',
+        }
+      : {
+          'Authorization': `Bearer ${lovableApiKey}`,
+          'X-Connection-Api-Key': googleMapsKey!,
+          'Content-Type': 'application/json',
+          'Referer': 'https://www.occta.co.uk/',
+        };
 
     const body = await req.json().catch(() => ({}));
     const action = String(body?.action || 'suggest');
-    const headers = {
-      'Authorization': `Bearer ${lovableApiKey}`,
-      'X-Connection-Api-Key': googleMapsKey,
-      'Content-Type': 'application/json',
-      'Referer': 'https://www.occta.co.uk/',
-    };
 
     if (action === 'suggest') {
       const input = String(body?.input || '').trim();

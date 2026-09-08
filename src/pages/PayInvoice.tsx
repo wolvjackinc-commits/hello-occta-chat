@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, AlertCircle, CheckCircle, ArrowLeft, CreditCard, Calendar, Receipt, Download } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
+import OcctaLoader from '@/components/loading/OcctaLoader';
 import { format } from 'date-fns';
 import { generateReceiptPdf } from '@/lib/generateReceiptPdf';
 import { toast } from 'sonner';
@@ -201,10 +202,7 @@ export default function PayInvoice() {
     return (
       <Layout>
         <div className="container max-w-2xl mx-auto py-12 px-4">
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Loading invoice...</p>
-          </div>
+          <OcctaLoader context="payment" label="Loading your invoice…" />
         </div>
       </Layout>
     );

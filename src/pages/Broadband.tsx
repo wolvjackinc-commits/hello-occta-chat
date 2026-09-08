@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
 import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
+import OcctaLoader from "@/components/loading/OcctaLoader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star, ChevronRight, Loader2 } from "lucide-react";
+import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star, ChevronRight } from "lucide-react";
 import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema, createBreadcrumbSchema, createFAQSchema } from "@/components/seo";
@@ -318,11 +319,11 @@ const BroadbandInner = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="card-brutal bg-card p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center min-h-[200px] sm:min-h-[320px]"
                 >
-                  <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                  <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                    {status === "loading-postcode" ? "Checking your address…" : "Finding available speeds…"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">This only takes a moment</p>
+                  <OcctaLoader
+                    context={status === "loading-postcode" ? "address" : "availability"}
+                    delayMs={200}
+                    className="w-full"
+                  />
                 </motion.div>
               )}
 

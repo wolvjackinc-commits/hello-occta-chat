@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
+import OcctaLoader from "@/components/loading/OcctaLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -220,10 +221,7 @@ export default function OrderJourney() {
   if (loading) {
     return (
       <Layout>
-        <div className="container mx-auto p-16 text-center">
-          <Loader2 className="w-6 h-6 animate-spin mx-auto" aria-hidden="true" />
-          <p className="mt-3 text-sm text-muted-foreground">Loading your order…</p>
-        </div>
+        <OcctaLoader context="checkout" variant="page" label="Loading your order…" />
       </Layout>
     );
   }

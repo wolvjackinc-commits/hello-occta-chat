@@ -94,6 +94,8 @@ function resolveGoogleTransport() {
       headers: {
         'X-Goog-Api-Key': ownKey,
         'Content-Type': 'application/json',
+        // OCCTA's key is website-restricted, so identify the calling site.
+        'Referer': 'https://www.occta.co.uk/',
       } as Record<string, string>,
     }
   }

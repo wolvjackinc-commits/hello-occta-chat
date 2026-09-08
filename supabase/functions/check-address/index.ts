@@ -90,7 +90,7 @@ function resolveGoogleTransport() {
   const ownKey = Deno.env.get('GOOGLE_API_KEY')
   if (ownKey) {
     return {
-      base: 'https://places.googleapis.com',
+      base: 'https://places.googleapis.com/v1',
       headers: {
         'X-Goog-Api-Key': ownKey,
         'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ function resolveGoogleTransport() {
   if (!lovableApiKey || !googleMapsKey) return null
 
   return {
-    base: GOOGLE_MAPS_GATEWAY,
+    base: `${GOOGLE_MAPS_GATEWAY}/places/v1`,
     headers: {
       'Authorization': `Bearer ${lovableApiKey}`,
       'X-Connection-Api-Key': googleMapsKey,
@@ -118,7 +118,7 @@ async function getGoogleTextSearchAddresses(postcode: string) {
   if (!transport) return []
 
   try {
-    const res = await fetchWithTimeout(`${transport.base}/places/v1/places:searchText`, {
+    const res = await fetchWithTimeout(`${transport.base}/places:searchText`, {
       method: 'POST',
       headers: {
         ...transport.headers,
@@ -152,7 +152,7 @@ async function getGoogleAddressFallback(postcode: string) {
   if (!transport) return []
 
   try {
-    const res = await fetchWithTimeout(`${transport.base}/places/v1/places:autocomplete`, {
+    const res = await fetchWithTimeout(`${transport.base}/places:autocomplete`, {
       method: 'POST',
       headers: {
         ...transport.headers,

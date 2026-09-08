@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1');
     if (!ownKey && (!lovableApiKey || !googleMapsKey)) return err(500, 'Address lookup not configured');
 
-    const base = ownKey ? 'https://places.googleapis.com' : GATEWAY;
+    const base = ownKey ? 'https://places.googleapis.com/v1' : `${GATEWAY}/places/v1`;
     const headers: Record<string, string> = ownKey
       ? {
           'X-Goog-Api-Key': ownKey,
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       const input = String(body?.input || '').trim();
       if (input.length < 3) return ok({ suggestions: [] });
       const sessionToken = String(body?.sessionToken || '');
-      const res = await fetch(`${base}/places/v1/places:autocomplete`, {
+      const res = await fetch(`${base}/places:autocomplete`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     if (action === 'details') {
       const placeId = String(body?.placeId || '').trim();
       if (!placeId) return err(400, 'Missing placeId');
-      const res = await fetch(`${base}/places/v1/places/${encodeURIComponent(placeId)}?languageCode=en-GB&regionCode=gb`, {
+      const res = await fetch(`${base}/places/${encodeURIComponent(placeId)}?languageCode=en-GB&regionCode=gb`, {
         method: 'GET',
         headers: { ...headers, 'X-Goog-FieldMask': 'id,formattedAddress,addressComponents,displayName' },
       });

@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { isSelectableAddressSuggestion, samePostcode } from "@/lib/address/suggestionFilter";
 
 export interface ParsedAddress {
   line1: string;
@@ -14,9 +15,11 @@ export interface ParsedAddress {
 interface Props {
   onSelect: (addr: ParsedAddress) => void;
   onManualFallback?: () => void;
-  initialQuery?: string;
+  /** Checked postcode: used only as hidden bias/validation, never prefilled. */
+  expectedPostcode?: string;
   label?: string;
   helperText?: string;
+  autoFocus?: boolean;
 }
 
 type Suggestion = {
@@ -24,6 +27,7 @@ type Suggestion = {
   mainText: string;
   secondaryText: string;
   fullText: string;
+  types?: string[];
 };
 
 function newToken() {

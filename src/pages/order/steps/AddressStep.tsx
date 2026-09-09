@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,7 +45,7 @@ export default function AddressStep({
       return;
     }
     if (!privacyAck) {
-      setErr("Please agree to the T&Cs and order journey conditions to continue.");
+      setErr("Please confirm you've read the Terms of Service and Privacy Policy to continue.");
       return;
     }
     setErr(null);
@@ -72,11 +73,11 @@ export default function AddressStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Where is the service going?</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          We need the address the broadband will be installed at. You can order in one go — no callbacks, no waiting for a quote.
+          We need the address the broadband will be installed at. You can complete the order online; final network and supplier availability is validated before provisioning.
         </p>
         {prefill && (prefill.postcode || prefill.line1) && (
           <p className="text-xs text-muted-foreground mt-2">
-            We've filled this in from your availability check — please check it and change anything that isn't right.
+            We've filled this in from your address check — please check it and change anything that isn't right.
           </p>
         )}
       </div>
@@ -134,26 +135,15 @@ export default function AddressStep({
         </div>
         <div className="pt-2">
           <div className="flex items-start gap-3">
-            <Checkbox 
-              id="j2-terms-ack" 
-              checked={privacyAck} 
-              onCheckedChange={(v) => setPrivacyAck(v === true)} 
-              className="mt-0.5" 
+            <Checkbox
+              id="j2-terms-ack"
+              checked={privacyAck}
+              onCheckedChange={(v) => setPrivacyAck(v === true)}
+              className="mt-0.5"
             />
             <Label htmlFor="j2-terms-ack" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-              By moving forward, I agree to OCCTA's{" "}
-              <button 
-                type="button"
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent("open-ai-chat"));
-                  setTimeout(() => window.dispatchEvent(new CustomEvent("ai-chat-seed", {
-                    detail: { message: "How will my email be used and what are the order journey conditions?" },
-                  })), 250);
-                }}
-                className="underline hover:text-foreground transition-colors"
-              >
-                T&Cs and order journey conditions
-              </button>.
+              I've read OCCTA's <Link to="/terms" className="underline hover:text-foreground">Terms of Service</Link> and{" "}
+              <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>. I understand that entering the order journey does not permit OCCTA to substitute a different broadband plan or price without my agreement.
             </Label>
           </div>
         </div>

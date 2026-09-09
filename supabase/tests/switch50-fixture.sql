@@ -19,6 +19,24 @@ CREATE TABLE public.orders(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), custom
   cancellation_requested_at timestamptz, cease_date date, activation_blocked_pending_review boolean DEFAULT false);
 CREATE TABLE public.customer_journey_sessions(id uuid PRIMARY KEY, checkout_session_id uuid, created_at timestamptz DEFAULT now(),
   order_id uuid, contract_snapshot_id uuid, test_session boolean DEFAULT false, utm_snapshot jsonb DEFAULT '{}');
+-- SWITCH50 recovery migration extends the existing checkout reminder contract.
+-- Reproduce the production prerequisite table here because the focused SWITCH50
+-- harness intentionally applies only migrations whose filenames contain switch50.
+CREATE TABLE public.checkout_reminders(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  journey_session_id uuid NOT NULL REFERENCES public.customer_journey_sessions(id) ON DELETE CASCADE,
+  reminder_number smallint NOT NULL CHECK (reminder_number BETWEEN 1 AND 3),
+  subject text NOT NULL,
+  stage text,
+  status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','sent','failed','skipped')),
+  provider_request_id bigint,
+  queued_at timestamptz NOT NULL DEFAULT now(),
+  delivered_at timestamptz,
+  failed_at timestamptz,
+  last_error text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (journey_session_id, reminder_number));
+CREATE INDEX idx_checkout_reminders_session_time ON public.checkout_reminders (journey_session_id, queued_at DESC);
 CREATE TABLE public.journey2_contract_snapshots(id uuid PRIMARY KEY, session_id uuid, snapshot jsonb);
 CREATE TABLE public.quotes(id uuid PRIMARY KEY, monthly_gross numeric, reward_eligibility text);
 CREATE TABLE public.contract_summaries(id uuid PRIMARY KEY, quote_id uuid, speed_notes text, monthly_price_incl_vat numeric);

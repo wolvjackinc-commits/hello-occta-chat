@@ -4,9 +4,9 @@ import type { RetailCardDef } from './types';
 // Maps to catalogue products by eligibleProductIds.
 // The UI renders these cards — never raw catalogue data.
 
-// Exactly THREE public broadband bands: Essential (80), Superfast (330),
-// Ultrafast (up to 1000). The internal `gigabit` supplier bucket sells inside
-// the Ultrafast band — there is no public Gigabit card.
+// Four public broadband bands: Essential (80), Superfast (330),
+// Ultrafast (up to 550) and Gigabit (up to 1000). Supplier selection and
+// final service availability remain server-side concerns.
 export const broadbandRetailCards: RetailCardDef[] = [
   {
     id: 'essential',
@@ -74,8 +74,39 @@ export const broadbandRetailCards: RetailCardDef[] = [
     id: 'ultrafast',
     publicTitle: 'ULTRAFAST FIBRE',
     category: 'Ultrafast Fibre',
-    tagline: 'Built for busy homes and businesses that need headroom.',
-    description: 'Built for busy homes and businesses that need headroom.',
+    tagline: 'Built for busy homes that need more speed and headroom.',
+    description: 'Built for busy homes that need more speed and headroom.',
+    features: [
+      'Up to 550Mbps download',
+      'Bring your own router or add premium WiFi',
+      'Full fibre speeds up to 550Mbps where available',
+      'Static IP available on selected services',
+      'Clear setup and add-on pricing',
+      'Final price confirmed before order',
+    ],
+    speedLabel: 'Up to 550Mbps download',
+    eligibleProductIds: ['fttp-500-tt', 'fttp-550-cf'],
+    popular: false,
+    serviceType: 'broadband',
+    publicPricePrefix: 'From',
+    publicSetupText: '',
+    publicTagline: 'Built for busy homes that need more speed and headroom.',
+    publicFeatures: [
+      'Up to 550Mbps download',
+      'Bring your own router or add premium WiFi',
+      'Full fibre speeds up to 550Mbps where available',
+      'Static IP available on selected services',
+      'Clear setup and add-on pricing',
+      'Final price confirmed before order',
+    ],
+    publicDisclaimer: 'Final price depends on address, plan type, router and setup.',
+  },
+  {
+    id: 'gigabit',
+    publicTitle: 'GIGABIT FIBRE',
+    category: 'Gigabit Fibre',
+    tagline: 'Our highest speed band for demanding homes and heavy usage.',
+    description: 'Our highest speed band for demanding homes and heavy usage.',
     features: [
       'Up to 1000Mbps download',
       'Bring your own router or add premium WiFi',
@@ -85,12 +116,12 @@ export const broadbandRetailCards: RetailCardDef[] = [
       'Final price confirmed before order',
     ],
     speedLabel: 'Up to 1000Mbps download',
-    eligibleProductIds: ['fttp-500-tt', 'fttp-550-cf', 'fttp-1000-tt', 'fttp-1000-cf'],
+    eligibleProductIds: ['fttp-1000-tt', 'fttp-1000-cf'],
     popular: false,
     serviceType: 'broadband',
     publicPricePrefix: 'From',
     publicSetupText: '',
-    publicTagline: 'Built for busy homes and businesses that need headroom.',
+    publicTagline: 'Our highest speed band for demanding homes and heavy usage.',
     publicFeatures: [
       'Up to 1000Mbps download',
       'Bring your own router or add premium WiFi',

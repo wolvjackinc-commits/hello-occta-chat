@@ -11,45 +11,39 @@ const GOVERNED = {
   essential: { lock24: 34.99, flex30: 37.99 },
   superfast: { lock24: 39.99, flex30: 44.99 },
   ultrafast: { lock24: 49.99, flex30: 52.99 },
+  gigabit: { lock24: 49.99, flex30: 52.99 },
 } as const;
 
-describe("three governed public broadband bands", () => {
+describe("four governed public broadband bands", () => {
   it("uses the governed headline prices for every public band", () => {
     for (const b of PUBLIC_SPEED_BUCKETS) {
       expect(FAIR_PRICING_DEFAULTS.headline[b]).toEqual(GOVERNED[b]);
     }
   });
 
-  it("exposes exactly three public bands", () => {
-    expect([...PUBLIC_SPEED_BUCKETS]).toEqual(["essential", "superfast", "ultrafast"]);
-    expect(broadbandRetailCards.map((c) => c.id)).toEqual(["essential", "superfast", "ultrafast"]);
+  it("exposes Essential, Superfast, Ultrafast and Gigabit", () => {
+    expect([...PUBLIC_SPEED_BUCKETS]).toEqual(["essential", "superfast", "ultrafast", "gigabit"]);
+    expect(broadbandRetailCards.map((c) => c.id)).toEqual(["essential", "superfast", "ultrafast", "gigabit"]);
   });
 
-  it("never leaks a public Gigabit plan", () => {
+  it("publishes Gigabit as its own customer-facing band", () => {
     const cards = getRetailBroadbandCards();
-    expect(cards).toHaveLength(3);
-    expect(cards.some((c) => c.id === "gigabit")).toBe(false);
-    expect(JSON.stringify(cards).toLowerCase()).not.toContain("gigabit fibre");
-    expect(read("src/pages/BuildPlan.tsx")).not.toContain('"gigabit"]');
-    expect(read("src/pages/seo/BroadbandPlans.tsx")).not.toMatch(/Gigabit estimated/);
-  });
-
-  it("maps the internal gigabit supplier bucket onto the public Ultrafast band", () => {
-    expect(toPublicBucket("gigabit")).toBe("ultrafast");
+    expect(cards).toHaveLength(4);
+    expect(cards.some((c) => c.id === "gigabit")).toBe(true);
+    expect(cards.find((c) => c.id === "gigabit")?.publicTitle).toContain("GIGABIT");
+    expect(toPublicBucket("gigabit")).toBe("gigabit");
     expect(toPublicBucket("essential")).toBe("essential");
-    // Internal bucket must mirror Ultrafast so a 1000 line never shows a 4th price.
-    expect(FAIR_PRICING_DEFAULTS.headline.gigabit).toEqual(GOVERNED.ultrafast);
-    const resolver = read("supabase/functions/_shared/buildPlanResolver.ts");
-    expect(resolver).not.toContain('gigabit: "Gigabit Fibre"');
-    expect(resolver).toContain('gigabit: "Ultrafast Fibre"');
+    const journey2 = read("supabase/functions/_shared/journey2.ts");
+    expect(journey2).toContain('gigabit: "Gigabit Fibre"');
   });
 
-  it("shows Ultrafast up to 1000Mbps and keeps the 80/330 band labels", () => {
+  it("keeps Ultrafast and Gigabit as distinct speed bands", () => {
     const cards = getRetailBroadbandCards();
     const byId = Object.fromEntries(cards.map((c) => [c.id, c]));
     expect(byId.essential.speedLabel).toContain("80");
     expect(byId.superfast.speedLabel).toContain("330");
-    expect(byId.ultrafast.speedLabel).toContain("1000");
+    expect(byId.ultrafast.speedLabel).toContain("550");
+    expect(byId.gigabit.speedLabel).toContain("1000");
   });
 });
 

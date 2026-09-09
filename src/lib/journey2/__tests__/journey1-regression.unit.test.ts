@@ -12,11 +12,18 @@ const invoke = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
 describe("[unit, mocked] Journey 1 regression", () => {
   beforeEach(() => invoke.mockReset());
 
-  it("sends a v1-assigned visitor to the quote-led journey", async () => {
-    invoke.mockResolvedValue({ data: { ok: true, journey_version: "v1", redirect: "/build-plan" }, error: null });
+  it("sends a v1-assigned visitor to the quote-led broadband journey", async () => {
+    invoke.mockResolvedValue({ data: { ok: true, journey_version: "v1", redirect: "/order" }, error: null });
     const navigate = vi.fn();
     await startAssignedJourney(navigate);
-    expect(navigate).toHaveBeenCalledWith("/build-plan");
+    expect(navigate).toHaveBeenCalledWith("/quote/start?interest=broadband");
+  });
+
+  it("honours a non-looping explicit redirect when the server supplies one", async () => {
+    invoke.mockResolvedValue({ data: { ok: true, journey_version: null, redirect: "/quote/start?interest=broadband" }, error: null });
+    const navigate = vi.fn();
+    await startAssignedJourney(navigate);
+    expect(navigate).toHaveBeenCalledWith("/quote/start?interest=broadband");
   });
 
   it("does not silently fall back to Journey 1 when assignment fails", async () => {

@@ -465,7 +465,7 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
 
       const body = `
         <p>Hi ${escapeHtml(qr.full_name)},</p>
-        <p>Thanks for confirming your order with OCCTA — here's a summary you can keep.</p>
+        <p>Thanks — we've received your OCCTA order and recorded the plan and price you selected. Here's a summary you can keep.</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #000;border-collapse:collapse;margin:16px 0;">
           <tr><td style="padding:10px 12px;border-bottom:1px solid #000;background:#facc15;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Order</td><td style="padding:10px 12px;border-bottom:1px solid #000;">${escapeHtml(order.order_number)}</td></tr>
           <tr><td style="padding:10px 12px;border-bottom:1px solid #000;">Plan</td><td style="padding:10px 12px;border-bottom:1px solid #000;">${escapeHtml(quote.plan_name)}</td></tr>
@@ -475,6 +475,10 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
           <tr><td style="padding:10px 12px;border-bottom:1px solid #000;">Payment method</td><td style="padding:10px 12px;border-bottom:1px solid #000;">${escapeHtml(pmLine)}</td></tr>
           <tr><td style="padding:10px 12px;">Billing day</td><td style="padding:10px 12px;">${dayLine}</td></tr>
         </table>
+        <div style="border:2px solid #000;background:#fffbea;padding:14px 16px;margin:18px 0;font-size:13px;line-height:1.6;">
+          <strong style="text-transform:uppercase;letter-spacing:0.04em;">Final availability check</strong><br>
+          Your selected plan remains subject to final network and supplier validation at your installation address. If the exact plan cannot be supplied, we'll email you with the available options before provisioning. We will not change your plan or price without your agreement. If no change is needed, your order will proceed as submitted.
+        </div>
         <p style="font-size:14px;">
           Your signed <strong>Contract Summary</strong> is attached to this email as a PDF for your records${csSignedUrl ? `, and can also be viewed online via the button below` : ""}.
         </p>
@@ -483,11 +487,11 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
           <strong>Your 14-day cooling-off period</strong> ends on ${escapeHtml(new Date(journey.cooling_off_ends_at as string).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}. You can cancel within this window for a full refund of anything paid.
         </p>
         <p style="font-size:13px;color:#444;">
-          We'll be in touch with your provisioning timeline shortly. <strong>No payment has been taken</strong>; billing only begins once your service is confirmed active.
+          We'll complete the final service validation and then confirm your provisioning timeline. <strong>No payment has been taken</strong>; billing only begins once your service is confirmed active.
         </p>
       `;
       const html = brutalistEmailShell(
-        "Your OCCTA order is in",
+        "Your OCCTA order has been received",
         body + (await fetchHelpfulLinksHtml(supabase, "order_received")),
         csSignedUrl
           ? { label: "View your signed contract summary", url: csSignedUrl }
@@ -495,7 +499,7 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
       );
       await sendResendEmail({
         to: qr.email,
-        subject: `Order ${order.order_number} confirmed — OCCTA`,
+        subject: `Order ${order.order_number} received — OCCTA`,
         html,
         replyTo: "hello@occta.co.uk",
         attachments: pdfAttachment ? [pdfAttachment] : undefined,

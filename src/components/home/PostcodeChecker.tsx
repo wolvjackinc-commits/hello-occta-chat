@@ -94,6 +94,10 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
         </Button>
       </div>
 
+      <p className="text-[11px] leading-relaxed text-muted-foreground mt-2">
+        <strong>Availability note:</strong> Plans shown are current OCCTA offers and may not all be available at every address. Final availability, speed and network technology are subject to network and supplier validation. If your selected plan cannot be supplied, we’ll email you with available options before provisioning and won’t change your plan or price without your agreement. If confirmed, your order proceeds as submitted.
+      </p>
+
       {showManualAddressLookup && (
         <div className="mt-4 border-4 border-foreground bg-card p-4">
           <AddressAutocomplete
@@ -120,7 +124,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
             <div>
               <p className="font-display uppercase text-sm tracking-wider">Broadband options available to view</p>
               <p className="text-sm text-muted-foreground mt-1">
-                We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. We'll confirm the final availability, speed, setup and price before you order.
+                We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. We'll confirm final service availability before provisioning and show the contractual price and charges before you accept the agreement.
               </p>
             </div>
           </div>
@@ -168,9 +172,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
         <div className="mt-3 flex items-center gap-2">
           <Check className="w-4 h-4 text-primary flex-shrink-0" />
           <p className="text-sm font-medium text-foreground">
-            {result.primaryTechnology === "FTTP"
-              ? "Full Fibre appears available"
-              : "Broadband options found"} — {getShortAddress(selectedAddress)}
+            Address selected — {getShortAddress(selectedAddress)}
           </p>
           <button onClick={reset} className="text-xs text-primary hover:underline ml-auto font-medium">
             Change
@@ -181,9 +183,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
       {showInlineResult && (
         <>
           <p className="text-xs text-muted-foreground mt-2">
-            {result?.primaryTechnology === "FTTP"
-              ? "Final speed, setup and price are confirmed before order."
-              : "Choose your plan and we'll confirm the final speed, setup and price before order."}
+            Choose the plan you're interested in. Final network/supplier availability is validated before provisioning, and any different option requires your agreement.
           </p>
           <Button
             onClick={startJourney}
@@ -201,13 +201,12 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
         </>
       )}
 
-      {/* Fallback when availability API can't confirm */}
       {/* Helper line */}
       {!showInlineAddresses && !showInlineResult && !showFallback && (
         <p className="text-xs text-muted-foreground mt-3 flex flex-wrap gap-x-3 gap-y-1">
           <span>✓ Takes 10 seconds</span>
           <span>✓ No commitment</span>
-          <span>✓ Final availability confirmed before order</span>
+          <span>✓ Final service availability validated before provisioning</span>
         </p>
       )}
     </div>

@@ -17,6 +17,7 @@ import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import { getFromPrices } from "@/lib/pricing/engine";
 import { AvailabilityProvider, useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 import { startAssignedJourney } from "@/lib/journey2/route";
+import { setPreferredSpeedBucket } from "@/lib/journey2/prefill";
 
 const BroadbandInner = () => {
   const [showVoiceDialog, setShowVoiceDialog] = useState(false);
@@ -52,8 +53,8 @@ const BroadbandInner = () => {
 
   const features = [
     { icon: X, text: "30-Day Rolling Where Eligible" },
-    { icon: Shield, text: "No Hidden Fees" },
-    { icon: Clock, text: "7-Day Setup" },
+    { icon: Shield, text: "Clear Contract Terms" },
+    { icon: Clock, text: "Setup Shown Before Acceptance" },
   ];
 
   const LayoutComponent = isAppMode ? AppLayout : Layout;
@@ -65,7 +66,8 @@ const BroadbandInner = () => {
   ];
 
   const handleChoosePlan = (planId: string) => {
-    // Every broadband CTA now routes through the Journey 2 assignment router.
+    const speedBucket = planId.replace("broadband-", "");
+    setPreferredSpeedBucket(speedBucket);
     startAssignedJourney((path) => navigate(path));
   };
 
@@ -88,37 +90,25 @@ const BroadbandInner = () => {
 
   const voiceTotal = voicePlan.priceNum + callPlanOptions.filter(cp => selectedCallPlans.includes(cp.id)).reduce((s, cp) => s + cp.price, 0);
 
-  // Filter plans based on availability
-  const hasPersonalisedResult = status === "success" && result && result.eligibleOcctaPlans.length > 0;
-
-  const getFilteredPlans = () => {
-    if (!hasPersonalisedResult) return broadbandPlans;
-    return broadbandPlans
-      .filter(p => result.eligibleOcctaPlans.includes(p.id.replace("broadband-", "")))
-      .sort((a, b) => {
-        const aId = a.id.replace("broadband-", "");
-        const bId = b.id.replace("broadband-", "");
-        if (aId === result.recommendedPlan) return -1;
-        if (bId === result.recommendedPlan) return 1;
-        return 0;
-      });
-  };
-
-  const filteredPlans = getFilteredPlans();
-  const isFttcOnly = hasPersonalisedResult && result.primaryTechnology !== "FTTP";
+  // The public page intentionally shows every current OCCTA speed band. The
+  // address check can suggest a band, but final network/supplier availability
+  // is validated before provisioning and never used to silently substitute a
+  // different product or price.
+  const hasPersonalisedResult = status === "success" && !!result;
+  const displayedPlans = broadbandPlans;
 
   const broadbandServiceSchema = createServiceSchema({
     name: 'OCCTA Broadband',
-    description: 'Fast, reliable fibre broadband with speeds up to 900Mbps. Price Lock 24 or Flex 30 where available.',
+    description: 'OCCTA broadband speed bands up to 1000Mbps. Price Lock 24 or Flex 30 where offered, subject to final service availability at the installation address.',
     url: '/broadband',
     price: getFromPrices().broadband,
   });
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
     name: `OCCTA ${plan.name}`,
-    description: `Fibre broadband up to ${plan.speed}Mbps. Flexible monthly, 30-day rolling options available where eligible. ${plan.features.slice(0, 3).join(', ')}.`,
+    description: `Broadband speed band up to ${plan.speed}Mbps. Price Lock 24 or Flex 30 where offered. Final network and supplier availability is validated before provisioning. ${plan.features.slice(0, 3).join(', ')}.`,
     price: plan.price.toString(),
-    url: `/pre-checkout?plans=${plan.id}`,
+    url: `/broadband`,
     sku: plan.id,
     category: 'Broadband',
   }));
@@ -133,10 +123,10 @@ const BroadbandInner = () => {
         { name: 'Broadband', url: '/broadband' },
       ]),
       createFAQSchema([
-        { question: 'How fast is OCCTA broadband?', answer: 'OCCTA offers full-fibre and FTTC broadband with speeds up to 900Mbps, depending on line availability at your address.' },
-        { question: 'Is there a contract?', answer: 'OCCTA supports both Flex 30 (rolling monthly) and Price Lock 24 (fixed-term with price lock) where eligible. Your accepted agreement is the binding source of truth.' },
-        { question: 'When does billing start?', answer: 'Billing starts only after your service is activated. The first invoice may include pro-rata charges for the partial month.' },
-        { question: 'Do I need a phone line?', answer: 'No. OCCTA broadband is delivered over fibre. If you want a home phone, add OCCTA Digital Voice which runs over your broadband.' },
+        { question: 'How fast is OCCTA broadband?', answer: 'OCCTA displays speed bands up to 1000Mbps. The service, technology and achievable speed depend on the installation address and are validated before provisioning.' },
+        { question: 'Is there a contract?', answer: 'OCCTA supports Flex 30 and Price Lock 24 options where offered. The Contract Summary and Contract Information you review before acceptance are the binding source of truth for your order.' },
+        { question: 'When does billing start?', answer: 'Billing starts only after your service is confirmed active. The first invoice can include agreed setup, activation, router or pro-rata charges shown in your order documents.' },
+        { question: 'Do I need a phone line?', answer: 'No separate traditional phone line is required for full-fibre broadband. If you want a home phone, OCCTA Digital Voice is an optional broadband-based service where available.' },
       ]),
     ],
   };
@@ -145,9 +135,9 @@ const BroadbandInner = () => {
     <LayoutComponent>
       <SEO 
         title="Affordable Broadband UK - Flexible Fibre & Price Lock"
-        description={`Affordable UK fibre broadband from £${getFromPrices().broadband}/mo. Price Lock 24 or Flex 30 where eligible. No hidden mid-contract hikes. Simple telecom.`}
+        description={`OCCTA broadband from £${getFromPrices().broadband}/mo with Essential, Superfast, Ultrafast and Gigabit speed bands. Price Lock 24 or Flex 30 where offered. Final service availability validated before provisioning.`}
         canonical="/broadband"
-        keywords="affordable broadband UK, flexible monthly broadband, flexible broadband, fibre broadband flexible monthly, budget broadband, affordable fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK"
+        keywords="affordable broadband UK, flexible monthly broadband, fibre broadband, gigabit broadband, 1000Mbps broadband, price lock broadband, rolling broadband UK"
         price={getFromPrices().broadband}
       />
       <StructuredData customSchema={combinedSchemas} />
@@ -252,14 +242,13 @@ const BroadbandInner = () => {
                 <span className="text-gradient">THAT WORKS</span>
               </h1>
               <p className="text-sm sm:text-lg text-muted-foreground mb-4 sm:mb-6 max-w-lg">
-                Fast, reliable internet without the corporate nonsense. 
-                From £{getFromPrices().broadband}/month with no price rises mid-contract — affordable broadband UK
-                that stays flexible with 30-day rolling options available where eligible.
+                Fast, reliable internet without the corporate nonsense. From £{getFromPrices().broadband}/month,
+                with no mid-contract broadband price rises on Price Lock. Flex 30 is available on eligible combinations.
               </p>
               <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
                 Want flexible terms?{" "}
                 <Link to="/no-contract-broadband-uk" className="font-medium text-accent hover:text-accent/80 transition-colors">
-                  Explore no-contract broadband options
+                  Explore rolling broadband options
                 </Link>
                 .
               </p>
@@ -287,7 +276,7 @@ const BroadbandInner = () => {
                   className="flex items-center gap-2 text-sm font-medium text-foreground mt-3"
                 >
                   <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                  {result.primaryTechnology === "FTTP" ? "Full Fibre" : "Fibre"} available — {getShortAddress(selectedAddress)}
+                  Address selected — {getShortAddress(selectedAddress)}
                   <button onClick={reset} className="text-xs text-primary hover:underline ml-auto font-medium">Change</button>
                 </motion.p>
               )}
@@ -355,8 +344,8 @@ const BroadbandInner = () => {
                     </div>
                   </div>
 
-                  <p className="text-xs text-muted-foreground mt-3">
-                    We'll only show plans actually available at your address.
+                  <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+                    Select the exact property to continue. We show the current OCCTA plan range; final network, supplier, speed and technology availability is validated before provisioning.
                   </p>
                 </motion.div>
               )}
@@ -364,7 +353,6 @@ const BroadbandInner = () => {
               {/* DEFAULT: Plans Preview (idle, error, or success) */}
               {status !== "loading-postcode" && status !== "checking-address" && !(status === "addresses" && addresses.length > 0) && (
                 <>
-                  {/* Generic availability message when checker errors */}
                   {status === "error" && postcode && (
                     <motion.div
                       initial={{ opacity: 0, y: 8 }}
@@ -374,21 +362,21 @@ const BroadbandInner = () => {
                       <Check className="w-5 h-5 text-primary flex-shrink-0" />
                       <div>
                         <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                          Full Fibre is available at {postcode}
+                          Browse OCCTA broadband for {postcode}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Browse all our plans below and choose the best speed for you.
+                          Live availability could not be confirmed here. You can still select an OCCTA speed band; final service availability is validated before provisioning.
                         </p>
                       </div>
                     </motion.div>
                   )}
 
                   <p className="font-display text-sm uppercase tracking-wider text-muted-foreground">
-                    {hasPersonalisedResult ? "Plans at Your Address" : "Choose Your Speed"}
+                    {hasPersonalisedResult ? "OCCTA Plans for Your Address" : "Choose Your Speed"}
                   </p>
-                  {(hasPersonalisedResult ? filteredPlans : broadbandPlans).slice(0, 3).map((plan) => {
+                  {displayedPlans.map((plan) => {
                     const planKey = plan.id.replace("broadband-", "");
-                    const isRecommended = hasPersonalisedResult && planKey === result.recommendedPlan;
+                    const isSuggested = hasPersonalisedResult && planKey === result?.recommendedPlan;
                     
                     return (
                       <motion.div
@@ -400,13 +388,13 @@ const BroadbandInner = () => {
                         <button
                           onClick={() => handleChoosePlan(plan.id)}
                           className={`block w-full text-left p-4 bg-card border-4 ${
-                            isRecommended ? 'border-primary' : plan.popular && !hasPersonalisedResult ? 'border-primary' : 'border-foreground'
+                            isSuggested ? 'border-primary' : plan.popular && !hasPersonalisedResult ? 'border-primary' : 'border-foreground'
                           } hover:bg-secondary transition-colors group relative`}
                         >
-                          {isRecommended && (
+                          {isSuggested && (
                             <div className="absolute -top-2.5 left-3 bg-primary text-primary-foreground px-2 py-0.5 font-display uppercase tracking-wider text-[10px] border border-foreground flex items-center gap-1">
                               <Star className="w-2.5 h-2.5" />
-                              Recommended
+                              Suggested speed band
                             </div>
                           )}
                           {!hasPersonalisedResult && plan.popular && (
@@ -414,17 +402,17 @@ const BroadbandInner = () => {
                               Popular
                             </span>
                           )}
-                          <div className={`flex items-center justify-between mb-3 ${isRecommended || (!hasPersonalisedResult && plan.popular) ? "pt-1" : ""}`}>
+                          <div className={`flex items-center justify-between mb-3 ${isSuggested || (!hasPersonalisedResult && plan.popular) ? "pt-1" : ""}`}>
                             <div>
                               <h2 className="font-display text-lg uppercase text-foreground">{plan.name}</h2>
-                              <p className="text-xs text-muted-foreground">Up to {plan.speed}Mbps</p>
+                              <p className="text-xs text-muted-foreground">Up to {plan.speed}Mbps speed band</p>
                             </div>
                             <div className="text-right flex items-center gap-3">
                               <div>
                                 <p className="font-display text-2xl text-primary">£{plan.price}</p>
-                                <p className="text-[10px] text-foreground font-semibold">/mo · Price Lock 24</p>
+                                <p className="text-[10px] text-foreground font-semibold">/mo · Price Lock 24 headline</p>
                                 {plan.flex30Price && (
-                                  <p className="text-[10px] text-muted-foreground">Flex 30 £{plan.flex30Price}</p>
+                                  <p className="text-[10px] text-muted-foreground">Flex 30 headline £{plan.flex30Price}</p>
                                 )}
                               </div>
                               <ArrowRight className="w-5 h-5 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -442,8 +430,11 @@ const BroadbandInner = () => {
                       </motion.div>
                     );
                   })}
+                  <p className="text-[11px] leading-relaxed text-muted-foreground border-2 border-foreground/15 p-3">
+                    <strong>Availability note:</strong> These are current OCCTA plan options and may not all be available at every address. Final availability, speed and network technology are subject to network and supplier validation for your installation address. If your selected plan cannot be supplied, we’ll email you with available options before provisioning. We won’t move you to a different plan or price without your agreement. If your selection is confirmed, your order continues as submitted.
+                  </p>
                   <Link to="#plans" className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    View all plans ↓
+                    Compare plan details ↓
                   </Link>
                 </>
               )}
@@ -457,14 +448,14 @@ const BroadbandInner = () => {
           <div className="card-brutal bg-card p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl md:text-3xl font-display uppercase mb-2">
-                30-day rolling options available where eligible / No fixed term
+                Flex 30 where offered / no fixed minimum term
               </h2>
               <p className="text-muted-foreground max-w-2xl">
-                Need broadband without a long tie-in? See how our rolling plans keep you flexible with no fixed term commitments.
+                Need broadband without a long tie-in? See the rolling option and its notice terms, where Flex 30 is offered for your selected plan.
               </p>
             </div>
             <Link to="/no-contract-broadband-uk" className="font-display uppercase tracking-wider text-accent hover:text-accent/80 transition-colors">
-              Learn about no-contract broadband →
+              Learn about rolling broadband →
             </Link>
           </div>
         </div>
@@ -480,58 +471,56 @@ const BroadbandInner = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-display-md mb-2">
-              {hasPersonalisedResult ? "PLANS AVAILABLE AT YOUR ADDRESS" : "ALL PLANS"}
+              {hasPersonalisedResult ? "OCCTA PLANS FOR YOUR ADDRESS" : "ALL OCCTA PLANS"}
             </h2>
             <p className="text-muted-foreground">
               {hasPersonalisedResult
-                ? `Showing plans available at your address (${postcode})`
-                : "Choose your speed — we'll handle the rest"}
+                ? `Current OCCTA plan options shown for ${postcode}. Final service availability is validated before provisioning.`
+                : "Choose your speed band — final service availability is validated before provisioning."}
             </p>
-            {isFttcOnly && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Full Fibre isn't currently available at this address
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground mt-2 max-w-4xl">
+              If the exact plan you select cannot be supplied at the installation address, we’ll contact you with the available options before provisioning. We will not substitute a different plan or price without your agreement.
+            </p>
             {hasPersonalisedResult && (
               <button
                 onClick={reset}
                 className="text-sm text-primary hover:underline mt-2 font-medium"
               >
-                Clear address check and view all plans
+                Clear address selection
               </button>
             )}
           </motion.div>
 
           <motion.div
-            className={`grid md:grid-cols-2 ${filteredPlans.length >= 4 ? "lg:grid-cols-4" : filteredPlans.length === 3 ? "lg:grid-cols-3" : filteredPlans.length === 2 ? "lg:grid-cols-2" : ""} gap-4`}
+            className={`grid md:grid-cols-2 ${displayedPlans.length >= 4 ? "lg:grid-cols-4" : displayedPlans.length === 3 ? "lg:grid-cols-3" : displayedPlans.length === 2 ? "lg:grid-cols-2" : ""} gap-4`}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={containerVariants}
           >
-            {filteredPlans.map((plan) => {
+            {displayedPlans.map((plan) => {
               const planKey = plan.id.replace("broadband-", "");
-              const isRecommended = hasPersonalisedResult && planKey === result.recommendedPlan;
-              const isUpgrade = hasPersonalisedResult && planKey === result.upgradePlan;
+              const isSuggested = hasPersonalisedResult && planKey === result?.recommendedPlan;
+              const isUpgrade = hasPersonalisedResult && planKey === result?.upgradePlan;
               
               return (
                 <motion.div
                   key={plan.id}
                   className={`relative card-brutal bg-card p-5 flex flex-col ${
-                    isRecommended ? "border-primary" : plan.popular && !hasPersonalisedResult ? "border-primary" : ""
+                    isSuggested ? "border-primary" : plan.popular && !hasPersonalisedResult ? "border-primary" : ""
                   }`}
                   variants={cardVariants}
                   whileHover={{ y: -6, x: -3, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
                 >
-                  {isRecommended && (
+                  {isSuggested && (
                     <div className="absolute -top-3 left-3 bg-primary text-primary-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground flex items-center gap-1">
                       <Star className="w-3 h-3" />
-                      Recommended for your address
+                      Suggested speed band
                     </div>
                   )}
-                  {isUpgrade && (
+                  {isUpgrade && !isSuggested && (
                     <div className="absolute -top-3 left-3 bg-accent text-accent-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
-                      Upgrade Option
+                      Higher speed option
                     </div>
                   )}
                   {!hasPersonalisedResult && plan.popular && (
@@ -540,7 +529,7 @@ const BroadbandInner = () => {
                     </div>
                   )}
                   
-                  <div className={(isRecommended || isUpgrade || (!hasPersonalisedResult && plan.popular)) ? "pt-2" : ""}>
+                  <div className={(isSuggested || isUpgrade || (!hasPersonalisedResult && plan.popular)) ? "pt-2" : ""}>
                     <h2 className="font-display text-2xl mb-1">{plan.name}</h2>
                     
                     <div className="flex items-baseline gap-1 mb-2">
@@ -548,9 +537,9 @@ const BroadbandInner = () => {
                       <span className="text-foreground/70 text-sm font-medium">/mo</span>
                     </div>
                     <div className="flex flex-wrap gap-1 mb-3 text-[11px] font-medium">
-                      <span className="px-2 py-0.5 bg-primary/10 border border-primary/30 text-foreground">Price Lock 24</span>
+                      <span className="px-2 py-0.5 bg-primary/10 border border-primary/30 text-foreground">Price Lock 24 headline</span>
                       {plan.flex30Price && (
-                        <span className="px-2 py-0.5 bg-secondary border border-foreground/15 text-muted-foreground">Flex 30 from £{plan.flex30Price}/mo</span>
+                        <span className="px-2 py-0.5 bg-secondary border border-foreground/15 text-muted-foreground">Flex 30 headline £{plan.flex30Price}/mo</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-accent border-2 border-foreground inline-block">
@@ -568,7 +557,7 @@ const BroadbandInner = () => {
                     </ul>
                     
                     <Button
-                      variant={isRecommended || (!hasPersonalisedResult && plan.popular) ? "hero" : "outline"}
+                      variant={isSuggested || (!hasPersonalisedResult && plan.popular) ? "hero" : "outline"}
                       className="w-full"
                       size="sm"
                       onClick={() => handleChoosePlan(plan.id)}
@@ -583,10 +572,10 @@ const BroadbandInner = () => {
           </motion.div>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            ✔ Setup usually within 7 days · ✔ We notify your current provider · ✔ No downtime during switch
+            Setup method, activation timing and switching steps depend on the service selected and network requirements.
           </p>
           <p className="text-center text-xs text-muted-foreground mt-2">
-            Price Lock 24 or Flex 30 where available. Final price confirmed before order.
+            Price Lock 24 or Flex 30 where offered. Your exact contractual charges are shown before you accept the agreement.
           </p>
         </div>
       </section>
@@ -602,14 +591,14 @@ const BroadbandInner = () => {
             >
               <h2 className="text-display-md mb-4">ADD DIGITAL VOICE (OPTIONAL ADD-ON)</h2>
               <p className="text-lg text-muted-foreground mb-6">
-                Home Phone over broadband — keep your number and plug into your router. Add-on to your broadband, from <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span>.
+                Home Phone over broadband — keep your number where porting is available and plug into a compatible router. Add-on to your broadband, from <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span>.
               </p>
               <ul className="space-y-3 mb-6">
                 {[
                   "Works with your broadband connection",
-                  "Keep your existing phone number",
-                  "Use most standard home phones",
-                  "Optional unlimited call plans available",
+                  "Keep your existing phone number where porting is available",
+                  "Use most standard home phones with compatible equipment",
+                  "Optional call plans available",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm">
                     <Check className="w-4 h-4 text-primary flex-shrink-0" />
@@ -639,13 +628,13 @@ const BroadbandInner = () => {
                 <span className="font-display text-4xl text-primary">£4.99</span>
                 <span className="text-foreground/70 text-sm font-medium">/mo</span>
               </div>
-              <p className="text-muted-foreground text-sm">Crystal clear HD calls through your broadband router. No separate line needed.</p>
+              <p className="text-muted-foreground text-sm">Digital calling through your broadband connection. Equipment compatibility and number porting are confirmed as part of setup.</p>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Router Included */}
+      {/* Router Choice */}
       <section className="py-12 bg-secondary">
         <div className="container mx-auto px-4">
           <div className="card-brutal bg-card p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -658,7 +647,7 @@ const BroadbandInner = () => {
                   Router Choice
                 </h2>
                 <p className="text-muted-foreground max-w-2xl">
-                  Bring your own compatible router for £0, or pick a router at checkout. If you add Digital Home Phone, simply plug your phone into your router — most standard home phones are supported.
+                  Bring your own compatible router for £0, or choose an available router option during your order. Digital Voice requires compatible equipment; the order journey shows the applicable options and charges before acceptance.
                 </p>
               </div>
             </div>
@@ -676,7 +665,7 @@ const BroadbandInner = () => {
           <div className="grid sm:grid-cols-3 gap-4">
             {[
               { title: "Flexible Broadband UK", desc: "How rolling monthly broadband works and who it suits.", path: "/guides/no-contract-broadband-uk" },
-              { title: "Affordable Broadband UK", desc: "How to find affordable internet and avoid hidden costs.", path: "/guides/cheap-broadband-uk" },
+              { title: "Affordable Broadband UK", desc: "How to compare broadband costs and contract terms.", path: "/guides/cheap-broadband-uk" },
               { title: "How to Switch Broadband", desc: "Step-by-step guide to switching provider.", path: "/guides/how-to-switch-broadband" },
             ].map((g) => (
               <Link key={g.path} to={g.path} className="card-brutal bg-card p-4 hover:bg-secondary transition-colors group">

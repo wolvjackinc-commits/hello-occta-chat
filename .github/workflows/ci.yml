@@ -104,6 +104,9 @@ jobs:
       - name: TypeScript typecheck
         run: npm run typecheck
 
+      - name: Email contract audit
+        run: node scripts/email-contract-audit.mjs
+
       - name: Lint
         run: npm run lint
 

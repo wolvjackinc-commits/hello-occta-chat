@@ -42,7 +42,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Typecheck business edge functions
-        run: deno check supabase/functions/submit-business-quote/index.ts supabase/functions/submit-business-lead/index.ts
+        run: DENO_NODE_MODULES_DIR=auto deno check supabase/functions/submit-business-quote/index.ts supabase/functions/submit-business-lead/index.ts
 
   deploy-business-functions:
     needs: verify

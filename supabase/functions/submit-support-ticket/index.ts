@@ -1,7 +1,18 @@
-import { corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import {
+  corsHeaders,
+  jsonResponse,
+  getServiceClient,
+  checkRateLimit,
+  getRequestIp,
+  sendTrackedCommunication,
+  brutalistEmailShell,
+  escapeHtml,
+  getAdminNotificationEmail,
+} from "../_shared/quoteHelpers.ts";
 
-// Public/auth support ticket ingress. Rate-limited. Creates support_tickets +
-// communication_thread + initial inbound communication_message. Logs ticket id only.
+// Authenticated support ticket ingress. Rate-limited. Creates support_tickets +
+// communication_thread + initial inbound communication_message, then sends a
+// customer acknowledgement and an internal support notification.
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
@@ -24,7 +35,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "invalid_email" }, 400);
   }
 
-  // Reject obvious card-like payloads
+  // Reject obvious payment/bank details from support free text.
   if (/\b\d{13,19}\b/.test(message) || /cvv|sort code|account number\s*[:=]/i.test(message)) {
     return jsonResponse({ error: "sensitive_data_not_allowed" }, 400);
   }
@@ -38,12 +49,15 @@ Deno.serve(async (req) => {
 
   const svc = getServiceClient();
 
-  // Resolve user (required — we don't accept anonymous tickets here; public users use the dedicated form/auth)
+  // Auth is required. Always send the acknowledgement to the registered auth
+  // email rather than trusting an arbitrary recipient supplied in the form.
   let userId: string | null = null;
+  let registeredEmail: string | null = null;
   const auth = req.headers.get("Authorization");
   if (auth?.startsWith("Bearer ")) {
     const { data } = await svc.auth.getUser(auth.replace("Bearer ", ""));
     userId = data?.user?.id ?? null;
+    registeredEmail = data?.user?.email?.trim().toLowerCase() ?? null;
   }
   if (!userId) return jsonResponse({ error: "auth_required" }, 401);
 
@@ -95,5 +109,52 @@ Deno.serve(async (req) => {
     _ticket_id: ticket.id,
   });
 
-  return jsonResponse({ ok: true, ticket_id: ticket.id });
+  let customerEmailSent = false;
+  if (registeredEmail) {
+    try {
+      const customerSubject = `We've received your support request — ${subject}`;
+      const customerHtml = brutalistEmailShell(
+        "Support request received",
+        `<p>Hi ${escapeHtml(name || "there")},</p><p>We've received your support request about <strong>${escapeHtml(subject)}</strong> and created a ticket for our team.</p><p>You can follow replies and updates from your OCCTA dashboard. If you reply to a support email, keep the same subject so we can match your response to the ticket.</p>`,
+        { label: "Open support dashboard", url: "https://www.occta.co.uk/dashboard" },
+      );
+      const result = await sendTrackedCommunication(svc, {
+        template_name: "support_ticket_customer_acknowledgement",
+        recipient_email: registeredEmail,
+        subject: customerSubject,
+        html: customerHtml,
+        user_id: userId,
+        replyTo: "support@occta.co.uk",
+        metadata: { ticket_id: ticket.id, category, priority },
+      });
+      customerEmailSent = result.ok;
+      if (!result.ok) console.error("support ticket acknowledgement failed", result.error);
+    } catch (e) {
+      console.error("support ticket acknowledgement exception", (e as Error)?.message ?? String(e));
+    }
+  }
+
+  // Internal alert contains only routing information; the support team reads
+  // the customer's full message in the protected ticket system.
+  try {
+    const adminEmail = (Deno.env.get("SUPPORT_NOTIFY_EMAIL") || getAdminNotificationEmail()).trim();
+    const internalSubject = `New support ticket — ${subject}`;
+    const internalHtml = brutalistEmailShell(
+      "New support ticket",
+      `<p><strong>Subject:</strong> ${escapeHtml(subject)}</p><p><strong>Category:</strong> ${escapeHtml(category)}<br/><strong>Priority:</strong> ${escapeHtml(priority)}</p><p><strong>Ticket ID:</strong> ${escapeHtml(ticket.id)}</p><p>Open the admin support queue to review the customer's message and respond.</p>`,
+      { label: "Open admin support", url: "https://www.occta.co.uk/admin/support" },
+    );
+    const result = await sendTrackedCommunication(svc, {
+      template_name: "support_ticket_admin_notification",
+      recipient_email: adminEmail,
+      subject: internalSubject,
+      html: internalHtml,
+      metadata: { ticket_id: ticket.id, category, priority },
+    });
+    if (!result.ok) console.error("support ticket admin notification failed", result.error);
+  } catch (e) {
+    console.error("support ticket admin notification exception", (e as Error)?.message ?? String(e));
+  }
+
+  return jsonResponse({ ok: true, ticket_id: ticket.id, customer_email_sent: customerEmailSent });
 });

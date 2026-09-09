@@ -1075,11 +1075,17 @@ export type Database = {
           company_name: string
           contact_name: string
           created_at: string
+          customer_acknowledged_at: string | null
           email: string
+          follow_up_due_at: string | null
           id: string
           internal_notes: string | null
           message: string | null
           phone: string | null
+          qualification_reasons: string[]
+          qualification_snapshot: Json
+          qualification_status: string
+          reference: string | null
           requirements: Json
           services: string[]
           site_count: number
@@ -1094,11 +1100,17 @@ export type Database = {
           company_name: string
           contact_name: string
           created_at?: string
+          customer_acknowledged_at?: string | null
           email: string
+          follow_up_due_at?: string | null
           id?: string
           internal_notes?: string | null
           message?: string | null
           phone?: string | null
+          qualification_reasons?: string[]
+          qualification_snapshot?: Json
+          qualification_status?: string
+          reference?: string | null
           requirements?: Json
           services?: string[]
           site_count?: number
@@ -1113,11 +1125,17 @@ export type Database = {
           company_name?: string
           contact_name?: string
           created_at?: string
+          customer_acknowledged_at?: string | null
           email?: string
+          follow_up_due_at?: string | null
           id?: string
           internal_notes?: string | null
           message?: string | null
           phone?: string | null
+          qualification_reasons?: string[]
+          qualification_snapshot?: Json
+          qualification_status?: string
+          reference?: string | null
           requirements?: Json
           services?: string[]
           site_count?: number

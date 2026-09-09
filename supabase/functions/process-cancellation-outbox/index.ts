@@ -41,7 +41,6 @@ function buildHtml(kind: string, c: any, dashboardUrl: string) {
        <p>This is the final balance you will be charged to close the service, calculated in line with the cease &amp; cancellation terms in the Contract Summary you accepted. The full breakdown (notice period, any early termination charge, unpaid invoices and credits) is available on your dashboard.</p>
        <p style="font-size:12px;color:#666">Figures are subject to final confirmation by our team. You will receive a closing invoice or credit note on the cease date.</p>`);
   }
-  // completed
   return head("Your service has been cancelled",
     `<p>Your service has been ceased on <b>${escapeHtml(fmtDate(c.actual_cease_date))}</b>.</p>
      <p>If there is a final invoice or credit note, you'll find it on your dashboard.</p>`);
@@ -100,12 +99,19 @@ Deno.serve(async (req) => {
         row.email_type === "confirmed_cease" ? "Your proposed cease date and final balance" :
         "Your service has been cancelled";
 
+      // send-email requires a supported type + data object. The previous raw
+      // {to, subject, html} payload was rejected as "Unknown email type", so
+      // cancellation emails could repeatedly retry without ever being sent.
       const sendResp = await supabase.functions.invoke("send-email", {
         body: {
+          type: "custom_admin",
           to: row.recipient_email,
-          subject,
-          html,
-          idempotencyKey: `cancel-email:${row.id}`,
+          logToCommunications: true,
+          data: {
+            subject,
+            use_raw_html: true,
+            html_body: html,
+          },
         },
       });
       if (sendResp.error) throw new Error(sendResp.error.message || "send_failed");
@@ -115,7 +121,7 @@ Deno.serve(async (req) => {
           status: "sent",
           sent_at: new Date().toISOString(),
           attempts: (row.attempts ?? 0) + 1,
-          provider_message_id: (sendResp.data as any)?.message_id ?? null,
+          provider_message_id: (sendResp.data as any)?.data?.data?.id ?? (sendResp.data as any)?.data?.id ?? null,
           last_error: null,
         }).eq("id", row.id);
       results.push({ id: row.id, sent: true });

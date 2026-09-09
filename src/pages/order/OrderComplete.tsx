@@ -133,7 +133,7 @@ export default function OrderComplete() {
 
   return (
     <Layout>
-      <SEO title="Order confirmed | OCCTA" description="Your OCCTA order is confirmed." noIndex />
+      <SEO title="Order received | OCCTA" description="Your OCCTA order has been received and is moving to final service validation." noIndex />
 
       <section className="container mx-auto px-4 py-10 md:py-14 max-w-4xl">
         {state.test_session && (
@@ -154,12 +154,11 @@ export default function OrderComplete() {
               <CheckCircle2 className="w-8 h-8" aria-hidden="true" />
             </div>
             <h1 className="font-display uppercase text-3xl md:text-5xl leading-[0.95] mb-3">
-              {state.customer_name ? `Congratulations, ${state.customer_name.split(" ")[0]}!` : "Congratulations!"}
-              <br />Your order is confirmed
+              {state.customer_name ? `Thanks, ${state.customer_name.split(" ")[0]}!` : "Thanks!"}
+              <br />Your order is received
             </h1>
             <p className="text-sm md:text-base opacity-90 max-w-xl mb-6">
-              Everything is signed, sealed and in motion. Your plan is locked in at the price you agreed — no
-              surprises, no small print games. {companyConfig.tagline}
+              Your selected plan and agreed price are recorded. We’ll now complete final network and supplier validation for your installation address. If the exact plan cannot be supplied, we’ll email you with available options before provisioning and won’t change your plan or price without your agreement. If it is confirmed, your order proceeds normally.
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -256,7 +255,7 @@ export default function OrderComplete() {
               <h2 className="font-display uppercase text-xl mb-4">Service &amp; billing details</h2>
               <dl>
                 {state.customer_name && <Row label="Account holder" value={state.customer_name} />}
-                {state.customer_email && <Row label="Confirmation sent to" value={state.customer_email} />}
+                {state.customer_email && <Row label="Order email sent to" value={state.customer_email} />}
                 {state.service_address && <Row label="Service address" value={state.service_address} />}
                 {state.current_provider && <Row label="Switching from" value={state.current_provider} />}
                 {state.number_action && (
@@ -287,7 +286,7 @@ export default function OrderComplete() {
               <h2 className="font-display uppercase text-xl mb-1">Your documents</h2>
               {allDocsReady ? (
                 <p className="text-xs text-muted-foreground mb-4">
-                  All {readyDocs.length} documents are ready to view or download now. Your order confirmation email also carries your contractual document pack.
+                  All {readyDocs.length} documents are ready to view or download now. Your order email also carries your contractual document pack.
                 </p>
               ) : (
                 <div className="border-2 border-destructive p-3 mb-4 text-xs" role="alert">
@@ -336,9 +335,9 @@ export default function OrderComplete() {
               <h2 className="font-display uppercase text-xl mb-4">What happens next</h2>
               <ol className="space-y-4">
                 {[
-                  { t: "Line confirmed", d: "We confirm your line and book activation for your preferred date." },
-                  { t: "Direct Debit set up", d: "Your mandate goes to your bank — we confirm when it's active." },
-                  { t: "Document pack", d: "Your contractual documents are available here and are sent with your order confirmation." },
+                  { t: "Final service validation", d: "We validate the selected plan with the network and supplier for your installation address. If the exact plan cannot be supplied, we email you with options before provisioning." },
+                  { t: "Activation arranged", d: "If the selected service is confirmed, we arrange activation around your preferred date and keep you updated." },
+                  { t: "Direct Debit set up", d: "Your mandate goes to your bank — we confirm when it's active and give advance notice before collection." },
                   { t: "Service live", d: "Billing starts when you go live, on your chosen billing day." },
                 ].map((s, i) => (
                   <li key={s.t} className="flex gap-3">

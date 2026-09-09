@@ -1,11 +1,14 @@
 /**
- * Journey 2 — address prefill from the homepage availability check.
+ * Journey 2 — lightweight prefill from the public broadband journey.
  *
  * The availability context stores the checked postcode and (when the customer
  * picked their exact address) the selected address in sessionStorage. Reusing it
- * means the first ordering step is already filled in.
+ * means the first ordering step is already filled in. A clicked public speed
+ * card is also carried into the plan step so "Choose plan" never silently loses
+ * the customer's selection.
  */
 const SESSION_KEY = "occta_availability";
+const SPEED_KEY = "occta_preferred_speed_bucket";
 
 export type AddressPrefill = {
   postcode: string;
@@ -15,7 +18,29 @@ export type AddressPrefill = {
   county: string;
 };
 
+export type PreferredSpeedBucket = "essential" | "superfast" | "ultrafast" | "gigabit";
+const SPEED_BUCKETS: PreferredSpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
+
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+
+export function setPreferredSpeedBucket(bucket: string): void {
+  try {
+    if ((SPEED_BUCKETS as string[]).includes(bucket)) sessionStorage.setItem(SPEED_KEY, bucket);
+  } catch { /* storage is best-effort */ }
+}
+
+export function getPreferredSpeedBucket(): PreferredSpeedBucket | null {
+  try {
+    const value = sessionStorage.getItem(SPEED_KEY);
+    return (SPEED_BUCKETS as string[]).includes(value ?? "") ? value as PreferredSpeedBucket : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPreferredSpeedBucket(): void {
+  try { sessionStorage.removeItem(SPEED_KEY); } catch { /* storage is best-effort */ }
+}
 
 export function getAvailabilityPrefill(): AddressPrefill | null {
   try {

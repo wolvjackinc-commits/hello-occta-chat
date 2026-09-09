@@ -6,7 +6,6 @@ import AppLayout from "@/components/app/AppLayout";
 import { Button } from "@/components/ui/button";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import BundleBuilder from "@/components/bundle/BundleBuilder";
-import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,7 +19,6 @@ import { AvailabilityProvider, useAvailability, getAddressLabel, getShortAddress
 import { startAssignedJourney } from "@/lib/journey2/route";
 
 const BroadbandInner = () => {
-  const [isReady, setIsReady] = useState(false);
   const [showVoiceDialog, setShowVoiceDialog] = useState(false);
   const [selectedBroadbandPlanId, setSelectedBroadbandPlanId] = useState<string | null>(null);
   const [selectedCallPlans, setSelectedCallPlans] = useState<string[]>([]);
@@ -28,15 +26,10 @@ const BroadbandInner = () => {
   const [searchParams] = useSearchParams();
   const { status, result, postcode, reset, addresses, selectedAddress, selectAddress } = useAvailability();
   
-  useEffect(() => {
-    const timer = setTimeout(() => setIsReady(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
   // Auto-trigger voice dialog if coming from homepage with plan param
   useEffect(() => {
     const planParam = searchParams.get("plan");
-    if (planParam && isReady) {
+    if (planParam) {
       const matchingPlan = broadbandPlans.find(p => p.id === `broadband-${planParam}` || p.id === planParam);
       if (matchingPlan) {
         setSelectedBroadbandPlanId(matchingPlan.id);
@@ -44,7 +37,7 @@ const BroadbandInner = () => {
         setShowVoiceDialog(true);
       }
     }
-  }, [searchParams, isReady]);
+  }, [searchParams]);
 
   const { isAppMode } = useAppMode();
   const containerVariants = {
@@ -113,10 +106,6 @@ const BroadbandInner = () => {
 
   const filteredPlans = getFilteredPlans();
   const isFttcOnly = hasPersonalisedResult && result.primaryTechnology !== "FTTP";
-
-  if (!isReady) {
-    return <LayoutComponent><ServicePageSkeleton /></LayoutComponent>;
-  }
 
   const broadbandServiceSchema = createServiceSchema({
     name: 'OCCTA Broadband',
@@ -317,11 +306,10 @@ const BroadbandInner = () => {
                   key="loading"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="card-brutal bg-card p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center min-h-[200px] sm:min-h-[320px]"
+                  className="card-brutal bg-card min-h-[200px] sm:min-h-[320px]"
                 >
                   <OcctaLoader
                     context={status === "loading-postcode" ? "address" : "availability"}
-                    delayMs={200}
                     className="w-full"
                   />
                 </motion.div>

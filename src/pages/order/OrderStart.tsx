@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import OcctaLoader from "@/components/loading/OcctaLoader";
 import { journey2 } from "@/lib/journey2/client";
 
 /**
@@ -69,11 +69,7 @@ export default function OrderStart() {
             </div>
           </div>
         ) : !failed ? (
-          <>
-            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-4" aria-hidden="true" />
-            <h1 className="font-display uppercase text-2xl mb-2">Setting up your order</h1>
-            <p className="text-sm text-muted-foreground">One moment — we're preparing your exact prices.</p>
-          </>
+          <OcctaLoader context="checkout" label="Setting up your order…" className="px-0 py-0 text-left" />
         ) : (
           <div className="border-4 border-foreground p-8">
             <h1 className="font-display uppercase text-2xl mb-3">Let's finish this by phone</h1>

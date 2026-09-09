@@ -45,10 +45,6 @@ export const IdentityVerification = ({
     setIsVerifying(true);
     setVerificationResult(null);
 
-    // Short pause only (this check is client-side, so a long artificial wait
-    // added latency without adding security).
-    await new Promise((resolve) => setTimeout(resolve, 250));
-
     const accountMatch = inputAccountNumber.toUpperCase().trim() === accountNumber?.toUpperCase().trim();
     const dobMatch = inputDob === dateOfBirth;
 

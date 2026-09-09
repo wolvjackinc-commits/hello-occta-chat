@@ -366,26 +366,33 @@
 .admin-dense table tbody tr:hover { background-color: hsl(var(--muted) / 0.4); }
 .admin-dense [data-slot="card"] { padding-top: 0.75rem; padding-bottom: 0.75rem; }
 
-/* ── OCCTA branded loader (presentation only) ───────────────────────── */
-@keyframes occta-loader-bar {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(300%); }
+/* OCCTA wait system: quiet skeletons, then one editorial fact for long waits. */
+@keyframes occta-skeleton-shimmer {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(210%); }
 }
-@keyframes occta-loader-node {
-  0%, 100% { opacity: 0.4; transform: scale(0.85); }
-  50% { opacity: 1; transform: scale(1.1); }
+@keyframes occta-signal {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
 }
-@keyframes occta-loader-dash {
-  0% { stroke-dashoffset: 160; }
-  100% { stroke-dashoffset: 0; }
+@keyframes occta-fact-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-.occta-loader-bar { animation: occta-loader-bar 1.4s ease-in-out infinite; }
-.occta-loader-node { transform-box: fill-box; transform-origin: center; animation: occta-loader-node 1.6s ease-in-out infinite; }
-.occta-loader-line { stroke-dasharray: 160; animation: occta-loader-dash 1.8s linear infinite; }
+.occta-skeleton { position: relative; border-radius: 0; }
+.occta-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, hsl(var(--background) / 0.55), transparent);
+  transform: translateX(-110%);
+  animation: occta-skeleton-shimmer 2.2s ease-in-out infinite;
+}
+.occta-signal-line > span { animation: occta-signal 3.2s ease-in-out infinite; }
+.occta-fact-fade { animation: occta-fact-fade 220ms ease-out; }
 @media (prefers-reduced-motion: reduce) {
-  .occta-loader-bar,
-  .occta-loader-node,
-  .occta-loader-line { animation: none; }
-  .occta-loader-bar { width: 100%; opacity: 0.5; }
-  .occta-loader-node { opacity: 0.8; }
+  .occta-skeleton::after,
+  .occta-signal-line > span,
+  .occta-fact-fade { animation: none; }
+  .occta-skeleton::after { display: none; }
 }

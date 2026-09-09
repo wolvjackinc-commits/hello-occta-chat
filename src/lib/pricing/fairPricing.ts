@@ -10,16 +10,16 @@
 export type SpeedBucket = 'essential' | 'superfast' | 'ultrafast' | 'gigabit';
 
 /**
- * Public broadband bands. The site sells exactly THREE bands.
- * `gigabit` remains an INTERNAL supplier bucket only (1000/115 rows) and always
- * presents to customers as Ultrafast Fibre. Never render a fourth public plan.
+ * Public broadband bands. OCCTA presents four customer-facing speed bands:
+ * Essential, Superfast, Ultrafast and Gigabit. Supplier products remain
+ * resolved server-side and may differ by address/network availability.
  */
-export const PUBLIC_SPEED_BUCKETS = ['essential', 'superfast', 'ultrafast'] as const;
+export const PUBLIC_SPEED_BUCKETS = ['essential', 'superfast', 'ultrafast', 'gigabit'] as const;
 export type PublicSpeedBucket = typeof PUBLIC_SPEED_BUCKETS[number];
 
-/** Maps any internal bucket onto the public band a customer may see. */
+/** Maps a pricing bucket onto the public band a customer may see. */
 export function toPublicBucket(b: SpeedBucket): PublicSpeedBucket {
-  return b === 'gigabit' ? 'ultrafast' : b;
+  return b;
 }
 export type PlanTerm = 'price_lock_24' | 'flex_30';
 export type RouterChoice = 'own' | 'standard' | 'premium' | 'business';
@@ -36,9 +36,10 @@ export interface AddonChoice {
  * Governed customer-facing headline prices (incl. VAT, residential):
  *   Essential up to 80    — PL24 £34.99 / Flex £37.99
  *   Superfast up to 330   — PL24 £39.99 / Flex £44.99
- *   Ultrafast up to 1000  — PL24 £49.99 / Flex £52.99
- * `gigabit` mirrors Ultrafast because 1000/115 supplier rows sell inside the
- * public Ultrafast band; the margin resolver auto-bumps where cost requires it.
+ *   Ultrafast up to 550   — PL24 £49.99 / Flex £52.99
+ *   Gigabit up to 1000    — PL24 £49.99 / Flex £52.99
+ * The server-side margin resolver remains authoritative and may auto-bump a
+ * displayed price when the selected supplier product requires it.
  */
 export const FAIR_PRICING_DEFAULTS = {
   headline: {
@@ -93,25 +94,24 @@ export const SPEED_BUCKET_META: Record<SpeedBucket, {
   },
   ultrafast: {
     title: 'Ultrafast Fibre',
-    speedRange: 'Up to 1000Mbps',
-    tagline: 'Built for busy homes and businesses that need headroom.',
+    speedRange: 'Up to 550Mbps',
+    tagline: 'Built for busy homes that need more speed and headroom.',
     badges: [
       'Bring your own router or add premium WiFi',
-      'Full fibre speeds up to 1000Mbps where available',
+      'Full fibre speeds up to 550Mbps where available',
       'Static IP available on selected services',
       'Clear setup and add-on pricing',
       'Final price confirmed before order',
     ],
   },
   gigabit: {
-    // Internal supplier bucket only — always presented as Ultrafast Fibre.
-    title: 'Ultrafast Fibre',
+    title: 'Gigabit Fibre',
     speedRange: 'Up to 1000Mbps',
-    tagline: 'Built for busy homes and businesses that need headroom.',
+    tagline: 'Our highest speed band for demanding homes and heavy usage.',
     badges: [
       'Full fibre speeds up to 1000Mbps where available',
-      'Static IP available',
-      'Bring your own router for £0',
+      'Static IP available on selected services',
+      'Bring your own router or add premium WiFi',
       'Final price confirmed before order',
     ],
   },

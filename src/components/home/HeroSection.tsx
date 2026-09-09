@@ -158,11 +158,10 @@ const HeroSection = () => {
                 key="loading-right"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="card-brutal bg-card p-6 flex flex-col items-center justify-center min-h-[320px]"
+                className="card-brutal bg-card min-h-[320px]"
               >
                 <OcctaLoader
                   context={isLoadingPostcode ? "address" : "availability"}
-                  delayMs={200}
                   className="w-full"
                 />
               </motion.div>

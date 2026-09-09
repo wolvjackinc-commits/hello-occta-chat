@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 /**
- * OCCTA branded loading experience.
- *
- * - Presentation only: never fetches, never blocks, never changes business logic.
- * - Appears after a short delay so very quick waits don't flash a loader.
- * - Rotates short, generic, accurate facts/tips while waiting.
- * - Fully respects prefers-reduced-motion (motion is disabled in CSS).
- * - Fixed minimum height per variant so it never causes layout shift.
+ * Delayed, destination-shaped wait state. It never delays the underlying work.
  */
 
 export type LoaderContext =
@@ -21,9 +17,9 @@ export type LoaderContext =
   | "admin";
 
 const HEADLINES: Record<LoaderContext, string> = {
-  address: "Looking up your address…",
+  address: "Finding matching properties…",
   availability: "Checking the best connection for your address…",
-  checkout: "Securing your checkout…",
+  checkout: "Preparing your order…",
   payment: "Processing securely…",
   account: "Loading your account…",
   documents: "Preparing your documents…",
@@ -31,109 +27,94 @@ const HEADLINES: Record<LoaderContext, string> = {
   admin: "Loading…",
 };
 
-const GENERAL_TIPS = [
-  "Tip: placing your router in the open, off the floor, improves Wi-Fi coverage.",
-  "Wi-Fi tip: the 5GHz band is faster over short distances, 2.4GHz reaches further.",
-  "Wired devices like TVs and consoles are steadier on an Ethernet cable.",
-  "Microwaves, baby monitors and thick walls can all weaken a Wi-Fi signal.",
-  "Speed you get over Wi-Fi is usually lower than the speed reaching your router.",
-  "Simple telecom. Clear terms.",
+const FACTS = [
+  {
+    title: "The Web began at CERN in 1989.",
+    detail: "Tim Berners-Lee created it to help scientists share information.",
+  },
+  {
+    title: "Router position matters.",
+    detail: "Keep it in the open, off the floor and roughly central.",
+  },
+  {
+    title: "Ethernet is usually more reliable than Wi-Fi.",
+    detail: "Useful for stationary TVs, consoles and work computers.",
+  },
+  {
+    title: "Walls and electrical devices can weaken Wi-Fi.",
+    detail: "Microwaves, baby monitors and thick walls can affect the signal.",
+  },
+  {
+    title: "Wi-Fi speed is not the same as line speed.",
+    detail: "Distance, interference and your device can change wireless performance.",
+  },
+  {
+    title: "Full fibre reaches the property using fibre.",
+    detail: "It does not rely on a final copper section to the premises.",
+  },
 ];
-
-const CONTEXT_TIPS: Partial<Record<LoaderContext, string[]>> = {
-  address: [
-    "We match your postcode to the Royal Mail address list.",
-    "Your address is only used to check what's available at your property.",
-  ],
-  availability: [
-    "Availability depends on the line and cabinet serving your property.",
-    "Estimated speeds are given as a range because every line is different.",
-  ],
-  checkout: [
-    "Your details are sent over an encrypted connection.",
-    "You'll see a full breakdown before anything is confirmed.",
-  ],
-  payment: [
-    "Card details are handled by our payment provider, never stored by us.",
-    "Please don't refresh this page while the payment completes.",
-  ],
-  account: [
-    "Your account shows your services, invoices and support tickets in one place.",
-  ],
-  documents: [
-    "Your contract documents are generated fresh for your order.",
-  ],
-};
-
-const SLOW_MESSAGE = "Still working — this is taking a little longer than usual. Please keep this page open.";
 
 interface OcctaLoaderProps {
   context?: LoaderContext;
   /** Overrides the default headline for this context. */
   label?: string;
-  /** Compact inline block vs full-height page panel. */
+  /** Retained for existing call sites; both modes now stay within content flow. */
   variant?: "inline" | "page";
-  /** Don't show the loader at all until this many ms have passed. */
+  /** Don't show any loading treatment until this many ms have passed. */
   delayMs?: number;
-  /** Hide the rotating facts (e.g. very small inline slots). */
+  /** Hide the long-wait information strip. */
   showTips?: boolean;
   className?: string;
 }
 
-const NetworkMotif = () => (
-  <svg
-    viewBox="0 0 120 60"
-    role="presentation"
-    aria-hidden="true"
-    className="occta-loader-motif w-[120px] h-[60px]"
-  >
-    <g stroke="currentColor" strokeWidth="2" fill="none" opacity="0.35">
-      <path d="M12 48 L44 24" />
-      <path d="M44 24 L76 40" />
-      <path d="M76 40 L108 14" />
-    </g>
-    <path
-      d="M12 48 L44 24 L76 40 L108 14"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      fill="none"
-      className="occta-loader-line"
-    />
-    {[
-      [12, 48],
-      [44, 24],
-      [76, 40],
-      [108, 14],
-    ].map(([cx, cy], i) => (
-      <circle
-        key={`${cx}-${cy}`}
-        cx={cx}
-        cy={cy}
-        r="5"
-        fill="currentColor"
-        className="occta-loader-node"
-        style={{ animationDelay: `${i * 180}ms` }}
-      />
-    ))}
-  </svg>
-);
+const Line = ({ className }: { className?: string }) => <Skeleton className={cn("h-3", className)} />;
+
+const ContentSkeleton = ({ context }: { context: LoaderContext }) => {
+  if (context === "address") {
+    return <div className="space-y-3"><Line className="h-11 w-full" /><Line className="h-11 w-full" /><Line className="h-11 w-5/6" /></div>;
+  }
+  if (context === "availability") {
+    return <div className="grid gap-3 sm:grid-cols-2"><Skeleton className="h-32" /><Skeleton className="h-32" /></div>;
+  }
+  if (context === "checkout") {
+    return (
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(15rem,1fr)]">
+        <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-40" /><Skeleton className="h-32" /></div>
+        <div className="space-y-3 border-l-0 border-foreground/15 lg:border-l lg:pl-5"><Line className="h-6 w-36" /><Skeleton className="h-28" /><Line className="w-full" /><Line className="w-4/5" /></div>
+      </div>
+    );
+  }
+  if (context === "account") {
+    return (
+      <div className="space-y-5"><Skeleton className="h-9 w-56" /><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div><div className="space-y-3"><Line className="h-6 w-40" /><Line className="h-12 w-full" /><Line className="h-12 w-full" /><Line className="h-12 w-5/6" /></div></div>
+    );
+  }
+  if (context === "documents") {
+    return <div className="space-y-5"><Skeleton className="h-9 w-64 max-w-full" /><Line className="w-full" /><Line className="w-11/12" /><Line className="w-4/5" /><div className="grid gap-3 pt-2 sm:grid-cols-2"><Skeleton className="h-24" /><Skeleton className="h-24" /></div></div>;
+  }
+  if (context === "payment") {
+    return <div className="mx-auto max-w-md space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-24" /><Skeleton className="h-12" /></div>;
+  }
+  if (context === "admin") {
+    return <div className="space-y-3"><div className="grid gap-3 md:grid-cols-4"><Skeleton className="h-20" /><Skeleton className="h-20" /><Skeleton className="h-20" /><Skeleton className="h-20" /></div><Line className="h-10" /><Line className="h-10" /><Line className="h-10" /></div>;
+  }
+  return <div className="space-y-4"><Skeleton className="h-10 w-2/3" /><Line className="w-full" /><Line className="w-5/6" /><Skeleton className="h-32" /></div>;
+};
 
 export const OcctaLoader = ({
   context = "page",
   label,
   variant = "inline",
-  delayMs = 250,
+  delayMs = 900,
   showTips = true,
   className = "",
 }: OcctaLoaderProps) => {
   const [visible, setVisible] = useState(delayMs <= 0);
-  const [slow, setSlow] = useState(false);
-  const [tipIndex, setTipIndex] = useState(0);
+  const [showLongWait, setShowLongWait] = useState(false);
+  const [factIndex, setFactIndex] = useState(0);
 
-  const tips = useMemo(() => {
-    const specific = CONTEXT_TIPS[context] ?? [];
-    return [...specific, ...GENERAL_TIPS];
-  }, [context]);
+  const canShowFacts = showTips && context !== "payment" && context !== "admin";
+  const fact = useMemo(() => FACTS[factIndex], [factIndex]);
 
   useEffect(() => {
     if (delayMs <= 0) return;
@@ -142,53 +123,43 @@ export const OcctaLoader = ({
   }, [delayMs]);
 
   useEffect(() => {
-    const slowTimer = window.setTimeout(() => setSlow(true), 8000);
+    const slowTimer = window.setTimeout(() => setShowLongWait(true), 3000);
     return () => window.clearTimeout(slowTimer);
   }, []);
 
   useEffect(() => {
-    if (!visible || !showTips) return;
+    if (!showLongWait || !canShowFacts) return;
     const id = window.setInterval(() => {
-      setTipIndex((i) => (i + 1) % tips.length);
-    }, 3200);
+      setFactIndex((i) => (i + 1) % FACTS.length);
+    }, 5000);
     return () => window.clearInterval(id);
-  }, [visible, showTips, tips.length]);
-
-  // Reserve the space immediately so nothing jumps when the loader appears.
-  const shell =
-    variant === "page"
-      ? "min-h-[50vh] flex items-center justify-center px-4 py-10"
-      : "min-h-[180px] flex items-center justify-center px-4 py-6";
+  }, [showLongWait, canShowFacts]);
 
   if (!visible) {
-    return <div className={`${shell} ${className}`} aria-hidden="true" />;
+    return null;
   }
 
   return (
-    <div className={`${shell} ${className}`}>
-      <div
-        role="status"
-        aria-live="polite"
-        className="w-full max-w-sm border-4 border-foreground bg-card p-6 text-center"
-      >
-        <div className="flex justify-center text-primary">
-          <NetworkMotif />
-        </div>
+    <div className={cn("w-full px-4 py-6 sm:px-6", variant === "page" && "container mx-auto max-w-6xl py-10", className)} aria-busy="true">
+      <p role="status" aria-live="polite" className="mb-5 text-sm font-medium text-foreground">
+        <span className="mr-2 inline-block h-2 w-2 bg-primary align-middle" aria-hidden="true" />
+        {label ?? HEADLINES[context]}
+        {context === "payment" && <span className="mt-1 block text-xs font-normal text-muted-foreground">Keep this page open.</span>}
+      </p>
+      <ContentSkeleton context={context} />
 
-        <p className="mt-3 font-display text-sm uppercase tracking-wider text-foreground">
-          {label ?? HEADLINES[context]}
-        </p>
-
-        <div className="mt-3 h-1 w-full overflow-hidden bg-muted">
-          <div className="occta-loader-bar h-full w-1/3 bg-primary" />
-        </div>
-
-        {showTips && (
-          <p className="mt-4 min-h-[2.5rem] text-xs leading-relaxed text-muted-foreground">
-            {slow ? SLOW_MESSAGE : tips[tipIndex]}
-          </p>
-        )}
-      </div>
+      {showLongWait && canShowFacts && (
+        <aside className="occta-wait-panel mt-8 border-y border-foreground/20 py-6 sm:grid sm:grid-cols-[10rem_1fr] sm:gap-8" aria-label="While you wait">
+          <div className="mb-4 sm:mb-0">
+            <p className="text-[11px] font-semibold uppercase text-muted-foreground">While we get this ready</p>
+            <div className="occta-signal-line mt-3 h-px w-full overflow-hidden bg-foreground/15" aria-hidden="true"><span className="block h-full w-1/3 bg-primary" /></div>
+          </div>
+          <div key={factIndex} className="occta-fact-fade" aria-hidden="true">
+            <p className="font-display text-xl uppercase text-foreground sm:text-2xl">{fact.title}</p>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{fact.detail}</p>
+          </div>
+        </aside>
+      )}
     </div>
   );
 };

@@ -36,13 +36,15 @@ export default function ContractSummaryAuthedView() {
     let cancelled = false;
     (async () => {
       try {
-        const row = await loadCs(csId);
+        const [row, { data: acc }] = await Promise.all([
+          loadCs(csId),
+          supabase.rpc("get_customer_contract_summary_acceptance", { _cs_id: csId }),
+        ]);
         if (cancelled) return;
         if (!row) { setCs(null); return; }
         setCs(row);
         if (!row.is_information_update) {
-          const { data: acc } = await supabase.rpc("get_customer_contract_summary_acceptance", { _cs_id: csId });
-          if (!cancelled) setAcceptance(Array.isArray(acc) ? acc[0] : acc);
+          setAcceptance(Array.isArray(acc) ? acc[0] : acc);
         }
       } finally { if (!cancelled) setLoading(false); }
     })();

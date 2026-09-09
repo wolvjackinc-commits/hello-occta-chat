@@ -178,7 +178,7 @@ import NetworkManagement from "./pages/legal/NetworkManagement";
 
 const queryClient = new QueryClient();
 
-const AdminRouteFallback = () => <OcctaLoader context="admin" variant="page" delayMs={200} showTips={false} />;
+const AdminRouteFallback = () => <OcctaLoader context="admin" variant="page" showTips={false} />;
 
 // Scroll to top on route change
 const ScrollToTop = () => {

@@ -18,7 +18,7 @@ const BusinessIndustryPage = () => {
     <Layout>
       <SEO
         title={`Business Broadband & Phones for ${industry.name} — UK`}
-        description={`${industry.hero} OCCTA business broadband, VoIP and SIMs for ${industry.name.toLowerCase()}. Ex-VAT pricing, UK support, 4-hour fix target.`}
+        description={`${industry.hero} OCCTA designs business broadband, VoIP and mobile options around the exact site, with transparent VAT and service terms confirmed before order.`}
         canonical={`/business/industries/${industry.slug}`}
         keywords={`business broadband for ${industry.name.toLowerCase()}, ${industry.name.toLowerCase()} phone system, business wifi ${industry.name.toLowerCase()}`}
       />
@@ -26,7 +26,7 @@ const BusinessIndustryPage = () => {
         <div className="container mx-auto px-4 py-14">
           <div className="text-sm uppercase tracking-wider text-muted-foreground mb-2">For {industry.name}</div>
           <h1 className="font-display text-5xl lg:text-6xl mb-4">{industry.hero}</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl">Made for {industry.name.toLowerCase()} teams that can't afford downtime.</p>
+          <p className="text-lg text-muted-foreground max-w-2xl">A practical telecom design for {industry.name.toLowerCase()} teams, with availability, care level and resilience options checked against the actual site.</p>
         </div>
       </section>
       <BusinessTrustBar />
@@ -37,7 +37,7 @@ const BusinessIndustryPage = () => {
           <p>{industry.pain}</p>
         </div>
         <div className="border-4 border-foreground bg-background p-6 shadow-brutal">
-          <h2 className="font-display text-2xl mb-4">What we recommend</h2>
+          <h2 className="font-display text-2xl mb-4">What we recommend checking</h2>
           <ul className="space-y-2">
             {industry.solution.map((s) => (
               <li key={s} className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" /> {s}</li>
@@ -49,10 +49,14 @@ const BusinessIndustryPage = () => {
         <section className="border-t-4 border-foreground bg-foreground text-background">
           <div className="container mx-auto px-4 py-14 grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <div className="text-sm uppercase tracking-wider opacity-80 mb-2">Recommended bundle</div>
+              <div className="text-sm uppercase tracking-wider opacity-80 mb-2">Recommended bundle design</div>
               <h2 className="font-display text-4xl mb-3">{bundle.name}</h2>
               <p className="opacity-80 mb-4">{bundle.tagline}</p>
-              <VatExPrice amount={bundle.priceExVat} size="xl" className="[&_span]:text-background" />
+              {bundle.priceExVat != null ? (
+                <VatExPrice amount={bundle.priceExVat} size="xl" className="[&_span]:text-background" />
+              ) : (
+                <div className="font-display text-3xl">Tailored to your site</div>
+              )}
             </div>
             <div className="border-4 border-background bg-background text-foreground p-6">
               <ul className="space-y-2">
@@ -60,7 +64,7 @@ const BusinessIndustryPage = () => {
                   <li key={f} className="flex gap-2 text-sm"><CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" /> {f}</li>
                 ))}
               </ul>
-              <Link to="/business/contact-sales" className="mt-6 block"><Button variant="hero" className="w-full">Get a quote</Button></Link>
+              <Link to={`/business/quote?service=bundle&bundle=${encodeURIComponent(bundle.id)}`} className="mt-6 block"><Button variant="hero" className="w-full">Build this quote</Button></Link>
             </div>
           </div>
         </section>

@@ -52,7 +52,8 @@ for (const file of files) {
   let match;
   while ((match = matcher.exec(source))) {
     invokeCount += 1;
-    const next = source.search.call(source.slice(match.index + match[0].length), /functions\.invoke\(\s*["']send-email["']/);
+    const afterMatch = source.slice(match.index + match[0].length);
+    const next = afterMatch.search(/functions\.invoke\(\s*["']send-email["']/);
     const end = next >= 0
       ? match.index + match[0].length + Math.min(next, 2200)
       : Math.min(source.length, match.index + 2200);

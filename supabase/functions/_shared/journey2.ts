@@ -9,15 +9,14 @@
 import { sha256Hex } from "./quoteHelpers.ts";
 import {
   resolveBuildPlanPrice, loadGiacomCandidates, RESOLVER_VERSION,
-  speedBucketLabel, planTermLabel, PUBLIC_SPEED_BUCKETS,
+  planTermLabel,
   type SpeedBucket, type PlanTerm, type RouterChoice, type RouterPayType,
   type SetupChoice, type AddonId, type ResolvedPriced,
 } from "./buildPlanResolver.ts";
 
-// Journey 2 follows the same public-band governance as the rest of the site:
-// exactly Essential, Superfast and Ultrafast. `gigabit` remains an internal
-// supplier bucket and must never render as a fourth public card.
-export const SPEED_BUCKETS: SpeedBucket[] = [...PUBLIC_SPEED_BUCKETS];
+// OCCTA's customer-facing catalogue has four speed bands. A band is published
+// only when the authoritative resolver can produce an exact, margin-safe price.
+export const SPEED_BUCKETS: SpeedBucket[] = ["essential", "superfast", "ultrafast", "gigabit"];
 export const PLAN_TERMS: PlanTerm[] = ["price_lock_24", "flex_30"];
 export const ROUTER_CHOICES: { option: RouterChoice; payment_type: RouterPayType }[] = [
   { option: "own", payment_type: "none" },
@@ -29,6 +28,17 @@ export const ROUTER_CHOICES: { option: RouterChoice; payment_type: RouterPayType
 export const ADDON_IDS: AddonId[] = ["priority_support", "static_ip", "digital_voice", "paper_billing"];
 /** Journey 2 only sells setup options with an exact, known price. */
 export const JOURNEY2_SETUP: SetupChoice = "remote";
+
+/** Customer-facing names are kept here so the internal supplier resolver does not
+ * decide presentation. */
+export function publicSpeedBucketLabel(b: SpeedBucket): string {
+  return ({
+    essential: "Essential Fibre",
+    superfast: "Superfast Fibre",
+    ultrafast: "Ultrafast Fibre",
+    gigabit: "Gigabit Fibre",
+  } as const)[b];
+}
 
 /**
  * Estimated line speeds shown against each speed bucket. These are estimates
@@ -187,8 +197,9 @@ function baseInput(
     setup_option: JOURNEY2_SETUP,
     addons: [] as AddonId[],
     customer_type,
-    // Journey 2 assumes availability for every published speed. No address
-    // speed cap is applied, so no "subject to confirmation" pricing appears.
+    // Journey 2 can show all published OCCTA bands, but the customer-facing UI
+    // makes clear that final address/network availability is still validated
+    // before provisioning. Exact price resolution remains fail-closed here.
   };
 }
 
@@ -274,7 +285,7 @@ export async function buildCatalogue(
       const est = speedEstimate(bucket);
       plans.push({
         speed_bucket: bucket,
-        label: speedBucketLabel(bucket),
+        label: publicSpeedBucketLabel(bucket),
         estimated_download_mbps: est.download,
         estimated_upload_mbps: est.upload,
         terms,
@@ -344,7 +355,7 @@ export async function buildCatalogue(
 }
 
 export function planNameFor(bucket: SpeedBucket, term: PlanTerm) {
-  return `${speedBucketLabel(bucket)} — ${planTermLabel(term)}`;
+  return `${publicSpeedBucketLabel(bucket)} — ${planTermLabel(term)}`;
 }
 
 export async function hashAnon(anonId: string) {

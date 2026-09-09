@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Gift, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Catalogue, type Journey2Session, type PlanTerm, type SpeedBucket } from "@/lib/journey2/client";
+import { clearPreferredSpeedBucket, getPreferredSpeedBucket } from "@/lib/journey2/prefill";
 
 export default function PlanStep({
   catalogue, session, saving, onSave, onBack,
@@ -12,7 +13,10 @@ export default function PlanStep({
   onSave: (payload: Record<string, unknown>) => void;
   onBack: () => void;
 }) {
-  const [bucket, setBucket] = useState<SpeedBucket | null>(session.speed_bucket ?? catalogue.plans[0]?.speed_bucket ?? null);
+  const preferred = getPreferredSpeedBucket();
+  const preferredIsAvailable = preferred && catalogue.plans.some((p) => p.speed_bucket === preferred);
+  const initialBucket = session.speed_bucket ?? (preferredIsAvailable ? preferred : catalogue.plans[0]?.speed_bucket) ?? null;
+  const [bucket, setBucket] = useState<SpeedBucket | null>(initialBucket);
   const [term, setTerm] = useState<PlanTerm>(session.plan_term ?? "price_lock_24");
 
   const plan = catalogue.plans.find((p) => p.speed_bucket === bucket) ?? null;
@@ -34,6 +38,12 @@ export default function PlanStep({
       }
     : null;
   const switch50 = session.campaign_code === "SWITCH50";
+
+  const savePlan = () => {
+    if (!bucket || !activeTerm) return;
+    clearPreferredSpeedBucket();
+    onSave({ speed_bucket: bucket, plan_term: activeTerm });
+  };
 
   return (
     <div className="border-4 border-foreground p-6 space-y-5">
@@ -151,7 +161,7 @@ export default function PlanStep({
         <Button
           type="button"
           disabled={saving || !bucket || !activeTerm || !priced}
-          onClick={() => bucket && activeTerm && onSave({ speed_bucket: bucket, plan_term: activeTerm })}
+          onClick={savePlan}
         >
           {saving ? "Saving…" : "Continue to router"}
         </Button>

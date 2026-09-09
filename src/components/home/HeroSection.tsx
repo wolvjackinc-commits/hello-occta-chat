@@ -7,6 +7,7 @@ import PostcodeChecker from "@/components/home/PostcodeChecker";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/AvailabilityContext";
 import { startAssignedJourney } from "@/lib/journey2/route";
+import { setPreferredSpeedBucket } from "@/lib/journey2/prefill";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 
 const HeroSection = () => {
@@ -38,6 +39,7 @@ const HeroSection = () => {
   const getSpeedLabel = (speed: number) => speed >= 1000 ? "1Gbps" : `${speed}Mbps`;
 
   const handleChoosePlan = (planId: string) => {
+    setPreferredSpeedBucket(planId);
     startAssignedJourney((path) => navigate(path));
   };
 
@@ -61,17 +63,14 @@ const HeroSection = () => {
         id: string; name: string; speed: number; speedLabel: string;
         price: string | number; isRecommended: boolean; isUpgrade: boolean;
       }[];
-    // Show ALL eligible plans (user can pick any to skip step 1 in /build-plan).
+    // Show all OCCTA bands returned by the plan-list service. Final address and
+    // supplier availability is explicitly validated later in the order flow.
     return cards;
   };
 
-  const inlineConfirmation = hasResult ? (
-    result.primaryTechnology === "FTTP"
-      ? "Full Fibre appears available at your address"
-      : result.available
-        ? "Broadband options found for your address"
-        : null
-  ) : null;
+  const inlineConfirmation = hasResult && selectedAddress
+    ? "Address selected — choose the OCCTA plan you're interested in"
+    : null;
 
   // Determine right panel state — addresses now render in the right panel
   // so customers don't need to scroll under the hero on small viewports.
@@ -202,7 +201,7 @@ const HeroSection = () => {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  Select the exact property first — plans will appear here in this same panel.
+                  Select the exact property first — OCCTA plan options will appear here in this same panel.
                 </p>
               </motion.div>
             )}
@@ -265,7 +264,7 @@ const HeroSection = () => {
               </motion.div>
             )}
 
-            {/* RESULT STATE — personalised plans stay in the same right-hand frame */}
+            {/* RESULT STATE — personalised plan list stays in the same right-hand frame */}
             {hasResult && (
               <motion.div
                 key="results-right"
@@ -277,7 +276,7 @@ const HeroSection = () => {
                 <div className="flex items-start justify-between mb-2 gap-4">
                   <div className="min-w-0">
                     <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                      Available at your address
+                      OCCTA plans for your address
                     </p>
                     {selectedAddress && (
                       <p className="text-xs text-muted-foreground truncate max-w-[360px]">
@@ -295,7 +294,7 @@ const HeroSection = () => {
 
                 <div className="flex items-center justify-between py-2 px-3 border-4 border-foreground bg-background mb-3">
                   <p className="font-display text-sm uppercase">
-                    Up to {getSpeedLabel(result.maxDownload)} available
+                    Speed bands shown up to {getSpeedLabel(result.maxDownload)}
                   </p>
                   <Wifi className="w-4 h-4 text-primary" />
                 </div>
@@ -355,8 +354,8 @@ const HeroSection = () => {
                   ))}
                 </div>
 
-                <p className="text-center text-[10px] text-muted-foreground pt-3">
-                  Estimated base prices shown now • addons update your estimate during the journey
+                <p className="text-center text-[10px] leading-relaxed text-muted-foreground pt-3">
+                  Prices shown are OCCTA plan prices. Final network/supplier availability, speed and technology are validated before provisioning. We won't substitute a different plan or price without your agreement.
                 </p>
               </motion.div>
             )}
@@ -374,7 +373,7 @@ const HeroSection = () => {
                   <div>
                     <p className="font-display uppercase text-sm tracking-wider">Broadband options available to view</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. We'll confirm the final availability, speed, setup and price before you order.
+                      We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. Final network/supplier availability is validated before provisioning and any different option requires your agreement.
                     </p>
                   </div>
                 </div>
@@ -411,20 +410,21 @@ const HeroSection = () => {
                   /month
                 </p>
                 <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-1 mb-1">
-                  *Subject to availability at your address
+                  *Plan and service availability varies by address
                 </p>
                 <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
-                  Price Lock 24 or Flex 30 • Final price confirmed before order
+                  Price Lock 24 or Flex 30 • Contractual price shown before acceptance
                 </p>
                 <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mb-3 sm:mb-4">
-                  Join customers switching away from price rises
+                  Choose the OCCTA speed band that fits you
                 </p>
 
                 <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
                   {[
-                    { name: "Essential", tagline: "Everyday browsing" },
-                    { name: "Superfast", tagline: "Streaming & busy homes" },
-                    { name: "Ultrafast", tagline: "Serious speed" },
+                    { name: "Essential", tagline: "Up to 80Mbps" },
+                    { name: "Superfast", tagline: "Up to 330Mbps" },
+                    { name: "Ultrafast", tagline: "Up to 550Mbps" },
+                    { name: "Gigabit", tagline: "Up to 1000Mbps" },
                   ].map(cat => (
                      <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/15 bg-background">
                        <span className="font-sans text-sm uppercase font-extrabold tracking-wide text-foreground min-w-[78px]">{cat.name}</span>
@@ -436,7 +436,7 @@ const HeroSection = () => {
                 <div className="space-y-1.5 sm:space-y-2.5 mb-3 sm:mb-4">
                   {[
                     "Full Fibre where available",
-                    "Works on the Openreach network",
+                    "Network and technology depend on your address",
                     "UK-based support when you need it",
                     "Installation costs (if any) shown in your Contract Summary",
                   ].map(line => (
@@ -449,7 +449,7 @@ const HeroSection = () => {
 
                 <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-[11px] sm:text-xs text-muted-foreground pt-2 border-t border-foreground/20">
                   <span>14-day cooling-off period</span>
-                  <span>Keep your number with Digital Voice</span>
+                  <span>Keep your number with Digital Voice where porting is available</span>
                   <span>No confusing mid-contract rises on Price Lock</span>
                 </div>
               </motion.div>

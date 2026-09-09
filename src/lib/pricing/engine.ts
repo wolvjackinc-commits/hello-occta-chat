@@ -6,12 +6,12 @@ import { FAIR_PRICING_DEFAULTS, PUBLIC_SPEED_BUCKETS } from './fairPricing';
 // ── Fair Pricing display map (Price Lock 24 / Flex 30) ──
 // This is the public source of truth for "from" prices on cards.
 // The server-side resolver remains authoritative for the final price.
-// Exactly three public bands — the internal `gigabit` supplier bucket sells
-// inside the public Ultrafast band and must never appear as a fourth card.
+// Four public bands: Essential, Superfast, Ultrafast and Gigabit.
 const FAIR_DISPLAY: Record<string, { lock24: number; flex30: number; speedLabel: string }> = {
   essential: { lock24: FAIR_PRICING_DEFAULTS.headline.essential.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.essential.flex30, speedLabel: 'Up to 80Mbps' },
   superfast: { lock24: FAIR_PRICING_DEFAULTS.headline.superfast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.superfast.flex30, speedLabel: 'Up to 330Mbps' },
-  ultrafast: { lock24: FAIR_PRICING_DEFAULTS.headline.ultrafast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.ultrafast.flex30, speedLabel: 'Up to 1000Mbps' },
+  ultrafast: { lock24: FAIR_PRICING_DEFAULTS.headline.ultrafast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.ultrafast.flex30, speedLabel: 'Up to 550Mbps' },
+  gigabit: { lock24: FAIR_PRICING_DEFAULTS.headline.gigabit.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.gigabit.flex30, speedLabel: 'Up to 1000Mbps' },
 };
 
 // ── Resolve cheapest eligible product for a broadband card ──

@@ -1,5 +1,7 @@
 import { journey2 } from "./client";
 
+const JOURNEY1_ROUTE = "/quote/start?interest=broadband";
+
 /**
  * Sends the visitor into whichever journey the server assigns them.
  *
@@ -15,9 +17,11 @@ export async function startAssignedJourney(
   try {
     const res = await journey2.start();
     if (res?.token) return navigate(`/order/${res.token}`);
-    // The server explicitly assigned Journey 1 (quote-led).
-    if (res?.redirect) return navigate(res.redirect);
-    if (res?.journey_version === "v1") return navigate("/order");
+    // Older server deployments returned /order for a v1 assignment, which
+    // points back to the assignment entry route and can loop forever. Treat any
+    // explicit v1 assignment as the quote-led journey instead.
+    if (res?.journey_version === "v1") return navigate(JOURNEY1_ROUTE);
+    if (res?.redirect && res.redirect !== "/order") return navigate(res.redirect);
     throw new Error(res?.message ?? "assignment_unavailable");
   } catch (e) {
     onError?.(

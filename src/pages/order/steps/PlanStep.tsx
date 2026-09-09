@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gift } from "lucide-react";
+import { Gift, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Catalogue, type Journey2Session, type PlanTerm, type SpeedBucket } from "@/lib/journey2/client";
 
@@ -40,8 +40,19 @@ export default function PlanStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Pick your speed</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Every price below is the exact price you'll pay, including VAT. No teaser rates and no mid-contract price rises.
+          The prices below are the OCCTA prices for the plan and term shown, including VAT. No teaser rates and no mid-contract price rises on Price Lock.
         </p>
+      </div>
+
+      <div className="border-2 border-foreground/30 bg-muted/30 p-4 text-xs leading-relaxed">
+        <div className="flex items-start gap-2">
+          <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+          <p>
+            <strong>Availability note:</strong> Plans shown are current OCCTA offers and may not all be available at every address.
+            Final availability, speed and network technology are subject to network and supplier validation for your installation address.
+            If your selected plan cannot be supplied, we’ll email you with the available options before provisioning. We won’t move you to a different plan or price without your agreement. If your selection is confirmed, your order continues as submitted.
+          </p>
+        </div>
       </div>
 
       {switch50 && (
@@ -87,9 +98,8 @@ export default function PlanStep({
 
       {est && (
         <p className="text-xs border-2 border-foreground p-3">
-          Estimated speeds for your line: up to {est.download} Mbps download and up to {est.upload} Mbps upload.
-          These are estimates, not guarantees, and they are shown on your Contract Summary and Contract Information
-          so you always have them in writing.
+          Estimated speeds for your selected band: up to {est.download} Mbps download and up to {est.upload} Mbps upload.
+          These are estimates, not guarantees. The service and speed information included in your Contract Summary and Contract Information forms part of what you review before accepting the agreement.
         </p>
       )}
 

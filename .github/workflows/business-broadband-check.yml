@@ -1,0 +1,65 @@
+name: Business Broadband Guardrail
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/business/**'
+      - 'src/components/business/**'
+      - 'src/pages/business/**'
+      - 'src/pages/admin/BusinessQuoteRequests.tsx'
+      - 'supabase/functions/submit-business-quote/**'
+      - 'supabase/functions/submit-business-lead/**'
+      - 'supabase/migrations/*business_quote*.sql'
+      - '.github/workflows/business-broadband-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/lib/business/**'
+      - 'src/components/business/**'
+      - 'src/pages/business/**'
+      - 'src/pages/admin/BusinessQuoteRequests.tsx'
+      - 'supabase/functions/submit-business-quote/**'
+      - 'supabase/functions/submit-business-lead/**'
+      - 'supabase/migrations/*business_quote*.sql'
+      - '.github/workflows/business-broadband-check.yml'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - name: Business catalogue regression guard
+        run: bunx vitest run src/lib/business/catalogue.test.ts
+      - name: Typecheck web application
+        run: bun run typecheck
+      - name: Production build
+        run: bun run build
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck business edge functions
+        run: DENO_NODE_MODULES_DIR=auto deno check supabase/functions/submit-business-quote/index.ts supabase/functions/submit-business-lead/index.ts
+
+  deploy-business-functions:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: oexgjmuvgdndizsufipe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Check deployment credential
+        run: test -n "$SUPABASE_ACCESS_TOKEN"
+      - name: Deploy business quote submission
+        run: supabase functions deploy submit-business-quote --project-ref "$PROJECT_REF"
+      - name: Deploy business lead submission
+        run: supabase functions deploy submit-business-lead --project-ref "$PROJECT_REF"

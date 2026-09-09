@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import { journey2 } from "@/lib/journey2/client";
 
+const JOURNEY1_ROUTE = "/quote/start?interest=broadband";
+
 /**
  * /order — journey entry point.
  *
@@ -31,7 +33,14 @@ export default function OrderStart() {
           navigate(`/order/${res.token}`, { replace: true });
           return;
         }
-        if (res?.redirect) {
+        // Older server versions can return /order for a v1 assignment. That is
+        // this same entry route, so redirect v1 explicitly to the quote-led flow
+        // rather than creating a self-redirect loop.
+        if (res?.journey_version === "v1") {
+          navigate(JOURNEY1_ROUTE, { replace: true });
+          return;
+        }
+        if (res?.redirect && res.redirect !== "/order") {
           navigate(res.redirect, { replace: true });
           return;
         }
@@ -60,8 +69,8 @@ export default function OrderStart() {
           <div className="border-4 border-foreground p-8 text-left">
             <h1 className="font-display uppercase text-2xl mb-3">Order OCCTA broadband online</h1>
             <p className="text-sm text-muted-foreground mb-4">
-              Check availability at your address, pick your speed and term, and complete your order in one go — exact prices
-              including VAT, clear contract terms, and Direct Debit set up before your order is placed.
+              Enter your service address, pick your speed and term, and complete your order in one go — exact prices
+              including VAT, clear contract terms, and Direct Debit set up before your order is placed. Final service availability is validated before provisioning.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild><a href="/broadband/flex">See broadband plans</a></Button>

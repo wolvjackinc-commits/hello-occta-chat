@@ -55,15 +55,18 @@ const BusinessContacts = () => {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(emptyForm(""));
   const [saving, setSaving] = useState(false);
+  // Viewer-role members are read-only (enforced by database policies too).
+  const [readOnly, setReadOnly] = useState(false);
 
   const load = async (u: any) => {
     // Membership → business_profile_id; fallback to own uid (owner-account)
     const { data: mem } = await supabase
       .from("business_users")
-      .select("business_profile_id")
+      .select("business_profile_id, role")
       .eq("user_id", u.id)
       .maybeSingle();
     const profileId = (mem as any)?.business_profile_id ?? u.id;
+    setReadOnly((mem as any)?.role === "viewer");
     setBpid(profileId);
     const { data } = await supabase
       .from("business_contacts")

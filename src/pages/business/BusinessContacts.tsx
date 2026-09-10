@@ -149,8 +149,11 @@ const BusinessContacts = () => {
             <h1 className="font-display text-4xl mb-2">Business contacts</h1>
             <p className="text-muted-foreground">Add named contacts and decide who receives invoices and service updates.</p>
           </div>
-          {user && (
+          {user && !readOnly && (
             <Button variant="hero" onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add contact</Button>
+          )}
+          {user && readOnly && (
+            <Badge variant="outline">View only access</Badge>
           )}
         </div>
 

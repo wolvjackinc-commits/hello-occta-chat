@@ -1,6 +1,17 @@
-import { corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import {
+  corsHeaders,
+  jsonResponse,
+  getServiceClient,
+  checkRateLimit,
+  getRequestIp,
+  sendTrackedCommunication,
+  brutalistEmailShell,
+  escapeHtml,
+  getAdminNotificationEmail,
+} from "../_shared/quoteHelpers.ts";
 
-// Vulnerable-support request. Auth required. Does NOT accept or store medical details.
+// Vulnerable-support request. Auth required. Does NOT accept medical details.
+// Emails deliberately exclude the customer's free-text support need.
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
@@ -25,9 +36,15 @@ Deno.serve(async (req) => {
   const svc = getServiceClient();
   const auth = req.headers.get("Authorization");
   let userId: string | null = null;
+  let registeredEmail: string | null = null;
+  let registeredName: string | null = null;
   if (auth?.startsWith("Bearer ")) {
     const { data } = await svc.auth.getUser(auth.replace("Bearer ", ""));
     userId = data?.user?.id ?? null;
+    registeredEmail = data?.user?.email?.trim().toLowerCase() ?? null;
+    registeredName = typeof data?.user?.user_metadata?.full_name === "string"
+      ? data.user.user_metadata.full_name.slice(0, 120)
+      : null;
   }
   if (!userId) return jsonResponse({ error: "auth_required" }, 401);
 
@@ -82,5 +99,52 @@ Deno.serve(async (req) => {
     _severity: "warning",
   });
 
-  return jsonResponse({ ok: true, ticket_id: ticket.id });
+  let customerEmailSent = false;
+  if (registeredEmail) {
+    try {
+      const customerSubject = "We've received your OCCTA support request";
+      const customerHtml = brutalistEmailShell(
+        "Support request received",
+        `<p>Hi ${escapeHtml(registeredName || "there")},</p><p>We've received your request for additional support and marked it for priority review.</p><p><strong>Preferred contact:</strong> ${escapeHtml(preferredContact || "not specified")}</p><p>For your privacy, this email does not repeat the details you entered. Our team can review them securely in your support ticket.</p>`,
+        { label: "Open support dashboard", url: "https://www.occta.co.uk/dashboard" },
+      );
+      const result = await sendTrackedCommunication(svc, {
+        template_name: "vulnerable_support_customer_acknowledgement",
+        recipient_email: registeredEmail,
+        subject: customerSubject,
+        html: customerHtml,
+        user_id: userId,
+        replyTo: "support@occta.co.uk",
+        metadata: { ticket_id: ticket.id, preferred_contact: preferredContact },
+      });
+      customerEmailSent = result.ok;
+      if (!result.ok) console.error("vulnerable support acknowledgement failed", result.error);
+    } catch (e) {
+      console.error("vulnerable support acknowledgement exception", (e as Error)?.message ?? String(e));
+    }
+  }
+
+  // Internal email carries routing information only. The free-text need remains
+  // in the authenticated support system and is not copied into email.
+  try {
+    const adminEmail = (Deno.env.get("VULNERABLE_SUPPORT_NOTIFY_EMAIL") || Deno.env.get("SUPPORT_NOTIFY_EMAIL") || getAdminNotificationEmail()).trim();
+    const internalSubject = "Priority support request received";
+    const internalHtml = brutalistEmailShell(
+      "Priority support request",
+      `<p>A vulnerable-support request has been received and requires priority review.</p><p><strong>Ticket ID:</strong> ${escapeHtml(ticket.id)}<br/><strong>Preferred contact:</strong> ${escapeHtml(preferredContact || "not specified")}</p><p>The customer's free-text request is intentionally omitted from email. Open the protected admin support queue to review it.</p>`,
+      { label: "Open admin support", url: "https://www.occta.co.uk/admin/support" },
+    );
+    const result = await sendTrackedCommunication(svc, {
+      template_name: "vulnerable_support_admin_notification",
+      recipient_email: adminEmail,
+      subject: internalSubject,
+      html: internalHtml,
+      metadata: { ticket_id: ticket.id, preferred_contact: preferredContact },
+    });
+    if (!result.ok) console.error("vulnerable support admin notification failed", result.error);
+  } catch (e) {
+    console.error("vulnerable support admin notification exception", (e as Error)?.message ?? String(e));
+  }
+
+  return jsonResponse({ ok: true, ticket_id: ticket.id, customer_email_sent: customerEmailSent });
 });

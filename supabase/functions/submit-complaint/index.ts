@@ -1,5 +1,16 @@
-import { corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
-import { sendResendEmail, brutalistEmailShell, escapeHtml, recordEmailCommunication } from "../_shared/quoteHelpers.ts";
+import {
+  corsHeaders,
+  jsonResponse,
+  getServiceClient,
+  checkRateLimit,
+  getRequestIp,
+  sendResendEmail,
+  brutalistEmailShell,
+  escapeHtml,
+  recordEmailCommunication,
+  sendTrackedCommunication,
+  getAdminNotificationEmail,
+} from "../_shared/quoteHelpers.ts";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
 Deno.serve(async (req) => {
@@ -13,6 +24,9 @@ Deno.serve(async (req) => {
   const email = String(body.contact_email ?? "").trim().toLowerCase().slice(0, 200) || null;
   const phone = String(body.contact_phone ?? "").trim().slice(0, 30) || null;
   if (summary.length < 5) return jsonResponse({ error: "summary_too_short" }, 400);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return jsonResponse({ error: "invalid_email" }, 400);
+  }
 
   const ip = getRequestIp(req) ?? "anon";
   const rlKey = email || ip;
@@ -29,7 +43,6 @@ Deno.serve(async (req) => {
     userId = data?.user?.id ?? null;
   }
 
-  // Generate reference
   const ref = `CMP-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${crypto.randomUUID().replace(/-/g,"").slice(0,6).toUpperCase()}`;
 
   const { data: complaint, error } = await svc.from("complaints").insert({
@@ -56,7 +69,6 @@ Deno.serve(async (req) => {
     visibility: "customer",
   });
 
-  // Draft acknowledgement letter (admin can review/send later)
   await svc.from("complaint_letters").insert({
     complaint_id: complaint.id,
     letter_type: "acknowledgement",
@@ -68,7 +80,6 @@ Deno.serve(async (req) => {
     status: "draft",
   });
 
-  // Create thread for ongoing comms
   await svc.from("communication_threads").insert({
     customer_id: userId,
     subject: `Complaint ${complaint.complaint_reference}`,
@@ -84,7 +95,7 @@ Deno.serve(async (req) => {
     _details: { complaint_id: complaint.id, reference: complaint.complaint_reference, category },
   });
 
-  // Send customer acknowledgement email (fail-soft).
+  let customerEmailSent = false;
   if (email) {
     try {
       let helpfulHtml = "";
@@ -93,12 +104,12 @@ Deno.serve(async (req) => {
       } catch (_e) {
         helpfulHtml = "";
       }
-      const ref = escapeHtml(complaint.complaint_reference);
-      const body = `
+      const safeRef = escapeHtml(complaint.complaint_reference);
+      const emailBody = `
         <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">Thanks for getting in touch — we've received your complaint and it's now logged with our team.</p>
         <div style="margin:16px 0;padding:14px 16px;border:2px solid #000;background:#fafafa;">
           <div style="font:700 10px/1 Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;color:#666;margin:0 0 6px 0;">Reference</div>
-          <div style="font:900 18px/1.2 Arial,Helvetica,sans-serif;color:#111;letter-spacing:0.04em;">${ref}</div>
+          <div style="font:900 18px/1.2 Arial,Helvetica,sans-serif;color:#111;letter-spacing:0.04em;">${safeRef}</div>
         </div>
         <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">A member of the team will review and get back to you within <strong>2 working days</strong>. Please keep this reference handy for any follow-up.</p>
         <p style="margin:0 0 12px 0;font-size:13px;line-height:1.6;color:#444;">If we can't resolve things within 6 weeks — or if we issue a deadlock letter sooner — you'll be able to refer your complaint to our Alternative Dispute Resolution (ADR) scheme, free of charge.</p>
@@ -106,7 +117,7 @@ Deno.serve(async (req) => {
       `;
       const html = brutalistEmailShell(
         `We've received your complaint`,
-        body,
+        emailBody,
         { label: "View your dashboard", url: "https://www.occta.co.uk/dashboard" },
       );
       const sendResult = await sendResendEmail({
@@ -115,6 +126,7 @@ Deno.serve(async (req) => {
         html,
         replyTo: "hello@occta.co.uk",
       });
+      customerEmailSent = sendResult.ok;
       await recordEmailCommunication(svc, {
         template_name: "complaint_ack",
         recipient_email: email,
@@ -127,10 +139,33 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Notify the complaints team without reproducing the complaint free text in
+  // email. Full content remains in the protected complaints system.
+  try {
+    const adminEmail = (Deno.env.get("COMPLAINTS_NOTIFY_EMAIL") || getAdminNotificationEmail()).trim();
+    const subjectLine = `New complaint ${complaint.complaint_reference}`;
+    const html = brutalistEmailShell(
+      "New complaint received",
+      `<p><strong>Reference:</strong> ${escapeHtml(complaint.complaint_reference)}<br/><strong>Category:</strong> ${escapeHtml(category)}</p><p>A new complaint has been logged. Open the complaints workspace to review the customer's full submission and begin the response workflow.</p>`,
+      { label: "Open complaints", url: "https://www.occta.co.uk/admin/complaints" },
+    );
+    const result = await sendTrackedCommunication(svc, {
+      template_name: "complaint_admin_notification",
+      recipient_email: adminEmail,
+      subject: subjectLine,
+      html,
+      metadata: { complaint_id: complaint.id, reference: complaint.complaint_reference, category },
+    });
+    if (!result.ok) console.error("[submit-complaint] admin notification failed", result.error);
+  } catch (e) {
+    console.error("[submit-complaint] admin notification exception", (e as Error)?.message ?? String(e));
+  }
+
   return jsonResponse({
     ok: true,
     complaint_id: complaint.id,
     reference: complaint.complaint_reference,
     six_week_adr_eligible_at: complaint.six_week_adr_eligible_at,
+    customer_email_sent: customerEmailSent,
   });
 });

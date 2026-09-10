@@ -53,24 +53,45 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Failed to save lead" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // The previous implementation called send-email with `internal_alert`, a
-    // type send-email does not support. Use the supported custom_admin path.
+    // Internal sales notification using a supported send-email type and tracked
+    // communications logging.
     try {
       const subject = `New business lead — ${lead.company_name}`;
       const { error: notifyError } = await supabase.functions.invoke("send-email", {
         body: {
           type: "custom_admin",
           to: "business@occta.co.uk",
+          logToCommunications: true,
           data: {
             subject,
             title: "New business lead",
             greeting: "Business team",
-            message_html: `<p><strong>Company:</strong> ${escapeHtml(lead.company_name)}</p><p><strong>Contact:</strong> ${escapeHtml(lead.contact_name)} — ${escapeHtml(lead.email)}${lead.phone ? " · " + escapeHtml(lead.phone) : ""}</p><p><strong>Postcode:</strong> ${escapeHtml(lead.postcode ?? lead.site_postcode ?? "—")} · <strong>Team:</strong> ${escapeHtml(lead.team_size ?? "—")} · <strong>Interest:</strong> ${escapeHtml(lead.interest ?? "—")}</p><p><strong>Care preference:</strong> ${escapeHtml(lead.sla_preference ?? "standard")}</p>${lead.billing_contact_name || lead.billing_contact_email ? `<p><strong>Billing contact:</strong> ${escapeHtml(lead.billing_contact_name)} — ${escapeHtml(lead.billing_contact_email)}</p>` : ""}${lead.secondary_contact_name ? `<p><strong>Secondary contact:</strong> ${escapeHtml(lead.secondary_contact_name)} — ${escapeHtml(lead.secondary_contact_email)}</p>` : ""}${lead.site_address_line1 ? `<p><strong>Site:</strong> ${escapeHtml(lead.site_address_line1)}${lead.site_address_line2 ? ", " + escapeHtml(lead.site_address_line2) : ""}, ${escapeHtml(lead.site_city)} ${escapeHtml(lead.site_postcode)}</p>` : ""}<p><strong>Message:</strong><br/>${escapeHtml(lead.message ?? "—").replace(/\n/g, "<br/>")}</p><p><strong>Source:</strong> ${escapeHtml(lead.source ?? "—")}</p>`,
+            message_html: `<p><strong>Company:</strong> ${escapeHtml(lead.company_name)}</p><p><strong>Contact:</strong> ${escapeHtml(lead.contact_name)} — ${escapeHtml(lead.email)}${lead.phone ? " · " + escapeHtml(lead.phone) : ""}</p><p><strong>Postcode:</strong> ${escapeHtml(lead.postcode ?? lead.site_postcode ?? "—")} · <strong>Team:</strong> ${escapeHtml(lead.team_size ?? "—")} · <strong>Interest:</strong> ${escapeHtml(lead.interest ?? "—")}</p><p><strong>Care preference:</strong> ${escapeHtml(lead.sla_preference ?? "standard")}</p>${lead.billing_contact_name || lead.billing_contact_email ? `<p><strong>Billing contact:</strong> ${escapeHtml(lead.billing_contact_name)} — ${escapeHtml(lead.billing_contact_email)}</p>` : ""}${lead.secondary_contact_name ? `<p><strong>Secondary contact:</strong> ${escapeHtml(lead.secondary_contact_name)} — ${escapeHtml(lead.secondary_contact_email)}</p>` : ""}${lead.site_address_line1 ? `<p><strong>Site:</strong> ${escapeHtml(lead.site_address_line1)}${lead.site_address_line2 ? ", " + escapeHtml(lead.site_address_line2) : ""}, ${escapeHtml(lead.site_city)} ${escapeHtml(lead.site_postcode)}</p>` : ""}<p><strong>Message:</strong><br/>${escapeHtml(lead.message ?? "—").replace(/\n/g, "<br/>")}</p><p><strong>Source:</strong> ${escapeHtml(lead.source ?? "—")}</p><p style="color:#666;font-size:12px">Lead ID: ${escapeHtml(data.id)}</p>`,
           },
         },
       });
       if (notifyError) console.error("business lead notification failed", notifyError);
     } catch (e) { console.error("business lead notification exception", e); }
+
+    // Always acknowledge the customer because this form requires an email.
+    // This is explicitly receipt-only and cannot be mistaken for an order.
+    try {
+      const subject = "We received your OCCTA business enquiry";
+      const { error: ackError } = await supabase.functions.invoke("send-email", {
+        body: {
+          type: "custom_admin",
+          to: lead.email,
+          logToCommunications: true,
+          data: {
+            subject,
+            title: "Business enquiry received",
+            greeting: `Hi ${lead.contact_name}`,
+            message_html: `<p>Thanks for contacting OCCTA on behalf of <strong>${escapeHtml(lead.company_name)}</strong>.</p><p>We've received your business enquiry and our team will review the service, site and care requirements you submitted.</p><p><strong>This acknowledgement is not an order, contract or confirmation of service availability.</strong> We will confirm the applicable plan, pricing and terms before anything proceeds.</p>`,
+          },
+        },
+      });
+      if (ackError) console.error("business lead acknowledgement failed", ackError);
+    } catch (e) { console.error("business lead acknowledgement exception", e); }
 
     return new Response(JSON.stringify({ id: data.id, ok: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {

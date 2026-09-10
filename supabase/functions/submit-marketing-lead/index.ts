@@ -1,6 +1,6 @@
 // Public endpoint for the LeadCaptureWidget.
 // Validates payload, inserts into public.marketing_leads with service-role,
-// and fires an internal notification email to the sales inbox.
+// and sends tracked internal/customer email notifications.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 const cors = {
@@ -72,28 +72,59 @@ Deno.serve(async (req) => {
     return bad("Could not save your enquiry. Please try again.", 500);
   }
 
-  // Fire-and-forget internal notification. Failure here must not fail the lead.
+  // Internal notification. The old payload omitted send-email's required
+  // `type`/`data` contract and was rejected with "Unknown email type".
   try {
-    await supabase.functions.invoke("send-email", {
+    const subject = `New ${interest} lead — ${name} (${postcode})`;
+    const { error: notifyError } = await supabase.functions.invoke("send-email", {
       body: {
+        type: "custom_admin",
         to: "sales@occta.co.uk",
-        subject: `New ${interest} lead — ${name} (${postcode})`,
-        html: `
-          <h2>New lead via ${source ?? "web"}</h2>
-          <p><strong>Name:</strong> ${escapeHtml(name)}<br/>
-          <strong>Postcode:</strong> ${escapeHtml(postcode)}<br/>
-          <strong>Interest:</strong> ${escapeHtml(interest)}<br/>
-          <strong>Email:</strong> ${escapeHtml(email ?? "—")}<br/>
-          <strong>Phone:</strong> ${escapeHtml(phone ?? "—")}<br/>
-          <strong>Page:</strong> ${escapeHtml(pagePath ?? "—")}</p>
-          ${message ? `<p><strong>Message:</strong><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}</p>` : ""}
-          <p style="color:#666;font-size:12px">Lead ID: ${data.id}</p>
-        `,
-        internal: true,
+        logToCommunications: true,
+        data: {
+          subject,
+          title: "New website enquiry",
+          greeting: "Sales team",
+          message_html: `
+            <p><strong>Name:</strong> ${escapeHtml(name)}<br/>
+            <strong>Postcode:</strong> ${escapeHtml(postcode)}<br/>
+            <strong>Interest:</strong> ${escapeHtml(interest)}<br/>
+            <strong>Email:</strong> ${escapeHtml(email ?? "—")}<br/>
+            <strong>Phone:</strong> ${escapeHtml(phone ?? "—")}<br/>
+            <strong>Page:</strong> ${escapeHtml(pagePath ?? "—")}</p>
+            ${message ? `<p><strong>Message:</strong><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}</p>` : ""}
+            <p style="color:#666;font-size:12px">Lead ID: ${escapeHtml(data.id)}</p>
+          `,
+        },
       },
     });
+    if (notifyError) console.error("lead notification failed", notifyError);
   } catch (err) {
-    console.error("lead notification failed", err);
+    console.error("lead notification exception", err);
+  }
+
+  // If the visitor supplied an email address, confirm receipt. This is
+  // transactional acknowledgement only; it does not imply an order/contract.
+  if (email) {
+    try {
+      const subject = "We received your OCCTA enquiry";
+      const { error: ackError } = await supabase.functions.invoke("send-email", {
+        body: {
+          type: "custom_admin",
+          to: email,
+          logToCommunications: true,
+          data: {
+            subject,
+            title: "Enquiry received",
+            greeting: `Hi ${name}`,
+            message_html: `<p>Thanks for contacting OCCTA about <strong>${escapeHtml(interest)}</strong>.</p><p>We've received your enquiry for <strong>${escapeHtml(postcode)}</strong> and our team will review it. If we need any more information, we'll contact you using the details you provided.</p><p>This message confirms receipt of your enquiry only; it is not an order, contract or confirmation of service availability.</p>`,
+          },
+        },
+      });
+      if (ackError) console.error("lead acknowledgement failed", ackError);
+    } catch (err) {
+      console.error("lead acknowledgement exception", err);
+    }
   }
 
   return new Response(JSON.stringify({ ok: true, id: data.id }), {

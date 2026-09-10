@@ -55,15 +55,18 @@ const BusinessContacts = () => {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(emptyForm(""));
   const [saving, setSaving] = useState(false);
+  // Viewer-role members are read-only (enforced by database policies too).
+  const [readOnly, setReadOnly] = useState(false);
 
   const load = async (u: any) => {
     // Membership → business_profile_id; fallback to own uid (owner-account)
     const { data: mem } = await supabase
       .from("business_users")
-      .select("business_profile_id")
+      .select("business_profile_id, role")
       .eq("user_id", u.id)
       .maybeSingle();
     const profileId = (mem as any)?.business_profile_id ?? u.id;
+    setReadOnly((mem as any)?.role === "viewer");
     setBpid(profileId);
     const { data } = await supabase
       .from("business_contacts")
@@ -146,8 +149,11 @@ const BusinessContacts = () => {
             <h1 className="font-display text-4xl mb-2">Business contacts</h1>
             <p className="text-muted-foreground">Add named contacts and decide who receives invoices and service updates.</p>
           </div>
-          {user && (
+          {user && !readOnly && (
             <Button variant="hero" onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add contact</Button>
+          )}
+          {user && readOnly && (
+            <Badge variant="outline">View only access</Badge>
           )}
         </div>
 
@@ -165,8 +171,14 @@ const BusinessContacts = () => {
         {user && !loading && rows.length === 0 && (
           <div className="border-4 border-foreground bg-secondary p-10 shadow-brutal text-center">
             <p className="font-display text-lg mb-2">No contacts yet</p>
-            <p className="text-muted-foreground mb-4">Add your primary contact and a dedicated billing contact for cleaner comms.</p>
-            <Button variant="hero" onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add your first contact</Button>
+            {readOnly ? (
+              <p className="text-muted-foreground">Your access is view only. Ask an account owner to add contacts.</p>
+            ) : (
+              <>
+                <p className="text-muted-foreground mb-4">Add your primary contact and a dedicated billing contact for cleaner comms.</p>
+                <Button variant="hero" onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add your first contact</Button>
+              </>
+            )}
           </div>
         )}
 
@@ -187,10 +199,12 @@ const BusinessContacts = () => {
                     {c.phone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" /> {c.phone}</span>}
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button size="sm" variant="outline" onClick={() => openEdit(c)}><Pencil className="w-3 h-3" /></Button>
-                  <Button size="sm" variant="outline" onClick={() => remove(c)}><Trash2 className="w-3 h-3" /></Button>
-                </div>
+                {!readOnly && (
+                  <div className="flex gap-2 shrink-0">
+                    <Button size="sm" variant="outline" onClick={() => openEdit(c)}><Pencil className="w-3 h-3" /></Button>
+                    <Button size="sm" variant="outline" onClick={() => remove(c)}><Trash2 className="w-3 h-3" /></Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

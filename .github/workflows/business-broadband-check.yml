@@ -53,13 +53,33 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       PROJECT_REF: oexgjmuvgdndizsufipe
     steps:
+      - name: Check deployment credential
+        id: credential
+        shell: bash
+        run: |
+          if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SUPABASE_ACCESS_TOKEN is not configured. Business edge-function deployment is skipped; verification still passed. Configure the repository secret to enable automatic GitHub deployment."
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.credential.outputs.available == 'true'
+
       - uses: supabase/setup-cli@v1
+        if: steps.credential.outputs.available == 'true'
         with:
           version: latest
-      - name: Check deployment credential
-        run: test -n "$SUPABASE_ACCESS_TOKEN"
+
       - name: Deploy business quote submission
+        if: steps.credential.outputs.available == 'true'
         run: supabase functions deploy submit-business-quote --project-ref "$PROJECT_REF"
+
       - name: Deploy business lead submission
+        if: steps.credential.outputs.available == 'true'
         run: supabase functions deploy submit-business-lead --project-ref "$PROJECT_REF"
+
+      - name: Record deployment skip
+        if: steps.credential.outputs.available != 'true'
+        run: echo "Deployment intentionally skipped because the repository deployment credential is absent."

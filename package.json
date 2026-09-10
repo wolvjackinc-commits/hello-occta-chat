@@ -124,5 +124,8 @@
   },
   "overrides": {
     "zod": "3.25.76"
+  },
+  "resolutions": {
+    "zod": "3.25.76"
   }
 }

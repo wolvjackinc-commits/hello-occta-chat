@@ -171,8 +171,14 @@ const BusinessContacts = () => {
         {user && !loading && rows.length === 0 && (
           <div className="border-4 border-foreground bg-secondary p-10 shadow-brutal text-center">
             <p className="font-display text-lg mb-2">No contacts yet</p>
-            <p className="text-muted-foreground mb-4">Add your primary contact and a dedicated billing contact for cleaner comms.</p>
-            <Button variant="hero" onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add your first contact</Button>
+            {readOnly ? (
+              <p className="text-muted-foreground">Your access is view only. Ask an account owner to add contacts.</p>
+            ) : (
+              <>
+                <p className="text-muted-foreground mb-4">Add your primary contact and a dedicated billing contact for cleaner comms.</p>
+                <Button variant="hero" onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add your first contact</Button>
+              </>
+            )}
           </div>
         )}
 
@@ -193,10 +199,12 @@ const BusinessContacts = () => {
                     {c.phone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" /> {c.phone}</span>}
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button size="sm" variant="outline" onClick={() => openEdit(c)}><Pencil className="w-3 h-3" /></Button>
-                  <Button size="sm" variant="outline" onClick={() => remove(c)}><Trash2 className="w-3 h-3" /></Button>
-                </div>
+                {!readOnly && (
+                  <div className="flex gap-2 shrink-0">
+                    <Button size="sm" variant="outline" onClick={() => openEdit(c)}><Pencil className="w-3 h-3" /></Button>
+                    <Button size="sm" variant="outline" onClick={() => remove(c)}><Trash2 className="w-3 h-3" /></Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

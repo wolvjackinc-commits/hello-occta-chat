@@ -701,6 +701,14 @@ serve(async (req) => {
         // Generate mandate reference
         const mandateRef = `DD-${request.account_number || 'OCC'}-${Date.now().toString(36).toUpperCase()}`;
 
+        // Bank details are encrypted at rest (AES-256-GCM) — no plaintext
+        // sort code / account number is ever written to dd_mandates.
+        const encBank = await encryptJson({
+          account_number: String(mandateData.accountNumber).replace(/\s+/g, ''),
+          sort_code: String(mandateData.sortCode).replace(/[^0-9]/g, ''),
+          account_holder_name: mandateData.accountHolderName ?? null,
+        });
+
         // Create DD mandate record with status 'pending' (NOT 'active' until provider/admin verifies)
         const { data: mandate, error: mandateError } = await supabase
           .from('dd_mandates')
@@ -711,8 +719,13 @@ serve(async (req) => {
             bank_last4: mandateData.accountNumber.slice(-4),
             account_holder: mandateData.accountHolderName,
             account_holder_name: mandateData.accountHolderName,
-            sort_code: mandateData.sortCode,
-            account_number_full: mandateData.accountNumber,
+            bank_details_ciphertext: encBank.ciphertext_hex,
+            enc_nonce: encBank.nonce_hex,
+            enc_key_id: encBank.key_id ?? DD_ENC_KEY_ID,
+            enc_alg: 'AES-256-GCM',
+            masked_account_last4: String(mandateData.accountNumber).slice(-4),
+            masked_sort_last2: String(mandateData.sortCode).replace(/[^0-9]/g, '').slice(-2),
+            plaintext_purged_at: new Date().toISOString(),
             billing_address: mandateData.billingAddress,
             consent_timestamp: new Date().toISOString(),
             consent_ip: clientIp,

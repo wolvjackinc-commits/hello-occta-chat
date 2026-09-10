@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
-import { decryptJson } from '../_shared/ddCrypto.ts';
+import { decryptJson, encryptJson, DD_ENC_KEY_ID } from '../_shared/ddCrypto.ts';
 
 // Append helpful KB links to an email HTML string (fail-soft).
 async function withHelpfulLinks(supabase: any, html: string, key: string): Promise<string> {

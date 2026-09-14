@@ -1,3 +1,4 @@
+import { comparisonTerm, planSavings } from "@/lib/journey2/conversion";
 import { useState } from "react";
 import { Gift, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ export default function PlanStep({
 
   const flex = plan?.terms.flex_30?.monthly_incl_vat;
   const lock = plan?.terms.price_lock_24?.monthly_incl_vat;
-  const saving24 = flex && lock ? Math.round((flex - lock) * 24 * 100) / 100 : null;
+  const savings = planSavings(flex, lock);
   const est = plan
     ? {
         download: plan.estimated_download_mbps ?? SPEED_ESTIMATES[plan.speed_bucket]?.download ?? 0,
@@ -76,7 +77,8 @@ export default function PlanStep({
         <legend className="font-display uppercase text-xs tracking-widest mb-2">Speed</legend>
         {catalogue.plans.map((p) => {
           const selected = p.speed_bucket === bucket;
-          const cheapest = Math.min(...Object.values(p.terms).map((t) => t!.monthly_incl_vat));
+          const shownTerm = comparisonTerm(p, term);
+          const shownPrice = shownTerm ? p.terms[shownTerm]?.monthly_incl_vat : undefined;
           const down = p.estimated_download_mbps ?? SPEED_ESTIMATES[p.speed_bucket]?.download ?? 0;
           const up = p.estimated_upload_mbps ?? SPEED_ESTIMATES[p.speed_bucket]?.upload ?? 0;
           const rewardPlan = switch50 && p.speed_bucket === "essential";
@@ -98,8 +100,8 @@ export default function PlanStep({
                 </span>
               </span>
               <span className="whitespace-nowrap pl-7 text-left sm:pl-0 sm:text-right">
-                <span className="block font-bold">{money(cheapest)}<span className="text-xs font-normal">/mo</span></span>
-                <span className="block text-[11px] text-muted-foreground">incl. VAT</span>
+                <span className="block font-bold">{shownPrice == null ? "Unavailable" : money(shownPrice)}<span className="text-xs font-normal">/mo</span></span>
+                <span className="block text-[11px] text-muted-foreground">incl. VAT · {shownTerm === "flex_30" ? "Flex 30" : "Price Lock 24"}</span>
               </span>
             </label>
           );
@@ -142,12 +144,20 @@ export default function PlanStep({
               </label>
             );
           })}
-          {saving24 !== null && saving24 > 0 && (
+          {savings && (
             <p className="text-xs border-2 border-foreground p-3">
-              Price Lock 24 saves you {money(saving24)} over 24 months compared with Flex 30, in exchange for a 24-month commitment.
+              Price Lock 24 is {money(savings.monthly)} less per month — {money(savings.over24Months)} over 24 months at today’s Flex 30 price, in exchange for a 24-month commitment. This comparison excludes router charges, extras and cashback; Flex 30 prices may change.
             </p>
           )}
         </fieldset>
+      )}
+
+      {priced && (
+        <div className="border-2 border-foreground p-4 text-sm" aria-live="polite">
+          <p className="font-semibold">Selected broadband: {money(priced.monthly_incl_vat)}/month including VAT</p>
+          <p className="mt-1">{catalogue.setup ? `${catalogue.setup.label}: ${money(catalogue.setup.one_off)} one-off.` : "Setup charge confirmed in your order summary."}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Router not included. Choose your own compatible router or a paid option next. Optional extras are shown separately before you confirm.</p>
+        </div>
       )}
 
       {catalogue.plans.length === 0 && (
@@ -164,7 +174,7 @@ export default function PlanStep({
           onClick={savePlan}
           className="w-full sm:w-auto"
         >
-          {saving ? "Saving…" : "Continue to router"}
+          {saving ? "Saving…" : "Choose router for this plan"}
         </Button>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { oneOffTotal } from "@/lib/journey2/conversion";
 import { Gift, Info } from "lucide-react";
 import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Journey2Session } from "@/lib/journey2/client";
 
@@ -5,12 +6,12 @@ import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Journey2Session } from "@
  * Live order summary. Every charge comes from the server-resolved price
  * snapshot. Promotional cash is shown separately and never netted off price.
  */
-export default function OrderSummaryCard({ session }: { session: Journey2Session }) {
+export default function OrderSummaryCard({ session, embedded = false }: { session: Journey2Session; embedded?: boolean }) {
   const p = session.price_snapshot;
   const campaign = session.campaign_snapshot;
   if (!p) {
     return (
-      <aside className="border-4 border-foreground p-5">
+      <aside id={embedded ? undefined : "order-summary"} tabIndex={-1} className="border-4 border-foreground p-5">
         <h2 className="font-display uppercase text-sm tracking-widest mb-2">Your order</h2>
         <p className="text-sm text-muted-foreground">Choose a plan and your exact price appears here — no estimates.</p>
         {session.campaign_code === "SWITCH50" && (
@@ -23,11 +24,12 @@ export default function OrderSummaryCard({ session }: { session: Journey2Session
     );
   }
   const addons = p.addons ?? [];
-  const oneOff = (p.setup?.oneOff ?? 0) + (p.router?.oneOff ?? 0);
+  const oneOff = oneOffTotal(p);
   const est = SPEED_ESTIMATES[p.speed_bucket];
   return (
-    <aside className="border-4 border-foreground p-5">
-      <h2 className="font-display uppercase text-sm tracking-widest mb-3">Your order</h2>
+    <aside id={embedded ? undefined : "order-summary"} tabIndex={-1} className="border-4 border-foreground p-5">
+      <h2 className="font-display uppercase text-sm tracking-widest mb-3">Your saved order</h2>
+      <p className="mb-3 text-xs text-muted-foreground">Includes choices saved with Continue. Review any changes before accepting your contract.</p>
 
       {campaign?.code === "SWITCH50" && campaign.eligible && (
         <div className="mb-4 border-4 border-primary bg-primary/10 p-4">
@@ -67,7 +69,7 @@ export default function OrderSummaryCard({ session }: { session: Journey2Session
         {p.router && (
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Router</dt>
-            <dd className="text-right font-medium">{p.router.label}</dd>
+            <dd className="text-right font-medium">{p.router.label}<span className="block text-xs">{money(p.router.monthly)}/month · {money(p.router.oneOff)} one-off</span></dd>
           </div>
         )}
         {addons.map((a) => (

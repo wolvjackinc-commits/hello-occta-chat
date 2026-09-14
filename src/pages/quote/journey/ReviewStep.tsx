@@ -31,12 +31,14 @@ export default function ReviewStep({
   journey,
   paymentMethod,
   onSubmitted,
+  orderSummary,
 }: {
   token: string;
   quote: any;
   journey: any;
   paymentMethod: any | null;
   onSubmitted: () => void;
+  orderSummary?: React.ReactNode;
 }) {
   const { toast } = useToast();
   const [agreed, setAgreed] = useState(false);
@@ -94,6 +96,8 @@ export default function ReviewStep({
         <Row label="Service postcode" value={addressLine || quote?.service_postcode} />
         <Row label="Customer" value={quote?.customer_name} />
       </Section>
+
+      {orderSummary}
 
       <Section title="Agreement">
         <Row label="Contract accepted" value={formatGB(journey?.contract_accepted_at)} />

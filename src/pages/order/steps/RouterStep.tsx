@@ -1,3 +1,4 @@
+import { oneOffTotal } from "@/lib/journey2/conversion";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { money, type Catalogue, type Journey2Session } from "@/lib/journey2/client";
@@ -73,6 +74,14 @@ export default function RouterStep({
           );
         })}
       </fieldset>
+
+      {chosen && session.price_snapshot && (
+        <div className="border-2 border-foreground p-3 text-sm" aria-live="polite">
+          <p className="font-semibold">With this router: {money(session.price_snapshot.monthly_total_incl_vat - (session.price_snapshot.router?.monthly ?? 0) + chosen.monthly)}/month</p>
+          <p>{money(oneOffTotal(session.price_snapshot) - (session.price_snapshot.router?.oneOff ?? 0) + chosen.one_off)} one-off in total · includes VAT</p>
+          <p className="mt-1 text-xs text-muted-foreground">Includes your saved plan and extras. Confirmed when you continue.</p>
+        </div>
+      )}
 
       <div className="grid gap-3 sm:flex sm:flex-wrap">
         <Button type="button" variant="outline" onClick={onBack} className="w-full sm:w-auto">Back</Button>

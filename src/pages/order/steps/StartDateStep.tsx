@@ -62,7 +62,7 @@ export default function StartDateStep({
   };
 
   return (
-    <form onSubmit={submit} className="border-4 border-foreground p-6 space-y-4">
+    <form onSubmit={submit} className="border-4 border-foreground p-4 sm:p-6 space-y-4">
       <div>
         <h1 className="font-display uppercase text-2xl">Preferred start date</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -103,7 +103,7 @@ export default function StartDateStep({
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid gap-3 sm:flex sm:flex-wrap">
         <Button type="button" variant="outline" onClick={onBack}>Back</Button>
         <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Continue to billing"}</Button>
       </div>

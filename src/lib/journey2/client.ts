@@ -107,6 +107,7 @@ export type Journey2Session = {
   checkout_session_id: string | null;
   quote_id: string | null;
   order_id: string | null;
+  utm_snapshot?: { source_type?: string };
   expires_at: string;
   completed_at: string | null;
 };

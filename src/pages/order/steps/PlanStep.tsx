@@ -55,17 +55,6 @@ export default function PlanStep({
         </p>
       </div>
 
-      <div className="border-2 border-foreground/30 bg-muted/30 p-4 text-xs leading-relaxed">
-        <div className="flex items-start gap-2">
-          <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
-          <p>
-            <strong>Availability note:</strong> Plans shown are current OCCTA offers and may not all be available at every address.
-            Final availability, speed and network technology are subject to network and supplier validation for your installation address.
-            If your selected plan cannot be supplied, we’ll email you with the available options before provisioning. We won’t move you to a different plan or price without your agreement. If your selection is confirmed, your order continues as submitted.
-          </p>
-        </div>
-      </div>
-
       {switch50 && (
         <div className="border-4 border-primary bg-primary/10 p-4 text-sm">
           <div className="flex items-center gap-2 font-display uppercase"><Gift className="h-4 w-4" /> Your SWITCH50 offer</div>
@@ -165,6 +154,17 @@ export default function PlanStep({
           We can't show exact prices online right now. Call 0800 260 6626 or email hello@occta.co.uk and we'll price your order with you.
         </p>
       )}
+
+      <div className="border-2 border-foreground/30 bg-muted/30 p-4 text-xs leading-relaxed">
+        <div className="flex items-start gap-2">
+          <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+          <p>
+            <strong>Availability note:</strong> Plans shown are current OCCTA offers and may not all be available at every address.
+            Final availability, speed and network technology are subject to network and supplier validation for your installation address.
+            If your selected plan cannot be supplied, we’ll email you with the available options before provisioning. We won’t move you to a different plan or price without your agreement. If your selection is confirmed, your order continues as submitted.
+          </p>
+        </div>
+      </div>
 
       <div className="grid gap-3 sm:flex sm:flex-wrap">
         <Button type="button" variant="outline" onClick={onBack} className="w-full sm:w-auto">Back</Button>

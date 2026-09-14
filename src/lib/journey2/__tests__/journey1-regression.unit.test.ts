@@ -10,7 +10,10 @@ import { startAssignedJourney } from "../route";
 const invoke = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
 
 describe("[unit, mocked] Journey 1 regression", () => {
-  beforeEach(() => invoke.mockReset());
+  beforeEach(() => {
+    invoke.mockReset();
+    localStorage.clear();
+  });
 
   it("sends a v1-assigned visitor to the quote-led broadband journey", async () => {
     invoke.mockResolvedValue({ data: { ok: true, journey_version: "v1", redirect: "/order" }, error: null });
@@ -33,5 +36,29 @@ describe("[unit, mocked] Journey 1 regression", () => {
     await startAssignedJourney(navigate, onError);
     expect(navigate).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalled();
+  });
+
+  it("starts a fresh Journey 2 session when a resumed browser session has expired", async () => {
+    localStorage.setItem("occta_j2_anon_id", "old-browser-identity");
+    invoke
+      .mockResolvedValueOnce({
+        data: { ok: true, journey_version: "v2", token: "expired-token-123456", resumed: true },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: { error: "session_expired" },
+        error: { message: "Edge Function returned a non-2xx status code" },
+      })
+      .mockResolvedValueOnce({
+        data: { ok: true, journey_version: "v2", token: "fresh-token-12345678", resumed: false },
+        error: null,
+      });
+
+    const navigate = vi.fn();
+    await startAssignedJourney(navigate);
+
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith("/order/fresh-token-12345678");
+    expect(localStorage.getItem("occta_j2_anon_id")).not.toBe("old-browser-identity");
   });
 });

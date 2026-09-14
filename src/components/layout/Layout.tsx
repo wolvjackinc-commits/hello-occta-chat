@@ -30,7 +30,7 @@ function CheckoutHeader() {
         </Link>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-4">
-          <div className="hidden items-center gap-1.5 text-xs font-medium text-muted-foreground xs:flex sm:text-sm">
+          <div className="hidden items-center gap-1.5 text-sm font-medium text-muted-foreground sm:flex">
             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
             <span>Secure order</span>
           </div>
@@ -73,11 +73,11 @@ const Layout = ({ children }: LayoutProps) => {
         </Suspense>
       )}
 
-      {!isCheckout && (chatOpen ? (
+      {chatOpen ? (
         <Suspense fallback={null}>
           <OcctaCompanion initialOpen onClose={() => setChatOpen(false)} />
         </Suspense>
-      ) : (
+      ) : !isCheckout ? (
         <button
           onClick={openChat}
           className="fixed right-4 bottom-4 z-[9999] rounded-full bg-primary text-primary-foreground p-3 shadow-lg hover:opacity-90 transition-opacity"
@@ -85,7 +85,7 @@ const Layout = ({ children }: LayoutProps) => {
         >
           <MessageCircle className="h-6 w-6" />
         </button>
-      ))}
+      ) : null}
     </div>
   );
 };

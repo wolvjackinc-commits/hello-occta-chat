@@ -66,7 +66,7 @@ export default function BillingStep({
   };
 
   return (
-    <form onSubmit={submit} className="border-4 border-foreground p-6 space-y-5">
+    <form onSubmit={submit} className="border-4 border-foreground p-4 sm:p-6 space-y-5">
       <div>
         <h1 className="font-display uppercase text-2xl">Billing and Direct Debit</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -161,7 +161,7 @@ export default function BillingStep({
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid gap-3 sm:flex sm:flex-wrap">
         <Button type="button" variant="outline" onClick={onBack}>Back</Button>
         <Button type="submit" disabled={saving}>{saving ? "Saving securely…" : "Continue to your contract"}</Button>
       </div>

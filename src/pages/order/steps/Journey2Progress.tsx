@@ -44,6 +44,7 @@ export default function Journey2Progress({ current }: { current: string }) {
       >
         <div className="h-full bg-foreground transition-all" style={{ width: `${pct}%` }} />
       </div>
+      <p className="mt-2 text-xs text-muted-foreground">{canonical === "complete" ? "Order complete" : idx === 0 ? "First your address, then your plan. Review everything before placing your order." : idx < 4 ? "Your completed steps are saved. Contract and final review come next." : "Take your time to check your contract and final order details."}</p>
       <ol className="mt-3 hidden flex-wrap gap-x-3 gap-y-1 text-[11px] uppercase tracking-wider md:flex">
         {PHASES.map((phase, i) => (
           <li key={phase.key} className={i <= idx ? "font-bold" : "text-muted-foreground"}>

@@ -1,3 +1,4 @@
+import { contactError } from "@/lib/journey2/conversion";
 import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,10 @@ export default function AddressStep({
   const [privacyAck, setPrivacyAck] = useState(false);
   const [manualEntry, setManualEntry] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const showManualEntry = useCallback(() => setManualEntry(true), []);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+  const validateContact = (field: string, value: string) => setFieldErrors((previous) => ({ ...previous, [field]: contactError(field, value) }));
 
   const hasUsableAddress = postcode.trim().length >= 5 && line1.trim().length >= 3 && town.trim().length >= 2;
 
@@ -87,9 +92,15 @@ export default function AddressStep({
         )}
       </div>
 
+      <div>
+        <Label htmlFor="j2-search-postcode">Installation postcode</Label>
+        <Input id="j2-search-postcode" value={postcode} onChange={(e) => { setPostcode(e.target.value.toUpperCase()); setLine1(""); setTown(""); }} autoComplete="postal-code" autoCapitalize="characters" spellCheck={false} maxLength={10} className="uppercase" aria-describedby="j2-postcode-help" />
+        <p id="j2-postcode-help" className="mt-1 text-xs text-muted-foreground">Then find your house number and street below.</p>
+      </div>
+
       <AddressAutocomplete
         onSelect={applyLookup}
-        onManualFallback={() => setManualEntry(true)}
+        onManualFallback={showManualEntry}
         expectedPostcode={postcode}
         label="Find your address"
         helperText="Start typing your house number and street, e.g. 22 Pavilion View."
@@ -161,20 +172,23 @@ export default function AddressStep({
         </div>
       )}
 
-      <div className="border-2 border-foreground/20 p-4 space-y-3">
+      {hasUsableAddress && <div className="border-2 border-foreground/20 p-4 space-y-3">
         <p className="font-display uppercase text-sm">Where should we send your order updates?</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="j2-first-name">Full name</Label>
             <Input id="j2-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)}
-              autoComplete="name" required maxLength={120} />
+              autoComplete="name" required maxLength={120} onBlur={() => validateContact("name", firstName)} aria-invalid={!!fieldErrors.name} aria-describedby="j2-name-error" />
+            <p id="j2-name-error" className="text-xs text-destructive" aria-live="polite">{fieldErrors.name}</p>
           </div>
           <div>
             <Label htmlFor="j2-early-email">Email address</Label>
             <Input id="j2-early-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email" required maxLength={180} placeholder="you@example.com" />
+              autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} required maxLength={180} placeholder="you@example.com" onBlur={() => validateContact("email", email)} aria-invalid={!!fieldErrors.email} aria-describedby="j2-early-email-error" />
+            <p id="j2-early-email-error" className="text-xs text-destructive" aria-live="polite">{fieldErrors.email}</p>
           </div>
         </div>
+        <p className="text-xs text-muted-foreground">Used for your order and service updates. You can choose marketing preferences later.</p>
         <div className="pt-2">
           <div className="flex items-start gap-3">
             <Checkbox
@@ -189,12 +203,12 @@ export default function AddressStep({
             </Label>
           </div>
         </div>
-      </div>
+      </div>}
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 
       <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-        {saving ? "Saving…" : "See available plans"}
+        {saving ? "Saving…" : hasUsableAddress ? "Save address and compare plans" : "Continue with this address"}
       </Button>
     </form>
   );

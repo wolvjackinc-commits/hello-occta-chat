@@ -1,3 +1,4 @@
+import { contactError } from "@/lib/journey2/conversion";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ export default function DetailsStep({
   const [vulnerability, setVulnerability] = useState(d?.vulnerability_support_needs ?? "");
   const [marketing, setMarketing] = useState(!!d?.marketing_consent);
   const [privacyAck, setPrivacyAck] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const submit = (e: React.FormEvent) => {
@@ -101,7 +103,7 @@ export default function DetailsStep({
   };
 
   return (
-    <form onSubmit={submit} className="border-4 border-foreground p-6 space-y-5">
+    <form onSubmit={submit} className="border-4 border-foreground p-4 sm:p-6 space-y-5">
       <div>
         <h1 className="font-display uppercase text-2xl">Your details</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -121,7 +123,8 @@ export default function DetailsStep({
         </div>
         <div>
           <Label htmlFor="j2-phone">Mobile or phone number</Label>
-          <Input id="j2-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" required maxLength={30} />
+          <Input id="j2-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" inputMode="tel" required maxLength={30} onBlur={() => setPhoneError(contactError("phone", phone))} aria-invalid={!!phoneError} aria-describedby="j2-phone-error" />
+          <p id="j2-phone-error" className="text-xs text-destructive" aria-live="polite">{phoneError}</p>
         </div>
         <div>
           <Label htmlFor="j2-dob">Date of birth</Label>
@@ -245,7 +248,7 @@ export default function DetailsStep({
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid gap-3 sm:flex sm:flex-wrap">
         <Button type="button" variant="outline" onClick={onBack}>Back</Button>
         <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Continue to your start date"}</Button>
       </div>

@@ -1,3 +1,6 @@
+import { trackConversion } from "@/lib/journey2/conversionTracking";
+import MobileOrderTotal from "./steps/MobileOrderTotal";
+import JourneyRecovery from "./steps/JourneyRecovery";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -51,6 +54,25 @@ export default function OrderJourney() {
   const appliedRef = useRef(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const editingRef = useRef(false);
+
+  const activeStep = (backStep ?? session?.current_step ?? "address") as string;
+  const inSelection = (SELECTION_STEPS as readonly string[]).includes(activeStep);
+  const contractStep: string = journeyState?.journey?.current_step ?? "agreement";
+  const displayStep = inSelection ? activeStep : (journeyState ? contractStep : "contract");
+  const viewedRef = useRef("");
+  useEffect(() => {
+    if (loading || error || !session || !token) return;
+    const recordView = () => {
+      const key = session.id + ":" + displayStep;
+      if (viewedRef.current === key) return;
+      void trackConversion(session, token, displayStep, viewedRef.current === "" && session.last_completed_step ? "resumed" : "view").then((sent) => {
+        if (sent) viewedRef.current = key;
+      });
+    };
+    recordView();
+    window.addEventListener("occta:consent-change", recordView);
+    return () => window.removeEventListener("occta:consent-change", recordView);
+  }, [loading, error, session, token, displayStep]);
 
   // ── Load session + catalogue ───────────────────────────────────────────────
   const loadSession = useCallback(async () => {
@@ -152,6 +174,7 @@ export default function OrderJourney() {
     try {
       const res = await journey2.submit(token);
       if (res?.ok) {
+        if (session) void trackConversion(session, token, "complete", "submitted");
         navigate(`/order/${token}/complete`, { replace: true });
         return;
       }
@@ -163,7 +186,7 @@ export default function OrderJourney() {
     } finally {
       setSubmitting(false);
     }
-  }, [token, navigate]);
+  }, [token, navigate, session]);
 
   useEffect(() => {
     const done = journeyState?.journey?.status === "completed" || journeyState?.journey?.current_step === "complete";
@@ -209,6 +232,7 @@ export default function OrderJourney() {
     try {
       const res = await journey2.saveStep(token, step, payload);
       if (!res?.ok || !res.session) {
+        if (session) void trackConversion(session, token, step, "save_error");
         toast({
           title: res?.error === "not_orderable_online" ? "We'll price this with you" : "Couldn't save that",
           description: res?.message ?? "Please check your answers and try again.",
@@ -217,6 +241,7 @@ export default function OrderJourney() {
         if (res?.redirect) window.location.assign(res.redirect);
         return;
       }
+      void trackConversion(res.session, token, step, "saved");
       setBackStep(null);
       setSession(res.session);
       // Editing after the contract was prepared invalidates it — regenerate so
@@ -233,6 +258,7 @@ export default function OrderJourney() {
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
+      if (session) void trackConversion(session, token, step, "save_error");
       toast({ title: "Network error", description: String((e as Error).message), variant: "destructive" });
     } finally {
       setSaving(false);
@@ -286,10 +312,7 @@ export default function OrderJourney() {
     );
   }
 
-  const activeStep = (backStep ?? session.current_step) as string;
-  const inSelection = (SELECTION_STEPS as readonly string[]).includes(activeStep);
-  const contractStep: string = journeyState?.journey?.current_step ?? "agreement";
-  const displayStep = inSelection ? activeStep : (journeyState ? contractStep : "contract");
+
 
   return (
     <Layout>
@@ -301,6 +324,7 @@ export default function OrderJourney() {
       />
       <section className="w-full px-3 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <Journey2Progress current={displayStep} />
+        <MobileOrderTotal session={session} />
         {session.test_session && (
           <p className="mb-4 border-2 border-foreground p-3 text-xs font-display uppercase tracking-widest">
             Test session — this order is marked internally as a test.
@@ -308,7 +332,7 @@ export default function OrderJourney() {
         )}
 
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:gap-8">
-          <div className="min-w-0">
+          <div className="min-w-0" onInvalidCapture={() => { if (token) void trackConversion(session, token, displayStep, "validation_error"); }}>
             {inSelection && activeStep === "address" && (
               <AddressStep session={session} saving={saving} onSave={(p) => save("address", p)} />
             )}
@@ -389,6 +413,7 @@ export default function OrderJourney() {
                     journey={journeyState.journey}
                     paymentMethod={journeyState.payment_method}
                     onSubmitted={refreshQuoteJourney}
+                    orderSummary={<OrderSummaryCard session={session} embedded />}
                   />
                 )}
                 {(contractStep === "complete" || journeyState.journey?.status === "completed") && (
@@ -416,6 +441,7 @@ export default function OrderJourney() {
               </>
             )}
 
+            <JourneyRecovery expiresAt={session.expires_at} />
             <div className="mt-4 flex justify-end">
               <button
                 type="button"

@@ -28,7 +28,7 @@ export default function ExtrasStep({
   };
 
   return (
-    <div className="border-4 border-foreground p-6 space-y-5">
+    <div className="border-4 border-foreground p-4 sm:p-6 space-y-5">
       <div>
         <h1 className="font-display uppercase text-2xl">Extras</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -73,9 +73,15 @@ export default function ExtrasStep({
         </div>
       )}
 
+      {session.price_snapshot && (
+        <p className="border-2 border-foreground p-3 text-sm" aria-live="polite">
+          With these extras: <strong>{money(session.price_snapshot.monthly_total_incl_vat - (session.price_snapshot.addons ?? []).reduce((total, addon) => total + addon.monthly, 0) + catalogue.extras.filter((extra) => selected.includes(extra.id)).reduce((total, extra) => total + extra.monthly, 0))}/month including VAT</strong>. Confirmed when you continue.
+        </p>
+      )}
+
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid gap-3 sm:flex sm:flex-wrap">
         <Button type="button" variant="outline" onClick={onBack}>Back</Button>
         <Button type="button" disabled={saving} onClick={submit}>
           {saving ? "Saving…" : selected.length ? "Continue with extras" : "Continue without extras"}

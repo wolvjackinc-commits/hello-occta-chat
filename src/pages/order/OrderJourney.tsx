@@ -22,6 +22,8 @@ import ReviewStep, { CompletedStep } from "@/pages/quote/journey/ReviewStep";
 
 const SELECTION_STEPS = ["address", "plan", "router", "extras", "details", "start_date", "billing"] as const;
 type SelectionStep = typeof SELECTION_STEPS[number];
+const NETWORK_RETRY_DELAY_MS = 450;
+const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
 /**
  * Journey 2 — one continuous ordering flow.
@@ -53,59 +55,88 @@ export default function OrderJourney() {
   // ── Load session + catalogue ───────────────────────────────────────────────
   const loadSession = useCallback(async () => {
     if (!token) return null;
-    const res = await journey2.get(token);
-    if (!res?.ok || !res.session) {
-      setError(res?.error ?? "session_not_found");
-      return null;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const res = await journey2.get(token);
+        if (!res?.ok || !res.session) {
+          setError(res?.error ?? "session_not_found");
+          return null;
+        }
+        setError(null);
+        setSession(res.session);
+        return res.session;
+      } catch {
+        if (attempt === 0) {
+          await wait(NETWORK_RETRY_DELAY_MS);
+          continue;
+        }
+        setError("network_error");
+        return null;
+      }
     }
-    setSession(res.session);
-    return res.session;
+    return null;
   }, [token]);
 
   const loadQuoteJourney = useCallback(async (qt: string) => {
-    const { data } = await supabase.functions.invoke("journey-state", { body: { token: qt, action: "get" } });
-    if ((data as any)?.ok) setJourneyState(data);
-    return data as any;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const { data, error: invokeError } = await supabase.functions.invoke("journey-state", { body: { token: qt, action: "get" } });
+      if (!invokeError) {
+        if ((data as any)?.ok) setJourneyState(data);
+        return data as any;
+      }
+      if (attempt === 0) await wait(NETWORK_RETRY_DELAY_MS);
+    }
+    return null;
   }, []);
 
   const enterContractPhase = useCallback(async (s: Journey2Session) => {
     if (!token) return;
-    const cached = quoteTokenStore.get(s.id);
-    let qt = cached;
-    if (!qt) {
-      const prep = await journey2.prepareContract(token);
-      if (!prep?.ok || !prep.quote_token) {
-        setError(prep?.error ?? "contract_prepare_failed");
-        return;
+    try {
+      const cached = quoteTokenStore.get(s.id);
+      let qt = cached;
+      if (!qt) {
+        const prep = await journey2.prepareContract(token);
+        if (!prep?.ok || !prep.quote_token) {
+          setError(prep?.error ?? "contract_prepare_failed");
+          return;
+        }
+        qt = prep.quote_token;
+        quoteTokenStore.set(s.id, qt);
       }
-      qt = prep.quote_token;
-      quoteTokenStore.set(s.id, qt);
-    }
-    setQuoteToken(qt);
-    const st = await loadQuoteJourney(qt);
-    if (!st?.ok) {
-      // A cached token can be stale after a session resume — re-prepare once.
-      const prep = await journey2.prepareContract(token);
-      if (prep?.quote_token) {
-        quoteTokenStore.set(s.id, prep.quote_token);
-        setQuoteToken(prep.quote_token);
-        await loadQuoteJourney(prep.quote_token);
+      setQuoteToken(qt);
+      const st = await loadQuoteJourney(qt);
+      if (!st?.ok) {
+        // A cached token can be stale after a session resume — re-prepare once.
+        const prep = await journey2.prepareContract(token);
+        if (prep?.quote_token) {
+          quoteTokenStore.set(s.id, prep.quote_token);
+          setQuoteToken(prep.quote_token);
+          await loadQuoteJourney(prep.quote_token);
+        }
       }
+    } catch {
+      setError("network_error");
     }
   }, [token, loadQuoteJourney]);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [s, cat] = await Promise.all([
-        loadSession(),
-        journey2.catalogue().then((r) => r?.catalogue ?? null).catch(() => null),
-      ]);
-      setCatalogue(cat);
-      if (s && !(SELECTION_STEPS as readonly string[]).includes(s.current_step)) {
-        await enterContractPhase(s);
+      try {
+        const [s, cat] = await Promise.all([
+          loadSession(),
+          journey2.catalogue().then((r) => r?.catalogue ?? null).catch(() => null),
+        ]);
+        setCatalogue(cat);
+        if (s && !(SELECTION_STEPS as readonly string[]).includes(s.current_step)) {
+          await enterContractPhase(s);
+        }
+      } catch {
+        setError("network_error");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [loadSession, enterContractPhase]);
 
@@ -227,19 +258,28 @@ export default function OrderJourney() {
   }
 
   if (error || !session) {
+    const expired = error === "session_expired";
+    const networkError = error === "network_error";
+    const title = expired ? "This order link has expired" : networkError ? "We couldn't load your order" : "Order not found";
+    const message = expired
+      ? "For security, order links expire after 30 days. Nothing has been charged. Start a fresh order and we'll re-check current availability and pricing before you continue."
+      : networkError
+        ? "We couldn't reach the ordering service just now. Nothing has been charged. Please try again — your existing order link has not been changed."
+        : "We couldn't find this order link. Nothing has been charged. You can start a fresh order or call us and we'll help you finish it.";
+
     return (
       <Layout>
-        <SEO title="Order not found | OCCTA Limited" description="This order link is no longer valid." canonical="/order" noIndex />
-        <section className="container mx-auto px-4 py-16 max-w-xl text-center border-4 border-foreground">
-          <h1 className="font-display uppercase text-2xl mb-3">
-            {error === "session_expired" ? "This link has expired" : "Order not found"}
-          </h1>
-          <p className="text-sm text-muted-foreground mb-5">
-            Nothing has been charged. Start again and your prices will be exactly the same, or let us finish it with you.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Button asChild><a href="/order">Start again</a></Button>
-            <Button asChild variant="outline"><a href="tel:08002606626">Call 0800 260 6626</a></Button>
+        <SEO title="Order help | OCCTA Limited" description="Resume or restart your OCCTA broadband order." canonical="/order" noIndex />
+        <section className="mx-3 my-6 max-w-xl border-4 border-foreground px-5 py-8 text-center sm:mx-auto sm:my-10 sm:px-8 sm:py-12">
+          <h1 className="font-display uppercase text-2xl mb-3">{title}</h1>
+          <p className="text-sm text-muted-foreground mb-6">{message}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {networkError ? (
+              <Button type="button" onClick={() => window.location.reload()} className="w-full">Try again</Button>
+            ) : (
+              <Button asChild className="w-full"><a href="/order">Start fresh order</a></Button>
+            )}
+            <Button asChild variant="outline" className="w-full"><a href="tel:08002606626">Call 0800 260 6626</a></Button>
           </div>
         </section>
       </Layout>
@@ -259,7 +299,7 @@ export default function OrderJourney() {
         canonical="/order"
         noIndex
       />
-      <section className="w-full px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+      <section className="w-full px-3 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <Journey2Progress current={displayStep} />
         {session.test_session && (
           <p className="mb-4 border-2 border-foreground p-3 text-xs font-display uppercase tracking-widest">
@@ -267,7 +307,7 @@ export default function OrderJourney() {
           </p>
         )}
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:gap-8">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:gap-8">
           <div className="min-w-0">
             {inSelection && activeStep === "address" && (
               <AddressStep session={session} saving={saving} onSave={(p) => save("address", p)} />

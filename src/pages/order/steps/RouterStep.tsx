@@ -32,7 +32,7 @@ export default function RouterStep({
   };
 
   return (
-    <div className="border-4 border-foreground p-6 space-y-5">
+    <div className="space-y-5 border-4 border-foreground p-4 sm:p-6">
       <div>
         <h1 className="font-display uppercase text-2xl">Router</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -52,10 +52,10 @@ export default function RouterStep({
           const selected = r.key === selectedKey;
           return (
             <label key={r.key}
-              className={`flex items-center justify-between gap-4 border-2 p-4 cursor-pointer ${selected ? "border-foreground bg-muted" : "border-border"}`}>
-              <span className="flex items-center gap-3">
-                <input type="radio" name="j2-router" checked={selected} onChange={() => setKey(r.key)} className="h-4 w-4" />
-                <span>
+              className={`flex cursor-pointer flex-col items-stretch gap-3 border-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${selected ? "border-foreground bg-muted" : "border-border"}`}>
+              <span className="flex min-w-0 items-start gap-3">
+                <input type="radio" name="j2-router" checked={selected} onChange={() => setKey(r.key)} className="mt-0.5 h-4 w-4 shrink-0" />
+                <span className="min-w-0">
                   <span className="block font-display uppercase">{optionLabel(r)}</span>
                   <span className="block text-xs text-muted-foreground">
                     {r.option === "own"
@@ -64,7 +64,7 @@ export default function RouterStep({
                   </span>
                 </span>
               </span>
-              <span className="text-right whitespace-nowrap">
+              <span className="whitespace-nowrap pl-7 text-left sm:pl-0 sm:text-right">
                 {r.monthly > 0 && <span className="block font-bold">{money(r.monthly)}<span className="text-xs font-normal">/mo</span></span>}
                 {r.one_off > 0 && <span className="block font-bold">{money(r.one_off)} <span className="text-xs font-normal">one-off</span></span>}
                 {r.monthly === 0 && r.one_off === 0 && <span className="block font-bold">No charge</span>}
@@ -74,10 +74,11 @@ export default function RouterStep({
         })}
       </fieldset>
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="button" variant="outline" onClick={onBack}>Back</Button>
+      <div className="grid gap-3 sm:flex sm:flex-wrap">
+        <Button type="button" variant="outline" onClick={onBack} className="w-full sm:w-auto">Back</Button>
         <Button type="button" disabled={saving || !chosen}
-          onClick={() => chosen && onSave({ router_option: chosen.option, router_payment_type: chosen.payment_type })}>
+          onClick={() => chosen && onSave({ router_option: chosen.option, router_payment_type: chosen.payment_type })}
+          className="w-full sm:w-auto">
           {saving ? "Saving…" : "Continue to extras"}
         </Button>
       </div>

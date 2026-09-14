@@ -46,7 +46,7 @@ export default function PlanStep({
   };
 
   return (
-    <div className="border-4 border-foreground p-6 space-y-5">
+    <div className="space-y-5 border-4 border-foreground p-4 sm:p-6">
       <div>
         <h1 className="font-display uppercase text-2xl">Pick your speed</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -82,12 +82,12 @@ export default function PlanStep({
           const rewardPlan = switch50 && p.speed_bucket === "essential";
           return (
             <label key={p.speed_bucket}
-              className={`relative flex items-center justify-between gap-4 border-2 p-4 cursor-pointer ${selected ? "border-foreground bg-muted" : rewardPlan ? "border-primary" : "border-border"}`}>
-              {rewardPlan && <span className="absolute right-2 top-2 bg-primary px-2 py-0.5 font-display text-[10px] uppercase text-primary-foreground">£50 Switch Cash eligible</span>}
-              <span className="flex items-center gap-3 pr-24 sm:pr-32">
+              className={`relative flex cursor-pointer flex-col items-stretch gap-3 border-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${selected ? "border-foreground bg-muted" : rewardPlan ? "border-primary" : "border-border"}`}>
+              {rewardPlan && <span className="self-start bg-primary px-2 py-0.5 font-display text-[10px] uppercase text-primary-foreground sm:absolute sm:right-2 sm:top-2">£50 Switch Cash eligible</span>}
+              <span className="flex min-w-0 items-start gap-3 sm:pr-32">
                 <input type="radio" name="j2-speed" checked={selected}
-                  onChange={() => setBucket(p.speed_bucket)} className="h-4 w-4" />
-                <span>
+                  onChange={() => setBucket(p.speed_bucket)} className="mt-0.5 h-4 w-4 shrink-0" />
+                <span className="min-w-0">
                   <span className="block font-display uppercase">{p.label}</span>
                   <span className="block text-xs font-medium">
                     Estimated download up to {down} Mbps · estimated upload up to {up} Mbps
@@ -97,7 +97,7 @@ export default function PlanStep({
                   </span>
                 </span>
               </span>
-              <span className="text-right whitespace-nowrap">
+              <span className="whitespace-nowrap pl-7 text-left sm:pl-0 sm:text-right">
                 <span className="block font-bold">{money(cheapest)}<span className="text-xs font-normal">/mo</span></span>
                 <span className="block text-[11px] text-muted-foreground">incl. VAT</span>
               </span>
@@ -122,11 +122,11 @@ export default function PlanStep({
             const rewardTerm = switch50 && bucket === "essential" && t === "price_lock_24";
             return (
               <label key={t}
-                className={`relative flex items-center justify-between gap-4 border-2 p-4 cursor-pointer ${selected ? "border-foreground bg-muted" : rewardTerm ? "border-primary" : "border-border"}`}>
-                {rewardTerm && <span className="absolute right-2 top-2 bg-primary px-2 py-0.5 font-display text-[10px] uppercase text-primary-foreground">SWITCH50</span>}
-                <span className="flex items-center gap-3 pr-20">
-                  <input type="radio" name="j2-term" checked={selected} onChange={() => setTerm(t)} className="h-4 w-4" />
-                  <span>
+                className={`relative flex cursor-pointer flex-col items-stretch gap-3 border-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${selected ? "border-foreground bg-muted" : rewardTerm ? "border-primary" : "border-border"}`}>
+                {rewardTerm && <span className="self-start bg-primary px-2 py-0.5 font-display text-[10px] uppercase text-primary-foreground sm:absolute sm:right-2 sm:top-2">SWITCH50</span>}
+                <span className="flex min-w-0 items-start gap-3 sm:pr-24">
+                  <input type="radio" name="j2-term" checked={selected} onChange={() => setTerm(t)} className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span className="min-w-0">
                     <span className="block font-display uppercase">{PLAN_TERM_LABEL[t]}</span>
                     <span className="block text-xs text-muted-foreground">
                       {t === "flex_30"
@@ -135,7 +135,7 @@ export default function PlanStep({
                     </span>
                   </span>
                 </span>
-                <span className="text-right whitespace-nowrap">
+                <span className="whitespace-nowrap pl-7 text-left sm:pl-0 sm:text-right">
                   <span className="block font-bold">{money(info.monthly_incl_vat)}<span className="text-xs font-normal">/mo</span></span>
                   <span className="block text-[11px] text-muted-foreground">{money(info.monthly_ex_vat)} + {money(info.vat_amount)} VAT</span>
                 </span>
@@ -156,12 +156,13 @@ export default function PlanStep({
         </p>
       )}
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="button" variant="outline" onClick={onBack}>Back</Button>
+      <div className="grid gap-3 sm:flex sm:flex-wrap">
+        <Button type="button" variant="outline" onClick={onBack} className="w-full sm:w-auto">Back</Button>
         <Button
           type="button"
           disabled={saving || !bucket || !activeTerm || !priced}
           onClick={savePlan}
+          className="w-full sm:w-auto"
         >
           {saving ? "Saving…" : "Continue to router"}
         </Button>

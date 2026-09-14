@@ -1,19 +1,16 @@
-const STEPS: { key: string; label: string }[] = [
-  { key: "address", label: "Address" },
-  { key: "plan", label: "Plan" },
-  { key: "router", label: "Router" },
-  { key: "extras", label: "Extras" },
-  { key: "details", label: "Your details" },
-  { key: "start_date", label: "Start date" },
-  { key: "billing", label: "Billing" },
-  { key: "contract", label: "Contract" },
-  { key: "review", label: "Review" },
-  { key: "complete", label: "Done" },
+const PHASES: { key: string; label: string; steps: string[] }[] = [
+  { key: "address", label: "Address", steps: ["address"] },
+  { key: "plan", label: "Plan & equipment", steps: ["plan", "router", "extras"] },
+  { key: "details", label: "Your details", steps: ["details"] },
+  { key: "setup", label: "Start & billing", steps: ["start_date", "billing"] },
+  { key: "contract", label: "Contract", steps: ["contract"] },
+  { key: "review", label: "Review", steps: ["review", "complete"] },
 ];
 
 // After Journey 2 materialises the contract it reuses the shared quote/order
-// journey, whose internal stage names differ. Never let an unknown shared stage
-// fall back to Step 1 / Address.
+// journey, whose internal stage names differ. Customer-facing progress groups
+// those technical stages into six clear phases so mobile customers do not see a
+// daunting ten-step checkout.
 const STEP_ALIASES: Record<string, string> = {
   quote: "contract",
   agreement: "contract",
@@ -25,19 +22,20 @@ const STEP_ALIASES: Record<string, string> = {
 
 export default function Journey2Progress({ current }: { current: string }) {
   const canonical = STEP_ALIASES[current] ?? current;
-  const found = STEPS.findIndex((s) => s.key === canonical);
-  const idx = found >= 0 ? found : Math.max(0, STEPS.findIndex((s) => s.key === "contract"));
-  const pct = Math.round(((idx + 1) / STEPS.length) * 100);
+  const found = PHASES.findIndex((phase) => phase.steps.includes(canonical));
+  const idx = found >= 0 ? found : PHASES.findIndex((phase) => phase.key === "contract");
+  const pct = canonical === "complete" ? 100 : Math.round(((idx + 1) / PHASES.length) * 100);
+
   return (
-    <div className="mb-6">
-      <div className="flex items-baseline justify-between mb-2">
-        <p className="font-display uppercase text-xs tracking-widest text-muted-foreground">
-          Step {idx + 1} of {STEPS.length} · {STEPS[idx]?.label}
+    <div className="mb-4 sm:mb-6">
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <p className="font-display text-[11px] uppercase tracking-widest text-muted-foreground sm:text-xs">
+          Step {idx + 1} of {PHASES.length} · {PHASES[idx]?.label}
         </p>
-        <p className="text-xs text-muted-foreground">{pct}%</p>
+        <p className="text-[11px] text-muted-foreground sm:text-xs">{pct}%</p>
       </div>
       <div
-        className="h-3 border-2 border-foreground bg-background"
+        className="h-2.5 border-2 border-foreground bg-background sm:h-3"
         role="progressbar"
         aria-valuenow={pct}
         aria-valuemin={0}
@@ -46,10 +44,10 @@ export default function Journey2Progress({ current }: { current: string }) {
       >
         <div className="h-full bg-foreground transition-all" style={{ width: `${pct}%` }} />
       </div>
-      <ol className="mt-3 hidden md:flex flex-wrap gap-x-3 gap-y-1 text-[11px] uppercase tracking-wider">
-        {STEPS.map((s, i) => (
-          <li key={s.key} className={i <= idx ? "font-bold" : "text-muted-foreground"}>
-            {i < idx ? "✓ " : ""}{s.label}
+      <ol className="mt-3 hidden flex-wrap gap-x-3 gap-y-1 text-[11px] uppercase tracking-wider md:flex">
+        {PHASES.map((phase, i) => (
+          <li key={phase.key} className={i <= idx ? "font-bold" : "text-muted-foreground"}>
+            {i < idx ? "✓ " : ""}{phase.label}
           </li>
         ))}
       </ol>

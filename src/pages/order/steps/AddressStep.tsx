@@ -28,12 +28,16 @@ export default function AddressStep({
   const [email, setEmail] = useState(d?.email ?? "");
   const [firstName, setFirstName] = useState(d?.full_name ?? "");
   const [privacyAck, setPrivacyAck] = useState(false);
+  const [manualEntry, setManualEntry] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const hasUsableAddress = postcode.trim().length >= 5 && line1.trim().length >= 3 && town.trim().length >= 2;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (postcode.trim().length < 5 || line1.trim().length < 3 || town.trim().length < 2) {
-      setErr("Please enter your postcode, first address line and town.");
+    if (!hasUsableAddress) {
+      setManualEntry(true);
+      setErr("Please find your address above or enter it manually.");
       return;
     }
     if (!firstName.trim() || firstName.trim().length < 2) {
@@ -65,62 +69,100 @@ export default function AddressStep({
     setLine2(addr.line2 ?? "");
     setTown(addr.city);
     setPostcode(addr.postcode.toUpperCase());
+    setManualEntry(false);
     setErr(null);
   }, []);
 
   return (
-    <form onSubmit={submit} className="border-4 border-foreground p-6 space-y-4">
+    <form onSubmit={submit} className="space-y-4 border-4 border-foreground p-4 sm:p-6">
       <div>
         <h1 className="font-display uppercase text-2xl">Where is the service going?</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          We need the address the broadband will be installed at. You can complete the order online; final network and supplier availability is validated before provisioning.
+          Find the installation address first. We'll confirm final network and supplier availability before provisioning.
         </p>
         {prefill && (prefill.postcode || prefill.line1) && (
           <p className="text-xs text-muted-foreground mt-2">
-            We've filled this in from your address check — please check it and change anything that isn't right.
+            We've reused what you entered in the address checker — change it only if it isn't right.
           </p>
         )}
       </div>
 
       <AddressAutocomplete
         onSelect={applyLookup}
+        onManualFallback={() => setManualEntry(true)}
         expectedPostcode={postcode}
         label="Find your address"
-        helperText="Start typing house number and street, e.g. 22 Pavilion View — or type it in below yourself."
+        helperText="Start typing your house number and street, e.g. 22 Pavilion View."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-1">
-          <Label htmlFor="j2-postcode">Postcode</Label>
-          <Input id="j2-postcode" value={postcode} onChange={(e) => setPostcode(e.target.value)}
-            autoComplete="postal-code" required maxLength={10} className="uppercase" />
+      {hasUsableAddress && !manualEntry && (
+        <div className="border-2 border-foreground bg-muted/30 p-4">
+          <p className="font-display text-xs uppercase tracking-wider text-muted-foreground">Selected address</p>
+          <p className="mt-1 text-sm font-medium">
+            {[line1, line2, town, county, postcode.toUpperCase()].filter(Boolean).join(", ")}
+          </p>
+          <button
+            type="button"
+            onClick={() => setManualEntry(true)}
+            className="mt-2 text-xs underline text-muted-foreground hover:text-foreground"
+          >
+            Edit address manually
+          </button>
         </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="j2-line1">Address line 1</Label>
-          <Input id="j2-line1" value={line1} onChange={(e) => setLine1(e.target.value)}
-            autoComplete="address-line1" required maxLength={160} />
-        </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="j2-line2">Address line 2 (optional)</Label>
-          <Input id="j2-line2" value={line2 ?? ""} onChange={(e) => setLine2(e.target.value)}
-            autoComplete="address-line2" maxLength={160} />
-        </div>
-        <div>
-          <Label htmlFor="j2-town">Town or city</Label>
-          <Input id="j2-town" value={town} onChange={(e) => setTown(e.target.value)}
-            autoComplete="address-level2" required maxLength={80} />
-        </div>
-        <div>
-          <Label htmlFor="j2-county">County (optional)</Label>
-          <Input id="j2-county" value={county ?? ""} onChange={(e) => setCounty(e.target.value)}
-            autoComplete="address-level1" maxLength={80} />
-        </div>
-      </div>
+      )}
 
-      {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
+      {!hasUsableAddress && !manualEntry && (
+        <Button type="button" variant="outline" onClick={() => setManualEntry(true)} className="w-full sm:w-auto">
+          Can't find it? Enter address manually
+        </Button>
+      )}
+
+      {manualEntry && (
+        <div className="space-y-3 border-2 border-foreground/20 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-display text-sm uppercase">Enter address manually</p>
+            {hasUsableAddress && (
+              <button
+                type="button"
+                onClick={() => setManualEntry(false)}
+                className="text-xs underline text-muted-foreground hover:text-foreground"
+              >
+                Done
+              </button>
+            )}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="j2-postcode">Postcode</Label>
+              <Input id="j2-postcode" value={postcode} onChange={(e) => setPostcode(e.target.value.toUpperCase())}
+                autoComplete="postal-code" required maxLength={10} className="uppercase" />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="j2-line1">Address line 1</Label>
+              <Input id="j2-line1" value={line1} onChange={(e) => setLine1(e.target.value)}
+                autoComplete="address-line1" required maxLength={160} />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="j2-line2">Address line 2 (optional)</Label>
+              <Input id="j2-line2" value={line2 ?? ""} onChange={(e) => setLine2(e.target.value)}
+                autoComplete="address-line2" maxLength={160} />
+            </div>
+            <div>
+              <Label htmlFor="j2-town">Town or city</Label>
+              <Input id="j2-town" value={town} onChange={(e) => setTown(e.target.value)}
+                autoComplete="address-level2" required maxLength={80} />
+            </div>
+            <div>
+              <Label htmlFor="j2-county">County (optional)</Label>
+              <Input id="j2-county" value={county ?? ""} onChange={(e) => setCounty(e.target.value)}
+                autoComplete="address-level1" maxLength={80} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="border-2 border-foreground/20 p-4 space-y-3">
-        <p className="font-display uppercase text-sm">Your contact details</p>
+        <p className="font-display uppercase text-sm">Where should we send your order updates?</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="j2-first-name">Full name</Label>
@@ -149,8 +191,10 @@ export default function AddressStep({
         </div>
       </div>
 
+      {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
+
       <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-        {saving ? "Saving…" : "Continue to plans"}
+        {saving ? "Saving…" : "See available plans"}
       </Button>
     </form>
   );

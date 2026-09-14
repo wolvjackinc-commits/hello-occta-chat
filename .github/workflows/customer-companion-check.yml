@@ -64,20 +64,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci --no-audit --no-fund
 
       - name: TypeScript typecheck
-        run: bun run typecheck
+        run: npm run typecheck
 
       - name: Lint companion, intelligence and attachment files
         run: >-
-          bunx eslint
+          npx eslint
           src/components/chat/OcctaCompanion.tsx
           src/components/chat/OcctaCompanionV3.tsx
           src/components/chat/OcctaCompanionV4.tsx
@@ -99,10 +100,10 @@ jobs:
 
       - name: Companion unit tests
         run: >-
-          bunx vitest run
+          npx vitest run
           src/lib/chat/companionCore.unit.test.ts
           src/lib/chat/ollieIntelligence.unit.test.ts
           src/lib/chat/ollieResolution.unit.test.ts
 
       - name: Production build
-        run: bun run build
+        run: npm run build

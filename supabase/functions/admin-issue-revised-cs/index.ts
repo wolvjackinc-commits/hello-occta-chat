@@ -382,5 +382,6 @@ Deno.serve(async (req) => {
     supersedes_id: src.id,
     recipient_masked: recipient.replace(/(.).+?(@.+)/, "$1***$2"),
     token_expires_at: row.token_expires_at,
+    contract_information_pack: reissuedCip,
   });
 });

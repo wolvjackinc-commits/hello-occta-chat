@@ -38,6 +38,7 @@ import { logClientEvent } from "@/lib/activityLog";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import { getReadMap, isTicketUnread, TICKETS_READ_EVENT } from "@/lib/ticketRead";
 import { countOpenQuoteWork, EMPTY_QUOTE_COUNTS, type QuoteCounts } from "@/lib/dashboard/quoteCounts";
+import { isActiveTicket, summarizeOutstandingInvoices } from "@/lib/dashboard/status";
 import { clearUserCache } from "@/lib/offlineCache";
 import { 
   Wifi, 
@@ -318,7 +319,10 @@ const Dashboard = () => {
         // open tickets and hid rows from the mobile support screen).
         supabase.from("support_tickets").select("*").eq("user_id", userId).order("updated_at", { ascending: false, nullsFirst: false }),
         supabase.from("user_files").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("invoices").select("id, invoice_number, total, status, due_date, issue_date").eq("user_id", userId).in("status", ["draft", "sent", "overdue"]).order("due_date", { ascending: true }),
+        // Do NOT restrict to a hand-picked status list: statuses such as
+        // "issued", "unpaid" and "partially_paid" are also outstanding. The
+        // settled-exclusion rule (shared helper) is applied when deriving.
+        supabase.from("invoices").select("id, invoice_number, total, status, due_date, issue_date").eq("user_id", userId).order("due_date", { ascending: true }),
         // Real customer-owned quote data — the Overview count must never be faked.
         (supabase as any).rpc("get_customer_quotes"),
         (supabase as any).rpc("get_customer_quote_requests"),

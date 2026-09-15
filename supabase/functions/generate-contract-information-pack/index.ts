@@ -25,9 +25,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const body = await req.json().catch(() => ({} as { quote_id?: string; customer_segment?: CustomerSegment }));
+  const body = await req.json().catch(() => ({} as {
+    quote_id?: string;
+    customer_segment?: CustomerSegment;
+    for_contract_summary_id?: string;
+  }));
   const quoteId = body.quote_id;
   if (!quoteId) return jsonResponse({ error: "missing_quote_id" }, 400);
+  // Optional: the exact Contract Summary version this pack must be paired to.
+  // Used when OCCTA reissues a revised Contract Summary — the accepted pack for
+  // the previous version stays immutable and a NEW pack version is issued and
+  // bound to the revised summary, so acceptance can never mix versions.
+  const forCsId = typeof body.for_contract_summary_id === "string" &&
+    /^[0-9a-f-]{36}$/i.test(body.for_contract_summary_id)
+    ? body.for_contract_summary_id
+    : null;
 
   const supabase = getServiceClient();
 

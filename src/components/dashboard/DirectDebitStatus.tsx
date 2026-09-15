@@ -218,10 +218,12 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
                   <p className="text-xs text-muted-foreground uppercase">Bank Account</p>
                   <p className="font-mono">****{mandate.bank_last4 || "****"}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase">Set Up</p>
-                  <p>{format(new Date(mandate.created_at), "dd MMM yyyy")}</p>
-                </div>
+                {formatSetupDate(mandate.created_at) && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase">Set Up</p>
+                    <p>{formatSetupDate(mandate.created_at)}</p>
+                  </div>
+                )}
               </div>
 
               {mandate.status === "pending" && (
@@ -274,9 +276,11 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
                           <span className="text-xs font-mono">{mandate.mandate_reference || "—"}</span>
                           {getStatusBadge(mandate.status)}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(mandate.created_at), "dd MMM yyyy")}
-                        </p>
+                        {formatSetupDate(mandate.created_at) && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatSetupDate(mandate.created_at)}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>

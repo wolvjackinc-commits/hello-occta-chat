@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
   }
 
   const nextVersion = (existingRows?.[0]?.version ?? 0) + 1;
+  const supersedesId = existingRows?.[0]?.id ?? null;
   if (existingRows && existingRows.length) {
     await supabase.from("contract_information_packs")
       .update({ document_status: "superseded", superseded_at_utc: new Date().toISOString() })
@@ -136,6 +137,7 @@ Deno.serve(async (req) => {
       quote_request_id: (q as any).quote_request_id,
       customer_id: (q as any).customer_id,
       ...(forCsId ? { contract_summary_id: forCsId } : {}),
+      ...(supersedesId ? { supersedes_id: supersedesId } : {}),
       version: nextVersion,
       document_status: "issued",
       template_version: TWO_DOC_TEMPLATE_VERSION,

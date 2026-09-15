@@ -37,6 +37,8 @@ const priorityStyles: Record<string, string> = {
   low: "bg-muted text-muted-foreground border-foreground",
 };
 
+import { isActiveTicket } from "@/lib/dashboard/status";
+
 const STATUS_FILTER_KEY = "occta:tickets:status-filter";
 const VALID_TICKET_STATUS = new Set(["all", "open", "awaiting", "in_progress"]);
 
@@ -122,7 +124,7 @@ export function SupportTab({ tickets, userId }: { tickets: Ticket[]; userId?: st
       <div className="grid grid-cols-3 gap-3">
         <div className="p-3 border-4 border-foreground bg-background">
           <p className="text-xs font-display uppercase tracking-wider text-muted-foreground">Open</p>
-          <p className="font-display text-2xl">{tickets.filter(t => t.status === "open" || t.status === "in_progress").length}</p>
+          <p className="font-display text-2xl">{tickets.filter(t => isActiveTicket(t.status)).length}</p>
         </div>
         <div className="p-3 border-4 border-foreground bg-background">
           <p className="text-xs font-display uppercase tracking-wider text-muted-foreground">Resolved</p>

@@ -38,6 +38,7 @@ import { logClientEvent } from "@/lib/activityLog";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import { getReadMap, isTicketUnread, TICKETS_READ_EVENT } from "@/lib/ticketRead";
 import { countOpenQuoteWork, EMPTY_QUOTE_COUNTS, type QuoteCounts } from "@/lib/dashboard/quoteCounts";
+import { isActiveTicket, summarizeOutstandingInvoices } from "@/lib/dashboard/status";
 import { clearUserCache } from "@/lib/offlineCache";
 import { 
   Wifi, 
@@ -318,7 +319,10 @@ const Dashboard = () => {
         // open tickets and hid rows from the mobile support screen).
         supabase.from("support_tickets").select("*").eq("user_id", userId).order("updated_at", { ascending: false, nullsFirst: false }),
         supabase.from("user_files").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("invoices").select("id, invoice_number, total, status, due_date, issue_date").eq("user_id", userId).in("status", ["draft", "sent", "overdue"]).order("due_date", { ascending: true }),
+        // Do NOT restrict to a hand-picked status list: statuses such as
+        // "issued", "unpaid" and "partially_paid" are also outstanding. The
+        // settled-exclusion rule (shared helper) is applied when deriving.
+        supabase.from("invoices").select("id, invoice_number, total, status, due_date, issue_date").eq("user_id", userId).order("due_date", { ascending: true }),
         // Real customer-owned quote data — the Overview count must never be faked.
         (supabase as any).rpc("get_customer_quotes"),
         (supabase as any).rpc("get_customer_quote_requests"),
@@ -491,11 +495,10 @@ const Dashboard = () => {
   const activeServiceCount = canonicalServiceActive
     ? Math.max(1, activeOrders.length)
     : activeOrders.length;
-  const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
-  const awaitingTickets = tickets.filter(t => t.status === 'waiting_customer');
-  const badgeTickets = tickets.filter(
-    (t) => (t.status === 'open' || t.status === 'in_progress' || t.status === 'waiting_customer')
-  );
+  // Unresolved work = open, in_progress, waiting_customer, waiting_occta
+  // (identical rule to app mode so customer-facing counts always agree).
+  const openTickets = tickets.filter(t => isActiveTicket(t.status));
+  const badgeTickets = openTickets;
   const ticketBadgeCount = user?.id
     ? badgeTickets.filter((t) => isTicketUnread(user.id, t as any, readMap)).length
     : badgeTickets.length;
@@ -525,8 +528,11 @@ const Dashboard = () => {
     f.description?.toLowerCase().includes('invoice')
   );
   
-  // Outstanding invoices needing payment
-  const outstandingInvoices = invoices.filter(inv => inv.status !== 'paid' && inv.status !== 'cancelled');
+  // Outstanding invoices needing payment: any status that is not settled
+  // (paid/cancelled/void/written_off). Totals and next due date come from the
+  // shared helper, which ignores invalid amounts and dates.
+  const outstanding = summarizeOutstandingInvoices(invoices);
+  
   
   // Group invoice files by month
   const groupedInvoiceFiles = invoiceFiles.reduce((acc, file) => {
@@ -620,8 +626,8 @@ const Dashboard = () => {
               linkedRecords={linkedRecords}
               identityVerified={isIdentityVerified}
               activeServices={activeServiceCount}
-              outstandingInvoices={outstandingInvoices.length}
-              outstandingTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
+              outstandingInvoices={outstanding.count}
+              outstandingTotal={outstanding.total}
               documents={userFiles.length}
               openTickets={openTickets.length}
             />
@@ -687,7 +693,7 @@ const Dashboard = () => {
             className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
           >
             {[
-              { label: "Active Services", value: activeOrders.length, color: "bg-primary" },
+              { label: "Active Services", value: activeServiceCount, color: "bg-primary" },
               { label: "Total Orders", value: allOrders.length, color: "bg-accent" },
               { label: "Open Tickets", value: openTickets.length, color: "bg-warning" },
               { label: "All Tickets", value: tickets.length, color: "bg-secondary" },
@@ -754,11 +760,11 @@ const Dashboard = () => {
                     ?? guestOrders[0]?.status
                     ?? null
                 }
-                unpaidInvoices={outstandingInvoices.length}
-                unpaidTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
+                unpaidInvoices={outstanding.count}
+                unpaidTotal={outstanding.total}
                 openTickets={openTickets.length}
-                nextDueDate={outstandingInvoices[0]?.due_date ?? null}
-                nextDueInvoiceId={outstandingInvoices[0]?.id ?? null}
+                nextDueDate={outstanding.nextDueDate}
+                nextDueInvoiceId={outstanding.nextDueInvoiceId}
               />
             </TabsContent>
 

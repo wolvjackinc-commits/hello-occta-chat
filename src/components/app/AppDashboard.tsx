@@ -124,12 +124,13 @@ const statusConfig: Record<string, { color: string; label: string }> = {
   cancelled: { color: "bg-destructive/20 text-destructive", label: "Cancelled" },
 };
 
+import { isActiveTicket, isOutstandingInvoice } from "@/lib/dashboard/status";
+
 const REWARDS_ENABLED = (import.meta as any).env?.VITE_FEATURE_REWARDS === "true";
 
 // Outstanding = anything not settled or cancelled, matching the desktop rule
 // (statuses such as "issued" must never silently disappear from the balance).
-const SETTLED_STATUS = new Set(["paid", "cancelled", "void", "written_off"]);
-const isOutstanding = (status: string | null | undefined) => !SETTLED_STATUS.has(String(status ?? "").toLowerCase());
+const isOutstanding = (status: string | null | undefined) => isOutstandingInvoice(status);
 
 const AppDashboard = ({
   user,
@@ -244,9 +245,7 @@ const AppDashboard = ({
     ? Number(canonicalService?.monthly_price ?? 0) || proxyActiveOrders.reduce((s, o) => s + Number(o.plan_price ?? 0), 0)
     : proxyActiveOrders.reduce((s, o) => s + Number(o.plan_price ?? 0), 0);
 
-  const openTicketCount = tickets.filter(
-    (t) => t.status === "open" || t.status === "in_progress" || t.status === "waiting_customer" || t.status === "waiting_occta",
-  ).length;
+  const openTicketCount = tickets.filter((t) => isActiveTicket(t.status)).length;
 
   const handleDownloadInvoice = async (invoiceId: string) => {
     setDownloadingId(invoiceId);

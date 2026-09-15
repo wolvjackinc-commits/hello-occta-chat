@@ -49,6 +49,9 @@ const Schema = z.object({
     speed_notes: z.string().max(2000).optional(),
     cease_cancellation_charges: z.string().max(2000).optional(),
     monthly_price_incl_vat: z.number().min(0).max(100000).optional(),
+    router_option: RouterOptionSchema.optional(),
+    router_charge: z.number().min(0).max(10000).optional(),
+    selected_addons: z.array(AddonSchema).max(20).optional(),
   }).default({}),
 });
 

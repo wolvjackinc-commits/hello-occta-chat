@@ -109,7 +109,7 @@ describe("app-mode dashboard", () => {
 
   it("initialises cached state per authenticated user only", () => {
     expect(appDashboard).not.toMatch(/readCache<[^>]*>\(\s*null\s*,/);
-    expect(appDashboard).toContain('readCache<Order[]>(userId, "dashboard.orders")');
+    expect(appDashboard).toContain('readCache<Order[]>(uid, "dashboard.orders")');
   });
 
   it("uses the canonical overview rather than order rows for service state", () => {

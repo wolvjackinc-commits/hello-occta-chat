@@ -180,7 +180,7 @@ export function InvoicesTab({ userId }: { userId: string }) {
     logClientEvent({ event_type: "tab_view", title: "dashboard:invoices", source_module: "dashboard" });
     (async () => {
       const [u, p, c] = await Promise.all([
-        supabase.from("invoices").select("id,invoice_number,total,status,due_date,issue_date").eq("user_id", userId).in("status", ["draft", "sent", "overdue"]).order("due_date", { ascending: true }),
+        supabase.from("invoices").select("id,invoice_number,total,status,due_date,issue_date").eq("user_id", userId).not("status", "in", "(paid,cancelled,void,written_off)").order("due_date", { ascending: true }),
         supabase.from("invoices").select("id,invoice_number,total,status,due_date,issue_date").eq("user_id", userId).eq("status", "paid").order("issue_date", { ascending: false }).limit(100),
         supabase.from("credit_notes").select("id,invoice_id,amount,reason,created_at").eq("user_id", userId).order("created_at", { ascending: false }),
       ]);

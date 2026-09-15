@@ -126,7 +126,10 @@ const statusConfig: Record<string, { color: string; label: string }> = {
 
 const REWARDS_ENABLED = (import.meta as any).env?.VITE_FEATURE_REWARDS === "true";
 
-const UNPAID_STATUS = new Set(["draft", "sent", "overdue", "unpaid", "partially_paid"]);
+// Outstanding = anything not settled or cancelled, matching the desktop rule
+// (statuses such as "issued" must never silently disappear from the balance).
+const SETTLED_STATUS = new Set(["paid", "cancelled", "void", "written_off"]);
+const isOutstanding = (status: string | null | undefined) => !SETTLED_STATUS.has(String(status ?? "").toLowerCase());
 
 const AppDashboard = ({
   user,
@@ -218,7 +221,7 @@ const AppDashboard = ({
   const unpaidInvoices = useMemo(
     () =>
       invoices
-        .filter((i) => UNPAID_STATUS.has(String(i.status ?? "").toLowerCase()))
+        .filter((i) => isOutstanding(i.status))
         .sort((a, b) => new Date(a.due_date ?? a.issue_date ?? 0).getTime() - new Date(b.due_date ?? b.issue_date ?? 0).getTime()),
     [invoices],
   );

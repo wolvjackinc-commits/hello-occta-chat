@@ -15,6 +15,27 @@ import {
   generateTokenPair, sendResendEmail, brutalistEmailShell, escapeHtml,
 } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { normaliseRouterOption, describeRouterSelection } from "../_shared/routerSummary.ts";
+
+const RouterOptionSchema = z.object({
+  option: z.enum(["own", "standard", "premium", "business", "business_hub"]),
+  label: z.string().trim().min(2).max(160),
+  payment_type: z.enum(["none", "one_off", "monthly"]),
+  monthly: z.number().min(0).max(1000).default(0),
+  one_off: z.number().min(0).max(10000).default(0),
+}).strict().refine(
+  (r) => (r.payment_type === "monthly" ? r.monthly > 0 : true) &&
+         (r.payment_type === "one_off" ? r.one_off > 0 : true) &&
+         (r.payment_type === "none" ? r.monthly === 0 && r.one_off === 0 : true),
+  { message: "router_option payment_type must match the monthly/one_off amounts" },
+);
+
+const AddonSchema = z.object({
+  id: z.string().trim().min(1).max(80),
+  label: z.string().trim().min(1).max(160),
+  monthly: z.number().min(0).max(1000).default(0),
+  one_off: z.number().min(0).max(10000).optional(),
+}).strict();
 
 const Schema = z.object({
   source_contract_summary_id: z.string().uuid(),

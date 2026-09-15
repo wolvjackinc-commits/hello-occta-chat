@@ -25,9 +25,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const body = await req.json().catch(() => ({} as { quote_id?: string; customer_segment?: CustomerSegment }));
+  const body = await req.json().catch(() => ({} as {
+    quote_id?: string;
+    customer_segment?: CustomerSegment;
+    for_contract_summary_id?: string;
+  }));
   const quoteId = body.quote_id;
   if (!quoteId) return jsonResponse({ error: "missing_quote_id" }, 400);
+  // Optional: the exact Contract Summary version this pack must be paired to.
+  // Used when OCCTA reissues a revised Contract Summary — the accepted pack for
+  // the previous version stays immutable and a NEW pack version is issued and
+  // bound to the revised summary, so acceptance can never mix versions.
+  const forCsId = typeof body.for_contract_summary_id === "string" &&
+    /^[0-9a-f-]{36}$/i.test(body.for_contract_summary_id)
+    ? body.for_contract_summary_id
+    : null;
 
   const supabase = getServiceClient();
 
@@ -72,20 +84,24 @@ Deno.serve(async (req) => {
 
   const { data: existingRows } = await supabase
     .from("contract_information_packs")
-    .select("id, cip_number, version, document_status, pdf_hash, pdf_storage_path")
+    .select("id, cip_number, version, document_status, pdf_hash, pdf_storage_path, contract_summary_id")
     .eq("quote_id", quoteId)
     .neq("document_status", "superseded")
     .order("version", { ascending: false });
 
+  // A pack may only be reused for the requested Contract Summary version.
+  const pairable = (r: { contract_summary_id?: string | null }) =>
+    !forCsId || !r.contract_summary_id || r.contract_summary_id === forCsId;
+
   const accepted = (existingRows ?? []).find((r) => r.document_status === "accepted");
-  if (accepted) {
+  if (accepted && pairable(accepted)) {
     return jsonResponse({
       ok: true, reused: true, immutable: true,
       pack_id: accepted.id, cip_number: accepted.cip_number, version: accepted.version,
       pdf_hash: accepted.pdf_hash,
     });
   }
-  const sameBody = (existingRows ?? []).find((r) => r.pdf_hash === bodyHash);
+  const sameBody = (existingRows ?? []).find((r) => r.pdf_hash === bodyHash && pairable(r));
   if (sameBody) {
     return jsonResponse({
       ok: true, reused: true,
@@ -119,6 +135,7 @@ Deno.serve(async (req) => {
       quote_id: quoteId,
       quote_request_id: (q as any).quote_request_id,
       customer_id: (q as any).customer_id,
+      ...(forCsId ? { contract_summary_id: forCsId } : {}),
       version: nextVersion,
       document_status: "issued",
       template_version: TWO_DOC_TEMPLATE_VERSION,

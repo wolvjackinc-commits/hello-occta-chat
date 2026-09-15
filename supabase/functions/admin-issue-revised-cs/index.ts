@@ -136,6 +136,65 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "pdf_generation_failed", contract_summary_id: created.id, details: body.slice(0, 300) }, 502);
   }
 
+  // Contract Information Pack must be reissued and paired to THIS revision,
+  // otherwise acceptance fails the snapshot-integrity check
+  // (contract_information_mismatch). The accepted pack on the previous version
+  // stays immutable — a new pack version is issued and bound to the new CS.
+  {
+    const { data: existingPack } = await supabase
+      .from("contract_information_packs")
+      .select("id")
+      .eq("quote_id", created.quote_id)
+      .neq("document_status", "superseded")
+      .limit(1)
+      .maybeSingle();
+    const { data: settings } = await supabase
+      .from("platform_settings")
+      .select("two_document_contract_flow_enabled")
+      .eq("singleton", true)
+      .maybeSingle();
+
+    if (existingPack || settings?.two_document_contract_flow_enabled) {
+      const cipRes = await fetch(`${projectUrl}/functions/v1/generate-contract-information-pack`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${svcKey}`, "Content-Type": "application/json", "x-internal-service": "1" },
+        body: JSON.stringify({ quote_id: created.quote_id, for_contract_summary_id: created.id }),
+      });
+      const cipBody = await cipRes.json().catch(() => null) as { pack_id?: string; error?: string } | null;
+      if (!cipRes.ok || !cipBody?.pack_id) {
+        return jsonResponse({
+          error: "contract_information_reissue_failed",
+          message: "The revised Contract Summary was created but its Contract Information Pack could not be reissued, so it must not be sent for signing yet.",
+          contract_summary_id: created.id,
+          details: cipBody?.error ?? null,
+        }, 502);
+      }
+      const { data: pack } = await supabase
+        .from("contract_information_packs")
+        .select("id, contract_summary_id, document_status")
+        .eq("id", cipBody.pack_id)
+        .maybeSingle();
+      if (pack && pack.contract_summary_id !== created.id) {
+        if (pack.document_status === "accepted") {
+          return jsonResponse({
+            error: "contract_information_bound_to_other_summary",
+            contract_summary_id: created.id,
+            details: "The reissued pack is already accepted against another Contract Summary version.",
+          }, 409);
+        }
+        const { error: linkErr } = await supabase
+          .from("contract_information_packs")
+          .update({ contract_summary_id: created.id })
+          .eq("id", pack.id)
+          .neq("document_status", "accepted");
+        if (linkErr) {
+          return jsonResponse({ error: "contract_information_link_failed", contract_summary_id: created.id, details: linkErr.message }, 502);
+        }
+      }
+    }
+  }
+
+
   const appBase = Deno.env.get("APP_BASE_URL") || "https://www.occta.co.uk";
   const csUrl = `${appBase}/quote/contract-summary/${raw}`;
   const recipient = created.customer_email_snapshot as string;

@@ -495,11 +495,10 @@ const Dashboard = () => {
   const activeServiceCount = canonicalServiceActive
     ? Math.max(1, activeOrders.length)
     : activeOrders.length;
-  const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
-  const awaitingTickets = tickets.filter(t => t.status === 'waiting_customer');
-  const badgeTickets = tickets.filter(
-    (t) => (t.status === 'open' || t.status === 'in_progress' || t.status === 'waiting_customer')
-  );
+  // Unresolved work = open, in_progress, waiting_customer, waiting_occta
+  // (identical rule to app mode so customer-facing counts always agree).
+  const openTickets = tickets.filter(t => isActiveTicket(t.status));
+  const badgeTickets = openTickets;
   const ticketBadgeCount = user?.id
     ? badgeTickets.filter((t) => isTicketUnread(user.id, t as any, readMap)).length
     : badgeTickets.length;
@@ -529,8 +528,11 @@ const Dashboard = () => {
     f.description?.toLowerCase().includes('invoice')
   );
   
-  // Outstanding invoices needing payment
-  const outstandingInvoices = invoices.filter(inv => inv.status !== 'paid' && inv.status !== 'cancelled');
+  // Outstanding invoices needing payment: any status that is not settled
+  // (paid/cancelled/void/written_off). Totals and next due date come from the
+  // shared helper, which ignores invalid amounts and dates.
+  const outstanding = summarizeOutstandingInvoices(invoices);
+  const outstandingInvoices = outstanding.invoices;
   
   // Group invoice files by month
   const groupedInvoiceFiles = invoiceFiles.reduce((acc, file) => {

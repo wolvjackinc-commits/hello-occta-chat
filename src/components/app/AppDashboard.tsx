@@ -46,7 +46,7 @@ import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab
 import { DirectDebitOverview } from "@/components/dashboard/DirectDebitOverview";
 import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
 import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
-import { format, isValid, parseISO } from "date-fns";
+import { formatGbp, formatUkDate } from "@/lib/dashboard/format";
 import type { QuoteCounts } from "@/lib/dashboard/quoteCounts";
 import { EMPTY_QUOTE_COUNTS } from "@/lib/dashboard/quoteCounts";
 
@@ -127,19 +127,6 @@ const statusConfig: Record<string, { color: string; label: string }> = {
 const REWARDS_ENABLED = (import.meta as any).env?.VITE_FEATURE_REWARDS === "true";
 
 const UNPAID_STATUS = new Set(["draft", "sent", "overdue", "unpaid", "partially_paid"]);
-
-/** UK date, never "Invalid Date" / NaN. */
-export function formatUkDate(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const d = typeof value === "string" && value.includes("T") ? parseISO(value) : new Date(String(value));
-  return isValid(d) ? format(d, "dd MMM yyyy") : null;
-}
-
-/** UK currency, never NaN. */
-export function formatGbp(value: number | string | null | undefined): string {
-  const n = Number(value ?? 0);
-  return `£${(Number.isFinite(n) ? n : 0).toFixed(2)}`;
-}
 
 const AppDashboard = ({
   user,

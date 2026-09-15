@@ -448,12 +448,14 @@ function BuildPlanInner() {
                     title="Use my own compatible router" subtitle="£0" body="Save by bringing your own. We'll send a compatibility checklist." />
                   <RouterOptionGroup
                     label="Standard WiFi 6 router" selected={router === "standard"} onSelect={() => setRouter("standard")}
-                    oneOffLabel="£79.99 one-off" monthlyLabel="£4.99/month"
+                    oneOffLabel={`£${FAIR_PRICING_DEFAULTS.router.standardOneOff.toFixed(2)} one-off`}
+                    monthlyLabel={`£${FAIR_PRICING_DEFAULTS.router.standardMonthly.toFixed(2)}/month`}
                     paymentType={routerPay} onPaymentChange={setRouterPay}
                   />
                   <RouterOptionGroup
                     label="Premium WiFi / mesh" selected={router === "premium"} onSelect={() => setRouter("premium")}
-                    oneOffLabel="From £129.99 one-off" monthlyLabel="£7.99/month"
+                    oneOffLabel={`From £${FAIR_PRICING_DEFAULTS.router.premiumOneOff.toFixed(2)} one-off`}
+                    monthlyLabel={`£${FAIR_PRICING_DEFAULTS.router.premiumMonthly.toFixed(2)}/month`}
                     paymentType={routerPay} onPaymentChange={setRouterPay}
                   />
                   <OptionCard selected={router === "business"} onClick={() => { setRouter("business"); setRouterPay("none"); setTimeout(() => setStep((s) => s === 3 ? 4 : s), 200); }}

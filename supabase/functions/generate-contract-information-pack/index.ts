@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
   }
 
   const nextVersion = (existingRows?.[0]?.version ?? 0) + 1;
+  const supersedesId = existingRows?.[0]?.id ?? null;
   if (existingRows && existingRows.length) {
     await supabase.from("contract_information_packs")
       .update({ document_status: "superseded", superseded_at_utc: new Date().toISOString() })

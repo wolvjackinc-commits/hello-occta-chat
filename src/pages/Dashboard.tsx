@@ -37,6 +37,8 @@ import { PaidStateBanner } from "@/components/dashboard/PaidStateBanner";
 import { logClientEvent } from "@/lib/activityLog";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import { getReadMap, isTicketUnread, TICKETS_READ_EVENT } from "@/lib/ticketRead";
+import { countOpenQuoteWork, EMPTY_QUOTE_COUNTS, type QuoteCounts } from "@/lib/dashboard/quoteCounts";
+import { clearUserCache } from "@/lib/offlineCache";
 import { 
   Wifi, 
   Smartphone, 
@@ -145,6 +147,10 @@ const ticketStatusConfig = {
   closed: { icon: XCircle, color: "bg-muted", label: "Closed" },
 };
 
+// Rewards is feature-gated. When it is off the tab must not exist at all —
+// otherwise ?tab=rewards selects an outer tab with no content (a dead link).
+export const REWARDS_TAB_ENABLED = (import.meta as any).env?.VITE_FEATURE_REWARDS === "true";
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -172,8 +178,12 @@ const Dashboard = () => {
     chat: { outer: "support", inner: "chat" },
     complaints: { outer: "support", inner: "complaints" },
     vuln: { outer: "support", inner: "vuln" },
-    rewards: { outer: "rewards" },
+    ...(REWARDS_TAB_ENABLED ? { rewards: { outer: "rewards" } } : {}),
     account: { outer: "account" },
+    // App-mode-only sections keep working as deep links on desktop too.
+    notifications: { outer: "account" },
+    privacy: { outer: "account" },
+    settings: { outer: "account" },
   }), []);
 
   const initialTabParam = searchParams.get("tab");
@@ -222,6 +232,7 @@ const Dashboard = () => {
   // requests, receipts, documents and timeline. Local tab queries remain
   // only as supplementary detail (tickets, files, etc).
   const [overview, setOverview] = useState<any>(null);
+  const [quoteCounts, setQuoteCounts] = useState<QuoteCounts>(EMPTY_QUOTE_COUNTS);
   const [linkedRecords, setLinkedRecords] = useState(0);
 
   useEffect(() => {
@@ -299,13 +310,18 @@ const Dashboard = () => {
       const overviewPromise = (supabase as any).rpc("get_my_customer_overview");
       // Fetch supplementary data in parallel (tickets, files, guest order
       // fallbacks, raw profile for legacy fields not in the RPC).
-      const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult, invoicesResult, overviewRes] = await Promise.all([
+      const [profileResult, ordersResult, guestOrdersResult, ticketsResult, filesResult, invoicesResult, quotesResult, quoteRequestsResult, overviewRes] = await Promise.all([
         supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
         supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("customer_guest_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        // Full RLS-scoped ticket list (was capped at 5, which under-reported
+        // open tickets and hid rows from the mobile support screen).
+        supabase.from("support_tickets").select("*").eq("user_id", userId).order("updated_at", { ascending: false, nullsFirst: false }),
         supabase.from("user_files").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("invoices").select("id, invoice_number, total, status, due_date, issue_date").eq("user_id", userId).in("status", ["draft", "sent", "overdue"]).order("due_date", { ascending: true }),
+        // Real customer-owned quote data — the Overview count must never be faked.
+        (supabase as any).rpc("get_customer_quotes"),
+        (supabase as any).rpc("get_customer_quote_requests"),
         overviewPromise,
       ]);
 
@@ -333,12 +349,22 @@ const Dashboard = () => {
         setInvoices(invoicesResult.data);
       }
 
+      if ((quotesResult as any).data || (quoteRequestsResult as any).data) {
+        setQuoteCounts(
+          countOpenQuoteWork(
+            ((quotesResult as any).data as any[]) ?? [],
+            ((quoteRequestsResult as any).data as any[]) ?? [],
+          ),
+        );
+      }
+
       if (profileResult.error) failed.push("profile");
       if (ordersResult.error) failed.push("orders");
       if (guestOrdersResult.error) failed.push("guest orders");
       if (ticketsResult.error) failed.push("support tickets");
       if (filesResult.error) failed.push("documents");
       if (invoicesResult.error) failed.push("invoices");
+      if ((quotesResult as any).error || (quoteRequestsResult as any).error) failed.push("quotes");
 
       if (overviewRes && (overviewRes as any).data) {
         setOverview((overviewRes as any).data);
@@ -387,6 +413,9 @@ const Dashboard = () => {
   };
 
   const handleSignOut = async () => {
+    // Never leave one customer's cached account data behind for the next sign-in.
+    clearUserCache(user?.id ?? null);
+    clearUserCache(null);
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
@@ -440,13 +469,28 @@ const Dashboard = () => {
   if (isAppMode) {
     return (
       <AppLayout>
-        <AppDashboard />
+        <AppDashboard
+          user={user}
+          overview={overview}
+          profile={profile as any}
+          tickets={tickets as any}
+          quoteCounts={quoteCounts}
+          isDataLoading={isDataLoading}
+          loadError={loadError}
+          onRetry={() => fetchUserData(user.id)}
+          onSignOut={handleSignOut}
+        />
       </AppLayout>
     );
   }
 
   const userFullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer";
   const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
+  // Canonical service state wins over the order-row proxy when the RPC has it.
+  const canonicalServiceActive = String((overview as any)?.service?.status ?? "") === "active";
+  const activeServiceCount = canonicalServiceActive
+    ? Math.max(1, activeOrders.length)
+    : activeOrders.length;
   const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
   const awaitingTickets = tickets.filter(t => t.status === 'waiting_customer');
   const badgeTickets = tickets.filter(
@@ -575,7 +619,7 @@ const Dashboard = () => {
               accountNumber={(overview as any)?.account_number || profile?.account_number || null}
               linkedRecords={linkedRecords}
               identityVerified={isIdentityVerified}
-              activeServices={activeOrders.length}
+              activeServices={activeServiceCount}
               outstandingInvoices={outstandingInvoices.length}
               outstandingTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
               documents={userFiles.length}
@@ -596,7 +640,9 @@ const Dashboard = () => {
                 <div>
                   <p className="text-sm text-muted-foreground font-display uppercase tracking-wider">Account Number</p>
                   <p className="text-display-sm font-mono">
-                    {(overview as any)?.account_number || profile?.account_number || 'Loading...'}
+                    {(overview as any)?.account_number
+                      || profile?.account_number
+                      || (isDataLoading ? "—" : "Not assigned yet")}
                   </p>
                 </div>
               </div>
@@ -675,7 +721,7 @@ const Dashboard = () => {
                 ["billing", "Billing & Payments", true],
                 ["documents", "Documents", true],
                 ["support", "Support", true],
-                ["rewards", "Rewards", (import.meta as any).env?.VITE_FEATURE_REWARDS === "true"],
+                ["rewards", "Rewards", REWARDS_TAB_ENABLED],
                 ["account", "Account", true],
               ] as [string, string, boolean][]).filter(([,,on]) => on).map(([v, l]) => (
                 <TabsTrigger
@@ -700,8 +746,8 @@ const Dashboard = () => {
 
             <TabsContent value="overview">
               <OverviewTab
-                activeServices={activeOrders.length}
-                pendingQuotes={0}
+                activeServices={activeServiceCount}
+                pendingQuotes={quoteCounts.total}
                 latestOrderStatus={
                   (overview as any)?.order?.lifecycle_status
                     ?? orders[0]?.status
@@ -761,7 +807,7 @@ const Dashboard = () => {
               </Tabs>
             </TabsContent>
 
-            {(import.meta as any).env?.VITE_FEATURE_REWARDS === "true" && (
+            {REWARDS_TAB_ENABLED && (
               <TabsContent value="rewards"><RewardsTab /></TabsContent>
             )}
 

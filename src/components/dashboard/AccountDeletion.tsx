@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { clearUserCache } from "@/lib/offlineCache";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +75,13 @@ export const AccountDeletion = ({ userEmail }: AccountDeletionProps) => {
         title: "Account deleted",
         description: "Your account has been permanently deleted. You will be signed out.",
       });
+
+      // Clear any cached account data before signing out.
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        clearUserCache(user?.id ?? null);
+      } catch { /* cache clearing is best-effort */ }
+      clearUserCache(null);
 
       // Sign out and redirect
       await supabase.auth.signOut();

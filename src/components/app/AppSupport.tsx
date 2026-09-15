@@ -49,7 +49,7 @@ const faqItems = [
 const AppSupport = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [tickets, setTickets] = useState<TicketType[]>(() => readCache<TicketType[]>(null, "support.tickets") ?? []);
+  const [tickets, setTickets] = useState<TicketType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 

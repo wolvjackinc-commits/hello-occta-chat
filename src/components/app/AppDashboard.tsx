@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { logError } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
-import { 
-  Wifi, 
-  Smartphone, 
-  PhoneCall, 
+import {
+  Wifi,
+  Smartphone,
+  PhoneCall,
   LogOut,
   Loader2,
   Package,
@@ -20,9 +20,11 @@ import {
   Bell,
   Shield,
   CreditCard,
-  CheckCircle2,
-  Clock,
-  Share2,
+  Landmark,
+  MessageSquare,
+  Download,
+  Gift,
+  Receipt as ReceiptIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { readCache, writeCache } from "@/lib/offlineCache";
@@ -30,15 +32,23 @@ import { useRealtimeSync, useReconnectSync } from "@/hooks/useRealtimeSync";
 import { InvoicesTab } from "@/components/dashboard/tabs/InvoicesTab";
 import { PaymentsTab } from "@/components/dashboard/tabs/PaymentsTab";
 import { ServicesTab } from "@/components/dashboard/tabs/ServicesTab";
+import { PackagesTab } from "@/components/dashboard/tabs/PackagesTab";
+import { QuotesTab } from "@/components/dashboard/tabs/QuotesTab";
+import { QuoteRequestsTab } from "@/components/dashboard/tabs/QuoteRequestsTab";
 import { ContractSummariesTab } from "@/components/dashboard/tabs/ContractSummariesTab";
 import { SupportTab } from "@/components/dashboard/tabs/SupportTab";
+import { ChatHistoryTab } from "@/components/dashboard/tabs/ChatHistoryTab";
+import { ComplaintsTab } from "@/components/dashboard/tabs/ComplaintsTab";
+import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
 import { DocumentsTab } from "@/components/dashboard/tabs/DocumentsTab";
 import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsTab";
 import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab";
+import { DirectDebitOverview } from "@/components/dashboard/DirectDebitOverview";
 import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
 import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
-import { format } from "date-fns";
-import { Download, Gift, Receipt as ReceiptIcon } from "lucide-react";
+import { formatGbp, formatUkDate } from "@/lib/dashboard/format";
+import type { QuoteCounts } from "@/lib/dashboard/quoteCounts";
+import { EMPTY_QUOTE_COUNTS } from "@/lib/dashboard/quoteCounts";
 
 type Order = {
   id: string;
@@ -47,7 +57,7 @@ type Order = {
   plan_price: number;
   status: 'pending' | 'confirmed' | 'active' | 'cancelled';
   created_at: string;
-  postcode: string;
+  postcode?: string | null;
 };
 
 type Profile = {
@@ -55,21 +65,16 @@ type Profile = {
   full_name: string | null;
   email: string | null;
   phone: string | null;
+  account_number?: string | null;
+  postcode?: string | null;
 };
 
-type UnpaidInvoice = {
+type OverviewInvoice = {
   id: string;
   invoice_number: string | null;
-  total: number;
-  status: string;
+  total: number | string | null;
+  status: string | null;
   due_date: string | null;
-  issue_date: string | null;
-};
-
-type PaidInvoice = {
-  id: string;
-  invoice_number: string | null;
-  total: number;
   issue_date: string | null;
 };
 
@@ -78,130 +83,178 @@ type ContractSummary = {
   cs_number: string | null;
   status: string | null;
   plan_name: string | null;
-  monthly_total: number | null;
+  monthly_price_incl_vat: number | null;
   created_at: string | null;
 };
 
-const serviceIcons = {
+type AppTicket = {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  updated_at?: string | null;
+  category?: string | null;
+};
+
+export type AppDashboardProps = {
+  /** Authenticated user, resolved once by the parent Dashboard page. */
+  user: User;
+  /** Canonical `get_my_customer_overview()` payload (source of truth). */
+  overview: any | null;
+  profile: Profile | null;
+  tickets: AppTicket[];
+  quoteCounts?: QuoteCounts;
+  isDataLoading?: boolean;
+  loadError?: string | null;
+  onRetry?: () => void;
+  onSignOut?: () => void;
+};
+
+const serviceIcons: Record<string, typeof Wifi> = {
   broadband: Wifi,
   sim: Smartphone,
   landline: PhoneCall,
 };
 
-const statusConfig = {
-  pending: { color: "bg-warning/20 text-warning", icon: Clock, label: "Pending" },
-  confirmed: { color: "bg-accent/20 text-accent", icon: CheckCircle2, label: "Confirmed" },
-  active: { color: "bg-success/20 text-success", icon: CheckCircle2, label: "Active" },
-  cancelled: { color: "bg-destructive/20 text-destructive", icon: Clock, label: "Cancelled" },
+const statusConfig: Record<string, { color: string; label: string }> = {
+  pending: { color: "bg-warning/20 text-warning", label: "Pending" },
+  confirmed: { color: "bg-accent/20 text-accent", label: "Confirmed" },
+  active: { color: "bg-success/20 text-success", label: "Active" },
+  cancelled: { color: "bg-destructive/20 text-destructive", label: "Cancelled" },
 };
 
-const AppDashboard = () => {
+const REWARDS_ENABLED = (import.meta as any).env?.VITE_FEATURE_REWARDS === "true";
+
+// Outstanding = anything not settled or cancelled, matching the desktop rule
+// (statuses such as "issued" must never silently disappear from the balance).
+const SETTLED_STATUS = new Set(["paid", "cancelled", "void", "written_off"]);
+const isOutstanding = (status: string | null | undefined) => !SETTLED_STATUS.has(String(status ?? "").toLowerCase());
+
+const AppDashboard = ({
+  user,
+  overview,
+  profile,
+  tickets,
+  quoteCounts = EMPTY_QUOTE_COUNTS,
+  isDataLoading = false,
+  loadError = null,
+  onRetry,
+  onSignOut,
+}: AppDashboardProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(() => readCache<Profile>(null, "dashboard.profile"));
-  const [orders, setOrders] = useState<Order[]>(() => readCache<Order[]>(null, "dashboard.orders") ?? []);
-  const [latestInvoice, setLatestInvoice] = useState<UnpaidInvoice | null>(() => readCache<UnpaidInvoice>(null, "dashboard.latestInvoice"));
-  const [contract, setContract] = useState<ContractSummary | null>(() => readCache<ContractSummary>(null, "dashboard.contract"));
-  const [paidInvoices, setPaidInvoices] = useState<PaidInvoice[]>(() => readCache<PaidInvoice[]>(null, "dashboard.paidInvoices") ?? []);
+  const userId = user.id;
+
+  // Cached state is strictly user-scoped and only hydrated once the
+  // authenticated user is known, so nothing can leak across accounts.
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [contract, setContract] = useState<ContractSummary | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadingContract, setDownloadingContract] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-      
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setTimeout(() => fetchUserData(session.user.id), 0);
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-      
-      if (!session) {
-        navigate("/auth");
-      } else {
-        fetchUserData(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const fetchUserData = async (userId: string) => {
+  const fetchSupplementary = useCallback(async (uid: string) => {
     try {
-      const cachedProfile = readCache<Profile>(userId, "dashboard.profile");
-      const cachedOrders = readCache<Order[]>(userId, "dashboard.orders");
-      if (cachedProfile) setProfile(cachedProfile);
+      const cachedOrders = readCache<Order[]>(uid, "dashboard.orders");
+      const cachedContract = readCache<ContractSummary>(uid, "dashboard.contract");
       if (cachedOrders) setOrders(cachedOrders);
+      if (cachedContract) setContract(cachedContract);
 
       if (typeof navigator !== "undefined" && navigator.onLine === false) return;
 
-      const [profileResult, ordersResult, invoiceResult, contractResult, paidResult] = await Promise.all([
-        supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
-        supabase.from("customer_orders" as any).select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+      const [ordersResult, contractResult] = await Promise.all([
+        supabase.from("customer_orders" as any).select("*").eq("user_id", uid).order("created_at", { ascending: false }),
         supabase
-          .from("invoices")
-          .select("id, invoice_number, total, status, due_date, issue_date")
-          .eq("user_id", userId)
-          .in("status", ["draft", "sent", "overdue"])
-          .order("due_date", { ascending: true })
-          .limit(1),
-        supabase
-          .from("contract_summaries" as any)
-          .select("id, cs_number, status, plan_name, monthly_total, created_at")
-          .eq("customer_id", userId)
-          // Information updates are records-only: never counted as the active
-          // or needs-acceptance contract summary.
+          .from("customer_contract_summaries" as any)
+          .select("id, cs_number, status, plan_name, monthly_price_incl_vat, created_at, is_information_update")
+          .eq("customer_id", uid)
           .eq("is_information_update", false)
           .order("created_at", { ascending: false })
           .limit(1),
-        supabase
-          .from("invoices")
-          .select("id, invoice_number, total, issue_date")
-          .eq("user_id", userId)
-          .eq("status", "paid")
-          .order("issue_date", { ascending: false })
-          .limit(3),
       ]);
 
-      if (profileResult.data) {
-        setProfile(profileResult.data as any);
-        writeCache(userId, "dashboard.profile", profileResult.data);
-      }
       if (ordersResult.data) {
         setOrders(ordersResult.data as any);
-        writeCache(userId, "dashboard.orders", ordersResult.data);
+        writeCache(uid, "dashboard.orders", ordersResult.data);
       }
-      const inv = (invoiceResult.data as any[] | null)?.[0] ?? null;
-      setLatestInvoice(inv);
-      writeCache(userId, "dashboard.latestInvoice", inv);
-      const cs = (contractResult.data as any[] | null)?.[0] ?? null;
-      setContract(cs);
-      writeCache(userId, "dashboard.contract", cs);
-      const paid = (paidResult.data as any[] | null) ?? [];
-      setPaidInvoices(paid);
-      writeCache(userId, "dashboard.paidInvoices", paid);
+      if (!contractResult.error) {
+        const cs = (contractResult.data as any[] | null)?.[0] ?? null;
+        setContract(cs);
+        writeCache(uid, "dashboard.contract", cs);
+      }
     } catch (error) {
-      logError("AppDashboard.fetchUserData", error);
+      logError("AppDashboard.fetchSupplementary", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Reset any previous account's rows before hydrating this user's data.
+    setOrders([]);
+    setContract(null);
+    void fetchSupplementary(userId);
+  }, [userId, fetchSupplementary]);
+
+  const refreshAll = useCallback(() => {
+    void fetchSupplementary(userId);
+    onRetry?.();
+  }, [fetchSupplementary, userId, onRetry]);
+
+  // Realtime: orders/invoices/profile changes for this user only.
+  useRealtimeSync(
+    `app-dashboard-${userId}`,
+    [
+      { table: "orders", filter: `user_id=eq.${userId}` },
+      { table: "invoices", filter: `user_id=eq.${userId}` },
+      { table: "profiles", filter: `id=eq.${userId}` },
+    ],
+    refreshAll,
+    true,
+  );
+
+  useReconnectSync(refreshAll, true);
+
+  const invoices: OverviewInvoice[] = useMemo(
+    () => (Array.isArray(overview?.invoices) ? (overview.invoices as OverviewInvoice[]) : []),
+    [overview],
+  );
+  const unpaidInvoices = useMemo(
+    () =>
+      invoices
+        .filter((i) => isOutstanding(i.status))
+        .sort((a, b) => new Date(a.due_date ?? a.issue_date ?? 0).getTime() - new Date(b.due_date ?? b.issue_date ?? 0).getTime()),
+    [invoices],
+  );
+  const paidInvoices = useMemo(
+    () => invoices.filter((i) => String(i.status ?? "").toLowerCase() === "paid").slice(0, 3),
+    [invoices],
+  );
+  const outstandingTotal = unpaidInvoices.reduce((s, i) => s + Number(i.total ?? 0), 0);
+  const latestInvoice = unpaidInvoices[0] ?? null;
+
+  const canonicalService = overview?.service ?? null;
+  const canonicalOrder = overview?.order ?? null;
+  const directDebit = overview?.direct_debit ?? null;
+  const accountNumber = overview?.account_number ?? profile?.account_number ?? null;
+
+  const proxyActiveOrders = orders.filter((o) => o.status === "active" || o.status === "confirmed");
+  const serviceIsActive = String(canonicalService?.status ?? "") === "active";
+  const activeServiceCount = serviceIsActive ? Math.max(1, proxyActiveOrders.length) : proxyActiveOrders.length;
+  const monthlyTotal = serviceIsActive
+    ? Number(canonicalService?.monthly_price ?? 0) || proxyActiveOrders.reduce((s, o) => s + Number(o.plan_price ?? 0), 0)
+    : proxyActiveOrders.reduce((s, o) => s + Number(o.plan_price ?? 0), 0);
+
+  const openTicketCount = tickets.filter(
+    (t) => t.status === "open" || t.status === "in_progress" || t.status === "waiting_customer" || t.status === "waiting_occta",
+  ).length;
 
   const handleDownloadInvoice = async (invoiceId: string) => {
-    if (!user) return;
     setDownloadingId(invoiceId);
     try {
       const [invRes, linesRes, profileRes] = await Promise.all([
         supabase.from("invoices").select("*").eq("id", invoiceId).maybeSingle(),
         supabase.from("invoice_lines").select("*").eq("invoice_id", invoiceId).order("created_at", { ascending: true }),
-        supabase.from("customer_profile" as any).select("*").eq("id", user.id).maybeSingle(),
+        supabase.from("customer_profile" as any).select("*").eq("id", userId).maybeSingle(),
       ]);
       if (invRes.error || !invRes.data) throw invRes.error ?? new Error("invoice_missing");
       const inv: any = invRes.data;
@@ -251,263 +304,296 @@ const AppDashboard = () => {
       if (!url) throw new Error("no_signed_url");
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (e) {
+      logError("AppDashboard.handleDownloadContract", e);
       toast({ title: "Couldn't open contract PDF", variant: "destructive" });
     } finally {
       setDownloadingContract(false);
     }
   };
 
-  // Realtime: orders/invoices/services/profile changes for this user.
-  useRealtimeSync(
-    `app-dashboard-${user?.id ?? "anon"}`,
-    user
-      ? [
-          { table: "orders", filter: `user_id=eq.${user.id}` },
-          { table: "invoices", filter: `user_id=eq.${user.id}` },
-          { table: "profiles", filter: `id=eq.${user.id}` },
-        ]
-      : [],
-    () => { if (user) fetchUserData(user.id); },
-    !!user,
-  );
+  const userName = profile?.full_name || user.email?.split("@")[0] || "Customer";
+  const userInitials = userName.slice(0, 2).toUpperCase();
 
-  useReconnectSync(() => { if (user) fetchUserData(user.id); }, !!user);
+  // `tab` is absent on the account home. Anything unknown also lands here so a
+  // stale or mistyped deep link can never render a blank screen.
+  const requestedSection = searchParams.get("tab");
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
-      toast({ title: "Signed out", description: "See you soon!" });
-      navigate("/");
-    }
+  const sectionTitle: Record<string, string> = {
+    orders: "All Orders",
+    services: "My Services",
+    packages: "My Packages",
+    quotes: "Quotes",
+    quoteRequests: "Quote Requests",
+    cs: "Contract Details",
+    invoices: "Invoices & Payments",
+    billing: "Invoices & Payments",
+    payments: "Payments & Receipts",
+    dd: "Direct Debit",
+    documents: "Documents",
+    tickets: "Support Tickets",
+    support: "Support Tickets",
+    chat: "Chat History",
+    complaints: "Complaints",
+    vuln: "Extra Support",
+    account: "Account Details",
+    notifications: "Notifications",
+    privacy: "Privacy",
+    settings: "Settings",
+    ...(REWARDS_ENABLED ? { rewards: "Rewards" } : {}),
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-accent" />
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
-  const userName = profile?.full_name || user.email?.split("@")[0] || "User";
-  const userInitials = userName.slice(0, 2).toUpperCase();
-  const activeOrders = orders.filter(o => o.status === 'active' || o.status === 'confirmed');
-  const totalMonthly = activeOrders.reduce((sum, o) => sum + o.plan_price, 0);
-  const activeSection = searchParams.get("tab") || "account";
+  const activeSection = requestedSection && sectionTitle[requestedSection] ? requestedSection : "home";
 
   const menuItems = [
-    { icon: CreditCard, label: "Invoices & Payments", description: "Bills, receipts and Pay Now", link: "/dashboard?tab=invoices" },
+    { icon: CreditCard, label: "Invoices & Payments", description: "Bills, receipts and Pay Now", link: "/dashboard?tab=invoices", badge: unpaidInvoices.length || undefined },
     { icon: ReceiptIcon, label: "Payments & Receipts", description: "Payment history and receipts", link: "/dashboard?tab=payments" },
+    { icon: Landmark, label: "Direct Debit", description: "Your payment mandate", link: "/dashboard?tab=dd" },
     { icon: FileText, label: "Contract details", description: "Your signed contract summary", link: "/dashboard?tab=cs" },
-    { icon: Wifi, label: "My services", description: "Active broadband & SIM", link: "/dashboard?tab=services" },
-    { icon: Package, label: "All Orders", description: "View order history", link: "/dashboard?tab=orders", badge: orders.length },
-    { icon: HelpCircle, label: "Support tickets", description: "Raised tickets & chat", link: "/dashboard?tab=tickets" },
+    { icon: Wifi, label: "My services", description: "Active broadband, SIM & phone", link: "/dashboard?tab=services" },
+    { icon: Package, label: "All Orders", description: "Track orders and activation", link: "/dashboard?tab=orders", badge: orders.length || undefined },
+    { icon: FileText, label: "Quotes", description: "Quotes ready to accept", link: "/dashboard?tab=quotes", badge: quoteCounts.openQuotes || undefined },
+    { icon: MessageSquare, label: "Quote requests", description: "Requests we're working on", link: "/dashboard?tab=quoteRequests", badge: quoteCounts.openRequests || undefined },
+    { icon: HelpCircle, label: "Support tickets", description: "Raised tickets & replies", link: "/dashboard?tab=tickets", badge: openTicketCount || undefined },
+    { icon: MessageSquare, label: "Complaints", description: "Raise or track a complaint", link: "/dashboard?tab=complaints" },
     { icon: FileText, label: "Documents", description: "Downloads and paperwork", link: "/dashboard?tab=documents" },
-    { icon: Gift, label: "Rewards", description: "Points and referrals", link: "/dashboard?tab=rewards" },
+    ...(REWARDS_ENABLED
+      ? [{ icon: Gift, label: "Rewards", description: "Points and referrals", link: "/dashboard?tab=rewards" }]
+      : []),
+    { icon: UserIcon, label: "Account details", description: "Name, contact and address", link: "/dashboard?tab=account" },
     { icon: Bell, label: "Notifications", description: "Manage alerts", link: "/dashboard?tab=notifications" },
-    { icon: Shield, label: "Privacy", description: "Security settings", link: "/dashboard?tab=privacy" },
+    { icon: Shield, label: "Privacy", description: "Policies and your data", link: "/dashboard?tab=privacy" },
     { icon: Settings, label: "Settings", description: "App preferences", link: "/dashboard?tab=settings" },
-  ];
+  ] as Array<{ icon: typeof Wifi; label: string; description: string; link: string; badge?: number }>;
 
-  const renderSection = () => {
-    const sectionTitle: Record<string, string> = {
-      orders: "All Orders",
-      documents: "Documents",
-      notifications: "Notifications",
-      privacy: "Privacy",
-      settings: "Settings",
-      invoices: "Invoices & Payments",
-      payments: "Payments & Receipts",
-      services: "My Services",
-      cs: "Contract Details",
-      tickets: "Support Tickets",
-      account: "Account",
-      rewards: "Rewards",
-    };
+  const errorBanner = loadError ? (
+    <div role="alert" className="bg-destructive/10 border border-destructive/30 rounded-2xl p-3 mb-4">
+      <p className="text-sm">{loadError}</p>
+      {onRetry && (
+        <Button size="sm" variant="outline" className="mt-2 rounded-xl" onClick={onRetry} disabled={isDataLoading}>
+          Retry
+        </Button>
+      )}
+    </div>
+  ) : null;
 
-    if (!sectionTitle[activeSection]) return null;
-
-    return (
-      <div className="min-h-screen bg-muted/30 pb-8">
-        <div className="bg-accent px-4 pt-4 pb-8 rounded-b-3xl">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="w-10 h-10 rounded-full bg-background/15 text-accent-foreground flex items-center justify-center"
-              aria-label="Back to account"
-            >
-              <ChevronRight className="w-5 h-5 rotate-180" />
-            </button>
-            <h2 className="font-bold text-lg text-accent-foreground">{sectionTitle[activeSection]}</h2>
-          </div>
-        </div>
-
-        <div className="px-4 -mt-4">
-          {activeSection === "invoices" && (
-            <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <InvoicesTab userId={user.id} />
+  const sectionBody = () => {
+    switch (activeSection) {
+      case "invoices":
+      case "billing":
+        return <InvoicesTab userId={userId} />;
+      case "payments":
+        return <PaymentsTab userId={userId} />;
+      case "dd":
+        return <DirectDebitOverview userId={userId} />;
+      case "services":
+        return <ServicesTab userId={userId} />;
+      case "packages":
+        return <PackagesTab userId={userId} />;
+      case "quotes":
+        return <QuotesTab userId={userId} />;
+      case "quoteRequests":
+        return <QuoteRequestsTab userId={userId} />;
+      case "cs":
+        return <ContractSummariesTab userId={userId} />;
+      case "orders":
+        return <OrdersTimelineTab userId={userId} userEmail={user.email ?? null} />;
+      case "documents":
+        return <DocumentsTab userId={userId} />;
+      case "chat":
+        return <ChatHistoryTab userId={userId} />;
+      case "complaints":
+        return <ComplaintsTab />;
+      case "vuln":
+        return <VulnerableSupportTab userId={userId} />;
+      case "rewards":
+        return <RewardsTab />;
+      case "account":
+        return (
+          <AccountSettingsTab
+            profile={(profile as any) ?? { id: userId, full_name: null, email: user.email ?? null }}
+          />
+        );
+      case "support":
+      case "tickets":
+        return (
+          <>
+            <SupportTab tickets={tickets as any} userId={userId} />
+            <div className="mt-3">
+              <Link to="/support">
+                <Button variant="outline" className="w-full rounded-xl">Full support centre</Button>
+              </Link>
             </div>
-          )}
-
-          {activeSection === "payments" && (
-            <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <PaymentsTab userId={user.id} />
-            </div>
-          )}
-
-          {activeSection === "services" && (
-            <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <ServicesTab userId={user.id} />
-            </div>
-          )}
-
-          {activeSection === "cs" && (
-            <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <ContractSummariesTab userId={user.id} />
-            </div>
-          )}
-
-          {activeSection === "tickets" && (
-            <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <SupportTab tickets={[] as any} />
-              <div className="mt-3">
-                <Link to="/support"><Button variant="outline" className="w-full rounded-xl">Open support</Button></Link>
+          </>
+        );
+      case "notifications":
+        return (
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <Bell className="w-5 h-5 text-accent" />
+              <div>
+                <p className="font-medium">Service alerts</p>
+                <p className="text-sm text-muted-foreground">Billing, orders and support updates</p>
               </div>
             </div>
-          )}
-
-          {activeSection === "account" && (
-            <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <AccountSettingsTab profile={(profile as any) ?? { id: user.id, full_name: null, email: user.email ?? null }} />
-            </div>
-          )}
-
-          {activeSection === "orders" && (
-            <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <OrdersTimelineTab userId={user.id} userEmail={user.email ?? null} />
-            </div>
-          )}
-
-          {activeSection === "documents" && (
-            <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <DocumentsTab userId={user.id} />
-            </div>
-          )}
-
-          {activeSection === "rewards" && (
-            <div className="bg-background rounded-2xl p-3 shadow-sm">
-              <RewardsTab />
-            </div>
-          )}
-
-          {activeSection === "notifications" && (
-            <div className="bg-background rounded-2xl p-4 shadow-sm">
-              <div className="flex items-center gap-3 mb-4"><Bell className="w-5 h-5 text-accent" /><div><p className="font-medium">Service alerts</p><p className="text-sm text-muted-foreground">Billing, orders and support updates</p></div></div>
-              <Button className="w-full rounded-xl" onClick={async () => {
+            <Button
+              className="w-full rounded-xl"
+              onClick={async () => {
                 if (!("Notification" in window)) {
                   toast({ title: "Unavailable", description: "Notifications are not supported on this device" });
                   return;
                 }
                 const permission = await Notification.requestPermission();
                 toast({ title: permission === "granted" ? "Notifications enabled" : "Notifications not enabled" });
-              }}>
-                Manage Notifications
-              </Button>
+              }}
+            >
+              Manage Notifications
+            </Button>
+          </div>
+        );
+      case "privacy":
+        return (
+          <div className="-m-3">
+            {[{ label: "Privacy Policy", to: "/privacy" }, { label: "Cookie Policy", to: "/cookies" }, { label: "Terms of Service", to: "/terms" }].map((item, index) => (
+              <Link key={item.to} to={item.to} className={`flex items-center gap-4 p-4 ${index !== 2 ? "border-b border-border" : ""}`}>
+                <Shield className="w-5 h-5 text-accent" />
+                <span className="flex-1 font-medium">{item.label}</span>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </Link>
+            ))}
+          </div>
+        );
+      case "settings":
+        return (
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">Signed in as</p>
+              <p className="font-medium break-words">{user.email}</p>
             </div>
-          )}
+            <Link to="/broadband" className="block">
+              <Button variant="outline" className="w-full rounded-xl h-12"><Wifi className="w-4 h-4 mr-2" />Add Broadband</Button>
+            </Link>
+            <Button
+              variant="outline"
+              className="w-full rounded-xl h-12 border-destructive/30 text-destructive hover:bg-destructive/10"
+              onClick={onSignOut}
+            >
+              <LogOut className="w-4 h-4 mr-2" />Sign Out
+            </Button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
-          {activeSection === "privacy" && (
-            <div className="bg-background rounded-2xl shadow-sm overflow-hidden">
-              {[{ label: "Privacy Policy", to: "/privacy" }, { label: "Cookie Policy", to: "/cookies" }, { label: "Terms of Service", to: "/terms" }].map((item, index) => (
-                <Link key={item.to} to={item.to} className={`flex items-center gap-4 p-4 ${index !== 2 ? "border-b border-border" : ""}`}>
-                  <Shield className="w-5 h-5 text-accent" />
-                  <span className="flex-1 font-medium">{item.label}</span>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
-          )}
+  if (activeSection !== "home") {
+    return (
+      <div className="min-h-screen bg-muted/30 pb-8">
+        <div className="bg-accent px-4 pt-4 pb-8 rounded-b-3xl">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="w-10 h-10 rounded-full bg-background/15 text-accent-foreground flex items-center justify-center shrink-0"
+              aria-label="Back to account"
+            >
+              <ChevronRight className="w-5 h-5 rotate-180" />
+            </button>
+            <h2 className="font-bold text-lg text-accent-foreground truncate">{sectionTitle[activeSection]}</h2>
+          </div>
+        </div>
 
-          {activeSection === "settings" && (
-            <div className="space-y-3">
-              <div className="bg-background rounded-2xl p-4 shadow-sm">
-                <p className="text-sm text-muted-foreground">Signed in as</p>
-                <p className="font-medium truncate">{user.email}</p>
-              </div>
-              <Link to="/broadband" className="block"><Button variant="outline" className="w-full rounded-xl h-12"><Wifi className="w-4 h-4 mr-2" />Add Broadband</Button></Link>
-              <Button variant="outline" className="w-full rounded-xl h-12 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={handleSignOut}>
-                <LogOut className="w-4 h-4 mr-2" />Sign Out
-              </Button>
-            </div>
-          )}
+        <div className="px-4 -mt-4">
+          {errorBanner}
+          <div className="bg-background rounded-2xl p-3 shadow-sm overflow-x-hidden">{sectionBody()}</div>
         </div>
       </div>
     );
-  };
-
-  const sectionContent = renderSection();
-  if (sectionContent) return sectionContent;
+  }
 
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <div className="bg-accent px-4 pt-4 pb-8 rounded-b-3xl">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-background rounded-2xl p-4"
         >
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-xl font-bold text-accent-foreground">
+            <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-xl font-bold text-accent-foreground shrink-0">
               {userInitials}
             </div>
-            <div className="flex-1">
-              <h2 className="font-bold text-lg">{userName}</h2>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-              {profile?.phone && (
-                <p className="text-sm text-muted-foreground">{profile.phone}</p>
-              )}
+            <div className="flex-1 min-w-0">
+              <h2 className="font-bold text-lg truncate">{userName}</h2>
+              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+              {profile?.phone && <p className="text-sm text-muted-foreground truncate">{profile.phone}</p>}
+              <p className="text-xs text-muted-foreground mt-1">
+                Account{" "}
+                <span className="font-mono">
+                  {accountNumber ?? (isDataLoading ? "—" : "Not assigned yet")}
+                </span>
+              </p>
             </div>
-            <button className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+            <Link
+              to="/dashboard?tab=account"
+              className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0"
+              aria-label="Account details"
+            >
               <UserIcon className="w-5 h-5 text-muted-foreground" />
-            </button>
+            </Link>
           </div>
-          
-          {activeOrders.length > 0 && (
-            <div className="bg-muted/50 rounded-xl p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{activeOrders.length} Active Service{activeOrders.length !== 1 ? 's' : ''}</span>
-                <span className="font-bold text-lg">£{totalMonthly.toFixed(2)}/mo</span>
-              </div>
+
+          <div className="bg-muted/50 rounded-xl p-3 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-muted-foreground">
+                {activeServiceCount > 0
+                  ? `${activeServiceCount} active service${activeServiceCount !== 1 ? "s" : ""}`
+                  : canonicalOrder
+                    ? `Order ${String(canonicalOrder.lifecycle_status ?? "in progress").replace(/_/g, " ")}`
+                    : "No active services yet"}
+              </span>
+              {monthlyTotal > 0 && <span className="font-bold text-lg">{formatGbp(monthlyTotal)}/mo</span>}
             </div>
-          )}
+            {canonicalService?.next_billing_date && (
+              <p className="text-xs text-muted-foreground">
+                Next bill {formatUkDate(canonicalService.next_billing_date) ?? "—"}
+              </p>
+            )}
+            {directDebit?.status && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Landmark className="w-3 h-3" />
+                Direct Debit: {String(directDebit.status).replace(/_/g, " ")}
+                {directDebit.masked_account_last4 ? ` ••••${directDebit.masked_account_last4}` : ""}
+              </p>
+            )}
+          </div>
         </motion.div>
       </div>
 
       <div className="px-4 -mt-4">
-        {/* Latest unpaid invoice — Pay Now */}
+        {errorBanner}
+
+        {/* Outstanding balance / Pay now */}
         {latestInvoice && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-background rounded-2xl p-4 shadow-sm mb-4 border-2 border-warning/40"
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-warning/15 flex items-center justify-center">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-warning/15 flex items-center justify-center shrink-0">
                   <CreditCard className="w-5 h-5 text-warning" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Latest invoice</p>
-                  <p className="font-bold">{latestInvoice.invoice_number || latestInvoice.id.slice(0, 8)}</p>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Outstanding</p>
+                  <p className="font-bold truncate">{latestInvoice.invoice_number || latestInvoice.id.slice(0, 8)}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-lg">£{Number(latestInvoice.total || 0).toFixed(2)}</p>
-                {latestInvoice.due_date && (
-                  <p className="text-xs text-muted-foreground">Due {new Date(latestInvoice.due_date).toLocaleDateString("en-GB")}</p>
+              <div className="text-right shrink-0">
+                <p className="font-bold text-lg">{formatGbp(outstandingTotal)}</p>
+                {formatUkDate(latestInvoice.due_date) && (
+                  <p className="text-xs text-muted-foreground">Due {formatUkDate(latestInvoice.due_date)}</p>
                 )}
               </div>
             </div>
@@ -517,7 +603,7 @@ const AppDashboard = () => {
               </Link>
               <Button
                 variant="outline"
-                className="rounded-xl"
+                className="rounded-xl shrink-0"
                 onClick={() => handleDownloadInvoice(latestInvoice.id)}
                 disabled={downloadingId === latestInvoice.id}
                 aria-label="Download invoice"
@@ -529,6 +615,24 @@ const AppDashboard = () => {
               </Link>
             </div>
           </motion.div>
+        )}
+
+        {/* Tickets awaiting the customer */}
+        {openTicketCount > 0 && (
+          <Link to="/dashboard?tab=tickets" className="block mb-4">
+            <div className="bg-background rounded-2xl p-4 shadow-sm flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                <HelpCircle className="w-5 h-5 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">
+                  {openTicketCount} open support ticket{openTicketCount !== 1 ? "s" : ""}
+                </p>
+                <p className="text-sm text-muted-foreground truncate">Tap to read replies and respond</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            </div>
+          </Link>
         )}
 
         {/* Recent paid invoices */}
@@ -548,12 +652,10 @@ const AppDashboard = () => {
                 <div key={inv.id} className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-xl">
                   <div className="min-w-0">
                     <p className="font-medium text-sm truncate">{inv.invoice_number || inv.id.slice(0, 8)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {inv.issue_date ? format(new Date(inv.issue_date), "dd MMM yyyy") : "—"}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{formatUkDate(inv.issue_date) ?? "—"}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-sm">£{Number(inv.total || 0).toFixed(2)}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <p className="font-bold text-sm">{formatGbp(inv.total)}</p>
                     <Button
                       size="sm"
                       variant="outline"
@@ -579,7 +681,7 @@ const AppDashboard = () => {
             transition={{ delay: 0.05 }}
             className="bg-background rounded-2xl p-4 shadow-sm mb-4"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
                   <FileText className="w-5 h-5 text-accent" />
@@ -587,12 +689,14 @@ const AppDashboard = () => {
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Your contract</p>
                   <p className="font-medium truncate">{contract.plan_name || contract.cs_number || "Contract summary"}</p>
-                  {contract.monthly_total != null && (
-                    <p className="text-xs text-muted-foreground">£{Number(contract.monthly_total).toFixed(2)}/mo · {contract.status ?? "active"}</p>
+                  {contract.monthly_price_incl_vat != null && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatGbp(contract.monthly_price_incl_vat)}/mo · {contract.status ?? "active"}
+                    </p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <Button
                   size="sm"
                   variant="outline"
@@ -611,8 +715,8 @@ const AppDashboard = () => {
           </motion.div>
         )}
 
-        {/* Active Services */}
-        {activeOrders.length > 0 && (
+        {/* Canonical service / order state */}
+        {(canonicalService || canonicalOrder) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -620,39 +724,64 @@ const AppDashboard = () => {
             className="bg-background rounded-2xl p-4 shadow-sm mb-4"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Active Services</h3>
-              <Link to="/dashboard" className="text-sm text-accent font-medium">View All</Link>
+              <h3 className="font-semibold">{serviceIsActive ? "Your service" : "Your order"}</h3>
+              <Link to={serviceIsActive ? "/dashboard?tab=services" : "/dashboard?tab=orders"} className="text-sm text-accent font-medium">
+                View
+              </Link>
             </div>
-            <div className="space-y-3">
-              {activeOrders.slice(0, 2).map((order) => {
-                const Icon = serviceIcons[order.service_type];
-                const status = statusConfig[order.status];
-                return (
-                  <div
-                    key={order.id}
-                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"
+            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+              <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                {(() => {
+                  const Icon = serviceIcons[String((canonicalService ?? canonicalOrder)?.service_type ?? "broadband")] ?? Wifi;
+                  return <Icon className="w-6 h-6 text-accent" />;
+                })()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">
+                  {(canonicalService ?? canonicalOrder)?.plan_name ?? "OCCTA service"}
+                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground capitalize">
+                    {String((canonicalService ?? canonicalOrder)?.service_type ?? "broadband")}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                      serviceIsActive ? statusConfig.active.color : statusConfig.pending.color
+                    }`}
                   >
-                    <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-                      <Icon className="w-6 h-6 text-accent" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{order.plan_name}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground capitalize">{order.service_type}</span>
-                        <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${status.color}`}>
-                          {status.label}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold">£{order.plan_price}</p>
-                      <p className="text-xs text-muted-foreground">/month</p>
-                    </div>
-                  </div>
-                );
-              })}
+                    {serviceIsActive
+                      ? "Active"
+                      : String(canonicalOrder?.lifecycle_status ?? "In progress").replace(/_/g, " ")}
+                  </span>
+                </div>
+                {!serviceIsActive && formatUkDate(canonicalOrder?.preferred_start_date) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Expected live {formatUkDate(canonicalOrder?.preferred_start_date)}
+                  </p>
+                )}
+                {serviceIsActive && formatUkDate(canonicalService?.activation_date) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Live since {formatUkDate(canonicalService?.activation_date)}
+                  </p>
+                )}
+              </div>
+              <div className="text-right shrink-0">
+                <p className="font-bold">{formatGbp((canonicalService ?? canonicalOrder)?.monthly_price)}</p>
+                <p className="text-xs text-muted-foreground">/month</p>
+              </div>
             </div>
           </motion.div>
+        )}
+
+        {/* Nothing yet */}
+        {!isDataLoading && !canonicalService && !canonicalOrder && orders.length === 0 && (
+          <div className="bg-background rounded-2xl p-4 shadow-sm mb-4">
+            <p className="font-medium mb-1">No services yet</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              Check your postcode and get a quote — it takes under a minute.
+            </p>
+            <Link to="/broadband"><Button className="w-full rounded-xl">Check availability</Button></Link>
+          </div>
         )}
 
         {/* Quick Actions */}
@@ -695,19 +824,19 @@ const AppDashboard = () => {
               to={item.link}
               className={`flex items-center gap-4 p-4 ${index !== menuItems.length - 1 ? 'border-b border-border' : ''}`}
             >
-              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
                 <item.icon className="w-5 h-5 text-muted-foreground" />
               </div>
-              <div className="flex-1">
-                <p className="font-medium">{item.label}</p>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{item.label}</p>
+                <p className="text-sm text-muted-foreground truncate">{item.description}</p>
               </div>
-              {item.badge && (
-                <span className="px-2 py-0.5 bg-accent text-accent-foreground text-xs rounded-full font-medium">
+              {item.badge ? (
+                <span className="px-2 py-0.5 bg-accent text-accent-foreground text-xs rounded-full font-medium shrink-0">
                   {item.badge}
                 </span>
-              )}
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              ) : null}
+              <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
             </Link>
           ))}
         </motion.div>
@@ -722,7 +851,7 @@ const AppDashboard = () => {
           <Button
             variant="outline"
             className="w-full rounded-xl h-12 border-destructive/30 text-destructive hover:bg-destructive/10"
-            onClick={handleSignOut}
+            onClick={onSignOut}
           >
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out

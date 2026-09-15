@@ -532,7 +532,7 @@ const Dashboard = () => {
   // (paid/cancelled/void/written_off). Totals and next due date come from the
   // shared helper, which ignores invalid amounts and dates.
   const outstanding = summarizeOutstandingInvoices(invoices);
-  const outstandingInvoices = outstanding.invoices;
+  
   
   // Group invoice files by month
   const groupedInvoiceFiles = invoiceFiles.reduce((acc, file) => {

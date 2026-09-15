@@ -134,6 +134,10 @@ function renderPdf(cs: any): Uint8Array {
   } else {
     row("Recurring price", `${fmtMoney(cs.monthly_price_incl_vat)} per month (incl. VAT)`);
   }
+  const routerSel = normaliseRouterOption(cs.router_option);
+  if (routerSel && routerSel.monthly > 0) {
+    row("Router (included above)", `${routerSel.label} — ${fmtMoney(routerSel.monthly)} per month incl. VAT`);
+  }
   row("One-off charges", oneOff.length
     ? oneOff.map((c: any) => `${c.label}: ${fmtMoney(c.amount)}`).join("  ·  ")
     : "None");

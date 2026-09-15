@@ -137,6 +137,7 @@ Deno.serve(async (req) => {
       quote_request_id: (q as any).quote_request_id,
       customer_id: (q as any).customer_id,
       ...(forCsId ? { contract_summary_id: forCsId } : {}),
+      ...(supersedesId ? { supersedes_id: supersedesId } : {}),
       version: nextVersion,
       document_status: "issued",
       template_version: TWO_DOC_TEMPLATE_VERSION,

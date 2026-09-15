@@ -70,8 +70,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const internal = req.headers.get("x-internal-service") === "1" &&
-    (req.headers.get("Authorization") ?? "").includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "\u0000");
+  // Internal server-to-server callers: either the service-role key, or the
+  // project's standard shared internal secret (same mechanism send-email and
+  // the outbox workers already use). Both are server-only values.
+  const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
+  const internal = (req.headers.get("x-internal-service") === "1" &&
+    (req.headers.get("Authorization") ?? "").includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "\u0000")) ||
+    (cronSecret.length >= 16 && req.headers.get("x-internal-secret") === cronSecret);
   let actorId: string | null = null;
   if (!internal) {
     const auth = await requireStaff(req, ["admin", "super_admin"]);

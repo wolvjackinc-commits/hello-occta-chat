@@ -44,9 +44,9 @@ const AppHome = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(() => readCache<any>(null, "home.profile"));
+  const [profile, setProfile] = useState<any>(null);
   const [activeService, setActiveService] = useState<Order | null>(
-    () => readCache<Order>(null, "home.activeService"),
+    null,
   );
   const [isLoading, setIsLoading] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);

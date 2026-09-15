@@ -28,6 +28,14 @@ type DDMandateCustomerView = {
   created_at: string | null;
 };
 
+/** Real timestamps only — never substitute "today" for a missing set-up date. */
+export function formatSetupDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return null;
+  return format(d, "dd MMM yyyy");
+}
+
 const DD_GUARANTEE_TEXT = `This Guarantee is offered by all banks and building societies that accept instructions to pay Direct Debits.
 
 If there are any changes to the amount, date or frequency of your Direct Debit, OCCTA Limited will notify you (normally 10 working days) in advance of your account being debited or as otherwise agreed. If you request OCCTA Limited to collect a payment, confirmation of the amount and date will be given to you at the time of the request.

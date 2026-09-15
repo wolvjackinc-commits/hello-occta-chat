@@ -626,8 +626,8 @@ const Dashboard = () => {
               linkedRecords={linkedRecords}
               identityVerified={isIdentityVerified}
               activeServices={activeServiceCount}
-              outstandingInvoices={outstandingInvoices.length}
-              outstandingTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
+              outstandingInvoices={outstanding.count}
+              outstandingTotal={outstanding.total}
               documents={userFiles.length}
               openTickets={openTickets.length}
             />
@@ -693,7 +693,7 @@ const Dashboard = () => {
             className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
           >
             {[
-              { label: "Active Services", value: activeOrders.length, color: "bg-primary" },
+              { label: "Active Services", value: activeServiceCount, color: "bg-primary" },
               { label: "Total Orders", value: allOrders.length, color: "bg-accent" },
               { label: "Open Tickets", value: openTickets.length, color: "bg-warning" },
               { label: "All Tickets", value: tickets.length, color: "bg-secondary" },
@@ -760,11 +760,11 @@ const Dashboard = () => {
                     ?? guestOrders[0]?.status
                     ?? null
                 }
-                unpaidInvoices={outstandingInvoices.length}
-                unpaidTotal={outstandingInvoices.reduce((s, i) => s + Number(i.total), 0)}
+                unpaidInvoices={outstanding.count}
+                unpaidTotal={outstanding.total}
                 openTickets={openTickets.length}
-                nextDueDate={outstandingInvoices[0]?.due_date ?? null}
-                nextDueInvoiceId={outstandingInvoices[0]?.id ?? null}
+                nextDueDate={outstanding.nextDueDate}
+                nextDueInvoiceId={outstanding.nextDueInvoiceId}
               />
             </TabsContent>
 

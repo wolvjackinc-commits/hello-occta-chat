@@ -123,6 +123,31 @@ Deno.serve(async (req) => {
     .from("contract_summaries").insert(row).select("*").single();
   if (insErr) return jsonResponse({ error: "create_failed", details: insErr.message }, 500);
 
+  // Fail closed: if any part of the document set cannot be produced, the new
+  // Contract Summary must never be signable. It is never deleted (documents are
+  // append-only) — it is voided for manual review and its signing token is
+  // destroyed, so the customer's existing accepted contract stays in force.
+  const voidRevision = async (why: string) => {
+    await supabase.from("contract_summaries").update({
+      status: "expired",
+      document_status: "void_manual_review",
+      public_token_hash: null,
+      token_expires_at: nowIso,
+      archived_at: nowIso,
+      archived_reason: `revision_void:${why}`.slice(0, 200),
+    }).eq("id", created.id).neq("status", "accepted");
+    await supabase.rpc("log_event", {
+      _actor_type: "system",
+      _event_type: "contract_summary_revision_voided",
+      _title: `Revised CS ${created.cs_number} voided before sending (${why})`,
+      _details: { reason, why, supersedes_id: src.id },
+      _source_module: "contract_summary",
+      _quote_id: created.quote_id,
+      _contract_summary_id: created.id,
+      _customer_id: created.customer_id,
+    }).then(() => {}).catch(() => {});
+  };
+
   // Immutable PDF for the new version.
   const projectUrl = Deno.env.get("SUPABASE_URL")!;
   const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -133,7 +158,8 @@ Deno.serve(async (req) => {
   });
   if (!pdfRes.ok) {
     const body = await pdfRes.text().catch(() => "");
-    return jsonResponse({ error: "pdf_generation_failed", contract_summary_id: created.id, details: body.slice(0, 300) }, 502);
+    await voidRevision("pdf_generation_failed");
+    return jsonResponse({ error: "pdf_generation_failed", contract_summary_id: created.id, voided: true, details: body.slice(0, 300) }, 502);
   }
 
   // Contract Information Pack must be reissued and paired to THIS revision,

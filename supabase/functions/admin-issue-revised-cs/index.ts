@@ -291,14 +291,25 @@ Deno.serve(async (req) => {
     ? `<tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Router charge</td><td style="padding:6px 0;font-size:13px;"><strong>£${routerOneOff.toFixed(2)} one-off incl. VAT</strong></td></tr>`
     : "";
 
+  // Two-document flow: the signing page shows the Contract Summary together
+  // with its matching Contract Information Pack, so both are referenced here.
+  const cipRow = reissuedCip
+    ? `<tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Contract Information</td><td style="padding:6px 0;font-size:13px;"><strong>${escapeHtml(reissuedCip.cip_number)}</strong> (v${reissuedCip.version})</td></tr>`
+    : "";
+  const cipNote = reissuedCip
+    ? `<p>Both documents have been reissued together: your revised Contract Summary and the matching Contract Information &amp; Customer Agreement Pack. You can read both on the signing page before you accept.</p>`
+    : "";
+
   const html = brutalistEmailShell(
     "Your revised OCCTA Contract Summary",
     `<p>Hi ${escapeHtml(firstName)},</p>
      <p>Thanks for speaking with us. As agreed, here is your <strong>revised Contract Summary</strong> — it replaces the one you accepted previously once you accept this version.</p>
      <p><strong>What has changed:</strong> ${escapeHtml(reason)}</p>
      ${unchangedHtml}
+     ${cipNote}
      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0;border-collapse:collapse;">
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Contract Summary</td><td style="padding:6px 0;font-size:13px;"><strong>${escapeHtml(String(created.cs_number))}</strong> (v${created.version})</td></tr>
+       ${cipRow}
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Plan</td><td style="padding:6px 0;font-size:13px;"><strong>${escapeHtml(String(created.plan_name))}</strong></td></tr>
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Estimated speeds</td><td style="padding:6px 0;font-size:13px;"><strong>Up to ${escapeHtml(String(created.estimated_download_speed))}Mbps down / up to ${escapeHtml(String(created.estimated_upload_speed))}Mbps up</strong></td></tr>
        ${routerRow}

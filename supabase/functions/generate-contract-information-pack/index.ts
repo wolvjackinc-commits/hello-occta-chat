@@ -84,20 +84,24 @@ Deno.serve(async (req) => {
 
   const { data: existingRows } = await supabase
     .from("contract_information_packs")
-    .select("id, cip_number, version, document_status, pdf_hash, pdf_storage_path")
+    .select("id, cip_number, version, document_status, pdf_hash, pdf_storage_path, contract_summary_id")
     .eq("quote_id", quoteId)
     .neq("document_status", "superseded")
     .order("version", { ascending: false });
 
+  // A pack may only be reused for the requested Contract Summary version.
+  const pairable = (r: { contract_summary_id?: string | null }) =>
+    !forCsId || !r.contract_summary_id || r.contract_summary_id === forCsId;
+
   const accepted = (existingRows ?? []).find((r) => r.document_status === "accepted");
-  if (accepted) {
+  if (accepted && pairable(accepted)) {
     return jsonResponse({
       ok: true, reused: true, immutable: true,
       pack_id: accepted.id, cip_number: accepted.cip_number, version: accepted.version,
       pdf_hash: accepted.pdf_hash,
     });
   }
-  const sameBody = (existingRows ?? []).find((r) => r.pdf_hash === bodyHash);
+  const sameBody = (existingRows ?? []).find((r) => r.pdf_hash === bodyHash && pairable(r));
   if (sameBody) {
     return jsonResponse({
       ok: true, reused: true,

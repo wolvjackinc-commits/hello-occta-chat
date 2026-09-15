@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
       _quote_id: created.quote_id,
       _contract_summary_id: created.id,
       _customer_id: created.customer_id,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
   };
 
   // Immutable PDF for the new version.

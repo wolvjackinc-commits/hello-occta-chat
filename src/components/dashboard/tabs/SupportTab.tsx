@@ -37,6 +37,8 @@ const priorityStyles: Record<string, string> = {
   low: "bg-muted text-muted-foreground border-foreground",
 };
 
+import { isActiveTicket } from "@/lib/dashboard/status";
+
 const STATUS_FILTER_KEY = "occta:tickets:status-filter";
 const VALID_TICKET_STATUS = new Set(["all", "open", "awaiting", "in_progress"]);
 

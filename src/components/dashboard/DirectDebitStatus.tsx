@@ -25,7 +25,7 @@ type DDMandateCustomerView = {
   mandate_reference: string | null;
   bank_last4: string | null;
   account_holder: string | null;
-  created_at: string;
+  created_at: string | null;
 };
 
 const DD_GUARANTEE_TEXT = `This Guarantee is offered by all banks and building societies that accept instructions to pay Direct Debits.
@@ -70,7 +70,8 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
               mandate_reference: null,
               bank_last4: dd.masked_account_last4 ?? null,
               account_holder: dd.account_holder_name ?? null,
-              created_at: dd.updated_at ?? new Date().toISOString(),
+              // Never invent a set-up date: show it only when the record has one.
+              created_at: dd.updated_at ?? null,
             },
           ]);
         } else {

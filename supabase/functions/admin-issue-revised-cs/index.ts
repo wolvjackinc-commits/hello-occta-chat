@@ -166,6 +166,7 @@ Deno.serve(async (req) => {
   // otherwise acceptance fails the snapshot-integrity check
   // (contract_information_mismatch). The accepted pack on the previous version
   // stays immutable — a new pack version is issued and bound to the new CS.
+  let reissuedCip: { cip_number: string; version: number } | null = null;
   {
     const { data: existingPack } = await supabase
       .from("contract_information_packs")
@@ -188,23 +189,31 @@ Deno.serve(async (req) => {
       });
       const cipBody = await cipRes.json().catch(() => null) as { pack_id?: string; error?: string } | null;
       if (!cipRes.ok || !cipBody?.pack_id) {
+        await voidRevision("contract_information_reissue_failed");
         return jsonResponse({
           error: "contract_information_reissue_failed",
-          message: "The revised Contract Summary was created but its Contract Information Pack could not be reissued, so it must not be sent for signing yet.",
+          message: "The Contract Information Pack could not be reissued for this revision, so the revised Contract Summary has been voided and nothing was sent.",
           contract_summary_id: created.id,
+          voided: true,
           details: cipBody?.error ?? null,
         }, 502);
       }
       const { data: pack } = await supabase
         .from("contract_information_packs")
-        .select("id, contract_summary_id, document_status")
+        .select("id, cip_number, version, contract_summary_id, document_status, pdf_storage_path")
         .eq("id", cipBody.pack_id)
         .maybeSingle();
-      if (pack && pack.contract_summary_id !== created.id) {
+      if (!pack) {
+        await voidRevision("contract_information_missing_after_generation");
+        return jsonResponse({ error: "contract_information_missing_after_generation", contract_summary_id: created.id, voided: true }, 502);
+      }
+      if (pack.contract_summary_id !== created.id) {
         if (pack.document_status === "accepted") {
+          await voidRevision("contract_information_bound_to_other_summary");
           return jsonResponse({
             error: "contract_information_bound_to_other_summary",
             contract_summary_id: created.id,
+            voided: true,
             details: "The reissued pack is already accepted against another Contract Summary version.",
           }, 409);
         }
@@ -214,11 +223,42 @@ Deno.serve(async (req) => {
           .eq("id", pack.id)
           .neq("document_status", "accepted");
         if (linkErr) {
-          return jsonResponse({ error: "contract_information_link_failed", contract_summary_id: created.id, details: linkErr.message }, 502);
+          await voidRevision("contract_information_link_failed");
+          return jsonResponse({ error: "contract_information_link_failed", contract_summary_id: created.id, voided: true, details: linkErr.message }, 502);
         }
       }
+      if (!pack.pdf_storage_path) {
+        await voidRevision("contract_information_pdf_missing");
+        return jsonResponse({ error: "contract_information_pdf_missing", contract_summary_id: created.id, voided: true }, 502);
+      }
+
+      // Mirror the acceptance-time snapshot-integrity check exactly: the LATEST
+      // pack for this quote must be the one bound to this revision, otherwise
+      // acceptance would fail with contract_information_mismatch.
+      const { data: latestPack } = await supabase
+        .from("contract_information_packs")
+        .select("id, contract_summary_id, document_status")
+        .eq("quote_id", created.quote_id)
+        .order("version", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const latestOk = latestPack &&
+        latestPack.contract_summary_id === created.id &&
+        !["superseded", "cancelled", "void_manual_review"].includes(String(latestPack.document_status));
+      if (!latestOk) {
+        await voidRevision("contract_information_not_current_for_revision");
+        return jsonResponse({
+          error: "contract_information_not_current_for_revision",
+          message: "The reissued Contract Information Pack is not the current version for this order, so the revision has been voided.",
+          contract_summary_id: created.id,
+          voided: true,
+        }, 409);
+      }
+
+      reissuedCip = { cip_number: String(pack.cip_number), version: Number(pack.version) };
     }
   }
+
 
 
   const appBase = Deno.env.get("APP_BASE_URL") || "https://www.occta.co.uk";

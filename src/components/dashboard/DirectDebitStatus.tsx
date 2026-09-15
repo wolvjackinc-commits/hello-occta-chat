@@ -168,7 +168,21 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
         )}
       </div>
 
-      {mandates.length === 0 ? (
+      {failed ? (
+        <div className="py-6 text-center" role="alert">
+          <Building2 className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+          <p className="text-muted-foreground mb-3">
+            We couldn't load your Direct Debit details just now.
+          </p>
+          <button
+            type="button"
+            onClick={fetchMandates}
+            className="border-2 border-foreground px-3 py-1.5 text-xs font-display uppercase"
+          >
+            Try again
+          </button>
+        </div>
+      ) : mandates.length === 0 ? (
         <div className="py-6 text-center">
           <Building2 className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
           <p className="text-muted-foreground mb-2">No Direct Debit set up</p>

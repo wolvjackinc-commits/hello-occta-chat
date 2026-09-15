@@ -45,6 +45,7 @@ interface DirectDebitStatusProps {
 export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
   const [mandates, setMandates] = useState<DDMandateCustomerView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     fetchMandates();
@@ -52,9 +53,38 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
 
   const fetchMandates = async () => {
     setLoading(true);
+    setFailed(false);
+
+    // Primary source: the canonical, auth-scoped overview RPC. It returns the
+    // masked mandate state only (never sort code / account number) and does not
+    // depend on direct table access, which customers deliberately do not have.
     try {
-      // Customer can only see their own mandates via RLS
-      // Only fetch safe fields - no full account numbers, sort codes, addresses, or consent details
+      const { data, error } = await supabase.rpc("get_my_customer_overview");
+      if (!error) {
+        const dd = (data as any)?.direct_debit;
+        if (dd?.status) {
+          setMandates([
+            {
+              id: "canonical-dd",
+              status: String(dd.status),
+              mandate_reference: null,
+              bank_last4: dd.masked_account_last4 ?? null,
+              account_holder: dd.account_holder_name ?? null,
+              created_at: dd.updated_at ?? new Date().toISOString(),
+            },
+          ]);
+        } else {
+          setMandates([]);
+        }
+        setLoading(false);
+        return;
+      }
+    } catch {
+      /* fall through to the masked view below */
+    }
+
+    // Fallback: the masked, security_invoker view (customer sees only own rows).
+    try {
       const { data, error } = await supabase
         .from("dd_mandates_list")
         .select("id, status, mandate_reference, bank_last4, account_holder, created_at")
@@ -63,8 +93,10 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
 
       if (error) throw error;
       setMandates((data || []) as DDMandateCustomerView[]);
-    } catch (err) {
-      console.error("Error fetching DD mandates:", err);
+    } catch {
+      // Never claim "no Direct Debit" when the lookup itself failed.
+      setMandates([]);
+      setFailed(true);
     } finally {
       setLoading(false);
     }

@@ -124,6 +124,24 @@ describe("app-mode dashboard", () => {
   });
 });
 
+describe("desktop/app consistency", () => {
+  it("uses the canonical activeServiceCount for the Active Services stat", () => {
+    expect(dashboard).toContain('{ label: "Active Services", value: activeServiceCount');
+    expect(dashboard).not.toContain('"Active Services", value: activeOrders.length');
+  });
+
+  it("does not hand-pick outstanding invoice statuses in the supplementary query", () => {
+    expect(dashboard).not.toContain('.in("status", ["draft", "sent", "overdue"])');
+    expect(dashboard).toContain("summarizeOutstandingInvoices(invoices)");
+  });
+
+  it("shares the unresolved-ticket rule with app mode and drops awaitingTickets", () => {
+    expect(dashboard).toContain("tickets.filter(t => isActiveTicket(t.status))");
+    expect(dashboard).not.toContain("awaitingTickets");
+    expect(appDashboard).toContain("isActiveTicket(t.status)");
+  });
+});
+
 describe("dashboard deep links", () => {
   const desktopTabs = objectKeysAfter(dashboard, "const TAB_PARENT:");
   const appSections = objectKeysAfter(appDashboard, "const sectionTitle:");

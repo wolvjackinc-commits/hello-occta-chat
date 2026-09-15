@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, requireStaff, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { routerEquipmentLine, normaliseRouterOption } from "../_shared/routerSummary.ts";
 // @ts-expect-error - npm specifier resolved at runtime
 import { jsPDF } from "npm:jspdf@2.5.1";
 
@@ -110,9 +111,7 @@ function renderPdf(cs: any): Uint8Array {
   const equipmentLines: string[] = [];
   const oneOff = Array.isArray(cs.one_off_charges_json) ? cs.one_off_charges_json : [];
   const routerCharge = Number(cs.router_charge ?? 0);
-  equipmentLines.push(routerCharge > 0
-    ? `Router supplied by OCCTA — one-off charge ${fmtMoney(routerCharge)} incl. VAT.`
-    : "No router is included. You may use your own compatible router; we provide the connection settings needed.");
+  equipmentLines.push(routerEquipmentLine(cs.router_option, routerCharge));
   row("Equipment", equipmentLines.join(" "));
   if (cs.digital_voice_warning) row("Digital Voice", String(cs.digital_voice_warning));
 
@@ -134,6 +133,10 @@ function renderPdf(cs: any): Uint8Array {
     row("Recurring price", `${fmtMoney(cs.business_monthly_ex_vat)} per month excl. VAT (${fmtMoney(cs.business_monthly_incl_vat)} incl. VAT)`);
   } else {
     row("Recurring price", `${fmtMoney(cs.monthly_price_incl_vat)} per month (incl. VAT)`);
+  }
+  const routerSel = normaliseRouterOption(cs.router_option);
+  if (routerSel && routerSel.monthly > 0) {
+    row("Router (included above)", `${routerSel.label} — ${fmtMoney(routerSel.monthly)} per month incl. VAT`);
   }
   row("One-off charges", oneOff.length
     ? oneOff.map((c: any) => `${c.label}: ${fmtMoney(c.amount)}`).join("  ·  ")

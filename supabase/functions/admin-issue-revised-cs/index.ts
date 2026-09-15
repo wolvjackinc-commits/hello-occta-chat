@@ -15,6 +15,27 @@ import {
   generateTokenPair, sendResendEmail, brutalistEmailShell, escapeHtml,
 } from "../_shared/quoteHelpers.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { normaliseRouterOption, describeRouterSelection } from "../_shared/routerSummary.ts";
+
+const RouterOptionSchema = z.object({
+  option: z.enum(["own", "standard", "premium", "business", "business_hub"]),
+  label: z.string().trim().min(2).max(160),
+  payment_type: z.enum(["none", "one_off", "monthly"]),
+  monthly: z.number().min(0).max(1000).default(0),
+  one_off: z.number().min(0).max(10000).default(0),
+}).strict().refine(
+  (r) => (r.payment_type === "monthly" ? r.monthly > 0 : true) &&
+         (r.payment_type === "one_off" ? r.one_off > 0 : true) &&
+         (r.payment_type === "none" ? r.monthly === 0 && r.one_off === 0 : true),
+  { message: "router_option payment_type must match the monthly/one_off amounts" },
+);
+
+const AddonSchema = z.object({
+  id: z.string().trim().min(1).max(80),
+  label: z.string().trim().min(1).max(160),
+  monthly: z.number().min(0).max(1000).default(0),
+  one_off: z.number().min(0).max(10000).optional(),
+}).strict();
 
 const Schema = z.object({
   source_contract_summary_id: z.string().uuid(),
@@ -28,6 +49,9 @@ const Schema = z.object({
     speed_notes: z.string().max(2000).optional(),
     cease_cancellation_charges: z.string().max(2000).optional(),
     monthly_price_incl_vat: z.number().min(0).max(100000).optional(),
+    router_option: RouterOptionSchema.optional(),
+    router_charge: z.number().min(0).max(10000).optional(),
+    selected_addons: z.array(AddonSchema).max(20).optional(),
   }).default({}),
 });
 
@@ -118,16 +142,42 @@ Deno.serve(async (req) => {
   const firstName = String(created.customer_name_snapshot || "there").split(" ")[0];
   const price = Number(created.monthly_price_incl_vat ?? 0).toFixed(2);
 
+  // Truthful "what has not changed" — only list what genuinely matches the source.
+  const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  const unchanged: string[] = [];
+  if (same(src.service_address, created.service_address)) unchanged.push("your service address");
+  if (same(src.plan_name, created.plan_name)) unchanged.push("your plan");
+  if (same(src.contract_length, created.contract_length) && same(src.notice_period, created.notice_period)) unchanged.push("your contract term and notice period");
+  if (same(src.estimated_download_speed, created.estimated_download_speed) && same(src.estimated_upload_speed, created.estimated_upload_speed)) unchanged.push("your estimated speeds");
+  if (Number(src.monthly_price_incl_vat ?? 0) === Number(created.monthly_price_incl_vat ?? 0)) unchanged.push("your monthly price");
+  const unchangedHtml = unchanged.length
+    ? `<p><strong>What has not changed:</strong> ${escapeHtml(unchanged.join(", "))}.</p>`
+    : "";
+
+  const routerLine = describeRouterSelection(created.router_option, created.router_charge);
+  const routerSel = normaliseRouterOption(created.router_option);
+  const routerOneOff = routerSel && routerSel.monthly === 0
+    ? (routerSel.one_off > 0 ? routerSel.one_off : Number(created.router_charge ?? 0))
+    : 0;
+  const routerRow = routerLine
+    ? `<tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Router</td><td style="padding:6px 0;font-size:13px;"><strong>${escapeHtml(routerLine)}</strong></td></tr>`
+    : "";
+  const routerChargeRow = routerOneOff > 0
+    ? `<tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Router charge</td><td style="padding:6px 0;font-size:13px;"><strong>£${routerOneOff.toFixed(2)} one-off incl. VAT</strong></td></tr>`
+    : "";
+
   const html = brutalistEmailShell(
     "Your revised OCCTA Contract Summary",
     `<p>Hi ${escapeHtml(firstName)},</p>
-     <p>Thanks for speaking with us. As agreed, here is your <strong>revised Contract Summary</strong> — it replaces the one you signed earlier today once you accept it.</p>
+     <p>Thanks for speaking with us. As agreed, here is your <strong>revised Contract Summary</strong> — it replaces the one you accepted previously once you accept this version.</p>
      <p><strong>What has changed:</strong> ${escapeHtml(reason)}</p>
-     <p><strong>What has not changed:</strong> your monthly price, your address, your plan type and everything else stay exactly as they were.</p>
+     ${unchangedHtml}
      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0;border-collapse:collapse;">
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Contract Summary</td><td style="padding:6px 0;font-size:13px;"><strong>${escapeHtml(String(created.cs_number))}</strong> (v${created.version})</td></tr>
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Plan</td><td style="padding:6px 0;font-size:13px;"><strong>${escapeHtml(String(created.plan_name))}</strong></td></tr>
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Estimated speeds</td><td style="padding:6px 0;font-size:13px;"><strong>Up to ${escapeHtml(String(created.estimated_download_speed))}Mbps down / up to ${escapeHtml(String(created.estimated_upload_speed))}Mbps up</strong></td></tr>
+       ${routerRow}
+       ${routerChargeRow}
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Monthly price</td><td style="padding:6px 0;font-size:13px;"><strong>£${price}/mo incl. VAT</strong></td></tr>
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Service address</td><td style="padding:6px 0;font-size:13px;">${escapeHtml(String(created.service_address ?? ""))}</td></tr>
      </table>

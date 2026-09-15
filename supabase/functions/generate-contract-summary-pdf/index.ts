@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, requireStaff, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { routerEquipmentLine, normaliseRouterOption } from "../_shared/routerSummary.ts";
 // @ts-expect-error - npm specifier resolved at runtime
 import { jsPDF } from "npm:jspdf@2.5.1";
 
@@ -110,9 +111,7 @@ function renderPdf(cs: any): Uint8Array {
   const equipmentLines: string[] = [];
   const oneOff = Array.isArray(cs.one_off_charges_json) ? cs.one_off_charges_json : [];
   const routerCharge = Number(cs.router_charge ?? 0);
-  equipmentLines.push(routerCharge > 0
-    ? `Router supplied by OCCTA — one-off charge ${fmtMoney(routerCharge)} incl. VAT.`
-    : "No router is included. You may use your own compatible router; we provide the connection settings needed.");
+  equipmentLines.push(routerEquipmentLine(cs.router_option, routerCharge));
   row("Equipment", equipmentLines.join(" "));
   if (cs.digital_voice_warning) row("Digital Voice", String(cs.digital_voice_warning));
 

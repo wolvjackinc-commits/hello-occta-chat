@@ -9,6 +9,7 @@ export type DDMandatePdfData = {
   account_number_masked: string | null;
   bank_last4: string | null;
   consent_timestamp: string | null;
+  signature_name?: string | null;
   created_at: string;
   customer_name?: string | null;
   customer_email?: string | null;
@@ -28,6 +29,11 @@ function esc(s: string | null | undefined): string {
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   try { return format(new Date(iso), "dd MMM yyyy"); } catch { return "—"; }
+}
+
+function fmtDateTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  try { return format(new Date(iso), "dd MMM yyyy HH:mm"); } catch { return "—"; }
 }
 
 /** Open a print-ready Direct Debit mandate confirmation in a new tab. */
@@ -99,7 +105,8 @@ export function generateDDMandatePdf(m: DDMandatePdfData): void {
       <div class="row"><span class="lbl">Sort code</span><span class="val">${esc(m.sort_code_masked) || "—"}</span></div>
       <div class="row"><span class="lbl">Account number</span><span class="val">${esc(m.account_number_masked) || (m.bank_last4 ? `••••${esc(m.bank_last4)}` : "—")}</span></div>
       <div class="row"><span class="lbl">Status</span><span class="val" style="text-transform:capitalize">${esc(m.status.replace(/_/g," "))}</span></div>
-      <div class="row"><span class="lbl">Consent captured</span><span class="val">${fmtDate(m.consent_timestamp || m.created_at)}</span></div>
+      <div class="row"><span class="lbl">Consent captured</span><span class="val">${fmtDateTime(m.consent_timestamp || m.created_at)}</span></div>
+      ${m.signature_name ? `<div class="row"><span class="lbl">Electronic signature</span><span class="val" style="font-family:Georgia,serif;font-style:italic">${esc(m.signature_name)}</span></div>` : ""}
     </div>
 
     ${m.next_collection_date ? `

@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
 import { formatAccountNumber } from "@/lib/account";
 import { format } from "date-fns";
+import { generateDDMandatePdf } from "@/lib/generateDDMandatePdf";
 import { 
   CreditCard, 
   Plus, 
@@ -39,7 +40,8 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  Ban
+  Ban,
+  FileText
 } from "lucide-react";
 import { DDMandateDetailDialog } from "@/components/admin/DDMandateDetailDialog";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
@@ -64,6 +66,7 @@ type DDMandate = {
   has_bank_details?: boolean;
   sort_code_masked?: string;
   account_number_masked?: string;
+  signature_name?: string | null;
 };
 
 type PaymentAttempt = {
@@ -257,6 +260,20 @@ export const AdminPaymentsDD = () => {
       );
     });
   }, [paymentsData?.payments, searchText, paymentProfileMap]);
+
+  const openSignedMandate = (mandate: DDMandate) => {
+    generateDDMandatePdf({
+      mandate_reference: mandate.mandate_reference || "—",
+      status: mandate.status,
+      account_holder: mandate.account_holder,
+      sort_code_masked: mandate.sort_code_masked ?? null,
+      account_number_masked: mandate.account_number_masked ?? null,
+      bank_last4: mandate.bank_last4,
+      consent_timestamp: mandate.consent_timestamp,
+      signature_name: mandate.signature_name ?? null,
+      created_at: mandate.created_at,
+    });
+  };
 
   const handleCreateMandate = async () => {
     if (!selectedCustomer) {
@@ -474,6 +491,17 @@ export const AdminPaymentsDD = () => {
                         <TableCell>{format(new Date(mandate.created_at), "dd MMM yyyy")}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {(mandate.consent_timestamp || mandate.signature_name) && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openSignedMandate(mandate)}
+                                title="View signed mandate"
+                                aria-label="View signed Direct Debit mandate"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -790,6 +818,7 @@ export const AdminPaymentsDD = () => {
             has_bank_details: viewMandate.has_bank_details,
             sort_code_masked: viewMandate.sort_code_masked,
             account_number_masked: viewMandate.account_number_masked,
+            signature_name: viewMandate.signature_name,
           }}
           onUpdate={() => refetchMandates()}
         />

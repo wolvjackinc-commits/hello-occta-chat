@@ -193,8 +193,13 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ReactNode; className: string }> = {
       pending: { icon: <Clock className="w-3 h-3" />, className: "bg-yellow-500/10 text-yellow-600 border-yellow-500" },
+      details_received: { icon: <CheckCircle className="w-3 h-3" />, className: "bg-blue-500/10 text-blue-600 border-blue-500" },
+      awaiting_manual_submission: { icon: <Clock className="w-3 h-3" />, className: "bg-yellow-500/10 text-yellow-700 border-yellow-500" },
+      pending_contract: { icon: <Clock className="w-3 h-3" />, className: "bg-yellow-500/10 text-yellow-700 border-yellow-500" },
       verified: { icon: <CheckCircle className="w-3 h-3" />, className: "bg-blue-500/10 text-blue-600 border-blue-500" },
       submitted_to_provider: { icon: <ExternalLink className="w-3 h-3" />, className: "bg-purple-500/10 text-purple-600 border-purple-500" },
+      action_required: { icon: <AlertTriangle className="w-3 h-3" />, className: "bg-yellow-500/10 text-yellow-700 border-yellow-500" },
+      rejected: { icon: <XCircle className="w-3 h-3" />, className: "bg-red-500/10 text-red-600 border-red-500" },
       active: { icon: <CheckCircle className="w-3 h-3" />, className: "bg-green-500/10 text-green-600 border-green-500" },
       cancelled: { icon: <XCircle className="w-3 h-3" />, className: "bg-red-500/10 text-red-600 border-red-500" },
       failed: { icon: <AlertCircle className="w-3 h-3" />, className: "bg-red-500/10 text-red-600 border-red-500" },
@@ -342,8 +347,8 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
                 {/* Admin Workflow Actions */}
                 {!["cancelled", "failed"].includes(mandate.status) && (
                   <div className="mt-3 pt-3 border-t border-foreground/10 flex flex-wrap gap-2">
-                    {/* Verify: pending → verified */}
-                    {mandate.status === "pending" && (
+                    {/* Customer details received → ready for manual provider submission */}
+                    {["pending", "details_received"].includes(mandate.status) && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -351,12 +356,12 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
                         className="border-2 border-foreground text-xs gap-1"
                       >
                         <CheckCircle className="w-3 h-3" />
-                        Verify
+                        Ready for Submission
                       </Button>
                     )}
 
-                    {/* Submit to Provider: verified → submitted_to_provider */}
-                    {mandate.status === "verified" && (
+                    {/* Submit to Provider: awaiting_manual_submission → submitted_to_provider */}
+                    {["verified", "awaiting_manual_submission"].includes(mandate.status) && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -421,7 +426,7 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
                 )}
 
                 {/* Terminal status indicator */}
-                {["cancelled", "failed"].includes(mandate.status) && (
+                {["cancelled", "failed", "rejected"].includes(mandate.status) && (
                   <div className="mt-3 pt-3 border-t border-foreground/10">
                     <p className="text-xs text-muted-foreground italic">
                       This mandate is {mandate.status} and cannot be modified.

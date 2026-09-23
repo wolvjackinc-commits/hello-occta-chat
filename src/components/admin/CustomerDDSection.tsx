@@ -45,6 +45,7 @@ type DDMandateView = {
   has_bank_details: boolean;
   consent_timestamp: string | null;
   payment_request_id: string | null;
+  signature_name?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -180,6 +181,7 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
       account_number_masked: mandate.account_number_masked,
       bank_last4: mandate.bank_last4,
       consent_timestamp: mandate.consent_timestamp,
+      signature_name: mandate.signature_name ?? null,
       created_at: mandate.created_at,
       customer_name: p?.full_name ?? null,
       customer_email: p?.email ?? null,
@@ -478,6 +480,7 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
             has_bank_details: selectedMandate.has_bank_details,
             sort_code_masked: selectedMandate.sort_code_masked || undefined,
             account_number_masked: selectedMandate.account_number_masked || undefined,
+            signature_name: selectedMandate.signature_name ?? null,
           }}
           onUpdate={() => refetch()}
         />

@@ -35,6 +35,7 @@ type DDMandate = {
   has_bank_details?: boolean;
   sort_code_masked?: string;
   account_number_masked?: string;
+  signature_name?: string | null;
 };
 
 type FullBankDetails = {
@@ -195,9 +196,15 @@ export function DDMandateDetailDialog({
               <p className="text-sm">{format(new Date(mandate.created_at), "dd MMM yyyy HH:mm")}</p>
             </div>
             {mandate.consent_timestamp && (
-              <div className="col-span-2">
+              <div>
                 <Label className="text-xs text-muted-foreground">Consent Given</Label>
                 <p className="text-sm">{format(new Date(mandate.consent_timestamp), "dd MMM yyyy HH:mm")}</p>
+              </div>
+            )}
+            {mandate.signature_name && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Electronic Signature</Label>
+                <p className="font-serif italic text-sm">{mandate.signature_name}</p>
               </div>
             )}
           </div>

@@ -122,12 +122,25 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
         );
       case "pending":
       case "verified":
+      case "details_received":
+      case "awaiting_manual_submission":
+      case "pending_contract":
       case "submitted_to_provider":
         return (
           <Badge className="bg-warning border-2 border-foreground gap-1">
             <Clock className="w-3 h-3" />
-            {status === "pending" ? "Pending Verification" : 
-             status === "verified" ? "Verified" : "Processing"}
+            {status === "pending" ? "Pending Verification" :
+             status === "verified" ? "Verified" :
+             status === "details_received" ? "Details Received" :
+             status === "awaiting_manual_submission" ? "Signed — Awaiting Submission" :
+             status === "pending_contract" ? "Pending Contract" : "Submitted to Provider"}
+          </Badge>
+        );
+      case "action_required":
+        return (
+          <Badge className="bg-warning border-2 border-foreground gap-1">
+            <Clock className="w-3 h-3" />
+            Action Required
           </Badge>
         );
       case "cancelled":
@@ -160,8 +173,10 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
   }
 
   // Filter to show only relevant mandates (not cancelled/failed unless recent)
-  const activeMandates = mandates.filter(m => ["active", "pending", "verified", "submitted_to_provider"].includes(m.status));
-  const inactiveMandates = mandates.filter(m => ["cancelled", "failed"].includes(m.status));
+  const activeMandates = mandates.filter(m =>
+    ["active", "pending", "verified", "details_received", "awaiting_manual_submission", "pending_contract", "submitted_to_provider", "action_required"].includes(m.status)
+  );
+  const inactiveMandates = mandates.filter(m => ["cancelled", "failed", "rejected"].includes(m.status));
 
   return (
     <Card className="card-brutal bg-card p-6">
@@ -234,11 +249,17 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
                 )}
               </div>
 
-              {mandate.status === "pending" && (
+              {["pending", "details_received", "awaiting_manual_submission", "submitted_to_provider", "action_required"].includes(mandate.status) && (
                 <div className="mt-3 p-2 bg-warning/10 border-2 border-warning/50 text-sm">
                   <p className="flex items-center gap-2 text-warning-foreground">
                     <Clock className="w-4 h-4" />
-                    Your Direct Debit is being verified (1-2 business days)
+                    {mandate.status === "awaiting_manual_submission"
+                      ? "Your signed Direct Debit instruction has been received and is awaiting manual submission to our Direct Debit provider."
+                      : mandate.status === "submitted_to_provider"
+                        ? "Your Direct Debit instruction has been submitted to the provider and is being processed."
+                        : mandate.status === "action_required"
+                          ? "We need to check something before your Direct Debit can be completed. Please contact support if we have not already contacted you."
+                          : "Your Direct Debit instruction has been received and is being checked."}
                   </p>
                 </div>
               )}

@@ -63,7 +63,7 @@ const DDMandatesQueueContent = () => {
       const { data: mandates, error, count } = await supabase
         .from("dd_mandates")
         .select("id, user_id, status, mandate_reference, bank_last4, account_holder, created_at", { count: "exact" })
-        .in("status", ["pending", "submitted"])
+        .in("status", ["details_received", "awaiting_manual_submission", "pending", "verified", "submitted_to_provider", "action_required"])
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -115,7 +115,7 @@ const DDMandatesQueueContent = () => {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
-          <h2 className="font-display text-lg">DD Mandates Pending</h2>
+          <h2 className="font-display text-lg">DD Mandates Requiring Attention</h2>
           <Badge variant="secondary">{data?.total || 0}</Badge>
         </div>
         <Button
@@ -129,7 +129,7 @@ const DDMandatesQueueContent = () => {
 
       {mandates.length === 0 ? (
         <p className="py-8 text-center text-muted-foreground">
-          No pending DD mandates.
+          No DD mandates requiring attention.
         </p>
       ) : (
         <>
@@ -168,7 +168,7 @@ const DDMandatesQueueContent = () => {
                         mandate.status === "pending" ? "secondary" : "default"
                       }
                     >
-                      {mandate.status}
+                      {mandate.status.replace(/_/g, " ")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Accordion,
@@ -16,8 +17,10 @@ import {
   XCircle,
   Shield,
   Info,
+  FileText,
 } from "lucide-react";
 import { format } from "date-fns";
+import { generateDDMandatePdf } from "@/lib/generateDDMandatePdf";
 
 type DDMandateCustomerView = {
   id: string;
@@ -25,6 +28,10 @@ type DDMandateCustomerView = {
   mandate_reference: string | null;
   bank_last4: string | null;
   account_holder: string | null;
+  sort_code_masked?: string | null;
+  account_number_masked?: string | null;
+  consent_timestamp?: string | null;
+  signature_name?: string | null;
   created_at: string | null;
 };
 
@@ -63,52 +70,66 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
     setLoading(true);
     setFailed(false);
 
-    // Primary source: the canonical, auth-scoped overview RPC. It returns the
-    // masked mandate state only (never sort code / account number) and does not
-    // depend on direct table access, which customers deliberately do not have.
-    try {
-      const { data, error } = await supabase.rpc("get_my_customer_overview");
-      if (!error) {
-        const dd = (data as any)?.direct_debit;
-        if (dd?.status) {
-          setMandates([
-            {
-              id: "canonical-dd",
-              status: String(dd.status),
-              mandate_reference: null,
-              bank_last4: dd.masked_account_last4 ?? null,
-              account_holder: dd.account_holder_name ?? null,
-              // Never invent a set-up date: show it only when the record has one.
-              created_at: dd.updated_at ?? null,
-            },
-          ]);
-        } else {
-          setMandates([]);
-        }
-        setLoading(false);
-        return;
-      }
-    } catch {
-      /* fall through to the masked view below */
-    }
-
-    // Fallback: the masked, security_invoker view (customer sees only own rows).
+    // Primary source: the masked customer/admin view. It is explicitly
+    // scoped to auth.uid() or staff roles and never exposes full bank details.
     try {
       const { data, error } = await supabase
         .from("dd_mandates_list")
-        .select("id, status, mandate_reference, bank_last4, account_holder, created_at")
+        .select("id, status, mandate_reference, bank_last4, account_holder, sort_code_masked, account_number_masked, consent_timestamp, signature_name, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       setMandates((data || []) as DDMandateCustomerView[]);
+      setLoading(false);
+      return;
     } catch {
-      // Never claim "no Direct Debit" when the lookup itself failed.
+      /* fall through to canonical overview */
+    }
+
+    // Fallback: the canonical auth-scoped overview RPC.
+    try {
+      const { data, error } = await supabase.rpc("get_my_customer_overview");
+      if (error) throw error;
+      const dd = (data as any)?.direct_debit;
+      if (dd?.status) {
+        setMandates([
+          {
+            id: "canonical-dd",
+            status: String(dd.status),
+            mandate_reference: null,
+            bank_last4: dd.masked_account_last4 ?? null,
+            account_holder: dd.account_holder_name ?? null,
+            sort_code_masked: dd.masked_sort_last2 ? `**-**-${dd.masked_sort_last2}` : null,
+            account_number_masked: dd.masked_account_last4 ? `****${dd.masked_account_last4}` : null,
+            consent_timestamp: null,
+            signature_name: null,
+            created_at: dd.updated_at ?? null,
+          },
+        ]);
+      } else {
+        setMandates([]);
+      }
+    } catch {
       setMandates([]);
       setFailed(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const openSignedMandate = (mandate: DDMandateCustomerView) => {
+    generateDDMandatePdf({
+      mandate_reference: mandate.mandate_reference || "—",
+      status: mandate.status,
+      account_holder: mandate.account_holder,
+      sort_code_masked: mandate.sort_code_masked ?? null,
+      account_number_masked: mandate.account_number_masked ?? null,
+      bank_last4: mandate.bank_last4,
+      consent_timestamp: mandate.consent_timestamp ?? null,
+      signature_name: mandate.signature_name ?? null,
+      created_at: mandate.created_at || new Date().toISOString(),
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -239,7 +260,7 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Bank Account</p>
-                  <p className="font-mono">****{mandate.bank_last4 || "****"}</p>
+                  <p className="font-mono">{mandate.account_number_masked || `****${mandate.bank_last4 || "****"}`}</p>
                 </div>
                 {formatSetupDate(mandate.created_at) && (
                   <div>
@@ -247,7 +268,25 @@ export function DirectDebitStatus({ userId }: DirectDebitStatusProps) {
                     <p>{formatSetupDate(mandate.created_at)}</p>
                   </div>
                 )}
+                {mandate.signature_name && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase">E-signature</p>
+                    <p className="font-serif italic">{mandate.signature_name}</p>
+                  </div>
+                )}
               </div>
+
+              {(mandate.consent_timestamp || mandate.signature_name) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4 border-2 border-foreground gap-2"
+                  onClick={() => openSignedMandate(mandate)}
+                >
+                  <FileText className="w-4 h-4" />
+                  View / print signed mandate
+                </Button>
+              )}
 
               {["pending", "details_received", "awaiting_manual_submission", "submitted_to_provider", "action_required"].includes(mandate.status) && (
                 <div className="mt-3 p-2 bg-warning/10 border-2 border-warning/50 text-sm">

@@ -27,6 +27,24 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+vi.mock("framer-motion", () => ({
+  motion: {
+    div: ({
+      children,
+      initial: _initial,
+      animate: _animate,
+      transition: _transition,
+      variants: _variants,
+      whileInView: _whileInView,
+      viewport: _viewport,
+      whileHover: _whileHover,
+      ...props
+    }: React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>) => (
+      <div {...props}>{children}</div>
+    ),
+  },
+}));
+
 vi.mock("@/lib/plans", () => ({
   broadbandPlans: [
     {

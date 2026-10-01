@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema, createServiceSchema, createOfferSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 import { broadbandPlans } from "@/lib/plans";
 import { getLocationBySlug } from "@/data/locations";
 import { getFromPrices } from "@/lib/pricing/engine";
@@ -12,7 +13,7 @@ import NotFound from "@/pages/NotFound";
 
 import { motion } from "framer-motion";
 
-const LocationBroadband = () => {
+const LocationBroadbandPage = () => {
   const { pathname } = useLocation();
   const slug = pathname.replace("/broadband-", "");
   const location = slug ? getLocationBySlug(slug) : undefined;
@@ -259,5 +260,11 @@ const LocationBroadband = () => {
     </Layout>
   );
 };
+
+const LocationBroadband = () => (
+  <AvailabilityProvider>
+    <LocationBroadbandPage />
+  </AvailabilityProvider>
+);
 
 export default LocationBroadband;

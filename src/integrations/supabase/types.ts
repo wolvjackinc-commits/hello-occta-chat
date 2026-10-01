@@ -12127,6 +12127,7 @@ export type Database = {
           payment_request_id: string | null
           provider_code: string | null
           provider_reference: string | null
+          signature_name: string | null
           sort_code_masked: string | null
           status: string | null
           submitted_to_provider_at: string | null
@@ -12146,6 +12147,7 @@ export type Database = {
           payment_request_id?: string | null
           provider_code?: string | null
           provider_reference?: string | null
+          signature_name?: string | null
           sort_code_masked?: never
           status?: string | null
           submitted_to_provider_at?: string | null
@@ -12165,6 +12167,7 @@ export type Database = {
           payment_request_id?: string | null
           provider_code?: string | null
           provider_reference?: string | null
+          signature_name?: string | null
           sort_code_masked?: never
           status?: string | null
           submitted_to_provider_at?: string | null

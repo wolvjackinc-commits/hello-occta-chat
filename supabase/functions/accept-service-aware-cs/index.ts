@@ -1,3 +1,4 @@
+import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
 // Phase C — acceptance endpoint for the two-document flow. Behind
 // two_document_contract_flow_enabled. Runs the full hard-block set (ETF,
 // price-change, DV ack), splits customer-visible acceptance evidence from
@@ -118,6 +119,10 @@ Deno.serve(async (req) => {
   if (cs.status === "accepted") {
     return jsonResponse({ error: "already_accepted", contract_summary_id: cs.id }, 409);
   }
+
+  const releaseBlock = consumerContractReleaseBlock(cs.customer_type);
+  if (releaseBlock) return jsonResponse(releaseBlock, 409);
+
   if (!["issued", "viewed", "draft"].includes(cs.status as string))
     return jsonResponse({ error: "not_acceptable", status: cs.status }, 409);
   if (i.cs_version !== cs.version) return jsonResponse({ error: "cs_version_stale", current: cs.version }, 409);

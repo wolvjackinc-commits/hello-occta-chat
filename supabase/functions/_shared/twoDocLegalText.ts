@@ -56,7 +56,7 @@ export const PAYMENT_SCHEDULE_SAFE =
 
 // ─── Complaints / ADR ────────────────────────────────────────────────────────
 export const COMPLAINTS_ADR_SAFE =
-  "OCCTA follows an Alternative Dispute Resolution (ADR) scheme. Eligible unresolved complaints may normally be referred to ADR free of charge after 6 weeks, or earlier if deadlock is reached; see the OCCTA Complaints Code for the referral process.";
+  "OCCTA follows an Alternative Dispute Resolution (ADR) scheme. Eligible unresolved complaints may normally be referred to ADR free of charge after six weeks, or earlier if deadlock is reached; see the Customer Complaints Code for the referral process.";
 
 // ─── Speeds ──────────────────────────────────────────────────────────────────
 export const SPEED_ESTIMATE_DISCLAIMER =

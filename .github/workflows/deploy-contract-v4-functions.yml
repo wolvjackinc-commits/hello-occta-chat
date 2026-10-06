@@ -8,6 +8,10 @@ on:
       - 'supabase/functions/_shared/legalText.ts'
       - 'supabase/functions/_shared/twoDocLegalText.ts'
       - 'supabase/functions/_shared/productionConsumerContract.ts'
+      - 'supabase/functions/_shared/consumerContractRelease.ts'
+      - 'supabase/functions/generate-service-aware-cs/**'
+      - 'supabase/functions/accept-contract-summary-authed/**'
+      - 'supabase/functions/admin-issue-revised-cs/**'
       - 'supabase/functions/_shared/journey2Snapshot.ts'
       - 'supabase/functions/resolve-build-plan-price/**'
       - 'supabase/functions/create-quote/**'
@@ -67,6 +71,12 @@ jobs:
         run: supabase functions deploy journey2-prepare-contract --project-ref "$PROJECT_REF"
       - name: Deploy primary contract acceptance
         run: supabase functions deploy accept-contract-summary --project-ref "$PROJECT_REF"
+      - name: Deploy authenticated contract acceptance
+        run: supabase functions deploy accept-contract-summary-authed --project-ref "$PROJECT_REF"
+      - name: Deploy service-aware issuance
+        run: supabase functions deploy generate-service-aware-cs --project-ref "$PROJECT_REF"
+      - name: Deploy revised contract issuance
+        run: supabase functions deploy admin-issue-revised-cs --project-ref "$PROJECT_REF"
       - name: Deploy service-aware acceptance
         run: supabase functions deploy accept-service-aware-cs --project-ref "$PROJECT_REF"
       - name: Deploy acceptance certificate generator

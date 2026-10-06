@@ -17,7 +17,7 @@ export const VULNERABLE_CUSTOMER_NOTE_TEXT =
   "Tell OCCTA if you or someone in your household has accessibility, health, financial or other support needs relevant to the service. We will consider reasonable adjustments and the support arrangements required by applicable rules.";
 
 export const COMPLAINTS_ADR_INFO_TEXT =
-  "OCCTA follows an Alternative Dispute Resolution (ADR) scheme. Eligible unresolved complaints may normally be referred to ADR free of charge after 6 weeks, or earlier if deadlock is reached; see the OCCTA Complaints Code for the referral process.";
+  "OCCTA follows an Alternative Dispute Resolution (ADR) scheme. Eligible unresolved complaints may normally be referred to ADR free of charge after six weeks, or earlier if deadlock is reached; see the Customer Complaints Code for the referral process.";
 
 export const PRICE_RISE_POLICY_TEXT =
   "No scheduled CPI-, RPI-, inflation-linked or percentage-based price increase applies. If OCCTA proposes a contract change that gives you a right to leave without penalty, we will give the required notice on a durable medium and explain that right.";

@@ -13,7 +13,7 @@ import { countOpenQuoteWork, EMPTY_QUOTE_COUNTS } from "@/lib/dashboard/quoteCou
 import { formatGbp, formatUkDate } from "@/lib/dashboard/format";
 import { readCache, writeCache, clearUserCache } from "@/lib/offlineCache";
 
-const read = (p: string) => readFileSync(p, "utf8");
+const read = (p: string) => readFileSync(p, "utf8").replace(/\r\n/g, "\n");
 const dashboard = read("src/pages/Dashboard.tsx");
 const appDashboard = read("src/components/app/AppDashboard.tsx");
 

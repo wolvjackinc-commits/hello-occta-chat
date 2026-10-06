@@ -73,7 +73,7 @@ export const PRODUCTION_CONTRACT_SECTIONS: ProductionContractSection[] = [
     "Tell OCCTA about relevant communication, disability, health, financial or other support needs. We will consider reasonable adjustments, accessible communications and appropriate support arrangements, and handle vulnerability information in accordance with the Privacy Policy."
   ]},
   { heading: "Complaints and ADR", paragraphs: [
-    "OCCTA follows an Alternative Dispute Resolution (ADR) scheme. Eligible unresolved complaints may normally be referred to ADR free of charge after 6 weeks, or earlier if deadlock is reached; see the OCCTA Complaints Code for the referral process."
+    "OCCTA follows an Alternative Dispute Resolution (ADR) scheme. Eligible unresolved complaints may normally be referred to ADR free of charge after six weeks, or earlier if deadlock is reached; see the Customer Complaints Code for the referral process."
   ]},
   { heading: "Data protection", paragraphs: [
     "OCCTA processes account/contact data, service/address data, billing/payment status, contract/acceptance evidence, service/network information and support/complaint records needed to provide and administer the service. The Privacy Policy explains purposes, lawful bases, sharing, retention and rights."

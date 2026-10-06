@@ -1,3 +1,4 @@
+import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, getRequestIp, checkRateLimit, sendResendEmail, brutalistEmailShell, escapeHtml, maskEmail } from "../_shared/quoteHelpers.ts";
 import { ACCEPTANCE_CHECKBOX_TEXT } from "../_shared/legalText.ts";
 import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
@@ -201,6 +202,10 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       certificate_number,
     });
   }
+
+
+  const releaseBlock = consumerContractReleaseBlock(cs.customer_type);
+  if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
   if (!["issued", "viewed", "draft"].includes(cs.status)) return jsonResponse({ error: "not_acceptable", status: cs.status }, 409);
   if (cs.token_expires_at && new Date(cs.token_expires_at) < new Date()) return jsonResponse({ error: "expired" }, 410);

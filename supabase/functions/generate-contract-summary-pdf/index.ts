@@ -3,6 +3,8 @@ import { routerEquipmentLine, normaliseRouterOption } from "../_shared/routerSum
 // @ts-expect-error - npm specifier resolved at runtime
 import { jsPDF } from "npm:jspdf@2.5.1";
 
+import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
+
 const BUCKET = "contract-pdfs";
 const SIGNED_URL_TTL = 60 * 60 * 24 * 7;
 const fmtMoney = (n: unknown) => `£${Number(n ?? 0).toFixed(2)}`;
@@ -238,6 +240,10 @@ Deno.serve(async (req) => {
   } else {
     if (cs.status === "accepted") {
       return jsonResponse({ error: "accepted_cs_missing_pdf", details: "Accepted Contract Summary has no stored PDF. Admin investigation required; refusing to generate replacement evidence.", contract_summary_id: cs.id }, 409);
+    }
+    if (!cs.is_information_update) {
+      const releaseBlock = consumerContractReleaseBlock(cs.customer_type);
+      if (releaseBlock) return jsonResponse(releaseBlock, 409);
     }
     const bytes = renderPdf(cs);
     sha = await sha256HexFromBytes(bytes);

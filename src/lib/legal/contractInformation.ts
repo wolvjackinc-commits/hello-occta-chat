@@ -127,7 +127,7 @@ export const CONTRACT_INFORMATION_SECTIONS: ContractInformationSection[] = [
   ]},
   { heading: "24. Complaints and ADR", paragraphs: [
     "If you are unhappy, contact OCCTA using the support/complaints contact routes. We will handle the matter under the OCCTA Complaints Code.",
-    "OCCTA follows an Alternative Dispute Resolution (ADR) scheme. Eligible unresolved complaints may normally be referred to ADR free of charge after 6 weeks, or earlier if deadlock is reached; see the OCCTA Complaints Code for the referral process.",
+    "OCCTA follows an Alternative Dispute Resolution (ADR) scheme. Eligible unresolved complaints may normally be referred to ADR free of charge after six weeks, or earlier if deadlock is reached; see the Customer Complaints Code for the referral process.",
     "Ofcom regulates the communications sector but does not normally determine individual customer disputes."
   ]},
   { heading: "25. Data protection and communications", paragraphs: [

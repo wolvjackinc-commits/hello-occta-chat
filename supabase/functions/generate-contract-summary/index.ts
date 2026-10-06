@@ -1,3 +1,4 @@
+import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
 import { corsHeaders, jsonResponse, getServiceClient, requireStaff, generateTokenPair } from "../_shared/quoteHelpers.ts";
 import {
   LEGAL_TEXT_VERSION, COMPLAINTS_ADR_INFO_TEXT, DIGITAL_VOICE_WARNING_TEXT,
@@ -75,6 +76,10 @@ Deno.serve(async (req) => {
 
   const { data: q, error: qErr } = await supabase.from("quotes").select("*").eq("id", quote_id).maybeSingle();
   if (qErr || !q) return jsonResponse({ error: "quote_not_found" }, 404);
+
+  const releaseBlock = consumerContractReleaseBlock(q.customer_type);
+  if (releaseBlock) return jsonResponse(releaseBlock, 409);
+
 
   if (!journeyMode && q.status !== "approved" && q.status !== "contract_summary_generated") return jsonResponse({ error: "quote_not_approved", message: `Quote status is ${q.status}; must be approved.` }, 409);
   if (!journeyMode && !q.customer_id) return jsonResponse({ error: "no_customer", message: "Quote is not linked to a customer account." }, 409);

@@ -1,4 +1,4 @@
-import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
+import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
 /**
  * Admin: issue a revised (superseding) Contract Summary.
  *
@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     .from("contract_summaries").select("*").eq("id", source_contract_summary_id).maybeSingle();
   if (!src) return jsonResponse({ error: "source_not_found" }, 404);
 
-  const releaseBlock = consumerContractReleaseBlock(src.customer_type);
+  const releaseBlock = await consumerContractReleaseBlockForDb(supabase, src.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
 

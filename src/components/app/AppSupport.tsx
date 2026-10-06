@@ -126,7 +126,7 @@ const AppSupport = () => {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
               <Bot className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="font-bold text-lg mb-1">Instant Help — 24/7</h2>
+            <h2 className="font-bold text-lg mb-1">Instant self-service help</h2>
             <p className="text-sm text-muted-foreground mb-3">
               Solve issues in seconds with our AI assistant
             </p>

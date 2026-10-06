@@ -1,4 +1,4 @@
-import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
+import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, getRequestIp, checkRateLimit, sendResendEmail, brutalistEmailShell, escapeHtml, maskEmail } from "../_shared/quoteHelpers.ts";
 import { ACCEPTANCE_CHECKBOX_TEXT } from "../_shared/legalText.ts";
 import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
@@ -204,7 +204,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   }
 
 
-  const releaseBlock = consumerContractReleaseBlock(cs.customer_type);
+  const releaseBlock = await consumerContractReleaseBlockForDb(supabase, cs.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
   if (!["issued", "viewed", "draft"].includes(cs.status)) return jsonResponse({ error: "not_acceptable", status: cs.status }, 409);

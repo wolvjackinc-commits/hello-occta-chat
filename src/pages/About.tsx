@@ -8,17 +8,17 @@ import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 
 const About = () => {
   const stats = [
-    { icon: MapPin, label: "Serving the UK", value: "Nationwide" },
-    { icon: Users, label: "Happy Customers", value: "5,000+" },
-    { icon: Award, label: "Customer Rating", value: "4.8 Stars" },
-    { icon: X, label: "Exit Fees", value: "None" },
+    { icon: MapPin, label: "Market", value: "United Kingdom" },
+    { icon: Users, label: "Services", value: "Consumer & Business" },
+    { icon: Award, label: "Contract Approach", value: "Clear Terms" },
+    { icon: X, label: "Broadband Options", value: "Flex 30 & Price Lock 24" },
   ];
 
   const values = [
-    { emoji: "🎯", title: "Honesty first", description: "No hidden fees. No sneaky price rises. If something costs money, we tell you upfront." },
+    { emoji: "🎯", title: "Honesty first", description: "We show the applicable price, minimum term, notice and one-off charges before you accept an agreement." },
     { emoji: "👋", title: "Humans over bots", description: "When you call us, a real person answers. They're probably drinking tea and genuinely want to help." },
     { emoji: "⚡", title: "Keep it simple", description: "If your nan can't understand it, we haven't done our job. Simple plans, simple prices." },
-    { emoji: "🌍", title: "Give a toss", description: "About our customers, our communities, and the planet. We're carbon-neutral and back UK community projects." },
+    { emoji: "🌍", title: "Give a toss", description: "About our customers and communities. We avoid unsupported environmental or social-impact claims and publish material commitments when they are verified." },
   ];
 
   return (
@@ -47,7 +47,7 @@ const About = () => {
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-lg">
                 We built OCCTA to be the cheaper, simpler alternative to the big brands.
-                Affordable telecom without contracts, hidden fees, or lock-ins — serving customers nationwide.
+                Affordable telecom with Flex 30 and Price Lock 24 broadband options where offered, plus clear customer-specific terms before acceptance.
               </p>
               
               <div className="flex flex-wrap gap-3">

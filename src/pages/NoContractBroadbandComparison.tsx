@@ -8,7 +8,7 @@ import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { motion } from "framer-motion";
 
 const providers = [
-  { name: "OCCTA", price: "£37.99", term: "30 days rolling", midRise: "No", credit: "No check", exit: "£0", highlight: true },
+  { name: "OCCTA", price: "£37.99", term: "Flex 30 · 30-day rolling", midRise: "No scheduled CPI/RPI rise", credit: "Check order terms", exit: "No remaining-month ETF; network charge may apply", highlight: true },
   { name: "Cuckoo", price: "£28.00", term: "30 days rolling", midRise: "No", credit: "Soft check", exit: "£0", highlight: false },
   { name: "NOW Broadband", price: "£25.00", term: "1 month rolling", midRise: "Possible", credit: "Hard check", exit: "£0", highlight: false },
   { name: "BT (12m)", price: "£32.99", term: "12-month contract", midRise: "Yes (CPI+3.9%)", credit: "Hard check", exit: "Up to £400+", highlight: false },
@@ -16,8 +16,8 @@ const providers = [
 ];
 
 const faqs = [
-  { question: "What counts as a no-contract broadband deal?", answer: "A no-contract (or rolling) broadband deal lets you cancel any time with no exit fee, usually after a 30-day notice period. There's no 12, 18 or 24-month lock-in." },
-  { question: "Is no-contract broadband more expensive?", answer: "Historically yes, but not with OCCTA. Our Flex 30 rolling plans start at £37.99/mo, and Price Lock 24 starts at £34.99/mo — with no mid-contract price rises and no exit fee on Flex 30." },
+  { question: "What counts as a no-contract broadband deal?", answer: "A rolling broadband deal has no long fixed minimum term. OCCTA Flex 30 is 30-day rolling with normal 30-day notice. There is no remaining-month ETF, but a separately valid network cease or migration charge may apply where lawful, incurred and disclosed." },
+  { question: "Is no-contract broadband more expensive?", answer: "OCCTA Flex 30 starts at £37.99/mo and Price Lock 24 starts at £34.99/mo for the headline Essential band. Final pricing depends on address, selected service, setup and router choices. Flex 30 has no remaining-month ETF." },
   { question: "Do I need a credit check for no-contract broadband?", answer: "Some providers (BT, Sky, NOW) run a hard credit check. OCCTA does not run a credit check on any broadband plan." },
   { question: "Will my price go up mid-contract?", answer: "Most big providers raise prices every April by CPI+3.9% or RPI+3.9%. OCCTA has no mid-contract price hikes — what you sign up for is what you pay." },
   { question: "Can I keep my phone number if I switch?", answer: "Yes. The One Touch Switch process (UK-wide) lets you keep your number and switches you with no downtime." },
@@ -40,7 +40,7 @@ const NoContractBroadbandComparison = () => {
     <Layout>
       <SEO
         title="Compare No-Contract Broadband UK 2026"
-        description="Compare no-contract broadband from OCCTA, Cuckoo, NOW, BT & Sky. Rolling plans, no exit fees, no credit check. Pick the best flexible UK broadband."
+        description="Compare rolling and fixed broadband terms. OCCTA Flex 30 has no fixed minimum term; Price Lock 24 has a 24-month minimum term. Check current provider terms before deciding."
         canonical="/compare/no-contract-broadband"
         keywords="no contract broadband uk, rolling broadband, 30 day broadband, flexible broadband uk, broadband no exit fee, compare no contract broadband"
         type="article"
@@ -117,11 +117,11 @@ const NoContractBroadbandComparison = () => {
           <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">Why OCCTA wins on flexibility</h2>
           <ul className="space-y-2">
             {[
-              "30-day rolling plans where eligible — cancel anytime",
+              "Flex 30 is 30-day rolling where eligible — normal 30-day notice",
               "No mid-contract price rises — ever",
               "No credit check on any broadband plan",
-              "£0 exit fees, no penalty if you switch away",
-              "Setup from £0 where available",
+              "No remaining-month ETF on Flex 30; separately valid network charges may apply",
+              "Setup from £0 where available; exact setup is confirmed before acceptance",
               "UK-based support, no outsourced call centres",
             ].map((b) => (
               <li key={b} className="flex items-start gap-3">
@@ -170,7 +170,7 @@ const NoContractBroadbandComparison = () => {
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="card-brutal bg-card p-6 md:p-8 text-center">
             <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">Check your address</h2>
-            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">See exactly which OCCTA no-contract plans are live at your postcode — fibre speeds, real prices, no commitment.</p>
+            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">See which OCCTA Flex 30 and Price Lock 24 options are available at your address, with the applicable speed, price, term and setup information before acceptance.</p>
             <Link to="/broadband">
               <Button variant="hero" size="lg">
                 Check Availability

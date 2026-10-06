@@ -102,9 +102,9 @@ export type Journey2Snapshot = {
 };
 
 const DIGITAL_VOICE_NOTICE =
-  "Digital Voice works over your broadband and mains power. In a power cut or broadband outage it will not " +
-  "work, including for 999 calls. If anyone at the property relies on the phone line for emergencies, tell us " +
-  "and we will arrange a suitable alternative at no charge.";
+  "Digital Voice works over your broadband and mains power. In a power cut or broadband outage it may not " +
+  "work, including for 999/112 calls. If anyone at the property relies on the phone line for emergencies, medical needs or telecare, tell us " +
+  "so we can assess the circumstances and discuss available resilience or alternative communication arrangements. 999/112 calls are free when the service is operational.";
 
 const FIRST_COLLECTION_RULE =
   "Nothing is payable today. Your first Direct Debit is collected on your chosen billing day once your service " +
@@ -115,11 +115,11 @@ const BILLING_COMMENCEMENT_RULE =
   "Billing starts when your service goes live. Your monthly charge is collected on your chosen billing day each month.";
 
 const COOLING_OFF_STATEMENT =
-  "You have a 14-day cooling-off period from the day you accept this agreement. Cancel within that period and " +
-  "you pay nothing for the service, though you must return any equipment we supplied.";
+  "You normally have a 14-day cooling-off period from the day you enter into this consumer agreement. If you expressly request an early start where available and then cancel during the period, " +
+  "you may have to pay the lawful proportionate amount for service supplied and applicable installation work already carried out. Equipment return/refund rules apply separately.";
 
 export const COOLING_OFF_DAYS = 14;
-export const SNAPSHOT_VERSION = "journey2-snapshot-v2";
+export const SNAPSHOT_VERSION = "journey2-snapshot-2026.10.1";
 
 /** Estimated line speeds per speed bucket — estimates, never guarantees. */
 export const SNAPSHOT_SPEED_ESTIMATES: Record<string, { download: number; upload: number }> = {

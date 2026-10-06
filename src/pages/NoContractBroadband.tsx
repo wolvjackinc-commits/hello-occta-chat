@@ -64,7 +64,7 @@ const comparisonData = [
 
 const faqs = [
   {
-    question: "Is there really no contract?",
+    question: "Does Flex 30 have a fixed minimum term?",
     answer: "Flex 30 has no fixed minimum term and normally uses 30 days’ notice. There is no remaining-month early termination charge on Flex 30. Separately valid network cease or migration charges may still apply where lawful, actually incurred and disclosed.",
   },
   {

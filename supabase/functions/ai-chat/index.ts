@@ -57,7 +57,7 @@ const businessInfo = {
     "Competitive pricing (£1-2 cheaper than market average)",
   ],
   broadbandPlans: [
-    { name: "ESSENTIAL", speed: "36Mbps", price: "£22.99/mo", description: "Perfect for light browsing" },
+    { name: "ESSENTIAL", speed: "Up to 80Mbps", price: "From £34.99/mo Price Lock 24", description: "Final address-specific service, price and speed information are confirmed before acceptance" },
     { name: "SUPERFAST", speed: "150Mbps", price: "£26.99/mo", description: "For households that use internet properly", popular: true },
     { name: "ULTRAFAST", speed: "500Mbps", price: "£38.99/mo", description: "For gamers, streamers, WFH" },
     { name: "GIGABIT", speed: "900Mbps", price: "£52.99/mo", description: "The fastest internet" },
@@ -78,7 +78,7 @@ const businessInfo = {
     { q: "How do I check my broadband speed?", a: "Use speedtest.net or our app. Test with ethernet for accurate results." },
     { q: "Can I keep my phone number?", a: "Yes! For mobile, text 'PAC' to 65075. For landlines, we handle the transfer." },
     { q: "What happens if I go over my data limit?", a: "No extra charges - just speed reduction to 1Mbps until next billing date." },
-    { q: "How do I cancel?", a: "Log in to dashboard or call us. 30 days notice, no exit fees on rolling contracts." },
+    { q: "How do I cancel?", a: "Flex 30 normally uses 30 days’ notice and has no remaining-month ETF. Price Lock 24 may have an ETF during the minimum term. Separately valid network cease or migration charges may apply where lawful, actually incurred and disclosed. One Touch Switch rules apply where relevant." },
   ],
 };
 

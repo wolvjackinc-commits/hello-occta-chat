@@ -1,299 +1,43 @@
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const GOOGLE_MAPS_GATEWAY = 'https://connector-gateway.lovable.dev/google_maps'
-const ALL_PLANS_NOTE = "Select your exact address and we'll show the available plans in this same panel."
-const LOOKUP_TIMEOUT_MS = 3000
-
-function formatPostcode(postcode: string) {
-  const normalized = postcode.trim().toUpperCase().replace(/\s+/g, '')
-  return normalized.length > 3 ? `${normalized.slice(0, -3)} ${normalized.slice(-3)}` : normalized
-}
-
-function compact(value: unknown) {
-  return typeof value === 'string' ? value.trim() : ''
-}
-
-function normalizeForCompare(value: unknown) {
-  return compact(value).toUpperCase().replace(/[^A-Z0-9]/g, '')
-}
-
-function isRealAddress(addr: any, postcode: string) {
-  const formatted = compact(addr?.formatted_address || addr?.premises_name)
-  if (!formatted) return false
-
-  const normalizedAddress = normalizeForCompare(formatted)
-  const normalizedPostcode = normalizeForCompare(postcode)
-  const normalizedPremises = normalizeForCompare(addr?.premises_name)
-  if (!normalizedAddress.includes(normalizedPostcode)) return false
-  if (normalizedPremises === normalizedPostcode) return false
-
-  // Never present the postcode itself as if it were an individual property.
-  const withoutPostcode = normalizedAddress.replace(normalizedPostcode, '')
-  return withoutPostcode.length >= 3
-}
-
-function uniqueAddresses(addresses: any[], postcode: string) {
-  const seen = new Set<string>()
-  return addresses.filter((addr) => {
-    if (!isRealAddress(addr, postcode)) return false
-    const key = normalizeForCompare(addr.formatted_address || addr.premises_name)
-    if (!key || seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-}
-
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = LOOKUP_TIMEOUT_MS) {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    return await fetch(url, { ...init, signal: controller.signal })
-  } finally {
-    clearTimeout(timeout)
-  }
-}
-
-function toGoogleAddress(candidate: any, postcode: string) {
-  const text = candidate?.placePrediction?.text?.text || candidate?.placePrediction?.structuredFormat?.mainText?.text || ''
-  const secondary = candidate?.placePrediction?.structuredFormat?.secondaryText?.text || ''
-  const full = [text, secondary].filter(Boolean).join(', ')
-  return {
-    source: 'google_places',
-    google_place_id: candidate?.placePrediction?.placeId || '',
-    premises_name: text,
-    post_town: secondary,
-    postcode,
-    formatted_address: full || postcode,
-  }
-}
-
-function toGooglePlaceAddress(place: any, postcode: string) {
-  const formatted = compact(place?.formattedAddress || place?.shortFormattedAddress)
-  const display = compact(place?.displayName?.text)
-  return {
-    source: 'google_places',
-    google_place_id: compact(place?.id),
-    premises_name: display || formatted,
-    post_town: '',
-    postcode,
-    formatted_address: formatted || display || postcode,
-  }
-}
-
-// Prefer OCCTA's own Google Maps Platform key when configured: it works for
-// every OCCTA domain (including occta.co.uk). Otherwise fall back to the
-// managed connector gateway.
-function resolveGoogleTransport() {
-  const ownKey = Deno.env.get('GOOGLE_API_KEY')
-  if (ownKey) {
-    return {
-      base: 'https://places.googleapis.com/v1',
-      headers: {
-        'X-Goog-Api-Key': ownKey,
-        'Content-Type': 'application/json',
-        // OCCTA's key is website-restricted, so identify the calling site.
-        'Referer': 'https://www.occta.co.uk/',
-      } as Record<string, string>,
-    }
-  }
-
-  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
-  const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY') ?? Deno.env.get('GOOGLE_MAPS_API_KEY_1')
-  if (!lovableApiKey || !googleMapsKey) return null
-
-  return {
-    base: `${GOOGLE_MAPS_GATEWAY}/places/v1`,
-    headers: {
-      'Authorization': `Bearer ${lovableApiKey}`,
-      'X-Connection-Api-Key': googleMapsKey,
-      'Content-Type': 'application/json',
-      'Referer': 'https://www.occta.co.uk/',
-    } as Record<string, string>,
-  }
-}
-
-async function getGoogleTextSearchAddresses(postcode: string) {
-  const transport = resolveGoogleTransport()
-  if (!transport) return []
-
-  try {
-    const res = await fetchWithTimeout(`${transport.base}/places:searchText`, {
-      method: 'POST',
-      headers: {
-        ...transport.headers,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.shortFormattedAddress',
-      },
-      body: JSON.stringify({
-        // A direct postcode query is both faster and less noisy than "addresses near ...".
-        textQuery: `${postcode}, UK`,
-        regionCode: 'gb',
-        languageCode: 'en-GB',
-      }),
-    })
-
-    if (!res.ok) {
-      console.error(`Google text address lookup failed (${res.status}):`, await res.text())
-      return []
-    }
-
-    const data = await res.json()
-    return (Array.isArray(data?.places) ? data.places : [])
-      .map((place: any) => toGooglePlaceAddress(place, postcode))
-      .filter((addr: any) => isRealAddress(addr, postcode))
-  } catch (err) {
-    console.error('Google text address lookup timed out or failed:', err)
-    return []
-  }
-}
-
-async function getGoogleAddressFallback(postcode: string) {
-  const transport = resolveGoogleTransport()
-  if (!transport) return []
-
-  try {
-    const res = await fetchWithTimeout(`${transport.base}/places:autocomplete`, {
-      method: 'POST',
-      headers: {
-        ...transport.headers,
-        'X-Goog-FieldMask': 'suggestions.placePrediction.placeId,suggestions.placePrediction.text,suggestions.placePrediction.structuredFormat',
-      },
-      body: JSON.stringify({
-        input: postcode,
-        includedPrimaryTypes: ['street_address', 'premise', 'subpremise'],
-        includedRegionCodes: ['gb'],
-        languageCode: 'en-GB',
-      }),
-    })
-
-    if (!res.ok) {
-      console.error(`Google address autocomplete failed (${res.status}):`, await res.text())
-      return []
-    }
-
-    const data = await res.json()
-    return (Array.isArray(data?.suggestions) ? data.suggestions : [])
-      .map((suggestion: any) => toGoogleAddress(suggestion, postcode))
-      .filter((addr: any) => isRealAddress(addr, postcode))
-  } catch (err) {
-    console.error('Google address autocomplete timed out or failed:', err)
-    return []
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Preferred provider: a PAF-capable exact-postcode address list.
-// Only used when IDEAL_POSTCODES_API_KEY is configured; never hard-coded.
-// ---------------------------------------------------------------------------
-async function getPafAddresses(displayPostcode: string) {
-  const key = Deno.env.get('IDEAL_POSTCODES_API_KEY')
-  if (!key) return []
-
-  const lookup = displayPostcode.replace(/\s+/g, '')
-  try {
-    const res = await fetchWithTimeout(
-      `https://api.ideal-postcodes.co.uk/v1/postcodes/${encodeURIComponent(lookup)}?api_key=${encodeURIComponent(key)}`,
-      { method: 'GET', headers: { 'Accept': 'application/json' } },
-      2500,
-    )
-    if (!res.ok) {
-      console.error(`PAF postcode lookup failed (${res.status})`)
-      return []
-    }
-    const data = await res.json()
-    const rows: any[] = Array.isArray(data?.result) ? data.result : []
-    return rows.map((row) => {
-      const line1 = compact(row?.line_1)
-      const line2 = compact(row?.line_2)
-      const town = compact(row?.post_town)
-      const pc = compact(row?.postcode) || displayPostcode
-      return {
-        source: 'paf',
-        udprn: compact(row?.udprn),
-        premises_name: line1,
-        sub_premises: line2 || undefined,
-        post_town: town,
-        postcode: pc,
-        formatted_address: [line1, line2, town, pc].filter(Boolean).join(', '),
-      }
-    }).filter((addr: any) => compact(addr.premises_name).length > 0)
-  } catch (e) {
-    console.error('PAF postcode lookup timed out or failed:', e)
-    return []
-  }
-}
+import { corsHeaders, jsonResponse, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { lookupIcukAddresses } from "../_shared/icukAvailability.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
+
+  const ip = getRequestIp(req) ?? "noip";
+  if (!(await checkRateLimit(ip, "check_address", 20, 300))) {
+    return jsonResponse({ error: "rate_limited" }, 429);
   }
+
+  const body = await req.json().catch(() => null);
+  const postcode = String(body?.postcode ?? "").trim();
+  if (!postcode) return jsonResponse({ error: "postcode_required" }, 400);
 
   try {
-    const { postcode } = await req.json()
-
-    if (!postcode || typeof postcode !== 'string') {
-      return new Response(
-        JSON.stringify({ error: 'Postcode is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    const addresses = await lookupIcukAddresses(postcode);
+    if (!addresses.length) {
+      return jsonResponse({
+        addresses: [],
+        verifiedSupplierAddresses: true,
+        message: "We couldn’t find an exact supplier address for that postcode. Contact OCCTA and we’ll check it manually.",
+      });
     }
-
-    const normalized = postcode.trim().toUpperCase().replace(/\s+/g, '')
-    const displayPostcode = formatPostcode(normalized)
-
-    const postcodeRegex = /^[A-Z]{1,2}[0-9][0-9A-Z]?[0-9][A-Z]{2}$/
-    if (!postcodeRegex.test(normalized)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid UK postcode format' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Exact Royal Mail / PAF postcode list first when a provider key exists.
-    const pafAddresses = await getPafAddresses(displayPostcode)
-    if (pafAddresses.length > 0) {
-      return new Response(
-        JSON.stringify({ addresses: pafAddresses, source: 'paf', message: ALL_PLANS_NOTE }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Run the independent provider calls concurrently. Previously these ran one
-    // after the other, so a slow provider doubled the customer's wait time.
-    const [textResult, autocompleteResult] = await Promise.allSettled([
-      getGoogleTextSearchAddresses(displayPostcode),
-      getGoogleAddressFallback(displayPostcode),
-    ])
-
-    const addresses = uniqueAddresses([
-      ...(textResult.status === 'fulfilled' ? textResult.value : []),
-      ...(autocompleteResult.status === 'fulfilled' ? autocompleteResult.value : []),
-    ], displayPostcode)
-
-    if (addresses.length === 0) {
-      // Do not fabricate a "Use this postcode" row. It is not an address and it
-      // made the UI say "1 address found" even when no property was returned.
-      return new Response(
-        JSON.stringify({
-          addresses: [],
-          source: 'no_property_addresses',
-          message: "We couldn't list individual properties for this postcode. Search for your full address or enter it manually and we'll confirm availability before activation.",
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    return new Response(
-      JSON.stringify({ addresses, source: addresses[0]?.source || 'address_lookup', message: ALL_PLANS_NOTE }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return jsonResponse({
+      addresses,
+      verifiedSupplierAddresses: true,
+      source: "ICUK_LIVE_ADDRESS",
+    });
   } catch (err) {
-    console.error('check-address error:', err)
-    return new Response(
-      JSON.stringify({ error: 'An error occurred while looking up addresses.' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    const code = err instanceof Error ? err.message : "address_lookup_failed";
+    console.error("[check-address]", code);
+    return jsonResponse({
+      addresses: [],
+      error: code,
+      verifiedSupplierAddresses: false,
+      message: code === "icuk_backend_not_configured"
+        ? "Supplier address verification is temporarily unavailable. Online ordering is paused rather than guessing availability."
+        : "We couldn’t verify addresses with the network right now. Contact OCCTA and we’ll check it manually.",
+    }, code === "invalid_postcode" ? 400 : 503);
   }
-})
+});

@@ -130,7 +130,7 @@ const routes: RouteSEO[] = [
     path: "/broadband",
     title: "Cheap Broadband UK - Flexible & Fixed-Term Fibre | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Cheap broadband UK from £34.99/mo. Flex 30 fibre broadband with 900Mbps speeds. Clear price and term information; cancel Flex 30 with the applicable notice. Best budget broadband 2025.",
+      "Broadband headline pricing from £34.99/mo on Price Lock 24. Flex 30 is available where offered. Public speed bands run up to 1000Mbps where available; final address-specific speed, price, setup and term are confirmed before acceptance.",
     canonical: "/broadband",
     keywords:
       "cheap broadband UK, Flex 30 broadband, cancel Flex 30 with the applicable notice broadband, fibre broadband Flex 30, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK",
@@ -159,7 +159,7 @@ const routes: RouteSEO[] = [
     path: "/sim-plans",
     title: "Cheap SIM Only Deals UK - 5G Flexible Plans | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Cheap SIM deals UK from £7.99/mo. 5G SIM options, Price Lock 24 or Flex 30 where offered, EU roaming included. Best budget SIM plans 2025. Unlimited calls & texts.",
+      "OCCTA SIM-only plans are loaded from the live catalogue, with selected 30-day and 24-month options on O2, Vodafone and EE. Current price, allowance, network, roaming and contract terms are shown before checkout.",
     canonical: "/sim-plans",
     keywords:
       "cheap SIM deals UK, 5G SIM options, Flex 30 SIM, cheap mobile plans UK, SIM only deals, budget SIM UK, unlimited SIM UK, PAYG SIM cheap, best SIM deals 2025",
@@ -171,7 +171,7 @@ const routes: RouteSEO[] = [
         "@type": "Service",
         name: "OCCTA SIM Plans",
         description:
-          "UK SIM-only mobile plans with 5G, EU roaming, and Price Lock 24 or Flex 30 where offered.",
+          "UK SIM-only options from the live catalogue, with selected 30-day and 24-month terms where available.",
         url: `${BASE_URL}/sim-plans`,
         provider: { "@type": "Organization", name: "OCCTA LIMITED", url: BASE_URL },
         areaServed: { "@type": "Country", name: "United Kingdom" },
@@ -272,7 +272,7 @@ const routes: RouteSEO[] = [
   {
     path: "/guides",
     title: "Guides — Broadband, Home Phone & SIM | OCCTA - Cheap UK Broadband & SIM",
-    description: "Helpful guides on UK broadband, Digital Home Phone, and SIM plans. No-contract options, switching tips, and money-saving advice from OCCTA.",
+    description: "Helpful guides on UK broadband, Digital Voice and SIM plans, including Flex 30, Price Lock 24, switching, billing and practical setup information.",
     canonical: "/guides",
     keywords: "broadband guide UK, home phone guide, SIM guide, internet tips, switching broadband, digital voice guide",
     jsonLd: [localBusinessSchema],
@@ -320,7 +320,7 @@ const routes: RouteSEO[] = [
   {
     path: "/guides/cheap-sim-only-deals",
     title: "Cheap SIM Only Deals UK — Budget Mobile Plans | OCCTA - Cheap UK Broadband & SIM",
-    description: "Find the best cheap SIM only deals in the UK. No credit check, Price Lock 24 or Flex 30 where offered, 5G included.",
+    description: "Compare current OCCTA SIM-only options using the live catalogue. Network, allowance, term, price and applicable charges vary by tariff.",
     canonical: "/guides/cheap-sim-only-deals",
     keywords: "cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only Flex 30, best SIM deals UK",
     jsonLd: [localBusinessSchema],
@@ -417,7 +417,7 @@ const routes: RouteSEO[] = [
   {
     path: "/broadband-no-credit-check",
     title: "Broadband No Credit Check — Get Connected Today | OCCTA",
-    description: "Need broadband with no credit check? OCCTA offers fast fibre broadband from £34.99/mo with no credit check, Flex 30.",
+    description: "Need broadband and want to understand ordering requirements? OCCTA shows current broadband options, address availability, contract term, setup and final price before acceptance.",
     canonical: "/broadband-no-credit-check",
     keywords: "broadband no credit check, internet no credit check, wifi no credit check, broadband without credit check UK",
     price: "22.99",
@@ -426,7 +426,7 @@ const routes: RouteSEO[] = [
   {
     path: "/broadband-for-students",
     title: "Student Broadband — Flexible Broadband for Students | OCCTA",
-    description: "Best broadband for students in the UK. Flex 30, no credit check, cancel Flex 30 with the applicable notice. From £34.99/mo.",
+    description: "Broadband for students and renters: compare Flex 30 with Price Lock 24, check the installation address and understand setup, notice and moving-home terms before ordering.",
     canonical: "/broadband-for-students",
     keywords: "student broadband, broadband for students UK, student internet deals, Flex 30 broadband students",
     price: "22.99",
@@ -435,7 +435,7 @@ const routes: RouteSEO[] = [
   {
     path: "/best-broadband-deals-uk",
     title: "Best Broadband Deals UK 2026 — Compare & Save | OCCTA",
-    description: "Find the best broadband deals in the UK for 2026. No-contract plans from £34.99/mo. No hidden fees.",
+    description: "Compare OCCTA broadband for 2026. Price Lock 24 headline pricing starts from £34.99/mo and Flex 30 is priced separately where offered. Final charges are confirmed before acceptance.",
     canonical: "/best-broadband-deals-uk",
     keywords: "best broadband deals UK, best broadband deals 2026, cheapest broadband UK, broadband deals comparison",
     price: "22.99",
@@ -444,7 +444,7 @@ const routes: RouteSEO[] = [
   {
     path: "/broadband-for-gaming",
     title: "Best Broadband for Gaming UK — Low Latency Internet | OCCTA",
-    description: "Best broadband for gaming in the UK. Low latency, fast speeds up to 900Mbps, Price Lock 24 or Flex 30 where offered. From £34.99/mo.",
+    description: "Broadband for gaming: compare address-available technology and speed bands, with Price Lock 24 or Flex 30 where offered. Final speed information and price are confirmed before acceptance.",
     canonical: "/broadband-for-gaming",
     keywords: "broadband for gaming, gaming broadband UK, best internet for gaming, low latency broadband",
     price: "22.99",
@@ -453,7 +453,7 @@ const routes: RouteSEO[] = [
   {
     path: "/broadband-for-working-from-home",
     title: "Best Broadband for Working from Home — Reliable WFH Internet | OCCTA",
-    description: "Best broadband for working from home. Reliable fibre, fast speeds, Price Lock 24 or Flex 30 where offered. From £34.99/mo.",
+    description: "Broadband for working from home: compare address-available technology and speed bands, with Price Lock 24 or Flex 30 where offered. Final speed information and price are confirmed before acceptance.",
     canonical: "/broadband-for-working-from-home",
     keywords: "broadband for working from home, WFH broadband, remote working internet, home office broadband",
     price: "22.99",
@@ -462,7 +462,7 @@ const routes: RouteSEO[] = [
   {
     path: "/broadband-no-upfront-cost",
     title: "Broadband With No Upfront Cost — £0 Setup Where Available | OCCTA",
-    description: "Broadband with no upfront cost. Full-fibre from £34.99/mo, £0 setup where available, bring your own router for £0. No hidden activation fees.",
+    description: "Broadband with £0 setup on eligible orders. Price Lock 24 headline pricing starts from £34.99/mo; exact technology, setup/activation charges and router options are confirmed for the address before acceptance.",
     canonical: "/broadband-no-upfront-cost",
     keywords: "broadband no upfront cost, broadband no setup fee, no upfront cost broadband, free setup broadband, broadband no activation fee",
     price: "34.99",
@@ -553,7 +553,7 @@ const routes: RouteSEO[] = [
   {
     path: "/guides/broadband-for-students",
     title: "Student Broadband UK — Flexible Broadband | OCCTA",
-    description: "Best broadband for students in the UK. Flex 30, no credit check, cancel when you move.",
+    description: "Broadband for students: compare Flex 30 with Price Lock 24 and review the accepted moving-home, setup, notice and termination terms before ordering.",
     canonical: "/guides/broadband-for-students",
     keywords: "student broadband, broadband for students, student internet UK, Flex 30 student broadband",
     jsonLd: [localBusinessSchema],

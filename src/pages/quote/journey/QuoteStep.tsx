@@ -88,7 +88,7 @@ export default function QuoteStep({
       {hasDigitalVoice && (
         <div className="border-2 border-warning bg-warning/10 p-3 mb-4 text-xs flex gap-2">
           <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span><strong>Digital Voice included.</strong> Digital Voice (VoIP) needs power and broadband to work. In a power cut you may not be able to call emergency services (999/112). We recommend keeping a charged mobile as backup. Vulnerable users may request a battery backup unit free of charge.</span>
+          <span><strong>Digital Voice included.</strong> Digital Voice (VoIP) needs power and broadband to work. In a power cut you may not be able to call emergency services (999/112). We recommend keeping a charged mobile as backup. If anyone relies on the line for safety, healthcare, telecare or because of poor mobile coverage, tell us so we can assess appropriate resilience or alternative communication support.</span>
         </div>
       )}
 

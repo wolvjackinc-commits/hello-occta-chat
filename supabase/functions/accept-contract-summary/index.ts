@@ -223,6 +223,13 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   const releaseBlock = await consumerContractReleaseBlockForDb(supabase, cs.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
+  if (cs.customer_type !== "business" && cs.terms_version === "2026.10.1" && !i.journey_mode) {
+    return jsonResponse({
+      error: "canonical_journey_required",
+      message: "New consumer contracts must be accepted through the verified OCCTA order journey.",
+    }, 409);
+  }
+
   if (!["issued", "viewed", "draft"].includes(cs.status)) return jsonResponse({ error: "not_acceptable", status: cs.status }, 409);
   if (cs.token_expires_at && new Date(cs.token_expires_at) < new Date()) return jsonResponse({ error: "expired" }, 410);
 
@@ -246,17 +253,19 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     }
   }
 
-  // Snapshot integrity: if a Contract Information Pack exists for this quote it
-  // must be linked to THIS Contract Summary, so acceptance can never mix
-  // mismatched document versions.
+  // Current consumer contracts require the exact paired Pack with separate
+  // logical-body and actual-PDF hashes. Historical generations retain their
+  // original evidence model and are not rewritten.
   {
     const { data: cip } = await supabase
       .from("contract_information_packs")
-      .select("id, cip_number, contract_summary_id, document_status, template_version")
+      .select("id, cip_number, version, contract_summary_id, document_status, template_version, body_snapshot_sha256, pdf_sha256, pdf_storage_path")
       .eq("quote_id", cs.quote_id)
+      .neq("document_status", "superseded")
       .order("version", { ascending: false })
       .limit(1)
       .maybeSingle();
+    currentCip = cip;
     if (cip && cip.contract_summary_id && cip.contract_summary_id !== cs.id) {
       return jsonResponse({
         error: "contract_information_mismatch",
@@ -270,6 +279,20 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
         message: "The Contract Information for this order is no longer current. OCCTA must reissue both documents together before acceptance.",
         details: { cip_number: cip.cip_number, document_status: cip.document_status },
       }, 409);
+    }
+    if (cs.customer_type !== "business" && cs.terms_version === "2026.10.1") {
+      if (!cip || cip.contract_summary_id !== cs.id) {
+        return jsonResponse({ error: "contract_information_required" }, 409);
+      }
+      if (cip.template_version !== "2026.10.1" || !cip.body_snapshot_sha256 || !cip.pdf_sha256 || !cip.pdf_storage_path) {
+        return jsonResponse({
+          error: "contract_information_evidence_incomplete",
+          message: "The exact Contract Information PDF and its evidence hashes must be stored before acceptance.",
+        }, 409);
+      }
+      if (!cs.body_snapshot_sha256) {
+        return jsonResponse({ error: "contract_summary_body_hash_missing" }, 409);
+      }
     }
   }
 

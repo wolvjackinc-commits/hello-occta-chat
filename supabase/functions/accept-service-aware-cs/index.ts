@@ -123,6 +123,13 @@ Deno.serve(async (req) => {
   const releaseBlock = await consumerContractReleaseBlockForDb(supabase, cs.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
+  if (cs.customer_type !== "business" && cs.terms_version === "2026.10.1") {
+    return jsonResponse({
+      error: "canonical_acceptance_required",
+      message: "New consumer contracts must be accepted through the OTP-verified OCCTA order journey.",
+    }, 409);
+  }
+
   if (!["issued", "viewed", "draft"].includes(cs.status as string))
     return jsonResponse({ error: "not_acceptable", status: cs.status }, 409);
   if (i.cs_version !== cs.version) return jsonResponse({ error: "cs_version_stale", current: cs.version }, 409);

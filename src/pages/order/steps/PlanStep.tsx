@@ -122,7 +122,7 @@ export default function PlanStep({
                     <span className="block text-xs text-muted-foreground">
                       {t === "flex_30"
                         ? "No minimum term — 30 days' notice to leave."
-                        : "Your price is fixed for 24 months. Early exit fees may apply if you leave during the minimum term."}
+                        : "Your recurring broadband price is fixed for the 24-month minimum term. If you leave during the minimum term and no penalty-free exit right applies, a fair-loss Early Termination Charge may apply. A separately valid network cease/migration charge may also apply where lawful and actually incurred."}
                     </span>
                   </span>
                 </span>
@@ -135,7 +135,7 @@ export default function PlanStep({
           })}
           {savings && (
             <p className="text-xs border-2 border-foreground p-3">
-              Price Lock 24 is {money(savings.monthly)} less per month — {money(savings.over24Months)} over 24 months at today’s Flex 30 price, in exchange for a 24-month commitment. This comparison excludes router charges, extras and cashback; Flex 30 prices may change.
+              Price Lock 24 is {money(savings.monthly)} less per month — {money(savings.over24Months)} over 24 months at today’s Flex 30 price, in exchange for a 24-month commitment. This comparison excludes router charges, extras and cashback; If a future Flex 30 contract change gives you a right to leave without penalty, OCCTA will give the required notice and explain that right.
             </p>
           )}
         </fieldset>

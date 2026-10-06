@@ -117,7 +117,7 @@ const globalSchemas = [organizationSchema, websiteSchema, localBusinessSchema];
 const routes: RouteSEO[] = [
   {
     path: "/",
-    title: "OCCTA — Cheap UK Broadband & SIM, No Contracts",
+    title: "OCCTA — Cheap UK Broadband & SIM, Clear Terms",
     description:
       "Cheap UK broadband from £34.99/mo. Price Lock 24 or Flex 30 where offered, fibre speed bands up to 1000Mbps where available, SIM plans priced from the live catalogue and digital home phone. Cancel Flex 30 with the applicable notice.",
     canonical: "/",
@@ -128,7 +128,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/broadband",
-    title: "Cheap Broadband UK - No Contract Fibre | OCCTA - Cheap UK Broadband & SIM",
+    title: "Cheap Broadband UK - Flexible & Fixed-Term Fibre | OCCTA - Cheap UK Broadband & SIM",
     description:
       "Cheap broadband UK from £34.99/mo. Flex 30 fibre broadband with 900Mbps speeds. Clear price and term information; cancel Flex 30 with the applicable notice. Best budget broadband 2025.",
     canonical: "/broadband",
@@ -157,7 +157,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/sim-plans",
-    title: "Cheap SIM Only Deals UK - 5G No Contract | OCCTA - Cheap UK Broadband & SIM",
+    title: "Cheap SIM Only Deals UK - 5G Flexible Plans | OCCTA - Cheap UK Broadband & SIM",
     description:
       "Cheap SIM deals UK from £7.99/mo. 5G SIM options, Price Lock 24 or Flex 30 where offered, EU roaming included. Best budget SIM plans 2025. Unlimited calls & texts.",
     canonical: "/sim-plans",
@@ -215,7 +215,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/no-contract-broadband-uk",
-    title: "No Contract Broadband UK | Cheap & Flexible Broadband | OCCTA - Cheap UK Broadband & SIM",
+    title: "Flex 30 Broadband UK | Cheap & Flexible Broadband | OCCTA - Cheap UK Broadband & SIM",
     description:
       "Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband with no lock-ins, no hidden fees, and no surprise price rises.",
     canonical: "/no-contract-broadband-uk",
@@ -227,7 +227,7 @@ const routes: RouteSEO[] = [
       {
         "@context": "https://schema.org",
         "@type": "Offer",
-        name: "No Contract Broadband",
+        name: "Flex 30 Broadband",
         description:
           "Flexible UK broadband with Price Lock 24 or Flex 30 where offered, no hidden fees, and no price rises.",
         price: "22.99",
@@ -279,7 +279,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/guides/no-contract-broadband-uk",
-    title: "No Contract Broadband UK — Flexible Internet | OCCTA - Cheap UK Broadband & SIM",
+    title: "Flex 30 Broadband UK — Flexible Internet | OCCTA - Cheap UK Broadband & SIM",
     description: "Looking for Flex 30 broadband in the UK? Learn how rolling monthly broadband works, who it suits, and how to get connected without lock-ins or exit fees.",
     canonical: "/guides/no-contract-broadband-uk",
     keywords: "Flex 30 broadband UK, flexible broadband, cancel Flex 30 with the applicable notice broadband, rolling monthly broadband, no lock-in broadband",
@@ -397,7 +397,7 @@ const routes: RouteSEO[] = [
     { slug: "cheltenham", city: "Cheltenham", region: "Gloucestershire" },
   ].map(({ slug, city, region }): RouteSEO => ({
     path: `/broadband-${slug}`,
-    title: `Cheap Broadband in ${city} - No Contract Fibre | OCCTA - Cheap UK Broadband & SIM`,
+    title: `Cheap Broadband in ${city} - Flexible & Fixed-Term Fibre | OCCTA - Cheap UK Broadband & SIM`,
     description: `Cheap broadband in ${city} from \u00A322.99/mo. Flex 30 fibre up to 900Mbps in ${region}. No price rises, cancel Flex 30 with the applicable notice.`,
     canonical: `/broadband-${slug}`,
     keywords: `cheap broadband ${city}, broadband ${city}, fibre broadband ${city}, Flex 30 broadband ${city}, internet ${city}, ${region} broadband`,
@@ -425,7 +425,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/broadband-for-students",
-    title: "Student Broadband — No Contract Internet for Students | OCCTA",
+    title: "Student Broadband — Flexible Broadband for Students | OCCTA",
     description: "Best broadband for students in the UK. Flex 30, no credit check, cancel Flex 30 with the applicable notice. From £34.99/mo.",
     canonical: "/broadband-for-students",
     keywords: "student broadband, broadband for students UK, student internet deals, Flex 30 broadband students",
@@ -552,7 +552,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/guides/broadband-for-students",
-    title: "Student Broadband UK — No Contract Internet | OCCTA",
+    title: "Student Broadband UK — Flexible Broadband | OCCTA",
     description: "Best broadband for students in the UK. Flex 30, no credit check, cancel when you move.",
     canonical: "/guides/broadband-for-students",
     keywords: "student broadband, broadband for students, student internet UK, Flex 30 student broadband",

@@ -202,6 +202,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       .limit(1)
       .maybeSingle();
     let certificate_number: string | null = null;
+    let certificate_pending = false;
     if (existingAcc) {
       const { data: cert } = await supabase
         .from("acceptance_certificates")
@@ -209,6 +210,33 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
         .eq("contract_acceptance_id", existingAcc.id)
         .maybeSingle();
       certificate_number = cert?.certificate_number ?? null;
+
+      // Idempotent repair for a transient certificate-generation failure.
+      // This never changes accepted contract evidence; it creates the separate
+      // immutable certificate from the already-recorded acceptance.
+      if (!certificate_number && cs.terms_version === "2026.10.1") {
+        try {
+          const projectUrl = Deno.env.get("SUPABASE_URL")!;
+          const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const certRes = await fetch(`${projectUrl}/functions/v1/generate-acceptance-certificate`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${svcKey}`,
+              "Content-Type": "application/json",
+              "x-internal-service": "1",
+            },
+            body: JSON.stringify({ contract_acceptance_id: existingAcc.id }),
+          });
+          if (certRes.ok) {
+            const certJson = await certRes.json();
+            certificate_number = certJson?.certificate_number ?? null;
+          } else {
+            certificate_pending = true;
+          }
+        } catch {
+          certificate_pending = true;
+        }
+      }
     }
     return jsonResponse({
       ok: true, already_accepted: true,
@@ -216,6 +244,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       contract_summary_id: cs.id,
       contract_acceptance_id: existingAcc?.id ?? null,
       certificate_number,
+      certificate_pending,
     });
   }
 
@@ -538,8 +567,11 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     actor_type: "anon",
   });
 
-  // Generate immutable acceptance certificate (best-effort).
+  // Generate the immutable acceptance certificate immediately. Acceptance
+  // remains legally recorded even if storage/email infrastructure is transiently
+  // unavailable, but activation is database-blocked until the certificate exists.
   let certificate_number: string | null = null;
+  let certificate_pending = false;
   if (acceptanceId) {
     try {
       const projectUrl = Deno.env.get("SUPABASE_URL")!;
@@ -556,8 +588,31 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       if (r.ok) {
         const j = await r.json();
         certificate_number = j?.certificate_number ?? null;
+      } else {
+        certificate_pending = true;
       }
-    } catch { /* certificate gen is best-effort */ }
+    } catch {
+      certificate_pending = true;
+    }
+
+    if (!certificate_number && cs.terms_version === "2026.10.1") {
+      certificate_pending = true;
+      try {
+        const title = `Acceptance certificate pending — ${cs.cs_number}`;
+        const { data: existingTask } = await supabase.from("admin_tasks")
+          .select("id").eq("title", title).in("status", ["open", "in_progress"]).limit(1).maybeSingle();
+        if (!existingTask) {
+          await supabase.from("admin_tasks").insert({
+            title,
+            description: "Contract acceptance is valid, but the immutable acceptance certificate has not yet been generated. Activation is blocked until the certificate exists.",
+            status: "open",
+            priority: "high",
+            related_customer_id: cs.customer_id,
+            related_account_number: cs.account_number,
+          });
+        }
+      } catch { /* task creation is non-fatal; activation guard is authoritative */ }
+    }
   }
 
   // Suppress legacy welcome email in journey-mode OR when the platform flag is on.
@@ -597,6 +652,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     contract_summary_id: cs.id,
     contract_acceptance_id: acceptanceId,
     certificate_number,
+    certificate_pending,
     journey_advanced_to: journey ? "start_date" : null,
     // Bespoke packs carry the customer straight into Direct Debit setup.
     dd_setup_path: typeof cs.pack_sections?.dd_setup_path === "string" ? cs.pack_sections.dd_setup_path : null,

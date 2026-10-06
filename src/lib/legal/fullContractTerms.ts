@@ -102,8 +102,8 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
   {
     heading: "11. Digital Voice & emergency calls",
     paragraphs: [
-      "If your service includes a digital phone line (Digital Voice / VoIP), please read this section carefully. Digital Voice works through your broadband connection and mains power supply. It may not work during a power cut, a broadband outage, or if the router is unplugged, unless a battery back-up unit (BBU) has been supplied and is correctly installed.",
-      "If you, or anyone in your household, relies on the phone line for emergency calls, telecare or medical equipment (for example a pendant alarm, dialysis monitor or health alert pager) you must tell OCCTA before activating the service. We will assess the situation, may provide a free battery back-up unit, and may signpost you to an alternative service if Digital Voice is not appropriate. This is in line with the Ofcom protections for vulnerable customers and the industry commitments on Public Switched Telephone Network (PSTN) migration.",
+      "If your service includes a digital phone line (Digital Voice / VoIP), please read this section carefully. Digital Voice works through your broadband connection, compatible equipment and mains power. It may not work during a power cut, broadband outage, router failure or certain network incidents.",
+      "If you, or anyone in your household, relies on the phone line for emergency calls, telecare or medical equipment, or has poor mobile coverage, tell OCCTA. We will assess the circumstances and discuss appropriate resilience or alternative communication arrangements. Suitable backup equipment may be one option where appropriate and available; it is not a universal guarantee of service during every outage.",
       "999/112 emergency calls remain free and are routed using the location data we hold for your service address. You must keep this address up to date.",
     ],
   },

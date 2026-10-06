@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, getRequestIp, checkRateLimit, sendResendEmail, brutalistEmailShell, escapeHtml, maskEmail } from "../_shared/quoteHelpers.ts";
-import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
+import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
 import { ACCEPTANCE_CHECKBOX_TEXT } from "../_shared/legalText.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       .eq("id", parsed.data.contract_summary_id).maybeSingle();
     if (!guard || guard.customer_id !== userId) return jsonResponse({ error: "not_found" }, 404);
     if (guard.status !== "accepted") {
-      const releaseBlock = consumerContractReleaseBlock(guard.customer_type);
+      const releaseBlock = await consumerContractReleaseBlockForDb(supabase, guard.customer_type);
       if (releaseBlock) return jsonResponse(releaseBlock, 409);
     }
     if (guard?.is_information_update === true) {

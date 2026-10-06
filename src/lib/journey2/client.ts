@@ -15,6 +15,41 @@ export type AddonId = "priority_support" | "static_ip" | "digital_voice" | "pape
 
 export type CatalogueTerm = { monthly_incl_vat: number; monthly_ex_vat: number; vat_amount: number };
 
+export type ContractSpeedMatrix = {
+  source: string;
+  source_retrieved_at: string;
+  technology: string;
+  minimum_download_mbps: number;
+  normally_available_download_mbps: number;
+  maximum_download_mbps: number;
+  advertised_download_mbps: number;
+  minimum_upload_mbps: number;
+  normally_available_upload_mbps: number;
+  maximum_upload_mbps: number;
+  advertised_upload_mbps: number;
+  derivation: string;
+};
+
+export type SupplierAvailabilityEvidence = {
+  evidence_version: string;
+  source: string;
+  verified_exact_address: boolean;
+  retrieved_at: string;
+  primary_technology: string;
+  eligible_occta_plans: SpeedBucket[];
+  address_reference: { nad_key: string | null; uprn: string | null };
+  products: Array<{
+    technology: string;
+    available: boolean;
+    likely_down_mbps: number | null;
+    likely_up_mbps: number | null;
+    minimum_down_mbps: number | null;
+    maximum_down_mbps: number | null;
+    minimum_up_mbps: number | null;
+    maximum_up_mbps: number | null;
+  }>;
+};
+
 export type CampaignPromotion = {
   code: string;
   title: string;
@@ -107,6 +142,12 @@ export type Journey2Session = {
   checkout_session_id: string | null;
   quote_id: string | null;
   order_id: string | null;
+  supplier_address_snapshot?: Record<string, unknown> | null;
+  supplier_availability_snapshot?: SupplierAvailabilityEvidence | null;
+  supplier_availability_sha256?: string | null;
+  supplier_availability_retrieved_at?: string | null;
+  supplier_availability_source?: string | null;
+  likely_service_date?: string | null;
   utm_snapshot?: { source_type?: string };
   expires_at: string;
   completed_at: string | null;

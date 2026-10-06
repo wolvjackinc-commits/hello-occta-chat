@@ -2,7 +2,7 @@
 // Never rename to "Full Contract Summary" — the long document is the
 // "OCCTA Contract Information & Customer Agreement Pack".
 
-export const TWO_DOC_TEMPLATE_VERSION = "2026-07-01";
+export const TWO_DOC_TEMPLATE_VERSION = "2026.10.1";
 
 export const CONTRACT_SUMMARY_TITLE = "OCCTA Contract Summary";
 export const CONTRACT_INFORMATION_PACK_TITLE =
@@ -17,7 +17,7 @@ export const DV_DEPENDENCY_POINTS: readonly string[] = [
   "Requires an OCCTA-supplied or approved router/ATA configured for Digital Voice.",
   "999 / 112 emergency calls will not work if power, broadband or the router is unavailable.",
   "Personal telecare alarms, medical alert pendants and lift/lifeline devices connected to your line may stop working without a compatible backup solution.",
-  "If you have poor or no mobile coverage at the property, you should not rely on Digital Voice for emergency calls without a backup.",
+  "If you have poor or no mobile coverage at the property, tell OCCTA so we can assess and discuss available resilience or alternative communication arrangements.",
 ];
 
 export const DV_ACKNOWLEDGEMENT_CHECKBOX =
@@ -52,15 +52,15 @@ export function priceChangeFixedPoundsWording(opts: {
 
 // ─── Payment schedule (safe wording) ─────────────────────────────────────────
 export const PAYMENT_SCHEDULE_SAFE =
-  "Billing starts after your service is confirmed live. Your first invoice is issued once we confirm the service-live date and will include the activation fee plus a pro-rata charge from the service-live date to your billing date. From then on, your service is billed monthly in advance on your billing date via the payment method you set up (secure Worldpay payment link or Direct Debit setup request).";
+  "Billing starts only after your service is confirmed live. Your first invoice may include agreed setup, activation, equipment or installation charges and any applicable pro-rata amount. Monthly service is then billed in advance on your agreed billing date. Direct Debit is treated as active only once the payment provider confirms the mandate.";
 
 // ─── Complaints / ADR ────────────────────────────────────────────────────────
 export const COMPLAINTS_ADR_SAFE =
-  "If something goes wrong, contact complaints@occta.co.uk. If we cannot resolve your complaint within 6 weeks, or if we issue a deadlock letter sooner, you have the right to refer it free of charge to our Alternative Dispute Resolution (ADR) scheme.";
+  "OCCTA follows an Alternative Dispute Resolution (ADR) scheme. Eligible unresolved complaints may normally be referred to ADR free of charge after 6 weeks, or earlier if deadlock is reached; see the OCCTA Complaints Code for the referral process.";
 
 // ─── Speeds ──────────────────────────────────────────────────────────────────
 export const SPEED_ESTIMATE_DISCLAIMER =
-  "Estimated speeds depend on your address and line check. Actual speeds may vary. If your line consistently underperforms the estimate shown, contact us — we will investigate with the access network and set out the remedies available to you, including any statutory or regulatory rights that apply.";
+  "Your order uses the best address/product speed information available to OCCTA. An advertised or up-to figure is not a guarantee unless expressly stated. Where the access network supplies contractual minimum, normally available, maximum and advertised speeds, those values are included in the order documents. Material recurring performance problems will be investigated and statutory/regulatory remedies remain available.";
 
 // ─── SIM-only fields (defaults; individual plans should override) ────────────
 export const SIM_ROAMING_DEFAULT =

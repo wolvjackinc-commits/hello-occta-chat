@@ -19,7 +19,8 @@ import {
 import { buildServiceComponentsSnapshot, hasComponent } from "../_shared/serviceComponents.ts";
 import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidators.ts";
-import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";\nimport { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
+import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
+import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";\nimport { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -175,7 +176,7 @@ function renderPackPdf(opts: {
   const line = (h = 14) => { y += h; if (y > H - 48) { doc.addPage(); y = M; } };
   const heading = (t: string) => {
     ensure(30);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(17,17,17); doc.text(t, M, y);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(17, 17, 17); doc.text(t, M, y);
     line(18); doc.setFont("helvetica", "normal"); doc.setFontSize(10);
   };
   const para = (t: string) => {
@@ -190,33 +191,34 @@ function renderPackPdf(opts: {
   doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
   doc.text("OCCTA LIMITED · 22 Pavilion View, Huddersfield, HD3 3WU · 0800 260 6626 · hello@occta.co.uk", M, 46);
   y = 88;
+
   doc.setFont("helvetica", "bold"); doc.setFontSize(17); doc.text(CONTRACT_INFORMATION_PACK_TITLE, M, y); line(22);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text(`Production v${PRODUCTION_CONTRACT_VERSION} · template v${TWO_DOC_TEMPLATE_VERSION} · issued ${new Date().toLocaleString("en-GB", { timeZone: "Europe/London" })}`, M, y); line(18);
-  doc.setFontSize(10);
+  doc.text(`Production v${PRODUCTION_CONTRACT_VERSION} · document template v${TWO_DOC_TEMPLATE_VERSION} · issued ${new Date().toLocaleString("en-GB", { timeZone: "Europe/London" })}`, M, y);
+  line(18); doc.setFontSize(10);
 
   heading("1. About this document");
-  para("This Contract Information & Customer Agreement Pack contains the detailed consumer terms for your OCCTA services. It must be read with the Contract Summary issued for your order. Both documents are provided before you are asked to accept the agreement. Customer-specific price, term, service, speed and charge information in the issued order documents takes priority over generic examples in this Pack, except where law requires otherwise.");
+  para("This Contract Information & Customer Agreement Pack contains the detailed consumer terms that apply to your OCCTA services. It must be read with the Contract Summary issued for your order. Both documents are provided before you are asked to accept the agreement. Customer-specific price, term, service, speed and charge information in your issued order documents takes priority over generic examples in this Pack, except where law requires otherwise.");
 
   heading("2. Your service components");
-  for (const component of opts.components) {
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-    doc.text(`${component.label} (${component.kind.replace("_", " ")})`, M, y); line(14);
+  for (const c of opts.components) {
+    ensure(20);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text(`${c.label} (${c.kind.replace("_", " ")})`, M, y); line(14);
     doc.setFont("helvetica", "normal");
-    para(`Monthly price (incl. VAT where applicable): £${component.monthly_price_incl_vat.toFixed(2)}.`);
-    para(`Contract type: ${component.contract_kind === "fixed_term" ? `Fixed term — ${component.minimum_term_months} months minimum` : "Flex 30 — 30-day rolling with no fixed minimum term"}.`);
-    para(`Notice period: ${component.notice_period_days} days. Cancellation: ${component.cancellation_wording}`);
-    if (component.contract_kind === "fixed_term" && component.etf) {
-      para(`Early Termination Charge: ${component.etf.wording}`);
-      para(`Calculation: ${component.etf.calculation_method}. Cap/formula: ${component.etf.cap_or_formula}. VAT treatment: ${component.etf.vat_treatment}. Date basis: ${component.etf.date_basis}.`);
-      para(`Worked example: ${component.etf.worked_example}`);
+    para(`Monthly price (incl. VAT where applicable): £${c.monthly_price_incl_vat.toFixed(2)}.`);
+    para(`Contract type: ${c.contract_kind === "fixed_term" ? `Fixed term — ${c.minimum_term_months} months minimum` : "Flex 30 — 30-day rolling with no fixed minimum term"}.`);
+    para(`Notice period: ${c.notice_period_days} days. Cancellation: ${c.cancellation_wording}`);
+    if (c.contract_kind === "fixed_term" && c.etf) {
+      para(`Early Termination Charge: ${c.etf.wording}`);
+      para(`Calculation: ${c.etf.calculation_method}. Cap/formula: ${c.etf.cap_or_formula}. VAT: ${c.etf.vat_treatment}. Date basis: ${c.etf.date_basis}.`);
+      para(`Worked example: ${c.etf.worked_example}`);
     }
-    para(`Price-change policy: ${component.price_change.wording ?? "No scheduled price increase."}`);
+    para(`Price-change policy: ${c.price_change.wording ?? "No scheduled price increase."}`);
   }
 
   if (hasComponent(opts.components, "digital_voice")) {
     heading("Digital Voice — essential warnings");
-    for (const point of DV_DEPENDENCY_POINTS) para(`• ${point}`);
+    for (const p of DV_DEPENDENCY_POINTS) para(`• ${p}`);
     para("999/112 calls are free when the service is operational. If you rely on the line because of vulnerability, medical needs, telecare or poor mobile coverage, tell OCCTA so we can assess and discuss available resilience or alternative communication arrangements.");
   }
 
@@ -234,27 +236,31 @@ function renderPackPdf(opts: {
   if (promotion?.eligible === true && promotion?.code === "SWITCH50") {
     heading("Promotion");
     para(`This order includes SWITCH50: £${Number(promotion.reward_amount ?? 50).toFixed(2)} cash reward. It is separate from the broadband subscription price.`);
-    para(String(promotion.payout_rule ?? ""));
+    if (promotion.payout_rule) para(String(promotion.payout_rule));
     if (promotion.terms_text) para(`Promotion terms (${String(promotion.terms_version ?? "current")}): ${String(promotion.terms_text)}`);
   }
 
   heading("Billing");
   para(PAYMENT_SCHEDULE_SAFE);
 
-  for (const section of PRODUCTION_CONTRACT_SECTIONS) {
-    heading(section.heading);
-    for (const p of section.paragraphs) para(p);
+  let n = 3;
+  for (const s of PRODUCTION_CONTRACT_SECTIONS) {
+    heading(`${n}. ${s.heading}`);
+    n += 1;
+    for (const p of s.paragraphs) para(p);
   }
 
-  heading("Complaints & ADR");
+  heading(`${n}. Complaints & ADR`);
   para(COMPLAINTS_ADR_SAFE);
 
   const pages = doc.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
+    doc.setDrawColor(180); doc.line(M, H - 36, W - M, H - 36);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80);
-    doc.text(`OCCTA Consumer Contract Information · Production v${PRODUCTION_CONTRACT_VERSION}`, M, H - 24);
-    doc.text(`Page ${i} of ${pages}`, W - M, H - 24, { align: "right" });
+    doc.text(`OCCTA Consumer Contract Information · Production v${PRODUCTION_CONTRACT_VERSION}`, M, H - 22);
+    doc.text(`Page ${i} of ${pages}`, W - M, H - 22, { align: "right" });
   }
+
   return doc.output("arraybuffer") as ArrayBuffer;
 }

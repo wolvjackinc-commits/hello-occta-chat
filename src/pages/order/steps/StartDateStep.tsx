@@ -8,7 +8,7 @@ import type { Journey2Session } from "@/lib/journey2/client";
 /** Statutory cooling-off window mirrored by the server. */
 const COOLING_OFF_DAYS = 14;
 /**
- * The shared journey allows a start date only AFTER the cooling-off period ends
+ * The standard online journey schedules start dates only AFTER the cooling-off period ends
  * (end of day 14), so the first selectable day is day 15. Journey 2 must offer
  * exactly the same window or the date is rejected once the contract is signed.
  */
@@ -72,7 +72,7 @@ export default function StartDateStep({
 
       <div className="border-2 border-border p-4 text-sm space-y-2">
         <p>
-          You get a <strong>14-day cancellation period</strong> from the day you accept your agreement, so the earliest
+          The standard online journey keeps activation after your <strong>14-day cooling-off period</strong>, so the earliest
           start date is <strong>{pretty(earliest)}</strong>.
         </p>
         <p className="text-muted-foreground">

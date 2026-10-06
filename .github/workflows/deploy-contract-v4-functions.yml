@@ -20,6 +20,12 @@ on:
       - 'supabase/functions/accept-contract-summary/**'
       - 'supabase/functions/accept-service-aware-cs/**'
       - 'supabase/functions/generate-acceptance-certificate/**'
+      - 'supabase/functions/journey-submit-order/**'
+      - 'supabase/functions/_shared/brandedEmailShell.ts'
+      - 'supabase/functions/process-activation-outbox/**'
+      - 'supabase/functions/dd-outbox-worker/**'
+      - 'supabase/functions/dd-status-notify/**'
+      - 'supabase/functions/switch50-message-worker/**'
       - '.github/workflows/deploy-contract-v4-functions.yml'
   workflow_dispatch:
 
@@ -65,3 +71,13 @@ jobs:
         run: supabase functions deploy accept-service-aware-cs --project-ref "$PROJECT_REF"
       - name: Deploy acceptance certificate generator
         run: supabase functions deploy generate-acceptance-certificate --project-ref "$PROJECT_REF"
+      - name: Deploy order submission/customer confirmation
+        run: supabase functions deploy journey-submit-order --project-ref "$PROJECT_REF"
+      - name: Deploy activation outbox consumer
+        run: supabase functions deploy process-activation-outbox --project-ref "$PROJECT_REF"
+      - name: Deploy Direct Debit outbox worker
+        run: supabase functions deploy dd-outbox-worker --project-ref "$PROJECT_REF"
+      - name: Deploy Direct Debit status notifier
+        run: supabase functions deploy dd-status-notify --project-ref "$PROJECT_REF"
+      - name: Deploy SWITCH50 message worker
+        run: supabase functions deploy switch50-message-worker --project-ref "$PROJECT_REF"

@@ -109,7 +109,7 @@ export default function StartDateStep({
               Preferred date: <strong className="text-foreground">{format(parseYmdLocal(journey.preferred_start_date), "EEEE d MMMM yyyy")}</strong>.
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              Your 14-day cooling-off period ends on <strong className="text-foreground">{format(coolEnd, "EEEE d MMMM yyyy 'at' HH:mm")}</strong> (Europe/London). The earliest standard service start date you can select is <strong className="text-foreground">{format(earliest, "EEEE d MMMM yyyy")}</strong>.
+              Your 14-day cooling-off period ends on <strong className="text-foreground">{format(coolEnd, "EEEE d MMMM yyyy 'at' HH:mm")}</strong> (Europe/London). The earliest standard online service start date you can select is <strong className="text-foreground">{format(earliest, "EEEE d MMMM yyyy")}</strong>. If OCCTA separately offers and you expressly request an earlier start, the cooling-off payment consequences are explained before that request is accepted.
             </p>
             <p className="text-xs text-muted-foreground mt-2 border-l-4 border-foreground pl-3">
               Your selected date is preferred and subject to availability. OCCTA will confirm your actual activation date. Billing begins only after your service has been confirmed as active.

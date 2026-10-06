@@ -315,7 +315,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     } else if (user) {
       welcomeContent = `Welcome back! 😊\nI'm IRA — want help with your services, billing, or something else today?`;
     } else {
-      welcomeContent = "👋 Hey! I'm IRA, your Intelligent Reliable Assistant.\nI can help you compare broadband & SIM plans, explain how switching works, or answer questions — no pressure, no contracts 🙂";
+      welcomeContent = "👋 Hey! I'm IRA, your Intelligent Reliable Assistant.\nI can help you compare broadband & SIM plans, explain Flex 30 and Price Lock 24, switching, billing and contract terms 🙂";
     }
 
     setMessages([

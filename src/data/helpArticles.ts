@@ -82,7 +82,7 @@ export const helpArticles: HelpArticle[] = [
       { heading: "The 60-second fix", paragraphs: ["When in doubt: unplug the router, wait 30 seconds, plug it back in. Genuinely fixes ~70% of issues. Wait 5 minutes before testing."] },
     ],
     faqs: [
-      { question: "Should I leave the router on 24/7?", answer: "Yes. Frequent reboots make your line look unstable and your supplier may throttle the speed as a 'fix'." },
+      { question: "Should I leave the router on 24/7?", answer: "Usually, leave the router powered on unless you are troubleshooting or following support instructions. Repeated power-cycling can interrupt service and make fault diagnosis harder." },
     ],
     related: ["slow-wifi-fix", "no-internet-troubleshooting", "getting-started"],
   },

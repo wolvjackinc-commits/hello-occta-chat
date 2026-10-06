@@ -141,7 +141,7 @@ export const helpArticles: HelpArticle[] = [
     sections: [
       { heading: "Plug it in", paragraphs: ["Connect your existing home phone to the green Phone port on the router. Pick up the handset — you should hear a dial tone."] },
       { heading: "Number porting", paragraphs: ["If you asked us to port your old number, it usually activates within one working day. You'll get an SMS or email when it's live."] },
-      { heading: "Emergency calls (999/112)", paragraphs: ["These work as normal. Important: in a power cut your phone won't work unless you have a battery backup unit. If anyone in the household relies on a phone line for safety, ask us for a free battery backup."] },
+      { heading: "Emergency calls (999/112)", paragraphs: ["999/112 calls are free when Digital Voice is operational. Digital Voice depends on working broadband, compatible equipment and mains power, so calls may not work during a power or broadband outage. If anyone relies on the phone for safety, healthcare or telecare, tell us so we can assess appropriate resilience or alternative communication support."] },
     ],
     faqs: [
       { question: "Can I keep my existing handset?", answer: "Yes — any standard home phone works." },
@@ -201,7 +201,7 @@ export const helpArticles: HelpArticle[] = [
     sections: [
       { heading: "Tell us early", paragraphs: ["Give us at least 14 days' notice with the new address and move-in date. We'll check availability at the new property and book activation for the day you arrive."] },
       { heading: "What if speed at the new address is slower?", paragraphs: ["You can downgrade to a cheaper plan, free of charge. No lock-in, no penalty."] },
-      { heading: "What if it's not available?", paragraphs: ["We'll cancel without a fee. Genuinely — no contracts means no contracts."] },
+      { heading: "What if it's not available?", paragraphs: ["We'll cancel without a fee. Genuinely — Price Lock 24 or Flex 30 where offered means Price Lock 24 or Flex 30 where offered."] },
     ],
     faqs: [
       { question: "Will I keep my landline number?", answer: "Yes, Digital Voice numbers travel with you — they don't depend on the address." },
@@ -212,13 +212,13 @@ export const helpArticles: HelpArticle[] = [
     slug: "cancel-or-switch",
     title: "Cancelling or Switching to Another Provider",
     metaTitle: "Cancel or Switch — OCCTA Help",
-    description: "How to cancel OCCTA or switch to another provider. No exit fees on rolling plans — straight talk.",
+    description: "How to cancel OCCTA or switch to another provider. No remaining-month early termination charge on Flex 30 on rolling plans — straight talk.",
     keywords: "cancel broadband uk, switch broadband, one touch switch",
     category: "Moving & Switching",
     readMinutes: 3,
     intro: "We hate the lock-ins as much as you do. Here's exactly how leaving works.",
     sections: [
-      { heading: "If you're on a rolling plan", paragraphs: ["Give 30 days' notice from your dashboard or by email. No exit fee. Service ends at midnight on day 30."] },
+      { heading: "If you're on a rolling plan", paragraphs: ["Give 30 days' notice from your dashboard or by email. No remaining-month early termination charge on Flex 30. Service ends at midnight on day 30."] },
       { heading: "If you're on a fixed term", paragraphs: ["Leaving early triggers an Early Termination Charge — the remaining monthly fees minus VAT discount, as set out in your Contract Summary. The exact figure is shown before you confirm."] },
       { heading: "Switching to another UK provider", paragraphs: ["Under Ofcom's One Touch Switch, your new provider handles everything. Just sign up with them — they'll tell us. No double bills, no overlap."] },
       { heading: "Returning the router", paragraphs: ["We email a free returns label. It must arrive within 14 days of cancellation, otherwise a £35 hardware fee applies."] },
@@ -239,7 +239,7 @@ export const helpArticles: HelpArticle[] = [
     intro: "If you or someone in the household depends on the line for safety, age, illness, mental health, financial hardship or any other reason — please tell us. We treat it seriously.",
     sections: [
       { heading: "Priority restoration", paragraphs: ["Outages affecting flagged accounts are prioritised by our supplier. We aim to have you back online within 24 hours."] },
-      { heading: "Free battery backup", paragraphs: ["For Digital Voice users who rely on the phone for emergencies, we provide a free battery backup unit so 999 calls keep working in a power cut."] },
+      { heading: "Free battery backup", paragraphs: ["Digital Voice depends on broadband and mains power. Where a customer relies on the phone for safety, healthcare or telecare, we assess their circumstances and discuss appropriate resilience or alternative communication arrangements."] },
       { heading: "Payment flexibility", paragraphs: ["Repayment plans, payment holidays and bill smoothing are all on the table — judgement-free. Just ask."] },
       { heading: "Accessibility", paragraphs: ["Large print bills, third-party contacts (e.g. a relative who manages the account) and BSL relay are supported. Email hello@occta.co.uk."] },
     ],

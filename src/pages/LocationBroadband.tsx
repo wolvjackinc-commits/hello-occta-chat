@@ -73,7 +73,7 @@ const LocationBroadbandPage = () => {
   return (
     <Layout>
       <SEO
-        title={`Cheap Broadband in ${location.city} - No Contract Fibre`}
+        title={`Broadband in ${location.city} - Flex 30 & Price Lock Options`}
         description={location.metaDescription}
         canonical={`/broadband-${location.slug}`}
         keywords={`cheap broadband ${location.city}, broadband ${location.city}, fibre broadband ${location.city}, no contract broadband ${location.city}, internet ${location.city}, ${location.region} broadband`}
@@ -225,7 +225,7 @@ const LocationBroadbandPage = () => {
           <h2 className="text-xl font-display uppercase mb-4">Broadband Guides</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { title: "No Contract Broadband UK", desc: "How rolling monthly broadband works and who it suits.", path: "/guides/no-contract-broadband-uk" },
+              { title: "Flex 30 Broadband UK", desc: "How 30-day rolling broadband works, including notice and applicable charges.", path: "/guides/no-contract-broadband-uk" },
               { title: "Cheap Broadband UK", desc: "How to find affordable internet and avoid hidden costs.", path: "/guides/cheap-broadband-uk" },
               { title: "How to Switch Broadband", desc: "Step-by-step guide to switching provider.", path: "/guides/how-to-switch-broadband" },
             ].map((g) => (

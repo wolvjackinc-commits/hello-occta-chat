@@ -145,6 +145,48 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='contract_summary_immutable_evidence_incomplete';
   END IF;
 
+  -- Mandatory commercial/service completeness for a new consumer agreement.
+  IF nullif(cs.customer_name_snapshot,'') IS NULL
+     OR nullif(cs.customer_email_snapshot,'') IS NULL
+     OR nullif(cs.service_address,'') IS NULL
+     OR nullif(cs.plan_name,'') IS NULL
+     OR cs.customer_type_v2 IS NULL
+     OR cs.contract_type IS NULL
+     OR cs.monthly_price_incl_vat IS NULL OR cs.monthly_price_incl_vat <= 0
+     OR cs.vat_snapshot IS NULL
+     OR cs.one_off_charges_snapshot IS NULL
+     OR cs.minimum_term_months IS NULL
+     OR cs.notice_period_days IS NULL
+     OR cs.price_change_snapshot IS NULL
+     OR cs.etf_policy_snapshot IS NULL
+     OR nullif(cs.cease_cancellation_charges,'') IS NULL
+     OR cs.payment_method_snapshot IS NULL
+     OR coalesce(cs.billing_start_rule,'') <> 'confirmed_service_live' THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='mandatory_contract_snapshot_incomplete';
+  END IF;
+
+  IF cs.service_type::text = 'broadband' THEN
+    IF cs.likely_service_date IS NULL
+       OR cs.speed_estimate_snapshot IS NULL
+       OR nullif(cs.speed_estimate_snapshot->>'technology','') IS NULL
+       OR coalesce((cs.speed_estimate_snapshot->>'minimum_download_mbps')::numeric,0) <= 0
+       OR coalesce((cs.speed_estimate_snapshot->>'normally_available_download_mbps')::numeric,0) <= 0
+       OR coalesce((cs.speed_estimate_snapshot->>'maximum_download_mbps')::numeric,0) <= 0
+       OR coalesce((cs.speed_estimate_snapshot->>'advertised_download_mbps')::numeric,0) <= 0
+       OR coalesce((cs.speed_estimate_snapshot->>'minimum_upload_mbps')::numeric,0) <= 0
+       OR coalesce((cs.speed_estimate_snapshot->>'normally_available_upload_mbps')::numeric,0) <= 0
+       OR coalesce((cs.speed_estimate_snapshot->>'maximum_upload_mbps')::numeric,0) <= 0
+       OR coalesce((cs.speed_estimate_snapshot->>'advertised_upload_mbps')::numeric,0) <= 0
+       OR nullif(cs.speed_estimate_snapshot->>'source_retrieved_at','') IS NULL
+       OR nullif(coalesce(cs.service_components_snapshot->0->>'supplier_availability_sha256',''),'') IS NULL THEN
+      RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='verified_broadband_speed_snapshot_incomplete';
+    END IF;
+  END IF;
+
+  IF NEW.cs_version IS DISTINCT FROM cs.version THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='contract_summary_version_mismatch';
+  END IF;
+
   IF NEW.journey_id IS NULL THEN
     RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='canonical_journey_required';
   END IF;

@@ -5,39 +5,39 @@ export default function SimOnlyPlansSeo() {
   return (
     <>
       <SeoContentLayout
-        title="SIM-only plans UK — 5G data on the biggest network | OCCTA"
+        title="SIM-only plans UK — clear prices and terms | OCCTA"
         metaDescription="OCCTA SIM-only plans on O2, Vodafone and EE, with 30-day and 24-month options where available. Live prices, allowances and contract terms are shown before checkout."
         canonical="/sim-only-plans"
         h1="SIM-only plans — clear prices and contract terms"
         shortAnswer="OCCTA offers selected SIM-only plans on O2, Vodafone and EE with 30-day rolling and 24-month terms where available. The live SIM catalogue shows the current VAT-inclusive consumer price, allowance, term and any applicable price-adjustment or early-termination information before checkout."
-        intro="A SIM should be cheap, fast and forgettable. Ours is. Pick a data allowance, keep your number, and change it whenever you want."
+        intro="Choose from the live SIM catalogue. Network, allowance, contract term, SIM type, roaming, price and any applicable charges are shown for the specific tariff before you order."
         sections={[
-          { heading: "The plans", body: "Lite 5GB £6, Everyday 20GB £9, Unlimited £14 — every plan includes unlimited UK minutes and texts, EU roaming up to 12GB, and 5G at no extra cost." },
-          { heading: "eSIM or physical SIM", body: "iPhone 12 and newer, and most Android flagships from 2022 onward, support eSIM — you can be live in about 5 minutes. Prefer a physical SIM? Free next-day delivery." },
-          { heading: "Keep your number", body: "PAC codes are honoured — port your number in without downtime. Most numbers move within one working day." },
-          { heading: "Fair use, actually fair", body: "'Unlimited' means unlimited. No throttling after a hidden cap, no tethering restriction, no surprise 'peak time' rules." },
+          { heading: "The plans", body: "OCCTA SIM plans are catalogue-driven. Selected 30-day and 24-month tariffs may be available on O2, Vodafone and EE. Use the live SIM page for the current allowance, VAT-inclusive consumer price, term, price-adjustment information and any early-termination treatment." },
+          { heading: "eSIM or physical SIM", body: "eSIM and physical-SIM availability depends on the selected live tariff and device compatibility. Checkout shows the available SIM type and any delivery charge or timing before you order." },
+          { heading: "Keep your number", body: "Number transfer is available on eligible orders using the applicable PAC process. The expected porting process and timing are confirmed for the order; we do not guarantee a universal next-day transfer." },
+          { heading: "Allowances and fair use", body: "Data, calls, texts, roaming and fair-use rules depend on the selected tariff. The live catalogue and pre-contract information are the source of truth for the plan you choose." },
         ]}
         faqs={[
-          { question: "Which network does OCCTA use?", answer: "We're an MVNO on the UK's largest 4G/5G network, so you get the same coverage without the parent-brand price tag." },
-          { question: "Is 5G included?", answer: "Yes — 5G is on by default at no extra cost wherever the underlying network has coverage." },
-          { question: "Can I use it abroad?", answer: "Yes — all plans include EU roaming up to a fair-use cap of 12GB per month at no extra charge." },
-          { question: "Do you credit check?", answer: "No credit check for SIM-only plans. Payment is by Direct Debit or card on the first of each month." },
+          { question: "Which networks are available?", answer: "Selected tariffs may be available on O2, Vodafone and EE. Choose the network and tariff shown in the live catalogue that best fits your needs." },
+          { question: "Is 5G included?", answer: "5G availability depends on the selected tariff, compatible device and underlying network coverage. Check the live plan details before ordering." },
+          { question: "Can I use it abroad?", answer: "Roaming destinations, fair-use limits and charges depend on the selected tariff. Check the live catalogue and pre-contract information for the plan you choose." },
+          { question: "Are there eligibility checks?", answer: "Any identity, eligibility or account checks depend on the selected tariff and current ordering process. The checkout explains what applies before you commit." },
           { question: "How do I cancel?", answer: "Cancellation depends on the SIM term you choose. 30-day plans and 24-month plans have different notice and early-termination treatment; the exact terms are shown before checkout and in your accepted agreement." },
         ]}
         relatedLinks={[
-          { label: "All SIM plans", to: "/sim", description: "Full plan grid and checkout." },
+          { label: "All SIM plans", to: "/sim", description: "Live plan grid and checkout." },
           { label: "eSIM vs physical SIM", to: "/learn/esim-vs-physical-sim", description: "Which one to pick." },
-          { label: "Best SIM-only deals UK", to: "/learn/best-sim-only-deals-uk", description: "What to look for in 2026." },
-          { label: "Coverage check", to: "/coverage-areas", description: "See where 5G is live." },
-          { label: "Bundle broadband + SIM", to: "/broadband-plans", description: "One bill, one Direct Debit." },
-          { label: "Business SIMs", to: "/business/sim", description: "Multi-line SIMs for teams." },
+          { label: "Best SIM-only deals UK", to: "/learn/best-sim-only-deals-uk", description: "What to compare." },
+          { label: "Coverage check", to: "/coverage-areas", description: "Check current coverage information." },
+          { label: "Broadband", to: "/broadband", description: "Compare broadband options." },
+          { label: "Business SIMs", to: "/business/sim", description: "SIM options for teams." },
         ]}
       />
       <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-16 -mt-8">
         <LeadCaptureWidget
           source="sim-only-plans-seo"
-          title="Want us to pick the right SIM?"
-          description="Tell us how much data you actually use and we'll match the right plan — no upsells."
+          title="Need help choosing a SIM?"
+          description="Tell us what you need and we can point you to the current live tariff options."
           defaultInterest="sim"
           compact
         />

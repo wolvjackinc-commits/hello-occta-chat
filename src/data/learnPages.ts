@@ -321,10 +321,10 @@ export const learnPages: LearnPage[] = [
     title: "Mid-contract broadband price rises explained — OCCTA",
     metaDescription: "Why do UK broadband providers put prices up mid-contract? What Ofcom rules say, and how to avoid CPI+3.9% hikes altogether.",
     h1: "Mid-contract price rises: what you need to know",
-    shortAnswer: "Most UK ISPs raise prices each April by CPI + 3.9%, even during a fixed-term contract. Since 2025 Ofcom requires future rises to be shown in pounds and pence at sign-up. OCCTA doesn't do them at all.",
+    shortAnswer: "Scheduled price changes vary by provider and tariff. For new telecom contracts, any scheduled rise must be made clear in pounds and pence before sign-up rather than being expressed only by reference to future inflation. OCCTA broadband contract version 2026.10.1 has no scheduled CPI-, RPI-, inflation-linked or percentage-based rise.",
     intro: "Broadband inflation is quietly one of the biggest household bill increases in the UK. If you're on a 24-month contract, that annual rise compounds. Here's what to look for.",
     sections: [
-      { heading: "The CPI+3.9% rule", body: "For years, providers wrote 'we may increase your monthly price each April by CPI + 3.9%' into contracts. With CPI around 4–10% in recent years, that meant real rises of 8–14%." },
+      { heading: "Historic inflation-linked rises", body: "Older telecom contracts often used CPI- or RPI-linked formulas. For current comparisons, use the exact pounds-and-pence price-change information shown for the tariff before sign-up rather than relying on historic formulas." },
       { heading: "The new Ofcom rules", body: "Since January 2025, any in-contract price rise must be expressed as a specific pound-and-pence amount at the time you sign up — not a percentage. This helps you compare true cost." },
       { heading: "How to avoid rises entirely", body: "Two options: (1) pick a fixed-price/price-lock contract where the monthly price is locked for the whole term; (2) go rolling-monthly where the price is what you see and doesn't rise until you're notified of a change." },
     ],

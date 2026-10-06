@@ -170,7 +170,7 @@ const AppHome = () => {
               <Zap className="w-6 h-6 text-primary" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-foreground">No Contract Broadband!</p>
+              <p className="font-semibold text-foreground">Flexible Broadband Options</p>
               <p className="text-sm text-muted-foreground">30-day rolling options available where eligible, no hidden fees</p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />

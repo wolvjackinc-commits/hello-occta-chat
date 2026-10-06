@@ -58,7 +58,7 @@ export const keywordPages: KeywordPage[] = [
       {
         heading: "How to Get Connected",
         paragraphs: [
-          "Getting OCCTA broadband is simple. Check your postcode, choose a plan, and complete your order. Most installations are completed within 7 working days. Your router is included free, and there\u2019s no engineer visit needed for most FTTC connections.",
+          "Getting OCCTA broadband is simple. Check your postcode, choose a plan, and complete your order. Installation timing and method depend on the address, network and existing service. Router choices, setup or engineer requirements, charges and the provisional service date are shown before acceptance.",
         ],
       },
     ],
@@ -127,12 +127,12 @@ export const keywordPages: KeywordPage[] = [
     keywords: "student broadband, broadband for students UK, student internet deals, 30-day rolling options where eligible broadband students, cheap broadband students, university broadband",
     heroTitle: "BROADBAND FOR",
     heroHighlight: "STUDENTS",
-    heroSubtitle: "Flex 30. No credit check. Cancel when you move out.",
+    heroSubtitle: "Flex 30 or Price Lock 24. Clear setup, moving-home and cancellation terms.",
     sections: [
       {
         heading: "Why Students Love OCCTA",
         paragraphs: [
-          "Student accommodation changes every year, so a 24-month broadband contract makes no sense. OCCTA gives you fast fibre broadband on a rolling monthly basis \u2014 use it for the academic year, cancel when you leave. Simple.",
+          "Student accommodation can change frequently. Compare Flex 30 with Price Lock 24 and choose the term that fits your expected stay. Moving home, setup, notice and any applicable charges follow the accepted agreement.",
           "There\u2019s no credit check either, so you won\u2019t get rejected even if you have no credit history.",
         ],
       },
@@ -179,7 +179,7 @@ export const keywordPages: KeywordPage[] = [
       {
         heading: "What Makes a Good Broadband Deal?",
         paragraphs: [
-          "The best broadband deal isn\u2019t just the lowest headline price. You need to look at the total cost including setup fees, mid-contract price rises, and exit penalties. Many \u201Ccheap\u201D deals become expensive once you factor in CPI + 3.9% annual increases.",
+          "The best broadband deal isn\u2019t just the lowest headline price. You need to look at the total cost including setup fees, mid-contract price rises, and exit penalties. Scheduled price changes vary by provider and tariff. Compare the pounds-and-pence price-change information shown before sign-up together with setup, equipment and termination costs.",
           "A genuinely good deal means: fair price, good speed, transparent terms, and the freedom to leave if it\u2019s not working.",
         ],
       },
@@ -254,7 +254,7 @@ export const keywordPages: KeywordPage[] = [
       { question: "What speed do I need for gaming?", answer: "36Mbps is enough for most online games. For streaming + gaming, aim for 150Mbps. For households with multiple gamers, 500Mbps+ is ideal." },
       { question: "Is fibre broadband better for gaming?", answer: "Yes. Fibre connections offer lower latency (ping) and more consistent speeds than copper or 4G/5G connections." },
       { question: "Does OCCTA throttle gaming traffic?", answer: "No. OCCTA does not throttle, shape, or cap any traffic. All data is unlimited and unrestricted." },
-      { question: "Can I game on OCCTA without a contract?", answer: "Yes. All plans are rolling monthly \u2014 upgrade or downgrade your speed anytime without penalties." },
+      { question: "Can I game on a flexible OCCTA plan?", answer: "Flex 30 is a 30-day rolling option where available. Price Lock 24 has a 24-month minimum term. Plan changes depend on address availability and the terms shown before you agree the change." },
     ],
     ctaTitle: "Level Up Your Connection",
     ctaText: "Check what gaming-ready broadband speeds are available at your address.",

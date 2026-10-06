@@ -38,6 +38,12 @@ Deno.serve(async (req) => {
     if (guard.status !== "accepted") {
       const releaseBlock = await consumerContractReleaseBlockForDb(supabase, guard.customer_type);
       if (releaseBlock) return jsonResponse(releaseBlock, 409);
+      if (guard.customer_type !== "business") {
+        return jsonResponse({
+          error: "canonical_acceptance_required",
+          message: "New consumer contracts must be accepted through the OTP-verified OCCTA order journey.",
+        }, 409);
+      }
     }
     if (guard?.is_information_update === true) {
       return jsonResponse({

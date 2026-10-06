@@ -82,7 +82,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA broadband available in Liverpool?", answer: "Yes \u2014 OCCTA covers Liverpool and surrounding areas in Merseyside via the Openreach network. Check your postcode to confirm availability." },
       { question: "How fast is broadband in Liverpool with OCCTA?", answer: "Speeds in Liverpool range from 36Mbps to 900Mbps depending on your address and whether full fibre (FTTP) has been rolled out to your street." },
-      { question: "What is included with Liverpool broadband?", answer: "Every OCCTA plan includes unlimited data, a Wi-Fi router, Setup from £0 where available, and flexible monthly. You can also add Digital Home Phone from \u00A34.99/mo." },
+      { question: "What is included with Liverpool broadband?", answer: "Plans show the included usage, router choice, setup requirement and contract term before acceptance. Digital Voice may be added where available, with its current price and equipment requirements shown in the order journey." },
     ],
   },
   {

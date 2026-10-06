@@ -10,9 +10,9 @@ import FullContractTermsBlock from "@/components/legal/FullContractTermsBlock";
 import ContractSmsVerification from "@/components/contract/ContractSmsVerification";
 
 const REVIEW_CONFIRMATION =
-  "I confirm that I have received and reviewed my Contract Summary and Contract Information, that my personal details and service address are correct, and that I understand the monthly and one-off charges, contract term, cancellation rights and payment arrangements.";
+  "I confirm that I received and can access my Contract Summary and Contract Information & Customer Agreement Pack, that my personal details and service address are correct, and that I understand the monthly and one-off charges, contract term, notice, cancellation rules and payment arrangements.";
 const CONSENT_CONFIRMATION =
-  "I agree to enter into this agreement with OCCTA LIMITED on the terms shown in my Contract Summary and Contract Information.";
+  "I agree to enter into the OCCTA agreement on the terms shown in those documents and understand that placing this order creates an obligation to pay.";
 
 /**
  * Device, network and (with permission) location signals collected at the moment
@@ -364,8 +364,8 @@ export default function AgreementStep({
       ) : (
         <div className="border-4 border-primary p-5 space-y-4">
           <div>
-            <p className="font-display uppercase text-sm mb-1">Sign and enter into the agreement</p>
-            <p className="text-xs text-muted-foreground">Two clear confirmations only. Nothing is binding until you click the button at the bottom.</p>
+            <p className="font-display uppercase text-sm mb-1">Review and accept your agreement</p>
+            <p className="text-xs text-muted-foreground">Nothing is binding until you complete the confirmations and use the final order button below.</p>
           </div>
 
           {onEditStep && (
@@ -493,7 +493,7 @@ export default function AgreementStep({
             disabled={!formValid || submitting}
             onClick={submit}
           >
-            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording…</> : "Sign and enter into the agreement"}
+            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording…</> : "ORDER WITH OBLIGATION TO PAY"}
           </Button>
           <p className="text-[11px] text-muted-foreground mt-3">
             For your protection we record the date and time, IP address, approximate location and device details of this

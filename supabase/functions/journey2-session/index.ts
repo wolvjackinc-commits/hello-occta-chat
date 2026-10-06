@@ -21,6 +21,7 @@ import {
 } from "../_shared/journey2.ts";
 import { RESOLVER_VERSION } from "../_shared/buildPlanResolver.ts";
 import { encryptJson } from "../_shared/ddCrypto.ts";
+import { verifyIcukAvailabilityForAddress, evidenceSha256, buildContractSpeedMatrix } from "../_shared/icukAvailability.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const SESSION_COLS = `
@@ -30,6 +31,8 @@ const SESSION_COLS = `
   preferred_start_date, cooling_off_acknowledged, billing_anchor_day, dd_masked, dd_status,
   digital_voice_acknowledged, checkout_session_id, contract_snapshot_id,
   quote_id, order_journey_id, order_id, guest_order_id, manual_review_reason,
+  supplier_address_snapshot, supplier_availability_snapshot, supplier_availability_sha256,
+  supplier_availability_retrieved_at, supplier_availability_source, likely_service_date,
   last_activity_at, expires_at, completed_at, created_at, campaign_code, campaign_snapshot, utm_snapshot
 `;
 
@@ -351,9 +354,36 @@ if (body.action === "get") {
     const p = AddressPayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);
     const { contact_email, contact_full_name, ...address } = p.data;
+
+    // Production contract rule: an ordinary postal address is not enough to
+    // sell broadband. Resolve it against ICUK LIVE and freeze the exact
+    // premises result before the customer can select a plan.
+    let supplier;
+    try {
+      supplier = await verifyIcukAvailabilityForAddress(address as Record<string, unknown>);
+    } catch (e) {
+      const code = e instanceof Error ? e.message : "supplier_availability_failed";
+      await supabase.from("customer_journey_sessions").update({
+        last_error: code,
+        manual_review_reason: "supplier_exact_address_or_availability_unverified",
+        last_activity_at: new Date().toISOString(),
+      }).eq("id", session.id);
+      return jsonResponse({
+        error: code,
+        message: "We can’t verify this exact installation address with the network right now. We won’t guess availability or let an unverified broadband order proceed.",
+        manual_review_required: true,
+      }, code === "icuk_backend_not_configured" || code.startsWith("icuk_") ? 503 : 409);
+    }
+
     patch.postcode = address.postcode.toUpperCase();
     patch.service_address = address;
-    
+    patch.supplier_address_snapshot = supplier.exact_address;
+    patch.supplier_availability_snapshot = supplier.evidence;
+    patch.supplier_availability_sha256 = await evidenceSha256(supplier.evidence);
+    patch.supplier_availability_retrieved_at = supplier.evidence.retrieved_at;
+    patch.supplier_availability_source = supplier.evidence.source;
+    patch.manual_review_reason = null;
+
     const existing = (session.customer_details ?? {}) as Record<string, unknown>;
     patch.customer_details = {
       ...existing,
@@ -363,6 +393,16 @@ if (body.action === "get") {
   } else if (body.step === "plan") {
     const p = PlanPayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);
+
+    const evidence = session.supplier_availability_snapshot;
+    const speedGate = buildContractSpeedMatrix(evidence, p.data.speed_bucket);
+    if (!speedGate.ok) {
+      return jsonResponse({
+        error: speedGate.error,
+        message: "That speed cannot be sold at this address because the required supplier speed evidence is not complete or no longer current.",
+      }, 409);
+    }
+
     patch.speed_bucket = p.data.speed_bucket;
     patch.plan_term = p.data.plan_term;
   } else if (body.step === "router") {
@@ -412,6 +452,10 @@ if (body.action === "get") {
       return jsonResponse({ error: "date_too_far", max_date: addDays(today, maxDays) }, 400);
     }
     patch.preferred_start_date = p.data.preferred_start_date;
+    // This is an initial likely service date, not a supplier appointment.
+    // It is frozen into the documents as the customer-selected target date and
+    // may only change before acceptance by issuing a new document version.
+    patch.likely_service_date = p.data.preferred_start_date;
     patch.cooling_off_acknowledged = true;
   } else {
     // billing — Direct Debit details are encrypted immediately and never

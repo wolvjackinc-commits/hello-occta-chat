@@ -47,15 +47,15 @@ export const guides: Guide[] = [
     title: 'No Contract Broadband UK: No Credit Check, Rolling Monthly',
     metaTitle: 'No Contract Broadband UK: No Credit Check, Rolling Monthly',
     description: 'Get no-contract broadband in the UK with no credit check and rolling monthly terms. Learn how flexible broadband works, who it suits, and how to get connected without lock-ins or exit fees.',
-    keywords: 'no contract broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, no lock-in broadband, no exit fee broadband',
+    keywords: 'Flex 30 broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, no lock-in broadband, no remaining-month early termination charge on Flex 30 broadband',
     category: 'broadband',
     categoryLabel: 'Broadband',
-    intro: 'Fed up with 18 or 24-month broadband contracts and credit checks? You are not alone. More UK households are switching to no-contract broadband — rolling monthly plans with no credit check, no lock-ins, and no exit fees. Here is everything you need to know.',
+    intro: 'Fed up with 18 or 24-month broadband contracts and credit checks? You are not alone. More UK households are switching to no-contract broadband — rolling monthly plans with no credit check, no lock-ins, and no remaining-month early termination charge on Flex 30. Here is everything you need to know.',
     sections: [
       {
         heading: 'What Is No Contract Broadband?',
         paragraphs: [
-          'No contract broadband — sometimes called rolling monthly or flexible broadband — means you pay month to month with no fixed term. You can cancel, upgrade, or downgrade at any time without penalty.',
+          'Flex 30 broadband — sometimes called rolling monthly or flexible broadband — means you pay month to month with no fixed term. You can cancel, upgrade, or downgrade at any time without penalty.',
           'Traditional providers lock you in for 18–24 months. If you leave early, you pay an exit fee that can run into hundreds of pounds. With no-contract broadband, that simply does not apply.',
         ],
       },
@@ -85,8 +85,8 @@ export const guides: Guide[] = [
       },
     ],
     faqs: [
-      { question: 'Is no contract broadband slower than contract broadband?', answer: 'No. At OCCTA, you get the same speeds regardless of contract type — up to 900Mbps on our fastest plan.' },
-      { question: 'Can I cancel at any time?', answer: 'Yes. Give us 30 days notice and you can leave whenever you like, no exit fees.' },
+      { question: 'Is Flex 30 broadband slower than contract broadband?', answer: 'No. At OCCTA, you get the same speeds regardless of contract type — up to 900Mbps on our fastest plan.' },
+      { question: 'Can I cancel at any time?', answer: 'Yes. Give us 30 days notice and you can leave whenever you like, no remaining-month early termination charge on Flex 30.' },
       { question: 'Is there a setup fee?', answer: 'Setup from £0 where available during promotional periods. Check our broadband page for the latest offers.' },
       { question: 'Do I need to return the router?', answer: 'Yes, the router should be returned if you cancel within the first 12 months.' },
     ],
@@ -141,7 +141,7 @@ export const guides: Guide[] = [
       },
     ],
     faqs: [
-      { question: 'What is the cheapest broadband in the UK?', answer: 'OCCTA offers broadband from £34.99 per month with no hidden fees, no contracts, and speeds up to 900Mbps.' },
+      { question: 'What is the cheapest broadband in the UK?', answer: 'OCCTA offers broadband from £34.99 per month with no hidden fees, Price Lock 24 or Flex 30 where offered, and speeds up to 900Mbps.' },
       { question: 'Are there any hidden fees?', answer: 'Not with OCCTA. The price advertised is the price you pay, including router and unlimited data.' },
       { question: 'Is cheap broadband reliable?', answer: 'Yes. Our network delivers the same fibre infrastructure used by larger providers. Speed and reliability are not compromised.' },
     ],
@@ -318,8 +318,8 @@ export const guides: Guide[] = [
     slug: 'cheap-sim-only-deals',
     title: 'Cheap SIM Only Deals UK: Best Budget Plans',
     metaTitle: 'Cheap SIM Only Deals UK — Budget Mobile Plans',
-    description: 'Find the best cheap SIM only deals in the UK. No credit check, no contracts, 5G included. Compare what matters and avoid overpaying for mobile.',
-    keywords: 'cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only no contract, best SIM deals UK, no credit check SIM',
+    description: 'Find the best cheap SIM only deals in the UK. No credit check, Price Lock 24 or Flex 30 where offered, 5G included. Compare what matters and avoid overpaying for mobile.',
+    keywords: 'cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only Flex 30, best SIM deals UK, no credit check SIM',
     category: 'sim',
     categoryLabel: 'SIM Plans',
     intro: 'Looking for a cheap SIM only deal in the UK? With so many options available, it is easy to overpay for data you do not use or get locked into a contract you do not need. Here is how to find genuine value.',
@@ -350,7 +350,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA SIM Plans',
         paragraphs: [
-          'OCCTA SIM plans start from £7.99 per month with no contract, no credit check, and 5G included. All plans come with unlimited UK calls and texts plus EU roaming. Switch up, down, or leave any time.',
+          'OCCTA SIM plans start from £7.99 per month with Flex 30, no credit check, and 5G included. All plans come with unlimited UK calls and texts plus EU roaming. Switch up, down, or leave any time.',
         ],
       },
     ],
@@ -401,7 +401,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Gaming',
         paragraphs: [
-          'OCCTA offers speeds up to 900Mbps on the Openreach fibre network with unlimited data and no throttling. There are no contracts, so you can upgrade your speed tier anytime as your gaming needs change.',
+          'OCCTA offers speeds up to 900Mbps on the Openreach fibre network with unlimited data and no throttling. OCCTA offers Price Lock 24 and Flex 30 where available. Any plan change is subject to the terms and eligibility shown before you agree it.',
         ],
       },
     ],
@@ -452,7 +452,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Home Workers',
         paragraphs: [
-          'OCCTA fibre broadband offers speeds up to 900Mbps with unlimited data and no throttling. With no contracts, you can upgrade your speed tier as your work demands change. UK-based support is available if you need help.',
+          'OCCTA fibre broadband offers speeds up to 900Mbps with unlimited data and no throttling. OCCTA offers Price Lock 24 and Flex 30 where available. Any speed or plan change is subject to availability and the terms shown before you agree it. UK-based support is available if you need help.',
         ],
       },
     ],
@@ -522,8 +522,8 @@ export const guides: Guide[] = [
     slug: 'broadband-for-students',
     title: 'Best Broadband for Students UK: No Contract Guide',
     metaTitle: 'Student Broadband UK — No Contract Internet',
-    description: 'Best broadband for students in the UK. No contract, no credit check, cancel when you move. Perfect internet for student houses and flats.',
-    keywords: 'student broadband, broadband for students, student internet UK, no contract student broadband, university broadband, cheap student broadband',
+    description: 'Best broadband for students in the UK. Flex 30, no credit check, cancel when you move. Perfect internet for student houses and flats.',
+    keywords: 'student broadband, broadband for students, student internet UK, Flex 30 student broadband, university broadband, cheap student broadband',
     category: 'broadband',
     categoryLabel: 'Broadband',
     intro: 'Student houses need fast, cheap broadband that can be cancelled when the tenancy ends. Here is how to find the right broadband for your student accommodation without getting locked into a long contract.',
@@ -539,7 +539,7 @@ export const guides: Guide[] = [
         heading: 'What to Look for in Student Broadband',
         paragraphs: ['Here are the key features for student broadband:'],
         bullets: [
-          'No contract — rolling monthly is essential for student tenancies',
+          'Flex 30 — rolling monthly is essential for student tenancies',
           'No credit check — many students have no credit history',
           'Enough speed for a shared house (100Mbps+ for 3-4 people)',
           'Unlimited data for streaming, gaming, and studying',
@@ -556,7 +556,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Students',
         paragraphs: [
-          'OCCTA broadband starts from £34.99/mo with no contract, no credit check, and Setup from £0 where available. Perfect for student accommodation of any length. When you move out, give us 30 days notice and that is it — no exit fees.',
+          'OCCTA broadband starts from £34.99/mo with Flex 30, no credit check, and Setup from £0 where available. Perfect for student accommodation of any length. When you move out, give us 30 days notice and that is it — no remaining-month early termination charge on Flex 30.',
         ],
       },
     ],
@@ -676,7 +676,7 @@ export const guides: Guide[] = [
     ],
     faqs: [
       { question: 'Is FTTP worth paying more for?', answer: 'If you can get it for similar money, yes. The upload speed and reliability gap is huge.' },
-      { question: 'Will FTTP need new wiring?', answer: 'Yes — an engineer pulls a fibre cable from the nearest pole or pit and fits a small box on the wall. Free with OCCTA.' },
+      { question: 'Will FTTP need new wiring?', answer: 'Yes — an engineer pulls a fibre cable from the nearest pole or pit and fits a small box on the wall. Installation requirements and any charge are confirmed for the address before acceptance.' },
     ],
     ctaText: 'See your line options',
     ctaLink: '/broadband',
@@ -1068,7 +1068,7 @@ guides.push({
   title: 'Broadband for Renters: Flexible Internet Without Exit Fees',
   metaTitle: 'Broadband for Renters UK — No Minimum Term Options',
   description: 'Renting and need broadband? Compare flexible monthly broadband with fixed-term plans, avoid exit fees when you move, and see what to check before you sign.',
-  keywords: 'broadband for renters, no contract broadband uk, flexible broadband renters, broadband when renting, moving house broadband, broadband exit fees',
+  keywords: 'broadband for renters, Flex 30 broadband uk, flexible broadband renters, broadband when renting, moving house broadband, broadband exit fees',
   category: 'broadband',
   categoryLabel: 'Broadband',
   intro: 'If you rent, your tenancy rarely lines up with a 24-month broadband contract. This guide explains how renters can get broadband that moves when they do, what exit fees actually are, and when a fixed-term Price Lock plan still makes sense.',

@@ -217,7 +217,7 @@ const routes: RouteSEO[] = [
     path: "/no-contract-broadband-uk",
     title: "Flex 30 Broadband UK | Cheap & Flexible Broadband | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Looking for no-contract broadband in the UK? OCCTA offers simple, affordable broadband with no lock-ins, no hidden fees, and no surprise price rises.",
+      "Looking for flexible broadband in the UK? OCCTA offers Flex 30 with no fixed minimum term where available, alongside Price Lock 24. Exact charges and terms are shown before acceptance.",
     canonical: "/no-contract-broadband-uk",
     keywords:
       "Flex 30 broadband UK, flexible broadband, cancel Flex 30 with the applicable notice broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no remaining-month early termination charge on Flex 30 broadband",
@@ -240,7 +240,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/support",
-    title: "Help & Support - 24/7 Customer Service | OCCTA - Cheap UK Broadband & SIM",
+    title: "Help & Support | OCCTA",
     description:
       "OCCTA Support Hub – UK-based help for broadband, SIM and home phone. AI chat, FAQs, ticket system. Fast resolution guaranteed.",
     canonical: "/support",
@@ -489,7 +489,7 @@ const routes: RouteSEO[] = [
     { slug: "leaving-sky", title: "Leaving Sky Broadband — how to switch away", desc: "How to leave Sky Broadband: One Touch Switch, exit fees, keeping Sky TV, and finding a cheaper Openreach provider.", kw: "leaving Sky broadband, cancel Sky broadband, switch from Sky, Sky alternative UK" },
     { slug: "leaving-virgin", title: "Leaving Virgin Media — switch to Openreach fibre", desc: "How to leave Virgin Media broadband: exit fees, cable-to-fibre switch, keeping your number, and finding a cheaper Openreach alternative.", kw: "leaving Virgin Media, cancel Virgin broadband, switch from Virgin to fibre, Virgin alternative" },
     { slug: "leaving-talktalk", title: "Leaving TalkTalk — how to switch away", desc: "Leaving TalkTalk broadband: how to switch, exit fees, and finding a faster provider on the same Openreach network.", kw: "leaving TalkTalk, cancel TalkTalk broadband, switch from TalkTalk, TalkTalk alternative" },
-    { slug: "mid-contract-price-rises", title: "Mid-contract broadband price rises explained", desc: "Why UK broadband providers put prices up mid-contract, what Ofcom rules say, and how to avoid CPI+3.9% hikes altogether.", kw: "broadband price rise, CPI + 3.9% broadband, mid-contract price rise, Ofcom price rise rules" },
+    { slug: "mid-contract-price-rises", title: "Mid-contract broadband price rises explained", desc: "How scheduled telecom price changes work, what current rules require providers to show before sign-up, and how OCCTA Price Lock 24 differs.", kw: "broadband price rise, CPI + 3.9% broadband, mid-contract price rise, Ofcom price rise rules" },
     { slug: "esim-vs-physical-sim", title: "eSIM vs physical SIM — which should you choose?", desc: "eSIM vs physical SIM in the UK: what's the difference, which phones support it, and which is right for you.", kw: "eSIM vs physical SIM, what is eSIM, eSIM UK, how does eSIM work" },
     { slug: "best-sim-only-deals-uk", title: "Best SIM-only deals UK 2026 — what to look for", desc: "How to find the best SIM-only deal in the UK: rolling contracts, data caps, roaming, and what OCCTA offers.", kw: "best SIM only deals UK, SIM only UK 2026, cheap SIM only, 5G SIM deals UK" },
     { slug: "digital-voice-explained", title: "Digital Voice explained — the UK PSTN switch-off", desc: "The UK's PSTN switch-off means every landline moves to Digital Voice by 2027. Here's what changes and what you need to do.", kw: "digital voice UK, PSTN switch off, landline switch off 2027, VoIP home phone UK" },

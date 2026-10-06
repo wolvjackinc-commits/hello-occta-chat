@@ -1,4 +1,4 @@
-import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
+import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
 // Phase B — generates the OCCTA Contract Information & Customer Agreement Pack
 // (long document). Service-aware. Behind two_document_contract_flow_enabled.
 //
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const releaseBlock = consumerContractReleaseBlock(q.customer_type);
+  const releaseBlock = await consumerContractReleaseBlockForDb(supabase, q.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
   const sameBody = (existingRows ?? []).find((r) => r.pdf_hash === bodyHash && pairable(r));

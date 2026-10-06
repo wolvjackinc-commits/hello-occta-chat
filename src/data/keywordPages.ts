@@ -122,7 +122,7 @@ export const keywordPages: KeywordPage[] = [
   },
   {
     slug: "broadband-for-students",
-    metaTitle: "Student Broadband — No Contract Internet for Students",
+    metaTitle: "Student Broadband — Flexible-Term Internet for Students",
     metaDescription: "Best broadband for students in the UK. Flex 30, no credit check, 30-day rolling options available where eligible. OCCTA student-friendly internet from \u00A334.99/mo.",
     keywords: "student broadband, broadband for students UK, student internet deals, 30-day rolling options where eligible broadband students, cheap broadband students, university broadband",
     heroTitle: "BROADBAND FOR",

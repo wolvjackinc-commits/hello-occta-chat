@@ -17,13 +17,13 @@ import { isTwoDocEnabledFor, callerUserIdFromRequest, logPilotEvent } from "../_
 
 const CHECKBOXES = {
   received_read:
-    "I confirm that I have received, reviewed and had the opportunity to download both my Contract Summary and my Contract Information & Customer Agreement Pack.",
+    "I confirm that I received and can access my Contract Summary and Contract Information & Customer Agreement Pack.",
   details_correct:
-    "I confirm that my personal details and service address shown are correct.",
+    "I confirm that my personal details and service address shown in my order documents are correct.",
   understand_charges:
-    "I understand the monthly charges, one-off charges, contract type per component, notice periods, cancellation rules and ETFs where they apply.",
+    "I understand the monthly and one-off charges, contract type, term, notice, cancellation rules and any applicable ETF/network cease charge.",
   consent:
-    "I expressly consent to enter into the agreement with OCCTA LIMITED on the terms shown in both documents.",
+    "I agree to enter into the OCCTA agreement on the terms shown in both documents and understand that the order creates an obligation to pay.",
 } as const;
 
 const Schema = z.object({

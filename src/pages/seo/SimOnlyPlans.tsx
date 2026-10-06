@@ -6,10 +6,10 @@ export default function SimOnlyPlansSeo() {
     <>
       <SeoContentLayout
         title="SIM-only plans UK — 5G data on the biggest network | OCCTA"
-        metaDescription="Rolling monthly SIM-only plans from £6/mo. 5G data, unlimited UK minutes and texts, eSIM ready. No credit checks, no lock-in — cancel anytime."
+        metaDescription="OCCTA SIM-only plans on O2, Vodafone and EE, with 30-day and 24-month options where available. Live prices, allowances and contract terms are shown before checkout."
         canonical="/sim-only-plans"
-        h1="SIM-only plans — 5G, rolling monthly, no lock-in"
-        shortAnswer="OCCTA SIM-only plans start at £6/mo with 5G data on the UK's largest 4G/5G network. All plans are rolling monthly with no minimum term. eSIM available on iPhone and modern Android."
+        h1="SIM-only plans — clear prices and contract terms"
+        shortAnswer="OCCTA offers selected SIM-only plans on O2, Vodafone and EE with 30-day rolling and 24-month terms where available. The live SIM catalogue shows the current VAT-inclusive consumer price, allowance, term and any applicable price-adjustment or early-termination information before checkout."
         intro="A SIM should be cheap, fast and forgettable. Ours is. Pick a data allowance, keep your number, and change it whenever you want."
         sections={[
           { heading: "The plans", body: "Lite 5GB £6, Everyday 20GB £9, Unlimited £14 — every plan includes unlimited UK minutes and texts, EU roaming up to 12GB, and 5G at no extra cost." },
@@ -22,7 +22,7 @@ export default function SimOnlyPlansSeo() {
           { question: "Is 5G included?", answer: "Yes — 5G is on by default at no extra cost wherever the underlying network has coverage." },
           { question: "Can I use it abroad?", answer: "Yes — all plans include EU roaming up to a fair-use cap of 12GB per month at no extra charge." },
           { question: "Do you credit check?", answer: "No credit check for SIM-only plans. Payment is by Direct Debit or card on the first of each month." },
-          { question: "How do I cancel?", answer: "One month's notice, any time, from your dashboard. No exit fee, no clawback." },
+          { question: "How do I cancel?", answer: "Cancellation depends on the SIM term you choose. 30-day plans and 24-month plans have different notice and early-termination treatment; the exact terms are shown before checkout and in your accepted agreement." },
         ]}
         relatedLinks={[
           { label: "All SIM plans", to: "/sim", description: "Full plan grid and checkout." },

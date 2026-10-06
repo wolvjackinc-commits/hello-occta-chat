@@ -38,11 +38,11 @@ const fixedCons = [
 ];
 
 const faqs = [
-  { question: "What is no contract broadband in the UK?", answer: "OCCTA Flex 30 is a 30-day rolling broadband option with no fixed minimum term where eligible. Normal notice is 30 days. There is no remaining-month ETF, but a separately valid network cease or migration charge may apply where lawful, incurred and disclosed." },
-  { question: "Is rolling broadband more expensive than a fixed contract?", answer: "Flex 30 starts at £37.99/mo and Price Lock 24 starts at £34.99/mo, so the flexibility premium is small. With most big providers, no contract broadband uk deals are £3–£8 more per month than their 18–24 month equivalents." },
+  { question: "What is Flex 30 broadband?", answer: "OCCTA Flex 30 is a 30-day rolling broadband option with no fixed minimum term where eligible. Normal notice is 30 days. There is no remaining-month ETF, but a separately valid network cease or migration charge may apply where lawful, incurred and disclosed." },
+  { question: "Is rolling broadband more expensive than a fixed contract?", answer: "OCCTA Flex 30 starts at the current headline price shown on the broadband page and Price Lock 24 normally has a lower headline monthly price for the same public speed band. Final pricing depends on address, supplier product, setup and router choices." },
   { question: "When should I pick a fixed-term contract instead?", answer: "Pick Price Lock 24 if you know you're staying put for at least two years and want the certainty of a locked monthly price with no April CPI/RPI hikes. Pick Flex 30 if you might move, are renting, or just want the freedom to leave." },
   { question: "Do I still get full fibre on a rolling plan?", answer: "Yes. OCCTA Flex 30 uses the same full-fibre lines as our fixed plans — same speeds, same router, same UK support. The only difference is the contract length." },
-  { question: "Are there mid-contract price rises on OCCTA Flex 30?", answer: "No. OCCTA does not apply CPI or RPI mid-contract price rises to Flex 30 or Price Lock 24. If we ever change a price on a rolling plan, you're free to leave with no exit fee." },
+  { question: "Are there mid-contract price rises on OCCTA Flex 30?", answer: "OCCTA contract version 2026.10.1 does not apply scheduled CPI-, RPI-, inflation-linked or percentage-based rises to residential broadband. If a later contract change gives you a right to leave without penalty, we will give the required notice and explain that right. Separately valid network charges may still apply where lawful." },
   { question: "Can I switch from a fixed contract to rolling later?", answer: "After Price Lock 24 ends, the service continues on a 30-day rolling basis unless you expressly agree another fixed term. Any internal plan change is handled by OCCTA; One Touch Switch applies when switching provider where the rules apply." },
 ];
 
@@ -59,7 +59,7 @@ const RollingVsFixedBroadbandComparison = () => {
     <Layout>
       <SEO
         title="Rolling vs Fixed Broadband UK — Which Should You Pick?"
-        description="No contract broadband uk vs fixed-term contracts, compared honestly. Exit fees, mid-contract price rises, and when Flex 30 or Price Lock 24 wins."
+        description="Flex 30 vs Price Lock 24, compared clearly: minimum term, notice, pricing, early termination and applicable network charges."
         canonical="/rolling-vs-fixed-broadband-comparison"
         keywords="no contract broadband uk, rolling vs fixed broadband, 30 day broadband uk, flexible broadband, price lock broadband uk, occta flex 30, occta price lock 24"
         type="article"
@@ -82,7 +82,7 @@ const RollingVsFixedBroadbandComparison = () => {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
               <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
                 <Zap className="w-4 h-4 inline mr-2" />
-                No contract broadband UK · Honest guide
+                Flex 30 vs fixed-term broadband · Clear guide
               </div>
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
                 Rolling vs Fixed

@@ -116,6 +116,9 @@ function renderPdf(cs: any): Uint8Array {
   equipmentLines.push(routerEquipmentLine(cs.router_option, routerCharge));
   row("Equipment", equipmentLines.join(" "));
   if (cs.digital_voice_warning) row("Digital Voice", String(cs.digital_voice_warning));
+  if (cs.likely_service_date) {
+    row("Initial likely service date", `${cs.likely_service_date} — customer-selected target date, provisional until the network confirms the appointment or activation.`);
+  }
 
   // 2. Speeds of the internet service and remedies
   section(2, CS_SECTION_ORDER[1]);
@@ -123,10 +126,30 @@ function renderPdf(cs: any): Uint8Array {
   if (!isInternet) {
     textBlock("Not applicable — this service is not an internet access service.");
   } else {
-    row("Address-specific speed estimate", `Up to ${cs.estimated_download_speed ?? "—"} Mbps download / up to ${cs.estimated_upload_speed ?? "—"} Mbps upload. This is an estimate, not a guarantee unless an express minimum is stated.`);
+    const s = cs.speed_estimate_snapshot as any;
+    if (
+      s &&
+      Number(s.minimum_download_mbps) > 0 &&
+      Number(s.normally_available_download_mbps) > 0 &&
+      Number(s.maximum_download_mbps) > 0 &&
+      Number(s.advertised_download_mbps) > 0 &&
+      Number(s.minimum_upload_mbps) > 0 &&
+      Number(s.normally_available_upload_mbps) > 0 &&
+      Number(s.maximum_upload_mbps) > 0 &&
+      Number(s.advertised_upload_mbps) > 0
+    ) {
+      row("Network technology", s.technology ?? "—");
+      row("Minimum speed", `${s.minimum_download_mbps} Mbps download / ${s.minimum_upload_mbps} Mbps upload`);
+      row("Normally available speed", `${s.normally_available_download_mbps} Mbps download / ${s.normally_available_upload_mbps} Mbps upload`);
+      row("Maximum speed", `${s.maximum_download_mbps} Mbps download / ${s.maximum_upload_mbps} Mbps upload`);
+      row("Advertised plan speed", `${s.advertised_download_mbps} Mbps download / ${s.advertised_upload_mbps} Mbps upload`);
+      textBlock(`Supplier evidence retrieved ${s.source_retrieved_at ?? "—"}. These figures are frozen from the exact-address availability check used for this order.`);
+    } else {
+      row("Address-specific speed estimate", `Up to ${cs.estimated_download_speed ?? "—"} Mbps download / up to ${cs.estimated_upload_speed ?? "—"} Mbps upload.`);
+    }
     const note = String(cs.speed_notes ?? "").split(/\n\n/)[0].trim();
-    if (note) textBlock(note.slice(0, 700));
-    textBlock("Where the access network supplies minimum, normally available, maximum and advertised contractual speeds, they are included in your order information. If performance is materially and repeatedly below the contractual level, contact OCCTA; we will investigate and preserve statutory/regulatory remedies.");
+    if (note) textBlock(note.slice(0, 900));
+    textBlock("If performance is materially and repeatedly below the contractual minimum, contact OCCTA. We will investigate and preserve the remedies available under your agreement and applicable rules.");
   }
 
   // 3. Price

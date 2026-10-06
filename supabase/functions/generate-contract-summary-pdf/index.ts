@@ -105,7 +105,7 @@ function renderPdf(cs: any): Uint8Array {
 
   // 1. Services and equipment
   section(1, CS_SECTION_ORDER[0]);
-  row("Service provider", "OCCTA LIMITED");
+  row("Service provider", "OCCTA LIMITED · 22 Pavilion View, Huddersfield, HD3 3WU · 0800 260 6626 · hello@occta.co.uk");
   row("Service", cs.plan_name);
   row("Service address", cs.service_address);
   const equipmentLines: string[] = [];
@@ -121,10 +121,10 @@ function renderPdf(cs: any): Uint8Array {
   if (!isInternet) {
     textBlock("Not applicable — this service is not an internet access service.");
   } else {
-    row("Estimated speed", `Up to ${cs.estimated_download_speed ?? "—"} Mbps download / up to ${cs.estimated_upload_speed ?? "—"} Mbps upload (estimate, not a guarantee).`);
+    row("Address-specific speed estimate", `Up to ${cs.estimated_download_speed ?? "—"} Mbps download / up to ${cs.estimated_upload_speed ?? "—"} Mbps upload. This is an estimate, not a guarantee unless an express minimum is stated.`);
     const note = String(cs.speed_notes ?? "").split(/\n\n/)[0].trim();
     if (note) textBlock(note.slice(0, 700));
-    textBlock("If your speed falls persistently below the estimate shown, contact OCCTA. We will investigate with the access network and set out the remedies available to you, including your statutory and regulatory rights.");
+    textBlock("Where the access network supplies minimum, normally available, maximum and advertised contractual speeds, they are included in your order information. If performance is materially and repeatedly below the contractual level, contact OCCTA; we will investigate and preserve statutory/regulatory remedies.");
   }
 
   // 3. Price

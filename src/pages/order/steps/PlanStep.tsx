@@ -15,12 +15,17 @@ export default function PlanStep({
   onBack: () => void;
 }) {
   const preferred = getPreferredSpeedBucket();
-  const preferredIsAvailable = preferred && catalogue.plans.some((p) => p.speed_bucket === preferred);
-  const initialBucket = session.speed_bucket ?? (preferredIsAvailable ? preferred : catalogue.plans[0]?.speed_bucket) ?? null;
+  const verifiedEvidence = session.supplier_availability_snapshot;
+  const verifiedBuckets = new Set(verifiedEvidence?.eligible_occta_plans ?? []);
+  const verifiedPlans = catalogue.plans.filter((p) => verifiedBuckets.has(p.speed_bucket));
+  const preferredIsAvailable = preferred && verifiedPlans.some((p) => p.speed_bucket === preferred);
+  const initialBucket = session.speed_bucket && verifiedBuckets.has(session.speed_bucket)
+    ? session.speed_bucket
+    : (preferredIsAvailable ? preferred : verifiedPlans[0]?.speed_bucket) ?? null;
   const [bucket, setBucket] = useState<SpeedBucket | null>(initialBucket);
   const [term, setTerm] = useState<PlanTerm>(session.plan_term ?? "price_lock_24");
 
-  const plan = catalogue.plans.find((p) => p.speed_bucket === bucket) ?? null;
+  const plan = verifiedPlans.find((p) => p.speed_bucket === bucket) ?? null;
   const availableTerms = plan ? (Object.keys(plan.terms) as PlanTerm[]) : [];
   const activeTerm = availableTerms.includes(term)
     ? term
@@ -51,7 +56,7 @@ export default function PlanStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Pick your speed</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          The prices below are the OCCTA prices for the plan and term shown, including VAT. No teaser rates and no mid-contract price rises on Price Lock.
+          These are the OCCTA prices for plans verified as available at your exact installation address, including VAT. No teaser rates and no scheduled mid-contract price rises on Price Lock.
         </p>
       </div>
 
@@ -64,7 +69,7 @@ export default function PlanStep({
 
       <fieldset className="space-y-3">
         <legend className="font-display uppercase text-xs tracking-widest mb-2">Speed</legend>
-        {catalogue.plans.map((p) => {
+        {verifiedPlans.map((p) => {
           const selected = p.speed_bucket === bucket;
           const shownTerm = comparisonTerm(p, term);
           const shownPrice = shownTerm ? p.terms[shownTerm]?.monthly_incl_vat : undefined;
@@ -149,9 +154,9 @@ export default function PlanStep({
         </div>
       )}
 
-      {catalogue.plans.length === 0 && (
+      {verifiedPlans.length === 0 && (
         <p className="text-sm border-2 border-foreground p-4">
-          We can't show exact prices online right now. Call 0800 260 6626 or email hello@occta.co.uk and we'll price your order with you.
+          We cannot sell a broadband plan online for this address because no plan has both verified supplier availability and an exact OCCTA price. Call 0800 260 6626 or email hello@occta.co.uk and we'll check it manually.
         </p>
       )}
 
@@ -159,9 +164,9 @@ export default function PlanStep({
         <div className="flex items-start gap-2">
           <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
           <p>
-            <strong>Availability note:</strong> Plans shown are current OCCTA offers and may not all be available at every address.
-            Final availability, speed and network technology are subject to network and supplier validation for your installation address.
-            If your selected plan cannot be supplied, we’ll email you with the available options before provisioning. We won’t move you to a different plan or price without your agreement. If your selection is confirmed, your order continues as submitted.
+            <strong>Address verified:</strong> The plans above are limited to the speed bands returned as orderable by the supplier check for your exact installation address.
+            Network technology: <strong>{verifiedEvidence?.primary_technology || "verified network"}</strong>. The exact address-specific minimum, normally available, maximum and advertised speeds used for your selected plan are frozen into the Contract Summary and Contract Information you review before ordering.
+            OCCTA will not substitute another plan or price without your agreement.
           </p>
         </div>
       </div>

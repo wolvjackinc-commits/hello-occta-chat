@@ -48,8 +48,9 @@ function buildExitTerms(planTerm: string, in12: number, after12: number, noticeD
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
+  if (req.method === "OPTIONS") return new Response("ok", { headers: { ...corsHeaders, "x-occta-contract-version": CONTRACT_TERMS_VERSION } });
+  if (req.method === "GET") return jsonResponse({ ok: true, service: "generate-contract-summary", contract_terms_version: CONTRACT_TERMS_VERSION }, 200);
+  if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed", contract_terms_version: CONTRACT_TERMS_VERSION }, 405);
 
   const isInternalService =
     req.headers.get("x-internal-service") === "1" &&

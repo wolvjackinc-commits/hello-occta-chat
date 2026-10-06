@@ -14,6 +14,8 @@ const REVIEW_CONFIRMATION =
 const CONSENT_CONFIRMATION =
   "I agree to enter into the OCCTA agreement on the terms shown in those documents and understand that placing this order creates an obligation to pay.";
 
+const REQUIRED_NEW_CONTRACT_TERMS_VERSION = "2026.10.1";
+
 /**
  * Device, network and (with permission) location signals collected at the moment
  * of signing. Used only to detect fraudulent orders and identity theft.
@@ -136,6 +138,15 @@ export default function AgreementStep({
       }
       if (!detail.pdf_ready || (detail.contract_information_required && !detail.contract_information_ready)) {
         setGenError("Your complete contract document pack could not be prepared. Please retry before signing.");
+        return;
+      }
+      // Production release gate: never let a NEW/unaccepted journey sign a
+      // superseded legal version. Historic accepted contracts remain viewable.
+      if (
+        !detail.accepted_at &&
+        detail.contract_summary?.terms_version !== REQUIRED_NEW_CONTRACT_TERMS_VERSION
+      ) {
+        setGenError("We’re updating your contract documents to the current production version. No old contract can be accepted. Please retry shortly.");
         return;
       }
       setCs(detail.contract_summary);

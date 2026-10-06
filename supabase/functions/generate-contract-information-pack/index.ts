@@ -20,7 +20,7 @@ import { buildServiceComponentsSnapshot, hasComponent } from "../_shared/service
 import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidators.ts";
 import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
-import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";\nimport { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
+import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

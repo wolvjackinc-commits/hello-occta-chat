@@ -143,7 +143,7 @@ const Business = () => {
     <LayoutComponent>
       <SEO 
         title="Business Broadband UK - Flexible Monthly"
-        description="Affordable business broadband UK from £24/mo. Static IP, priority support, flexible monthly options available. Trusted by 5,000+ UK businesses. WiFi 6 routers included."
+        description="OCCTA business telecom: broadband, voice and connectivity options with service, price, VAT treatment, equipment, care level and contract term confirmed in a written quote before order."
         canonical="/business"
         keywords="business broadband UK, affordable business internet, flexible business broadband, static IP broadband, SME broadband, business fibre UK, affordable business internet"
         price="24"

@@ -133,7 +133,7 @@ const Business = () => {
       ]),
       createFAQSchema([
         { question: 'Do you offer static IPs for business?', answer: 'Yes. Static IP addresses are available on OCCTA Business Broadband plans — useful for VPNs, remote access, and hosting.' },
-        { question: 'Is business broadband contract-free?', answer: 'Both flexible monthly and fixed-term Price Lock plans are available for eligible business lines.' },
+        { question: 'Is business broadband clear-term?', answer: 'Both flexible monthly and fixed-term Price Lock plans are available for eligible business lines.' },
         { question: 'What support is included?', answer: 'UK-based priority support for business customers by email and phone, with faster response SLAs than residential plans.' },
       ]),
     ],

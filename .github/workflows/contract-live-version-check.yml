@@ -1,0 +1,28 @@
+name: OCCTA Live Contract Version Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/generate-contract-summary/**'
+      - 'supabase/functions/_shared/legalText.ts'
+      - 'supabase/functions/_shared/twoDocLegalText.ts'
+      - 'supabase/functions/generate-contract-information-pack/**'
+      - '.github/workflows/contract-live-version-check.yml'
+  workflow_dispatch:
+
+jobs:
+  verify-live-contract-version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check live Contract Summary generator version
+        shell: bash
+        env:
+          URL: https://oexgjmuvgdndizsufipe.supabase.co/functions/v1/generate-contract-summary
+          ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9leGdqbXV2Z2RuZGl6c3VmaXBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2Nzk5NDksImV4cCI6MjA4MzI1NTk0OX0.GnviK6x-kwCSFww-Wa4fcCtQGOQ1iMx8rZTrrU46Pto
+        run: |
+          set -euo pipefail
+          body="$(curl -fsS -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" "$URL")"
+          echo "$body"
+          echo "$body" | grep -F '"contract_terms_version":"2026.10.1"'

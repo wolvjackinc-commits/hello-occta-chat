@@ -355,6 +355,23 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     acceptance_text_hash: acceptanceTextHash,
     date_of_birth: i.date_of_birth ?? null,
     business_name: i.business_name ?? null,
+    contract_summary_body_sha256: cs.body_snapshot_sha256 ?? null,
+    contract_information_pack_id: currentCip?.id ?? null,
+    contract_information_pack_version: currentCip?.version ?? null,
+    contract_information_pack_pdf_hash: currentCip?.pdf_sha256 ?? null,
+    contract_information_pack_pdf_sha256: currentCip?.pdf_sha256 ?? null,
+    contract_information_pack_body_sha256: currentCip?.body_snapshot_sha256 ?? null,
+    contract_summary_template_version: cs.terms_version,
+    contract_information_pack_template_version: currentCip?.template_version ?? null,
+    otp_challenge_id: otpChallengeRowId,
+    otp_verified_at: otpChallengeVerifiedAt,
+    early_start_requested: false,
+    early_start_consent: false,
+    digital_voice_acknowledged: cs.customer_type === "business"
+      ? null
+      : (cs.digital_voice_addon_snapshot && Object.keys(cs.digital_voice_addon_snapshot).length > 0
+          ? journeySession?.digital_voice_acknowledged === true
+          : false),
     pack_acknowledgements: packAcks.length
       ? {
           confirmed_at: acceptedAt,
@@ -392,13 +409,23 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     console.warn("[accept-contract-summary] risk capture failed", (e as Error).message);
   }
 
-  const { error: csErr } = await supabase.from("contract_summaries").update({
-    status: "accepted",
-    accepted_at: acceptedAt,
-    accepted_ip: ip,
-    accepted_user_agent: ua,
-  }).eq("id", cs.id);
-  if (csErr) return jsonResponse({ error: "cs_update_failed", details: csErr.message }, 500);
+  // v2026.10.1 consumer acceptance is committed atomically by the database
+  // acceptance trigger (Summary + Pack + OTP). Legacy/business paths retain
+  // the explicit update below for compatibility.
+  const { data: acceptedState } = await supabase
+    .from("contract_summaries")
+    .select("status")
+    .eq("id", cs.id)
+    .maybeSingle();
+  if (acceptedState?.status !== "accepted") {
+    const { error: csErr } = await supabase.from("contract_summaries").update({
+      status: "accepted",
+      accepted_at: acceptedAt,
+      accepted_ip: ip,
+      accepted_user_agent: ua,
+    }).eq("id", cs.id);
+    if (csErr) return jsonResponse({ error: "cs_update_failed", details: csErr.message }, 500);
+  }
 
   await supabase.from("quotes").update({ status: "contract_summary_accepted" }).eq("id", cs.quote_id);
   await supabase.from("quote_requests").update({ status: "contract_summary_accepted", updated_at: acceptedAt }).eq("id", cs.quote_request_id);

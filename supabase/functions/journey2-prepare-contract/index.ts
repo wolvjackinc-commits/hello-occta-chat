@@ -27,6 +27,7 @@ import {
 } from "../_shared/journey2Snapshot.ts";
 import { buildJourney2DocumentPack } from "../_shared/journey2Docs.ts";
 import { resolveOfferPromotion } from "../_shared/offerCampaign.ts";
+import { buildContractSpeedMatrix } from "../_shared/icukAvailability.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16) });
@@ -95,6 +96,22 @@ Deno.serve(async (req) => {
   if (!session.billing_anchor_day || !session.dd_masked) {
     return jsonResponse({ error: "billing_required", message: "Complete your billing day and Direct Debit details before we prepare your contract." }, 409);
   }
+  if (!session.supplier_availability_snapshot || !session.supplier_availability_sha256) {
+    return jsonResponse({
+      error: "verified_supplier_availability_required",
+      message: "We must verify your exact installation address with the network before preparing a contract.",
+    }, 409);
+  }
+  const speedGate = buildContractSpeedMatrix(session.supplier_availability_snapshot, session.speed_bucket);
+  if (!speedGate.ok) {
+    return jsonResponse({
+      error: speedGate.error,
+      message: "The address-specific speed evidence is incomplete or no longer current. Please run the network check again.",
+    }, 409);
+  }
+  if (!session.likely_service_date) {
+    return jsonResponse({ error: "likely_service_date_required" }, 409);
+  }
 
   // ── One canonical snapshot per session ─────────────────────────────────────
   const { data: existingSnap } = await supabase
@@ -161,14 +178,21 @@ Deno.serve(async (req) => {
       effective_for_new_customers_from: "2026-10-06",
     } as Record<string, string>;
 
-    snapshot = buildJourney2Snapshot({
-      session,
-      priced,
-      vatPercent,
-      pricingVersion: RESOLVER_VERSION,
-      planName: planNameFor(session.speed_bucket as any, session.plan_term as any),
-      legalVersions,
-    });
+    try {
+      snapshot = buildJourney2Snapshot({
+        session,
+        priced,
+        vatPercent,
+        pricingVersion: RESOLVER_VERSION,
+        planName: planNameFor(session.speed_bucket as any, session.plan_term as any),
+        legalVersions,
+      });
+    } catch (e) {
+      return jsonResponse({
+        error: e instanceof Error ? e.message : "contract_snapshot_validation_failed",
+        message: "We could not freeze a complete, verified contract snapshot. Your order has not been accepted.",
+      }, 409);
+    }
     snapshotHash = await snapshotFingerprint(snapshot);
 
     const snapIns = await supabase.from("journey2_contract_snapshots").upsert({
@@ -294,11 +318,15 @@ Deno.serve(async (req) => {
       speed_bucket: session.speed_bucket,
       plan_term: session.plan_term,
       router_option: snapshot.router,
-      estimated_download_speed: snapshot.product.estimated_download_mbps
-        || speedEstimatesFor(session.speed_bucket)?.download || null,
-      estimated_upload_speed: snapshot.product.estimated_upload_mbps
-        || speedEstimatesFor(session.speed_bucket)?.upload || null,
-      speed_notes: snapshot.product.speed_statement || speedStatementFor(session.speed_bucket),
+      estimated_download_speed: snapshot.product.speed_matrix.normally_available_download_mbps,
+      estimated_upload_speed: snapshot.product.speed_matrix.normally_available_upload_mbps,
+      speed_notes: snapshot.product.speed_statement,
+      supplier_address_snapshot: session.supplier_address_snapshot,
+      supplier_availability_snapshot: session.supplier_availability_snapshot,
+      supplier_availability_sha256: session.supplier_availability_sha256,
+      supplier_availability_retrieved_at: session.supplier_availability_retrieved_at,
+      supplier_availability_source: session.supplier_availability_source,
+      likely_service_date: snapshot.schedule.likely_service_date,
       setup_option: { option: JOURNEY2_SETUP, label: snapshot.product.setup.label, oneOff: snapshot.product.setup.one_off_incl_vat },
       selected_addons: snapshot.addons,
       reward_eligibility: snapshot.promotion

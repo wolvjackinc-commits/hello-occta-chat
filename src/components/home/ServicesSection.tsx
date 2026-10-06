@@ -98,7 +98,7 @@ const ServicesSection = () => {
           </h2>
           <p className="text-xl text-muted-foreground">
             Three services. Zero nonsense. UK-wide coverage with straightforward,
-            contract-free pricing. Looking for cheap broadband UK, no contract broadband,
+            clear contract options. Looking for affordable broadband, flexible monthly broadband,
             or SIM only deals UK? You're in the right place.
           </p>
         </motion.div>

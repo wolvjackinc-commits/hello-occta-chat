@@ -41,11 +41,11 @@ export default function CancellationPage() {
         },
       ]}
       aeo={[
-        { question: "Is cancellation always free?", answer: "No. Free cancellation only applies where the agreed terms say so — for example, outside a minimum term, or during the statutory cooling-off period for new orders." },
+        { question: "Is cancellation always free?", answer: "No. Whether a charge applies depends on the accepted terms and circumstances. During the statutory cooling-off period, an expressly requested early start may still result in lawful proportionate charges for service or installation work already supplied." },
         { question: "How quickly can I cancel?", answer: "We acknowledge the request within one working day. The actual end date depends on the notice period in your agreement." },
       ]}
       faqs={[
-        { question: "Do I have a cooling-off period?", answer: "New consumer orders normally include a statutory cooling-off period — your accepted agreement and order confirmation state how long applies to you." },
+        { question: "Do I have a cooling-off period?", answer: "New distance consumer orders normally have a 14-day cooling-off period. If you expressly request an early start where offered and lawful, proportionate charges may apply for service or installation work already supplied if you then cancel during that period." },
         { question: "What happens to my final invoice?", answer: "We issue a closing invoice covering any used time up to the end date and any agreed cancellation charges. It's payable like any other invoice." },
         { question: "Will I lose my phone number?", answer: "If you're porting to another provider they request the number transfer. If you're cancelling without porting, the number is released." },
       ]}

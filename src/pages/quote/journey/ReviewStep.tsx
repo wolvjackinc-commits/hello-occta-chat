@@ -85,7 +85,7 @@ export default function ReviewStep({
           <p className="font-display uppercase text-sm">Review your order</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          Please double-check everything below. Nothing is charged at this step — submitting confirms your intent to proceed and starts your 14-day cooling-off period (already begun on acceptance).
+          Please double-check everything below. Nothing is charged at this step. Your 14-day cooling-off period began when you accepted the agreement; submitting this review confirms your order details and does not restart that period.
         </p>
       </div>
 

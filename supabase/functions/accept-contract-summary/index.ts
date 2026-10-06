@@ -92,6 +92,9 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   let cs: any = null;
   let journey: any = null;
   let otpChallengeRowId: string | null = null;
+  let otpChallengeVerifiedAt: string | null = null;
+  let journeySession: any = null;
+  let currentCip: any = null;
   if (i.journey_mode) {
     const { data: j } = await supabase
       .from("order_journeys")
@@ -104,6 +107,12 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     journey = j;
     const { data } = await supabase.from("contract_summaries").select("*").eq("id", j.contract_summary_id).maybeSingle();
     cs = data;
+    const { data: js } = await supabase
+      .from("customer_journey_sessions")
+      .select("id, digital_voice_acknowledged, preferred_start_date, likely_service_date, supplier_availability_sha256")
+      .eq("order_journey_id", j.id)
+      .maybeSingle();
+    journeySession = js;
   } else {
     const { data } = await supabase.from("contract_summaries").select("*").eq("public_token_hash", hash).maybeSingle();
     cs = data;
@@ -145,6 +154,13 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       }, 403);
     }
     otpChallengeRowId = (otpGate.challenge?.id as string | undefined) ?? null;
+    otpChallengeVerifiedAt = (otpGate.challenge?.verified_at as string | undefined) ?? null;
+    if (cs?.terms_version === "2026.10.1" && (!otpChallengeRowId || otpGate.bypassed)) {
+      return jsonResponse({
+        error: "verified_otp_required",
+        message: "SMS verification is mandatory for this contract version and cannot be bypassed.",
+      }, 403);
+    }
   } else {
     if (i.checkbox_confirmed !== true) return jsonResponse({ error: "checkbox_required" }, 400);
   }

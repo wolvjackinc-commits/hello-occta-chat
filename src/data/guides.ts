@@ -44,8 +44,8 @@ export interface Guide {
 export const guides: Guide[] = [
   {
     slug: 'no-contract-broadband-uk',
-    title: 'No Contract Broadband UK: No Credit Check, Rolling Monthly',
-    metaTitle: 'No Contract Broadband UK: No Credit Check, Rolling Monthly',
+    title: 'Flex 30 Broadband UK: 30-Day Rolling, No Fixed Minimum Term',
+    metaTitle: 'Flex 30 Broadband UK: 30-Day Rolling, No Fixed Minimum Term',
     description: 'Get no-contract broadband in the UK with no credit check and rolling monthly terms. Learn how flexible broadband works, who it suits, and how to get connected without lock-ins or exit fees.',
     keywords: 'Flex 30 broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, no lock-in broadband, no remaining-month early termination charge on Flex 30 broadband',
     category: 'broadband',
@@ -53,7 +53,7 @@ export const guides: Guide[] = [
     intro: 'Fed up with 18 or 24-month broadband contracts and credit checks? You are not alone. More UK households are switching to no-contract broadband — rolling monthly plans with no credit check, no lock-ins, and no remaining-month early termination charge on Flex 30. Here is everything you need to know.',
     sections: [
       {
-        heading: 'What Is No Contract Broadband?',
+        heading: 'What Is Flex 30 Broadband?',
         paragraphs: [
           'Flex 30 broadband — sometimes called rolling monthly or flexible broadband — means you pay month to month with no fixed term. You can cancel, upgrade, or downgrade at any time without penalty.',
           'Traditional providers lock you in for 18–24 months. If you leave early, you pay an exit fee that can run into hundreds of pounds. With no-contract broadband, that simply does not apply.',
@@ -520,8 +520,8 @@ export const guides: Guide[] = [
   },
   {
     slug: 'broadband-for-students',
-    title: 'Best Broadband for Students UK: No Contract Guide',
-    metaTitle: 'Student Broadband UK — No Contract Internet',
+    title: 'Best Broadband for Students UK: Flexible-Term Guide',
+    metaTitle: 'Student Broadband UK — Flexible-Term Internet',
     description: 'Best broadband for students in the UK. Flex 30, no credit check, cancel when you move. Perfect internet for student houses and flats.',
     keywords: 'student broadband, broadband for students, student internet UK, Flex 30 student broadband, university broadband, cheap student broadband',
     category: 'broadband',

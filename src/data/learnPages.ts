@@ -236,7 +236,7 @@ export const learnPages: LearnPage[] = [
     shortAnswer: "You don't need to call BT to leave. Sign up with a new provider, and the One Touch Switch process cancels BT automatically. Any exit fees will be disclosed before the switch goes ahead.",
     intro: "BT's prices have crept up every year while their contracts have got longer. If you're out of your minimum term (or willing to pay the exit fee), leaving is straightforward. Here's the process.",
     sections: [
-      { heading: "Check if you're still in contract", body: "Log into your BT account or check your latest bill. If your minimum term has ended, you can leave with no exit fees. If you're still in contract, exit fees can be £10–£20 per remaining month." },
+      { heading: "Check if you're still in contract", body: "Log into your BT account or check your latest bill. If your minimum term has ended, you can leave with no remaining-month early termination charge on Flex 30. If you're still in contract, exit fees can be £10–£20 per remaining month." },
       { heading: "Pick a new provider on the same network", body: "OCCTA uses the same Openreach fibre as BT — same speeds, same reliability, but rolling monthly and with no annual CPI+3.9% price hike. Check availability at your postcode." },
       { heading: "Sign up — that's it", body: "The new provider triggers One Touch Switch, tells BT to stop the service on the switch date, and you never speak to BT retention." },
       { heading: "Return the BT hub", body: "BT will send you a return bag. Post the hub back or you'll be charged around £50." },
@@ -299,7 +299,7 @@ export const learnPages: LearnPage[] = [
     title: "Leaving TalkTalk — how to switch away — OCCTA",
     metaDescription: "Leaving TalkTalk broadband: how to switch, exit fees, and finding a faster provider on the same Openreach network.",
     h1: "Leaving TalkTalk",
-    shortAnswer: "Sign up with a new provider — they trigger One Touch Switch and cancel TalkTalk for you. If you're outside your minimum term there's no exit fee.",
+    shortAnswer: "Sign up with a new provider — they trigger One Touch Switch and cancel TalkTalk for you. If you're outside your minimum term there's no remaining-month early termination charge on Flex 30.",
     intro: "TalkTalk uses Openreach, so switching is fully automatic under the One Touch Switch rules. You never need to phone TalkTalk retention.",
     sections: [
       { heading: "Check your contract term", body: "Log into MyAccount to see when your minimum term ends. Outside it, switching is free." },

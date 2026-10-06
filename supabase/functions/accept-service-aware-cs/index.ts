@@ -1,4 +1,4 @@
-import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
+import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
 // Phase C — acceptance endpoint for the two-document flow. Behind
 // two_document_contract_flow_enabled. Runs the full hard-block set (ETF,
 // price-change, DV ack), splits customer-visible acceptance evidence from
@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "already_accepted", contract_summary_id: cs.id }, 409);
   }
 
-  const releaseBlock = consumerContractReleaseBlock(cs.customer_type);
+  const releaseBlock = await consumerContractReleaseBlockForDb(supabase, cs.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
   if (!["issued", "viewed", "draft"].includes(cs.status as string))

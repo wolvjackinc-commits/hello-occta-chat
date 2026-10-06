@@ -9,8 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 import FullContractTermsBlock from "@/components/legal/FullContractTermsBlock";
 import ContractSmsVerification from "@/components/contract/ContractSmsVerification";
 
-const REVIEW_CONFIRMATION =
-  "I confirm that I received and can access my Contract Summary and Contract Information & Customer Agreement Pack, that my personal details and service address are correct, and that I understand the monthly and one-off charges, contract term, notice, cancellation rules and payment arrangements.";
+const RECEIVED_CONFIRMATION =
+  "I confirm that I received and can access my Contract Summary and Contract Information & Customer Agreement Pack.";
+const DETAILS_CONFIRMATION =
+  "I confirm that my personal details and service address shown in my order documents are correct.";
+const CHARGES_CONFIRMATION =
+  "I understand the monthly and one-off charges, contract type, term, notice, cancellation rules and any applicable early termination or network cease/migration charge.";
 const CONSENT_CONFIRMATION =
   "I agree to enter into the OCCTA agreement on the terms shown in those documents and understand that placing this order creates an obligation to pay.";
 
@@ -93,7 +97,9 @@ export default function AgreementStep({
   const [phoneMasked, setPhoneMasked] = useState<string | null>(null);
   const [mobileVerified, setMobileVerified] = useState(false);
   const [dob, setDob] = useState(dateOfBirth ?? "");
-  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [receivedConfirmed, setReceivedConfirmed] = useState(false);
+  const [detailsConfirmed, setDetailsConfirmed] = useState(false);
+  const [chargesConfirmed, setChargesConfirmed] = useState(false);
   const [consentConfirmed, setConsentConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [startedAt] = useState(() => Date.now());
@@ -166,7 +172,7 @@ export default function AgreementStep({
 
   useEffect(() => { ensureCs(); }, [ensureCs]);
 
-  const allChecksTicked = reviewConfirmed && consentConfirmed;
+  const allChecksTicked = receivedConfirmed && detailsConfirmed && chargesConfirmed && consentConfirmed;
   const dobAge = (() => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return -1;
     const d = new Date(dob + "T00:00:00Z");
@@ -199,14 +205,11 @@ export default function AgreementStep({
           accepted_by_name: fullName.trim(),
           accepted_by_email: emailConfirm.trim().toLowerCase(),
           accepted_by_mobile: phoneMasked ?? "verified",
-          // One review confirmation covers document review, details/address correctness and commercial terms.
-          // We map that single explicit confirmation to the existing immutable evidence fields so the server-side
-          // acceptance gate remains fully backwards-compatible and no legal/operational check is weakened.
-          address_confirmed: reviewConfirmed,
+          address_confirmed: detailsConfirmed,
           date_of_birth: dob,
-          checkbox_received_read: reviewConfirmed,
-          checkbox_details_correct: reviewConfirmed,
-          checkbox_understand_charges: reviewConfirmed,
+          checkbox_received_read: receivedConfirmed,
+          checkbox_details_correct: detailsConfirmed,
+          checkbox_understand_charges: chargesConfirmed,
           checkbox_consent: consentConfirmed,
           cs_version: cs?.version,
           source_route: typeof window !== "undefined" ? window.location.pathname : null,
@@ -462,29 +465,47 @@ export default function AgreementStep({
           </div>
 
           <div className="space-y-3 border-2 border-foreground/30 p-4">
-  <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed">
-    <Checkbox
-      checked={reviewConfirmed}
-      onCheckedChange={(v) => setReviewConfirmed(v === true)}
-      aria-label="Confirm contract review, details and charges"
-    />
-    <span>
-      {REVIEW_CONFIRMATION}
-      <span className="mt-1 block text-xs text-muted-foreground">
-        Service address: <strong className="text-foreground">{cs.service_address}</strong>
-      </span>
-    </span>
-  </label>
+            <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed">
+              <Checkbox
+                checked={receivedConfirmed}
+                onCheckedChange={(v) => setReceivedConfirmed(v === true)}
+                aria-label="Confirm access to both contract documents"
+              />
+              <span>{RECEIVED_CONFIRMATION}</span>
+            </label>
 
-  <label className="flex cursor-pointer items-start gap-3 border-t border-foreground/20 pt-3 text-sm leading-relaxed">
-    <Checkbox
-      checked={consentConfirmed}
-      onCheckedChange={(v) => setConsentConfirmed(v === true)}
-      aria-label="Agree to enter into the OCCTA agreement"
-    />
-    <span>{CONSENT_CONFIRMATION}</span>
-  </label>
-</div>
+            <label className="flex cursor-pointer items-start gap-3 border-t border-foreground/20 pt-3 text-sm leading-relaxed">
+              <Checkbox
+                checked={detailsConfirmed}
+                onCheckedChange={(v) => setDetailsConfirmed(v === true)}
+                aria-label="Confirm personal details and service address"
+              />
+              <span>
+                {DETAILS_CONFIRMATION}
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Service address: <strong className="text-foreground">{cs.service_address}</strong>
+                </span>
+              </span>
+            </label>
+
+            <label className="flex cursor-pointer items-start gap-3 border-t border-foreground/20 pt-3 text-sm leading-relaxed">
+              <Checkbox
+                checked={chargesConfirmed}
+                onCheckedChange={(v) => setChargesConfirmed(v === true)}
+                aria-label="Confirm understanding of charges and cancellation rules"
+              />
+              <span>{CHARGES_CONFIRMATION}</span>
+            </label>
+
+            <label className="flex cursor-pointer items-start gap-3 border-t border-foreground/20 pt-3 text-sm leading-relaxed">
+              <Checkbox
+                checked={consentConfirmed}
+                onCheckedChange={(v) => setConsentConfirmed(v === true)}
+                aria-label="Agree to enter into the OCCTA agreement"
+              />
+              <span>{CONSENT_CONFIRMATION}</span>
+            </label>
+          </div>
 
           {!documentsReady && (
             <p className="text-xs text-destructive flex items-center gap-2">

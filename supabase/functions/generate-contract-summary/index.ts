@@ -1,5 +1,5 @@
 import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
-import { corsHeaders, jsonResponse, getServiceClient, requireStaff, generateTokenPair } from "../_shared/quoteHelpers.ts";
+import { corsHeaders, jsonResponse, getServiceClient, requireStaff, generateTokenPair, sha256Hex } from "../_shared/quoteHelpers.ts";
 import {
   LEGAL_TEXT_VERSION, COMPLAINTS_ADR_INFO_TEXT, DIGITAL_VOICE_WARNING_TEXT,
   PRICE_RISE_POLICY_TEXT, PAYMENT_SCHEDULE_TEXT_MONTHLY, VULNERABLE_CUSTOMER_NOTE_TEXT,
@@ -11,6 +11,7 @@ import {
 } from "../_shared/buildPlanResolver.ts";
 import { speedEstimatesFor, speedStatementFor } from "../_shared/journey2Snapshot.ts";
 import { resolveNoticePeriod } from "../_shared/noticePeriod.ts";
+import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "../_shared/icukAvailability.ts";
 
 const CONTRACT_TERMS_VERSION = "2026.10.1";
 const money = (n: number) => `£${Number(n).toFixed(2)}`;
@@ -105,6 +106,24 @@ Deno.serve(async (req) => {
   let etfPolicySnapshot: Record<string, unknown> | null = null;
   let exactDown: number | null = q.estimated_download_speed ?? null;
   let exactUp: number | null = q.estimated_upload_speed ?? null;
+  let contractSpeedMatrix: ContractSpeedMatrix | null = null;
+
+  if (q.customer_type !== "business" && q.service_type === "broadband") {
+    const speedGate = buildContractSpeedMatrix(q.supplier_availability_snapshot, q.speed_bucket);
+    if (!speedGate.ok) {
+      return jsonResponse({
+        error: speedGate.error,
+        message: "Verified exact-address minimum, normally available, maximum and advertised speeds are required before a consumer broadband contract can be issued.",
+      }, 409);
+    }
+    if (!q.likely_service_date) {
+      return jsonResponse({ error: "likely_service_date_required" }, 409);
+    }
+    contractSpeedMatrix = speedGate.matrix;
+    exactDown = speedGate.matrix.normally_available_download_mbps;
+    exactUp = speedGate.matrix.normally_available_upload_mbps;
+  }
+
   const extraOneOff: { label: string; amount: number }[] = [];
 
   if (q.speed_bucket && q.plan_term) {
@@ -137,8 +156,10 @@ Deno.serve(async (req) => {
     const drift = Math.abs(Number(q.monthly_gross) - resolved.monthly_total_incl_vat);
     if (drift > 0.02) return jsonResponse({ error: "price_drift", message: `Stored monthly price (£${Number(q.monthly_gross).toFixed(2)}) no longer matches resolver (£${resolved.monthly_total_incl_vat.toFixed(2)}). Re-quote required.` }, 409);
 
-    exactDown = resolved.estimated_download_mbps;
-    exactUp = resolved.estimated_upload_mbps;
+    if (!contractSpeedMatrix) {
+      exactDown = resolved.estimated_download_mbps;
+      exactUp = resolved.estimated_upload_mbps;
+    }
     const exit = buildExitTerms(q.plan_term, resolved.internal.disconnect_fee_in_12m_incl_vat, resolved.internal.disconnect_fee_after_12m_incl_vat, notice.days, notice.text);
     exitText = exit.text;
     etfPolicySnapshot = exit.snapshot;
@@ -146,7 +167,9 @@ Deno.serve(async (req) => {
     const termCopy = q.plan_term === "price_lock_24" ? PRICE_LOCK_WORDING : FLEX_30_WORDING;
     bpAddendum =
       `\n\nPlan: ${speedBucketLabel(q.speed_bucket as any)} — ${planTermLabel(q.plan_term as any)}.` +
-      `\nContract speed used for this quote: up to ${exactDown} Mbps down / ${exactUp} Mbps up (estimate, not a guarantee).` +
+      (contractSpeedMatrix
+        ? `\nVerified address-specific speeds (download/upload Mbps): minimum ${contractSpeedMatrix.minimum_download_mbps}/${contractSpeedMatrix.minimum_upload_mbps}; normally available ${contractSpeedMatrix.normally_available_download_mbps}/${contractSpeedMatrix.normally_available_upload_mbps}; maximum ${contractSpeedMatrix.maximum_download_mbps}/${contractSpeedMatrix.maximum_upload_mbps}; advertised plan ${contractSpeedMatrix.advertised_download_mbps}/${contractSpeedMatrix.advertised_upload_mbps}. Supplier evidence retrieved ${contractSpeedMatrix.source_retrieved_at}.`
+        : `\nContract speed used for this quote: up to ${exactDown} Mbps down / ${exactUp} Mbps up (estimate, not a guarantee).`) +
       `\nRouter: ${resolved.router.label} (${resolved.router.payment_type === "monthly" ? `£${resolved.router.monthly.toFixed(2)}/mo` : resolved.router.oneOff > 0 ? `£${resolved.router.oneOff.toFixed(2)} one-off` : "£0"}).` +
       `\nSetup: ${resolved.setup.label}${resolved.setup.oneOff > 0 ? ` (£${resolved.setup.oneOff.toFixed(2)} one-off)` : " (£0)"}.` +
       (resolved.addons.length ? `\nAdd-ons: ${resolved.addons.map((a) => `${a.label} £${a.monthly.toFixed(2)}/mo`).join("; ")}.` : "") +
@@ -199,6 +222,55 @@ Deno.serve(async (req) => {
       ? `Flex 30 — rolling monthly. Cancel with ${notice.text} notice.`
       : q.plan_type === "flex" ? `Rolling monthly. Cancel with ${notice.text} notice.` : `${q.contract_length_months} months minimum term. Notice period: ${notice.text}.`;
 
+  const contractType = q.plan_term === "price_lock_24" ? "fixed_term" : "flex_30_rolling";
+  const customerTypeV2 = q.customer_type === "business" ? "business" : "residential_consumer";
+  const vatSnapshot = {
+    treatment: q.customer_type === "business" ? "price_shown_ex_and_incl_vat" : "consumer_price_includes_vat",
+    rate_percent: Number(q.monthly_vat_rate ?? 0),
+    monthly_vat_amount: Number(q.monthly_vat_amount ?? 0),
+    recurring_incl_vat: Number(q.monthly_gross ?? 0),
+  };
+  const priceChangeSnapshot = {
+    model: "no_scheduled_in_contract_increase",
+    wording: q.price_rise_policy ?? PRICE_RISE_POLICY_TEXT,
+  };
+  const serviceComponentsSnapshot = [{
+    kind: q.service_type,
+    plan_name: q.plan_name,
+    speed_bucket: q.speed_bucket ?? null,
+    contract_type: contractType,
+    minimum_term_months: q.plan_term === "price_lock_24" ? 24 : 0,
+    notice_period_days: notice.days,
+    monthly_price_incl_vat: Number(q.monthly_gross ?? 0),
+    etf_policy: etfPolicySnapshot,
+    speed_matrix: contractSpeedMatrix,
+    supplier_availability_sha256: q.supplier_availability_sha256 ?? null,
+  }];
+  const logicalBodySnapshot = {
+    contract_terms_version: CONTRACT_TERMS_VERSION,
+    customer_name: qr?.full_name ?? null,
+    customer_email: qr?.email ?? null,
+    service_address: addr || qr?.postcode || null,
+    customer_type: customerTypeV2,
+    service_type: q.service_type,
+    plan_name: q.plan_name,
+    contract_type: contractType,
+    monthly_price_incl_vat: Number(q.monthly_gross ?? 0),
+    one_off_charges: finalOneOff,
+    notice_period_days: notice.days,
+    minimum_term_months: q.plan_term === "price_lock_24" ? 24 : 0,
+    etf_policy: etfPolicySnapshot,
+    cease_cancellation_charges: exitText,
+    price_change: priceChangeSnapshot,
+    vat: vatSnapshot,
+    speed_matrix: contractSpeedMatrix,
+    supplier_availability_sha256: q.supplier_availability_sha256 ?? null,
+    likely_service_date: q.likely_service_date ?? null,
+    digital_voice_selected: isVoice,
+    billing_start_rule: "confirmed_service_live",
+  };
+  const bodySnapshotSha256 = await sha256Hex(JSON.stringify(logicalBodySnapshot));
+
   const { data: cs, error: csErr } = await supabase.from("contract_summaries").insert({
     quote_id: q.id,
     quote_request_id: q.quote_request_id,
@@ -206,6 +278,7 @@ Deno.serve(async (req) => {
     version: nextVersion,
     status: "issued",
     document_status: "issued",
+    body_snapshot_sha256: bodySnapshotSha256,
     account_number: prof?.account_number ?? null,
     customer_email_snapshot: qr!.email,
     customer_name_snapshot: qr!.full_name,
@@ -224,13 +297,28 @@ Deno.serve(async (req) => {
     installation_charge: q.installation_gross,
     cease_cancellation_charges: exitText ?? (q.service_type === "broadband" ? null : "See the service-specific terms for any cancellation charges."),
     contract_length: contractLength,
+    contract_type: contractType,
+    customer_type_v2: customerTypeV2,
     minimum_term_months: q.plan_term === "price_lock_24" ? 24 : (q.plan_term === "flex_30" ? 0 : (q.contract_length_months ?? null)),
     notice_period: notice.text,
     notice_period_days: notice.days,
     etf_policy_snapshot: etfPolicySnapshot,
+    price_change_snapshot: priceChangeSnapshot,
+    payment_method_snapshot: journeyMode ? "direct_debit_setup_request" : null,
+    billing_start_rule: "confirmed_service_live",
+    speed_estimate_snapshot: contractSpeedMatrix,
+    activation_fee_snapshot: { label: "Setup", amount_incl_vat: Number(q.setup_gross ?? 0) },
+    one_off_charges_snapshot: finalOneOff,
+    router_addon_snapshot: q.router_option ?? null,
+    digital_voice_addon_snapshot: isVoice ? { selected: true, dependency_warning: DIGITAL_VOICE_WARNING_TEXT } : {},
+    vat_snapshot: vatSnapshot,
+    service_components_snapshot: serviceComponentsSnapshot,
+    likely_service_date: q.likely_service_date ?? null,
     estimated_download_speed: exactDown ?? speedEstimatesFor(q.speed_bucket)?.download ?? null,
     estimated_upload_speed: exactUp ?? speedEstimatesFor(q.speed_bucket)?.upload ?? null,
-    speed_notes: (q.speed_notes ?? speedStatementFor(q.speed_bucket) ?? "") + bpAddendum,
+    speed_notes: (contractSpeedMatrix
+      ? `Verified exact-address broadband speeds: minimum ${contractSpeedMatrix.minimum_download_mbps}/${contractSpeedMatrix.minimum_upload_mbps} Mbps; normally available ${contractSpeedMatrix.normally_available_download_mbps}/${contractSpeedMatrix.normally_available_upload_mbps} Mbps; maximum ${contractSpeedMatrix.maximum_download_mbps}/${contractSpeedMatrix.maximum_upload_mbps} Mbps; advertised plan ${contractSpeedMatrix.advertised_download_mbps}/${contractSpeedMatrix.advertised_upload_mbps} Mbps (download/upload). Source retrieved ${contractSpeedMatrix.source_retrieved_at}.`
+      : (q.speed_notes ?? speedStatementFor(q.speed_bucket) ?? "")) + bpAddendum,
     price_rise_policy: q.price_rise_policy ?? PRICE_RISE_POLICY_TEXT,
     digital_voice_warning: isVoice ? DIGITAL_VOICE_WARNING_TEXT : null,
     vulnerable_customer_note: VULNERABLE_CUSTOMER_NOTE_TEXT,

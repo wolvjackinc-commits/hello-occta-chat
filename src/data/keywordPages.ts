@@ -66,7 +66,7 @@ export const keywordPages: KeywordPage[] = [
       { question: "How do I find the cheapest broadband near me?", answer: "Enter your postcode on our broadband page to see exact pricing and speeds available at your address. OCCTA plans start from \u00A334.99/mo with 30-day rolling options where eligible." },
       { question: "Is cheap broadband reliable?", answer: "Yes. OCCTA uses the same Openreach fibre network as BT, Sky, and Plusnet. You get the same infrastructure at a lower price." },
       { question: "Do I need a credit check for broadband?", answer: "Not with OCCTA. We don\u2019t run credit checks on any of our broadband plans." },
-      { question: "Can I get broadband without a contract near me?", answer: "Yes. All OCCTA plans are rolling monthly with no lock-in and no exit fees." },
+      { question: "Can I get broadband without a contract near me?", answer: "Yes. OCCTA offers Price Lock 24 and Flex 30 where eligible. The accepted agreement is the binding source of truth on term, notice and charges." },
     ],
     ctaTitle: "Check Your Postcode",
     ctaText: "See exactly what broadband plans and speeds are available at your address.",
@@ -123,11 +123,11 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "broadband-for-students",
     metaTitle: "Student Broadband — No Contract Internet for Students",
-    metaDescription: "Best broadband for students in the UK. No contract, no credit check, 30-day rolling options available where eligible. OCCTA student-friendly internet from \u00A334.99/mo.",
+    metaDescription: "Best broadband for students in the UK. Flex 30, no credit check, 30-day rolling options available where eligible. OCCTA student-friendly internet from \u00A334.99/mo.",
     keywords: "student broadband, broadband for students UK, student internet deals, 30-day rolling options where eligible broadband students, cheap broadband students, university broadband",
     heroTitle: "BROADBAND FOR",
     heroHighlight: "STUDENTS",
-    heroSubtitle: "No contract. No credit check. Cancel when you move out.",
+    heroSubtitle: "Flex 30. No credit check. Cancel when you move out.",
     sections: [
       {
         heading: "Why Students Love OCCTA",
@@ -142,7 +142,7 @@ export const keywordPages: KeywordPage[] = [
         bullets: [
           "Unlimited data for streaming, gaming, and video calls",
           "Speeds up to 900Mbps for shared houses",
-          "No contract \u2014 cancel when your lease ends",
+          "Flex 30 \u2014 cancel when your lease ends",
           "No credit check \u2014 perfect for first-time subscribers",
           "Bring your own router for £0, or choose a router at checkout. Setup from £0 where available",
           "Split the bill easily \u2014 one simple monthly payment",
@@ -157,7 +157,7 @@ export const keywordPages: KeywordPage[] = [
     ],
     faqs: [
       { question: "Can students get broadband without a credit check?", answer: "Yes. OCCTA doesn\u2019t run credit checks, making it ideal for students with no credit history." },
-      { question: "Can I cancel my student broadband when I move out?", answer: "Yes. All OCCTA plans are rolling monthly. Give us 30 days notice and you can cancel with no fees." },
+      { question: "Can I cancel my student broadband when I move out?", answer: "Yes. OCCTA offers Price Lock 24 and Flex 30 where eligible. The accepted agreement is the binding source of truth on term, notice and charges." },
       { question: "What speed do students need?", answer: "For a shared student house, we recommend at least 100Mbps. Our 300Mbps or 500Mbps plans are ideal for 4+ people." },
       { question: "Is there a student discount?", answer: "OCCTA\u2019s prices are already the lowest available, starting from \u00A334.99/mo with no mid-contract price hikes." },
     ],
@@ -300,7 +300,7 @@ export const keywordPages: KeywordPage[] = [
       { question: "What speed do I need for working from home?", answer: "80Mbps is ideal for solo remote workers. For households with multiple remote workers, 300Mbps+ is recommended." },
       { question: "Is OCCTA broadband reliable enough for video calls?", answer: "Yes. Our fibre connection provides consistent speeds and low latency, ideal for Zoom, Teams, and Google Meet." },
       { question: "Can I claim broadband as a business expense?", answer: "You may be able to claim a proportion of your broadband cost as a business expense. Check with your accountant or HMRC." },
-      { question: "Do I need a contract for WFH broadband?", answer: "No. OCCTA is rolling monthly, so you can cancel or change speed anytime." },
+      { question: "Do I need a contract for WFH broadband?", answer: "No. Flex 30 is a 30-day rolling option where available; Price Lock 24 has a 24-month minimum term. Any plan change is subject to availability and the agreed terms." },
     ],
     ctaTitle: "Work Without Interruption",
     ctaText: "Get reliable home office broadband. Check your postcode for availability.",

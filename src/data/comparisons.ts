@@ -223,7 +223,7 @@ export const comparisons: Comparison[] = [
       { feature: "Monthly price (superfast)", occta: "From \u00A334.99/mo", competitor: "From \u00A320\u2013\u00A325/mo" },
       { feature: "Contract length", occta: "Flex 30-day or Price Lock 24", competitor: "24 months" },
       { feature: "Mid-contract price rises", occta: "None on Price Lock", competitor: "None during contract" },
-      { feature: "Setup fees", occta: "Setup from \u00A30 where available", competitor: "Free installation" },
+      { feature: "Setup fees", occta: "Setup from \u00A30 where available; exact charge shown before acceptance", competitor: "Check current provider/order terms" },
       { feature: "Speeds available", occta: "Up to 900Mbps", competitor: "Up to 3Gbps" },
       { feature: "Network", occta: "Openreach", competitor: "Own fibre network" },
     ],

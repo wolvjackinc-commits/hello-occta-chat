@@ -6,7 +6,7 @@ export default function ComplaintsCode() {
       title="Complaints Code of Practice"
       description="OCCTA's formal Complaints Code of Practice, including how to raise a complaint and how to escalate to an Alternative Dispute Resolution (ADR) scheme after 6 weeks."
       canonical="/legal/complaints-code"
-      lastUpdated="June 2026"
+      lastUpdated="October 2026"
     >
       <p>This Code explains how OCCTA handles customer complaints and how you can escalate if we don't resolve things to your satisfaction. It applies to all residential and small-business customers.</p>
       <h2>How to raise a complaint</h2>

@@ -29,6 +29,36 @@ ALTER TABLE public.contract_information_packs
   ADD COLUMN IF NOT EXISTS body_snapshot_sha256 text,
   ADD COLUMN IF NOT EXISTS pdf_sha256 text;
 
+CREATE TABLE IF NOT EXISTS public.customer_vulnerability_reviews (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  journey_id uuid NOT NULL UNIQUE,
+  customer_id uuid,
+  contract_acceptance_id uuid REFERENCES public.contract_acceptances(id),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','cleared','not_required')),
+  reason_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  reviewed_at timestamptz,
+  reviewed_by uuid,
+  review_note text
+);
+
+ALTER TABLE public.customer_vulnerability_reviews ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Staff manage vulnerability reviews" ON public.customer_vulnerability_reviews;
+CREATE POLICY "Staff manage vulnerability reviews"
+ON public.customer_vulnerability_reviews
+FOR ALL TO authenticated
+USING (
+  has_role(auth.uid(), 'admin'::app_role)
+  OR has_role(auth.uid(), 'super_admin'::app_role)
+  OR has_role(auth.uid(), 'compliance_admin'::app_role)
+)
+WITH CHECK (
+  has_role(auth.uid(), 'admin'::app_role)
+  OR has_role(auth.uid(), 'super_admin'::app_role)
+  OR has_role(auth.uid(), 'compliance_admin'::app_role)
+);
+
 ALTER TABLE public.contract_acceptances
   ADD COLUMN IF NOT EXISTS contract_summary_body_sha256 text,
   ADD COLUMN IF NOT EXISTS contract_information_pack_body_sha256 text,
@@ -335,6 +365,196 @@ DROP TRIGGER IF EXISTS trg_consumer_2026_10_1_acceptance_commit ON public.contra
 CREATE TRIGGER trg_consumer_2026_10_1_acceptance_commit
 AFTER INSERT ON public.contract_acceptances
 FOR EACH ROW EXECUTE FUNCTION public.commit_consumer_2026_10_1_acceptance();
+
+-- Structured vulnerability review: customer-entered support needs create a
+-- review record and an operations task. The review record, not the note/task,
+-- is the authoritative activation blocker.
+CREATE OR REPLACE FUNCTION public.create_consumer_vulnerability_review()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $
+DECLARE
+  v_session record;
+  v_details jsonb;
+  v_accessibility text;
+  v_vulnerability text;
+BEGIN
+  IF NEW.journey_id IS NULL OR coalesce(NEW.terms_version,'') <> '2026.10.1' THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT id, customer_details INTO v_session
+    FROM public.customer_journey_sessions
+   WHERE order_journey_id = NEW.journey_id
+   LIMIT 1;
+
+  IF v_session.id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  v_details := coalesce(v_session.customer_details, '{}'::jsonb);
+  v_accessibility := btrim(coalesce(v_details->>'accessibility_needs',''));
+  v_vulnerability := btrim(coalesce(v_details->>'vulnerability_support_needs',''));
+
+  IF v_accessibility <> '' OR v_vulnerability <> '' THEN
+    INSERT INTO public.customer_vulnerability_reviews (
+      journey_id, customer_id, contract_acceptance_id, status, reason_snapshot
+    ) VALUES (
+      NEW.journey_id, NEW.customer_id, NEW.id, 'pending',
+      jsonb_build_object(
+        'accessibility_needs', nullif(v_accessibility,''),
+        'vulnerability_support_needs', nullif(v_vulnerability,''),
+        'digital_voice_acknowledged', NEW.digital_voice_acknowledged
+      )
+    )
+    ON CONFLICT (journey_id) DO NOTHING;
+
+    INSERT INTO public.admin_tasks (
+      title, description, priority, status, related_customer_id
+    )
+    SELECT
+      'Vulnerability review required before activation',
+      'Structured vulnerability/support information was supplied in the customer journey. Review customer_vulnerability_reviews before service activation.',
+      'high', 'open', NEW.customer_id
+    WHERE NOT EXISTS (
+      SELECT 1 FROM public.admin_tasks t
+       WHERE t.related_customer_id = NEW.customer_id
+         AND t.title = 'Vulnerability review required before activation'
+         AND t.status IN ('open','in_progress')
+    );
+  END IF;
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS trg_consumer_vulnerability_review ON public.contract_acceptances;
+CREATE TRIGGER trg_consumer_vulnerability_review
+AFTER INSERT ON public.contract_acceptances
+FOR EACH ROW EXECUTE FUNCTION public.create_consumer_vulnerability_review();
+
+-- No order can become live under v2026.10.1 unless the exact accepted
+-- Summary + Pack + acceptance + immutable certificate chain exists.
+CREATE OR REPLACE FUNCTION public.enforce_order_live_contract_evidence()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $
+DECLARE
+  cs public.contract_summaries%ROWTYPE;
+  ca public.contract_acceptances%ROWTYPE;
+  cip public.contract_information_packs%ROWTYPE;
+  cert public.acceptance_certificates%ROWTYPE;
+BEGIN
+  IF NEW.lifecycle_status IS DISTINCT FROM 'live' THEN
+    RETURN NEW;
+  END IF;
+  IF TG_OP = 'UPDATE' AND OLD.lifecycle_status = 'live' THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.contract_summary_id IS NULL THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='activation_missing_contract_summary';
+  END IF;
+  SELECT * INTO cs FROM public.contract_summaries WHERE id=NEW.contract_summary_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='activation_contract_summary_not_found';
+  END IF;
+  IF cs.customer_type::text='business' OR coalesce(cs.terms_version,'') <> '2026.10.1' THEN
+    RETURN NEW;
+  END IF;
+
+  IF cs.status::text <> 'accepted'
+     OR cs.document_status::text <> 'accepted'
+     OR cs.accepted_at IS NULL
+     OR nullif(cs.pdf_sha256,'') IS NULL
+     OR nullif(cs.body_snapshot_sha256,'') IS NULL THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='activation_contract_evidence_incomplete';
+  END IF;
+
+  SELECT * INTO ca
+    FROM public.contract_acceptances a
+   WHERE a.contract_summary_id=cs.id
+     AND (NEW.journey_id IS NULL OR a.journey_id=NEW.journey_id)
+   ORDER BY a.accepted_at DESC
+   LIMIT 1;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='activation_acceptance_evidence_missing';
+  END IF;
+
+  SELECT * INTO cip FROM public.contract_information_packs WHERE id=ca.contract_information_pack_id;
+  IF NOT FOUND
+     OR cip.document_status::text <> 'accepted'
+     OR nullif(cip.pdf_sha256,'') IS NULL
+     OR nullif(cip.body_snapshot_sha256,'') IS NULL THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='activation_contract_information_evidence_incomplete';
+  END IF;
+
+  SELECT * INTO cert
+    FROM public.acceptance_certificates ac
+   WHERE ac.contract_acceptance_id=ca.id
+   LIMIT 1;
+  IF NOT FOUND
+     OR nullif(cert.storage_key,'') IS NULL
+     OR nullif(cert.sha256,'') IS NULL THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='activation_acceptance_certificate_missing';
+  END IF;
+
+  IF coalesce(NEW.activation_blocked_pending_review,false) THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='activation_blocked_pending_review';
+  END IF;
+  IF NEW.journey_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.customer_vulnerability_reviews vr
+     WHERE vr.journey_id=NEW.journey_id AND vr.status='pending'
+  ) THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='activation_vulnerability_review_pending';
+  END IF;
+
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS trg_order_live_requires_contract_evidence ON public.orders;
+CREATE TRIGGER trg_order_live_requires_contract_evidence
+BEFORE UPDATE OF lifecycle_status ON public.orders
+FOR EACH ROW EXECUTE FUNCTION public.enforce_order_live_contract_evidence();
+
+CREATE OR REPLACE FUNCTION public.resolve_customer_vulnerability_review(
+  _review_id uuid,
+  _status text,
+  _note text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $
+DECLARE
+  v_actor uuid := auth.uid();
+BEGIN
+  IF v_actor IS NULL OR NOT (
+    public.has_role(v_actor,'admin'::app_role)
+    OR public.has_role(v_actor,'super_admin'::app_role)
+    OR public.has_role(v_actor,'compliance_admin'::app_role)
+  ) THEN
+    RAISE EXCEPTION 'forbidden';
+  END IF;
+  IF _status NOT IN ('cleared','not_required') THEN
+    RAISE EXCEPTION 'invalid_review_status';
+  END IF;
+
+  UPDATE public.customer_vulnerability_reviews
+     SET status=_status, review_note=_note, reviewed_at=now(), reviewed_by=v_actor
+   WHERE id=_review_id AND status='pending';
+  IF NOT FOUND THEN RAISE EXCEPTION 'review_not_pending_or_not_found'; END IF;
+
+  RETURN jsonb_build_object('ok',true,'review_id',_review_id,'status',_status);
+END;
+$;
+REVOKE ALL ON FUNCTION public.resolve_customer_vulnerability_review(uuid,text,text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.resolve_customer_vulnerability_review(uuid,text,text) TO authenticated;
 
 -- Direct Debit provider truth: a local setup state may only become "active"
 -- after an actual non-test provider mandate is active.

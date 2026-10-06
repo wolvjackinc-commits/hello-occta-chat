@@ -238,7 +238,7 @@ const Support = () => {
   return (
     <Layout>
       <SEO 
-        title="Help & Support - 24/7 Customer Service"
+        title="Help & Support - OCCTA Customer Service"
         description="OCCTA Support Hub – UK-based help for broadband, SIM and home phone. AI chat, FAQs, ticket system. Fast resolution guaranteed."
         canonical="/support"
         keywords="OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, home phone help"
@@ -280,7 +280,7 @@ const Support = () => {
                   </div>
                   <div>
                     <h2 className="font-display text-2xl uppercase">Instant Help (IRA)</h2>
-                    <p className="text-sm text-muted-foreground">Solve issues in seconds — 24/7</p>
+                    <p className="text-sm text-muted-foreground">Self-service help is available online; advisor availability is shown on our contact channels</p>
                   </div>
                 </div>
                 <Button

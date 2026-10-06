@@ -211,8 +211,8 @@ Deno.serve(perfServe("generate-acceptance-certificate", async (req) => {
   const checkboxes = [
     { label: "I confirm that I received and can access my Contract Summary and Contract Information & Customer Agreement Pack.", ticked: !!acc.checkbox_received_read },
     { label: "I confirm that my personal details and service address shown in my order documents are correct.", ticked: !!acc.checkbox_details_correct },
-    { label: "I understand the monthly and one-off charges, contract term, notice, cancellation rules and payment arrangements.", ticked: !!acc.checkbox_understand_charges },
-    { label: "I agree to enter into the OCCTA agreement on the terms shown in my Contract Summary and Contract Information & Customer Agreement Pack and understand that the order creates an obligation to pay.", ticked: !!acc.checkbox_consent },
+    { label: "I understand the monthly and one-off charges, contract type, term, notice, cancellation rules and any applicable Early Termination Charge or network cease/migration charge.", ticked: !!acc.checkbox_understand_charges },
+    { label: "I agree to enter into the OCCTA agreement on the terms shown in my Contract Summary and Contract Information & Customer Agreement Pack and understand that placing this order creates an obligation to pay.", ticked: !!acc.checkbox_consent },
   ];
 
   const bytes = renderCertificatePdf({

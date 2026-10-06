@@ -22,7 +22,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA broadband in London?", answer: "Yes \u2014 OCCTA broadband is available across Greater London via the Openreach fibre network. Enter your postcode on our broadband page to check speeds and availability at your address." },
       { question: "How fast is OCCTA broadband in London?", answer: "Speeds depend on your address and the infrastructure available. Most London postcodes can access speeds from 36Mbps up to 900Mbps through FTTP (full fibre) or FTTC connections." },
-      { question: "Is there a contract for London broadband?", answer: "No. All OCCTA broadband plans are rolling monthly with no lock-in, no exit fees, and no mid-contract price rises \u2014 whether you\u2019re in Hackney or Hounslow." },
+      { question: "Is there a contract for London broadband?", answer: "No. OCCTA offers Price Lock 24 and Flex 30 where eligible. Your exact term, price, technology, speed and charges are confirmed before acceptance." },
     ],
   },
   {
@@ -34,7 +34,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA broadband available in Manchester?", answer: "Yes \u2014 OCCTA covers most of Greater Manchester via the Openreach network. Check your postcode on our broadband page to confirm availability and speeds at your address." },
       { question: "What speeds can I get in Manchester?", answer: "Most Manchester addresses can access speeds from 36Mbps to 900Mbps depending on whether your area has FTTC or full fibre (FTTP) coverage." },
-      { question: "Do I need a contract for Manchester broadband?", answer: "No. Every OCCTA plan is rolling monthly. No lock-in, no exit fees, and your price stays the same for as long as you\u2019re with us." },
+      { question: "Do I need a contract for Manchester broadband?", answer: "No. OCCTA offers Price Lock 24 and Flex 30 where eligible. Your exact term, price, technology, speed and charges are confirmed before acceptance." },
     ],
   },
   {
@@ -58,7 +58,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Leeds?", answer: "Yes \u2014 OCCTA broadband covers Leeds and much of West Yorkshire via the Openreach network. Check your postcode to see available speeds at your address." },
       { question: "What fibre speeds can I get in Leeds?", answer: "Most Leeds postcodes have access to speeds from 36Mbps up to 900Mbps, depending on whether your street has FTTC or full fibre (FTTP) infrastructure." },
-      { question: "Can I cancel my Leeds broadband anytime?", answer: "Yes \u2014 all OCCTA plans are rolling monthly. Cancel whenever you like with no exit fees and no penalty charges." },
+      { question: "Can I cancel my Leeds broadband anytime?", answer: "Yes \u2014 OCCTA offers Price Lock 24 and Flex 30 where eligible. Your exact term, price, technology, speed and charges are confirmed before acceptance." },
     ],
   },
   {
@@ -70,7 +70,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA broadband in Glasgow?", answer: "Yes \u2014 OCCTA provides broadband across Glasgow through the Openreach fibre network. Enter your postcode to check what speeds and plans are available at your address." },
       { question: "What broadband speeds are available in Glasgow?", answer: "Glasgow has good fibre coverage. Most addresses can access speeds from 36Mbps to 900Mbps depending on local infrastructure. Full fibre (FTTP) is expanding rapidly across the city." },
-      { question: "Is OCCTA broadband really flexible monthly in Glasgow?", answer: "Yes \u2014 every OCCTA plan is rolling monthly, regardless of location. No minimum term, no exit fees, and your monthly price is fixed for as long as you stay." },
+      { question: "Is OCCTA broadband really flexible monthly in Glasgow?", answer: "Yes \u2014 OCCTA offers Price Lock 24 and Flex 30 where eligible. Your exact term, price, technology, speed and charges are confirmed before acceptance." },
     ],
   },
   {
@@ -130,7 +130,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA broadband available in Nottingham?", answer: "Yes \u2014 OCCTA covers Nottingham and the wider East Midlands via the Openreach network. Enter your postcode to check speeds and plans available at your address." },
       { question: "What speeds can I get in Nottingham?", answer: "Nottingham has expanding fibre coverage. Speeds from 36Mbps to 900Mbps are available depending on your address and local infrastructure." },
-      { question: "Is there really flexible monthly for Nottingham broadband?", answer: "Correct \u2014 all OCCTA plans are rolling monthly. No minimum term, no exit fees, and your price is locked in from day one." },
+      { question: "Is there really flexible monthly for Nottingham broadband?", answer: "Correct \u2014 OCCTA offers Price Lock 24 and Flex 30 where eligible. Your exact term, price, technology, speed and charges are confirmed before acceptance." },
     ],
   },
   // ─── New cities (11–50) ───
@@ -143,7 +143,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA broadband in Edinburgh?", answer: "Yes \u2014 OCCTA covers Edinburgh through the Openreach fibre network. Check your postcode to see available speeds." },
       { question: "What speeds are available in Edinburgh?", answer: "Most Edinburgh addresses can access speeds from 36Mbps to 900Mbps depending on local FTTP/FTTC coverage." },
-      { question: "Is there a contract for Edinburgh broadband?", answer: "No \u2014 all plans are rolling monthly with no exit fees." },
+      { question: "Is there a contract for Edinburgh broadband?", answer: "No \u2014 all plans are rolling monthly with no remaining-month early termination charge on Flex 30." },
     ],
   },
   {
@@ -155,7 +155,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA broadband available in Cardiff?", answer: "Yes \u2014 OCCTA covers Cardiff via the Openreach network. Enter your postcode to check availability." },
       { question: "What broadband speeds can I get in Cardiff?", answer: "Cardiff has strong fibre coverage with speeds from 36Mbps to 900Mbps available." },
-      { question: "Do I need a contract?", answer: "No \u2014 all OCCTA plans are rolling monthly. 30-day rolling options available where eligible with no fees." },
+      { question: "Do I need a contract?", answer: "No \u2014 OCCTA offers Price Lock 24 and Flex 30 where eligible. Your exact term, price, technology, speed and charges are confirmed before acceptance." },
     ],
   },
   {
@@ -179,7 +179,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Southampton?", answer: "Yes \u2014 OCCTA covers Southampton and Hampshire via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps are available depending on your address." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 all plans are rolling monthly with no exit fees." },
+      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 all plans are rolling monthly with no remaining-month early termination charge on Flex 30." },
     ],
   },
   {
@@ -203,7 +203,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Brighton?", answer: "Yes \u2014 OCCTA covers Brighton and East Sussex via the Openreach network." },
       { question: "What speeds can I get in Brighton?", answer: "Brighton has excellent fibre coverage with speeds from 36Mbps to 900Mbps." },
-      { question: "Do I need a contract?", answer: "No \u2014 every plan is rolling monthly with no exit fees." },
+      { question: "Do I need a contract?", answer: "No \u2014 every plan is rolling monthly with no remaining-month early termination charge on Flex 30." },
     ],
   },
   {
@@ -239,7 +239,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA in Wolverhampton?", answer: "Yes \u2014 OCCTA covers Wolverhampton and the West Midlands via Openreach." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no exit fees, no minimum term." },
+      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -299,7 +299,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Sunderland?", answer: "Yes \u2014 OCCTA covers Sunderland via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most Sunderland postcodes can access 36Mbps to 900Mbps." },
-      { question: "Do I need a contract?", answer: "No \u2014 all plans are rolling monthly with no exit fees." },
+      { question: "Do I need a contract?", answer: "No \u2014 all plans are rolling monthly with no remaining-month early termination charge on Flex 30." },
     ],
   },
   {
@@ -323,7 +323,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Luton?", answer: "Yes \u2014 OCCTA covers Luton and Bedfordshire via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most Luton addresses can access 36Mbps to 900Mbps." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no exit fees, no minimum term." },
+      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -347,7 +347,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Milton Keynes?", answer: "Yes \u2014 OCCTA covers Milton Keynes via the Openreach network." },
       { question: "What speeds can I get?", answer: "Most MK postcodes can access 36Mbps to 900Mbps." },
-      { question: "Do I need a contract?", answer: "No \u2014 all plans are rolling monthly with no exit fees." },
+      { question: "Do I need a contract?", answer: "No \u2014 all plans are rolling monthly with no remaining-month early termination charge on Flex 30." },
     ],
   },
   {
@@ -383,7 +383,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA in York?", answer: "Yes \u2014 OCCTA covers York and North Yorkshire via the Openreach network." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no exit fees, no minimum term." },
+      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -431,7 +431,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA in Oxford?", answer: "Yes \u2014 OCCTA covers Oxford and Oxfordshire via the Openreach network." },
       { question: "What speeds are available?", answer: "Most Oxford postcodes can access 36Mbps to 900Mbps." },
-      { question: "Do I need a contract?", answer: "No \u2014 all plans are rolling monthly with no exit fees." },
+      { question: "Do I need a contract?", answer: "No \u2014 all plans are rolling monthly with no remaining-month early termination charge on Flex 30." },
     ],
   },
   {
@@ -455,7 +455,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA in Bournemouth?", answer: "Yes \u2014 OCCTA covers Bournemouth and Dorset via the Openreach network." },
       { question: "What speeds are available?", answer: "Most Bournemouth postcodes can access 36Mbps to 900Mbps." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no exit fees, no minimum term." },
+      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -515,7 +515,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Peterborough?", answer: "Yes \u2014 OCCTA covers Peterborough via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps depending on your postcode." },
-      { question: "Do I need a contract?", answer: "No \u2014 all plans are rolling monthly with no exit fees." },
+      { question: "Do I need a contract?", answer: "No \u2014 all plans are rolling monthly with no remaining-month early termination charge on Flex 30." },
     ],
   },
   {
@@ -539,7 +539,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Wakefield?", answer: "Yes \u2014 OCCTA covers Wakefield via the Openreach network." },
       { question: "What speeds can I get?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no exit fees, no minimum term." },
+      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -599,7 +599,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA in Wigan?", answer: "Yes \u2014 OCCTA covers Wigan via the Openreach network." },
       { question: "What speeds are available?", answer: "Speeds from 36Mbps to 900Mbps depending on your address." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no exit fees, no minimum term." },
+      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {

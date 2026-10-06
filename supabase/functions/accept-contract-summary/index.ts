@@ -14,9 +14,9 @@ export const JOURNEY_CHECKBOX_TEXTS = {
   details_correct:
     "I confirm that my personal details and service address shown in my order documents are correct.",
   understand_charges:
-    "I understand the monthly and one-off charges, contract term, notice, cancellation rules and payment arrangements.",
+    "I understand the monthly and one-off charges, contract type, term, notice, cancellation rules and any applicable Early Termination Charge or network cease/migration charge.",
   consent:
-    "I agree to enter into the OCCTA agreement on the terms shown in my Contract Summary and Contract Information & Customer Agreement Pack and understand that the order creates an obligation to pay.",
+    "I agree to enter into the OCCTA agreement on the terms shown in my Contract Summary and Contract Information & Customer Agreement Pack and understand that placing this order creates an obligation to pay.",
 } as const;
 
 const Schema = z.object({

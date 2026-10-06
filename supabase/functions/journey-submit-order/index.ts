@@ -484,7 +484,7 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
         </p>
         ${accountAccessBlock}
         <p style="font-size:13px;color:#444;">
-          <strong>Your 14-day cooling-off period</strong> ends on ${escapeHtml(new Date(journey.cooling_off_ends_at as string).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}. You can cancel within this window for a full refund of anything paid.
+          <strong>Your 14-day cooling-off period</strong> ends on ${escapeHtml(new Date(journey.cooling_off_ends_at as string).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}. You may cancel during this statutory period as explained in your Contract Information. If an early start was expressly requested and supplied where available, lawful proportionate service/installation charges may apply; equipment return/refund rules apply separately.
         </p>
         <p style="font-size:13px;color:#444;">
           We'll complete the final service validation and then confirm your provisioning timeline. <strong>No payment has been taken</strong>; billing only begins once your service is confirmed active.

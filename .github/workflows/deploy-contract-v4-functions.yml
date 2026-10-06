@@ -1,22 +1,32 @@
-name: Deploy Contract V4 Functions
+name: Deploy OCCTA Production Contract Functions
 
 on:
   push:
     branches: [main]
     paths:
       - 'supabase/functions/_shared/buildPlanResolver.ts'
+      - 'supabase/functions/_shared/legalText.ts'
+      - 'supabase/functions/_shared/twoDocLegalText.ts'
+      - 'supabase/functions/_shared/productionConsumerContract.ts'
+      - 'supabase/functions/_shared/journey2Snapshot.ts'
       - 'supabase/functions/resolve-build-plan-price/**'
       - 'supabase/functions/create-quote/**'
       - 'supabase/functions/submit-build-plan/**'
       - 'supabase/functions/generate-contract-summary/**'
       - 'supabase/functions/generate-contract-summary-pdf/**'
+      - 'supabase/functions/generate-contract-information-pack/**'
+      - 'supabase/functions/journey-generate-cs/**'
+      - 'supabase/functions/journey2-prepare-contract/**'
+      - 'supabase/functions/accept-contract-summary/**'
+      - 'supabase/functions/accept-service-aware-cs/**'
+      - 'supabase/functions/generate-acceptance-certificate/**'
       - '.github/workflows/deploy-contract-v4-functions.yml'
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       PROJECT_REF: oexgjmuvgdndizsufipe
@@ -43,3 +53,15 @@ jobs:
         run: supabase functions deploy generate-contract-summary --project-ref "$PROJECT_REF"
       - name: Deploy Contract Summary PDF renderer
         run: supabase functions deploy generate-contract-summary-pdf --project-ref "$PROJECT_REF"
+      - name: Deploy Contract Information Pack generator
+        run: supabase functions deploy generate-contract-information-pack --project-ref "$PROJECT_REF"
+      - name: Deploy journey contract wrapper
+        run: supabase functions deploy journey-generate-cs --project-ref "$PROJECT_REF"
+      - name: Deploy Journey 2 contract preparation
+        run: supabase functions deploy journey2-prepare-contract --project-ref "$PROJECT_REF"
+      - name: Deploy primary contract acceptance
+        run: supabase functions deploy accept-contract-summary --project-ref "$PROJECT_REF"
+      - name: Deploy service-aware acceptance
+        run: supabase functions deploy accept-service-aware-cs --project-ref "$PROJECT_REF"
+      - name: Deploy acceptance certificate generator
+        run: supabase functions deploy generate-acceptance-certificate --project-ref "$PROJECT_REF"

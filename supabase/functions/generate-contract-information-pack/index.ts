@@ -20,6 +20,7 @@ import { buildServiceComponentsSnapshot, hasComponent } from "../_shared/service
 import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidators.ts";
 import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
+import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -167,81 +168,99 @@ function renderPackPdf(opts: {
 }): ArrayBuffer {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
   const M = 48;
   let y = M;
 
-  const line = (h = 14) => { y += h; if (y > 780) { doc.addPage(); y = M; } };
-  const heading = (t: string) => { doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.text(t, M, y); line(20); doc.setFont("helvetica", "normal"); doc.setFontSize(10); };
+  const ensure = (needed = 18) => { if (y + needed > H - 48) { doc.addPage(); y = M; } };
+  const line = (h = 14) => { y += h; if (y > H - 48) { doc.addPage(); y = M; } };
+  const heading = (t: string) => {
+    ensure(30);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(17, 17, 17); doc.text(t, M, y);
+    line(18); doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  };
   const para = (t: string) => {
-    const wrapped = doc.splitTextToSize(t, W - M * 2);
+    const wrapped = doc.splitTextToSize(t, W - M * 2) as string[];
+    ensure(Math.max(18, wrapped.length * 13 + 6));
     for (const l of wrapped) { doc.text(l, M, y); line(13); }
     line(4);
   };
 
-  doc.setFont("helvetica", "bold"); doc.setFontSize(18);
-  doc.text(CONTRACT_INFORMATION_PACK_TITLE, M, y); line(24);
+  doc.setFillColor(255, 226, 0); doc.rect(0, 0, W, 64, "F");
+  doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.text("OCCTA", M, 28);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+  doc.text("OCCTA LIMITED · 22 Pavilion View, Huddersfield, HD3 3WU · 0800 260 6626 · hello@occta.co.uk", M, 46);
+  y = 88;
+
+  doc.setFont("helvetica", "bold"); doc.setFontSize(17); doc.text(CONTRACT_INFORMATION_PACK_TITLE, M, y); line(22);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text(`Template v${TWO_DOC_TEMPLATE_VERSION} — issued ${new Date().toLocaleString("en-GB", { timeZone: "Europe/London" })}`, M, y); line(18);
-  doc.setFontSize(10);
+  doc.text(`Production v${PRODUCTION_CONTRACT_VERSION} · document template v${TWO_DOC_TEMPLATE_VERSION} · issued ${new Date().toLocaleString("en-GB", { timeZone: "Europe/London" })}`, M, y);
+  line(18); doc.setFontSize(10);
 
   heading("1. About this document");
-  para("This Contract Information & Customer Agreement Pack sets out the full terms that apply to your OCCTA services. It sits alongside the short Contract Summary you have already reviewed. Both documents apply together.");
+  para("This Contract Information & Customer Agreement Pack contains the detailed consumer terms that apply to your OCCTA services. It must be read with the Contract Summary issued for your order. Both documents are provided before you are asked to accept the agreement. Customer-specific price, term, service, speed and charge information in your issued order documents takes priority over generic examples in this Pack, except where law requires otherwise.");
 
   heading("2. Your service components");
   for (const c of opts.components) {
-    doc.setFont("helvetica", "bold"); doc.text(`${c.label} (${c.kind.replace("_", " ")})`, M, y); line(14);
+    ensure(20);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text(`${c.label} (${c.kind.replace("_", " ")})`, M, y); line(14);
     doc.setFont("helvetica", "normal");
-    para(`Monthly price (incl. VAT where applicable): £${c.monthly_price_incl_vat.toFixed(2)}`);
-    para(`Contract type: ${c.contract_kind === "fixed_term" ? `Fixed term — ${c.minimum_term_months} months minimum` : "Flex 30 — 30-day rolling"}`);
-    para(`Notice period: ${c.notice_period_days} days.`);
-    para(`Cancellation: ${c.cancellation_wording}`);
+    para(`Monthly price (incl. VAT where applicable): £${c.monthly_price_incl_vat.toFixed(2)}.`);
+    para(`Contract type: ${c.contract_kind === "fixed_term" ? `Fixed term — ${c.minimum_term_months} months minimum` : "Flex 30 — 30-day rolling with no fixed minimum term"}.`);
+    para(`Notice period: ${c.notice_period_days} days. Cancellation: ${c.cancellation_wording}`);
     if (c.contract_kind === "fixed_term" && c.etf) {
-      para(`Early Termination Charge — customer wording: ${c.etf.wording}`);
-      para(`ETF calculation method: ${c.etf.calculation_method}`);
-      para(`ETF cap / formula: ${c.etf.cap_or_formula}`);
-      para(`ETF worked example: ${c.etf.worked_example}`);
-      para(`ETF VAT treatment: ${c.etf.vat_treatment}`);
-      para(`ETF date basis: ${c.etf.date_basis}`);
+      para(`Early Termination Charge: ${c.etf.wording}`);
+      para(`Calculation: ${c.etf.calculation_method}. Cap/formula: ${c.etf.cap_or_formula}. VAT: ${c.etf.vat_treatment}. Date basis: ${c.etf.date_basis}.`);
+      para(`Worked example: ${c.etf.worked_example}`);
     }
-    para(`Price-change policy: ${c.price_change.wording ?? "None scheduled."}`);
-    line(6);
+    para(`Price-change policy: ${c.price_change.wording ?? "No scheduled price increase."}`);
   }
 
   if (hasComponent(opts.components, "digital_voice")) {
-    heading("3. Digital Voice / Home Phone — essential warnings");
+    heading("Digital Voice — essential warnings");
     for (const p of DV_DEPENDENCY_POINTS) para(`• ${p}`);
+    para("999/112 calls are free when the service is operational. If you rely on the line because of vulnerability, medical needs, telecare or poor mobile coverage, tell OCCTA so we can assess and discuss available resilience or alternative communication arrangements.");
   }
 
   if (hasComponent(opts.components, "sim")) {
-    heading("4. Mobile SIM — allowances & roaming");
-    para("Data, minutes and text allowances are shown in your Contract Summary. Fair usage limits apply to unlimited allowances.");
+    heading("Mobile SIM — allowances and roaming");
+    para("Data, minutes and text allowances are shown in your Contract Summary/order. Fair-use limits apply only where disclosed for the selected plan.");
     para(SIM_ROAMING_DEFAULT);
     para(SIM_FAIR_USE_DEFAULT);
-    para("Out-of-bundle usage is charged at the rates in the OCCTA Mobile Price Guide, available at occta.co.uk/legal/price-guide.");
   }
 
-  heading("5. Speeds");
+  heading("Broadband speed information");
   para(SPEED_ESTIMATE_DISCLAIMER);
 
   const promotion = opts.quote.campaign_snapshot;
   if (promotion?.eligible === true && promotion?.code === "SWITCH50") {
-    heading("6. SWITCH50 — £50 Switch Cash");
-    para(`This order includes the SWITCH50 promotion: £${Number(promotion.reward_amount ?? 50).toFixed(2)} cash reward. The reward is separate from the broadband price and does not reduce the monthly broadband charge of £${Number(opts.quote.monthly_gross ?? 0).toFixed(2)}.`);
-    para(String(promotion.payout_rule ?? "The reward becomes eligible 30 days after service activation once the first broadband invoice has been paid and the account remains eligible."));
-    para(`Promotion terms (${String(promotion.terms_version ?? "switch50")}): ${String(promotion.terms_text ?? "")}`);
+    heading("Promotion");
+    para(`This order includes SWITCH50: £${Number(promotion.reward_amount ?? 50).toFixed(2)} cash reward. It is separate from the broadband subscription price.`);
+    if (promotion.payout_rule) para(String(promotion.payout_rule));
+    if (promotion.terms_text) para(`Promotion terms (${String(promotion.terms_version ?? "current")}): ${String(promotion.terms_text)}`);
   }
 
-  heading("7. Billing");
+  heading("Billing");
   para(PAYMENT_SCHEDULE_SAFE);
 
-  heading("8. Complaints & ADR");
+  let n = 3;
+  for (const s of PRODUCTION_CONTRACT_SECTIONS) {
+    heading(`${n}. ${s.heading}`);
+    n += 1;
+    for (const p of s.paragraphs) para(p);
+  }
+
+  heading(`${n}. Complaints & ADR`);
   para(COMPLAINTS_ADR_SAFE);
 
-  heading("9. Data protection");
-  para("OCCTA LIMITED is the data controller for your personal information. See our Privacy Policy at occta.co.uk/privacy for lawful bases, retention periods and your rights.");
-
-  heading("10. Vulnerable customers");
-  para("If you or someone in your household has additional needs — medical, accessibility, financial vulnerability, or reliance on the line for emergency contact — please tell us before accepting this pack so we can support you appropriately.");
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(180); doc.line(M, H - 36, W - M, H - 36);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80);
+    doc.text(`OCCTA Consumer Contract Information · Production v${PRODUCTION_CONTRACT_VERSION}`, M, H - 22);
+    doc.text(`Page ${i} of ${pages}`, W - M, H - 22, { align: "right" });
+  }
 
   return doc.output("arraybuffer") as ArrayBuffer;
 }

@@ -151,9 +151,15 @@ Deno.serve(async (req) => {
       .from("site_copy")
       .select("key, updated_at")
       .in("key", ["terms_of_service", "privacy_policy", "contract_summary", "direct_debit_guarantee"]);
-    const legalVersions = Object.fromEntries(
-      (legalRows ?? []).map((r: any) => [String(r.key), String(r.updated_at)]).sort(),
-    ) as Record<string, string>;
+    const legalVersions = {
+      ...Object.fromEntries(
+        (legalRows ?? []).map((r: any) => [String(r.key), String(r.updated_at)]).sort(),
+      ),
+      occta_consumer_contract: "2026.10.1",
+      contract_summary_terms: "2026.10.1",
+      contract_information_pack: "2026.10.1",
+      effective_for_new_customers_from: "2026-10-06",
+    } as Record<string, string>;
 
     snapshot = buildJourney2Snapshot({
       session,

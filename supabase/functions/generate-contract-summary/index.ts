@@ -11,23 +11,25 @@ import {
 import { speedEstimatesFor, speedStatementFor } from "../_shared/journey2Snapshot.ts";
 import { resolveNoticePeriod } from "../_shared/noticePeriod.ts";
 
-const CONTRACT_TERMS_VERSION = "2026-08-10-v4";
+const CONTRACT_TERMS_VERSION = "2026.10.1";
 const money = (n: number) => `£${Number(n).toFixed(2)}`;
 
 function buildExitTerms(planTerm: string, in12: number, after12: number, noticeDays: number, noticeLabel: string) {
-  const networkCharge = `A network cease/migration-away charge applies when the broadband service is ceased or transferred: ${money(in12)} incl. VAT if it ends within 12 months of going live, or ${money(after12)} incl. VAT after 12 months.`;
+  const customerIn12 = Math.min(Number(in12 || 0), 114);
+  const customerAfter12 = Math.min(Number(after12 || 0), 60);
+  const networkCharge = `A separate network cease/migration charge may apply only where it is lawful and OCCTA actually incurs the qualifying network/wholesale charge. The customer charge is the actual qualifying cost incurred, capped at ${money(customerIn12)} incl. VAT if the service ends within 12 months of going live, or ${money(customerAfter12)} incl. VAT after 12 months.`;
   const noticeSentence = noticeDays > 0
     ? `You can end the broadband service by giving ${noticeLabel} notice.`
     : `No notice period applies to ending the broadband service.`;
   if (planTerm === "flex_30") {
     return {
-      text: `Flex 30 has no remaining-month early termination charge. ${noticeSentence} ${networkCharge} This is separate from any unpaid usage or account balance. It will not be charged where a statutory or regulatory penalty-free exit right applies, or where OCCTA confirms a waiver in writing.`,
+      text: `Flex 30 has no remaining-month early termination charge. ${noticeSentence} Where One Touch Switch applies, subscription notice charges do not continue beyond the completed switch date where the rules prohibit them. ${networkCharge} This is separate from unpaid usage or account balances and will not be charged where a statutory or regulatory penalty-free exit right prevents it.`,
       snapshot: {
         kind: "flex_30",
         minimum_term_months: 0,
         notice_period_days: noticeDays,
         early_termination_charge: "None — no remaining-month ETF on Flex 30",
-        network_cease_migration_charge: { within_12_months_incl_vat: in12, after_12_months_incl_vat: after12 },
+        network_cease_migration_charge: { within_12_months_incl_vat: customerIn12, after_12_months_incl_vat: customerAfter12 },
       },
     };
   }
@@ -39,7 +41,7 @@ function buildExitTerms(planTerm: string, in12: number, after12: number, noticeD
       notice_period_days: noticeDays,
       calculation_method: "Remaining recurring broadband charges to end of minimum term, less VAT no longer due and direct costs OCCTA reasonably saves because the service ends early",
       cap_or_formula: "Never more than the remaining contracted broadband charges; no double recovery of the same loss",
-      network_cease_migration_charge: { within_12_months_incl_vat: in12, after_12_months_incl_vat: after12 },
+      network_cease_migration_charge: { within_12_months_incl_vat: customerIn12, after_12_months_incl_vat: customerAfter12 },
       penalty_free_rights_preserved: true,
     },
   };

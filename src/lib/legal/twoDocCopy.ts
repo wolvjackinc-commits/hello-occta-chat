@@ -1,7 +1,7 @@
 // Phase B/C — mirror of supabase/functions/_shared/twoDocLegalText.ts for
 // customer-facing screens. Keep in sync.
 
-export const TWO_DOC_TEMPLATE_VERSION = "2026-07-01";
+export const TWO_DOC_TEMPLATE_VERSION = "2026.10.1";
 
 export const CONTRACT_SUMMARY_TITLE = "OCCTA Contract Summary";
 export const CONTRACT_INFORMATION_PACK_TITLE =
@@ -15,7 +15,7 @@ export const DV_DEPENDENCY_POINTS: readonly string[] = [
   "Requires an OCCTA-supplied or approved router/ATA configured for Digital Voice.",
   "999 / 112 emergency calls will not work if power, broadband or the router is unavailable.",
   "Personal telecare alarms, medical alert pendants and lift/lifeline devices connected to your line may stop working without a compatible backup solution.",
-  "If you have poor or no mobile coverage at the property, you should not rely on Digital Voice for emergency calls without a backup.",
+  "If you have poor or no mobile coverage at the property, tell OCCTA so we can assess and discuss available resilience or alternative communication arrangements.",
 ];
 
 export const DV_ACKNOWLEDGEMENT_CHECKBOX =

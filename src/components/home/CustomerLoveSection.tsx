@@ -58,7 +58,7 @@ I respect that.`,
     mainLine: "\"I left out of spite. I stayed because it's cheaper.\"",
     body: `I compared prices.
 OCCTA was cheaper than the big names.
-No contract. No exit fees.
+Flex 30 available. Clear notice and charge terms.
 
 Somehow this is rare in telecom.`,
     caption: "Lower prices. Same essentials. Fewer headaches.",

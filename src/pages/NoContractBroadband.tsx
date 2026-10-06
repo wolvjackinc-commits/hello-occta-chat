@@ -39,7 +39,7 @@ const itemVariants = {
 };
 
 const trustBadges = [
-  { icon: Shield, text: "No Contracts" },
+  { icon: Shield, text: "Flex 30 · No Fixed Minimum Term" },
   { icon: Check, text: "No Hidden Fees" },
   { icon: MapPin, text: "UK-Wide Coverage" },
   { icon: Phone, text: "UK-Based Support" },
@@ -57,7 +57,7 @@ const whySwitchReasons = [
 const comparisonData = [
   { feature: "Contract length", occta: "None", others: "12-24 months" },
   { feature: "Price rises", occta: "None", others: "Annual CPI increases" },
-  { feature: "Exit fees", occta: "None", others: "Up to £200+" },
+  { feature: "Early termination", occta: "No remaining-month ETF on Flex 30; separately valid network charges may apply", others: "Depends on provider and contract" },
   { feature: "Transparency", occta: "Clear pricing", others: "Complex bundles" },
   { feature: "Flexibility", occta: "Rolling monthly where eligible", others: "Locked in" },
 ];
@@ -65,7 +65,7 @@ const comparisonData = [
 const faqs = [
   {
     question: "Is there really no contract?",
-    answer: "Yes, genuinely. You pay monthly and can cancel whenever you like. No minimum term, no exit fees, no catches. We believe if our service is good enough, you'll stay because you want to — not because you're trapped.",
+    answer: "Flex 30 has no fixed minimum term and normally uses 30 days’ notice. There is no remaining-month early termination charge on Flex 30. Separately valid network cease or migration charges may still apply where lawful, actually incurred and disclosed.",
   },
   {
     question: "Can I cancel whenever I want?",
@@ -85,7 +85,7 @@ const faqs = [
   },
   {
     question: "How does OCCTA compare to BT, Sky, or TalkTalk?",
-    answer: "The big providers typically require 18-24 month contracts, include CPI-linked annual price rises, and charge hefty exit fees. We don't do any of that. Our speeds and reliability are comparable, but without the corporate nonsense.",
+    answer: "OCCTA offers Flex 30 and Price Lock 24 where available. The exact term, price, speed information and any one-off or termination-related charges are shown before you accept the agreement.",
   },
 ];
 
@@ -95,8 +95,8 @@ const NoContractBroadband = () => {
   const prices = getFromPrices();
   const faqSchema = createFAQSchema(faqs.slice(0, 6));
   const offerSchema = createOfferSchema({
-    name: "No Contract Broadband",
-    description: "Flexible UK broadband with no credit check, rolling monthly terms, no hidden fees, and no price rises.",
+    name: "Flex 30 Broadband",
+    description: "Flex 30 broadband with no fixed minimum term where available. Exact pricing, speed information, setup and any applicable network charges are shown before acceptance.",
     price: prices.broadband,
     url: "/no-contract-broadband-uk",
     category: "Broadband",
@@ -106,8 +106,8 @@ const NoContractBroadband = () => {
     <AvailabilityProvider>
       <LayoutComponent>
         <SEO
-          title="No-Contract Broadband UK: No Credit Check, Rolling Monthly"
-          description={`Get no-contract broadband in the UK with no credit check and rolling monthly terms. OCCTA fibre from £${prices.broadband}/mo with no lock-ins, no exit fees, and no mid-contract price rises.`}
+          title="Flex 30 Broadband UK: 30-Day Rolling, No Fixed Minimum Term"
+          description={`Flex 30 broadband is a 30-day rolling option with no fixed minimum term where available. Broadband from £${prices.broadband}/mo; exact charges, speeds and availability are confirmed before acceptance.`}
           canonical="/no-contract-broadband-uk"
           keywords="no contract broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, no exit fee broadband"
           type="article"
@@ -131,7 +131,7 @@ const NoContractBroadband = () => {
               className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight mb-6"
             >
               No-Contract Broadband UK.{" "}
-              <span className="text-accent">No Credit Check. Rolling Monthly.</span>
+              <span className="text-accent">Flex 30. Rolling Monthly.</span>
             </motion.h1>
 
             <motion.p
@@ -140,14 +140,14 @@ const NoContractBroadband = () => {
             >
               Broadband from{" "}
               <span className="text-foreground">£{prices.broadband}/month</span>. No
-              credit check, no lock-ins, no exit fees.
+              clear term, notice and charge information before acceptance.
             </motion.p>
 
             <motion.p
               variants={itemVariants}
               className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto"
             >
-              Get fast, reliable UK broadband on rolling monthly terms with no
+              Get fast, reliable UK broadband on Flex 30 where available, with no fixed
               credit check and no long-term commitment. Whether you are renting,
               switching, or just tired of lock-ins, OCCTA gives you the
               flexibility to leave whenever you want — with clear pricing and no
@@ -425,7 +425,7 @@ const NoContractBroadband = () => {
                     SIM Plans
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Flexible mobile plans with no contract from £{prices.sim}/month
+                    Mobile plans with 30-day and fixed-term options from the live SIM catalogue
                   </p>
                 </Card>
               </Link>

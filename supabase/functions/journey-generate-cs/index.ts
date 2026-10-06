@@ -1,6 +1,8 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
 import { perfServe } from "../_shared/perfLog.ts";
 
+const ACTIVE_CONTRACT_TERMS_VERSION = "2026.10.1";
+
 /**
  * Token-based wrapper around the contract-document generators for the unified
  * `/quote/:token` journey. It guarantees that the immutable Contract Summary
@@ -114,14 +116,29 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
   // Idempotent reuse: existing non-superseded CS for the quote.
   const { data: existing } = await supabase
     .from("contract_summaries")
-    .select("id, status, version, pdf_storage_key, public_token_hash")
+    .select("id, status, version, pdf_storage_key, public_token_hash, terms_version")
     .eq("quote_id", q.id)
     .neq("status", "superseded")
     .order("version", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (existing) {
+  if (existing && existing.status !== "accepted" && existing.terms_version !== ACTIVE_CONTRACT_TERMS_VERSION) {
+    // Pause pre-production wording for customers who have not yet accepted.
+    // Historic accepted evidence is immutable; only unaccepted old versions are superseded.
+    await supabase.from("contract_summaries")
+      .update({ status: "superseded", document_status: "superseded" })
+      .eq("id", existing.id)
+      .neq("status", "accepted");
+    await supabase.from("contract_information_packs")
+      .update({ document_status: "superseded", superseded_at_utc: new Date().toISOString() })
+      .eq("contract_summary_id", existing.id)
+      .neq("document_status", "accepted");
+    if (journey.contract_summary_id === existing.id) {
+      await supabase.from("order_journeys").update({ contract_summary_id: null }).eq("id", journey.id);
+      journey.contract_summary_id = null;
+    }
+  } else if (existing) {
     if (!journey.contract_summary_id) {
       await supabase.from("order_journeys")
         .update({ contract_summary_id: existing.id })

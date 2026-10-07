@@ -27,7 +27,7 @@ import {
 } from "../_shared/journey2Snapshot.ts";
 import { buildJourney2DocumentPack } from "../_shared/journey2Docs.ts";
 import { resolveOfferPromotion } from "../_shared/offerCampaign.ts";
-import { buildContractSpeedMatrix } from "../_shared/icukAvailability.ts";
+import { buildContractSpeedMatrix } from "../_shared/networkEvidence.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16) });
@@ -96,18 +96,38 @@ Deno.serve(async (req) => {
   if (!session.billing_anchor_day || !session.dd_masked) {
     return jsonResponse({ error: "billing_required", message: "Complete your billing day and Direct Debit details before we prepare your contract." }, 409);
   }
-  if (!session.supplier_availability_snapshot || !session.supplier_availability_sha256) {
-    return jsonResponse({
-      error: "verified_supplier_availability_required",
-      message: "We must verify your exact installation address with the network before preparing a contract.",
-    }, 409);
-  }
+  // Fail closed: no binding broadband documents without verified,
+  // supplier-neutral network evidence. The order stays captured and staff are
+  // tasked to confirm availability; no acceptance/OTP is offered yet.
   const speedGate = buildContractSpeedMatrix(session.supplier_availability_snapshot, session.speed_bucket);
-  if (!speedGate.ok) {
+  const hashOk = /^[0-9a-f]{64}$/i.test(String(session.supplier_availability_sha256 ?? ""));
+  if (!speedGate.ok || !hashOk) {
+    const reason = speedGate.ok ? "network_evidence_hash_missing" : speedGate.error;
+    await supabase.from("customer_journey_sessions").update({
+      network_validation_status: "pending",
+      manual_review_reason: `pending_network_validation:${reason}`.slice(0, 200),
+      last_activity_at: new Date().toISOString(),
+    }).eq("id", session.id);
+    try {
+      const title = `Network validation required — journey ${String(session.id).slice(0, 8)}`;
+      const { data: existingTask } = await supabase.from("admin_tasks")
+        .select("id").eq("title", title).in("status", ["open", "in_progress"]).limit(1).maybeSingle();
+      if (!existingTask) {
+        await supabase.from("admin_tasks").insert({
+          title,
+          description: `Confirm network technology and min/normal/max speeds for ${String(address?.address_line_1 ?? "")}, ${String(session.postcode ?? "")} (plan ${String(session.speed_bucket)}), then record verified network evidence on journey session ${session.id}. Reason: ${reason}. No contract documents have been issued.`,
+          status: "open",
+          priority: "high",
+        });
+      }
+    } catch { /* task creation is non-fatal; the contract gate is authoritative */ }
     return jsonResponse({
-      error: speedGate.error,
-      message: "The address-specific speed evidence is incomplete or no longer current. Please run the network check again.",
-    }, 409);
+      ok: false,
+      error: "pending_network_validation",
+      pending_network_validation: true,
+      reason,
+      message: "Your order is saved. OCCTA will confirm network availability and speeds at your address, then send your contract documents before you accept or pay.",
+    }, 200);
   }
   if (!session.likely_service_date) {
     return jsonResponse({ error: "likely_service_date_required" }, 409);

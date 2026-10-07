@@ -16,7 +16,10 @@ export default function PlanStep({
 }) {
   const preferred = getPreferredSpeedBucket();
   const verifiedEvidence = session.supplier_availability_snapshot;
-  const verifiedBuckets = new Set(verifiedEvidence?.eligible_occta_plans ?? []);
+  const hasVerifiedEvidence = !!verifiedEvidence?.verified && Array.isArray(verifiedEvidence?.eligible_occta_plans);
+  // Without verified network evidence, show the current OCCTA retail bands —
+  // no address-specific availability is claimed.
+  const verifiedBuckets = new Set(hasVerifiedEvidence ? verifiedEvidence!.eligible_occta_plans : catalogue.plans.map((p) => p.speed_bucket));
   const verifiedPlans = catalogue.plans.filter((p) => verifiedBuckets.has(p.speed_bucket));
   const preferredIsAvailable = preferred && verifiedPlans.some((p) => p.speed_bucket === preferred);
   const initialBucket = session.speed_bucket && verifiedBuckets.has(session.speed_bucket)
@@ -56,7 +59,7 @@ export default function PlanStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Pick your speed</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          These are the OCCTA prices for plans verified as available at your exact installation address, including VAT. No teaser rates and no scheduled mid-contract price rises on Price Lock.
+          {hasVerifiedEvidence ? "These are the OCCTA prices for plans confirmed for your installation address, including VAT." : "These are OCCTA's current speed bands and prices, including VAT. Availability at your address is confirmed before your contract is issued."} No teaser rates and no scheduled mid-contract price rises on Price Lock.
         </p>
       </div>
 
@@ -156,7 +159,7 @@ export default function PlanStep({
 
       {verifiedPlans.length === 0 && (
         <p className="text-sm border-2 border-foreground p-4">
-          We cannot sell a broadband plan online for this address because no plan has both verified supplier availability and an exact OCCTA price. Call 0800 260 6626 or email hello@occta.co.uk and we'll check it manually.
+          We cannot show a broadband plan online for this address right now. Call 0800 260 6626 or email hello@occta.co.uk and we'll check it manually.
         </p>
       )}
 
@@ -164,8 +167,15 @@ export default function PlanStep({
         <div className="flex items-start gap-2">
           <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
           <p>
-            <strong>Address verified:</strong> The plans above are limited to the speed bands returned as orderable by the supplier check for your exact installation address.
-            Network technology: <strong>{verifiedEvidence?.primary_technology || "verified network"}</strong>. The exact address-specific minimum, normally available, maximum and advertised speeds used for your selected plan are frozen into the Contract Summary and Contract Information you review before ordering.
+            {hasVerifiedEvidence ? (
+              <>
+                <strong>Network confirmed:</strong> Network technology: <strong>{verifiedEvidence?.technology}</strong>. The address-specific minimum, normally available, maximum and advertised speeds for your selected plan are frozen into the Contract Summary and Contract Information you review before ordering.{" "}
+              </>
+            ) : (
+              <>
+                <strong>Network check pending:</strong> Speeds shown are OCCTA's plan bands, not a promise for your address. OCCTA will confirm the exact network technology, speeds and availability before issuing your Contract Summary and Contract Information. You won't be asked to accept or pay until then.{" "}
+              </>
+            )}
             OCCTA will not substitute another plan or price without your agreement.
           </p>
         </div>

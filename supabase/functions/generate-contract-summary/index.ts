@@ -11,7 +11,7 @@ import {
 } from "../_shared/buildPlanResolver.ts";
 import { speedEstimatesFor, speedStatementFor } from "../_shared/journey2Snapshot.ts";
 import { resolveNoticePeriod } from "../_shared/noticePeriod.ts";
-import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "../_shared/icukAvailability.ts";
+import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "../_shared/networkEvidence.ts";
 
 const CONTRACT_TERMS_VERSION = "2026.10.1";
 const money = (n: number) => `£${Number(n).toFixed(2)}`;

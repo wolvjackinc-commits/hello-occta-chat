@@ -12,7 +12,7 @@ export const AdminPlans = () => {
         <div>
           <h1 className="text-2xl font-display">Broadband Plans</h1>
           <p className="text-sm text-muted-foreground">
-            Public retail bands OCCTA sells to customers. Prices are derived from the ICUK
+            Public retail bands OCCTA sells to customers. Prices are derived from the OCCTA
             wholesale catalogue and margin rules — edit those to change what customers see.
           </p>
         </div>

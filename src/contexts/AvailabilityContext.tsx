@@ -31,6 +31,8 @@ export interface AvailabilityResult {
   recommendedPlan: string;
   upgradePlan?: string;
   message?: string;
+  /** No live supplier feed: exact technology/speed/availability is confirmed before the binding contract. */
+  pendingNetworkValidation?: boolean;
 }
 
 interface AvailabilityState {
@@ -58,7 +60,7 @@ const ADDRESS_LOOKUP_TIMEOUT = "address_lookup_timeout";
 
 // ── Recommendation logic ──
 
-function computeRecommendation(
+export function computeRecommendation(
   primaryTechnology: string,
   maxDownload: number,
   eligiblePlans: string[]
@@ -283,53 +285,24 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
       errorMessage: "",
     }));
 
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "check-availability",
-        { body: { address: addr } }
-      );
-
-      if (error) throw error;
-
-      if (data?.available && data?.eligibleOcctaPlans?.length > 0) {
-        const { recommendedPlan, upgradePlan } = computeRecommendation(
-          data.primaryTechnology,
-          data.maxDownload,
-          data.eligibleOcctaPlans
-        );
-        const result: AvailabilityResult = {
-          available: true,
-          primaryTechnology: data.primaryTechnology,
-          maxDownload: data.maxDownload,
-          maxUpload: data.maxUpload,
-          eligibleOcctaPlans: data.eligibleOcctaPlans,
-          recommendedPlan,
-          upgradePlan,
-        };
-        setState((s) => {
-          const next = { ...s, status: "success" as AvailabilityStatus, result };
-          saveToSession(next);
-          return next;
-        });
-      } else {
-        setState((s) => ({
-          ...s,
-          status: "error",
-          errorType: "availability-failed",
-          errorMessage:
-            data?.message ||
-            "We couldn't confirm availability online.",
-        }));
-      }
-    } catch (err) {
-      console.error("Availability check error:", err);
-      setState((s) => ({
-        ...s,
-        status: "error",
-        errorType: "backend-unavailable",
-        errorMessage: "Something went wrong checking availability. Please try again.",
-      }));
-    }
+    // Supplier-neutral: OCCTA has no live supplier availability feed. Show the
+    // current OCCTA retail speed bands without claiming address-specific
+    // availability; the network is validated before any binding contract.
+    const result: AvailabilityResult = {
+      available: false,
+      primaryTechnology: "",
+      maxDownload: 1000,
+      maxUpload: 115,
+      eligibleOcctaPlans: ["essential", "superfast", "ultrafast", "gigabit"],
+      recommendedPlan: "superfast",
+      pendingNetworkValidation: true,
+      message: "Exact network technology, speed and availability at this address will be confirmed before your binding broadband contract is issued.",
+    };
+    setState((s) => {
+      const next = { ...s, status: "success" as AvailabilityStatus, result };
+      saveToSession(next);
+      return next;
+    });
   }, []);
 
   const reset = useCallback(() => {

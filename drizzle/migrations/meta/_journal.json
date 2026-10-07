@@ -8,6 +8,13 @@
       "when": 1789453241527,
       "tag": "0000_fix_customer_overview_order_timeline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791360240832,
+      "tag": "0001_journey_network_validation_status",
+      "breakpoints": true
     }
   ]
 }

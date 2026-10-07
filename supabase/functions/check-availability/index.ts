@@ -36,6 +36,6 @@ Deno.serve(async (req) => {
     verifiedExactAddress: false,
     eligibleOcctaPlans: [],
     selectedAddress: address,
-    message: "You can continue with your order. OCCTA will confirm the exact network technology, speed and availability at this address before your binding broadband contract is issued.",
+    message: "You can continue with your order. The speeds shown are OCCTA plan estimates; final network technology, availability and actual line performance are confirmed during provisioning. We will not substitute a different plan or price without your agreement.",
   });
 });

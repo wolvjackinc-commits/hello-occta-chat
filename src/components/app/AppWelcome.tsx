@@ -55,7 +55,7 @@ const AppWelcome = () => {
             Switch to Cheaper<br />UK Broadband Today
           </h1>
           <p className="text-accent-foreground/90 text-sm mb-8">
-            Affordable telecom without contracts, hidden fees, or lock-ins — available across the UK.
+            Affordable telecom with clear terms. Flex 30 and Price Lock 24 broadband options are available where eligible, with customer-specific charges shown before acceptance.
           </p>
 
           <div className="flex gap-3">

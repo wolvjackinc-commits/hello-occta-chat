@@ -37,6 +37,7 @@ type CustomerRow = {
   latest_postcode: string | null;
   latest_postcode_normalized: string | null;
   created_at: string;
+  latest_activity_at: string | null;
 };
 
 const defaultFilters: AdvancedSearchFilters = {
@@ -109,7 +110,7 @@ export const AdminCustomers = () => {
       let query = supabase
         .from("admin_customer_search_view")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
+        .order("latest_activity_at", { ascending: false })
         .range(from, to);
 
       // Quick search with smart detection

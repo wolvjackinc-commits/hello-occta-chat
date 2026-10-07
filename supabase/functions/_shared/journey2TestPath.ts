@@ -427,7 +427,18 @@ export async function submitTestOrder(
   const verified = await verifyStoredSnapshot(snapRow.snapshot, snapRow.snapshot_sha256);
   if (!verified.ok) return { ok: false, error: `snapshot_integrity:${verified.reason}`, status: 409 };
   const snapshot = snapRow.snapshot as Journey2Snapshot;
-  const drift = snapshotMatchesSession(snapshot, session);
+
+  // The isolated test-session table intentionally does not carry the live
+  // supplier/network-evidence columns. The immutable snapshot already contains
+  // the server-generated test-only evidence hash and likely service date, so
+  // supply those two snapshot-only values when checking for drift. All mutable
+  // customer/commercial fields are still compared against the test session.
+  const driftSession = {
+    ...session,
+    supplier_availability_sha256: snapshot.supplier_availability?.evidence_sha256 ?? null,
+    likely_service_date: snapshot.schedule?.likely_service_date ?? session.preferred_start_date,
+  };
+  const drift = snapshotMatchesSession(snapshot, driftSession);
   if (!drift.ok) return { ok: false, error: `snapshot_drift:${drift.field}`, status: 409 };
 
   const existing = await supabase.from("journey2_test_orders")

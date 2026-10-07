@@ -1,3 +1,21 @@
+-- Extend Journey 2 state for a saved sale awaiting exact network validation.
+ALTER TABLE public.customer_journey_sessions
+  DROP CONSTRAINT IF EXISTS cjs_status_chk;
+ALTER TABLE public.customer_journey_sessions
+  ADD CONSTRAINT cjs_status_chk CHECK (
+    status = ANY (ARRAY[
+      'active'::text,
+      'network_validation_pending'::text,
+      'contract_prepared'::text,
+      'contract_accepted'::text,
+      'order_submitted'::text,
+      'completed'::text,
+      'cancelled'::text,
+      'expired'::text,
+      'manual_review'::text
+    ])
+  );
+
 -- Supplier-neutral network validation queue for broadband Journey 2.
 -- This is forward-only and does not rewrite accepted historical contract evidence.
 

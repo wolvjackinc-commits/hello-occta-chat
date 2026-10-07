@@ -181,6 +181,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "acceptance_certificates_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "acceptance_certificates_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
             foreignKeyName: "acceptance_certificates_journey_id_fkey"
             columns: ["journey_id"]
             isOneToOne: false
@@ -704,6 +718,13 @@ export type Database = {
             foreignKeyName: "audit_logs_actor_user_id_fkey"
             columns: ["actor_user_id"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "audit_logs_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -748,6 +769,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_services"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "billing_events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_service_billing_issues"
+            referencedColumns: ["service_id"]
           },
           {
             foreignKeyName: "billing_events_service_id_fkey"
@@ -896,6 +931,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_contacts_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "business_contacts_business_profile_id_fkey"
@@ -1238,6 +1280,13 @@ export type Database = {
             foreignKeyName: "business_users_business_profile_id_fkey"
             columns: ["business_profile_id"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "business_users_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1390,6 +1439,13 @@ export type Database = {
             foreignKeyName: "campaign_recipients_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1467,6 +1523,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "campaigns_created_by_fkey"
@@ -2228,6 +2291,13 @@ export type Database = {
             foreignKeyName: "communications_log_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "communications_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2552,10 +2622,13 @@ export type Database = {
           checkbox_understand_charges: boolean
           checkout_session_id: string | null
           complaints_code_version: string | null
+          contract_information_pack_body_sha256: string | null
           contract_information_pack_id: string | null
           contract_information_pack_pdf_hash: string | null
+          contract_information_pack_pdf_sha256: string | null
           contract_information_pack_template_version: string | null
           contract_information_pack_version: number | null
+          contract_summary_body_sha256: string | null
           contract_summary_id: string
           contract_summary_template_version: string | null
           cookie_policy_version: string | null
@@ -2563,8 +2636,11 @@ export type Database = {
           cs_version: number | null
           customer_id: string | null
           date_of_birth: string | null
+          digital_voice_acknowledged: boolean | null
           digital_voice_policy_version: string | null
           digital_voice_terms_version: string | null
+          early_start_consent: boolean | null
+          early_start_requested: boolean | null
           equipment_terms_version: string | null
           id: string
           ip: string | null
@@ -2577,6 +2653,8 @@ export type Database = {
           mobile_roaming_policy_version: string | null
           mobile_snapshot: string | null
           number_porting_policy_version: string | null
+          otp_challenge_id: string | null
+          otp_verified_at: string | null
           pack_acknowledgements: Json | null
           pdf_sha256: string | null
           pdf_storage_key: string | null
@@ -2617,10 +2695,13 @@ export type Database = {
           checkbox_understand_charges?: boolean
           checkout_session_id?: string | null
           complaints_code_version?: string | null
+          contract_information_pack_body_sha256?: string | null
           contract_information_pack_id?: string | null
           contract_information_pack_pdf_hash?: string | null
+          contract_information_pack_pdf_sha256?: string | null
           contract_information_pack_template_version?: string | null
           contract_information_pack_version?: number | null
+          contract_summary_body_sha256?: string | null
           contract_summary_id: string
           contract_summary_template_version?: string | null
           cookie_policy_version?: string | null
@@ -2628,8 +2709,11 @@ export type Database = {
           cs_version?: number | null
           customer_id?: string | null
           date_of_birth?: string | null
+          digital_voice_acknowledged?: boolean | null
           digital_voice_policy_version?: string | null
           digital_voice_terms_version?: string | null
+          early_start_consent?: boolean | null
+          early_start_requested?: boolean | null
           equipment_terms_version?: string | null
           id?: string
           ip?: string | null
@@ -2642,6 +2726,8 @@ export type Database = {
           mobile_roaming_policy_version?: string | null
           mobile_snapshot?: string | null
           number_porting_policy_version?: string | null
+          otp_challenge_id?: string | null
+          otp_verified_at?: string | null
           pack_acknowledgements?: Json | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
@@ -2682,10 +2768,13 @@ export type Database = {
           checkbox_understand_charges?: boolean
           checkout_session_id?: string | null
           complaints_code_version?: string | null
+          contract_information_pack_body_sha256?: string | null
           contract_information_pack_id?: string | null
           contract_information_pack_pdf_hash?: string | null
+          contract_information_pack_pdf_sha256?: string | null
           contract_information_pack_template_version?: string | null
           contract_information_pack_version?: number | null
+          contract_summary_body_sha256?: string | null
           contract_summary_id?: string
           contract_summary_template_version?: string | null
           cookie_policy_version?: string | null
@@ -2693,8 +2782,11 @@ export type Database = {
           cs_version?: number | null
           customer_id?: string | null
           date_of_birth?: string | null
+          digital_voice_acknowledged?: boolean | null
           digital_voice_policy_version?: string | null
           digital_voice_terms_version?: string | null
+          early_start_consent?: boolean | null
+          early_start_requested?: boolean | null
           equipment_terms_version?: string | null
           id?: string
           ip?: string | null
@@ -2707,6 +2799,8 @@ export type Database = {
           mobile_roaming_policy_version?: string | null
           mobile_snapshot?: string | null
           number_porting_policy_version?: string | null
+          otp_challenge_id?: string | null
+          otp_verified_at?: string | null
           pack_acknowledgements?: Json | null
           pdf_sha256?: string | null
           pdf_storage_key?: string | null
@@ -2738,6 +2832,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
             foreignKeyName: "contract_acceptances_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -2750,6 +2858,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "contract_acceptances_customer_id_fkey"
@@ -2770,6 +2885,13 @@ export type Database = {
             columns: ["journey_id"]
             isOneToOne: false
             referencedRelation: "order_journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_otp_challenge_id_fkey"
+            columns: ["otp_challenge_id"]
+            isOneToOne: false
+            referencedRelation: "sms_otp_challenges"
             referencedColumns: ["id"]
           },
           {
@@ -2887,6 +3009,7 @@ export type Database = {
         Row: {
           accepted_at_utc: string | null
           body_snapshot: Json
+          body_snapshot_sha256: string | null
           cancelled_at_utc: string | null
           cip_number: string
           contract_summary_id: string | null
@@ -2899,6 +3022,7 @@ export type Database = {
           issued_at_utc: string | null
           legacy_compliance_status: Database["public"]["Enums"]["legacy_compliance_status_enum"]
           pdf_hash: string | null
+          pdf_sha256: string | null
           pdf_storage_path: string | null
           quote_id: string
           quote_request_id: string | null
@@ -2911,6 +3035,7 @@ export type Database = {
         Insert: {
           accepted_at_utc?: string | null
           body_snapshot: Json
+          body_snapshot_sha256?: string | null
           cancelled_at_utc?: string | null
           cip_number?: string
           contract_summary_id?: string | null
@@ -2923,6 +3048,7 @@ export type Database = {
           issued_at_utc?: string | null
           legacy_compliance_status?: Database["public"]["Enums"]["legacy_compliance_status_enum"]
           pdf_hash?: string | null
+          pdf_sha256?: string | null
           pdf_storage_path?: string | null
           quote_id: string
           quote_request_id?: string | null
@@ -2935,6 +3061,7 @@ export type Database = {
         Update: {
           accepted_at_utc?: string | null
           body_snapshot?: Json
+          body_snapshot_sha256?: string | null
           cancelled_at_utc?: string | null
           cip_number?: string
           contract_summary_id?: string | null
@@ -2947,6 +3074,7 @@ export type Database = {
           issued_at_utc?: string | null
           legacy_compliance_status?: Database["public"]["Enums"]["legacy_compliance_status_enum"]
           pdf_hash?: string | null
+          pdf_sha256?: string | null
           pdf_storage_path?: string | null
           quote_id?: string
           quote_request_id?: string | null
@@ -2975,6 +3103,13 @@ export type Database = {
             foreignKeyName: "contract_information_packs_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "contract_information_packs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2984,6 +3119,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contract_information_packs"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_information_packs_supersedes_id_fkey"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_information_pack_id"]
           },
         ]
       }
@@ -2999,6 +3141,7 @@ export type Database = {
           archived_reason: string | null
           authorised_signatory_note: string | null
           billing_start_rule: string | null
+          body_snapshot_sha256: string | null
           business_monthly_ex_vat: number | null
           business_monthly_incl_vat: number | null
           cancelled_at_utc: string | null
@@ -3038,6 +3181,7 @@ export type Database = {
           legacy_compliance_status:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
+          likely_service_date: string | null
           minimum_term_months: number | null
           monthly_price_incl_vat: number
           notice_period: string
@@ -3098,6 +3242,7 @@ export type Database = {
           archived_reason?: string | null
           authorised_signatory_note?: string | null
           billing_start_rule?: string | null
+          body_snapshot_sha256?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null
           cancelled_at_utc?: string | null
@@ -3137,6 +3282,7 @@ export type Database = {
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
+          likely_service_date?: string | null
           minimum_term_months?: number | null
           monthly_price_incl_vat: number
           notice_period: string
@@ -3197,6 +3343,7 @@ export type Database = {
           archived_reason?: string | null
           authorised_signatory_note?: string | null
           billing_start_rule?: string | null
+          body_snapshot_sha256?: string | null
           business_monthly_ex_vat?: number | null
           business_monthly_incl_vat?: number | null
           cancelled_at_utc?: string | null
@@ -3236,6 +3383,7 @@ export type Database = {
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
+          likely_service_date?: string | null
           minimum_term_months?: number | null
           monthly_price_incl_vat?: number
           notice_period?: string
@@ -3299,6 +3447,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "contract_summaries_customer_id_fkey"
@@ -3395,6 +3550,7 @@ export type Database = {
           last_completed_step: string | null
           last_error: string | null
           last_error_at: string | null
+          likely_service_date: string | null
           manual_review_reason: string | null
           order_id: string | null
           order_journey_id: string | null
@@ -3420,6 +3576,11 @@ export type Database = {
           speed_bucket: string | null
           status: string
           submitted_at: string | null
+          supplier_address_snapshot: Json | null
+          supplier_availability_retrieved_at: string | null
+          supplier_availability_sha256: string | null
+          supplier_availability_snapshot: Json | null
+          supplier_availability_source: string | null
           test_acceptance_id: string | null
           test_contract_summary_id: string | null
           test_order_id: string | null
@@ -3462,6 +3623,7 @@ export type Database = {
           last_completed_step?: string | null
           last_error?: string | null
           last_error_at?: string | null
+          likely_service_date?: string | null
           manual_review_reason?: string | null
           order_id?: string | null
           order_journey_id?: string | null
@@ -3487,6 +3649,11 @@ export type Database = {
           speed_bucket?: string | null
           status?: string
           submitted_at?: string | null
+          supplier_address_snapshot?: Json | null
+          supplier_availability_retrieved_at?: string | null
+          supplier_availability_sha256?: string | null
+          supplier_availability_snapshot?: Json | null
+          supplier_availability_source?: string | null
           test_acceptance_id?: string | null
           test_contract_summary_id?: string | null
           test_order_id?: string | null
@@ -3529,6 +3696,7 @@ export type Database = {
           last_completed_step?: string | null
           last_error?: string | null
           last_error_at?: string | null
+          likely_service_date?: string | null
           manual_review_reason?: string | null
           order_id?: string | null
           order_journey_id?: string | null
@@ -3554,6 +3722,11 @@ export type Database = {
           speed_bucket?: string | null
           status?: string
           submitted_at?: string | null
+          supplier_address_snapshot?: Json | null
+          supplier_availability_retrieved_at?: string | null
+          supplier_availability_sha256?: string | null
+          supplier_availability_snapshot?: Json | null
+          supplier_availability_source?: string | null
           test_acceptance_id?: string | null
           test_contract_summary_id?: string | null
           test_order_id?: string | null
@@ -3564,6 +3737,60 @@ export type Database = {
           utm_snapshot?: Json | null
         }
         Relationships: []
+      }
+      customer_vulnerability_reviews: {
+        Row: {
+          contract_acceptance_id: string | null
+          created_at: string
+          customer_id: string | null
+          id: string
+          journey_id: string
+          reason_snapshot: Json
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          contract_acceptance_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          journey_id: string
+          reason_snapshot?: Json
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          contract_acceptance_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          journey_id?: string
+          reason_snapshot?: Json
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_vulnerability_reviews_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "contract_acceptances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_vulnerability_reviews_contract_acceptance_id_fkey"
+            columns: ["contract_acceptance_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contract_acceptances"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dd_email_outbox: {
         Row: {
@@ -3731,6 +3958,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "order_journeys"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_intake_requests_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "occta_dd_state_issues"
+            referencedColumns: ["payment_method_id"]
           },
           {
             foreignKeyName: "dd_intake_requests_payment_method_id_fkey"
@@ -4065,6 +4299,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "draft_order_packs_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "draft_order_packs_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
             foreignKeyName: "draft_order_packs_payment_request_id_fkey"
             columns: ["payment_request_id"]
             isOneToOne: false
@@ -4217,6 +4465,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "email_templates_created_by_fkey"
@@ -4382,6 +4637,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_services"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "first_billing_jobs_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "first_billing_jobs_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_service_billing_issues"
+            referencedColumns: ["service_id"]
           },
           {
             foreignKeyName: "first_billing_jobs_service_id_fkey"
@@ -4934,6 +5203,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_services"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "invoices_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_service_billing_issues"
+            referencedColumns: ["service_id"]
           },
           {
             foreignKeyName: "invoices_service_id_fkey"
@@ -6278,6 +6561,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "manual_fulfilment_orders_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
             foreignKeyName: "manual_fulfilment_orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -6290,6 +6587,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "manual_fulfilment_orders_customer_id_fkey"
@@ -6651,6 +6955,20 @@ export type Database = {
             foreignKeyName: "order_billing_snapshots_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "order_billing_snapshots_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_service_billing_issues"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "order_billing_snapshots_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
             referencedRelation: "services"
             referencedColumns: ["id"]
           },
@@ -6826,6 +7144,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_contract_summaries"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
           },
           {
             foreignKeyName: "order_journeys_quote_id_fkey"
@@ -7301,6 +7633,20 @@ export type Database = {
             foreignKeyName: "payment_methods_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "payment_methods_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_service_billing_issues"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "payment_methods_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
             referencedRelation: "services"
             referencedColumns: ["id"]
           },
@@ -7480,6 +7826,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payment_requests_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "payment_requests_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
             foreignKeyName: "payment_requests_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -7492,6 +7852,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "payment_requests_created_by_fkey"
@@ -7534,6 +7901,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "payment_requests_user_id_fkey"
@@ -7584,6 +7958,8 @@ export type Database = {
         Row: {
           api_mode: string
           business_vat_display: string
+          consumer_contract_release_enabled: boolean
+          consumer_contract_release_version: string
           contract_sms_otp_bypass_reason: string | null
           contract_sms_otp_required: boolean
           created_at: string
@@ -7625,6 +8001,8 @@ export type Database = {
         Insert: {
           api_mode?: string
           business_vat_display?: string
+          consumer_contract_release_enabled?: boolean
+          consumer_contract_release_version?: string
           contract_sms_otp_bypass_reason?: string | null
           contract_sms_otp_required?: boolean
           created_at?: string
@@ -7666,6 +8044,8 @@ export type Database = {
         Update: {
           api_mode?: string
           business_vat_display?: string
+          consumer_contract_release_enabled?: boolean
+          consumer_contract_release_version?: string
           contract_sms_otp_bypass_reason?: string | null
           contract_sms_otp_required?: boolean
           created_at?: string
@@ -8301,6 +8681,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "provisioning_readiness_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "provisioning_readiness_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
             foreignKeyName: "provisioning_readiness_payment_request_id_fkey"
             columns: ["payment_request_id"]
             isOneToOne: true
@@ -8360,6 +8754,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_contract_summaries"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
           },
           {
             foreignKeyName: "quote_events_quote_id_fkey"
@@ -8650,6 +9058,13 @@ export type Database = {
             foreignKeyName: "quote_requests_assigned_admin_id_fkey"
             columns: ["assigned_admin_id"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "quote_requests_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -8666,6 +9081,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "quote_requests_customer_id_fkey"
@@ -8771,6 +9193,7 @@ export type Database = {
           legacy_compliance_status:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
+          likely_service_date: string | null
           locked_at: string | null
           margin_amount: number | null
           margin_status: Database["public"]["Enums"]["margin_status_kind"]
@@ -8815,6 +9238,11 @@ export type Database = {
           speed_estimate_snapshot: Json | null
           speed_notes: string | null
           status: Database["public"]["Enums"]["quote_status_kind"]
+          supplier_address_snapshot: Json | null
+          supplier_availability_retrieved_at: string | null
+          supplier_availability_sha256: string | null
+          supplier_availability_snapshot: Json | null
+          supplier_availability_source: string | null
           supplier_name: string | null
           supplier_product_id: string | null
           supplier_reference: string | null
@@ -8869,6 +9297,7 @@ export type Database = {
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
+          likely_service_date?: string | null
           locked_at?: string | null
           margin_amount?: number | null
           margin_status?: Database["public"]["Enums"]["margin_status_kind"]
@@ -8913,6 +9342,11 @@ export type Database = {
           speed_estimate_snapshot?: Json | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["quote_status_kind"]
+          supplier_address_snapshot?: Json | null
+          supplier_availability_retrieved_at?: string | null
+          supplier_availability_sha256?: string | null
+          supplier_availability_snapshot?: Json | null
+          supplier_availability_source?: string | null
           supplier_name?: string | null
           supplier_product_id?: string | null
           supplier_reference?: string | null
@@ -8967,6 +9401,7 @@ export type Database = {
           legacy_compliance_status?:
             | Database["public"]["Enums"]["legacy_compliance_status_enum"]
             | null
+          likely_service_date?: string | null
           locked_at?: string | null
           margin_amount?: number | null
           margin_status?: Database["public"]["Enums"]["margin_status_kind"]
@@ -9011,6 +9446,11 @@ export type Database = {
           speed_estimate_snapshot?: Json | null
           speed_notes?: string | null
           status?: Database["public"]["Enums"]["quote_status_kind"]
+          supplier_address_snapshot?: Json | null
+          supplier_availability_retrieved_at?: string | null
+          supplier_availability_sha256?: string | null
+          supplier_availability_snapshot?: Json | null
+          supplier_availability_source?: string | null
           supplier_name?: string | null
           supplier_product_id?: string | null
           supplier_reference?: string | null
@@ -9039,6 +9479,13 @@ export type Database = {
             foreignKeyName: "quotes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "quotes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -9055,6 +9502,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "quotes_customer_id_fkey"
@@ -9518,6 +9972,20 @@ export type Database = {
             foreignKeyName: "service_activation_outbox_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "service_activation_outbox_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_service_billing_issues"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "service_activation_outbox_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
             referencedRelation: "services"
             referencedColumns: ["id"]
           },
@@ -9677,6 +10145,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
             foreignKeyName: "service_cancellation_cases_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -9703,6 +10185,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_services"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_service_billing_issues"
+            referencedColumns: ["service_id"]
           },
           {
             foreignKeyName: "service_cancellation_cases_service_id_fkey"
@@ -11102,6 +11598,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
             foreignKeyName: "service_cancellation_cases_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -11128,6 +11638,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_services"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_service_billing_issues"
+            referencedColumns: ["service_id"]
           },
           {
             foreignKeyName: "service_cancellation_cases_service_id_fkey"
@@ -11233,6 +11757,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
             foreignKeyName: "contract_acceptances_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -11245,6 +11783,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "contract_acceptances_customer_id_fkey"
@@ -11465,6 +12010,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_profile"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "contract_summaries_customer_id_fkey"
@@ -11743,6 +12295,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_contract_summaries"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
           },
           {
             foreignKeyName: "order_journeys_quote_id_fkey"
@@ -12491,6 +13057,153 @@ export type Database = {
           },
         ]
       }
+      occta_contract_integrity_issues: {
+        Row: {
+          contract_summary_id: string | null
+          cs_number: string | null
+          customer_id: string | null
+          issue_code: string | null
+          terms_version: string | null
+          version: number | null
+        }
+        Insert: {
+          contract_summary_id?: string | null
+          cs_number?: string | null
+          customer_id?: string | null
+          issue_code?: never
+          terms_version?: string | null
+          version?: number | null
+        }
+        Update: {
+          contract_summary_id?: string | null
+          cs_number?: string | null
+          customer_id?: string | null
+          issue_code?: never
+          terms_version?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "contract_summaries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      occta_customer_360_control: {
+        Row: {
+          account_number: string | null
+          actual_money_received: number | null
+          cip_number: string | null
+          contract_information_pack_id: string | null
+          contract_information_pack_version: number | null
+          contract_information_pdf_sha256: string | null
+          contract_summary_id: string | null
+          contract_summary_pdf_sha256: string | null
+          contract_summary_version: number | null
+          contract_type: string | null
+          contracted_service_price: number | null
+          cs_number: string | null
+          customer_id: string | null
+          customer_name: string | null
+          dd_provider_reference: string | null
+          dd_provider_status: string | null
+          email: string | null
+          minimum_term_end_date: string | null
+          notice_period_days: number | null
+          open_cancellation_count: number | null
+          open_complaint_count: number | null
+          open_invoice_balance: number | null
+          open_invoice_count: number | null
+          plan_name: string | null
+          service_address: string | null
+          service_billing_issue: string | null
+          service_id: string | null
+          service_status: string | null
+          service_type: string | null
+          terms_version: string | null
+        }
+        Relationships: []
+      }
+      occta_dd_state_issues: {
+        Row: {
+          customer_id: string | null
+          issue_code: string | null
+          local_dd_setup_status: string | null
+          local_payment_method_selected: boolean | null
+          payment_method_id: string | null
+          provider_mandate_status: string | null
+          provider_reference: string | null
+          service_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_methods_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "customer_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_methods_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "payment_methods_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "occta_service_billing_issues"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "payment_methods_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      occta_service_billing_issues: {
+        Row: {
+          actual_activation_date: string | null
+          billing_enabled: boolean | null
+          contract_summary_id: string | null
+          customer_id: string | null
+          issue_code: string | null
+          next_billing_date: string | null
+          order_id: string | null
+          service_id: string | null
+          service_status: string | null
+        }
+        Relationships: []
+      }
       platform_settings_public: {
         Row: {
           api_mode: string | null
@@ -12644,6 +13357,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_contract_summaries"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_contract_integrity_issues"
+            referencedColumns: ["contract_summary_id"]
+          },
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "occta_customer_360_control"
+            referencedColumns: ["contract_summary_id"]
           },
           {
             foreignKeyName: "quote_events_quote_id_fkey"
@@ -13592,6 +14319,8 @@ export type Database = {
         Returns: {
           api_mode: string
           business_vat_display: string
+          consumer_contract_release_enabled: boolean
+          consumer_contract_release_version: string
           contract_sms_otp_bypass_reason: string | null
           contract_sms_otp_required: boolean
           created_at: string
@@ -13798,6 +14527,10 @@ export type Database = {
       recompute_reward_balances: {
         Args: { _customer_id: string }
         Returns: undefined
+      }
+      resolve_customer_vulnerability_review: {
+        Args: { _note?: string; _review_id: string; _status: string }
+        Returns: Json
       }
       save_quote_submission: {
         Args: {

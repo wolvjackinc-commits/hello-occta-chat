@@ -8,7 +8,7 @@
  * stored fingerprint. Every contractual document renders from this snapshot, so
  * the figures a customer signs are the figures that are committed and billed.
  */
-import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "./networkEvidence.ts";
+import { buildContractSpeedMatrix, matrixHeadline, speedMatrixStatement, type ContractSpeedMatrix } from "./networkEvidence.ts";
 
 /** Deterministic JSON: object keys sorted recursively, arrays order-preserving. */
 export function canonicalJson(value: unknown): string {
@@ -80,6 +80,7 @@ export type Journey2Snapshot = {
     minimum_term_months: number; setup: { option: string; label: string; one_off_incl_vat: number };
     technology: string;
     speed_matrix: ContractSpeedMatrix;
+    speed_basis: "verified_address_network" | "occta_plan_estimate";
     estimated_download_mbps: number; estimated_upload_mbps: number; speed_statement: string;
   };
   supplier_availability: {
@@ -276,14 +277,10 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
       minimum_term_months: session.plan_term === "price_lock_24" ? 24 : 0,
       technology: speedMatrix.technology,
       speed_matrix: speedMatrix,
-      estimated_download_mbps: speedMatrix.normally_available_download_mbps,
-      estimated_upload_mbps: speedMatrix.normally_available_upload_mbps,
-      speed_statement:
-        `Verified address-specific broadband speeds: minimum ${speedMatrix.minimum_download_mbps}/${speedMatrix.minimum_upload_mbps} Mbps, ` +
-        `normally available ${speedMatrix.normally_available_download_mbps}/${speedMatrix.normally_available_upload_mbps} Mbps, ` +
-        `maximum ${speedMatrix.maximum_download_mbps}/${speedMatrix.maximum_upload_mbps} Mbps, and advertised plan speed ` +
-        `${speedMatrix.advertised_download_mbps}/${speedMatrix.advertised_upload_mbps} Mbps (download/upload). ` +
-        `Source: verified network evidence retrieved ${speedMatrix.source_retrieved_at}.`,
+      speed_basis: speedMatrix.basis,
+      estimated_download_mbps: matrixHeadline(speedMatrix).download,
+      estimated_upload_mbps: matrixHeadline(speedMatrix).upload,
+      speed_statement: speedMatrixStatement(speedMatrix),
       setup: {
         option: String(priced.setup.option),
         label: String(priced.setup.label),

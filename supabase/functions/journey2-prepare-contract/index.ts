@@ -21,13 +21,13 @@ import {
 import { loadJourneySettings, resolveJourney2Price, planNameFor, JOURNEY2_SETUP } from "../_shared/journey2.ts";
 import { RESOLVER_VERSION } from "../_shared/buildPlanResolver.ts";
 import {
-  buildJourney2Snapshot, snapshotFingerprint, verifyStoredSnapshot,
+  buildJourney2Snapshot, snapshotFingerprint, canonicalJson, verifyStoredSnapshot,
   speedEstimatesFor, speedStatementFor,
   type Journey2Snapshot,
 } from "../_shared/journey2Snapshot.ts";
 import { buildJourney2DocumentPack } from "../_shared/journey2Docs.ts";
 import { resolveOfferPromotion } from "../_shared/offerCampaign.ts";
-import { buildContractSpeedMatrix } from "../_shared/networkEvidence.ts";
+import { buildContractSpeedMatrix, buildPlanEstimateEvidence, evidenceSha256, matrixHeadline } from "../_shared/networkEvidence.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16) });
@@ -96,38 +96,37 @@ Deno.serve(async (req) => {
   if (!session.billing_anchor_day || !session.dd_masked) {
     return jsonResponse({ error: "billing_required", message: "Complete your billing day and Direct Debit details before we prepare your contract." }, 409);
   }
-  // Fail closed: no binding broadband documents without verified,
-  // supplier-neutral network evidence. The order stays captured and staff are
-  // tasked to confirm availability; no acceptance/OTP is offered yet.
-  const speedGate = buildContractSpeedMatrix(session.supplier_availability_snapshot, session.speed_bucket);
-  const hashOk = /^[0-9a-f]{64}$/i.test(String(session.supplier_availability_sha256 ?? ""));
-  if (!speedGate.ok || !hashOk) {
-    const reason = speedGate.ok ? "network_evidence_hash_missing" : speedGate.error;
-    await supabase.from("customer_journey_sessions").update({
-      network_validation_status: "pending",
-      manual_review_reason: `pending_network_validation:${reason}`.slice(0, 200),
-      last_activity_at: new Date().toISOString(),
-    }).eq("id", session.id);
-    try {
-      const title = `Network validation required — journey ${String(session.id).slice(0, 8)}`;
-      const { data: existingTask } = await supabase.from("admin_tasks")
-        .select("id").eq("title", title).in("status", ["open", "in_progress"]).limit(1).maybeSingle();
-      if (!existingTask) {
-        await supabase.from("admin_tasks").insert({
-          title,
-          description: `Confirm network technology and min/normal/max speeds for ${String(address?.address_line_1 ?? "")}, ${String(session.postcode ?? "")} (plan ${String(session.speed_bucket)}), then record verified network evidence on journey session ${session.id}. Reason: ${reason}. No contract documents have been issued.`,
-          status: "open",
-          priority: "high",
-        });
-      }
-    } catch { /* task creation is non-fatal; the contract gate is authoritative */ }
-    return jsonResponse({
-      ok: false,
-      error: "pending_network_validation",
-      pending_network_validation: true,
-      reason,
-      message: "Your order is saved. OCCTA will confirm network availability and speeds at your address, then send your contract documents before you accept or pay.",
-    }, 200);
+  // Speed basis: genuine verified supplier-neutral evidence is preferred.
+  // Without it, the journey continues on a deterministic server-generated
+  // OCCTA plan-estimate snapshot (never browser-supplied, never presented as
+  // address-specific). Staff network validation is optional and non-blocking.
+  if (!session.contract_snapshot_id) {
+    const verifiedGate = buildContractSpeedMatrix(session.supplier_availability_snapshot, session.speed_bucket);
+    const hashOk = /^[0-9a-f]{64}$/i.test(String(session.supplier_availability_sha256 ?? ""));
+    const useVerified = verifiedGate.ok && verifiedGate.matrix.basis === "verified_address_network" && hashOk;
+    const reuseEstimate = verifiedGate.ok && verifiedGate.matrix.basis === "occta_plan_estimate" && hashOk &&
+      session.network_validation_status === "plan_estimate_used";
+    if (!useVerified && !reuseEstimate) {
+      const est = buildPlanEstimateEvidence(session.speed_bucket, session.postcode);
+      if (!est) return jsonResponse({ error: "plan_not_selected" }, 409);
+      const estHash = await evidenceSha256(canonicalJson(est));
+      const patchEst = {
+        supplier_availability_snapshot: est,
+        supplier_availability_sha256: estHash,
+        supplier_availability_retrieved_at: est.retrieved_at,
+        supplier_availability_source: est.source,
+        network_validation_status: "plan_estimate_used",
+        manual_review_reason: null,
+        likely_service_date: session.likely_service_date ?? session.preferred_start_date ?? null,
+        last_activity_at: new Date().toISOString(),
+      };
+      const saved = await supabase.from("customer_journey_sessions").update(patchEst).eq("id", session.id).is("contract_snapshot_id", null);
+      if (saved.error) return jsonResponse({ error: "speed_snapshot_save_failed", retryable: true }, 503);
+      Object.assign(session, patchEst);
+    } else if (useVerified && session.network_validation_status !== "verified") {
+      await supabase.from("customer_journey_sessions").update({ network_validation_status: "verified" }).eq("id", session.id);
+      session.network_validation_status = "verified";
+    }
   }
   if (!session.likely_service_date) {
     return jsonResponse({ error: "likely_service_date_required" }, 409);
@@ -338,8 +337,8 @@ Deno.serve(async (req) => {
       speed_bucket: session.speed_bucket,
       plan_term: session.plan_term,
       router_option: snapshot.router,
-      estimated_download_speed: snapshot.product.speed_matrix.normally_available_download_mbps,
-      estimated_upload_speed: snapshot.product.speed_matrix.normally_available_upload_mbps,
+      estimated_download_speed: matrixHeadline(snapshot.product.speed_matrix).download,
+      estimated_upload_speed: matrixHeadline(snapshot.product.speed_matrix).upload,
       speed_notes: snapshot.product.speed_statement,
       supplier_address_snapshot: session.supplier_address_snapshot,
       supplier_availability_snapshot: session.supplier_availability_snapshot,

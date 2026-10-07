@@ -147,7 +147,7 @@ export type Journey2Session = {
   supplier_availability_sha256?: string | null;
   supplier_availability_retrieved_at?: string | null;
   supplier_availability_source?: string | null;
-  network_validation_status?: "pending" | "verified" | "failed" | null;
+  network_validation_status?: "pending" | "verified" | "failed" | "plan_estimate_used" | "legacy_not_required" | null;
   likely_service_date?: string | null;
   utm_snapshot?: { source_type?: string };
   expires_at: string;

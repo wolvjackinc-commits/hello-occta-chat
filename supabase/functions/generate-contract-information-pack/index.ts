@@ -22,7 +22,7 @@ import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidators.ts";
 import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
-import { buildContractSpeedMatrix } from "../_shared/networkEvidence.ts";
+import { buildContractSpeedMatrix, speedMatrixStatement, type VerifiedContractSpeedMatrix } from "../_shared/networkEvidence.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     ? buildContractSpeedMatrix((q as any).supplier_availability_snapshot, (q as any).speed_bucket)
     : null;
   if (speedGate && !speedGate.ok) {
-    return jsonResponse({ error: speedGate.error, message: "Verified address-specific speed evidence is required before Contract Information can be issued." }, 409);
+    return jsonResponse({ error: speedGate.error, message: "A server-side speed basis (verified network evidence or OCCTA plan estimate) is required before Contract Information can be issued." }, 409);
   }
   if (isNewConsumerBroadband && !(q as any).likely_service_date) {
     return jsonResponse({ error: "likely_service_date_required" }, 409);
@@ -264,15 +264,18 @@ function renderPackPdf(opts: {
   const speedMatrix = (opts.quote as any).supplier_availability_snapshot && (opts.quote as any).speed_bucket
     ? buildContractSpeedMatrix((opts.quote as any).supplier_availability_snapshot, (opts.quote as any).speed_bucket)
     : null;
-  if (speedMatrix?.ok) {
-    const s = speedMatrix.matrix;
+  if (speedMatrix?.ok && speedMatrix.matrix.basis === "occta_plan_estimate") {
+    para(speedMatrixStatement(speedMatrix.matrix));
+    para("No address-specific minimum, normally available or maximum speed has been measured for this order. If, once provisioned, your line cannot support the selected plan, OCCTA will tell you and you will not be held to a plan your line cannot deliver.");
+  } else if (speedMatrix?.ok) {
+    const s = speedMatrix.matrix as VerifiedContractSpeedMatrix;
     para(
       `Technology: ${s.technology}. Address-specific download speeds: minimum ${s.minimum_download_mbps} Mbps; normally available ${s.normally_available_download_mbps} Mbps; maximum ${s.maximum_download_mbps} Mbps; advertised plan speed ${s.advertised_download_mbps} Mbps.`
     );
     para(
-      `Address-specific upload speeds: minimum ${s.minimum_upload_mbps} Mbps; normally available ${s.normally_available_upload_mbps} Mbps; maximum ${s.maximum_upload_mbps} Mbps; advertised plan speed ${s.advertised_upload_mbps} Mbps. Supplier evidence retrieved ${s.source_retrieved_at}.`
+      `Address-specific upload speeds: minimum ${s.minimum_upload_mbps} Mbps; normally available ${s.normally_available_upload_mbps} Mbps; maximum ${s.maximum_upload_mbps} Mbps; advertised plan speed ${s.advertised_upload_mbps} Mbps. Verified network evidence retrieved ${s.source_retrieved_at}.`
     );
-    para("These figures are frozen from the exact-address supplier availability check used for this order. Contact OCCTA if your service is materially and repeatedly below the contractual minimum so we can investigate and apply the remedies available under your agreement and applicable rules.");
+    para("These figures are frozen from the verified address-specific network evidence used for this order. Contact OCCTA if your service is materially and repeatedly below the contractual minimum so we can investigate and apply the remedies available under your agreement and applicable rules.");
   } else {
     para(SPEED_ESTIMATE_DISCLAIMER);
   }

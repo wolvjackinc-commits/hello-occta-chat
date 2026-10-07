@@ -15,6 +15,13 @@
       "when": 1791360240832,
       "tag": "0001_journey_network_validation_status",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791365707194,
+      "tag": "0002_plan_estimate_speed_basis",
+      "breakpoints": true
     }
   ]
 }

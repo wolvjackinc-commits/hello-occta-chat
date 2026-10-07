@@ -283,20 +283,6 @@ export default function OrderJourney() {
     );
   }
 
-  if (error === "pending_network_validation" && session) {
-    return (
-      <Layout>
-        <SEO title="Order received | OCCTA Limited" description="Your OCCTA broadband order is saved while we confirm network availability." canonical="/order" noIndex />
-        <section className="mx-3 my-6 max-w-xl border-4 border-foreground px-5 py-8 sm:mx-auto sm:my-10 sm:px-8 sm:py-12">
-          <h1 className="font-display uppercase text-2xl mb-3">Your order is saved</h1>
-          <p className="text-sm mb-3">Thanks — we have your address, plan and details. Before anything becomes binding, OCCTA will confirm the exact network technology, speeds and availability at your address.</p>
-          <p className="text-sm mb-6">We'll then email you your Contract Summary and Contract Information documents to review. You won't be asked to accept, sign or pay anything until then, and nothing has been charged.</p>
-          <Button asChild variant="outline" className="w-full"><a href="tel:08002606626">Questions? Call 0800 260 6626</a></Button>
-        </section>
-      </Layout>
-    );
-  }
-
   if (error || !session) {
     const expired = error === "session_expired";
     const networkError = error === "network_error";

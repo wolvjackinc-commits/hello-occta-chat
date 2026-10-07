@@ -115,7 +115,7 @@ export const guides: Guide[] = [
         heading: 'Hidden Costs to Watch For',
         paragraphs: ['Before signing up, check for these common traps:'],
         bullets: [
-          'Mid-contract price rises (CPI + 3.9% is common with large providers)',
+          'Scheduled price changes shown in pounds and pence for the specific tariff',
           'Router delivery or postage charges',
           'Early termination fees if you need to cancel',
           'Out-of-contract price hikes when your deal ends',
@@ -241,7 +241,7 @@ export const guides: Guide[] = [
         paragraphs: ['To use Digital Voice, you need:'],
         bullets: [
           'An active broadband connection (Digital Voice requires broadband to work)',
-          'A broadband router with a phone port (included with OCCTA broadband)',
+          'A compatible router or ATA where required; the order journey confirms whether equipment is supplied and any charge',
           'A standard home phone handset (most existing phones work)',
         ],
       },
@@ -532,7 +532,7 @@ export const guides: Guide[] = [
         heading: 'Why Students Need No-Contract Broadband',
         paragraphs: [
           'Most student tenancies last 9-12 months, but big providers want 18-24 month contracts. That means paying for broadband in a house you have already left, or paying expensive exit fees.',
-          'No-contract broadband solves this. Sign up when you move in, cancel when you move out. No penalties.',
+          'Flex 30 may suit renters who want no fixed minimum term. Moving-home, notice and any applicable network charges still follow the accepted agreement.',
         ],
       },
       {
@@ -992,7 +992,7 @@ guides.push({
   keywords: 'broadband price lock, no price rise broadband, avoid broadband price rise, broadband price increase UK, CPI broadband, fixed price broadband UK',
   category: 'broadband',
   categoryLabel: 'Broadband',
-  intro: 'Most big UK broadband providers raise their prices every April — often by CPI + 3.9% — even if you signed a two-year contract. Here is exactly how these price rises work, why they happen, and how to avoid them entirely with a genuine Price Lock plan.',
+  intro: 'UK providers use different price-change policies. For any tariff with a scheduled change, compare the pounds-and-pence amount and timing shown before sign-up. OCCTA Price Lock 24 under contract version 2026.10.1 has no scheduled CPI-, RPI-, inflation-linked or percentage-based increase on the recurring residential broadband subscription.' ,
   sections: [
     {
       heading: 'How UK broadband price rises actually work',

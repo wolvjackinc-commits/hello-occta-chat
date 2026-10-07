@@ -21,8 +21,9 @@ function ageFrom(dob: string): number | null {
 }
 
 /**
- * Journey 2 — customer details. Everything the contract, provisioning and
- * billing records need is captured here, before the start date and billing.
+ * Journey 2 — customer details. Required facts stay server-validated, while
+ * optional/current-provider/support questions are visually tucked away so the
+ * normal checkout is short and easy to scan.
  */
 export default function DetailsStep({
   session, saving, onSave, onBack,
@@ -33,13 +34,11 @@ export default function DetailsStep({
   onBack: () => void;
 }) {
   const d = session.customer_details;
-  // Phone-number questions only apply when a voice service is being taken.
   const voiceSelected = (session.selected_addons ?? []).includes("digital_voice");
   const [fullName, setFullName] = useState(d?.full_name ?? "");
   const [email, setEmail] = useState(d?.email ?? "");
   const [phone, setPhone] = useState(d?.phone ?? "");
   const [dob, setDob] = useState(d?.date_of_birth ?? "");
-  const [age18, setAge18] = useState(false);
   const [billingSame, setBillingSame] = useState(d?.billing_address_same !== false);
   const [bLine1, setBLine1] = useState(d?.billing_address?.address_line_1 ?? "");
   const [bLine2, setBLine2] = useState(d?.billing_address?.address_line_2 ?? "");
@@ -53,7 +52,6 @@ export default function DetailsStep({
   const [access, setAccess] = useState(d?.accessibility_needs ?? "");
   const [vulnerability, setVulnerability] = useState(d?.vulnerability_support_needs ?? "");
   const [marketing, setMarketing] = useState(!!d?.marketing_consent);
-  const [privacyAck, setPrivacyAck] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -65,7 +63,7 @@ export default function DetailsStep({
     const age = ageFrom(dob);
     if (age === null) return setErr("Please enter your date of birth.");
     if (age < 18) return setErr("You must be 18 or over to take out this service.");
-    if (!age18) return setErr("Please confirm you're 18 or over.");
+    if (age > 120) return setErr("Please enter a valid date of birth.");
     if (!billingSame && (bLine1.trim().length < 2 || bTown.trim().length < 2 || bPostcode.trim().length < 3)) {
       return setErr("Please complete your billing address.");
     }
@@ -75,13 +73,13 @@ export default function DetailsStep({
     if (voiceSelected && numberAction === "port_in" && numberToPort.replace(/\D/g, "").length < 10) {
       return setErr("Please enter the number you'd like to bring with you.");
     }
-    if (!privacyAck) return setErr("Please confirm you've read how we handle your information.");
     setErr(null);
     onSave({
       full_name: fullName.trim(),
       email: email.trim().toLowerCase(),
       phone: phone.trim(),
       date_of_birth: dob,
+      // Derived from the server-validated DOB instead of asking for a redundant tick.
       age_18_confirmed: true,
       billing_address_same: billingSame,
       billing_address: billingSame ? null : {
@@ -98,6 +96,7 @@ export default function DetailsStep({
       accessibility_needs: access.trim() || null,
       vulnerability_support_needs: vulnerability.trim() || null,
       marketing_consent: marketing,
+      // The privacy notice is presented directly beside the continue action.
       privacy_acknowledged: true,
     });
   };
@@ -107,7 +106,7 @@ export default function DetailsStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Your details</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          We use these to prepare your contract, set up your service and keep you updated.
+          Just the information we need to prepare your agreement and service.
         </p>
       </div>
 
@@ -115,7 +114,7 @@ export default function DetailsStep({
         <div className="sm:col-span-2">
           <Label htmlFor="j2-name">Full name</Label>
           <Input id="j2-name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required maxLength={120} readOnly className="bg-muted" />
-          <p className="text-[10px] text-muted-foreground mt-1">Contact details are locked to this order session.</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Locked to this order session.</p>
         </div>
         <div>
           <Label htmlFor="j2-email">Email address</Label>
@@ -129,26 +128,24 @@ export default function DetailsStep({
         <div>
           <Label htmlFor="j2-dob">Date of birth</Label>
           <Input id="j2-dob" type="date" value={dob ?? ""} onChange={(e) => setDob(e.target.value)} required />
+          <p className="mt-1 text-[10px] text-muted-foreground">Used to confirm you are 18 or over. No extra checkbox needed.</p>
         </div>
       </div>
 
-      <div className="flex items-start gap-3 border-2 border-border p-4">
-        <Checkbox id="j2-age" checked={age18} onCheckedChange={(v) => setAge18(v === true)} className="mt-0.5" />
-        <Label htmlFor="j2-age" className="text-sm font-normal leading-relaxed">
-          I confirm I'm 18 or over and able to enter into this agreement.
-        </Label>
-      </div>
-
-      <fieldset className="space-y-3 border-2 border-border p-4">
-        <legend className="font-display uppercase text-xs tracking-widest px-1">Billing address</legend>
-        <div className="flex items-start gap-3">
-          <Checkbox id="j2-billing-same" checked={billingSame} onCheckedChange={(v) => setBillingSame(v === true)} className="mt-0.5" />
-          <Label htmlFor="j2-billing-same" className="text-sm font-normal leading-relaxed">
-            My billing address is the same as my service address.
-          </Label>
+      <div className="border-2 border-border p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-display uppercase text-xs tracking-widest">Billing address</p>
+            <p className="text-xs text-muted-foreground">
+              {billingSame ? "Same as your service address." : "Using a different billing address."}
+            </p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => setBillingSame((v) => !v)}>
+            {billingSame ? "Use a different address" : "Use service address"}
+          </Button>
         </div>
         {!billingSame && (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="j2-b1">Address line 1</Label>
               <Input id="j2-b1" value={bLine1} onChange={(e) => setBLine1(e.target.value)} maxLength={120} />
@@ -167,13 +164,15 @@ export default function DetailsStep({
             </div>
           </div>
         )}
-      </fieldset>
+      </div>
 
-      <fieldset className="space-y-4 border-2 border-border p-4">
-        <legend className="font-display uppercase text-xs tracking-widest px-1">Your current service</legend>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <details className="border-2 border-border p-4">
+        <summary className="cursor-pointer font-display uppercase text-xs tracking-widest">
+          Current provider & switching details <span className="font-sans normal-case tracking-normal text-muted-foreground">(optional)</span>
+        </summary>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="j2-provider">Current provider (optional)</Label>
+            <Label htmlFor="j2-provider">Current provider</Label>
             <Input id="j2-provider" value={provider ?? ""} onChange={(e) => setProvider(e.target.value)} maxLength={80} />
           </div>
           <div>
@@ -217,40 +216,41 @@ export default function DetailsStep({
             </>
           )}
         </div>
-      </fieldset>
+      </details>
 
-      <fieldset className="space-y-4 border-2 border-border p-4">
-        <legend className="font-display uppercase text-xs tracking-widest px-1">Support needs (optional)</legend>
-        <div>
-          <Label htmlFor="j2-access">Accessibility needs</Label>
-          <Textarea id="j2-access" value={access ?? ""} onChange={(e) => setAccess(e.target.value)} maxLength={600} rows={2} />
+      <details className="border-2 border-border p-4">
+        <summary className="cursor-pointer font-display uppercase text-xs tracking-widest">
+          Accessibility or extra support <span className="font-sans normal-case tracking-normal text-muted-foreground">(optional)</span>
+        </summary>
+        <div className="mt-4 space-y-4">
+          <div>
+            <Label htmlFor="j2-access">Accessibility needs</Label>
+            <Textarea id="j2-access" value={access ?? ""} onChange={(e) => setAccess(e.target.value)} maxLength={600} rows={2} />
+          </div>
+          <div>
+            <Label htmlFor="j2-vuln">Anything that means you'd need extra support</Label>
+            <Textarea id="j2-vuln" value={vulnerability ?? ""} onChange={(e) => setVulnerability(e.target.value)} maxLength={600} rows={2} />
+          </div>
         </div>
-        <div>
-          <Label htmlFor="j2-vuln">Anything that means you'd need extra support</Label>
-          <Textarea id="j2-vuln" value={vulnerability ?? ""} onChange={(e) => setVulnerability(e.target.value)} maxLength={600} rows={2} />
-        </div>
-      </fieldset>
+      </details>
 
       <div className="flex items-start gap-3 border-2 border-border p-4">
         <Checkbox id="j2-marketing" checked={marketing} onCheckedChange={(v) => setMarketing(v === true)} className="mt-0.5" />
         <Label htmlFor="j2-marketing" className="text-sm font-normal leading-relaxed">
-          Email me occasional OCCTA offers and service news. Optional — your order works either way, and you can opt out at any time.
+          Email me occasional OCCTA offers and service news. Optional — your order works either way.
         </Label>
       </div>
 
-      <div className="flex items-start gap-3 border-2 border-border p-4">
-        <Checkbox id="j2-privacy" checked={privacyAck} onCheckedChange={(v) => setPrivacyAck(v === true)} className="mt-0.5" />
-        <Label htmlFor="j2-privacy" className="text-sm font-normal leading-relaxed">
-          I've read how OCCTA handles my information in the{" "}
-          <Link to="/privacy" className="underline">Privacy Policy</Link>.
-        </Label>
-      </div>
+      <p className="text-xs text-muted-foreground">
+        By continuing, you acknowledge that OCCTA will use the information you provided to process this order and provide the service as explained in our{" "}
+        <Link to="/privacy" className="underline">Privacy Policy</Link>.
+      </p>
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 
       <div className="grid gap-3 sm:flex sm:flex-wrap">
         <Button type="button" variant="outline" onClick={onBack}>Back</Button>
-        <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Continue to your start date"}</Button>
+        <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Continue"}</Button>
       </div>
     </form>
   );

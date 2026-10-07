@@ -59,7 +59,7 @@ export default function PlanStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Pick your speed</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {hasVerifiedEvidence ? "These are the OCCTA prices for plans confirmed for your installation address, including VAT." : "These are OCCTA's current speed bands and prices, including VAT. Availability at your address is confirmed before your contract is issued."} No teaser rates and no scheduled mid-contract price rises on Price Lock.
+          {hasVerifiedEvidence ? "These are the OCCTA prices for plans confirmed for your installation address, including VAT." : "These are OCCTA's current plans and prices, including VAT. Speeds shown are OCCTA plan estimates."} No teaser rates and no scheduled mid-contract price rises on Price Lock.
         </p>
       </div>
 
@@ -173,7 +173,7 @@ export default function PlanStep({
               </>
             ) : (
               <>
-                <strong>Network check pending:</strong> Speeds shown are OCCTA's plan bands, not a promise for your address. OCCTA will confirm the exact network technology, speeds and availability before issuing your Contract Summary and Contract Information. You won't be asked to accept or pay until then.{" "}
+                <strong>Plan speed estimates:</strong> Speeds shown are OCCTA's advertised estimates for each plan, not measurements for your address. Availability and actual line performance are subject to provisioning, and your Contract Summary states the speed basis used.{" "}
               </>
             )}
             OCCTA will not substitute another plan or price without your agreement.

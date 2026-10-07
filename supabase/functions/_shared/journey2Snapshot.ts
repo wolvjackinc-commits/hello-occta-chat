@@ -103,12 +103,13 @@ export type Journey2Snapshot = {
     preferred_start_date: string;
     likely_service_date: string;
     likely_service_date_basis: string;
-    billing_day: number;
+    billing_day: number | null;
     expected_first_collection_rule: string; billing_commencement_rule: string;
   };
   cooling_off: { days: number; acknowledged: boolean; statement: string };
   direct_debit: {
-    account_holder_name: string; bank_name: string; last4: string; sort_last2: string;
+    setup_status: "pending_after_contract" | "details_received";
+    account_holder_name: string | null; bank_name: string | null; last4: string | null; sort_last2: string | null;
     guarantee_provided: boolean; advance_notice_days: number;
   };
   legal_document_versions: Record<string, string>;
@@ -321,7 +322,7 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
       preferred_start_date: String(session.preferred_start_date),
       likely_service_date: likelyServiceDate,
       likely_service_date_basis: "Customer-selected target date; provisional until the network confirms the appointment/activation.",
-      billing_day: Number(session.billing_anchor_day),
+      billing_day: session.billing_anchor_day == null ? null : Number(session.billing_anchor_day),
       expected_first_collection_rule: FIRST_COLLECTION_RULE,
       billing_commencement_rule: BILLING_COMMENCEMENT_RULE,
     },
@@ -331,11 +332,12 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
       statement: COOLING_OFF_STATEMENT,
     },
     direct_debit: {
-      account_holder_name: String(mask.account_holder_name ?? ""),
-      bank_name: String(mask.bank_name ?? ""),
-      last4: String(mask.last4 ?? ""),
-      sort_last2: String(mask.sort_last2 ?? ""),
-      guarantee_provided: true,
+      setup_status: mask.last4 ? "details_received" : "pending_after_contract",
+      account_holder_name: mask.account_holder_name ? String(mask.account_holder_name) : null,
+      bank_name: mask.bank_name ? String(mask.bank_name) : null,
+      last4: mask.last4 ? String(mask.last4) : null,
+      sort_last2: mask.sort_last2 ? String(mask.sort_last2) : null,
+      guarantee_provided: !!mask.last4,
       advance_notice_days: 3,
     },
     legal_document_versions: legalVersions ?? {},
@@ -377,11 +379,11 @@ export function snapshotMatchesSession(
     ["preferred_start_date", snapshot.schedule?.preferred_start_date, session.preferred_start_date],
     ["likely_service_date", snapshot.schedule?.likely_service_date, session.likely_service_date ?? session.preferred_start_date],
     ["supplier_availability_sha256", snapshot.supplier_availability?.evidence_sha256, session.supplier_availability_sha256],
-    ["billing_day", Number(snapshot.schedule?.billing_day), Number(session.billing_anchor_day)],
     ["speed_bucket", snapshot.product?.speed_bucket, session.speed_bucket],
     ["contract_term", snapshot.product?.contract_term, session.plan_term],
-    ["dd_last4", snapshot.direct_debit?.last4, (session.dd_masked ?? {}).last4],
-    ["dd_sort_last2", snapshot.direct_debit?.sort_last2, (session.dd_masked ?? {}).sort_last2],
+    // Direct Debit is intentionally collected after contract acceptance, so
+    // bank details/billing day are operational post-contract fields rather than
+    // part of the signed commercial snapshot.
     ["email", snapshot.customer?.email, (session.customer_details ?? {}).email],
   ];
   for (const [field, a, b] of checks) {

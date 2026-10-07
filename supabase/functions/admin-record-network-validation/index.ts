@@ -32,7 +32,7 @@ const Matrix = z.object({
 const Schema = z.object({
   session_id: z.string().uuid(),
   source_label: z.string().trim().min(2).max(120),
-  source_reference: z.string().trim().max(240).optional().nullable(),
+  source_reference: z.string().trim().min(2).max(240),
   address_reference: z.string().trim().max(240).optional().nullable(),
   technology: z.string().trim().min(2).max(80),
   speed_matrix: Matrix,
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
   if (!parsed.success) return jsonResponse({ error: "validation", details: parsed.error.flatten() }, 400);
   const i = parsed.data;
 
-  if (/icuk|interdns/i.test(i.source_label) || /icuk|interdns/i.test(i.source_reference ?? "")) {
+  if (/icuk|interdns/i.test(i.source_label) || /icuk|interdns/i.test(i.source_reference)) {
     return jsonResponse({
       error: "retired_supplier_not_allowed",
       message: "This supplier/source has been retired from OCCTA and cannot be used for new contract evidence.",
@@ -57,6 +57,32 @@ Deno.serve(async (req) => {
   }
 
   const supabase = getServiceClient();
+
+  const { data: activeSupplier } = await supabase
+    .from("supplier_profiles")
+    .select("id, supplier_name, status")
+    .eq("supplier_name", i.source_label)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!activeSupplier) {
+    return jsonResponse({
+      error: "active_supplier_source_required",
+      message: "Choose an active supplier configured in OCCTA before recording network evidence.",
+    }, 409);
+  }
+  const { count: broadbandCount } = await supabase
+    .from("supplier_products")
+    .select("id", { count: "exact", head: true })
+    .eq("supplier_id", activeSupplier.id)
+    .eq("service_type", "broadband")
+    .eq("active", true);
+  if (!(Number(broadbandCount ?? 0) > 0)) {
+    return jsonResponse({
+      error: "supplier_has_no_active_broadband_products",
+      message: "The selected supplier has no active broadband products configured in OCCTA.",
+    }, 409);
+  }
+
   const { data: session, error: sessionErr } = await supabase
     .from("customer_journey_sessions")
     .select("id, status, postcode, service_address, speed_bucket, plan_term, preferred_start_date, likely_service_date, contract_snapshot_id")
@@ -92,7 +118,7 @@ Deno.serve(async (req) => {
   const evidence: VerifiedNetworkEvidence = {
     evidence_version: "network-validation-v1",
     source: i.source_label,
-    source_reference: i.source_reference ?? null,
+    source_reference: i.source_reference,
     verified_exact_address: true,
     retrieved_at: now,
     postcode: String(session.postcode).toUpperCase(),
@@ -131,7 +157,7 @@ Deno.serve(async (req) => {
     speed_bucket: b,
     plan_term: session.plan_term,
     source_label: i.source_label,
-    source_reference: i.source_reference ?? null,
+    source_reference: i.source_reference,
     evidence_snapshot: evidence,
     evidence_sha256: hash,
     validated_at: now,

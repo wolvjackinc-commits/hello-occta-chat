@@ -308,7 +308,7 @@ ${speedMatrixStatement(contractSpeedMatrix)}`
     notice_period_days: notice.days,
     etf_policy_snapshot: etfPolicySnapshot,
     price_change_snapshot: priceChangeSnapshot,
-    payment_method_snapshot: journeyMode ? "direct_debit_setup_request" : null,
+    payment_method_snapshot: journeyMode ? "direct_debit_to_be_set_up_after_contract_acceptance" : null,
     billing_start_rule: "confirmed_service_live",
     speed_estimate_snapshot: contractSpeedMatrix,
     activation_fee_snapshot: { label: "Setup", amount_incl_vat: Number(q.setup_gross ?? 0) },

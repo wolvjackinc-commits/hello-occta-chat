@@ -22,7 +22,7 @@ import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidators.ts";
 import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
-import { buildContractSpeedMatrix, speedMatrixStatement } from "../_shared/networkEvidence.ts";
+import { buildContractSpeedMatrix, speedMatrixStatement, type VerifiedContractSpeedMatrix } from "../_shared/networkEvidence.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -268,7 +268,7 @@ function renderPackPdf(opts: {
     para(speedMatrixStatement(speedMatrix.matrix));
     para("No address-specific minimum, normally available or maximum speed has been measured for this order. If, once provisioned, your line cannot support the selected plan, OCCTA will tell you and you will not be held to a plan your line cannot deliver.");
   } else if (speedMatrix?.ok) {
-    const s = speedMatrix.matrix;
+    const s = speedMatrix.matrix as VerifiedContractSpeedMatrix;
     para(
       `Technology: ${s.technology}. Address-specific download speeds: minimum ${s.minimum_download_mbps} Mbps; normally available ${s.normally_available_download_mbps} Mbps; maximum ${s.maximum_download_mbps} Mbps; advertised plan speed ${s.advertised_download_mbps} Mbps.`
     );

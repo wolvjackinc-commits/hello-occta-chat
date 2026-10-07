@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
   gate("dedicated_test_session_table", "The test session was created in journey2_test_sessions");
   for (const stage of [
     "address", "plan", "router", "extras", "details", "start_date",
-    "billing", "contract", "review", "complete",
+    "contract", "billing", "review", "complete",
   ]) gate(`stage_${stage}`, `The run completed the ${stage.replace("_", " ")} stage`);
   gate("snapshot_hash_byte_for_byte", "The canonical snapshot SHA-256 matched byte-for-byte");
   gate("tamper_rejected", "A deliberately tampered snapshot copy was rejected");
@@ -134,8 +134,8 @@ Deno.serve(async (req) => {
   gate("zero_due_today", "Nothing was payable today");
   gate("vat_matches_settings", "VAT matched the configured rate");
   gate("one_offs_on_first_bill", "One-off charges were placed on the estimated first bill");
-  gate("dd_state_details_received", "Direct Debit reached details_received after billing");
-  gate("dd_state_pending_contract", "Direct Debit reached pending_contract at the contract stage");
+  gate("stage_contract_acceptance", "The contract was accepted before Direct Debit details were captured");
+  gate("dd_state_details_received", "Direct Debit reached details_received after contract acceptance");
   gate("dd_state_setup_requested_test", "Direct Debit finished at setup_requested_test");
   gate("dd_never_live_state", "Direct Debit never entered a live activation state");
   gate("dd_encrypted_in_test", "Test bank details were stored encrypted only");

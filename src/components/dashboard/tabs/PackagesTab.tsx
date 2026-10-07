@@ -143,7 +143,7 @@ export function PackagesTab({ userId }: { userId: string }) {
             ) : (
               <div className="space-y-3">
                 {items.map((s) => {
-                  const contract = s.contract_type || (s.plan_name || "").toLowerCase().includes("saver") ? "Contract Saver" : "Flex";
+                  const contract = s.contract_type || (s.plan_name || "").toLowerCase().includes("saver") ? "Price Lock 24" : "Flex 30";
                   const inMinTerm =
                     s.minimum_term_end_date && new Date(s.minimum_term_end_date) > new Date();
                   return (

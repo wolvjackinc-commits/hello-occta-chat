@@ -216,7 +216,7 @@ export const learnPages: LearnPage[] = [
       { heading: "Step 1: Check availability", body: "Enter your postcode with the new provider. This confirms your address is in coverage and shows which speed tier your line supports." },
       { heading: "Step 2: Choose your plan and sign up", body: "Pick your speed and complete the online order. You'll set an activation date — usually 10–14 days later." },
       { heading: "Step 3: One Touch Switch does the rest", body: "Your new provider tells your old provider to stop the service on the changeover date. Any early-termination fees the old provider charges must be disclosed up-front so you can accept or cancel." },
-      { heading: "Step 4: Router arrives, service goes live", body: "Your new router arrives a few days before activation. Plug it in on the go-live date — most switches involve zero downtime." },
+      { heading: "Step 4: Router arrives, service goes live", body: "Your new router arrives a few days before activation. Plug it in on the go-live date — most switches are designed to minimise disruption, but a short outage can occur." },
     ],
     faqs: [
       { question: "Do I need to cancel my old provider?", answer: "No. Under One Touch Switch, your new provider handles the cancellation for you." },
@@ -281,7 +281,7 @@ export const learnPages: LearnPage[] = [
     intro: "Because Virgin runs its own cable, leaving is slightly less automatic than switching between Openreach providers. Here's how to do it cleanly without paying for two services at once.",
     sections: [
       { heading: "Call Virgin to cancel", body: "Ring Virgin on 150 (from a Virgin line) or 0345 454 1111 and give 30 days' notice. Ask for the exact final service date in writing/email." },
-      { heading: "Order OCCTA for the day Virgin ends", body: "Book your OCCTA activation for the day after Virgin stops. That way you have zero overlap and zero downtime." },
+      { heading: "Order OCCTA for the day Virgin ends", body: "Book your OCCTA activation for the day after Virgin stops. That can reduce overlap, but activation dates and any downtime risk should be confirmed for the order." },
       { heading: "Return the Virgin equipment", body: "Virgin will send return packaging — post the hub and any V6/TV box back to avoid non-return fees (often £40+)." },
       { heading: "Keep your phone number", body: "Ask Virgin for a PAC (mobile) or ordinary port authority (landline). Give it to OCCTA to keep your number." },
     ],
@@ -409,7 +409,7 @@ export const learnPages: LearnPage[] = [
     title: "Keep your landline number when you switch — OCCTA",
     metaDescription: "How to keep your existing UK landline number when you switch broadband or move to Digital Voice.",
     h1: "Keeping your landline number",
-    shortAnswer: "Your landline number is yours. Give it to OCCTA when you sign up and we'll port it over as part of the switch — usually with zero downtime.",
+    shortAnswer: "Your landline number is yours. Give it to OCCTA when you sign up and we'll port it over as part of the switch — subject to the donating provider and porting process; a short interruption can occur.",
     intro: "You've had the same number for years. You shouldn't have to give it up to save money on your bill.",
     sections: [
       { heading: "Number porting is a legal right", body: "Under Ofcom rules, you can take your number with you when you switch provider. This applies to Digital Voice too." },

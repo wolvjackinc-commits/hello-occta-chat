@@ -8,7 +8,7 @@
  * stored fingerprint. Every contractual document renders from this snapshot, so
  * the figures a customer signs are the figures that are committed and billed.
  */
-import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "./icukAvailability.ts";
+import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "./networkAvailability.ts";
 
 /** Deterministic JSON: object keys sorted recursively, arrays order-preserving. */
 export function canonicalJson(value: unknown): string {
@@ -283,7 +283,7 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
         `normally available ${speedMatrix.normally_available_download_mbps}/${speedMatrix.normally_available_upload_mbps} Mbps, ` +
         `maximum ${speedMatrix.maximum_download_mbps}/${speedMatrix.maximum_upload_mbps} Mbps, and advertised plan speed ` +
         `${speedMatrix.advertised_download_mbps}/${speedMatrix.advertised_upload_mbps} Mbps (download/upload). ` +
-        `Source: ICUK LIVE exact-address availability retrieved ${speedMatrix.source_retrieved_at}.`,
+        `Source: verified exact-address network evidence recorded ${speedMatrix.source_retrieved_at}.`,
       setup: {
         option: String(priced.setup.option),
         label: String(priced.setup.label),
@@ -295,8 +295,8 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
       retrieved_at: String(availability.retrieved_at ?? ""),
       evidence_sha256: availabilityHash,
       address_reference: {
-        nad_key: availability.address_reference?.nad_key ?? null,
-        uprn: availability.address_reference?.uprn ?? null,
+        nad_key: availability.address_reference ?? null,
+        uprn: null,
       },
     },
     router: {

@@ -144,6 +144,7 @@ const AdminFairPricing = lazy(() => import("./pages/admin/FairPricing").then(m =
 const AdminSuppliersGiacomImport = lazy(() => import("./pages/admin/SuppliersGiacomImport").then(m => ({ default: m.AdminSuppliersGiacomImport })));
 const AdminCustomerJourney = lazy(() => import("./pages/admin/CustomerJourney"));
 const AdminJourneyControl = lazy(() => import("./pages/admin/JourneyControl"));
+const AdminNetworkValidation = lazy(() => import("./pages/admin/NetworkValidation"));
 const AdminSimPlans = lazy(() => import("./pages/admin/SimPlansAdmin").then(m => ({ default: m.AdminSimPlans })));
 const AdminSimOrders = lazy(() => import("./pages/admin/SimOrders").then(m => ({ default: m.AdminSimOrders })));
 const AdminBusinessLeads = lazy(() => import("./pages/admin/BusinessLeads"));
@@ -242,6 +243,7 @@ const AnimatedRoutes = () => {
             <Route path="webhook-monitor" element={<Suspense fallback={<AdminRouteFallback />}><AdminWebhookMonitor /></Suspense>} />
             <Route path="notification-settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminNotificationSettings /></Suspense>} />
             <Route path="journey-control" element={<Suspense fallback={<AdminRouteFallback />}><AdminJourneyControl /></Suspense>} />
+            <Route path="network-validation" element={<Suspense fallback={<AdminRouteFallback />}><AdminNetworkValidation /></Suspense>} />
             <Route path="notification-events" element={<Suspense fallback={<AdminRouteFallback />}><AdminNotificationEvents /></Suspense>} />
             <Route path="quote-requests" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuoteRequests /></Suspense>} />
             <Route path="quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminQuotes /></Suspense>} />

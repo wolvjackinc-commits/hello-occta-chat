@@ -21,6 +21,7 @@ import {
   snapshotMatchesSession, type Journey2Snapshot,
 } from "./journey2Snapshot.ts";
 import { buildJourney2DocumentPack, REQUIRED_DOC_TYPES } from "./journey2Docs.ts";
+import type { VerifiedAvailabilityEvidence } from "./icukAvailability.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 export const TEST_LABEL = "TEST — Journey 2 isolated run";
@@ -284,8 +285,57 @@ export async function prepareTestContract(
   if (!priced) return { ok: false, error: "price_unavailable", status: 409 };
 
   const vatPercent = Number((settings as any).vat_default_rate ?? 20);
+
+  // The isolated engine test must exercise the same production snapshot
+  // requirements without calling the real ICUK supplier or writing to live
+  // availability tables. Build deterministic TEST-ONLY supplier evidence in
+  // memory for the selected speed band.
+  const caps: Record<string, { down: number; up: number }> = {
+    essential: { down: 80, up: 20 },
+    superfast: { down: 330, up: 50 },
+    ultrafast: { down: 550, up: 75 },
+    gigabit: { down: 1000, up: 115 },
+  };
+  const cap = caps[String(session.speed_bucket)] ?? caps.essential;
+  const retrievedAt = new Date().toISOString();
+  const testAvailability: VerifiedAvailabilityEvidence = {
+    evidence_version: "icuk-exact-address-v1",
+    source: "ICUK_LIVE_EXACT_ADDRESS",
+    verified_exact_address: true,
+    retrieved_at: retrievedAt,
+    postcode: String(session.postcode ?? "HD33WU"),
+    address_reference: { nad_key: "TEST-NAD", uprn: "TEST-UPRN" },
+    primary_technology: "FTTP",
+    eligible_occta_plans: [session.speed_bucket],
+    products: [{
+      name: `TEST FTTP ${cap.down}/${cap.up}`,
+      technology: "FTTP",
+      available: true,
+      availability_flag: "AVAILABLE",
+      likely_down_mbps: cap.down,
+      likely_up_mbps: cap.up,
+      minimum_down_mbps: cap.down,
+      maximum_down_mbps: cap.down,
+      minimum_up_mbps: cap.up,
+      maximum_up_mbps: cap.up,
+      speed_range: `${cap.down}Mbps`,
+      speed_range_up: `${cap.up}Mbps`,
+    }],
+    exchange: { code: "TEST", name: "TEST EXCHANGE", cabinet_id: null, classification: null },
+    raw_response_sha256: "0".repeat(64),
+  };
+  const availabilityHash = await sha256Hex(JSON.stringify(testAvailability));
+  const snapshotSession = {
+    ...session,
+    supplier_availability_snapshot: testAvailability,
+    supplier_availability_sha256: availabilityHash,
+    supplier_availability_retrieved_at: retrievedAt,
+    supplier_availability_source: "TEST_ISOLATED_ICUK_EVIDENCE",
+    likely_service_date: session.preferred_start_date,
+  };
+
   const snapshot = buildJourney2Snapshot({
-    session,
+    session: snapshotSession,
     priced,
     vatPercent,
     pricingVersion: RESOLVER_VERSION,

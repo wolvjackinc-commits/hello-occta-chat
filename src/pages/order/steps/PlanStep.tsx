@@ -15,17 +15,15 @@ export default function PlanStep({
   onBack: () => void;
 }) {
   const preferred = getPreferredSpeedBucket();
-  const verifiedEvidence = session.supplier_availability_snapshot;
-  const verifiedBuckets = new Set(verifiedEvidence?.eligible_occta_plans ?? []);
-  const verifiedPlans = catalogue.plans.filter((p) => verifiedBuckets.has(p.speed_bucket));
-  const preferredIsAvailable = preferred && verifiedPlans.some((p) => p.speed_bucket === preferred);
-  const initialBucket = session.speed_bucket && verifiedBuckets.has(session.speed_bucket)
+  const availablePlans = catalogue.plans;
+  const preferredIsAvailable = preferred && availablePlans.some((p) => p.speed_bucket === preferred);
+  const initialBucket = session.speed_bucket && availablePlans.some((p) => p.speed_bucket === session.speed_bucket)
     ? session.speed_bucket
-    : (preferredIsAvailable ? preferred : verifiedPlans[0]?.speed_bucket) ?? null;
+    : (preferredIsAvailable ? preferred : availablePlans[0]?.speed_bucket) ?? null;
   const [bucket, setBucket] = useState<SpeedBucket | null>(initialBucket);
   const [term, setTerm] = useState<PlanTerm>(session.plan_term ?? "price_lock_24");
 
-  const plan = verifiedPlans.find((p) => p.speed_bucket === bucket) ?? null;
+  const plan = availablePlans.find((p) => p.speed_bucket === bucket) ?? null;
   const availableTerms = plan ? (Object.keys(plan.terms) as PlanTerm[]) : [];
   const activeTerm = availableTerms.includes(term)
     ? term
@@ -56,7 +54,7 @@ export default function PlanStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Pick your speed</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          These are the OCCTA prices for plans verified as available at your exact installation address, including VAT. No teaser rates and no scheduled mid-contract price rises on Price Lock.
+          These are current OCCTA retail plan prices including VAT. Choose the speed band you want; exact network availability and contractual speeds are validated for your address before we issue an agreement for you to accept.
         </p>
       </div>
 
@@ -69,7 +67,7 @@ export default function PlanStep({
 
       <fieldset className="space-y-3">
         <legend className="font-display uppercase text-xs tracking-widest mb-2">Speed</legend>
-        {verifiedPlans.map((p) => {
+        {availablePlans.map((p) => {
           const selected = p.speed_bucket === bucket;
           const shownTerm = comparisonTerm(p, term);
           const shownPrice = shownTerm ? p.terms[shownTerm]?.monthly_incl_vat : undefined;
@@ -154,9 +152,9 @@ export default function PlanStep({
         </div>
       )}
 
-      {verifiedPlans.length === 0 && (
+      {availablePlans.length === 0 && (
         <p className="text-sm border-2 border-foreground p-4">
-          We cannot sell a broadband plan online for this address because no plan has both verified supplier availability and an exact OCCTA price. Call 0800 260 6626 or email hello@occta.co.uk and we'll check it manually.
+          No exact OCCTA retail price is configured for online ordering right now. Call 0800 260 6626 or email hello@occta.co.uk and we'll prepare the order manually.
         </p>
       )}
 
@@ -164,9 +162,9 @@ export default function PlanStep({
         <div className="flex items-start gap-2">
           <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
           <p>
-            <strong>Address verified:</strong> The plans above are limited to the speed bands returned as orderable by the supplier check for your exact installation address.
-            Network technology: <strong>{verifiedEvidence?.primary_technology || "verified network"}</strong>. The exact address-specific minimum, normally available, maximum and advertised speeds used for your selected plan are frozen into the Contract Summary and Contract Information you review before ordering.
-            OCCTA will not substitute another plan or price without your agreement.
+            <strong>Network validation before agreement:</strong> Choosing a plan here does not claim that every speed band is available at your address.
+            OCCTA validates the exact network route and contractual minimum, normally available, maximum and advertised speeds before issuing your Contract Summary and Contract Information.
+            If the selected plan cannot be supplied, we will contact you with the available options and will not substitute another plan or price without your agreement.
           </p>
         </div>
       </div>

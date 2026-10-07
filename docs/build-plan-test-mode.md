@@ -7,7 +7,7 @@ without sending real customer/admin emails or creating quotes/orders/payments.
 
 `/build-plan?test=1&max_download=80&primary_technology=FTTC`
 
-- `test=1` — enables test mode UI (bypasses ICUK availability gate).
+- `test=1` — enables test mode UI (bypasses live supplier availability gate).
 - `max_download` — speed cap to simulate at the address.
 - `primary_technology` — optional tech hint (FTTP, SOGEA, FTTC, …).
 

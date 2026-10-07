@@ -22,7 +22,7 @@ import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidators.ts";
 import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
-import { buildContractSpeedMatrix } from "../_shared/icukAvailability.ts";
+import { buildContractSpeedMatrix } from "../_shared/networkAvailability.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

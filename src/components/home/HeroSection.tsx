@@ -294,7 +294,7 @@ const HeroSection = () => {
 
                 <div className="flex items-center justify-between py-2 px-3 border-4 border-foreground bg-background mb-3">
                   <p className="font-display text-sm uppercase">
-                    Speed bands shown up to {getSpeedLabel(result.maxDownload)}
+                    {result.networkValidationPending ? "OCCTA broadband plans" : `Speed bands shown up to ${getSpeedLabel(result.maxDownload)}`}
                   </p>
                   <Wifi className="w-4 h-4 text-primary" />
                 </div>
@@ -355,7 +355,7 @@ const HeroSection = () => {
                 </div>
 
                 <p className="text-center text-[10px] leading-relaxed text-muted-foreground pt-3">
-                  Prices shown are OCCTA plan prices. Final network/supplier availability, speed and technology are validated before provisioning. We won't substitute a different plan or price without your agreement.
+                  Prices shown are OCCTA retail plan prices. Exact network availability and contractual speeds are validated for your address before we issue an agreement for you to accept. We won't substitute a different plan or price without your agreement.
                 </p>
               </motion.div>
             )}
@@ -373,7 +373,7 @@ const HeroSection = () => {
                   <div>
                     <p className="font-display uppercase text-sm tracking-wider">Broadband options available to view</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. Final network/supplier availability is validated before provisioning and any different option requires your agreement.
+                      You can still choose the OCCTA plan you're interested in. Exact network availability and contractual speeds are validated before we issue an agreement for you to accept, and any different option requires your agreement.
                     </p>
                   </div>
                 </div>

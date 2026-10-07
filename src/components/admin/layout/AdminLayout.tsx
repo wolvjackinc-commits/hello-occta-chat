@@ -90,6 +90,7 @@ const navSections: NavSection[] = [
     label: "Orders", icon: ClipboardList, children: [
       { label: "All Orders",             to: "/admin/orders" },
       { label: "Installations",          to: "/admin/installations" },
+      { label: "Network Validation",     to: "/admin/network-validation" },
       { label: "Services",               to: "/admin/services" },
       { label: "SIM Orders",             to: "/admin/sim-orders" },
       { label: "SIM Plans",              to: "/admin/sim-plans" },

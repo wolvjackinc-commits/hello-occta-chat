@@ -21,6 +21,7 @@ import {
   snapshotMatchesSession, type Journey2Snapshot,
 } from "./journey2Snapshot.ts";
 import { buildJourney2DocumentPack, REQUIRED_DOC_TYPES } from "./journey2Docs.ts";
+import type { VerifiedNetworkEvidence } from "./networkAvailability.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 export const TEST_LABEL = "TEST — Journey 2 isolated run";
@@ -284,8 +285,55 @@ export async function prepareTestContract(
   if (!priced) return { ok: false, error: "price_unavailable", status: 409 };
 
   const vatPercent = Number((settings as any).vat_default_rate ?? 20);
+
+  // The isolated engine test must exercise the same production snapshot
+  // requirements without calling any real supplier or writing to live
+  // availability tables. Build deterministic TEST-ONLY network evidence in
+  // memory for the selected speed band.
+  const caps: Record<string, { down: number; up: number }> = {
+    essential: { down: 80, up: 20 },
+    superfast: { down: 330, up: 50 },
+    ultrafast: { down: 550, up: 75 },
+    gigabit: { down: 1000, up: 115 },
+  };
+  const cap = caps[String(session.speed_bucket)] ?? caps.essential;
+  const retrievedAt = new Date().toISOString();
+  const testAvailability: VerifiedNetworkEvidence = {
+    evidence_version: "network-validation-v1",
+    source: "TEST_ISOLATED_NETWORK_EVIDENCE",
+    source_reference: "TEST-RUN",
+    verified_exact_address: true,
+    retrieved_at: retrievedAt,
+    postcode: String(session.postcode ?? "HD33WU"),
+    address_reference: "TEST-ADDRESS",
+    primary_technology: "FTTP",
+    eligible_occta_plans: [session.speed_bucket],
+    plan_speed_matrices: {
+      [session.speed_bucket]: {
+        minimum_download_mbps: cap.down,
+        normally_available_download_mbps: cap.down,
+        maximum_download_mbps: cap.down,
+        advertised_download_mbps: cap.down,
+        minimum_upload_mbps: cap.up,
+        normally_available_upload_mbps: cap.up,
+        maximum_upload_mbps: cap.up,
+        advertised_upload_mbps: cap.up,
+      },
+    },
+    verified_by: "isolated-test-runner",
+  };
+  const availabilityHash = await sha256Hex(JSON.stringify(testAvailability));
+  const snapshotSession = {
+    ...session,
+    supplier_availability_snapshot: testAvailability,
+    supplier_availability_sha256: availabilityHash,
+    supplier_availability_retrieved_at: retrievedAt,
+    supplier_availability_source: "TEST_ISOLATED_NETWORK_EVIDENCE",
+    likely_service_date: session.preferred_start_date,
+  };
+
   const snapshot = buildJourney2Snapshot({
-    session,
+    session: snapshotSession,
     priced,
     vatPercent,
     pricingVersion: RESOLVER_VERSION,

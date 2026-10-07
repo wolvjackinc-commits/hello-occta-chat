@@ -36,6 +36,7 @@ const AdminServices = lazy(() => import("./pages/admin/Services").then(m => ({ d
 const AdminPaymentsDD = lazy(() => import("./pages/admin/PaymentsDD").then(m => ({ default: m.AdminPaymentsDD })));
 const AdminInstallations = lazy(() => import("./pages/admin/Installations").then(m => ({ default: m.AdminInstallations })));
 const AdminPlans = lazy(() => import("./pages/admin/Plans").then(m => ({ default: m.AdminPlans })));
+const AdminNetworkValidation = lazy(() => import("./pages/admin/NetworkValidation"));
 const AdminCompliance = lazy(() => import("./pages/admin/Compliance").then(m => ({ default: m.AdminCompliance })));
 const AdminSettings = lazy(() => import("./pages/admin/Settings").then(m => ({ default: m.AdminSettings })));
 const AdminAuditLog = lazy(() => import("./pages/admin/AuditLog").then(m => ({ default: m.AdminAuditLog })));
@@ -232,6 +233,7 @@ const AnimatedRoutes = () => {
             <Route path="payments-dd" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentsDD /></Suspense>} />
             <Route path="installations" element={<Suspense fallback={<AdminRouteFallback />}><AdminInstallations /></Suspense>} />
             <Route path="plans" element={<Suspense fallback={<AdminRouteFallback />}><AdminPlans /></Suspense>} />
+            <Route path="network-validation" element={<Suspense fallback={<AdminRouteFallback />}><AdminNetworkValidation /></Suspense>} />
             <Route path="compliance" element={<Suspense fallback={<AdminRouteFallback />}><AdminCompliance /></Suspense>} />
             <Route path="settings" element={<Suspense fallback={<AdminRouteFallback />}><AdminSettings /></Suspense>} />
             <Route path="audit-log" element={<Suspense fallback={<AdminRouteFallback />}><AdminAuditLog /></Suspense>} />

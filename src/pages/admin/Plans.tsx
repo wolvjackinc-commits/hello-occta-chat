@@ -12,8 +12,7 @@ export const AdminPlans = () => {
         <div>
           <h1 className="text-2xl font-display">Broadband Plans</h1>
           <p className="text-sm text-muted-foreground">
-            Public retail bands OCCTA sells to customers. Prices are derived from the ICUK
-            wholesale catalogue and margin rules — edit those to change what customers see.
+            Public retail bands OCCTA sells to customers. Current broadband prices are resolved from OCCTA pricing rules and the active supplier catalogue in Supabase. Legacy card mappings shown here are not the current supplier source of truth.
           </p>
         </div>
         <div className="flex gap-2">

@@ -53,6 +53,8 @@ export default function OrderJourney() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const appliedRef = useRef(false);
   const [applyError, setApplyError] = useState<string | null>(null);
+  const [networkValidationPending, setNetworkValidationPending] = useState(false);
+  const [networkValidationMessage, setNetworkValidationMessage] = useState<string | null>(null);
   const editingRef = useRef(false);
 
   const activeStep = (backStep ?? session?.current_step ?? "address") as string;
@@ -119,10 +121,18 @@ export default function OrderJourney() {
       let qt = cached;
       if (!qt) {
         const prep = await journey2.prepareContract(token);
+        if (prep?.ok && prep.pending_network_validation) {
+          setNetworkValidationPending(true);
+          setNetworkValidationMessage(prep.message ?? null);
+          setSession({ ...s, status: "network_validation_pending", current_step: "contract" });
+          return;
+        }
         if (!prep?.ok || !prep.quote_token) {
           setError(prep?.error ?? "contract_prepare_failed");
           return;
         }
+        setNetworkValidationPending(false);
+        setNetworkValidationMessage(null);
         qt = prep.quote_token;
         quoteTokenStore.set(s.id, qt);
       }
@@ -131,6 +141,11 @@ export default function OrderJourney() {
       if (!st?.ok) {
         // A cached token can be stale after a session resume — re-prepare once.
         const prep = await journey2.prepareContract(token);
+        if (prep?.ok && prep.pending_network_validation) {
+          setNetworkValidationPending(true);
+          setNetworkValidationMessage(prep.message ?? null);
+          return;
+        }
         if (prep?.quote_token) {
           quoteTokenStore.set(s.id, prep.quote_token);
           setQuoteToken(prep.quote_token);
@@ -313,6 +328,29 @@ export default function OrderJourney() {
   }
 
 
+
+  if ((networkValidationPending || session.status === "network_validation_pending") && !backStep) {
+    return (
+      <Layout>
+        <SEO title="Network validation | OCCTA Limited" description="Your OCCTA broadband order details are saved while we validate the network for your address." canonical="/order" noIndex />
+        <section className="mx-3 my-8 max-w-2xl border-4 border-foreground p-6 sm:mx-auto sm:p-8">
+          <h1 className="font-display uppercase text-2xl sm:text-3xl">Your order details are saved</h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            {networkValidationMessage ?? "We’re validating the exact network availability and contractual speeds for your installation address before we issue anything for you to accept."}
+          </p>
+          <div className="mt-5 border-2 border-foreground p-4 text-sm space-y-2">
+            <p><strong>Nothing has been charged.</strong></p>
+            <p>We will not guess availability or contractual speeds, and we will not place you on a different plan or price without your agreement.</p>
+            <p>Once the address has been validated, your Contract Summary and Contract Information will be generated from the verified details.</p>
+          </div>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <Button type="button" onClick={() => window.location.reload()}>Check again</Button>
+            <Button asChild variant="outline"><a href="tel:08002606626">Call 0800 260 6626</a></Button>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

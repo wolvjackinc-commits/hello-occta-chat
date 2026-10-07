@@ -319,7 +319,7 @@ export const journey2 = {
     call<{ ok: boolean; catalogue: Catalogue; error?: string }>("journey2-catalogue", { customer_type }),
 
   prepareContract: (token: string) =>
-    call<{ ok: boolean; quote_token?: string; contract_ready?: boolean; contract_error?: string; error?: string; message?: string }>(
+    call<{ ok: boolean; quote_token?: string; contract_ready?: boolean; pending_network_validation?: boolean; quote_request_id?: string; contract_error?: string; error?: string; message?: string }>(
       "switch50-prepare-contract", { token },
     ),
 

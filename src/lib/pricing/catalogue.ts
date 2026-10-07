@@ -16,7 +16,7 @@ export const GLOBAL_CEASE_FEE = 36.00;
 export const REBATE_CLAWBACK_MONTHS = 12;
 
 // ── Broadband Catalogue ──
-// Every ICUK wholesale row with exact uploaded prices.
+// Legacy static catalogue retained only for backward-compatible UI mappings. Current broadband pricing is resolved from the active supplier catalogue in Supabase.
 export const catalogueProducts: CatalogueProduct[] = [
   // ── Residential 1-month (public, rolling) ──
   {
@@ -27,7 +27,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTC', installTypeSupported: ['engineer', 'no-engineer', 'migrate-fttc', 'migrate-adsl'],
     freeInstallEligible: false, rebateClawbackMonths: 12, ceaseFee: 36.00,
     priorityScore: 30, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'public', notes: 'SOGEA 1-month product', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: 'SOGEA 1-month product', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'sogea-80-20-1m', slug: 'sogea-80-20-1m', name: 'SOGEA 80/20 1-month',
@@ -37,7 +37,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTC', installTypeSupported: ['engineer', 'no-engineer', 'migrate-fttc', 'migrate-adsl'],
     freeInstallEligible: false, rebateClawbackMonths: 12, ceaseFee: 36.00,
     priorityScore: 40, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'public', notes: 'SOGEA 1-month product', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: 'SOGEA 1-month product', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-80-20-tt', slug: 'fttp-80-20-tt', name: 'FTTP 80/20 TalkTalk',
@@ -47,7 +47,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 50, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'public', notes: '', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: '', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-160-tt', slug: 'fttp-160-tt', name: 'FTTP 160 TalkTalk',
@@ -57,7 +57,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 60, marginMonthly: 5.95, marginOneOff: 0,
-    visibility: 'public', notes: '', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: '', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-220-tt', slug: 'fttp-220-tt', name: 'FTTP 220 TalkTalk',
@@ -67,7 +67,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 65, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'public', notes: '', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: '', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-330-tt', slug: 'fttp-330-tt', name: 'FTTP 330 TalkTalk',
@@ -77,7 +77,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 70, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'public', notes: '', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: '', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-500-tt', slug: 'fttp-500-tt', name: 'FTTP 500 TalkTalk',
@@ -87,7 +87,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 80, marginMonthly: 5.95, marginOneOff: 0,
-    visibility: 'public', notes: '', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: '', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-550-cf', slug: 'fttp-550-cf', name: 'FTTP 550 CityFibre',
@@ -97,7 +97,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 75, marginMonthly: 5.95, marginOneOff: 0,
-    visibility: 'public', notes: '', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: '', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-1000-tt', slug: 'fttp-1000-tt', name: 'FTTP 1000 TalkTalk',
@@ -107,7 +107,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 90, marginMonthly: 5.95, marginOneOff: 0,
-    visibility: 'public', notes: '', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: '', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-1000-cf', slug: 'fttp-1000-cf', name: 'FTTP 1000 CityFibre',
@@ -117,7 +117,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 85, marginMonthly: 5.95, marginOneOff: 0,
-    visibility: 'public', notes: '', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: '', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-2500-cf', slug: 'fttp-2500-cf', name: 'FTTP 2500 CityFibre',
@@ -127,7 +127,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 95, marginMonthly: 10.95, marginOneOff: 0,
-    visibility: 'public', notes: 'Hyper tier — not mapped to public residential card', disclaimers: '', source: 'icuk',
+    visibility: 'public', notes: 'Hyper tier — not mapped to public residential card', disclaimers: '', source: 'legacy_catalogue',
   },
 
   // ── Business-grade variants (internal_only) ──
@@ -139,7 +139,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTC', installTypeSupported: ['engineer', 'no-engineer', 'migrate-fttc', 'migrate-adsl'],
     freeInstallEligible: false, rebateClawbackMonths: 12, ceaseFee: 36.00,
     priorityScore: 30, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'internal_only', notes: 'Business variant', disclaimers: '', source: 'icuk',
+    visibility: 'internal_only', notes: 'Business variant', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'sogea-80-20-1m-biz', slug: 'sogea-80-20-1m-biz', name: 'SOGEA 80/20 1-month Business',
@@ -149,7 +149,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTC', installTypeSupported: ['engineer', 'no-engineer', 'migrate-fttc', 'migrate-adsl'],
     freeInstallEligible: false, rebateClawbackMonths: 12, ceaseFee: 36.00,
     priorityScore: 40, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'internal_only', notes: 'Business variant', disclaimers: '', source: 'icuk',
+    visibility: 'internal_only', notes: 'Business variant', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-500-tt-biz', slug: 'fttp-500-tt-biz', name: 'FTTP 500 TalkTalk Business',
@@ -159,7 +159,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 80, marginMonthly: 5.95, marginOneOff: 0,
-    visibility: 'internal_only', notes: 'Business variant', disclaimers: '', source: 'icuk',
+    visibility: 'internal_only', notes: 'Business variant', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'fttp-1000-tt-biz', slug: 'fttp-1000-tt-biz', name: 'FTTP 1000 TalkTalk Business',
@@ -169,7 +169,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTP', installTypeSupported: ['fttp-standard'],
     freeInstallEligible: true, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 90, marginMonthly: 5.95, marginOneOff: 0,
-    visibility: 'internal_only', notes: 'Business variant', disclaimers: '', source: 'icuk',
+    visibility: 'internal_only', notes: 'Business variant', disclaimers: '', source: 'legacy_catalogue',
   },
 
   // ── 12-month term variants (internal_only) ──
@@ -181,7 +181,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTC', installTypeSupported: ['engineer', 'no-engineer', 'migrate-fttc', 'migrate-adsl'],
     freeInstallEligible: false, rebateClawbackMonths: 12, ceaseFee: 36.00,
     priorityScore: 20, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'internal_only', notes: '12-month term variant', disclaimers: '', source: 'icuk',
+    visibility: 'internal_only', notes: '12-month term variant', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'sogea-80-20-12m', slug: 'sogea-80-20-12m', name: 'SOGEA 80/20 12-month',
@@ -191,7 +191,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTC', installTypeSupported: ['engineer', 'no-engineer', 'migrate-fttc', 'migrate-adsl'],
     freeInstallEligible: false, rebateClawbackMonths: 12, ceaseFee: 36.00,
     priorityScore: 25, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'internal_only', notes: '12-month term variant', disclaimers: '', source: 'icuk',
+    visibility: 'internal_only', notes: '12-month term variant', disclaimers: '', source: 'legacy_catalogue',
   },
 
   // ── 18-month term variants (internal_only) ──
@@ -203,7 +203,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'FTTC', installTypeSupported: ['engineer', 'no-engineer', 'migrate-fttc', 'migrate-adsl'],
     freeInstallEligible: false, rebateClawbackMonths: 12, ceaseFee: 36.00,
     priorityScore: 15, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'internal_only', notes: '18-month term variant', disclaimers: '', source: 'icuk',
+    visibility: 'internal_only', notes: '18-month term variant', disclaimers: '', source: 'legacy_catalogue',
   },
 
   // ── Legacy / quote-only ──
@@ -215,7 +215,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'ADSL', installTypeSupported: ['engineer', 'no-engineer'],
     freeInstallEligible: false, rebateClawbackMonths: 12, ceaseFee: 36.00,
     priorityScore: 10, marginMonthly: 4.95, marginOneOff: 0,
-    visibility: 'internal_only', notes: 'Legacy ADSL — not promoted publicly', disclaimers: '', source: 'icuk',
+    visibility: 'internal_only', notes: 'Legacy ADSL — not promoted publicly', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'pstn-line', slug: 'pstn-line', name: 'PSTN Line',
@@ -225,7 +225,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'PSTN', installTypeSupported: [],
     freeInstallEligible: false, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 1, marginMonthly: 6.95, marginOneOff: 0,
-    visibility: 'quote_only', notes: 'Legacy PSTN — quote only', disclaimers: '', source: 'icuk',
+    visibility: 'quote_only', notes: 'Legacy PSTN — quote only', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'isdn2-line', slug: 'isdn2-line', name: 'ISDN2 Line',
@@ -235,7 +235,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'ISDN', installTypeSupported: [],
     freeInstallEligible: false, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 1, marginMonthly: 10.95, marginOneOff: 0,
-    visibility: 'quote_only', notes: 'Legacy ISDN2 — quote only', disclaimers: '', source: 'icuk',
+    visibility: 'quote_only', notes: 'Legacy ISDN2 — quote only', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'isdn30-channel', slug: 'isdn30-channel', name: 'ISDN30 Channel',
@@ -245,7 +245,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'ISDN', installTypeSupported: [],
     freeInstallEligible: false, rebateClawbackMonths: 0, ceaseFee: 36.00,
     priorityScore: 1, marginMonthly: 6.95, marginOneOff: 0,
-    visibility: 'quote_only', notes: 'Legacy ISDN30 — quote only, per channel', disclaimers: '', source: 'icuk',
+    visibility: 'quote_only', notes: 'Legacy ISDN30 — quote only, per channel', disclaimers: '', source: 'legacy_catalogue',
   },
   {
     id: 'cps-line', slug: 'cps-line', name: 'CPS (Carrier Pre-Select)',
@@ -255,7 +255,7 @@ export const catalogueProducts: CatalogueProduct[] = [
     networkType: 'CPS', installTypeSupported: [],
     freeInstallEligible: false, rebateClawbackMonths: 0, ceaseFee: 0,
     priorityScore: 1, marginMonthly: 0, marginOneOff: 0,
-    visibility: 'quote_only', notes: 'Legacy CPS — quote only', disclaimers: '', source: 'icuk',
+    visibility: 'quote_only', notes: 'Legacy CPS — quote only', disclaimers: '', source: 'legacy_catalogue',
   },
 ];
 
@@ -277,13 +277,13 @@ export const careLevels: CareLevelConfig[] = [
 
 // ── Voice Products ──
 export const voiceProducts: VoiceCatalogueProduct[] = [
-  { id: 'home-phone-payg', name: 'Digital Home Phone PAYG', type: 'home', variant: 'payg', wholesaleMonthly: 2.00, retailMonthly: 4.95, minutesIncluded: null, productStatus: 'public', customerType: 'residential', source: 'icuk' },
-  { id: 'home-phone-1000min', name: 'Digital Home Phone 1000min', type: 'home', variant: 'bundle', wholesaleMonthly: 4.00, retailMonthly: 7.95, minutesIncluded: 1000, productStatus: 'public', customerType: 'residential', source: 'icuk' },
-  { id: 'biz-voip-payg', name: 'Business VoIP PAYG', type: 'business', variant: 'payg', wholesaleMonthly: 3.00, retailMonthly: 6.95, minutesIncluded: null, productStatus: 'public', customerType: 'business', source: 'icuk' },
-  { id: 'biz-voip-2000min', name: 'Business VoIP 2000min', type: 'business', variant: 'bundle', wholesaleMonthly: 6.00, retailMonthly: 11.95, minutesIncluded: 2000, productStatus: 'public', customerType: 'business', source: 'icuk' },
-  { id: 'sip-trunk-payg', name: 'SIP Trunk PAYG', type: 'sip', variant: 'payg', wholesaleMonthly: 3.00, retailMonthly: 5.95, minutesIncluded: null, productStatus: 'public', customerType: 'business', source: 'icuk' },
-  { id: 'sip-trunk-2000min', name: 'SIP Trunk 2000min', type: 'sip', variant: 'bundle', wholesaleMonthly: 6.00, retailMonthly: 9.95, minutesIncluded: 2000, productStatus: 'public', customerType: 'business', source: 'icuk' },
-  { id: 'enhanced-sip', name: 'Enhanced SIP Add-on', type: 'sip', variant: 'payg', wholesaleMonthly: 1.00, retailMonthly: 2.50, minutesIncluded: null, productStatus: 'public', customerType: 'business', source: 'icuk' },
+  { id: 'home-phone-payg', name: 'Digital Home Phone PAYG', type: 'home', variant: 'payg', wholesaleMonthly: 2.00, retailMonthly: 4.95, minutesIncluded: null, productStatus: 'public', customerType: 'residential', source: 'legacy_catalogue' },
+  { id: 'home-phone-1000min', name: 'Digital Home Phone 1000min', type: 'home', variant: 'bundle', wholesaleMonthly: 4.00, retailMonthly: 7.95, minutesIncluded: 1000, productStatus: 'public', customerType: 'residential', source: 'legacy_catalogue' },
+  { id: 'biz-voip-payg', name: 'Business VoIP PAYG', type: 'business', variant: 'payg', wholesaleMonthly: 3.00, retailMonthly: 6.95, minutesIncluded: null, productStatus: 'public', customerType: 'business', source: 'legacy_catalogue' },
+  { id: 'biz-voip-2000min', name: 'Business VoIP 2000min', type: 'business', variant: 'bundle', wholesaleMonthly: 6.00, retailMonthly: 11.95, minutesIncluded: 2000, productStatus: 'public', customerType: 'business', source: 'legacy_catalogue' },
+  { id: 'sip-trunk-payg', name: 'SIP Trunk PAYG', type: 'sip', variant: 'payg', wholesaleMonthly: 3.00, retailMonthly: 5.95, minutesIncluded: null, productStatus: 'public', customerType: 'business', source: 'legacy_catalogue' },
+  { id: 'sip-trunk-2000min', name: 'SIP Trunk 2000min', type: 'sip', variant: 'bundle', wholesaleMonthly: 6.00, retailMonthly: 9.95, minutesIncluded: 2000, productStatus: 'public', customerType: 'business', source: 'legacy_catalogue' },
+  { id: 'enhanced-sip', name: 'Enhanced SIP Add-on', type: 'sip', variant: 'payg', wholesaleMonthly: 1.00, retailMonthly: 2.50, minutesIncluded: null, productStatus: 'public', customerType: 'business', source: 'legacy_catalogue' },
 ];
 
 // ── Numbers ──
@@ -321,15 +321,15 @@ export const callTariffs: CallTariff[] = [
 
 // ── Add-ons ──
 export const addonCatalogue: AddonCatalogueItem[] = [
-  // ICUK-derived add-ons
-  { id: 'addon-call-recording-12m', name: 'Call Recording 12m', wholesaleMonthly: 5.00, retailMonthly: 8.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'mic', description: 'Call recording with 12-month storage', source: 'icuk' },
-  { id: 'addon-call-recording-24m', name: 'Call Recording 24m', wholesaleMonthly: 10.00, retailMonthly: 14.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'mic', description: 'Call recording with 24-month storage', source: 'icuk' },
-  { id: 'addon-call-recording-36m', name: 'Call Recording 36m', wholesaleMonthly: 15.00, retailMonthly: 19.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'mic', description: 'Call recording with 36-month storage', source: 'icuk' },
-  { id: 'addon-conference', name: 'Conference Calling', wholesaleMonthly: 5.00, retailMonthly: 9.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'users', description: 'Multi-party conference calling', source: 'icuk' },
-  { id: 'addon-mobile-app', name: 'Mobile App', wholesaleMonthly: 1.00, retailMonthly: 1.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'smartphone', description: 'Softphone app for iOS/Android', source: 'icuk' },
-  { id: 'addon-desktop-app', name: 'Desktop App', wholesaleMonthly: 1.50, retailMonthly: 2.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'monitor', description: 'Desktop softphone application', source: 'icuk' },
+  // Legacy add-ons — not an authoritative current supplier rate card
+  { id: 'addon-call-recording-12m', name: 'Call Recording 12m', wholesaleMonthly: 5.00, retailMonthly: 8.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'mic', description: 'Call recording with 12-month storage', source: 'legacy_catalogue' },
+  { id: 'addon-call-recording-24m', name: 'Call Recording 24m', wholesaleMonthly: 10.00, retailMonthly: 14.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'mic', description: 'Call recording with 24-month storage', source: 'legacy_catalogue' },
+  { id: 'addon-call-recording-36m', name: 'Call Recording 36m', wholesaleMonthly: 15.00, retailMonthly: 19.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'mic', description: 'Call recording with 36-month storage', source: 'legacy_catalogue' },
+  { id: 'addon-conference', name: 'Conference Calling', wholesaleMonthly: 5.00, retailMonthly: 9.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'users', description: 'Multi-party conference calling', source: 'legacy_catalogue' },
+  { id: 'addon-mobile-app', name: 'Mobile App', wholesaleMonthly: 1.00, retailMonthly: 1.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'smartphone', description: 'Softphone app for iOS/Android', source: 'legacy_catalogue' },
+  { id: 'addon-desktop-app', name: 'Desktop App', wholesaleMonthly: 1.50, retailMonthly: 2.95, retailOneOff: 0, serviceType: 'voice', productStatus: 'public', icon: 'monitor', description: 'Desktop softphone application', source: 'legacy_catalogue' },
 
-  // Existing website add-ons (no ICUK wholesale data)
+  // Existing website add-ons
   { id: 'addon-wifi-extender', name: 'WiFi Extender', wholesaleMonthly: 0, retailMonthly: 3.99, retailOneOff: 0, serviceType: 'broadband', productStatus: 'public', icon: 'wifi', description: 'Boost signal to every corner of your home', source: 'website_existing' },
   { id: 'addon-mesh-node', name: 'Mesh WiFi Node', wholesaleMonthly: 0, retailMonthly: 5.99, retailOneOff: 0, serviceType: 'broadband', productStatus: 'public', icon: 'router', description: 'Seamless whole-home coverage with mesh technology', source: 'website_existing' },
   { id: 'addon-static-ip', name: 'Static IP Address', wholesaleMonthly: 0, retailMonthly: 4.99, retailOneOff: 0, serviceType: 'broadband', productStatus: 'public', icon: 'server', description: 'Fixed IP for remote access, gaming servers & security cameras', source: 'website_existing' },

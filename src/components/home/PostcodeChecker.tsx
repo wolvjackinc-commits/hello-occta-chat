@@ -95,7 +95,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
       </div>
 
       <p className="text-[11px] leading-relaxed text-muted-foreground mt-2">
-        <strong>Availability note:</strong> Plans shown are current OCCTA offers and may not all be available at every address. Final availability, speed and network technology are subject to network and supplier validation. If your selected plan cannot be supplied, we’ll email you with available options before provisioning and won’t change your plan or price without your agreement. If confirmed, your order proceeds as submitted.
+        <strong>Availability note:</strong> Plans shown are current OCCTA offers and may not all be available at every address. Exact availability, contractual speeds and network technology are validated for your address before we issue an agreement for you to accept. If your selected plan cannot be supplied, we’ll contact you with the available options and won’t change your plan or price without your agreement.
       </p>
 
       {showManualAddressLookup && (
@@ -124,7 +124,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
             <div>
               <p className="font-display uppercase text-sm tracking-wider">Broadband options available to view</p>
               <p className="text-sm text-muted-foreground mt-1">
-                We couldn't confirm live availability online right now, but you can still choose the plan you're interested in. We'll confirm final service availability before provisioning and show the contractual price and charges before you accept the agreement.
+                You can still choose the plan you're interested in. We'll validate exact network availability and contractual speeds before issuing the agreement, so nothing is guessed and nothing is accepted until the address has been checked.
               </p>
             </div>
           </div>
@@ -183,7 +183,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
       {showInlineResult && (
         <>
           <p className="text-xs text-muted-foreground mt-2">
-            Choose the plan you're interested in. Final network/supplier availability is validated before provisioning, and any different option requires your agreement.
+            Choose the plan you're interested in. Exact network availability and contractual speeds are validated before the agreement is issued, and any different option requires your agreement.
           </p>
           <Button
             onClick={startJourney}
@@ -206,7 +206,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
         <p className="text-xs text-muted-foreground mt-3 flex flex-wrap gap-x-3 gap-y-1">
           <span>✓ Takes 10 seconds</span>
           <span>✓ No commitment</span>
-          <span>✓ Final service availability validated before provisioning</span>
+          <span>✓ Exact network validation before agreement</span>
         </p>
       )}
     </div>

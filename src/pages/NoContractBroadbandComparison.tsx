@@ -119,7 +119,7 @@ const NoContractBroadbandComparison = () => {
             {[
               "Flex 30 is 30-day rolling where eligible — normal 30-day notice",
               "No mid-contract price rises — ever",
-              "No credit check on any broadband plan",
+              "Eligibility requirements are shown before order",
               "No remaining-month ETF on Flex 30; separately valid network charges may apply",
               "Setup from £0 where available; exact setup is confirmed before acceptance",
               "UK-based support, no outsourced call centres",

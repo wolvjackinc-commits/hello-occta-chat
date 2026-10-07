@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { logClientEvent } from "@/lib/activityLog";
 
 const points = [
-  "Lower indicative monthly pricing in exchange for a longer minimum term.",
+  "Lower headline monthly pricing in exchange for a 24-month minimum term.",
   "Eligible for the OCCTA Rewards programme (launching soon).",
   "All monthly and one-off charges shown before you order.",
   "Availability depends on your exact address.",
@@ -15,26 +15,25 @@ const points = [
 
 export default function ContractSaverBroadband() {
   useEffect(() => {
-    logClientEvent({ event_type: "page_view", title: "Contract Saver page", source_module: "marketing" });
+    logClientEvent({ event_type: "page_view", title: "Price Lock 24 page", source_module: "marketing" });
   }, []);
 
   return (
     <Layout>
       <SEO
-        title="Contract Saver Broadband"
-        description="OCCTA Contract Saver Broadband. Lower indicative monthly pricing in exchange for a longer minimum term. Final price and key terms confirmed in your Contract Summary before you pay."
+        title="Price Lock 24 Broadband"
+        description="OCCTA Price Lock 24 broadband has a 24-month minimum term and lower headline monthly pricing than Flex 30 where available. Final price, speed information, setup and charges are confirmed before acceptance."
         canonical="/broadband/contract-saver"
       />
       <section className="container mx-auto px-4 py-12 max-w-5xl">
         <p className="font-display text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">
-          Contract Saver Broadband
+          Price Lock 24 Broadband
         </p>
         <h1 className="font-display uppercase text-4xl md:text-6xl leading-[0.95] tracking-tight mb-6">
-          Lower monthly bill, <span className="text-primary">longer term.</span>
+          Price certainty, <span className="text-primary">24-month minimum term.</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mb-8">
-          Contract Saver is for customers who want a lower monthly price and don't mind committing for longer.
-          Final price, contract length, fees, speed and key terms will be confirmed in your Contract Summary before you pay.
+          Price Lock 24 is for customers who prefer lower headline monthly pricing and can commit to a 24-month minimum term. Final price, address-specific speed information, setup, equipment and any applicable charges are confirmed in the Contract Summary and Contract Information before acceptance.
         </p>
 
         <div className="grid md:grid-cols-2 gap-6 mb-10">
@@ -56,10 +55,10 @@ export default function ContractSaverBroadband() {
               <Shield className="w-5 h-5 text-primary" /> Things to know
             </h2>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li>Early termination fees may apply if you leave before the minimum term ends — shown in your Contract Summary.</li>
-              <li>Any setup, equipment or supplier charges are shown before you order.</li>
+              <li>A fair-loss Early Termination Charge may apply if you leave during the 24-month minimum term and no penalty-free exit right applies; the method is shown in your accepted documents.</li>
+              <li>Any setup, equipment or separately valid network cease/migration charge is shown or governed by the accepted terms.</li>
               <li>Speeds and final price depend on your confirmed address.</li>
-              <li>14-day cooling-off period applies under the Consumer Contracts Regulations.</li>
+              <li>A 14-day cooling-off period normally applies to distance consumer orders; if you expressly request an early start, lawful proportionate charges may apply for service or installation already supplied.</li>
             </ul>
           </div>
         </div>
@@ -67,7 +66,7 @@ export default function ContractSaverBroadband() {
         <div className="border-4 border-primary p-6 md:p-8 bg-primary/5">
           <h3 className="font-display uppercase text-2xl mb-2">Prefer no minimum term?</h3>
           <p className="text-muted-foreground mb-4">
-            Look at Flex — 30-day rolling, cancel with notice.
+            Look at Flex 30 — 30-day rolling with no fixed minimum term and normal 30-day notice.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link to="/broadband/flex">

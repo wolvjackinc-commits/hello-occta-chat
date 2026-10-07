@@ -121,9 +121,9 @@ const DIGITAL_VOICE_NOTICE =
   "so we can assess the circumstances and discuss available resilience or alternative communication arrangements. 999/112 calls are free when the service is operational.";
 
 const FIRST_COLLECTION_RULE =
-  "Nothing is payable today. Your first Direct Debit is collected on your chosen billing day once your service " +
-  "is live and your mandate is active, and never sooner than 3 working days after we send your advance notice. " +
-  "One-off charges appear on your first bill, not today.";
+  "Nothing is payable today. After you accept the agreement, you set up Direct Debit and choose your preferred collection day. " +
+  "Your first Direct Debit is collected only once your service is live and your mandate is active, and never sooner than " +
+  "3 working days after we send your advance notice. One-off charges appear on your first bill, not today.";
 
 const BILLING_COMMENCEMENT_RULE =
   "Billing starts when your service goes live. Your monthly charge is collected on your chosen billing day each month.";

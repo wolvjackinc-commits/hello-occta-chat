@@ -18,6 +18,11 @@ const CHARGES_CONFIRMATION =
 const CONSENT_CONFIRMATION =
   "I agree to enter into the OCCTA agreement on the terms shown in my Contract Summary and Contract Information & Customer Agreement Pack and understand that placing this order creates an obligation to pay.";
 
+const DOCUMENTS_AND_DETAILS_CONFIRMATION =
+  `${RECEIVED_CONFIRMATION} ${DETAILS_CONFIRMATION}`;
+const TERMS_AND_CONSENT_CONFIRMATION =
+  `${CHARGES_CONFIRMATION} ${CONSENT_CONFIRMATION}`;
+
 const REQUIRED_NEW_CONTRACT_TERMS_VERSION = "2026.10.1";
 
 /**
@@ -97,10 +102,8 @@ export default function AgreementStep({
   const [phoneMasked, setPhoneMasked] = useState<string | null>(null);
   const [mobileVerified, setMobileVerified] = useState(false);
   const [dob, setDob] = useState(dateOfBirth ?? "");
-  const [receivedConfirmed, setReceivedConfirmed] = useState(false);
-  const [detailsConfirmed, setDetailsConfirmed] = useState(false);
-  const [chargesConfirmed, setChargesConfirmed] = useState(false);
-  const [consentConfirmed, setConsentConfirmed] = useState(false);
+  const [documentsAndDetailsConfirmed, setDocumentsAndDetailsConfirmed] = useState(false);
+  const [termsAndConsentConfirmed, setTermsAndConsentConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [startedAt] = useState(() => Date.now());
 
@@ -172,7 +175,7 @@ export default function AgreementStep({
 
   useEffect(() => { ensureCs(); }, [ensureCs]);
 
-  const allChecksTicked = receivedConfirmed && detailsConfirmed && chargesConfirmed && consentConfirmed;
+  const allChecksTicked = documentsAndDetailsConfirmed && termsAndConsentConfirmed;
   const dobAge = (() => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return -1;
     const d = new Date(dob + "T00:00:00Z");
@@ -205,12 +208,15 @@ export default function AgreementStep({
           accepted_by_name: fullName.trim(),
           accepted_by_email: emailConfirm.trim().toLowerCase(),
           accepted_by_mobile: phoneMasked ?? "verified",
-          address_confirmed: detailsConfirmed,
+          // Two clear customer-facing confirmations preserve the four existing
+          // evidence fields underneath. Each grouped checkbox contains the
+          // canonical wording for both statements it confirms.
+          address_confirmed: documentsAndDetailsConfirmed,
           date_of_birth: dob,
-          checkbox_received_read: receivedConfirmed,
-          checkbox_details_correct: detailsConfirmed,
-          checkbox_understand_charges: chargesConfirmed,
-          checkbox_consent: consentConfirmed,
+          checkbox_received_read: documentsAndDetailsConfirmed,
+          checkbox_details_correct: documentsAndDetailsConfirmed,
+          checkbox_understand_charges: termsAndConsentConfirmed,
+          checkbox_consent: termsAndConsentConfirmed,
           cs_version: cs?.version,
           source_route: typeof window !== "undefined" ? window.location.pathname : null,
           session_id: typeof window !== "undefined" ? window.sessionStorage.getItem("occta_session_id") || crypto.randomUUID() : null,
@@ -407,30 +413,18 @@ export default function AgreementStep({
             </div>
           )}
 
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="ag-name">Typed full legal name</Label>
-              <Input id="ag-name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" />
-            </div>
-            <div>
-              <Label htmlFor="ag-email">Confirm email</Label>
-              <Input id="ag-email" type="email" value={emailConfirm} onChange={(e) => setEmailConfirm(e.target.value)} autoComplete="email" />
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="ag-mobile">Mobile number (from your details)</Label>
-              <Input id="ag-mobile" type="tel" value={phoneMasked ?? ""} readOnly disabled placeholder="******0000" />
-              {onEditStep ? (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Wrong number?{" "}
-                  <button type="button" className="underline font-medium text-foreground" onClick={() => onEditStep("details")}>
-                    Change my mobile number
-                  </button>{" "}
-                  — any earlier verification is cleared.
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground mt-1">
-                  To change this, go back to your customer details step — any earlier verification is cleared.
-                </p>
+          <div className="border-2 border-foreground/30 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-display uppercase text-xs tracking-widest">Signing as</p>
+                <p className="mt-1 text-sm font-semibold">{fullName}</p>
+                <p className="text-xs text-muted-foreground">{emailConfirm}</p>
+                <p className="text-xs text-muted-foreground">{phoneMasked ?? "Mobile from your order details"}</p>
+              </div>
+              {onEditStep && (
+                <Button type="button" variant="outline" size="sm" onClick={() => onEditStep("details")}>
+                  Edit details
+                </Button>
               )}
             </div>
             <div className="sm:col-span-2">
@@ -467,21 +461,12 @@ export default function AgreementStep({
           <div className="space-y-3 border-2 border-foreground/30 p-4">
             <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed">
               <Checkbox
-                checked={receivedConfirmed}
-                onCheckedChange={(v) => setReceivedConfirmed(v === true)}
-                aria-label="Confirm access to both contract documents"
-              />
-              <span>{RECEIVED_CONFIRMATION}</span>
-            </label>
-
-            <label className="flex cursor-pointer items-start gap-3 border-t border-foreground/20 pt-3 text-sm leading-relaxed">
-              <Checkbox
-                checked={detailsConfirmed}
-                onCheckedChange={(v) => setDetailsConfirmed(v === true)}
-                aria-label="Confirm personal details and service address"
+                checked={documentsAndDetailsConfirmed}
+                onCheckedChange={(v) => setDocumentsAndDetailsConfirmed(v === true)}
+                aria-label="Confirm contract documents and order details"
               />
               <span>
-                {DETAILS_CONFIRMATION}
+                {DOCUMENTS_AND_DETAILS_CONFIRMATION}
                 <span className="mt-1 block text-xs text-muted-foreground">
                   Service address: <strong className="text-foreground">{cs.service_address}</strong>
                 </span>
@@ -490,20 +475,11 @@ export default function AgreementStep({
 
             <label className="flex cursor-pointer items-start gap-3 border-t border-foreground/20 pt-3 text-sm leading-relaxed">
               <Checkbox
-                checked={chargesConfirmed}
-                onCheckedChange={(v) => setChargesConfirmed(v === true)}
-                aria-label="Confirm understanding of charges and cancellation rules"
+                checked={termsAndConsentConfirmed}
+                onCheckedChange={(v) => setTermsAndConsentConfirmed(v === true)}
+                aria-label="Confirm charges, cancellation terms and agreement"
               />
-              <span>{CHARGES_CONFIRMATION}</span>
-            </label>
-
-            <label className="flex cursor-pointer items-start gap-3 border-t border-foreground/20 pt-3 text-sm leading-relaxed">
-              <Checkbox
-                checked={consentConfirmed}
-                onCheckedChange={(v) => setConsentConfirmed(v === true)}
-                aria-label="Agree to enter into the OCCTA agreement"
-              />
-              <span>{CONSENT_CONFIRMATION}</span>
+              <span>{TERMS_AND_CONSENT_CONFIRMATION}</span>
             </label>
           </div>
 

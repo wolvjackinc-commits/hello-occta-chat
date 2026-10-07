@@ -624,7 +624,7 @@ function approvedPublicReply(intent: string): string | null {
     case "vulnerable":
       return withOptions(
         `OCCTA can record support needs and discuss appropriate communication or service arrangements. Broadband-based phone services and telecare can be affected by power cuts, so resilience should be discussed before relying on them. [Read the vulnerable-customer policy](${BASE_URL}/legal/vulnerable-customers).`,
-        ["Tell OCCTA my support needs", "Ask about battery backup", "Talk to a human"],
+        ["Tell OCCTA my support needs", "Ask about Digital Voice resilience", "Talk to a human"],
       );
     case "human":
       return withOptions(

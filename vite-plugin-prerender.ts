@@ -327,10 +327,10 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/guides/how-to-get-broadband-with-bad-credit",
-    title: "Broadband with Bad Credit — No Credit Check UK | OCCTA",
+    title: "Broadband Eligibility with Limited Credit History | OCCTA",
     description: "Bad credit? Learn how to get UK broadband without a hard credit check and how OCCTA's flexible no long-contract plans help.",
     canonical: "/guides/how-to-get-broadband-with-bad-credit",
-    keywords: "broadband no credit check, broadband with bad credit UK, bad credit broadband, no credit check broadband",
+    keywords: "broadband eligibility, broadband with limited credit history UK, broadband ordering requirements",
     jsonLd: [localBusinessSchema],
   },
   {
@@ -416,10 +416,10 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/broadband-no-credit-check",
-    title: "Broadband No Credit Check — Get Connected Today | OCCTA",
+    title: "Broadband Eligibility & Ordering Requirements | OCCTA",
     description: "Need broadband and want to understand ordering requirements? OCCTA shows current broadband options, address availability, contract term, setup and final price before acceptance.",
     canonical: "/broadband-no-credit-check",
-    keywords: "broadband no credit check, internet no credit check, wifi no credit check, broadband without credit check UK",
+    keywords: "broadband eligibility UK, broadband ordering requirements, flexible broadband UK",
     price: "34.99",
     jsonLd: [localBusinessSchema],
   },

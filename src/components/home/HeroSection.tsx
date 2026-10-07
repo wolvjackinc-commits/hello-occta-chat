@@ -300,7 +300,7 @@ const HeroSection = () => {
                 </div>
                 {result.pendingNetworkValidation && (
                   <p className="text-xs text-muted-foreground mb-3">
-                    You can continue your order now. Exact network technology, speed and availability at this address will be confirmed before your binding broadband contract is issued.
+                    You can continue your order now. Speeds shown are OCCTA plan estimates. Final network technology, availability and actual line performance are confirmed during provisioning.
                   </p>
                 )}
 

@@ -5,6 +5,7 @@ import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import { journey2 } from "@/lib/journey2/client";
+import { consumePreparedJourneyStart } from "@/lib/journey2/route";
 
 const JOURNEY1_ROUTE = "/quote/start?interest=broadband";
 
@@ -28,7 +29,9 @@ export default function OrderStart() {
     started.current = true;
     (async () => {
       try {
-        const res = await journey2.start({ adminTest: params.get("test") === "1" });
+        const res = params.get("test") === "1"
+          ? await journey2.start({ adminTest: true })
+          : await consumePreparedJourneyStart();
         if (res?.token) {
           navigate(`/order/${res.token}`, { replace: true });
           return;

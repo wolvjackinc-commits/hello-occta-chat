@@ -200,7 +200,7 @@ export const helpArticles: HelpArticle[] = [
     intro: "Moving? We move with you — no early termination fees, no panic.",
     sections: [
       { heading: "Tell us early", paragraphs: ["Give us at least 14 days' notice with the new address and move-in date. We'll check availability at the new property and book activation for the day you arrive."] },
-      { heading: "What if speed at the new address is slower?", paragraphs: ["You can downgrade to a cheaper plan, free of charge. No lock-in, no penalty."] },
+      { heading: "What if speed at the new address is slower?", paragraphs: ["If the available service at the new address is materially different, OCCTA will explain the options. Any plan change, installation work, ETF or network charge depends on the accepted agreement and the service available at the new address."] },
       { heading: "What if it's not available?", paragraphs: ["We'll cancel without a fee. Genuinely — Price Lock 24 or Flex 30 where offered means Price Lock 24 or Flex 30 where offered."] },
     ],
     faqs: [

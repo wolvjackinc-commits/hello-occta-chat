@@ -21,6 +21,7 @@ const Footer = () => {
   const footerLinks = {
     services: [
       { name: "Broadband", path: "/broadband" },
+      { name: "Fixed-Price Broadband", path: "/fixed-price-broadband" },
       { name: "SIM Plans", path: "/sim-plans" },
       { name: "Digital Voice (Home Phone)", path: "/landline" },
       { name: "Business", path: "/business" },

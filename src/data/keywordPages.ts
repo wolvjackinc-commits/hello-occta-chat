@@ -49,7 +49,7 @@ export const keywordPages: KeywordPage[] = [
         bullets: [
           "30-day rolling options available where eligible",
           "No mid-contract price rises \u2014 your price is fixed",
-          "No credit check required",
+          "Eligibility requirements are shown before order",
           "Setup from £0 where available. Bring your own router for £0, or choose a router at checkout",
           "No hidden setup fees or delivery charges",
           "Speeds up to 900Mbps on full fibre",
@@ -86,13 +86,13 @@ export const keywordPages: KeywordPage[] = [
       {
         heading: "Why We Don\u2019t Run Credit Checks",
         paragraphs: [
-          "Most big broadband providers run a hard credit check when you sign up, which can affect your credit score and may result in rejection. OCCTA takes a different approach \u2014 we believe everyone deserves access to fast, reliable internet.",
-          "We don\u2019t check your credit history. There\u2019s no soft check, no hard check, and no risk to your credit score. If you want broadband, you can have it.",
+          "Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit.",
+          "Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit.",
         ],
       },
       {
         heading: "Who Benefits from No Credit Check Broadband?",
-        paragraphs: ["No credit check broadband is ideal for:"],
+        paragraphs: ["Eligibility requirements are shown before order"],
         bullets: [
           "People with a low or no credit score",
           "Those who have recently moved to the UK",
@@ -104,18 +104,18 @@ export const keywordPages: KeywordPage[] = [
       {
         heading: "Same Speeds, Same Network",
         paragraphs: [
-          "No credit check doesn\u2019t mean slower speeds or worse service. OCCTA uses the same Openreach fibre network as BT and Sky. You get speeds up to 900Mbps, unlimited data, and UK-based support \u2014 all without a credit check.",
+          "Eligibility requirements are shown before order",
         ],
       },
     ],
     faqs: [
-      { question: "Can I really get broadband without a credit check?", answer: "Yes. OCCTA does not run any credit checks \u2014 hard or soft \u2014 on any broadband plan." },
-      { question: "Will no credit check broadband affect my credit score?", answer: "No. Since we don\u2019t check your credit, signing up with OCCTA has zero impact on your credit score." },
+      { question: "Can I really get broadband without a credit check?", answer: "Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit." },
+      { question: "Will no credit check broadband affect my credit score?", answer: "Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit." },
       { question: "Is no credit check broadband slower?", answer: "No. You get the same Openreach fibre speeds as any other provider \u2014 up to 900Mbps." },
-      { question: "Do I need to pay a deposit?", answer: "No. There\u2019s no deposit, no upfront cost, and no surprise price rises." },
+      { question: "Do I need to pay a deposit?", answer: "Any deposit, upfront or setup charge depends on the selected service and order. Exact one-off charges are shown before acceptance." },
     ],
     ctaTitle: "Get Connected Today",
-    ctaText: "No credit check, 30-day rolling options where eligible, no hassle. Enter your postcode to get started.",
+    ctaText: "Eligibility requirements are shown before order",
     ctaLink: "/broadband",
     ctaButton: "Check Availability",
     price: "34.99",
@@ -133,7 +133,7 @@ export const keywordPages: KeywordPage[] = [
         heading: "Why Students Love OCCTA",
         paragraphs: [
           "Student accommodation can change frequently. Compare Flex 30 with Price Lock 24 and choose the term that fits your expected stay. Moving home, setup, notice and any applicable charges follow the accepted agreement.",
-          "There\u2019s no credit check either, so you won\u2019t get rejected even if you have no credit history.",
+          "Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit.",
         ],
       },
       {
@@ -143,7 +143,7 @@ export const keywordPages: KeywordPage[] = [
           "Unlimited data for streaming, gaming, and video calls",
           "Speeds up to 900Mbps for shared houses",
           "Flex 30 \u2014 cancel when your lease ends",
-          "No credit check \u2014 perfect for first-time subscribers",
+          "Eligibility requirements are shown before order",
           "Bring your own router for £0, or choose a router at checkout. Setup from £0 where available",
           "Split the bill easily \u2014 one simple monthly payment",
         ],
@@ -151,7 +151,7 @@ export const keywordPages: KeywordPage[] = [
       {
         heading: "How to Set Up Student Broadband",
         paragraphs: [
-          "Check your student house postcode, choose a speed that suits your household, and complete the order online. Installation usually takes 7 working days. When you move out, just give us 30 days notice \u2014 no fees, no hassle.",
+          "Check your student house postcode, choose a speed that suits your household, and complete the order online. Installation timing depends on the address, network and whether engineering work is required. The provisional service date and any applicable setup or engineer charge are shown before acceptance.",
         ],
       },
     ],
@@ -187,11 +187,11 @@ export const keywordPages: KeywordPage[] = [
         heading: "Why OCCTA Offers the Best Value",
         paragraphs: ["Here\u2019s what sets OCCTA apart from other broadband deals:"],
         bullets: [
-          "From \u00A334.99/mo \u2014 one of the lowest prices in the UK",
+          "Price Lock 24 headline pricing from \u00A334.99/mo; Flex 30 priced separately where offered",
           "30-day rolling options available where eligible",
-          "No mid-contract price rises \u2014 your price is guaranteed",
-          "No credit check required",
-          "Setup from £0 where available and Wi-Fi router",
+          "No scheduled CPI-, RPI-, inflation-linked or percentage-based rise on Price Lock 24 under contract version 2026.10.1",
+          "Eligibility requirements are shown before order",
+          "Setup from £0 where available; router options and any charge are shown before acceptance",
           "Speeds up to 900Mbps on the Openreach network",
           "UK-based customer support",
         ],
@@ -199,15 +199,15 @@ export const keywordPages: KeywordPage[] = [
       {
         heading: "How OCCTA Compares",
         paragraphs: [
-          "OCCTA uses the same Openreach fibre network as BT, Sky, Plusnet, and TalkTalk. You get identical infrastructure and comparable speeds \u2014 but without the contract, without the price rises, and at a lower monthly cost.",
+          "The underlying access network depends on the address and selected supplier product. OCCTA remains your retail provider unless we tell you otherwise.",
         ],
       },
     ],
     faqs: [
-      { question: "What is the cheapest broadband deal in the UK?", answer: "OCCTA offers broadband from \u00A334.99/mo with no surprise price rises, 30-day rolling options where eligible, and no mid-contract price hikes \u2014 making it one of the best-value deals available." },
-      { question: "Which broadband provider has the best deals?", answer: "For no-contract, fixed-price broadband, OCCTA consistently offers the best value compared to BT, Sky, Virgin Media, and TalkTalk." },
-      { question: "Are cheap broadband deals any good?", answer: "Yes. OCCTA uses the same Openreach network as the major providers. Cheap doesn\u2019t mean slow or unreliable." },
-      { question: "Should I get a contract or no-contract broadband?", answer: "No-contract gives you flexibility to switch or 30-day rolling options available where eligible. With OCCTA, you don\u2019t pay more for this freedom." },
+      { question: "What is the cheapest broadband deal in the UK?", answer: "OCCTA Price Lock 24 headline pricing starts from \u00A334.99/mo, with Flex 30 priced separately where offered. Final price, speed information, setup and router choices depend on the address and selected service." },
+      { question: "Which broadband provider has the best deals?", answer: "Value depends on your address, required speed, term, setup and competing offers. Compare the total cost and contract terms before ordering." },
+      { question: "Are cheap broadband deals any good?", answer: "Network technology and supplier vary by address. The exact access technology and address-specific speed information are confirmed before acceptance." },
+      { question: "Should I get a contract or no-contract broadband?", answer: "Flex 30 gives you a 30-day rolling option with no fixed minimum term where eligible. Price Lock 24 has a 24-month minimum term and may offer a lower headline monthly price. Compare the accepted term, notice and termination charges." },
     ],
     ctaTitle: "Find Your Best Deal",
     ctaText: "Check what speeds and prices are available at your postcode.",

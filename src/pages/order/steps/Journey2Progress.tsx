@@ -1,16 +1,13 @@
 const PHASES: { key: string; label: string; steps: string[] }[] = [
-  { key: "address", label: "Address", steps: ["address"] },
-  { key: "plan", label: "Plan & equipment", steps: ["plan", "router", "extras"] },
-  { key: "details", label: "Your details", steps: ["details"] },
-  { key: "setup", label: "Start & billing", steps: ["start_date", "billing"] },
-  { key: "contract", label: "Contract", steps: ["contract"] },
-  { key: "review", label: "Review", steps: ["review", "complete"] },
+  { key: "choose", label: "Choose", steps: ["address", "plan", "router", "extras"] },
+  { key: "setup", label: "Your details", steps: ["details", "start_date", "billing"] },
+  { key: "agreement", label: "Agreement", steps: ["contract"] },
+  { key: "review", label: "Review & order", steps: ["review", "complete"] },
 ];
 
-// After Journey 2 materialises the contract it reuses the shared quote/order
-// journey, whose internal stage names differ. Customer-facing progress groups
-// those technical stages into six clear phases so mobile customers do not see a
-// daunting ten-step checkout.
+// Internal Journey 2 and quote/order stages stay unchanged. Customer-facing
+// progress is intentionally condensed to four simple phases so the checkout
+// feels short without weakening any server-side validation or evidence.
 const STEP_ALIASES: Record<string, string> = {
   quote: "contract",
   agreement: "contract",
@@ -23,7 +20,7 @@ const STEP_ALIASES: Record<string, string> = {
 export default function Journey2Progress({ current }: { current: string }) {
   const canonical = STEP_ALIASES[current] ?? current;
   const found = PHASES.findIndex((phase) => phase.steps.includes(canonical));
-  const idx = found >= 0 ? found : PHASES.findIndex((phase) => phase.key === "contract");
+  const idx = found >= 0 ? found : 2;
   const pct = canonical === "complete" ? 100 : Math.round(((idx + 1) / PHASES.length) * 100);
 
   return (
@@ -44,7 +41,17 @@ export default function Journey2Progress({ current }: { current: string }) {
       >
         <div className="h-full bg-foreground transition-all" style={{ width: `${pct}%` }} />
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">{canonical === "complete" ? "Order complete" : idx === 0 ? "First your address, then your plan. Review everything before placing your order." : idx < 4 ? "Your completed steps are saved. Contract and final review come next." : "Take your time to check your contract and final order details."}</p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {canonical === "complete"
+          ? "Order complete."
+          : idx === 0
+            ? "Choose your service and options."
+            : idx === 1
+              ? "Add your details, preferred start date and Direct Debit."
+              : idx === 2
+                ? "Review your documents, verify your mobile and accept."
+                : "One quick final check, then submit your order."}
+      </p>
       <ol className="mt-3 hidden flex-wrap gap-x-3 gap-y-1 text-[11px] uppercase tracking-wider md:flex">
         {PHASES.map((phase, i) => (
           <li key={phase.key} className={i <= idx ? "font-bold" : "text-muted-foreground"}>

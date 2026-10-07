@@ -30,7 +30,7 @@ const SERVICE_INTERESTS = [
 
 const PLAN_PREFS = [
   { value: "flex", label: "Flex (30-day rolling)" },
-  { value: "contract_saver", label: "Contract Saver" },
+  { value: "contract_saver", label: "Price Lock 24" },
   { value: "not_sure", label: "Not sure yet" },
 ] as const;
 

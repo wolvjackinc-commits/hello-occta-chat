@@ -53,7 +53,7 @@ export default function RewardsPage() {
           <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
             <li>Rewards will be tied to cleared payments, not sign-ups.</li>
             <li>Eligibility rules and fraud checks will be transparent and published.</li>
-            <li>Contract Saver customers will have stronger rewards eligibility than Flex customers.</li>
+            <li>Price Lock 24 customers may have different rewards eligibility from Flex 30 customers where a rewards offer expressly says so.</li>
             <li>You'll see your reward status inside your customer dashboard once the programme is live.</li>
           </ul>
         </div>

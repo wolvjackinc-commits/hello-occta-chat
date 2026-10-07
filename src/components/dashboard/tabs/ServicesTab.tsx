@@ -59,7 +59,7 @@ export function ServicesTab({ userId }: { userId: string }) {
     <div className="space-y-3">
       {liveServices.map((s) => {
         const hasVoice = (s.service_type || "").toLowerCase().includes("voice") || (s.service_type || "").toLowerCase().includes("landline");
-        const contractType = (s.plan_name || "").toLowerCase().includes("saver") ? "Contract Saver" : "Flex";
+        const contractType = (s.plan_name || "").toLowerCase().includes("saver") ? "Price Lock 24" : "Flex 30";
         return (
           <div key={s.id} className="border-4 border-foreground bg-background p-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">

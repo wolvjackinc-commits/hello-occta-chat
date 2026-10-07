@@ -23,6 +23,11 @@ export function validateStaffEvidence(e: StaffEvidenceInput, selectedPlan: unkno
   const plan = String(selectedPlan ?? "") as SpeedBucket;
   if (!PLAN_CAPS[plan]) return { ok: false, error: "session_plan_missing" };
   if (e.eligible_plan !== plan) return { ok: false, error: "selected_plan_not_in_evidence" };
+  const cap = PLAN_CAPS[plan];
+  if (Math.abs(e.advertised_download_mbps - cap.download) > 0.001 ||
+      Math.abs(e.advertised_upload_mbps - cap.upload) > 0.001) {
+    return { ok: false, error: "advertised_speed_must_match_selected_plan" };
+  }
   const t = Date.parse(e.retrieved_at);
   if (!Number.isFinite(t)) return { ok: false, error: "retrieved_at_invalid" };
   if (t > now + 5 * 60_000) return { ok: false, error: "retrieved_at_in_future" };

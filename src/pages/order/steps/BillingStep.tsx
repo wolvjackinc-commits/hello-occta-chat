@@ -10,8 +10,8 @@ import { money, type Journey2Session } from "@/lib/journey2/client";
 const DAYS = [1, 5, 10, 15, 20, 25, 28];
 
 /**
- * Journey 2 — billing day and Direct Debit Instruction, captured before the
- * contract is generated. Card payment is deliberately not offered.
+ * Journey 2 — billing day and Direct Debit Instruction, collected only after
+ * mobile verification and contract acceptance. Card payment is deliberately not offered.
  */
 export default function BillingStep({
   session, saving, onSave, onBack,
@@ -67,10 +67,9 @@ export default function BillingStep({
     <form onSubmit={submit} className="border-4 border-foreground p-4 sm:p-6 space-y-5">
       <div>
         <h1 className="font-display uppercase text-2xl">Set up your Direct Debit</h1>
-        <p className="text-sm text-muted-foreground mt-1">Your contract is accepted. Now add the bank details we'll use for future bills. Nothing is taken today.</p>
         <p className="text-sm text-muted-foreground mt-1">
-          Nothing is taken today — <strong>{money(0)}</strong> due now. Your details are stored securely and your first
-          collection only happens after your Direct Debit is active and we've given you advance notice.
+          Your contract is accepted. Add the bank details we'll use for future bills. <strong>{money(0)}</strong> is due now;
+          your first collection only happens after the Direct Debit is active and we've given you advance notice.
         </p>
       </div>
 
@@ -146,7 +145,7 @@ export default function BillingStep({
 
       <div className="grid gap-3 sm:flex sm:flex-wrap">
         {onBack && <Button type="button" variant="outline" onClick={onBack}>Back</Button>}
-        <Button type="submit" disabled={saving}>{saving ? "Saving securely…" : "Continue to your contract"}</Button>
+        <Button type="submit" disabled={saving}>{saving ? "Saving securely…" : "Continue to final review"}</Button>
       </div>
     </form>
   );

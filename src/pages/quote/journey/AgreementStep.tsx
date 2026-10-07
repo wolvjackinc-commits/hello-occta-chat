@@ -384,7 +384,7 @@ export default function AgreementStep({
         <div className="border-4 border-primary p-5 space-y-4">
           <div>
             <p className="font-display uppercase text-sm mb-1">Review and accept your agreement</p>
-            <p className="text-xs text-muted-foreground">Nothing is binding until you complete the confirmations and use the final order button below.</p>
+            <p className="text-xs text-muted-foreground">Nothing is binding until you verify your mobile and accept the contract below. Direct Debit is set up securely afterwards.</p>
           </div>
 
           {onEditStep && (

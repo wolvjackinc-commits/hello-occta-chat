@@ -244,7 +244,7 @@ export const seoGrowthArticles: SeoArticle[] = [
     ],
     faqs: [
       { question: "Does Digital Voice work in a power cut?", answer: "Not normally unless the router and any required fibre equipment have backup power." },
-      { question: "Can I get battery backup for a digital landline?", answer: "If you depend on the landline for emergency calls, tell your provider. Ofcom expects at least one hour of resilience for landline-dependent customers and says it should be free to those customers." },
+      { question: "Can I get battery backup for a digital landline?", answer: "If you depend on the landline for emergency calls, healthcare or telecare, tell your provider. The provider should assess your circumstances and discuss an appropriate resilience or alternative communication solution; do not assume one battery product is suitable for every household." },
       { question: "Will a cordless phone work during a power cut?", answer: "A cordless base usually needs electricity, so it may stop even if other communications equipment has backup power. Check the complete setup, not only the router." },
       { question: "What if I have no mobile signal at home?", answer: "Tell your provider before the migration. Poor or unavailable mobile coverage can be important when deciding what emergency-call resilience is appropriate." },
     ],

@@ -68,7 +68,7 @@ const faqs = [
     answer: "Flex 30 has no fixed minimum term and normally uses 30 days’ notice. There is no remaining-month early termination charge on Flex 30. Separately valid network cease or migration charges may still apply where lawful, actually incurred and disclosed.",
   },
   {
-    question: "Can I cancel whenever I want?",
+    question: "How do I leave Flex 30?",
     answer: "Absolutely. Give us 30 days notice and you're free to go. No penalties, no hassle, no 'retention team' trying to convince you otherwise. We make leaving as easy as joining.",
   },
   {

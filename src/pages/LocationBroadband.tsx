@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ArrowRight, Check, ChevronRight, Wifi, Shield, Clock, X, Zap } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Wifi, Shield, Clock, Zap } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";

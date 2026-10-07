@@ -55,9 +55,9 @@ const LocationBroadbandPage = () => {
   };
 
   const features = [
-    { icon: X, text: "30-Day Rolling Where Eligible" },
-    { icon: Shield, text: "No Hidden Fees" },
-    { icon: Clock, text: "7-Day Setup" },
+    { icon: Check, text: "Address-Specific Availability" },
+    { icon: Shield, text: "Charges Shown Before Acceptance" },
+    { icon: Clock, text: "Installation Date Confirmed" },
   ];
 
   const containerVariants = {

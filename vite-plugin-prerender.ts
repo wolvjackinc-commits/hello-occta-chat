@@ -188,7 +188,7 @@ const routes: RouteSEO[] = [
     path: "/landline",
     title: "Digital Home Phone UK - Add to Broadband | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Add Digital Home Phone from £4.95/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. Price Lock 24 or Flex 30 where offered.",
+      "Add Digital Voice / Home Phone to eligible OCCTA broadband. Current price, number-porting availability, equipment requirements and call charges are shown before acceptance.",
     canonical: "/landline",
     keywords:
       "digital home phone, digital voice UK, VoIP home phone, home phone broadband, cheap home phone UK, Flex 30 home phone, digital home phone UK",
@@ -280,7 +280,7 @@ const routes: RouteSEO[] = [
   {
     path: "/guides/no-contract-broadband-uk",
     title: "Flex 30 Broadband UK — Flexible Internet | OCCTA - Cheap UK Broadband & SIM",
-    description: "Looking for Flex 30 broadband in the UK? Learn how rolling monthly broadband works, who it suits, and how to get connected without lock-ins or exit fees.",
+    description: "Looking for Flex 30 broadband in the UK? Learn how the 30-day rolling term, notice period, setup and any applicable network charges work.",
     canonical: "/guides/no-contract-broadband-uk",
     keywords: "Flex 30 broadband UK, flexible broadband, cancel Flex 30 with the applicable notice broadband, rolling monthly broadband, no lock-in broadband",
     jsonLd: [localBusinessSchema],

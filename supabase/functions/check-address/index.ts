@@ -6,10 +6,17 @@ import { corsHeaders, jsonResponse, checkRateLimit, getRequestIp } from "../_sha
 const POSTCODE_RE = /^[A-Z]{1,2}[0-9][0-9A-Z]?[0-9][A-Z]{2}$/;
 
 async function idealPostcodes(postcode: string) {
+  const first = await idealPostcodesOnce(postcode);
+  if (first !== null) return first;
+  // One retry on timeout / transient provider errors.
+  return await idealPostcodesOnce(postcode);
+}
+
+async function idealPostcodesOnce(postcode: string) {
   const key = Deno.env.get("IDEAL_POSTCODES_API_KEY")?.trim();
   if (!key) return null;
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 2500);
+  const t = setTimeout(() => ctrl.abort(), 9000);
   try {
     const res = await fetch(
       `https://api.ideal-postcodes.co.uk/v1/postcodes/${encodeURIComponent(postcode)}?api_key=${encodeURIComponent(key)}`,

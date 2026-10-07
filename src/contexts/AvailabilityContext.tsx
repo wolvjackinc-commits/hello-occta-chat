@@ -55,7 +55,7 @@ interface AvailabilityActions {
 type AvailabilityContextValue = AvailabilityState & AvailabilityActions;
 
 const SESSION_KEY = "occta_availability";
-const ADDRESS_LOOKUP_TIMEOUT_MS = 3000;
+const ADDRESS_LOOKUP_TIMEOUT_MS = 11000;
 const ADDRESS_LOOKUP_TIMEOUT = "address_lookup_timeout";
 
 // ── Recommendation logic ──
@@ -231,12 +231,24 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
       // Do not let a slow provider leave the homepage spinner hanging. The
       // underlying request may finish later, but this customer interaction can
       // move straight to the full-address search instead.
-      const { data, error } = await withTimeout(
-        supabase.functions.invoke("check-address", {
-          body: { postcode: trimmed },
-        }),
-        ADDRESS_LOOKUP_TIMEOUT_MS
-      );
+      // One safe retry on timeout/transient server errors before falling back.
+      // The spinner stays up while the lookup is merely slow.
+      const lookup = () =>
+        withTimeout(
+          supabase.functions.invoke("check-address", { body: { postcode: trimmed } }),
+          ADDRESS_LOOKUP_TIMEOUT_MS
+        );
+      let data: any;
+      let error: any;
+      try {
+        ({ data, error } = await lookup());
+        if (error && (error as any)?.context?.status && (error as any).context.status < 500) throw error;
+        if (error || data?.source === "address_lookup_unavailable") ({ data, error } = await lookup());
+      } catch (first) {
+        const status = (first as any)?.context?.status;
+        if (status && status < 500) throw first;
+        ({ data, error } = await lookup());
+      }
 
       if (error) throw error;
 
@@ -269,7 +281,7 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
         addresses: [],
         errorType: timedOut ? "no-addresses" : "backend-unavailable",
         errorMessage: timedOut
-          ? "The postcode list is taking longer than expected. Search for your full address instead."
+          ? "We couldn't load the postcode list right now. Search for your full address instead."
           : "Something went wrong looking up your address. Search for your full address instead.",
       }));
     }

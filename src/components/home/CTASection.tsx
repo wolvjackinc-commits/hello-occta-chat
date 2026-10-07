@@ -103,7 +103,7 @@ const CTASection = () => {
             className="text-xl text-background/85 max-w-xl mb-10"
           >
             Join the growing number of sensible people who've had enough of the big providers.
-            Affordable telecom without contracts, hidden fees, or lock-ins — available across the UK.
+            Affordable telecom with clear terms. Flex 30 and Price Lock 24 broadband options are available where eligible, with customer-specific charges shown before acceptance.
           </motion.p>
 
           {/* CTA Buttons */}

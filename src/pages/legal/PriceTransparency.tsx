@@ -4,7 +4,7 @@ export default function PriceTransparency() {
   return (
     <LegalPage
       title="Price Transparency"
-      description="OCCTA's approach to price transparency, including how indicative pricing, your Contract Summary and any supplier charges are communicated before you pay."
+      description="OCCTA's approach to price transparency, including how indicative pricing, your Contract Summary and applicable charges are communicated before acceptance."
       canonical="/legal/price-transparency"
       lastUpdated="6 October 2026"
     >

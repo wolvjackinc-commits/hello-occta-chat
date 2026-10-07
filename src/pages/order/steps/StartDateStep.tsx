@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Journey2Session } from "@/lib/journey2/client";
+import { prewarmContractPipeline, type Journey2Session } from "@/lib/journey2/client";
 
 /** Statutory cooling-off window mirrored by the server. */
 const COOLING_OFF_DAYS = 14;
@@ -47,6 +47,12 @@ export default function StartDateStep({
   const [date, setDate] = useState(session.preferred_start_date ?? earliest);
   const [err, setErr] = useState<string | null>(null);
 
+  useEffect(() => {
+    // Warm the contract functions while the customer reviews their preferred
+    // start date, removing avoidable cold-start time from the Continue click.
+    prewarmContractPipeline();
+  }, []);
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || date < earliest) {
@@ -63,7 +69,7 @@ export default function StartDateStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Preferred start date</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Choose when you'd like your service to start. Your contract will show this date.
+          Choose when you'd like your service to start. Next you'll review and verify your contract; Direct Debit comes afterwards.
         </p>
       </div>
 
@@ -98,7 +104,7 @@ export default function StartDateStep({
 
       <div className="grid gap-3 sm:flex sm:flex-wrap">
         <Button type="button" variant="outline" onClick={onBack}>Back</Button>
-        <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Continue to billing"}</Button>
+        <Button type="submit" disabled={saving}>{saving ? "Preparing…" : "Review my contract"}</Button>
       </div>
     </form>
   );

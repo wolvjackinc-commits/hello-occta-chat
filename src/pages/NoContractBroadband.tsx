@@ -109,7 +109,7 @@ const NoContractBroadband = () => {
           title="Flex 30 Broadband UK: 30-Day Rolling, No Fixed Minimum Term"
           description={`Flex 30 broadband is a 30-day rolling option with no fixed minimum term where available. Broadband from £${prices.broadband}/mo; exact charges, speeds and availability are confirmed before acceptance.`}
           canonical="/no-contract-broadband-uk"
-          keywords="no contract broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, 30-day rolling broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, no exit fee broadband"
+          keywords="Flex 30 broadband UK, rolling monthly broadband UK, flexible broadband, 30-day rolling broadband, Price Lock 24, OCCTA broadband"
           type="article"
           price={prices.broadband}
         />

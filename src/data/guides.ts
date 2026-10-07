@@ -561,7 +561,7 @@ export const guides: Guide[] = [
       },
     ],
     faqs: [
-      { question: 'Can students get broadband without a credit check?', answer: 'Yes. OCCTA does not run credit checks on any plan, making it ideal for students.' },
+      { question: 'Are there eligibility checks for student broadband?', answer: 'Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit.' },
       { question: 'Can I cancel when I move out?', answer: 'Flex 30 normally uses 30 days’ notice and has no remaining-month ETF. Price Lock 24 may have an ETF during the minimum term. Moving-home and any separately valid network charges follow the accepted agreement.' },
       { question: 'How many people can share one broadband connection?', answer: 'With 100Mbps, 3-4 people can comfortably stream, game, and browse. For larger houses, choose 300Mbps+.' },
       { question: 'How long does installation take?', answer: 'Usually 7 working days from placing your order.' },

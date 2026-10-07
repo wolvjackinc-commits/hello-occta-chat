@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import type { Journey2Session } from "@/lib/journey2/client";
 import { getAvailabilityPrefill } from "@/lib/journey2/prefill";
@@ -28,11 +27,14 @@ export default function AddressStep({
   const d = session.customer_details;
   const [email, setEmail] = useState(d?.email ?? "");
   const [firstName, setFirstName] = useState(d?.full_name ?? "");
-  const [privacyAck, setPrivacyAck] = useState(false);
   const [manualEntry, setManualEntry] = useState(false);
+  const [changeAddress, setChangeAddress] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const showManualEntry = useCallback(() => setManualEntry(true), []);
+  const showManualEntry = useCallback(() => {
+    setChangeAddress(true);
+    setManualEntry(true);
+  }, []);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
   const validateContact = (field: string, value: string) => setFieldErrors((previous) => ({ ...previous, [field]: contactError(field, value) }));
 
@@ -53,10 +55,6 @@ export default function AddressStep({
       setErr("Please enter a valid email address.");
       return;
     }
-    if (!privacyAck) {
-      setErr("Please confirm you've read the Terms of Service and Privacy Policy to continue.");
-      return;
-    }
     setErr(null);
     onSave({
       postcode: postcode.trim().toUpperCase(),
@@ -75,6 +73,7 @@ export default function AddressStep({
     setTown(addr.city);
     setPostcode(addr.postcode.toUpperCase());
     setManualEntry(false);
+    setChangeAddress(false);
     setErr(null);
   }, []);
 
@@ -92,40 +91,58 @@ export default function AddressStep({
         )}
       </div>
 
-      <div>
-        <Label htmlFor="j2-search-postcode">Installation postcode</Label>
-        <Input id="j2-search-postcode" value={postcode} onChange={(e) => { setPostcode(e.target.value.toUpperCase()); setLine1(""); setTown(""); }} autoComplete="postal-code" autoCapitalize="characters" spellCheck={false} maxLength={10} className="uppercase" aria-describedby="j2-postcode-help" />
-        <p id="j2-postcode-help" className="mt-1 text-xs text-muted-foreground">Then find your house number and street below.</p>
-      </div>
+      {(!hasUsableAddress || changeAddress) && !manualEntry && (
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="j2-search-postcode">Installation postcode</Label>
+            <Input
+              id="j2-search-postcode"
+              value={postcode}
+              onChange={(e) => {
+                setPostcode(e.target.value.toUpperCase());
+                setLine1("");
+                setTown("");
+              }}
+              autoComplete="postal-code"
+              autoCapitalize="characters"
+              spellCheck={false}
+              maxLength={10}
+              className="uppercase"
+              aria-describedby="j2-postcode-help"
+            />
+            <p id="j2-postcode-help" className="mt-1 text-xs text-muted-foreground">
+              Then choose your house number and street below.
+            </p>
+          </div>
 
-      <AddressAutocomplete
-        onSelect={applyLookup}
-        onManualFallback={showManualEntry}
-        expectedPostcode={postcode}
-        label="Find your address"
-        helperText="Start typing your house number and street, e.g. 22 Pavilion View."
-      />
+          <AddressAutocomplete
+            onSelect={applyLookup}
+            onManualFallback={showManualEntry}
+            expectedPostcode={postcode}
+            label="Find your address"
+            helperText="Start typing your house number and street, e.g. 22 Pavilion View."
+          />
 
-      {hasUsableAddress && !manualEntry && (
-        <div className="border-2 border-foreground bg-muted/30 p-4">
-          <p className="font-display text-xs uppercase tracking-wider text-muted-foreground">Selected address</p>
-          <p className="mt-1 text-sm font-medium">
-            {[line1, line2, town, county, postcode.toUpperCase()].filter(Boolean).join(", ")}
-          </p>
-          <button
-            type="button"
-            onClick={() => setManualEntry(true)}
-            className="mt-2 text-xs underline text-muted-foreground hover:text-foreground"
-          >
-            Edit address manually
-          </button>
+          <Button type="button" variant="outline" onClick={showManualEntry} className="w-full sm:w-auto">
+            Can't find it? Enter address manually
+          </Button>
         </div>
       )}
 
-      {!hasUsableAddress && !manualEntry && (
-        <Button type="button" variant="outline" onClick={() => setManualEntry(true)} className="w-full sm:w-auto">
-          Can't find it? Enter address manually
-        </Button>
+      {hasUsableAddress && !manualEntry && !changeAddress && (
+        <div className="border-2 border-foreground bg-muted/30 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-display text-xs uppercase tracking-wider text-muted-foreground">Selected address</p>
+              <p className="mt-1 text-sm font-medium">
+                {[line1, line2, town, county, postcode.toUpperCase()].filter(Boolean).join(", ")}
+              </p>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => setChangeAddress(true)}>
+              Change address
+            </Button>
+          </div>
+        </div>
       )}
 
       {manualEntry && (
@@ -135,7 +152,7 @@ export default function AddressStep({
             {hasUsableAddress && (
               <button
                 type="button"
-                onClick={() => setManualEntry(false)}
+                onClick={() => { setManualEntry(false); setChangeAddress(false); }}
                 className="text-xs underline text-muted-foreground hover:text-foreground"
               >
                 Done
@@ -188,21 +205,13 @@ export default function AddressStep({
             <p id="j2-early-email-error" className="text-xs text-destructive" aria-live="polite">{fieldErrors.email}</p>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Used for your order and service updates. You can choose marketing preferences later.</p>
-        <div className="pt-2">
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="j2-terms-ack"
-              checked={privacyAck}
-              onCheckedChange={(v) => setPrivacyAck(v === true)}
-              className="mt-0.5"
-            />
-            <Label htmlFor="j2-terms-ack" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-              I've read OCCTA's <Link to="/terms" className="underline hover:text-foreground">Terms of Service</Link> and{" "}
-              <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>. I understand that entering the order journey does not permit OCCTA to substitute a different broadband plan or price without my agreement.
-            </Label>
-          </div>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Used for your order and service updates. You can choose marketing preferences later.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          By continuing, you acknowledge OCCTA's <Link to="/terms" className="underline hover:text-foreground">Terms of Service</Link> and{" "}
+          <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>. Entering the order journey does not allow OCCTA to substitute a different broadband plan or price without your agreement.
+        </p>
       </div>}
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}

@@ -14,6 +14,7 @@ async function ensureContractInformationPack(
   supabase: any,
   quoteId: string,
   contractSummaryId: string,
+  preGeneratedPackId?: string | null,
 ): Promise<{ required: boolean; ready: boolean; pack_id?: string; error?: string; details?: unknown }> {
   const { data: settings } = await supabase
     .from("platform_settings")
@@ -22,26 +23,30 @@ async function ensureContractInformationPack(
     .maybeSingle();
   if (!settings?.two_document_contract_flow_enabled) return { required: false, ready: true };
 
-  const projectUrl = Deno.env.get("SUPABASE_URL")!;
-  const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const r = await fetch(`${projectUrl}/functions/v1/generate-contract-information-pack`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${svcKey}`,
-      "Content-Type": "application/json",
-      "x-internal-service": "1",
-    },
-    body: JSON.stringify({ quote_id: quoteId }),
-  });
-  const body = await r.json().catch(async () => ({ raw: await r.text().catch(() => "") }));
-  if (!r.ok || !body?.pack_id) {
-    return { required: true, ready: false, error: "contract_information_generation_failed", details: body };
+  let packId = preGeneratedPackId ?? null;
+  if (!packId) {
+    const projectUrl = Deno.env.get("SUPABASE_URL")!;
+    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const r = await fetch(`${projectUrl}/functions/v1/generate-contract-information-pack`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${svcKey}`,
+        "Content-Type": "application/json",
+        "x-internal-service": "1",
+      },
+      body: JSON.stringify({ quote_id: quoteId }),
+    });
+    const body = await r.json().catch(async () => ({ raw: await r.text().catch(() => "") }));
+    if (!r.ok || !body?.pack_id) {
+      return { required: true, ready: false, error: "contract_information_generation_failed", details: body };
+    }
+    packId = body.pack_id;
   }
 
   const { data: pack, error: packErr } = await supabase
     .from("contract_information_packs")
     .select("id, contract_summary_id, document_status, pdf_storage_path")
-    .eq("id", body.pack_id)
+    .eq("id", packId)
     .maybeSingle();
   if (packErr || !pack) {
     return { required: true, ready: false, error: "contract_information_missing_after_generation", details: packErr?.message };
@@ -167,18 +172,37 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
     });
   }
 
-  // Generate the Contract Summary using service-role + internal flag.
+  // Generate the two independent document PDFs in parallel. The information
+  // pack is quote-based and can be rendered while the Contract Summary is being
+  // rendered; pairing is enforced only after both complete.
   const projectUrl = Deno.env.get("SUPABASE_URL")!;
   const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const r = await fetch(`${projectUrl}/functions/v1/generate-contract-summary`, {
+  const internalHeaders = {
+    "Authorization": `Bearer ${svcKey}`,
+    "Content-Type": "application/json",
+    "x-internal-service": "1",
+  };
+
+  const { data: twoDocSettings } = await supabase
+    .from("platform_settings")
+    .select("two_document_contract_flow_enabled")
+    .eq("singleton", true)
+    .maybeSingle();
+
+  const csPromise = fetch(`${projectUrl}/functions/v1/generate-contract-summary`, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${svcKey}`,
-      "Content-Type": "application/json",
-      "x-internal-service": "1",
-    },
+    headers: internalHeaders,
     body: JSON.stringify({ quote_id: q.id, actor_id: q.customer_id ?? null, journey_mode: true }),
   });
+  const ciPromise = twoDocSettings?.two_document_contract_flow_enabled
+    ? fetch(`${projectUrl}/functions/v1/generate-contract-information-pack`, {
+        method: "POST",
+        headers: internalHeaders,
+        body: JSON.stringify({ quote_id: q.id }),
+      })
+    : Promise.resolve(null);
+
+  const [r, ciGeneratedResponse] = await Promise.all([csPromise, ciPromise]);
 
   if (!r.ok) {
     const txt = await r.text().catch(() => "");
@@ -197,12 +221,19 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
   const csId = json.contract_summary_id as string | undefined;
   if (!csId) return jsonResponse({ error: "generation_failed", details: "Contract Summary generator returned no id." }, 502);
 
-  // Link journey to the newly minted CS before preparing the paired document.
+  let preGeneratedPackId: string | null = null;
+  if (ciGeneratedResponse) {
+    const ciBody = await ciGeneratedResponse.json().catch(() => null);
+    if (ciGeneratedResponse.ok && ciBody?.pack_id) preGeneratedPackId = String(ciBody.pack_id);
+  }
+
+  // Link journey to the newly minted CS, then bind the concurrently-rendered
+  // information pack to that exact Summary version.
   await supabase.from("order_journeys")
     .update({ contract_summary_id: csId })
     .eq("id", journey.id);
 
-  const ci = await ensureContractInformationPack(supabase, q.id, csId);
+  const ci = await ensureContractInformationPack(supabase, q.id, csId, preGeneratedPackId);
   if (!ci.ready) {
     await supabase.rpc("log_event", {
       _actor_type: "system", _event_type: "journey_contract_information_generation_failed",

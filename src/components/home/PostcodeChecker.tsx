@@ -183,7 +183,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
       {showInlineResult && (
         <>
           <p className="text-xs text-muted-foreground mt-2">
-            Choose the plan you're interested in. Exact network technology, speed and availability at this address will be confirmed before your binding broadband contract is issued, and any different option requires your agreement.
+            Choose the plan you're interested in. Speeds shown are OCCTA plan estimates. Final network technology, availability and actual line performance are confirmed during provisioning, and any different option requires your agreement.
           </p>
           <Button
             onClick={startJourney}

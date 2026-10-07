@@ -132,6 +132,11 @@ Deno.serve(async (req) => {
   }
 
   // ── One canonical snapshot per session ─────────────────────────────────────
+  // Keep the authoritative resolved price in memory so a fresh journey does
+  // not repeat the same supplier/catalogue resolution again when materialising
+  // the quote a few lines later.
+  let pricedForQuote: Awaited<ReturnType<typeof resolveJourney2Price>> | null = null;
+
   const { data: existingSnap } = await supabase
     .from("journey2_contract_snapshots")
     .select("id, snapshot, snapshot_sha256")
@@ -163,6 +168,7 @@ Deno.serve(async (req) => {
       addons: (session.selected_addons ?? []) as any,
       customer_type: "residential",
     });
+    pricedForQuote = priced;
     if (!priced) {
       await supabase.from("customer_journey_sessions")
         .update({ last_error: "price_not_exact_at_contract", last_activity_at: new Date().toISOString() })
@@ -258,7 +264,7 @@ Deno.serve(async (req) => {
   let quoteId: string | null = session.quote_id ?? null;
 
   if (!quoteId) {
-    const priced = await resolveJourney2Price(supabase, settings, {
+    const priced = pricedForQuote ?? await resolveJourney2Price(supabase, settings, {
       speed_bucket: session.speed_bucket,
       plan_term: session.plan_term,
       router_option: (session.router_option as any)?.router_option ?? "own",

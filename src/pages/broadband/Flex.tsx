@@ -61,13 +61,13 @@ export default function FlexBroadband() {
         <div className="border-4 border-primary p-6 md:p-8 bg-primary/5">
           <h3 className="font-display uppercase text-2xl mb-2">Want lower monthly pricing?</h3>
           <p className="text-muted-foreground mb-4">
-            Look at Contract Saver — keeps your monthly bill down in exchange for a longer term and
+            Look at Price Lock 24 — lower headline monthly pricing in exchange for a 24-month minimum term and
             stronger rewards eligibility.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link to="/broadband/contract-saver">
               <Button variant="outline" className="font-display uppercase">
-                Contract Saver <ArrowRight className="w-4 h-4 ml-1" />
+                Price Lock 24 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>
             <Link to="/broadband">

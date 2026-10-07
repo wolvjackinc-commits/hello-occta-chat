@@ -73,7 +73,10 @@ Deno.serve(perfServe("journey-cs-detail", async (req) => {
       .from("contract-pdfs")
       .createSignedUrl(cs.pdf_storage_key, 60 * 60 * 24);
     signed_pdf_url = signed?.signedUrl ?? null;
-    pdf_ready = !!signed_pdf_url;
+    const currentEvidenceReady = cs.terms_version !== "2026.10.1"
+      || cs.status === "accepted"
+      || (!!cs.pdf_sha256 && !!cs.body_snapshot_sha256);
+    pdf_ready = !!signed_pdf_url && currentEvidenceReady;
   }
 
   const { data: settings } = await supabase
@@ -86,13 +89,20 @@ Deno.serve(perfServe("journey-cs-detail", async (req) => {
   let contract_information: { number: string; signed_url: string; version: number } | null = null;
   const { data: cip } = await supabase
     .from("contract_information_packs")
-    .select("cip_number, version, document_status, pdf_storage_path")
+    .select("cip_number, version, document_status, pdf_storage_path, body_snapshot_sha256, pdf_sha256, template_version")
     .eq("contract_summary_id", cs.id)
     .neq("document_status", "superseded")
     .order("version", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (cip?.pdf_storage_path && !["cancelled", "void_manual_review"].includes(String(cip.document_status))) {
+  const cipEvidenceReady = !!cip?.pdf_storage_path
+    && !["cancelled", "void_manual_review"].includes(String(cip.document_status))
+    && (
+      cs.terms_version !== "2026.10.1"
+      || cs.status === "accepted"
+      || (cip?.template_version === "2026.10.1" && !!cip?.body_snapshot_sha256 && !!cip?.pdf_sha256)
+    );
+  if (cipEvidenceReady) {
     const { data: signed } = await supabase.storage
       .from("contract-documents")
       .createSignedUrl(cip.pdf_storage_path, 60 * 60 * 24);

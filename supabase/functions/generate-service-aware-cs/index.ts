@@ -1,4 +1,4 @@
-import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
+import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
 // Phase B — issue-time generator for the service-aware short Contract Summary.
 // Behind two_document_contract_flow_enabled. Does NOT touch existing
 // generate-contract-summary / accept-contract-summary / journey-generate-cs
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   const { data: q } = await supabase.from("quotes").select("*").eq("id", quoteId).maybeSingle();
   if (!q) return jsonResponse({ error: "quote_not_found" }, 404);
 
-  const releaseBlock = consumerContractReleaseBlock(q.customer_type);
+  const releaseBlock = await consumerContractReleaseBlockForDb(supabase, q.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
 

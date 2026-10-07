@@ -38,6 +38,10 @@ function renderCertificatePdf(opts: {
   acceptanceTextVersion: string;
   acceptanceTextHash: string;
   csPdfSha256: string;
+  cipNumber: string;
+  cipVersion: number | null;
+  cipPdfSha256: string;
+  otpVerifiedAt: string | null;
   checkboxes: { label: string; ticked: boolean }[];
 }): Uint8Array {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -99,6 +103,9 @@ function renderCertificatePdf(opts: {
   kv("Contract Summary reference", opts.csNumber);
   kv("Contract Summary version", String(opts.csVersion));
   kv("Contract Summary PDF (SHA-256)", opts.csPdfSha256);
+  kv("Contract Information reference", opts.cipNumber || "—");
+  kv("Contract Information version", opts.cipVersion == null ? "—" : String(opts.cipVersion));
+  kv("Contract Information PDF (SHA-256)", opts.cipPdfSha256 || "—");
 
   heading("Acceptance");
   kv("Accepted (UTC)", opts.acceptedAtUtc);
@@ -106,6 +113,7 @@ function renderCertificatePdf(opts: {
   kv("Acceptance wording version", opts.acceptanceTextVersion);
   kv("Terms version", opts.termsVersion);
   kv("Acceptance text (SHA-256)", opts.acceptanceTextHash);
+  kv("Mobile OTP verified (UTC)", opts.otpVerifiedAt || "—");
   // NOTE: IP, user-agent and source route are audit-only fields and are NOT
   // rendered onto the customer-facing certificate. They remain in
   // `acceptance_audit_records` for admin/compliance review only.
@@ -185,15 +193,30 @@ Deno.serve(perfServe("generate-acceptance-certificate", async (req) => {
     .eq("id", acc.quote_id)
     .maybeSingle();
 
+  const { data: cip } = acc.contract_information_pack_id
+    ? await supabase
+        .from("contract_information_packs")
+        .select("cip_number, version, pdf_sha256, pdf_hash")
+        .eq("id", acc.contract_information_pack_id)
+        .maybeSingle()
+    : { data: null };
+
+  // Reserve the real immutable certificate number BEFORE rendering so the PDF,
+  // database row and customer-facing reference are identical.
+  const { data: certificateNumber, error: numberErr } = await supabase.rpc("generate_acceptance_certificate_number");
+  if (numberErr || !certificateNumber) {
+    return jsonResponse({ error: "certificate_number_failed", details: numberErr?.message }, 500);
+  }
+
   const checkboxes = [
     { label: "I confirm that I received and can access my Contract Summary and Contract Information & Customer Agreement Pack.", ticked: !!acc.checkbox_received_read },
     { label: "I confirm that my personal details and service address shown in my order documents are correct.", ticked: !!acc.checkbox_details_correct },
-    { label: "I understand the monthly and one-off charges, contract term, notice, cancellation rules and payment arrangements.", ticked: !!acc.checkbox_understand_charges },
-    { label: "I agree to enter into the OCCTA agreement on the terms shown in my Contract Summary and Contract Information & Customer Agreement Pack and understand that the order creates an obligation to pay.", ticked: !!acc.checkbox_consent },
+    { label: "I understand the monthly and one-off charges, contract type, term, notice, cancellation rules and any applicable Early Termination Charge or network cease/migration charge.", ticked: !!acc.checkbox_understand_charges },
+    { label: "I agree to enter into the OCCTA agreement on the terms shown in my Contract Summary and Contract Information & Customer Agreement Pack and understand that placing this order creates an obligation to pay.", ticked: !!acc.checkbox_consent },
   ];
 
   const bytes = renderCertificatePdf({
-    certificateNumber: "PENDING", // overwritten — but stored value is taken from DB trigger
+    certificateNumber: String(certificateNumber),
     csNumber: cs.cs_number ?? "—",
     csVersion: cs.version ?? 1,
     quoteNumber: q?.quote_number ?? "—",
@@ -207,6 +230,10 @@ Deno.serve(perfServe("generate-acceptance-certificate", async (req) => {
     acceptanceTextVersion: acc.acceptance_text_version ?? "—",
     acceptanceTextHash: acc.acceptance_text_hash ?? "—",
     csPdfSha256: cs.pdf_sha256 ?? "—",
+    cipNumber: cip?.cip_number ?? "—",
+    cipVersion: cip?.version ?? acc.contract_information_pack_version ?? null,
+    cipPdfSha256: acc.contract_information_pack_pdf_sha256 ?? cip?.pdf_sha256 ?? acc.contract_information_pack_pdf_hash ?? "—",
+    otpVerifiedAt: acc.otp_verified_at ?? null,
     checkboxes,
   });
 
@@ -227,6 +254,13 @@ Deno.serve(perfServe("generate-acceptance-certificate", async (req) => {
     quote_id: acc.quote_id,
     customer_id: acc.customer_id,
     journey_id: acc.journey_id,
+    certificate_number: String(certificateNumber),
+    accepted_at_utc: acc.accepted_at_utc ?? acc.accepted_at,
+    contract_information_pack_id: acc.contract_information_pack_id ?? null,
+    contract_information_pack_version: acc.contract_information_pack_version ?? null,
+    contract_information_pack_pdf_hash: acc.contract_information_pack_pdf_sha256 ?? acc.contract_information_pack_pdf_hash ?? null,
+    contract_summary_template_version: acc.contract_summary_template_version ?? acc.terms_version ?? null,
+    contract_information_pack_template_version: acc.contract_information_pack_template_version ?? null,
     storage_key: storageKey,
     sha256: sha,
   }).select("certificate_number, storage_key, sha256").single();

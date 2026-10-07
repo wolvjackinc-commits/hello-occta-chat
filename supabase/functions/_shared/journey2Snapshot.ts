@@ -8,6 +8,7 @@
  * stored fingerprint. Every contractual document renders from this snapshot, so
  * the figures a customer signs are the figures that are committed and billed.
  */
+import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "./icukAvailability.ts";
 
 /** Deterministic JSON: object keys sorted recursively, arrays order-preserving. */
 export function canonicalJson(value: unknown): string {
@@ -77,7 +78,15 @@ export type Journey2Snapshot = {
   product: {
     plan_name: string; speed_bucket: string; contract_term: string;
     minimum_term_months: number; setup: { option: string; label: string; one_off_incl_vat: number };
+    technology: string;
+    speed_matrix: ContractSpeedMatrix;
     estimated_download_mbps: number; estimated_upload_mbps: number; speed_statement: string;
+  };
+  supplier_availability: {
+    source: string;
+    retrieved_at: string;
+    evidence_sha256: string;
+    address_reference: { nad_key: string | null; uprn: string | null };
   };
   router: Record<string, unknown>;
   addons: { id: string; label: string; monthly: number }[];
@@ -90,7 +99,10 @@ export type Journey2Snapshot = {
   };
   promotion: Journey2Promotion | null;
   schedule: {
-    preferred_start_date: string; billing_day: number;
+    preferred_start_date: string;
+    likely_service_date: string;
+    likely_service_date_basis: string;
+    billing_day: number;
     expected_first_collection_rule: string; billing_commencement_rule: string;
   };
   cooling_off: { days: number; acknowledged: boolean; statement: string };
@@ -209,6 +221,14 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
   const dvSelected = ((session.selected_addons ?? []) as string[]).includes("digital_voice");
   const mask = (session.dd_masked ?? {}) as Record<string, any>;
   const createdAt = input.createdAt ?? new Date().toISOString();
+  const speedGate = buildContractSpeedMatrix(session.supplier_availability_snapshot, session.speed_bucket);
+  if (!speedGate.ok) throw new Error(speedGate.error);
+  const speedMatrix = speedGate.matrix;
+  const availability = (session.supplier_availability_snapshot ?? {}) as Record<string, any>;
+  const availabilityHash = String(session.supplier_availability_sha256 ?? "");
+  if (!/^[0-9a-f]{64}$/i.test(availabilityHash)) throw new Error("supplier_availability_hash_missing");
+  const likelyServiceDate = String(session.likely_service_date ?? session.preferred_start_date ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(likelyServiceDate)) throw new Error("likely_service_date_missing");
 
   return {
     snapshot_version: SNAPSHOT_VERSION,
@@ -253,17 +273,30 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
       plan_name: planName,
       speed_bucket: String(session.speed_bucket),
       contract_term: String(session.plan_term),
-      minimum_term_months: session.plan_term === "price_lock_24" ? 24 : 1,
-      estimated_download_mbps: SNAPSHOT_SPEED_ESTIMATES[String(session.speed_bucket)]?.download ?? 0,
-      estimated_upload_mbps: SNAPSHOT_SPEED_ESTIMATES[String(session.speed_bucket)]?.upload ?? 0,
+      minimum_term_months: session.plan_term === "price_lock_24" ? 24 : 0,
+      technology: speedMatrix.technology,
+      speed_matrix: speedMatrix,
+      estimated_download_mbps: speedMatrix.normally_available_download_mbps,
+      estimated_upload_mbps: speedMatrix.normally_available_upload_mbps,
       speed_statement:
-        `Estimated download up to ${SNAPSHOT_SPEED_ESTIMATES[String(session.speed_bucket)]?.download ?? 0} Mbps and ` +
-        `estimated upload up to ${SNAPSHOT_SPEED_ESTIMATES[String(session.speed_bucket)]?.upload ?? 0} Mbps. ` +
-        `Speeds are estimates for your line and are not guaranteed.`,
+        `Verified address-specific broadband speeds: minimum ${speedMatrix.minimum_download_mbps}/${speedMatrix.minimum_upload_mbps} Mbps, ` +
+        `normally available ${speedMatrix.normally_available_download_mbps}/${speedMatrix.normally_available_upload_mbps} Mbps, ` +
+        `maximum ${speedMatrix.maximum_download_mbps}/${speedMatrix.maximum_upload_mbps} Mbps, and advertised plan speed ` +
+        `${speedMatrix.advertised_download_mbps}/${speedMatrix.advertised_upload_mbps} Mbps (download/upload). ` +
+        `Source: ICUK LIVE exact-address availability retrieved ${speedMatrix.source_retrieved_at}.`,
       setup: {
         option: String(priced.setup.option),
         label: String(priced.setup.label),
         one_off_incl_vat: round2(priced.setup.oneOff),
+      },
+    },
+    supplier_availability: {
+      source: String(availability.source ?? ""),
+      retrieved_at: String(availability.retrieved_at ?? ""),
+      evidence_sha256: availabilityHash,
+      address_reference: {
+        nad_key: availability.address_reference?.nad_key ?? null,
+        uprn: availability.address_reference?.uprn ?? null,
       },
     },
     router: {
@@ -292,6 +325,8 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
     promotion: promotionForSnapshot(session, createdAt),
     schedule: {
       preferred_start_date: String(session.preferred_start_date),
+      likely_service_date: likelyServiceDate,
+      likely_service_date_basis: "Customer-selected target date; provisional until the network confirms the appointment/activation.",
       billing_day: Number(session.billing_anchor_day),
       expected_first_collection_rule: FIRST_COLLECTION_RULE,
       billing_commencement_rule: BILLING_COMMENCEMENT_RULE,
@@ -346,6 +381,8 @@ export function snapshotMatchesSession(
 ): { ok: boolean; field?: string } {
   const checks: [string, unknown, unknown][] = [
     ["preferred_start_date", snapshot.schedule?.preferred_start_date, session.preferred_start_date],
+    ["likely_service_date", snapshot.schedule?.likely_service_date, session.likely_service_date ?? session.preferred_start_date],
+    ["supplier_availability_sha256", snapshot.supplier_availability?.evidence_sha256, session.supplier_availability_sha256],
     ["billing_day", Number(snapshot.schedule?.billing_day), Number(session.billing_anchor_day)],
     ["speed_bucket", snapshot.product?.speed_bucket, session.speed_bucket],
     ["contract_term", snapshot.product?.contract_term, session.plan_term],

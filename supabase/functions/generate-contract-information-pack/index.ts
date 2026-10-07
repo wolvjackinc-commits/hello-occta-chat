@@ -1,4 +1,4 @@
-import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
+import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
 // Phase B — generates the OCCTA Contract Information & Customer Agreement Pack
 // (long document). Service-aware. Behind two_document_contract_flow_enabled.
 //
@@ -22,6 +22,7 @@ import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidators.ts";
 import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
+import { buildContractSpeedMatrix } from "../_shared/icukAvailability.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -78,15 +79,35 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "hard_block", blocks: check.blocks }, 422);
   }
 
-  // Promotion is part of the logical body. An accepted pack therefore cannot
-  // silently gain or lose SWITCH50 after the customer accepts it.
+  const isNewConsumerBroadband = q.customer_type !== "business" && String((q as any).service_type ?? "") === "broadband";
+  const speedGate = isNewConsumerBroadband
+    ? buildContractSpeedMatrix((q as any).supplier_availability_snapshot, (q as any).speed_bucket)
+    : null;
+  if (speedGate && !speedGate.ok) {
+    return jsonResponse({ error: speedGate.error, message: "Verified address-specific speed evidence is required before Contract Information can be issued." }, 409);
+  }
+  if (isNewConsumerBroadband && !(q as any).likely_service_date) {
+    return jsonResponse({ error: "likely_service_date_required" }, 409);
+  }
+
+  // Promotion, address-specific network evidence and likely service date are
+  // part of the logical body. Any material change therefore requires a new
+  // document version instead of mutating an issued/accepted Pack.
   const promotion = ((q as any).campaign_snapshot ?? null) as Record<string, any> | null;
-  const bodySnapshot = { components, segment, promotion, template_version: TWO_DOC_TEMPLATE_VERSION };
+  const bodySnapshot = {
+    components,
+    segment,
+    promotion,
+    template_version: TWO_DOC_TEMPLATE_VERSION,
+    supplier_availability_sha256: (q as any).supplier_availability_sha256 ?? null,
+    speed_matrix: speedGate?.ok ? speedGate.matrix : null,
+    likely_service_date: (q as any).likely_service_date ?? null,
+  };
   const bodyHash = await sha256Hex(JSON.stringify(bodySnapshot));
 
   const { data: existingRows } = await supabase
     .from("contract_information_packs")
-    .select("id, cip_number, version, document_status, pdf_hash, pdf_storage_path, contract_summary_id")
+    .select("id, cip_number, version, document_status, pdf_hash, body_snapshot_sha256, pdf_sha256, pdf_storage_path, contract_summary_id")
     .eq("quote_id", quoteId)
     .neq("document_status", "superseded")
     .order("version", { ascending: false });
@@ -100,18 +121,21 @@ Deno.serve(async (req) => {
     return jsonResponse({
       ok: true, reused: true, immutable: true,
       pack_id: accepted.id, cip_number: accepted.cip_number, version: accepted.version,
-      pdf_hash: accepted.pdf_hash,
+      body_snapshot_sha256: accepted.body_snapshot_sha256 ?? accepted.pdf_hash,
+      pdf_sha256: accepted.pdf_sha256,
     });
   }
 
-  const releaseBlock = consumerContractReleaseBlock(q.customer_type);
+  const releaseBlock = await consumerContractReleaseBlockForDb(supabase, q.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
-  const sameBody = (existingRows ?? []).find((r) => r.pdf_hash === bodyHash && pairable(r));
+  const sameBody = (existingRows ?? []).find((r) => (r.body_snapshot_sha256 ?? r.pdf_hash) === bodyHash && pairable(r));
   if (sameBody) {
     return jsonResponse({
       ok: true, reused: true,
-      pack_id: sameBody.id, cip_number: sameBody.cip_number, version: sameBody.version, pdf_hash: sameBody.pdf_hash,
+      pack_id: sameBody.id, cip_number: sameBody.cip_number, version: sameBody.version,
+      body_snapshot_sha256: sameBody.body_snapshot_sha256 ?? sameBody.pdf_hash,
+      pdf_sha256: sameBody.pdf_sha256,
     });
   }
 
@@ -148,7 +172,9 @@ Deno.serve(async (req) => {
       document_status: "issued",
       template_version: TWO_DOC_TEMPLATE_VERSION,
       body_snapshot: bodySnapshot,
-      pdf_hash: bodyHash,
+      pdf_hash: bodyHash, // legacy compatibility only; logical body hash
+      body_snapshot_sha256: bodyHash,
+      pdf_sha256: pdfSha,
       pdf_storage_path: storagePath,
       issued_at_utc: new Date().toISOString(),
       display_timezone: "Europe/London",
@@ -161,7 +187,7 @@ Deno.serve(async (req) => {
   return jsonResponse({
     ok: true, reused: false,
     pack_id: inserted.id, cip_number: inserted.cip_number, version: inserted.version,
-    pdf_hash: bodyHash, pdf_sha256: pdfSha, storage_path: storagePath,
+    body_snapshot_sha256: bodyHash, pdf_sha256: pdfSha, storage_path: storagePath,
   });
 });
 
@@ -235,7 +261,24 @@ function renderPackPdf(opts: {
   }
 
   heading("Broadband speed information");
-  para(SPEED_ESTIMATE_DISCLAIMER);
+  const speedMatrix = (opts.quote as any).supplier_availability_snapshot && (opts.quote as any).speed_bucket
+    ? buildContractSpeedMatrix((opts.quote as any).supplier_availability_snapshot, (opts.quote as any).speed_bucket)
+    : null;
+  if (speedMatrix?.ok) {
+    const s = speedMatrix.matrix;
+    para(
+      `Technology: ${s.technology}. Address-specific download speeds: minimum ${s.minimum_download_mbps} Mbps; normally available ${s.normally_available_download_mbps} Mbps; maximum ${s.maximum_download_mbps} Mbps; advertised plan speed ${s.advertised_download_mbps} Mbps.`
+    );
+    para(
+      `Address-specific upload speeds: minimum ${s.minimum_upload_mbps} Mbps; normally available ${s.normally_available_upload_mbps} Mbps; maximum ${s.maximum_upload_mbps} Mbps; advertised plan speed ${s.advertised_upload_mbps} Mbps. Supplier evidence retrieved ${s.source_retrieved_at}.`
+    );
+    para("These figures are frozen from the exact-address supplier availability check used for this order. Contact OCCTA if your service is materially and repeatedly below the contractual minimum so we can investigate and apply the remedies available under your agreement and applicable rules.");
+  } else {
+    para(SPEED_ESTIMATE_DISCLAIMER);
+  }
+  if ((opts.quote as any).likely_service_date) {
+    para(`Initial likely service date: ${String((opts.quote as any).likely_service_date)}. This is the customer-selected target date and remains provisional until the network confirms the appointment or activation.`);
+  }
 
   const promotion = opts.quote.campaign_snapshot;
   if (promotion?.eligible === true && promotion?.code === "SWITCH50") {

@@ -1,4 +1,4 @@
-import { consumerContractReleaseBlock } from "../_shared/consumerContractRelease.ts";
+import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, getRequestIp, checkRateLimit, sendResendEmail, brutalistEmailShell, escapeHtml, maskEmail } from "../_shared/quoteHelpers.ts";
 import { ACCEPTANCE_CHECKBOX_TEXT } from "../_shared/legalText.ts";
 import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts";
@@ -14,9 +14,9 @@ export const JOURNEY_CHECKBOX_TEXTS = {
   details_correct:
     "I confirm that my personal details and service address shown in my order documents are correct.",
   understand_charges:
-    "I understand the monthly and one-off charges, contract term, notice, cancellation rules and payment arrangements.",
+    "I understand the monthly and one-off charges, contract type, term, notice, cancellation rules and any applicable Early Termination Charge or network cease/migration charge.",
   consent:
-    "I agree to enter into the OCCTA agreement on the terms shown in my Contract Summary and Contract Information & Customer Agreement Pack and understand that the order creates an obligation to pay.",
+    "I agree to enter into the OCCTA agreement on the terms shown in my Contract Summary and Contract Information & Customer Agreement Pack and understand that placing this order creates an obligation to pay.",
 } as const;
 
 const Schema = z.object({
@@ -92,6 +92,9 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   let cs: any = null;
   let journey: any = null;
   let otpChallengeRowId: string | null = null;
+  let otpChallengeVerifiedAt: string | null = null;
+  let journeySession: any = null;
+  let currentCip: any = null;
   if (i.journey_mode) {
     const { data: j } = await supabase
       .from("order_journeys")
@@ -104,6 +107,12 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     journey = j;
     const { data } = await supabase.from("contract_summaries").select("*").eq("id", j.contract_summary_id).maybeSingle();
     cs = data;
+    const { data: js } = await supabase
+      .from("customer_journey_sessions")
+      .select("id, digital_voice_acknowledged, preferred_start_date, likely_service_date, supplier_availability_sha256")
+      .eq("order_journey_id", j.id)
+      .maybeSingle();
+    journeySession = js;
   } else {
     const { data } = await supabase.from("contract_summaries").select("*").eq("public_token_hash", hash).maybeSingle();
     cs = data;
@@ -145,6 +154,13 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       }, 403);
     }
     otpChallengeRowId = (otpGate.challenge?.id as string | undefined) ?? null;
+    otpChallengeVerifiedAt = (otpGate.challenge?.verified_at as string | undefined) ?? null;
+    if (cs?.terms_version === "2026.10.1" && (!otpChallengeRowId || otpGate.bypassed)) {
+      return jsonResponse({
+        error: "verified_otp_required",
+        message: "SMS verification is mandatory for this contract version and cannot be bypassed.",
+      }, 403);
+    }
   } else {
     if (i.checkbox_confirmed !== true) return jsonResponse({ error: "checkbox_required" }, 400);
   }
@@ -186,6 +202,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       .limit(1)
       .maybeSingle();
     let certificate_number: string | null = null;
+    let certificate_pending = false;
     if (existingAcc) {
       const { data: cert } = await supabase
         .from("acceptance_certificates")
@@ -193,6 +210,33 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
         .eq("contract_acceptance_id", existingAcc.id)
         .maybeSingle();
       certificate_number = cert?.certificate_number ?? null;
+
+      // Idempotent repair for a transient certificate-generation failure.
+      // This never changes accepted contract evidence; it creates the separate
+      // immutable certificate from the already-recorded acceptance.
+      if (!certificate_number && cs.terms_version === "2026.10.1") {
+        try {
+          const projectUrl = Deno.env.get("SUPABASE_URL")!;
+          const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const certRes = await fetch(`${projectUrl}/functions/v1/generate-acceptance-certificate`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${svcKey}`,
+              "Content-Type": "application/json",
+              "x-internal-service": "1",
+            },
+            body: JSON.stringify({ contract_acceptance_id: existingAcc.id }),
+          });
+          if (certRes.ok) {
+            const certJson = await certRes.json();
+            certificate_number = certJson?.certificate_number ?? null;
+          } else {
+            certificate_pending = true;
+          }
+        } catch {
+          certificate_pending = true;
+        }
+      }
     }
     return jsonResponse({
       ok: true, already_accepted: true,
@@ -200,12 +244,20 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       contract_summary_id: cs.id,
       contract_acceptance_id: existingAcc?.id ?? null,
       certificate_number,
+      certificate_pending,
     });
   }
 
 
-  const releaseBlock = consumerContractReleaseBlock(cs.customer_type);
+  const releaseBlock = await consumerContractReleaseBlockForDb(supabase, cs.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
+
+  if (cs.customer_type !== "business" && cs.terms_version === "2026.10.1" && !i.journey_mode) {
+    return jsonResponse({
+      error: "canonical_journey_required",
+      message: "New consumer contracts must be accepted through the verified OCCTA order journey.",
+    }, 409);
+  }
 
   if (!["issued", "viewed", "draft"].includes(cs.status)) return jsonResponse({ error: "not_acceptable", status: cs.status }, 409);
   if (cs.token_expires_at && new Date(cs.token_expires_at) < new Date()) return jsonResponse({ error: "expired" }, 410);
@@ -230,17 +282,19 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     }
   }
 
-  // Snapshot integrity: if a Contract Information Pack exists for this quote it
-  // must be linked to THIS Contract Summary, so acceptance can never mix
-  // mismatched document versions.
+  // Current consumer contracts require the exact paired Pack with separate
+  // logical-body and actual-PDF hashes. Historical generations retain their
+  // original evidence model and are not rewritten.
   {
     const { data: cip } = await supabase
       .from("contract_information_packs")
-      .select("id, cip_number, contract_summary_id, document_status, template_version")
+      .select("id, cip_number, version, contract_summary_id, document_status, template_version, body_snapshot_sha256, pdf_sha256, pdf_storage_path")
       .eq("quote_id", cs.quote_id)
+      .neq("document_status", "superseded")
       .order("version", { ascending: false })
       .limit(1)
       .maybeSingle();
+    currentCip = cip;
     if (cip && cip.contract_summary_id && cip.contract_summary_id !== cs.id) {
       return jsonResponse({
         error: "contract_information_mismatch",
@@ -254,6 +308,20 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
         message: "The Contract Information for this order is no longer current. OCCTA must reissue both documents together before acceptance.",
         details: { cip_number: cip.cip_number, document_status: cip.document_status },
       }, 409);
+    }
+    if (cs.customer_type !== "business" && cs.terms_version === "2026.10.1") {
+      if (!cip || cip.contract_summary_id !== cs.id) {
+        return jsonResponse({ error: "contract_information_required" }, 409);
+      }
+      if (cip.template_version !== "2026.10.1" || !cip.body_snapshot_sha256 || !cip.pdf_sha256 || !cip.pdf_storage_path) {
+        return jsonResponse({
+          error: "contract_information_evidence_incomplete",
+          message: "The exact Contract Information PDF and its evidence hashes must be stored before acceptance.",
+        }, 409);
+      }
+      if (!cs.body_snapshot_sha256) {
+        return jsonResponse({ error: "contract_summary_body_hash_missing" }, 409);
+      }
     }
   }
 
@@ -316,6 +384,23 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     acceptance_text_hash: acceptanceTextHash,
     date_of_birth: i.date_of_birth ?? null,
     business_name: i.business_name ?? null,
+    contract_summary_body_sha256: cs.body_snapshot_sha256 ?? null,
+    contract_information_pack_id: currentCip?.id ?? null,
+    contract_information_pack_version: currentCip?.version ?? null,
+    contract_information_pack_pdf_hash: currentCip?.pdf_sha256 ?? null,
+    contract_information_pack_pdf_sha256: currentCip?.pdf_sha256 ?? null,
+    contract_information_pack_body_sha256: currentCip?.body_snapshot_sha256 ?? null,
+    contract_summary_template_version: cs.terms_version,
+    contract_information_pack_template_version: currentCip?.template_version ?? null,
+    otp_challenge_id: otpChallengeRowId,
+    otp_verified_at: otpChallengeVerifiedAt,
+    early_start_requested: false,
+    early_start_consent: false,
+    digital_voice_acknowledged: cs.customer_type === "business"
+      ? null
+      : (cs.digital_voice_addon_snapshot && Object.keys(cs.digital_voice_addon_snapshot).length > 0
+          ? journeySession?.digital_voice_acknowledged === true
+          : false),
     pack_acknowledgements: packAcks.length
       ? {
           confirmed_at: acceptedAt,
@@ -353,13 +438,23 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     console.warn("[accept-contract-summary] risk capture failed", (e as Error).message);
   }
 
-  const { error: csErr } = await supabase.from("contract_summaries").update({
-    status: "accepted",
-    accepted_at: acceptedAt,
-    accepted_ip: ip,
-    accepted_user_agent: ua,
-  }).eq("id", cs.id);
-  if (csErr) return jsonResponse({ error: "cs_update_failed", details: csErr.message }, 500);
+  // v2026.10.1 consumer acceptance is committed atomically by the database
+  // acceptance trigger (Summary + Pack + OTP). Legacy/business paths retain
+  // the explicit update below for compatibility.
+  const { data: acceptedState } = await supabase
+    .from("contract_summaries")
+    .select("status")
+    .eq("id", cs.id)
+    .maybeSingle();
+  if (acceptedState?.status !== "accepted") {
+    const { error: csErr } = await supabase.from("contract_summaries").update({
+      status: "accepted",
+      accepted_at: acceptedAt,
+      accepted_ip: ip,
+      accepted_user_agent: ua,
+    }).eq("id", cs.id);
+    if (csErr) return jsonResponse({ error: "cs_update_failed", details: csErr.message }, 500);
+  }
 
   await supabase.from("quotes").update({ status: "contract_summary_accepted" }).eq("id", cs.quote_id);
   await supabase.from("quote_requests").update({ status: "contract_summary_accepted", updated_at: acceptedAt }).eq("id", cs.quote_request_id);
@@ -472,8 +567,11 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     actor_type: "anon",
   });
 
-  // Generate immutable acceptance certificate (best-effort).
+  // Generate the immutable acceptance certificate immediately. Acceptance
+  // remains legally recorded even if storage/email infrastructure is transiently
+  // unavailable, but activation is database-blocked until the certificate exists.
   let certificate_number: string | null = null;
+  let certificate_pending = false;
   if (acceptanceId) {
     try {
       const projectUrl = Deno.env.get("SUPABASE_URL")!;
@@ -490,8 +588,31 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       if (r.ok) {
         const j = await r.json();
         certificate_number = j?.certificate_number ?? null;
+      } else {
+        certificate_pending = true;
       }
-    } catch { /* certificate gen is best-effort */ }
+    } catch {
+      certificate_pending = true;
+    }
+
+    if (!certificate_number && cs.terms_version === "2026.10.1") {
+      certificate_pending = true;
+      try {
+        const title = `Acceptance certificate pending — ${cs.cs_number}`;
+        const { data: existingTask } = await supabase.from("admin_tasks")
+          .select("id").eq("title", title).in("status", ["open", "in_progress"]).limit(1).maybeSingle();
+        if (!existingTask) {
+          await supabase.from("admin_tasks").insert({
+            title,
+            description: "Contract acceptance is valid, but the immutable acceptance certificate has not yet been generated. Activation is blocked until the certificate exists.",
+            status: "open",
+            priority: "high",
+            related_customer_id: cs.customer_id,
+            related_account_number: cs.account_number,
+          });
+        }
+      } catch { /* task creation is non-fatal; activation guard is authoritative */ }
+    }
   }
 
   // Suppress legacy welcome email in journey-mode OR when the platform flag is on.
@@ -531,6 +652,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     contract_summary_id: cs.id,
     contract_acceptance_id: acceptanceId,
     certificate_number,
+    certificate_pending,
     journey_advanced_to: journey ? "start_date" : null,
     // Bespoke packs carry the customer straight into Direct Debit setup.
     dd_setup_path: typeof cs.pack_sections?.dd_setup_path === "string" ? cs.pack_sections.dd_setup_path : null,

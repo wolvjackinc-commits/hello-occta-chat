@@ -123,7 +123,7 @@ const routes: RouteSEO[] = [
     canonical: "/",
     keywords:
       "cheap broadband UK, Flex 30 broadband, cancel Flex 30 with the applicable notice broadband, affordable internet UK, 5G SIM options, cheap SIM deals UK, budget broadband 2025, fibre broadband Flex 30, unlimited broadband UK, OCCTA broadband",
-    price: "22.99",
+    price: "34.99",
     jsonLd: globalSchemas,
   },
   {
@@ -134,7 +134,7 @@ const routes: RouteSEO[] = [
     canonical: "/broadband",
     keywords:
       "cheap broadband UK, Flex 30 broadband, cancel Flex 30 with the applicable notice broadband, fibre broadband Flex 30, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [
       localBusinessSchema,
       {
@@ -148,7 +148,7 @@ const routes: RouteSEO[] = [
         areaServed: { "@type": "Country", name: "United Kingdom" },
         offers: {
           "@type": "Offer",
-          price: "22.99",
+          price: "34.99",
           priceCurrency: "GBP",
           availability: "https://schema.org/InStock",
         },
@@ -221,7 +221,7 @@ const routes: RouteSEO[] = [
     canonical: "/no-contract-broadband-uk",
     keywords:
       "Flex 30 broadband UK, flexible broadband, cancel Flex 30 with the applicable notice broadband, no lock-in broadband, cheap broadband UK, OCCTA broadband, rolling monthly broadband, no remaining-month early termination charge on Flex 30 broadband",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [
       localBusinessSchema,
       {
@@ -229,8 +229,8 @@ const routes: RouteSEO[] = [
         "@type": "Offer",
         name: "Flex 30 Broadband",
         description:
-          "Flexible UK broadband with Price Lock 24 or Flex 30 where offered, no hidden fees, and no price rises.",
-        price: "22.99",
+          "Flex 30 is 30-day rolling with no fixed minimum term where offered; Price Lock 24 has a 24-month minimum term. Exact price, speed information, setup and charges are confirmed before acceptance.",
+        price: "34.99",
         priceCurrency: "GBP",
         url: `${BASE_URL}/no-contract-broadband-uk`,
         availability: "https://schema.org/InStock",
@@ -242,7 +242,7 @@ const routes: RouteSEO[] = [
     path: "/support",
     title: "Help & Support | OCCTA",
     description:
-      "OCCTA Support Hub – UK-based help for broadband, SIM and home phone. AI chat, FAQs, ticket system. Fast resolution guaranteed.",
+      "OCCTA Support Hub – UK-based help for broadband, SIM and home phone. AI chat, FAQs, ticket system. Use self-service help, AI assistance or contact channels; advisor availability is shown on the support page.",
     canonical: "/support",
     keywords:
       "OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, home phone help",
@@ -252,7 +252,7 @@ const routes: RouteSEO[] = [
     path: "/about",
     title: "About OCCTA - UK Telecom Company | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "OCCTA is a UK telecom company providing cheap broadband, SIM, and digital home phone services. No hidden fees, real UK-based customer support. 5,000+ happy customers.",
+      "OCCTA is a UK telecom company providing cheap broadband, SIM, and digital home phone services. Clear customer-specific terms, pricing and support routes for broadband, SIM and Digital Voice.",
     canonical: "/about",
     keywords:
       "OCCTA, UK telecom company, cheap broadband provider, affordable internet UK, honest broadband, UK internet provider",
@@ -401,7 +401,7 @@ const routes: RouteSEO[] = [
     description: `Cheap broadband in ${city} from \u00A322.99/mo. Flex 30 fibre up to 900Mbps in ${region}. No price rises, cancel Flex 30 with the applicable notice.`,
     canonical: `/broadband-${slug}`,
     keywords: `cheap broadband ${city}, broadband ${city}, fibre broadband ${city}, Flex 30 broadband ${city}, internet ${city}, ${region} broadband`,
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   }))),
   /* ─── Keyword landing pages ─── */
@@ -411,7 +411,7 @@ const routes: RouteSEO[] = [
     description: "Looking for cheap broadband near you? OCCTA offers affordable fibre broadband from £34.99/mo with Price Lock 24 or Flex 30 where offered across the UK.",
     canonical: "/cheap-broadband-near-me",
     keywords: "cheap broadband near me, affordable broadband near me, broadband deals near me, internet near me cheap",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
@@ -420,7 +420,7 @@ const routes: RouteSEO[] = [
     description: "Need broadband and want to understand ordering requirements? OCCTA shows current broadband options, address availability, contract term, setup and final price before acceptance.",
     canonical: "/broadband-no-credit-check",
     keywords: "broadband no credit check, internet no credit check, wifi no credit check, broadband without credit check UK",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
@@ -429,7 +429,7 @@ const routes: RouteSEO[] = [
     description: "Broadband for students and renters: compare Flex 30 with Price Lock 24, check the installation address and understand setup, notice and moving-home terms before ordering.",
     canonical: "/broadband-for-students",
     keywords: "student broadband, broadband for students UK, student internet deals, Flex 30 broadband students",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
@@ -438,7 +438,7 @@ const routes: RouteSEO[] = [
     description: "Compare OCCTA broadband for 2026. Price Lock 24 headline pricing starts from £34.99/mo and Flex 30 is priced separately where offered. Final charges are confirmed before acceptance.",
     canonical: "/best-broadband-deals-uk",
     keywords: "best broadband deals UK, best broadband deals 2026, cheapest broadband UK, broadband deals comparison",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
@@ -447,7 +447,7 @@ const routes: RouteSEO[] = [
     description: "Broadband for gaming: compare address-available technology and speed bands, with Price Lock 24 or Flex 30 where offered. Final speed information and price are confirmed before acceptance.",
     canonical: "/broadband-for-gaming",
     keywords: "broadband for gaming, gaming broadband UK, best internet for gaming, low latency broadband",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {
@@ -456,7 +456,7 @@ const routes: RouteSEO[] = [
     description: "Broadband for working from home: compare address-available technology and speed bands, with Price Lock 24 or Flex 30 where offered. Final speed information and price are confirmed before acceptance.",
     canonical: "/broadband-for-working-from-home",
     keywords: "broadband for working from home, WFH broadband, remote working internet, home office broadband",
-    price: "22.99",
+    price: "34.99",
     jsonLd: [localBusinessSchema],
   },
   {

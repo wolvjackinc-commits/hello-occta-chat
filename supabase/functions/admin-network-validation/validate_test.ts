@@ -23,6 +23,10 @@ Deno.test("plan mismatch rejected", () => {
   const r = validateStaffEvidence(base, "gigabit", now);
   assertEquals(r.ok ? "" : r.error, "selected_plan_not_in_evidence");
 });
+Deno.test("advertised speed must match selected OCCTA plan", () => {
+  const r = validateStaffEvidence({ ...base, advertised_download_mbps: 200 }, "superfast", now);
+  assertEquals(r.ok ? "" : r.error, "advertised_speed_must_match_selected_plan");
+});
 Deno.test("stale and future evidence rejected", () => {
   assertEquals(validateStaffEvidence({ ...base, retrieved_at: "2026-08-01T00:00:00Z" }, "superfast", now).ok, false);
   assertEquals(validateStaffEvidence({ ...base, retrieved_at: "2026-10-08T00:00:00Z" }, "superfast", now).ok, false);

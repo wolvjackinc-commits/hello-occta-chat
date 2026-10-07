@@ -24,6 +24,7 @@ export type AvailabilityStatus =
 
 export interface AvailabilityResult {
   available: boolean;
+  networkValidationPending: boolean;
   primaryTechnology: string;
   maxDownload: number;
   maxUpload: number;
@@ -55,33 +56,6 @@ type AvailabilityContextValue = AvailabilityState & AvailabilityActions;
 const SESSION_KEY = "occta_availability";
 const ADDRESS_LOOKUP_TIMEOUT_MS = 3000;
 const ADDRESS_LOOKUP_TIMEOUT = "address_lookup_timeout";
-
-// ── Recommendation logic ──
-
-function computeRecommendation(
-  primaryTechnology: string,
-  maxDownload: number,
-  eligiblePlans: string[]
-): { recommendedPlan: string; upgradePlan?: string } {
-  if (!eligiblePlans.length) return { recommendedPlan: "" };
-
-  // FTTC only
-  if (primaryTechnology !== "FTTP") {
-    return { recommendedPlan: "essential" };
-  }
-
-  // FTTP
-  const hasSuperfast = eligiblePlans.includes("superfast");
-  const hasUltrafast = eligiblePlans.includes("ultrafast");
-
-  if (maxDownload >= 550 && hasSuperfast && hasUltrafast) {
-    return { recommendedPlan: "superfast", upgradePlan: "ultrafast" };
-  }
-  if (hasSuperfast) {
-    return { recommendedPlan: "superfast" };
-  }
-  return { recommendedPlan: eligiblePlans[0] };
-}
 
 // ── Postcode validation ──
 
@@ -274,62 +248,32 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const selectAddress = useCallback(async (addr: AvailabilityAddress) => {
-    setState((s) => ({
-      ...s,
-      status: "checking-address",
-      selectedAddress: addr,
-      result: null,
-      errorType: null,
-      errorMessage: "",
-    }));
-
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "check-availability",
-        { body: { address: addr } }
-      );
-
-      if (error) throw error;
-
-      if (data?.available && data?.eligibleOcctaPlans?.length > 0) {
-        const { recommendedPlan, upgradePlan } = computeRecommendation(
-          data.primaryTechnology,
-          data.maxDownload,
-          data.eligibleOcctaPlans
-        );
-        const result: AvailabilityResult = {
-          available: true,
-          primaryTechnology: data.primaryTechnology,
-          maxDownload: data.maxDownload,
-          maxUpload: data.maxUpload,
-          eligibleOcctaPlans: data.eligibleOcctaPlans,
-          recommendedPlan,
-          upgradePlan,
-        };
-        setState((s) => {
-          const next = { ...s, status: "success" as AvailabilityStatus, result };
-          saveToSession(next);
-          return next;
-        });
-      } else {
-        setState((s) => ({
-          ...s,
-          status: "error",
-          errorType: "availability-failed",
-          errorMessage:
-            data?.message ||
-            "We couldn't confirm availability online.",
-        }));
-      }
-    } catch (err) {
-      console.error("Availability check error:", err);
-      setState((s) => ({
+    // Address selection is deliberately supplier-neutral. We let customers
+    // browse OCCTA's public retail bands immediately, then validate exact
+    // network availability and contractual speeds before any agreement is
+    // issued for acceptance.
+    const result: AvailabilityResult = {
+      available: false,
+      networkValidationPending: true,
+      primaryTechnology: "",
+      maxDownload: 0,
+      maxUpload: 0,
+      eligibleOcctaPlans: ["essential", "superfast", "ultrafast"],
+      recommendedPlan: "",
+      message: "Address saved. Exact network availability and contractual speeds will be validated before you are asked to accept an agreement.",
+    };
+    setState((s) => {
+      const next = {
         ...s,
-        status: "error",
-        errorType: "backend-unavailable",
-        errorMessage: "Something went wrong checking availability. Please try again.",
-      }));
-    }
+        status: "success" as AvailabilityStatus,
+        selectedAddress: addr,
+        result,
+        errorType: null,
+        errorMessage: "",
+      };
+      saveToSession(next);
+      return next;
+    });
   }, []);
 
   const reset = useCallback(() => {

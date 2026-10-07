@@ -27,7 +27,7 @@ import {
 } from "../_shared/journey2Snapshot.ts";
 import { buildJourney2DocumentPack } from "../_shared/journey2Docs.ts";
 import { resolveOfferPromotion } from "../_shared/offerCampaign.ts";
-import { buildContractSpeedMatrix } from "../_shared/icukAvailability.ts";
+import { buildContractSpeedMatrix } from "../_shared/networkAvailability.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({ token: z.string().min(16) });
@@ -96,18 +96,71 @@ Deno.serve(async (req) => {
   if (!session.billing_anchor_day || !session.dd_masked) {
     return jsonResponse({ error: "billing_required", message: "Complete your billing day and Direct Debit details before we prepare your contract." }, 409);
   }
-  if (!session.supplier_availability_snapshot || !session.supplier_availability_sha256) {
-    return jsonResponse({
-      error: "verified_supplier_availability_required",
-      message: "We must verify your exact installation address with the network before preparing a contract.",
-    }, 409);
-  }
-  const speedGate = buildContractSpeedMatrix(session.supplier_availability_snapshot, session.speed_bucket);
+  const speedGate = session.supplier_availability_snapshot && session.supplier_availability_sha256
+    ? buildContractSpeedMatrix(session.supplier_availability_snapshot, session.speed_bucket)
+    : { ok: false as const, error: "verified_network_evidence_missing" };
+
   if (!speedGate.ok) {
+    // Do not lose the sale and do not fabricate contractual speeds. Capture the
+    // customer as a real quote request and place the session in a structured
+    // network-validation queue. Contract generation resumes only after an
+    // authorised operator records current exact-address evidence.
+    let quoteRequestId: string | null = session.quote_request_id ?? null;
+    if (!quoteRequestId) {
+      const qrIns = await supabase.from("quote_requests").insert({
+        full_name: details.full_name,
+        email: details.email,
+        phone: details.phone,
+        date_of_birth: details.date_of_birth ?? null,
+        postcode: String(session.postcode).toUpperCase(),
+        address_line_1: address.address_line_1,
+        address_line_2: address.address_line_2 ?? null,
+        town: address.town,
+        county: address.county ?? null,
+        service_interest: "broadband",
+        plan_preference: session.plan_term === "flex_30" ? "flex" : "contract_saver",
+        customer_type: "residential",
+        current_provider: details.current_provider ?? null,
+        preferred_contact_method: "email",
+        marketing_consent: !!details.marketing_consent,
+        source: "journey_v2_network_validation",
+        status: "checking",
+        message: `Journey 2 network validation required before contract: ${session.speed_bucket} · ${session.plan_term}`,
+        ip,
+        user_agent: ua,
+      }).select("id, reference").single();
+      if (qrIns.error) return jsonResponse({ error: "network_validation_lead_capture_failed", details: qrIns.error.message }, 500);
+      quoteRequestId = qrIns.data.id;
+    }
+
+    await supabase.from("network_validation_cases").upsert({
+      session_id: session.id,
+      quote_request_id: quoteRequestId,
+      status: "pending",
+      address_snapshot: address,
+      speed_bucket: session.speed_bucket,
+      plan_term: session.plan_term,
+      evidence_snapshot: null,
+      evidence_sha256: null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "session_id" });
+
+    await supabase.from("customer_journey_sessions").update({
+      quote_request_id: quoteRequestId,
+      status: "network_validation_pending",
+      current_step: "contract",
+      manual_review_reason: "network_validation_required",
+      last_error: speedGate.error,
+      last_activity_at: new Date().toISOString(),
+    }).eq("id", session.id);
+
     return jsonResponse({
-      error: speedGate.error,
-      message: "The address-specific speed evidence is incomplete or no longer current. Please run the network check again.",
-    }, 409);
+      ok: true,
+      pending_network_validation: true,
+      quote_request_id: quoteRequestId,
+      contract_ready: false,
+      message: "Your order details are saved. We’re validating the exact network availability and contractual speeds for your address before we issue anything for you to accept. Nothing has been charged.",
+    });
   }
   if (!session.likely_service_date) {
     return jsonResponse({ error: "likely_service_date_required" }, 409);
@@ -293,6 +346,16 @@ Deno.serve(async (req) => {
     const router_gross = round2(priced.router.oneOff);
     const setup_net = priced.internal.setup_one_off_ex_vat;
     const setup_gross = round2(priced.setup.oneOff);
+
+    if (quoteRequestId) {
+      await supabase.from("quote_requests")
+        .update({ status: "quoted", updated_at: new Date().toISOString() })
+        .eq("id", quoteRequestId);
+      await supabase.from("network_validation_cases")
+        .update({ status: "validated", updated_at: new Date().toISOString() })
+        .eq("session_id", session.id)
+        .eq("status", "pending");
+    }
 
     const { raw, hash } = await generateTokenPair();
     const expiresAt = new Date(Date.now() + 30 * 86400_000).toISOString();

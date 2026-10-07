@@ -107,11 +107,30 @@ Deno.serve(async (req) => {
   if (!result?.ok) return jsonResponse({ error: result?.error ?? "submit_rejected", retryable: true }, 409);
 
   // ── Snapshot-driven document pack (idempotent) ───────────────────────────
+  // Bank details are intentionally outside the signed pre-contract snapshot.
+  // Pull only the masked, active payment-method data for the post-contract DD
+  // confirmation documents.
+  const { data: activePaymentMethod } = session.order_journey_id
+    ? await supabase.from("payment_methods")
+        .select("account_holder_name, bank_name, masked_account_last4, masked_sort_last2, billing_anchor_day, active")
+        .eq("journey_id", session.order_journey_id)
+        .eq("active", true)
+        .maybeSingle()
+    : { data: null } as any;
+
   const pack = buildJourney2DocumentPack(snapshot, {
     order_number: result.order_number ?? "",
     snapshot_sha256: storedHash,
     dd_status: "setup_requested",
     test: false,
+    direct_debit: activePaymentMethod ? {
+      account_holder_name: activePaymentMethod.account_holder_name,
+      bank_name: activePaymentMethod.bank_name,
+      last4: activePaymentMethod.masked_account_last4,
+      sort_last2: activePaymentMethod.masked_sort_last2,
+      billing_day: activePaymentMethod.billing_anchor_day,
+      guarantee_provided: true,
+    } : null,
   });
   for (const doc of pack) {
     await supabase.from("journey2_documents").upsert({

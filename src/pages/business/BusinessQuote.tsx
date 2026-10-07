@@ -118,9 +118,9 @@ const BusinessQuoteInner = () => {
       site_postcode: sitePostcode.trim().toUpperCase(),
       selected_address: selectedAddressLabel || null,
       availability_confirmed: availability.status === "success" ? "yes" : "no",
-      availability_max_download: availability.result?.maxDownload != null ? String(availability.result.maxDownload) : null,
-      availability_max_upload: availability.result?.maxUpload != null ? String(availability.result.maxUpload) : null,
-      availability_primary_technology: availability.result?.primaryTechnology ?? null,
+      availability_max_download: availability.result && !availability.result.networkValidationPending ? String(availability.result.maxDownload) : null,
+      availability_max_upload: availability.result && !availability.result.networkValidationPending ? String(availability.result.maxUpload) : null,
+      availability_primary_technology: availability.result && !availability.result.networkValidationPending ? availability.result.primaryTechnology : null,
       selected_marketing_tier: initialTier || null,
       selected_bundle_design: initialBundle || null,
     };
@@ -221,7 +221,7 @@ const BusinessQuoteInner = () => {
                 {availability.status === "checking-address" && <p className="text-sm mt-3 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Checking the selected address…</p>}
                 {availability.status === "success" && availability.selectedAddress && (
                   <div className="mt-3 border-2 border-foreground bg-background p-3 text-sm">
-                    <div className="flex gap-2"><CheckCircle2 className="w-4 h-4 text-primary mt-0.5" /><div><strong>{selectedAddressLabel}</strong><div className="text-muted-foreground mt-1">Current availability lookup reports {availability.result?.primaryTechnology || "broadband"} with a maximum download indication of up to {availability.result?.maxDownload ?? "—"} Mbps. The final supplier route is still validated before order.</div></div></div>
+                    <div className="flex gap-2"><CheckCircle2 className="w-4 h-4 text-primary mt-0.5" /><div><strong>{selectedAddressLabel}</strong><div className="text-muted-foreground mt-1">Address selected. OCCTA will validate the exact network route, availability and contractual speeds before the final business agreement is issued.</div></div></div>
                   </div>
                 )}
                 {availability.status === "error" && <p className="text-xs text-destructive mt-2">{availability.errorMessage} You can still submit the postcode; the request will be routed for manual qualification.</p>}

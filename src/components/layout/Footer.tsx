@@ -118,10 +118,10 @@ const Footer = () => {
               <Shield className="w-3.5 h-3.5" /> UK communications provider · Ofcom General Conditions apply
             </span>
             <span className="flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5" /> Secure payments (256-bit encryption)
+              <Lock className="w-3.5 h-3.5" /> Secure payment routes
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5" /> Transparent pricing — no hidden fees
+              <CheckCircle className="w-3.5 h-3.5" /> Charges shown before acceptance
             </span>
             <span className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" /> UK customer support team
@@ -145,7 +145,7 @@ const Footer = () => {
               </div>
             </Link>
             <p className="text-background/80 mb-6 max-w-xs">
-              Proper British telecom. No robots, no rubbish, no regrets.
+              Simple telecom. Clear terms.
             </p>
             
             {/* Contact Info - De-emphasised phone */}

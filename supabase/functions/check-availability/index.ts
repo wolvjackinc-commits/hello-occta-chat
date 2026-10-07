@@ -1,9 +1,10 @@
 import { corsHeaders, jsonResponse, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
-import {
-  verifyIcukAvailabilityForAddress,
-  buildContractSpeedMatrix,
-} from "../_shared/icukAvailability.ts";
 
+// Supplier-neutral availability state. OCCTA has no live supplier feed here,
+// so this never invents availability or speeds and never reports
+// "unavailable" just because no feed exists. The postal address is echoed so
+// the customer can continue; network validation happens before any binding
+// contract is issued.
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
@@ -14,58 +15,27 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json().catch(() => null);
-  const address = body?.address;
-  if (!address || typeof address !== "object") {
+  const a = body?.address;
+  const line1 = String(a?.address_line_1 ?? a?.premises_name ?? "").trim();
+  if (!a || typeof a !== "object" || !line1 || !String(a.postcode ?? "").trim()) {
     return jsonResponse({ error: "full_address_required" }, 400);
   }
+  const address = {
+    address_line_1: line1.slice(0, 200),
+    address_line_2: a.address_line_2 ? String(a.address_line_2).slice(0, 200) : null,
+    town: (a.town ?? a.post_town) ? String(a.town ?? a.post_town).slice(0, 100) : null,
+    county: a.county ? String(a.county).slice(0, 100) : null,
+    postcode: String(a.postcode).toUpperCase().slice(0, 10),
+  };
 
-  try {
-    const { exact_address, evidence } = await verifyIcukAvailabilityForAddress(address);
-
-    const planSpeedMatrices: Record<string, unknown> = {};
-    for (const bucket of evidence.eligible_occta_plans) {
-      const matrix = buildContractSpeedMatrix(evidence, bucket);
-      if (matrix.ok) planSpeedMatrices[bucket] = matrix.matrix;
-    }
-
-    const primaryProducts = evidence.products.filter(
-      (p) => p.available && p.technology === evidence.primary_technology,
-    );
-    const maxDownload = Math.max(...primaryProducts.map(
-      (p) => p.maximum_down_mbps ?? p.likely_down_mbps ?? 0,
-    ), 0);
-    const maxUpload = Math.max(...primaryProducts.map(
-      (p) => p.maximum_up_mbps ?? p.likely_up_mbps ?? 0,
-    ), 0);
-
-    return jsonResponse({
-      available: true,
-      verifiedExactAddress: true,
-      source: evidence.source,
-      retrievedAt: evidence.retrieved_at,
-      primaryTechnology: evidence.primary_technology,
-      maxDownload,
-      maxUpload,
-      eligibleOcctaPlans: evidence.eligible_occta_plans,
-      technologies: [...new Set(evidence.products.filter((p) => p.available).map((p) => p.technology))],
-      products: evidence.products,
-      exchange: evidence.exchange,
-      addressReference: evidence.address_reference,
-      exactAddress: exact_address,
-      contractSpeedMatrices: planSpeedMatrices,
-      evidence,
-    });
-  } catch (err) {
-    const code = err instanceof Error ? err.message : "availability_failed";
-    const unavailable = code === "icuk_backend_not_configured" || code.startsWith("icuk_");
-    console.error("[check-availability]", code);
-    return jsonResponse({
-      available: false,
-      error: code,
-      eligibleOcctaPlans: [],
-      message: unavailable
-        ? "We can’t verify supplier availability for this address right now. Your order cannot proceed until the network check succeeds."
-        : "We couldn’t verify this exact address with the network. Contact OCCTA and we’ll check it manually.",
-    }, unavailable ? 503 : 409);
-  }
+  return jsonResponse({
+    status: "pending_network_validation",
+    network_validation_required: true,
+    canContinue: true,
+    available: null,
+    verifiedExactAddress: false,
+    eligibleOcctaPlans: [],
+    selectedAddress: address,
+    message: "You can continue with your order. OCCTA will confirm the exact network technology, speed and availability at this address before your binding broadband contract is issued.",
+  });
 });

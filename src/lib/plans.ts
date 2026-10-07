@@ -50,7 +50,7 @@ export const broadbandPlans: Plan[] = bbCards.map(card => ({
   catalogueProductId: getCheapestEligibleId(card.eligibleProductIds),
 }));
 
-// ── SIM plans (no ICUK data — keep current prices) ──
+// ── SIM plans (no wholesale catalogue data — keep current prices) ──
 export const simPlans: Plan[] = [
   {
     id: "sim-starter", name: "Starter", data: "5GB", price: "7.99", priceNum: 7.99,

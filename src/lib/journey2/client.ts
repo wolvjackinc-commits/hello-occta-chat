@@ -30,24 +30,24 @@ export type ContractSpeedMatrix = {
   derivation: string;
 };
 
+/** Supplier-neutral verified network evidence (recorded after address capture). */
 export type SupplierAvailabilityEvidence = {
   evidence_version: string;
   source: string;
-  verified_exact_address: boolean;
+  verified: boolean;
   retrieved_at: string;
-  primary_technology: string;
+  postcode: string;
+  technology: string;
   eligible_occta_plans: SpeedBucket[];
-  address_reference: { nad_key: string | null; uprn: string | null };
-  products: Array<{
-    technology: string;
-    available: boolean;
-    likely_down_mbps: number | null;
-    likely_up_mbps: number | null;
-    minimum_down_mbps: number | null;
-    maximum_down_mbps: number | null;
-    minimum_up_mbps: number | null;
-    maximum_up_mbps: number | null;
-  }>;
+  provider_reference: string | null;
+  speeds: {
+    minimum_download_mbps: number;
+    normally_available_download_mbps: number;
+    maximum_download_mbps: number;
+    minimum_upload_mbps: number;
+    normally_available_upload_mbps: number;
+    maximum_upload_mbps: number;
+  };
 };
 
 export type CampaignPromotion = {
@@ -147,6 +147,7 @@ export type Journey2Session = {
   supplier_availability_sha256?: string | null;
   supplier_availability_retrieved_at?: string | null;
   supplier_availability_source?: string | null;
+  network_validation_status?: "pending" | "verified" | "failed" | null;
   likely_service_date?: string | null;
   utm_snapshot?: { source_type?: string };
   expires_at: string;

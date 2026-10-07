@@ -5,14 +5,14 @@ on:
     paths:
       - 'supabase/functions/check-address/**'
       - 'supabase/functions/check-availability/**'
-      - 'supabase/functions/_shared/icukAvailability.ts'
+      - 'supabase/functions/_shared/networkEvidence.ts'
       - '.github/workflows/deploy-address-lookup.yml'
   push:
     branches: [main]
     paths:
       - 'supabase/functions/check-address/**'
       - 'supabase/functions/check-availability/**'
-      - 'supabase/functions/_shared/icukAvailability.ts'
+      - 'supabase/functions/_shared/networkEvidence.ts'
       - '.github/workflows/deploy-address-lookup.yml'
   workflow_dispatch:
 

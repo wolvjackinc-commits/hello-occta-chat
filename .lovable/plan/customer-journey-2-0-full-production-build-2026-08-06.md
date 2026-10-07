@@ -4,7 +4,7 @@ Journey 1 (`/build-plan` → quote request → `/quote/:token` UnifiedJourney) s
 
 Confirmed current state: there is no `/order` route, no Journey 2 session table, and `platform_settings` only has the legacy `unified_journey_enabled` flag. The existing `journey-*` edge functions and contract/DD/order services are in place and will be reused.
 
-Agreed decisions: build the whole thing in one pass; Journey 2 uses assumed availability (no live ICUK call, no "subject to confirmation" wording); existing router and add-on prices are used as-is, and any item with "from"/unknown pricing is excluded from Journey 2.
+Agreed decisions: build the whole thing in one pass; Journey 2 uses assumed availability (no live supplier call, no "subject to confirmation" wording); existing router and add-on prices are used as-is, and any item with "from"/unknown pricing is excluded from Journey 2.
 
 ## What the customer will experience
 

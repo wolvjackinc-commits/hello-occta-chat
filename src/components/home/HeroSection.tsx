@@ -276,7 +276,7 @@ const HeroSection = () => {
                 <div className="flex items-start justify-between mb-2 gap-4">
                   <div className="min-w-0">
                     <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                      OCCTA plans for your address
+                      {result.pendingNetworkValidation ? "Current OCCTA plans" : "OCCTA plans for your address"}
                     </p>
                     {selectedAddress && (
                       <p className="text-xs text-muted-foreground truncate max-w-[360px]">
@@ -294,10 +294,15 @@ const HeroSection = () => {
 
                 <div className="flex items-center justify-between py-2 px-3 border-4 border-foreground bg-background mb-3">
                   <p className="font-display text-sm uppercase">
-                    Speed bands shown up to {getSpeedLabel(result.maxDownload)}
+                    {result.pendingNetworkValidation ? "Current OCCTA speed bands" : <>Speed bands shown up to {getSpeedLabel(result.maxDownload)}</>}
                   </p>
                   <Wifi className="w-4 h-4 text-primary" />
                 </div>
+                {result.pendingNetworkValidation && (
+                  <p className="text-xs text-muted-foreground mb-3">
+                    You can continue your order now. Exact network technology, speed and availability at this address will be confirmed before your binding broadband contract is issued.
+                  </p>
+                )}
 
                 <div className="grid sm:grid-cols-2 gap-3">
                   {getHeroPlanCards().map(plan => (

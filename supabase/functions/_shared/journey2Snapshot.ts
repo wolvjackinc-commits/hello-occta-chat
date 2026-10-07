@@ -8,7 +8,7 @@
  * stored fingerprint. Every contractual document renders from this snapshot, so
  * the figures a customer signs are the figures that are committed and billed.
  */
-import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "./icukAvailability.ts";
+import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "./networkEvidence.ts";
 
 /** Deterministic JSON: object keys sorted recursively, arrays order-preserving. */
 export function canonicalJson(value: unknown): string {
@@ -86,7 +86,7 @@ export type Journey2Snapshot = {
     source: string;
     retrieved_at: string;
     evidence_sha256: string;
-    address_reference: { nad_key: string | null; uprn: string | null };
+    provider_reference: string | null;
   };
   router: Record<string, unknown>;
   addons: { id: string; label: string; monthly: number }[];
@@ -283,7 +283,7 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
         `normally available ${speedMatrix.normally_available_download_mbps}/${speedMatrix.normally_available_upload_mbps} Mbps, ` +
         `maximum ${speedMatrix.maximum_download_mbps}/${speedMatrix.maximum_upload_mbps} Mbps, and advertised plan speed ` +
         `${speedMatrix.advertised_download_mbps}/${speedMatrix.advertised_upload_mbps} Mbps (download/upload). ` +
-        `Source: ICUK LIVE exact-address availability retrieved ${speedMatrix.source_retrieved_at}.`,
+        `Source: verified network evidence retrieved ${speedMatrix.source_retrieved_at}.`,
       setup: {
         option: String(priced.setup.option),
         label: String(priced.setup.label),
@@ -294,10 +294,7 @@ export function buildJourney2Snapshot(input: SnapshotInput): Journey2Snapshot {
       source: String(availability.source ?? ""),
       retrieved_at: String(availability.retrieved_at ?? ""),
       evidence_sha256: availabilityHash,
-      address_reference: {
-        nad_key: availability.address_reference?.nad_key ?? null,
-        uprn: availability.address_reference?.uprn ?? null,
-      },
+      provider_reference: availability.provider_reference ?? null,
     },
     router: {
       option: String(priced.router.option),

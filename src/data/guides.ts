@@ -56,12 +56,12 @@ export const guides: Guide[] = [
         heading: 'What Is Flex 30 Broadband?',
         paragraphs: [
           'Flex 30 broadband — sometimes called rolling monthly or flexible broadband — means you pay month to month with no fixed term. You can cancel, upgrade, or downgrade at any time without penalty.',
-          'Traditional providers lock you in for 18–24 months. If you leave early, you pay an exit fee that can run into hundreds of pounds. With no-contract broadband, that simply does not apply.',
+          'Fixed-term and rolling broadband solve different needs. OCCTA Flex 30 has no fixed minimum term and no remaining-month ETF; a separately valid network cease/migration charge may still apply where lawful, actually incurred and disclosed.',
         ],
       },
       {
         heading: 'Who Is It Best For?',
-        paragraphs: ['No-contract broadband suits a wide range of situations:'],
+        paragraphs: ['Flex 30 may suit customers who prefer a 30-day rolling service with no fixed minimum term:'],
         bullets: [
           'Renters who move frequently and cannot commit to long contracts',
           'Students in short-term accommodation',
@@ -74,7 +74,7 @@ export const guides: Guide[] = [
         heading: 'How Much Does It Cost?',
         paragraphs: [
           'OCCTA Flex 30 headline pricing starts from £37.99 per month for the Essential public speed band where offered. Price Lock 24 headline pricing starts from £34.99. Final price, technology, address-specific speed information, setup and router choices are confirmed before acceptance.',
-          'Many providers charge a premium for flexibility. We believe broadband should be simple: one price, no hidden fees, no mid-contract price rises.',
+          'Compare the total monthly and one-off cost, term and any scheduled price change shown before sign-up. OCCTA contract version 2026.10.1 does not schedule CPI-, RPI-, inflation-linked or percentage-based rises on residential broadband.',
         ],
       },
       {
@@ -85,7 +85,7 @@ export const guides: Guide[] = [
       },
     ],
     faqs: [
-      { question: 'Is Flex 30 broadband slower than contract broadband?', answer: 'No. At OCCTA, you get the same speeds regardless of contract type — up to 900Mbps on our fastest plan.' },
+      { question: 'Is Flex 30 broadband slower than Price Lock 24?', answer: 'Available speed depends on the address and underlying product, not simply the contract label. We confirm the address-specific estimate and contractual speed information before acceptance.' },
       { question: 'How do I leave Flex 30?', answer: 'Flex 30 normally uses 30 days’ notice and has no remaining-month Early Termination Charge. A separately valid network cease or migration charge may apply where lawful, actually incurred and disclosed. One Touch Switch rules apply where relevant.' },
       { question: 'Is there a setup fee?', answer: 'Setup from £0 where available during promotional periods. Check our broadband page for the latest offers.' },
       { question: 'Do I need to return the router?', answer: 'Yes, the router should be returned if you cancel within the first 12 months.' },
@@ -135,7 +135,7 @@ export const guides: Guide[] = [
         bullets: [
           'Choose only the speed you actually need — most households are fine on 80Mbps',
           'Avoid bundled TV packages if you use streaming services',
-          'Pick a no-contract provider so you can switch if a better deal appears',
+          'If flexibility matters, compare a rolling option such as Flex 30 with the cost and certainty of a fixed minimum term',
           'Add Digital Home Phone only if you use a landline regularly',
         ],
       },
@@ -401,7 +401,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Gaming',
         paragraphs: [
-          'OCCTA offers speeds up to 900Mbps on the Openreach fibre network with unlimited data and no throttling. OCCTA offers Price Lock 24 and Flex 30 where available. Any plan change is subject to the terms and eligibility shown before you agree it.',
+          'OCCTA offers public broadband speed bands up to 1000Mbps where available. The address-specific technology, speed information and applicable usage terms are confirmed before acceptance. OCCTA offers Price Lock 24 and Flex 30 where available. Any plan change is subject to the terms and eligibility shown before you agree it.',
         ],
       },
     ],
@@ -452,7 +452,7 @@ export const guides: Guide[] = [
       {
         heading: 'OCCTA for Home Workers',
         paragraphs: [
-          'OCCTA fibre broadband offers speeds up to 900Mbps with unlimited data and no throttling. OCCTA offers Price Lock 24 and Flex 30 where available. Any speed or plan change is subject to availability and the terms shown before you agree it. UK-based support is available if you need help.',
+          'OCCTA offers public broadband speed bands up to 1000Mbps where available. The address-specific technology, speed information and applicable usage terms are confirmed before acceptance. OCCTA offers Price Lock 24 and Flex 30 where available. Any speed or plan change is subject to availability and the terms shown before you agree it. UK-based support is available if you need help.',
         ],
       },
     ],
@@ -486,7 +486,7 @@ export const guides: Guide[] = [
       {
         heading: 'What Is FTTP (Fibre to the Premises)?',
         paragraphs: [
-          'FTTP — also called full fibre — uses fibre optic cables all the way from the exchange to your home. No copper at all. This delivers the fastest possible speeds: up to 900Mbps or even 1Gbps.',
+          'FTTP — also called full fibre — uses fibre optic cables all the way from the exchange to your home. No copper at all. This delivers the fastest possible speeds: up to 1000Mbps where available or even 1Gbps.',
           'FTTP is being rolled out across the UK by Openreach and alternative networks. Coverage is expanding rapidly, with over 14 million UK homes now able to access full fibre.',
         ],
       },
@@ -494,7 +494,7 @@ export const guides: Guide[] = [
         heading: 'Which Is Better?',
         paragraphs: ['Here is how FTTC and FTTP compare:'],
         bullets: [
-          'Speed: FTTP is significantly faster (up to 900Mbps vs 80Mbps for FTTC)',
+          'Speed: FTTP is significantly faster (up to 1000Mbps where available vs 80Mbps for FTTC)',
           'Reliability: FTTP is more consistent as there is no copper degradation',
           'Upload speed: FTTP offers much faster uploads, important for WFH and cloud services',
           'Availability: FTTC is available to ~95% of UK premises; FTTP covers ~60% and growing',
@@ -529,7 +529,7 @@ export const guides: Guide[] = [
     intro: 'Student houses need fast, cheap broadband that can be cancelled when the tenancy ends. Here is how to find the right broadband for your student accommodation without getting locked into a long contract.',
     sections: [
       {
-        heading: 'Why Students Need No-Contract Broadband',
+        heading: 'Why Students May Prefer Flexible Broadband',
         paragraphs: [
           'Most student tenancies last 9-12 months, but big providers want 18-24 month contracts. That means paying for broadband in a house you have already left, or paying expensive exit fees.',
           'Flex 30 may suit renters who want no fixed minimum term. Moving-home, notice and any applicable network charges still follow the accepted agreement.',
@@ -540,7 +540,7 @@ export const guides: Guide[] = [
         paragraphs: ['Here are the key features for student broadband:'],
         bullets: [
           'Flex 30 — rolling monthly is essential for student tenancies',
-          'No credit check — many students have no credit history',
+          'Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit.',
           'Enough speed for a shared house (100Mbps+ for 3-4 people)',
           'Unlimited data for streaming, gaming, and studying',
           'Easy setup with a Bring your own router for £0, or choose a router at checkout',
@@ -562,7 +562,7 @@ export const guides: Guide[] = [
     ],
     faqs: [
       { question: 'Can students get broadband without a credit check?', answer: 'Yes. OCCTA does not run credit checks on any plan, making it ideal for students.' },
-      { question: 'Can I cancel when I move out?', answer: 'Yes. OCCTA is rolling monthly. Give 30 days notice and cancel with no fees.' },
+      { question: 'Can I cancel when I move out?', answer: 'Flex 30 normally uses 30 days’ notice and has no remaining-month ETF. Price Lock 24 may have an ETF during the minimum term. Moving-home and any separately valid network charges follow the accepted agreement.' },
       { question: 'How many people can share one broadband connection?', answer: 'With 100Mbps, 3-4 people can comfortably stream, game, and browse. For larger houses, choose 300Mbps+.' },
       { question: 'How long does installation take?', answer: 'Usually 7 working days from placing your order.' },
     ],
@@ -575,7 +575,7 @@ export const guides: Guide[] = [
     title: 'How to Get Broadband with Bad Credit (UK Guide)',
     metaTitle: 'Broadband with Bad Credit — No Credit Check UK',
     description: 'Bad credit history? Learn how to get UK broadband without a hard credit check, what providers actually look for, and how OCCTA\u2019s flexible plans help.',
-    keywords: 'broadband no credit check, broadband with bad credit UK, bad credit broadband, no credit check broadband, broadband no credit history',
+    keywords: 'broadband no credit check, broadband with bad credit UK, bad credit broadband, Broadband eligibility, broadband no credit history',
     category: 'broadband',
     categoryLabel: 'Broadband',
     intro: 'Most big UK broadband providers run a hard credit check before they will sign you up \u2014 and a thin file, missed payment or CCJ can mean a refusal. The good news: getting connected with bad credit is still very possible. Here is how it works, and what to look for.',
@@ -622,7 +622,7 @@ export const guides: Guide[] = [
         heading: 'What to Avoid',
         paragraphs: [
           'Be cautious with anyone advertising \u201Cguaranteed broadband, no checks, any credit history\u201D at a high upfront price \u2014 these can be resold mobile broadband at poor value.',
-          'Always check the provider is a real UK ISP, the price is clear, and there are no hidden setup fees.',
+          'Always check the provider is a real UK ISP, the price is clear, and there are all applicable setup charges disclosed before acceptance.',
         ],
       },
     ],
@@ -800,10 +800,10 @@ export const guides: Guide[] = [
   },
   {
     slug: 'no-credit-check-broadband-uk',
-    title: 'No Credit Check Broadband UK: How to Get Online Without a Credit Check',
-    metaTitle: 'No Credit Check Broadband UK | OCCTA',
+    title: 'Broadband Eligibility UK: What to Expect When Ordering',
+    metaTitle: 'Broadband Eligibility & Ordering | OCCTA',
     description: 'Looking for broadband with limited credit history? Learn how OCCTA’s Flex 30 and Price Lock 24 options work and check the current ordering and eligibility requirements before you apply.',
-    keywords: 'broadband no credit check, no credit check broadband uk, broadband without credit check, bad credit broadband, broadband for poor credit',
+    keywords: 'broadband no credit check, Broadband eligibility uk, broadband without credit check, bad credit broadband, broadband for poor credit',
     category: 'broadband',
     categoryLabel: 'Broadband',
     intro: 'Most UK broadband providers run a hard credit check before they will switch you on. If your credit file is thin, damaged, or simply private, that is a real barrier. OCCTA is built differently: flexible terms, card payment up front, and no long lock-in. Here is how to get connected without the credit-check hurdle.',
@@ -818,7 +818,7 @@ export const guides: Guide[] = [
       {
         heading: 'How OCCTA works without a hard credit check',
         paragraphs: [
-          'OCCTA offers no-contract, rolling monthly broadband. Because we are not locking you into a long term, we do not need to underwrite you the way a 24-month provider does.',
+          'OCCTA offers Flex 30 and Price Lock 24 where eligible. Any identity, credit or eligibility requirements are explained in the current order process before you commit.',
           'You can start service by paying your first month and any setup fee by card up front. From there you choose how to pay each month — Direct Debit, card, or bank transfer. No hard credit search, no long-term commitment.',
         ],
         bullets: [
@@ -830,7 +830,7 @@ export const guides: Guide[] = [
       },
       {
         heading: 'Who is this best for?',
-        paragraphs: ['No credit check broadband suits a wide range of households:'],
+        paragraphs: ['Broadband eligibility suits a wide range of households:'],
         bullets: [
           'People rebuilding their credit after past missed payments',
           'New UK residents with little or no credit footprint',
@@ -856,11 +856,11 @@ export const guides: Guide[] = [
     faqs: [
       {
         question: 'Does OCCTA run a hard credit check?',
-        answer: 'No. Because OCCTA is no-contract and your first invoice is paid by card, we do not run a hard credit search at signup. Your credit score is not affected.',
+        answer: 'Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit.',
       },
       {
         question: 'Can I get broadband with bad credit in the UK?',
-        answer: 'Yes. OCCTA\u2019s flexible, no-contract plans and card-first payment option mean you can get connected without passing a traditional credit check.',
+        answer: 'Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit.',
       },
       {
         question: 'What if I cannot set up a Direct Debit?',

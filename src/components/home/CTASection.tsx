@@ -84,16 +84,16 @@ const CTASection = () => {
 
           {/* Headline */}
           <motion.h2 variants={itemVariants} className="text-display-lg mb-6">
-            READY TO SWITCH TO
+            READY TO CHECK YOUR
             <br />
-            CHEAPER UK
+            UK BROADBAND
             <br />
             <motion.span 
               className="text-primary inline-block"
               whileHover={{ x: 10, scale: 1.02 }}
               transition={{ duration: 0.2 }}
             >
-              BROADBAND &amp; SIM?
+              &amp; SIM OPTIONS?
             </motion.span>
           </motion.h2>
 
@@ -102,8 +102,7 @@ const CTASection = () => {
             variants={itemVariants}
             className="text-xl text-background/85 max-w-xl mb-10"
           >
-            Join the growing number of sensible people who've had enough of the big providers.
-            Affordable telecom with clear terms. Flex 30 and Price Lock 24 broadband options are available where eligible, with customer-specific charges shown before acceptance.
+            Compare the broadband and SIM options currently available to you. For broadband, Flex 30 and Price Lock 24 are offered where eligible, with customer-specific price, speed information, setup and applicable charges shown before acceptance.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -154,7 +153,7 @@ const CTASection = () => {
             variants={itemVariants}
             className="mt-4 text-sm text-background/70 font-display uppercase tracking-wider"
           >
-            No CPI price rises • 30-day rolling options available where eligible • Same networks, lower prices
+            Price Lock 24 • Flex 30 where eligible • Customer-specific terms before acceptance
           </motion.p>
         </motion.div>
       </div>

@@ -6,7 +6,7 @@ export type Technology = 'SOGEA' | 'FTTP' | 'SOGFast' | 'SOADSL' | 'PSTN' | 'ISD
 export type VoiceType = 'home' | 'business' | 'sip';
 export type VoiceVariant = 'payg' | 'bundle';
 export type ServiceFamily = 'broadband' | 'sim' | 'landline' | 'voice' | 'sip';
-export type ProductSource = 'icuk' | 'website_existing';
+export type ProductSource = 'legacy_catalogue' | 'website_existing';
 
 export interface CatalogueProduct {
   id: string;

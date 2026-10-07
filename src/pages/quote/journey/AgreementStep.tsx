@@ -389,28 +389,28 @@ export default function AgreementStep({
           </div>
 
           {onEditStep && (
-            <div className="border-2 border-dashed border-foreground/40 p-3">
-              <p className="font-display uppercase text-xs tracking-widest mb-2">Need to change something first?</p>
-              <p className="text-xs text-muted-foreground mb-2">
-                You can still edit anything before you sign. Once you sign, changes can only be made by our team.
+            <details className="border-2 border-dashed border-foreground/40 p-3">
+              <summary className="cursor-pointer font-display uppercase text-xs tracking-widest">Edit order details</summary>
+              <p className="mt-2 text-xs text-muted-foreground">
+                You can still change anything before you sign. Any material change regenerates the contract documents.
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {([
-                  ["address", "Service address"],
-                  ["plan", "Plan and term"],
+                  ["address", "Address"],
+                  ["plan", "Plan"],
                   ["router", "Router"],
                   ["extras", "Extras"],
-                  ["details", "Your details / mobile"],
+                  ["details", "Your details"],
                   ["start_date", "Start date"],
-                  ["billing", "Billing and Direct Debit"],
+                  ["billing", "Billing"],
                 ] as const).map(([step, label]) => (
                   <Button key={step} type="button" variant="outline" size="sm" className="text-xs"
                     onClick={() => onEditStep(step)}>
-                    Edit {label.toLowerCase()}
+                    {label}
                   </Button>
                 ))}
               </div>
-            </div>
+            </details>
           )}
 
           <div className="border-2 border-foreground/30 p-4">

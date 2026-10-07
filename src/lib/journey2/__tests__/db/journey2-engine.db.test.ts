@@ -232,8 +232,8 @@ maybe("Journey 2 real isolated engine run", () => {
     );
     const ddKeys = ddGates.map((r) => r.gate_key);
     for (const g of [
+      "stage_contract_acceptance",
       "dd_state_details_received",
-      "dd_state_pending_contract",
       "dd_state_setup_requested_test",
       "dd_never_live_state",
     ]) {

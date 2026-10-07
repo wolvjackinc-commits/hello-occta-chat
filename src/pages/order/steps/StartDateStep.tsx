@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import type { Journey2Session } from "@/lib/journey2/client";
 
 /** Statutory cooling-off window mirrored by the server. */
@@ -46,7 +45,6 @@ export default function StartDateStep({
   const earliest = ymd(addDays(today, EARLIEST_START_OFFSET_DAYS));
   const latest = ymd(addDays(today, 90));
   const [date, setDate] = useState(session.preferred_start_date ?? earliest);
-  const [ack, setAck] = useState(!!session.cooling_off_acknowledged);
   const [err, setErr] = useState<string | null>(null);
 
   const submit = (e: React.FormEvent) => {
@@ -56,7 +54,6 @@ export default function StartDateStep({
       return;
     }
     if (date > latest) { setErr("Please choose a date within the next 90 days."); return; }
-    if (!ack) { setErr("Please confirm you understand this is a preferred date."); return; }
     setErr(null);
     onSave({ preferred_start_date: date, cooling_off_acknowledged: true });
   };
@@ -93,13 +90,9 @@ export default function StartDateStep({
           required
         />
       </div>
-
-      <div className="flex items-start gap-3 border-2 border-border p-4">
-        <Checkbox id="j2-start-ack" checked={ack} onCheckedChange={(v) => setAck(v === true)} className="mt-0.5" />
-        <Label htmlFor="j2-start-ack" className="text-sm font-normal leading-relaxed">
-          I understand this is my preferred date and OCCTA will confirm the actual activation date with me.
-        </Label>
-      </div>
+      <p className="text-xs text-muted-foreground border-l-4 border-foreground pl-3 py-1">
+        This is your preferred date. OCCTA will confirm the actual activation date with you during provisioning.
+      </p>
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 

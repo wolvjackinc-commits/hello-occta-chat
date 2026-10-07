@@ -11446,6 +11446,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string | null
+          latest_activity_at: string | null
           latest_postcode: string | null
           latest_postcode_normalized: string | null
           phone: string | null

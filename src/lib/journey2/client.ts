@@ -267,6 +267,27 @@ export type StartResult = {
   error?: string;
 };
 
+export function prewarmContractPipeline(): void {
+  const base = String(import.meta.env.VITE_SUPABASE_URL ?? "").replace(/\/$/, "");
+  if (!base) return;
+  const functions = [
+    "journey2-prepare-contract",
+    "journey-generate-cs",
+    "generate-contract-summary",
+    "generate-contract-summary-pdf",
+    "generate-contract-information-pack",
+    "journey-cs-detail",
+  ];
+  void Promise.allSettled(
+    functions.map((fn) =>
+      fetch(`${base}/functions/v1/${fn}`, {
+        method: "OPTIONS",
+        cache: "no-store",
+      }),
+    ),
+  );
+}
+
 export const journey2 = {
   start: async (opts: { adminTest?: boolean } = {}) => {
     const result = await call<StartResult>("journey2-session", {

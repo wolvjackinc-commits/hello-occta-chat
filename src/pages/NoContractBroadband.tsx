@@ -40,7 +40,7 @@ const itemVariants = {
 
 const trustBadges = [
   { icon: Shield, text: "Flex 30 · No Fixed Minimum Term" },
-  { icon: Check, text: "No Hidden Fees" },
+  { icon: Check, text: "Charges Shown Before Acceptance" },
   { icon: MapPin, text: "UK-Wide Coverage" },
   { icon: Phone, text: "UK-Based Support" },
 ];

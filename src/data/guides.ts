@@ -47,7 +47,7 @@ export const guides: Guide[] = [
     title: 'Flex 30 Broadband UK: 30-Day Rolling, No Fixed Minimum Term',
     metaTitle: 'Flex 30 Broadband UK: 30-Day Rolling, No Fixed Minimum Term',
     description: 'Learn how OCCTA Flex 30 works: a 30-day rolling broadband option with no fixed minimum term where available. Exact address-specific price, speed, setup and any applicable network charge are shown before acceptance.',
-    keywords: 'Flex 30 broadband UK, broadband no credit check, rolling monthly broadband UK, flexible broadband, no lock-in broadband, no remaining-month early termination charge on Flex 30 broadband',
+    keywords: 'Flex 30 broadband UK, rolling monthly broadband UK, flexible broadband, Price Lock 24, broadband eligibility',
     category: 'broadband',
     categoryLabel: 'Broadband',
     intro: 'Flex 30 is OCCTA’s 30-day rolling broadband option where available. It has no fixed minimum term and no remaining-month Early Termination Charge; normal notice is 30 days. Separately valid network cease or migration charges may still apply where lawful, actually incurred and disclosed.',
@@ -319,7 +319,7 @@ export const guides: Guide[] = [
     title: 'Cheap SIM Only Deals UK: Best Budget Plans',
     metaTitle: 'Cheap SIM Only Deals UK — Budget Mobile Plans',
     description: 'Compare OCCTA SIM-only options using the live catalogue. Available networks, 30-day or 24-month term, allowance, VAT-inclusive consumer price, price-adjustment terms and any early-termination treatment are shown before checkout.',
-    keywords: 'cheap SIM only UK, budget SIM deals, cheap mobile plans, SIM only Flex 30, best SIM deals UK, no credit check SIM',
+    keywords: 'SIM only UK, budget SIM deals, mobile plans UK, 30 day SIM, 24 month SIM, SIM eligibility',
     category: 'sim',
     categoryLabel: 'SIM Plans',
     intro: 'Looking for a cheap SIM only deal in the UK? With so many options available, it is easy to overpay for data you do not use or get locked into a contract you do not need. Here is how to find genuine value.',
@@ -573,9 +573,9 @@ export const guides: Guide[] = [
   {
     slug: 'how-to-get-broadband-with-bad-credit',
     title: 'How to Get Broadband with Bad Credit (UK Guide)',
-    metaTitle: 'Broadband with Bad Credit — No Credit Check UK',
+    metaTitle: 'Broadband Eligibility with Limited Credit History | OCCTA',
     description: 'Bad credit history? Learn how to get UK broadband without a hard credit check, what providers actually look for, and how OCCTA\u2019s flexible plans help.',
-    keywords: 'broadband no credit check, broadband with bad credit UK, bad credit broadband, Broadband eligibility, broadband no credit history',
+    keywords: 'broadband eligibility, broadband with limited credit history UK, broadband ordering requirements, flexible broadband',
     category: 'broadband',
     categoryLabel: 'Broadband',
     intro: 'Most big UK broadband providers run a hard credit check before they will sign you up \u2014 and a thin file, missed payment or CCJ can mean a refusal. The good news: getting connected with bad credit is still very possible. Here is how it works, and what to look for.',
@@ -588,7 +588,7 @@ export const guides: Guide[] = [
         ],
       },
       {
-        heading: 'Is There Truly \u201CNo Credit Check\u201D Broadband?',
+        heading: 'What Eligibility Checks Can Apply?'
         paragraphs: [
           'A fully no-checks-at-all broadband product is rare in the UK because the provider still needs to verify your identity and address for regulatory reasons.',
           'What is realistic is broadband without a hard credit check \u2014 short, rolling plans that do not require committing to a long fixed term, so the provider takes far less credit risk and either skips the hard search or only runs a soft check.',
@@ -803,7 +803,7 @@ export const guides: Guide[] = [
     title: 'Broadband Eligibility UK: What to Expect When Ordering',
     metaTitle: 'Broadband Eligibility & Ordering | OCCTA',
     description: 'Looking for broadband with limited credit history? Learn how OCCTA’s Flex 30 and Price Lock 24 options work and check the current ordering and eligibility requirements before you apply.',
-    keywords: 'broadband no credit check, Broadband eligibility uk, broadband without credit check, bad credit broadband, broadband for poor credit',
+    keywords: 'broadband eligibility UK, broadband ordering requirements, flexible broadband UK, broadband with limited credit history',
     category: 'broadband',
     categoryLabel: 'Broadband',
     intro: 'Most UK broadband providers run a hard credit check before they will switch you on. If your credit file is thin, damaged, or simply private, that is a real barrier. OCCTA is built differently: flexible terms, card payment up front, and no long lock-in. Here is how to get connected without the credit-check hurdle.',

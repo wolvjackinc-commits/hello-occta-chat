@@ -35,7 +35,7 @@ export type TestStage = typeof TEST_STAGES[number];
 
 /** Direct Debit states permitted in test mode. Never pending_activation/active. */
 export const TEST_DD_LIFECYCLE = [
-  "details_received", "pending_contract", "suppressed_test", "setup_requested_test",
+  "details_received", "suppressed_test", "setup_requested_test",
 ] as const;
 
 export const TEST_SESSION_COLS = `
@@ -491,6 +491,14 @@ export async function submitTestOrder(
     snapshot_sha256: String(snapRow.snapshot_sha256),
     dd_status: "suppressed_test",
     test: true,
+    direct_debit: session.dd_masked ? {
+      account_holder_name: session.dd_masked.account_holder_name,
+      bank_name: session.dd_masked.bank_name,
+      last4: session.dd_masked.last4,
+      sort_last2: session.dd_masked.sort_last2,
+      billing_day: session.billing_anchor_day,
+      guarantee_provided: true,
+    } : null,
   });
   const docIns = await supabase.from("journey2_test_documents").upsert(
     docs.map((d) => ({
@@ -533,7 +541,7 @@ export async function submitTestOrder(
     ok: true, created: true, test_order_id: orderId,
     test_order_number: ins.data.test_order_number,
     snapshot_sha256: String(snapRow.snapshot_sha256),
-    dd_transitions: ["details_received", "pending_contract", "suppressed_test", "setup_requested_test"],
+    dd_transitions: ["details_received", "suppressed_test", "setup_requested_test"],
   };
 }
 

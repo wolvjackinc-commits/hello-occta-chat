@@ -21,15 +21,15 @@ const serviceIcons: Record<string, typeof Wifi> = {
 const offers = [
   {
     title: "Switch & Save Credit",
-    detail: "£100 migration credit to cover install or early-exit fees.",
+    detail: "Any migration credit or support is confirmed in the written quote before order.",
   },
   {
     title: "Multi-Site Discount",
-    detail: "£5 off each additional location on the same billing account.",
+    detail: "Multi-site pricing is confirmed in the written quote for the locations ordered.",
   },
   {
     title: "Phone Bundle Boost",
-    detail: "Buy 5 hosted seats, get 2 desk phones included.",
+    detail: "Any handset bundle is confirmed in the written quote before order.",
   },
 ];
 
@@ -69,9 +69,7 @@ const BusinessOffers = () => {
                 PLAN BUILDER
               </h1>
               <p className="text-lg text-muted-foreground">
-                Explore our business plans, stacked services, and limited offers. Every
-                price is set at least £1 below typical market ranges so you stay lean
-                without losing performance.
+                Explore our business plans, stacked services, and limited offers. Prices, service levels, contract terms and any promotional credits are confirmed in a written business quote before order.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/business">

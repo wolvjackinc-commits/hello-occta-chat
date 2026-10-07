@@ -307,7 +307,7 @@ const getWelcomeHtml = (data: Record<string, unknown>) => `
             <div class="feature-icon">⚡</div>
             <div class="feature-text">
               <div class="feature-title">Manage Services</div>
-              <div class="feature-desc">Add, upgrade, or modify your services anytime — no lock-ins.</div>
+              <div class="feature-desc">Add or change services subject to availability and the terms shown before you agree the change.</div>
             </div>
           </div>
           <div class="feature">

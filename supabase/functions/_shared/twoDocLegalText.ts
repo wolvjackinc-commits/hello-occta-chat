@@ -12,7 +12,7 @@ export const CONTRACT_INFORMATION_PACK_TITLE =
 export const DV_DEPENDENCY_POINTS: readonly string[] = [
   "Depends on your broadband connection being live.",
   "Depends on mains power to your router and any DECT / handset base.",
-  "Will not work during a mains power cut unless suitable battery backup is in place.",
+  "May not work during a mains power cut. Suitable resilience or backup equipment may help depending on the network, equipment and circumstances.",
   "Will not work during a broadband outage.",
   "Requires an OCCTA-supplied or approved router/ATA configured for Digital Voice.",
   "999 / 112 emergency calls will not work if power, broadband or the router is unavailable.",
@@ -21,7 +21,7 @@ export const DV_DEPENDENCY_POINTS: readonly string[] = [
 ];
 
 export const DV_ACKNOWLEDGEMENT_CHECKBOX =
-  "I understand that Digital Voice / Home Phone depends on broadband and mains power and may not work during a power cut or broadband outage unless suitable backup is in place.";
+  "I understand that Digital Voice / Home Phone depends on broadband, compatible equipment and mains power and may not work during a power cut, broadband outage or equipment/network failure. Any resilience arrangement is assessed for my circumstances.";
 
 export const DV_VULNERABILITY_QUESTIONS: ReadonlyArray<{ id: string; label: string }> = [
   { id: "relies_on_emergency", label: "Do you rely on this line for 999 / 112 emergency calls?" },

@@ -1,6 +1,6 @@
 import type { FromPrices, OrderSummary, ServiceFamily, VatMode } from './types';
 import { catalogueProducts, voiceProducts, installScenarios, careLevels, bundleConfigs, addonCatalogue, portingOptions, numberTypes, smsTiers, callTariffs, GLOBAL_CEASE_FEE } from './catalogue';
-import { broadbandRetailCards, landlineRetailCard, simRetailCards } from './retailCards';
+import { broadbandRetailCards, landlineRetailCard } from './retailCards';
 import { FAIR_PRICING_DEFAULTS, PUBLIC_SPEED_BUCKETS } from './fairPricing';
 
 // ── Fair Pricing display map (Price Lock 24 / Flex 30) ──
@@ -23,21 +23,19 @@ function getCheapestForCard(eligibleIds: string[]): number | null {
   return Math.min(...eligible.map(p => p.retailMonthly));
 }
 
-// ── SIM prices (no ICUK data — hardcoded from current site) ──
-const SIM_PRICES: Record<string, number> = {
-  'sim-starter': 7.99,
-  'sim-essential': 11.99,
-  'sim-plus': 17.99,
-  'sim-unlimited': 27.99,
-};
+// ── SIM fallback price ──────────────────────────────────────────────────────
+// The live /sim journey reads sim_plans_public. This value is only a generic
+// fallback for legacy "from" surfaces that cannot query the live catalogue.
+// Keep it aligned to the lowest active consumer SIM-only headline price.
+const SIM_FROM_FALLBACK = 12.00;
 
 // ── The ONE helper all UI reads from ──
 export function getFromPrices(): FromPrices {
   // Broadband: cheapest Price Lock 24 across Fair Pricing buckets (Essential = £34.99).
   const bbMin = Math.min(...Object.values(FAIR_DISPLAY).map(v => v.lock24));
 
-  // SIM: cheapest SIM card
-  const simMin = Math.min(...Object.values(SIM_PRICES));
+  // SIM: live catalogue is authoritative; generic surfaces use this fallback.
+  const simMin = SIM_FROM_FALLBACK;
 
   // Landline: from voice catalogue
   const homePayg = voiceProducts.find(v => v.id === 'home-phone-payg');
@@ -199,15 +197,15 @@ export function calculateProration(monthlyAmount: number, activationDate: Date, 
 
 // ── SOGEA fairness note ──
 export function getSOGEANote(): string {
-  return '30-day rolling. One-off setup applies. If service is ended within 12 months, upstream install subsidy conditions may affect internal costs.';
+  return 'Setup may apply. If the service is ended or migrated, a separately valid network cease/migration charge may apply only where lawful, actually incurred and disclosed in the accepted terms.';
 }
 
 // ── Consent labels ──
 const ORDER_CONSENT_LABELS = [
-  'I understand this service is 30-day rolling with no fixed contract',
-  'Setup charges may apply depending on my line status',
-  'I accept all charges shown above',
-  'Service is subject to availability at my address',
+  'I understand the plan term and notice period shown in my order and Contract Summary',
+  'I understand setup, equipment and any applicable network charges shown before acceptance',
+  'I accept the charges shown for this order',
+  'Service is subject to final availability at my address',
 ];
 
 // ── Order summary builder ──

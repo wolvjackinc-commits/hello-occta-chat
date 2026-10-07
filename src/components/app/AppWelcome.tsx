@@ -16,9 +16,9 @@ import { getFromPrices } from "@/lib/pricing/engine";
 import { Button } from "@/components/ui/button";
 
 const benefits = [
-  { icon: Shield, title: "No Contract", desc: "30-day rolling options available where eligible, no hidden fees" },
+  { icon: Shield, title: "Clear Terms", desc: "Flex 30 or fixed-term options where eligible; exact charges shown before acceptance" },
   { icon: Zap, title: "Super Fast", desc: "Ultra-fast broadband speeds" },
-  { icon: Clock, title: "24/7 Support", desc: "Always here to help you" },
+  { icon: Clock, title: "Customer Support", desc: "Support routes and current availability are shown in the help centre" },
   { icon: Headphones, title: "UK Support", desc: "UK-based team, real humans" },
 ];
 

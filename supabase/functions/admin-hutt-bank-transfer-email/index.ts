@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       logToCommunications: true,
       data: {
         subject: "Your OCCTA account OCC69244673 \u2014 \u00a353.05 payable by bank transfer (and one thing before you go)",
-        preheader: "No exit fees on your 30-day rolling plan. Bank details inside \u2014 reference OCC69244673.",
+        preheader: "Your Flex 30 notice and payment details are inside. Flex 30 has no remaining-month ETF; separately valid network charges may apply under the accepted terms.",
         greeting: "Dear Chris",
         title: "Your Account & Payment Details",
         html_body: BODY_HTML,

@@ -844,7 +844,7 @@ const Checkout = () => {
 
                 {/* Trust Indicators */}
                 <div className="pt-3 mt-3 border-t border-foreground/10 flex flex-wrap gap-1.5">
-                  {["No contract", setupCharge === 0 ? "Free install" : "Setup applies", "UK support"].map((tag) => (
+                  {["Terms shown before acceptance", setupCharge === 0 ? "£0 setup for this order" : "Setup applies", "UK support"].map((tag) => (
                     <span key={tag} className="text-[10px] font-display uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded-sm">
                       {tag}
                     </span>

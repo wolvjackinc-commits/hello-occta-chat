@@ -145,7 +145,7 @@ export const landlineRetailCard: RetailCardDef = {
     'Crystal clear HD calls',
     'Caller display',
     'Free voicemail',
-    '30-day rolling options available where eligible',
+    '30-day and fixed-term options are shown in the live SIM catalogue',
     'Works with standard home phones',
   ],
   speedLabel: '',
@@ -160,13 +160,13 @@ export const landlineRetailCard: RetailCardDef = {
     'Crystal clear HD calls',
     'Caller display',
     'Free voicemail',
-    '30-day rolling options available where eligible',
+    '30-day and fixed-term options are shown in the live SIM catalogue',
     'Works with standard home phones',
   ],
   publicDisclaimer: '',
 };
 
-// SIM retail cards — no ICUK data uploaded, keep current prices exactly
+// Legacy SIM presentation labels only. Live pricing and term data come from sim_plans_public.
 export const simRetailCards: RetailCardDef[] = [
   {
     id: 'sim-starter',
@@ -174,7 +174,7 @@ export const simRetailCards: RetailCardDef[] = [
     category: 'SIM',
     tagline: 'For light users and second phones',
     description: 'For light users and second phones',
-    features: ['5GB 5G data', 'Unlimited UK calls', 'Unlimited texts', 'EU roaming included', '30-day rolling options available where eligible', 'Free SIM delivery'],
+    features: ['5GB 5G data', 'Unlimited UK calls', 'Unlimited texts', 'EU roaming included', '30-day and fixed-term options are shown in the live SIM catalogue', 'Free SIM delivery'],
     speedLabel: '5GB',
     eligibleProductIds: [],
     popular: false,
@@ -182,7 +182,7 @@ export const simRetailCards: RetailCardDef[] = [
     publicPricePrefix: '',
     publicSetupText: '',
     publicTagline: 'For light users and second phones',
-    publicFeatures: ['5GB 5G data', 'Unlimited UK calls', 'Unlimited texts', 'EU roaming included', '30-day rolling options available where eligible', 'Free SIM delivery'],
+    publicFeatures: ['5GB 5G data', 'Unlimited UK calls', 'Unlimited texts', 'EU roaming included', '30-day and fixed-term options are shown in the live SIM catalogue', 'Free SIM delivery'],
     publicDisclaimer: '',
   },
   {
@@ -191,7 +191,7 @@ export const simRetailCards: RetailCardDef[] = [
     category: 'SIM',
     tagline: 'Perfect for everyday use',
     description: 'Perfect for everyday use',
-    features: ['15GB 5G data', 'Unlimited UK calls', 'Unlimited texts', 'EU roaming included', '30-day rolling options available where eligible', 'Data rollover'],
+    features: ['15GB 5G data', 'Unlimited UK calls', 'Unlimited texts', 'EU roaming included', '30-day and fixed-term options are shown in the live SIM catalogue', 'Data rollover'],
     speedLabel: '15GB',
     eligibleProductIds: [],
     popular: false,
@@ -199,7 +199,7 @@ export const simRetailCards: RetailCardDef[] = [
     publicPricePrefix: '',
     publicSetupText: '',
     publicTagline: 'Perfect for everyday use',
-    publicFeatures: ['15GB 5G data', 'Unlimited UK calls', 'Unlimited texts', 'EU roaming included', '30-day rolling options available where eligible', 'Data rollover'],
+    publicFeatures: ['15GB 5G data', 'Unlimited UK calls', 'Unlimited texts', 'EU roaming included', '30-day and fixed-term options are shown in the live SIM catalogue', 'Data rollover'],
     publicDisclaimer: '',
   },
   {
@@ -208,7 +208,7 @@ export const simRetailCards: RetailCardDef[] = [
     category: 'SIM',
     tagline: 'For the social media enthusiasts',
     description: 'For the social media enthusiasts',
-    features: ['50GB 5G data', 'Unlimited UK calls', 'Unlimited texts', '30GB EU roaming', '30-day rolling options available where eligible', 'Data rollover'],
+    features: ['50GB 5G data', 'Unlimited UK calls', 'Unlimited texts', '30GB EU roaming', '30-day and fixed-term options are shown in the live SIM catalogue', 'Data rollover'],
     speedLabel: '50GB',
     eligibleProductIds: [],
     popular: true,
@@ -216,7 +216,7 @@ export const simRetailCards: RetailCardDef[] = [
     publicPricePrefix: '',
     publicSetupText: '',
     publicTagline: 'For the social media enthusiasts',
-    publicFeatures: ['50GB 5G data', 'Unlimited UK calls', 'Unlimited texts', '30GB EU roaming', '30-day rolling options available where eligible', 'Data rollover'],
+    publicFeatures: ['50GB 5G data', 'Unlimited UK calls', 'Unlimited texts', '30GB EU roaming', '30-day and fixed-term options are shown in the live SIM catalogue', 'Data rollover'],
     publicDisclaimer: '',
   },
   {
@@ -225,7 +225,7 @@ export const simRetailCards: RetailCardDef[] = [
     category: 'SIM',
     tagline: 'Never worry about data again',
     description: 'Never worry about data again',
-    features: ['Unlimited 5G data', 'Unlimited UK calls', 'Unlimited texts', '50GB EU roaming', '30-day rolling options available where eligible', 'Free intl calls (50 countries)'],
+    features: ['Unlimited 5G data', 'Unlimited UK calls', 'Unlimited texts', '50GB EU roaming', '30-day and fixed-term options are shown in the live SIM catalogue', 'Free intl calls (50 countries)'],
     speedLabel: '∞',
     eligibleProductIds: [],
     popular: false,
@@ -233,7 +233,7 @@ export const simRetailCards: RetailCardDef[] = [
     publicPricePrefix: '',
     publicSetupText: '',
     publicTagline: 'Never worry about data again',
-    publicFeatures: ['Unlimited 5G data', 'Unlimited UK calls', 'Unlimited texts', '50GB EU roaming', '30-day rolling options available where eligible', 'Free intl calls (50 countries)'],
+    publicFeatures: ['Unlimited 5G data', 'Unlimited UK calls', 'Unlimited texts', '50GB EU roaming', '30-day and fixed-term options are shown in the live SIM catalogue', 'Free intl calls (50 countries)'],
     publicDisclaimer: '',
   },
 ];

@@ -9,8 +9,8 @@ import { motion } from "framer-motion";
 
 const rows = [
   { feature: "Minimum term", rolling: "30 days", fixed: "12 / 18 / 24 months" },
-  { feature: "Exit fee if you leave early", rolling: "£0", fixed: "Often £200–£500+" },
-  { feature: "Mid-contract price rises", rolling: "No (OCCTA Flex 30)", fixed: "Usually CPI/RPI + 3.9% every April" },
+  { feature: "Ending the service", rolling: "No remaining-month ETF; network charge may apply where valid", fixed: "ETF may apply during minimum term; network charge may also apply where valid" },
+  { feature: "Scheduled price rises", rolling: "No scheduled CPI/RPI rise on OCCTA Flex 30", fixed: "OCCTA Price Lock 24 has no scheduled CPI/RPI rise" },
   { feature: "Price certainty", rolling: "Month by month", fixed: "Locked for term (OCCTA Price Lock 24)" },
   { feature: "Best for", rolling: "Renters, students, short lets, movers", fixed: "Long-term homes wanting the lowest headline price" },
   { feature: "Typical starting price", rolling: "From £37.99/mo (OCCTA Flex 30)", fixed: "From £34.99/mo (OCCTA Price Lock 24)" },
@@ -18,7 +18,7 @@ const rows = [
 
 const rollingPros = [
   "Cancel any time after the 30-day notice period",
-  "No early-exit fees if life changes",
+  "No remaining-month ETF on Flex 30",
   "No mid-contract price hikes with OCCTA Flex 30",
   "Ideal for renters, students and short-term lets",
 ];
@@ -32,18 +32,18 @@ const fixedPros = [
   "Simple 'set and forget' if you're not moving",
 ];
 const fixedCons = [
-  "Early-exit fees can be £200–£500+ if you need to leave",
+  "A fixed-term ETF may apply if you leave during the minimum term; the exact method is in your agreement",
   "Most big-brand fixed deals raise prices every April (CPI/RPI + 3.9%)",
   "Harder credit checks are common",
 ];
 
 const faqs = [
-  { question: "What is no contract broadband in the UK?", answer: "No contract broadband uk plans are rolling monthly deals — typically 30 days — that you can cancel any time without paying an early-exit fee. OCCTA's Flex 30 is a no-contract plan available on full-fibre lines where eligible." },
-  { question: "Is rolling broadband more expensive than a fixed contract?", answer: "Flex 30 starts at £37.99/mo and Price Lock 24 starts at £34.99/mo, so the flexibility premium is small. With most big providers, no contract broadband uk deals are £3–£8 more per month than their 18–24 month equivalents." },
+  { question: "What is Flex 30 broadband?", answer: "OCCTA Flex 30 is a 30-day rolling broadband option with no fixed minimum term where eligible. Normal notice is 30 days. There is no remaining-month ETF, but a separately valid network cease or migration charge may apply where lawful, incurred and disclosed." },
+  { question: "Is rolling broadband more expensive than a fixed contract?", answer: "OCCTA Flex 30 starts at the current headline price shown on the broadband page and Price Lock 24 normally has a lower headline monthly price for the same public speed band. Final pricing depends on address, supplier product, setup and router choices." },
   { question: "When should I pick a fixed-term contract instead?", answer: "Pick Price Lock 24 if you know you're staying put for at least two years and want the certainty of a locked monthly price with no April CPI/RPI hikes. Pick Flex 30 if you might move, are renting, or just want the freedom to leave." },
   { question: "Do I still get full fibre on a rolling plan?", answer: "Yes. OCCTA Flex 30 uses the same full-fibre lines as our fixed plans — same speeds, same router, same UK support. The only difference is the contract length." },
-  { question: "Are there mid-contract price rises on OCCTA Flex 30?", answer: "No. OCCTA does not apply CPI or RPI mid-contract price rises to Flex 30 or Price Lock 24. If we ever change a price on a rolling plan, you're free to leave with no exit fee." },
-  { question: "Can I switch from a fixed contract to rolling later?", answer: "Yes — once your fixed term ends you can move to Flex 30 in a few clicks. You keep your line, your speed and your number via the UK One Touch Switch process." },
+  { question: "Are there mid-contract price rises on OCCTA Flex 30?", answer: "OCCTA contract version 2026.10.1 does not apply scheduled CPI-, RPI-, inflation-linked or percentage-based rises to residential broadband. If a later contract change gives you a right to leave without penalty, we will give the required notice and explain that right. Separately valid network charges may still apply where lawful." },
+  { question: "Can I switch from a fixed contract to rolling later?", answer: "After Price Lock 24 ends, the service continues on a 30-day rolling basis unless you expressly agree another fixed term. Any internal plan change is handled by OCCTA; One Touch Switch applies when switching provider where the rules apply." },
 ];
 
 const RollingVsFixedBroadbandComparison = () => {
@@ -59,9 +59,9 @@ const RollingVsFixedBroadbandComparison = () => {
     <Layout>
       <SEO
         title="Rolling vs Fixed Broadband UK — Which Should You Pick?"
-        description="No contract broadband uk vs fixed-term contracts, compared honestly. Exit fees, mid-contract price rises, and when Flex 30 or Price Lock 24 wins."
+        description="Flex 30 vs Price Lock 24, compared clearly: minimum term, notice, pricing, early termination and applicable network charges."
         canonical="/rolling-vs-fixed-broadband-comparison"
-        keywords="no contract broadband uk, rolling vs fixed broadband, 30 day broadband uk, flexible broadband, price lock broadband uk, occta flex 30, occta price lock 24"
+        keywords="Flex 30 broadband UK, rolling vs fixed broadband, 30 day broadband UK, flexible broadband, price lock broadband UK, OCCTA Flex 30, OCCTA Price Lock 24"
         type="article"
       />
       <StructuredData customOnly customSchema={combinedSchema} />
@@ -82,7 +82,7 @@ const RollingVsFixedBroadbandComparison = () => {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
               <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
                 <Zap className="w-4 h-4 inline mr-2" />
-                No contract broadband UK · Honest guide
+                Flex 30 vs fixed-term broadband · Clear guide
               </div>
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
                 Rolling vs Fixed
@@ -159,9 +159,9 @@ const RollingVsFixedBroadbandComparison = () => {
         <div className="container mx-auto px-4 max-w-3xl">
           <h2 className="text-3xl md:text-4xl font-display uppercase mb-6">Which should you pick?</h2>
           <div className="space-y-4 text-lg leading-relaxed">
-            <p><strong>Pick Flex 30</strong> if you're renting, moving in the next year, or simply don't want to be told what your April price rise is going to be. You get full-fibre broadband with 30 days' notice to leave and no exit fee.</p>
+            <p><strong>Pick Flex 30</strong> if you're renting, moving in the next year, or simply don't want to be told what your April price rise is going to be. You get a 30-day rolling option where available, normally with 30 days’ notice and no remaining-month ETF. Separately valid network charges may apply.</p>
             <p><strong>Pick Price Lock 24</strong> if you're settled and want the reassurance of a locked monthly price for two years — with no CPI or RPI mid-contract hikes.</p>
-            <p>Both plans use the same full-fibre network, the same router and the same UK-based support. The only difference is how long you're committing for.</p>
+            <p>Network technology, router options, setup and availability depend on the address and selected service. The Contract Summary shows the customer-specific details before acceptance.</p>
           </div>
           <div className="flex flex-wrap gap-3 mt-8">
             <Button asChild size="lg"><Link to="/broadband/flex">See Flex 30</Link></Button>

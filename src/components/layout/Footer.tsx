@@ -62,7 +62,7 @@ const Footer = () => {
       { name: "Digital Voice & Emergency Calls", path: "/guides/digital-voice-uk" },
     ],
     guides: [
-      { name: "No Contract Broadband", path: "/guides/no-contract-broadband-uk" },
+      { name: "Flex 30 Broadband", path: "/guides/no-contract-broadband-uk" },
       { name: "Digital Voice UK", path: "/guides/digital-voice-uk" },
       { name: "Cheap SIM Deals", path: "/guides/cheap-sim-only-deals" },
       { name: "All Guides", path: "/guides" },

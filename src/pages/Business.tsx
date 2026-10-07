@@ -28,7 +28,7 @@ const planHighlights = [
       "Unlimited data",
       "Smart router + WiFi 6",
       "4G failover ready",
-      "Next-day setup",
+      "Setup timing confirmed in quote",
     ],
   },
   {
@@ -54,7 +54,7 @@ const planHighlights = [
       "Unlimited data",
       "Pro router + mesh",
       "Managed security",
-      "4-hour fix target",
+      "Care level confirmed in quote",
     ],
   },
 ];
@@ -62,15 +62,15 @@ const planHighlights = [
 const offers = [
   {
     title: "Switch & Save Credit",
-    detail: "£100 migration credit to cover install or early-exit fees.",
+    detail: "Any migration support or promotional credit is confirmed in your written business quote before order.",
   },
   {
     title: "4G Backup Free for 3 Months",
-    detail: "Stay online when the street cabinet goes quiet.",
+    detail: "Availability, equipment, failover behaviour and charges are confirmed in the business quote.",
   },
   {
     title: "Phones On Us",
-    detail: "Buy 5 hosted seats, get 2 extra desk phones free.",
+    detail: "Any handset or seat promotion is shown in the current written quote before acceptance.",
   },
 ];
 
@@ -133,7 +133,7 @@ const Business = () => {
       ]),
       createFAQSchema([
         { question: 'Do you offer static IPs for business?', answer: 'Yes. Static IP addresses are available on OCCTA Business Broadband plans — useful for VPNs, remote access, and hosting.' },
-        { question: 'Is business broadband contract-free?', answer: 'Both flexible monthly and fixed-term Price Lock plans are available for eligible business lines.' },
+        { question: 'Is business broadband clear-term?', answer: 'Both flexible monthly and fixed-term Price Lock plans are available for eligible business lines.' },
         { question: 'What support is included?', answer: 'UK-based priority support for business customers by email and phone, with faster response SLAs than residential plans.' },
       ]),
     ],
@@ -143,7 +143,7 @@ const Business = () => {
     <LayoutComponent>
       <SEO 
         title="Business Broadband UK - Flexible Monthly"
-        description="Affordable business broadband UK from £24/mo. Static IP, priority support, flexible monthly options available. Trusted by 5,000+ UK businesses. WiFi 6 routers included."
+        description="OCCTA business telecom: broadband, voice and connectivity options with service, price, VAT treatment, equipment, care level and contract term confirmed in a written quote before order."
         canonical="/business"
         keywords="business broadband UK, affordable business internet, flexible business broadband, static IP broadband, SME broadband, business fibre UK, affordable business internet"
         price="24"
@@ -224,7 +224,7 @@ const Business = () => {
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 {[
-                  { icon: ShieldCheck, label: "24/7 monitoring" },
+                  { icon: ShieldCheck, label: "business support monitoring" },
                   { icon: Headset, label: "Priority support" },
                   { icon: Clock, label: "Fast install" },
                   { icon: Wifi, label: "WiFi 6 routers" },

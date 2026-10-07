@@ -23,14 +23,14 @@ const LocationBroadbandPage = () => {
   const prices = getFromPrices();
   const broadbandServiceSchema = createServiceSchema({
     name: `OCCTA Broadband in ${location.city}`,
-    description: `Fast, reliable fibre broadband in ${location.city} with speeds up to 900Mbps. Price Lock 24 or Flex 30 where eligible.`,
+    description: `OCCTA broadband in ${location.city} with public speed bands up to 1000Mbps where available. Price Lock 24 or Flex 30 may be offered; exact address-specific speed information, setup and charges are confirmed before acceptance.`,
     url: `/broadband-${location.slug}`,
     price: prices.broadband,
   });
 
   const planOfferSchemas = broadbandPlans.map(plan => createOfferSchema({
     name: `OCCTA ${plan.name}`,
-    description: `Fibre broadband up to ${plan.speed}Mbps in ${location.city}. No contract, 30-day rolling options available where eligible. ${plan.features.slice(0, 3).join(', ')}.`,
+    description: `Fibre broadband speed band up to ${plan.speed}Mbps in ${location.city}. Price Lock 24 or Flex 30 where offered. Final address-specific availability, speeds, term and charges are confirmed before acceptance. ${plan.features.slice(0, 3).join(', ')}.`,
     price: plan.price.toString(),
     url: `/pre-checkout?plans=${plan.id}`,
     sku: plan.id,
@@ -73,10 +73,10 @@ const LocationBroadbandPage = () => {
   return (
     <Layout>
       <SEO
-        title={`Cheap Broadband in ${location.city} - No Contract Fibre`}
+        title={`Broadband in ${location.city} - Flex 30 & Price Lock Options`}
         description={location.metaDescription}
         canonical={`/broadband-${location.slug}`}
-        keywords={`cheap broadband ${location.city}, broadband ${location.city}, fibre broadband ${location.city}, no contract broadband ${location.city}, internet ${location.city}, ${location.region} broadband`}
+        keywords={`affordable broadband ${location.city}, broadband ${location.city}, fibre broadband ${location.city}, flexible broadband ${location.city}, internet ${location.city}, ${location.region} broadband`}
         type="article"
         price={prices.broadband}
       />
@@ -143,7 +143,7 @@ const LocationBroadbandPage = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-display-md mb-2">BROADBAND PLANS IN {location.city.toUpperCase()}</h2>
-            <p className="text-muted-foreground">Unlimited data, no price rises. Available in {location.city}.</p>
+            <p className="text-muted-foreground">Unlimited data where shown. Price Lock 24 or Flex 30 where offered in {location.city}; exact address-specific terms are confirmed before acceptance.</p>
           </motion.div>
 
           <motion.div
@@ -225,7 +225,7 @@ const LocationBroadbandPage = () => {
           <h2 className="text-xl font-display uppercase mb-4">Broadband Guides</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { title: "No Contract Broadband UK", desc: "How rolling monthly broadband works and who it suits.", path: "/guides/no-contract-broadband-uk" },
+              { title: "Flex 30 Broadband UK", desc: "How 30-day rolling broadband works, including notice and applicable charges.", path: "/guides/no-contract-broadband-uk" },
               { title: "Cheap Broadband UK", desc: "How to find affordable internet and avoid hidden costs.", path: "/guides/cheap-broadband-uk" },
               { title: "How to Switch Broadband", desc: "Step-by-step guide to switching provider.", path: "/guides/how-to-switch-broadband" },
             ].map((g) => (

@@ -97,7 +97,7 @@ const Complaints = () => {
     {
       title: "Independent ADR",
       description:
-        "If we cannot resolve your complaint within 6 weeks, or we issue a deadlock letter earlier, you may refer the matter to our approved Alternative Dispute Resolution (ADR) scheme.",
+        "If we cannot resolve your complaint within 6 weeks, or we issue a deadlock letter earlier, you may normally refer the matter to the Alternative Dispute Resolution (ADR) scheme OCCTA follows, free of charge, in accordance with the Complaints Code.",
       icon: Scale,
     },
   ];

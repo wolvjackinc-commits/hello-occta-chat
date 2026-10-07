@@ -132,15 +132,14 @@ const Schema = z.discriminatedUnion("action", [
 ]);
 
 /**
- * Required Journey 2 sequence. Start date and billing are captured BEFORE the
- * contract is generated, so the documents the customer signs already contain
- * the start date, billing day and first-collection wording.
+ * Required Journey 2 sequence. The customer reviews, verifies and accepts the
+ * contract before providing Direct Debit details.
  */
 const STEP_ORDER = JOURNEY2_STEPS;
-/** Steps the customer completes before any contract document exists. */
-const PRE_CONTRACT_STEPS = ["address", "plan", "router", "extras", "details", "start_date", "billing"] as const;
-/** Selections that materially change the agreement once accepted. */
-const MATERIAL_STEPS = ["address", "plan", "router", "extras", "start_date", "billing"] as const;
+/** Steps completed before any contract document exists. */
+const PRE_CONTRACT_STEPS = ["address", "plan", "router", "extras", "details", "start_date"] as const;
+/** Selections that materially change the agreement once prepared. */
+const MATERIAL_STEPS = ["address", "plan", "router", "extras", "start_date"] as const;
 
 function nextStep(step: string): string {
   const i = STEP_ORDER.indexOf(step as never);
@@ -325,11 +324,16 @@ if (body.action === "get") {
   }
 
   // ── save_step ────────────────────────────────────────────────────────────
-  if (!["active", "contract_prepared"].includes(session.status)) {
-    return jsonResponse({ error: "session_locked", status: session.status }, 409);
-  }
-  if (!(PRE_CONTRACT_STEPS as readonly string[]).includes(body.step)) {
-    return jsonResponse({ error: "step_not_editable" }, 409);
+  const isPostContractBilling =
+    body.step === "billing" &&
+    session.status === "contract_accepted" &&
+    ["billing", "review"].includes(String(session.current_step ?? ""));
+  const isPreContractStep =
+    (PRE_CONTRACT_STEPS as readonly string[]).includes(body.step) &&
+    ["active", "contract_prepared"].includes(session.status);
+
+  if (!isPostContractBilling && !isPreContractStep) {
+    return jsonResponse({ error: "session_locked", status: session.status, step: body.step }, 409);
   }
   // Once the immutable contractual snapshot exists it can never be replaced,
   // so a material change is refused outright rather than quietly superseding a
@@ -432,10 +436,14 @@ if (body.action === "get") {
     patch.likely_service_date = p.data.preferred_start_date;
     patch.cooling_off_acknowledged = true;
   } else {
-    // billing — Direct Debit details are encrypted immediately and never
-    // returned to the browser, stored in logs or written to the session.
+    // billing — collected only after the customer has verified their mobile
+    // and accepted the contract. Details are encrypted immediately and never
+    // returned to the browser, logged or written to the session in clear text.
     const p = BillingPayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);
+    if (session.status !== "contract_accepted") {
+      return jsonResponse({ error: "contract_acceptance_required_first" }, 409);
+    }
     if (!session.preferred_start_date && !patch.preferred_start_date) {
       return jsonResponse({ error: "start_date_required_first" }, 409);
     }

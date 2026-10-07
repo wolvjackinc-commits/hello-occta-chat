@@ -25,7 +25,7 @@ const About = () => {
     <Layout>
       <SEO 
         title="About OCCTA - UK Telecom Company"
-        description="OCCTA is a UK telecom company offering affordable broadband, SIM and digital home phone plans with no hidden fees and UK-based support."
+        description="OCCTA is a UK telecom company offering broadband, SIM and Digital Voice services with clear customer-specific pricing and contract terms."
         canonical="/about"
         keywords="OCCTA, UK telecom company, cheap broadband provider, affordable internet UK, honest broadband, UK internet provider"
       />

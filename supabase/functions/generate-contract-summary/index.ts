@@ -11,7 +11,7 @@ import {
 } from "../_shared/buildPlanResolver.ts";
 import { speedEstimatesFor, speedStatementFor } from "../_shared/journey2Snapshot.ts";
 import { resolveNoticePeriod } from "../_shared/noticePeriod.ts";
-import { buildContractSpeedMatrix, type ContractSpeedMatrix } from "../_shared/networkEvidence.ts";
+import { buildContractSpeedMatrix, matrixHeadline, speedMatrixStatement, type ContractSpeedMatrix } from "../_shared/networkEvidence.ts";
 
 const CONTRACT_TERMS_VERSION = "2026.10.1";
 const money = (n: number) => `£${Number(n).toFixed(2)}`;
@@ -113,15 +113,18 @@ Deno.serve(async (req) => {
     if (!speedGate.ok) {
       return jsonResponse({
         error: speedGate.error,
-        message: "Verified exact-address minimum, normally available, maximum and advertised speeds are required before a consumer broadband contract can be issued.",
+        message: "A server-side speed basis (verified network evidence or OCCTA plan estimate) is required before a consumer broadband contract can be issued.",
       }, 409);
     }
     if (!q.likely_service_date) {
       return jsonResponse({ error: "likely_service_date_required" }, 409);
     }
     contractSpeedMatrix = speedGate.matrix;
-    exactDown = speedGate.matrix.normally_available_download_mbps;
-    exactUp = speedGate.matrix.normally_available_upload_mbps;
+    if (!/^[0-9a-f]{64}$/i.test(String(q.supplier_availability_sha256 ?? ""))) {
+      return jsonResponse({ error: "speed_evidence_hash_missing" }, 409);
+    }
+    exactDown = matrixHeadline(speedGate.matrix).download;
+    exactUp = matrixHeadline(speedGate.matrix).upload;
   }
 
   const extraOneOff: { label: string; amount: number }[] = [];
@@ -168,7 +171,8 @@ Deno.serve(async (req) => {
     bpAddendum =
       `\n\nPlan: ${speedBucketLabel(q.speed_bucket as any)} — ${planTermLabel(q.plan_term as any)}.` +
       (contractSpeedMatrix
-        ? `\nVerified address-specific speeds (download/upload Mbps): minimum ${contractSpeedMatrix.minimum_download_mbps}/${contractSpeedMatrix.minimum_upload_mbps}; normally available ${contractSpeedMatrix.normally_available_download_mbps}/${contractSpeedMatrix.normally_available_upload_mbps}; maximum ${contractSpeedMatrix.maximum_download_mbps}/${contractSpeedMatrix.maximum_upload_mbps}; advertised plan ${contractSpeedMatrix.advertised_download_mbps}/${contractSpeedMatrix.advertised_upload_mbps}. Supplier evidence retrieved ${contractSpeedMatrix.source_retrieved_at}.`
+        ? `
+${speedMatrixStatement(contractSpeedMatrix)}`
         : `\nContract speed used for this quote: up to ${exactDown} Mbps down / ${exactUp} Mbps up (estimate, not a guarantee).`) +
       `\nRouter: ${resolved.router.label} (${resolved.router.payment_type === "monthly" ? `£${resolved.router.monthly.toFixed(2)}/mo` : resolved.router.oneOff > 0 ? `£${resolved.router.oneOff.toFixed(2)} one-off` : "£0"}).` +
       `\nSetup: ${resolved.setup.label}${resolved.setup.oneOff > 0 ? ` (£${resolved.setup.oneOff.toFixed(2)} one-off)` : " (£0)"}.` +
@@ -317,7 +321,7 @@ Deno.serve(async (req) => {
     estimated_download_speed: exactDown ?? speedEstimatesFor(q.speed_bucket)?.download ?? null,
     estimated_upload_speed: exactUp ?? speedEstimatesFor(q.speed_bucket)?.upload ?? null,
     speed_notes: (contractSpeedMatrix
-      ? `Verified exact-address broadband speeds: minimum ${contractSpeedMatrix.minimum_download_mbps}/${contractSpeedMatrix.minimum_upload_mbps} Mbps; normally available ${contractSpeedMatrix.normally_available_download_mbps}/${contractSpeedMatrix.normally_available_upload_mbps} Mbps; maximum ${contractSpeedMatrix.maximum_download_mbps}/${contractSpeedMatrix.maximum_upload_mbps} Mbps; advertised plan ${contractSpeedMatrix.advertised_download_mbps}/${contractSpeedMatrix.advertised_upload_mbps} Mbps (download/upload). Source retrieved ${contractSpeedMatrix.source_retrieved_at}.`
+      ? speedMatrixStatement(contractSpeedMatrix)
       : (q.speed_notes ?? speedStatementFor(q.speed_bucket) ?? "")) + bpAddendum,
     price_rise_policy: q.price_rise_policy ?? PRICE_RISE_POLICY_TEXT,
     digital_voice_warning: isVoice ? DIGITAL_VOICE_WARNING_TEXT : null,

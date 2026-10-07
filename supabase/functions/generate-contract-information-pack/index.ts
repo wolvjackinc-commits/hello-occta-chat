@@ -22,7 +22,7 @@ import { validateTwoDocIssue } from "../_shared/twoDocValidators.ts";
 import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidators.ts";
 import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
-import { buildContractSpeedMatrix } from "../_shared/networkEvidence.ts";
+import { buildContractSpeedMatrix, speedMatrixStatement } from "../_shared/networkEvidence.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     ? buildContractSpeedMatrix((q as any).supplier_availability_snapshot, (q as any).speed_bucket)
     : null;
   if (speedGate && !speedGate.ok) {
-    return jsonResponse({ error: speedGate.error, message: "Verified address-specific speed evidence is required before Contract Information can be issued." }, 409);
+    return jsonResponse({ error: speedGate.error, message: "A server-side speed basis (verified network evidence or OCCTA plan estimate) is required before Contract Information can be issued." }, 409);
   }
   if (isNewConsumerBroadband && !(q as any).likely_service_date) {
     return jsonResponse({ error: "likely_service_date_required" }, 409);

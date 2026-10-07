@@ -29,7 +29,7 @@ export const TEST_LABEL = "TEST — Journey 2 isolated run";
 /** The ten logical stages a Journey 2 order passes through. */
 export const TEST_STAGES = [
   "address", "plan", "router", "extras", "details",
-  "start_date", "billing", "contract", "review", "complete",
+  "start_date", "contract", "billing", "review", "complete",
 ] as const;
 export type TestStage = typeof TEST_STAGES[number];
 
@@ -107,7 +107,7 @@ const BillingPayload = z.object({
   }),
 });
 
-const MATERIAL_STEPS = new Set(["plan", "router", "extras", "start_date", "billing"]);
+const MATERIAL_STEPS = new Set(["plan", "router", "extras", "start_date"]);
 
 // ── Session lifecycle ──────────────────────────────────────────────────────
 
@@ -200,10 +200,11 @@ export async function saveTestStep(
     if (p.data.preferred_start_date > addDays(todayYmd(), 90)) return fail("date_too_far", 400);
     patch.preferred_start_date = p.data.preferred_start_date;
     patch.cooling_off_acknowledged = true;
-    patch.current_step = "billing";
+    patch.current_step = "contract";
   } else if (step === "billing") {
     const p = BillingPayload.safeParse(payload);
     if (!p.success) return fail("validation", 400, p.error.flatten());
+    if (!session.accepted_at || session.status !== "contract_accepted") return fail("contract_acceptance_required_first", 409);
     if (!session.preferred_start_date) return fail("start_date_required_first", 409);
     let enc;
     try {
@@ -244,7 +245,7 @@ export async function saveTestStep(
     patch.dd_consent = true;
     patch.dd_masked = masked;
     patch.dd_status = "details_received";
-    patch.current_step = "contract";
+    patch.current_step = "review";
   } else {
     return fail("unknown_step", 400);
   }
@@ -278,7 +279,7 @@ export async function prepareTestContract(
   settings: JourneySettings,
   session: TestSession,
 ): Promise<{ ok: true; snapshot: Journey2Snapshot; snapshot_sha256: string; session: TestSession } | { ok: false; error: string; status: number }> {
-  for (const req of ["service_address", "speed_bucket", "plan_term", "customer_details", "preferred_start_date", "billing_anchor_day", "dd_masked"]) {
+  for (const req of ["service_address", "speed_bucket", "plan_term", "customer_details", "preferred_start_date"]) {
     if (!session[req]) return { ok: false, error: `missing_${req}`, status: 409 };
   }
   const priced = session.price_snapshot;
@@ -347,16 +348,11 @@ export async function prepareTestContract(
   }, { onConflict: "session_id" });
   if (cs.error) return { ok: false, error: `test_contract_failed:${cs.error.message}`, status: 500 };
 
-  await supabase.from("journey2_test_dd_intake")
-    .update({ dd_status: "pending_contract" }).eq("session_id", session.id);
-
   const upd = await supabase.from("journey2_test_sessions").update({
     contract_locked: true,
     test_snapshot_id: snapId,
-    dd_status: "pending_contract",
-    dd_masked: { ...(session.dd_masked ?? {}), status: "pending_contract" },
     status: "contract_prepared",
-    current_step: "review",
+    current_step: "contract",
   }).eq("id", session.id).select(TEST_SESSION_COLS).single();
   if (upd.error) return { ok: false, error: `test_session_update_failed:${upd.error.message}`, status: 500 };
 
@@ -397,7 +393,7 @@ export async function acceptTestContract(
   await supabase.from("journey2_test_contract_summaries")
     .update({ status: "accepted", accepted_at: acceptedAt }).eq("session_id", session.id);
   await supabase.from("journey2_test_sessions")
-    .update({ accepted_at: acceptedAt, status: "contract_accepted" }).eq("id", session.id);
+    .update({ accepted_at: acceptedAt, status: "contract_accepted", current_step: "billing" }).eq("id", session.id);
 
   return { ok: true, snapshot_sha256: String(snap.snapshot_sha256) };
 }

@@ -1,0 +1,1 @@
+- Broadband availability is supplier-neutral: `_shared/networkEvidence.ts` is the only gate for binding contract speeds — why: no live supplier feed, so documents must never be issued from guessed speeds.

@@ -19,7 +19,7 @@ export default function BillingStep({
   session: Journey2Session;
   saving: boolean;
   onSave: (payload: Record<string, unknown>) => void;
-  onBack: () => void;
+  onBack?: () => void;
 }) {
   const addr = session.service_address;
   const [day, setDay] = useState(String(session.billing_anchor_day ?? 1));
@@ -66,7 +66,8 @@ export default function BillingStep({
   return (
     <form onSubmit={submit} className="border-4 border-foreground p-4 sm:p-6 space-y-5">
       <div>
-        <h1 className="font-display uppercase text-2xl">Billing and Direct Debit</h1>
+        <h1 className="font-display uppercase text-2xl">Set up your Direct Debit</h1>
+        <p className="text-sm text-muted-foreground mt-1">Your contract is accepted. Now add the bank details we'll use for future bills. Nothing is taken today.</p>
         <p className="text-sm text-muted-foreground mt-1">
           Nothing is taken today — <strong>{money(0)}</strong> due now. Your details are stored securely and your first
           collection only happens after your Direct Debit is active and we've given you advance notice.
@@ -144,7 +145,7 @@ export default function BillingStep({
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 
       <div className="grid gap-3 sm:flex sm:flex-wrap">
-        <Button type="button" variant="outline" onClick={onBack}>Back</Button>
+        {onBack && <Button type="button" variant="outline" onClick={onBack}>Back</Button>}
         <Button type="submit" disabled={saving}>{saving ? "Saving securely…" : "Continue to your contract"}</Button>
       </div>
     </form>

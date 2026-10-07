@@ -8,19 +8,17 @@ import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { motion } from "framer-motion";
 
 const providers = [
-  { name: "OCCTA", price: "£37.99", term: "Flex 30 · 30-day rolling", midRise: "No scheduled CPI/RPI rise", credit: "Check order terms", exit: "No remaining-month ETF; network charge may apply", highlight: true },
-  { name: "Cuckoo", price: "£28.00", term: "30 days rolling", midRise: "No", credit: "Soft check", exit: "£0", highlight: false },
-  { name: "NOW Broadband", price: "£25.00", term: "1 month rolling", midRise: "Possible", credit: "Hard check", exit: "£0", highlight: false },
-  { name: "BT (12m)", price: "£32.99", term: "12-month contract", midRise: "Yes (CPI+3.9%)", credit: "Hard check", exit: "Up to £400+", highlight: false },
-  { name: "Sky (18m)", price: "£28.00", term: "18-month contract", midRise: "Yes (RPI+3.9%)", credit: "Hard check", exit: "Up to £500+", highlight: false },
+  { name: "OCCTA Flex 30", price: "From £37.99/mo", term: "30-day rolling", midRise: "No scheduled CPI/RPI/percentage rise under v2026.10.1", credit: "Check order terms", exit: "No remaining-month ETF; valid disclosed network charge may apply", highlight: true },
+  { name: "OCCTA Price Lock 24", price: "From £34.99/mo", term: "24-month minimum", midRise: "No scheduled CPI/RPI/percentage rise under v2026.10.1", credit: "Check order terms", exit: "ETF may apply during minimum term", highlight: false },
+  { name: "Other UK providers", price: "Varies", term: "Varies by tariff", midRise: "Check exact pounds-and-pence disclosure", credit: "Varies by provider and product", exit: "Depends on accepted contract", highlight: false },
 ];
 
 const faqs = [
   { question: "What counts as a no-contract broadband deal?", answer: "A rolling broadband deal has no long fixed minimum term. OCCTA Flex 30 is 30-day rolling with normal 30-day notice. There is no remaining-month ETF, but a separately valid network cease or migration charge may apply where lawful, incurred and disclosed." },
-  { question: "Is no-contract broadband more expensive?", answer: "OCCTA Flex 30 starts at £37.99/mo and Price Lock 24 starts at £34.99/mo for the headline Essential band. Final pricing depends on address, selected service, setup and router choices. Flex 30 has no remaining-month ETF." },
-  { question: "Do I need a credit check for no-contract broadband?", answer: "Some providers (BT, Sky, NOW) run a hard credit check. OCCTA does not run a credit check on any broadband plan." },
-  { question: "Will my price go up mid-contract?", answer: "Most big providers raise prices every April by CPI+3.9% or RPI+3.9%. OCCTA has no mid-contract price hikes — what you sign up for is what you pay." },
-  { question: "Can I keep my phone number if I switch?", answer: "Yes. The One Touch Switch process (UK-wide) lets you keep your number and switches you with no downtime." },
+  { question: "Is no-contract broadband more expensive?", answer: "OCCTA Flex 30 has a higher headline starting price than Price Lock 24 for the Essential band. Final pricing depends on address, selected service, setup and router choices, so compare total cost and flexibility rather than only the headline price." },
+  { question: "Do I need a credit check for no-contract broadband?", answer: "Identity, credit or eligibility checks vary by provider, product and ordering process. OCCTA shows the current requirements for the selected order before you commit." },
+  { question: "Will my price go up?", answer: "Under OCCTA residential contract version 2026.10.1 there is no scheduled CPI-, RPI-, inflation-linked or percentage-based rise on the recurring broadband subscription. For another provider, check the exact pounds-and-pence price-change disclosure for the tariff you are considering." },
+  { question: "Can I keep my phone number if I switch?", answer: "Number-porting eligibility depends on the service and switch. Confirm the porting option for your specific order before relying on it." },
 ];
 
 const NoContractBroadbandComparison = () => {
@@ -71,7 +69,7 @@ const NoContractBroadbandComparison = () => {
                 <span className="text-gradient">Compared (UK 2026)</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-2xl leading-relaxed">
-                The honest side-by-side: OCCTA vs Cuckoo, NOW, BT and Sky. Rolling terms, exit fees, mid-contract price rises and credit checks — laid out so you can pick the one that actually fits.
+                Compare rolling and fixed-term broadband using the things that change your real cost: minimum term, scheduled price changes, setup, eligibility requirements and termination charges.
               </p>
               <PostcodeChecker />
             </motion.div>
@@ -81,7 +79,7 @@ const NoContractBroadbandComparison = () => {
 
       <section className="py-12 bg-background">
         <div className="container mx-auto px-4 max-w-5xl">
-          <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">UK no-contract broadband at a glance</h2>
+          <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">Rolling and fixed broadband at a glance</h2>
           <div className="overflow-x-auto border-4 border-foreground/10">
             <table className="w-full text-sm">
               <thead className="bg-secondary">
@@ -97,8 +95,8 @@ const NoContractBroadbandComparison = () => {
               <tbody>
                 {providers.map((p) => (
                   <tr key={p.name} className={`border-t-2 border-foreground/10 ${p.highlight ? "bg-accent/10 font-semibold" : ""}`}>
-                    <td className="p-3">{p.name}{p.highlight && <span className="ml-2 text-xs text-accent">★ Best value</span>}</td>
-                    <td className="p-3">{p.price}/mo</td>
+                    <td className="p-3">{p.name}{p.highlight && <span className="ml-2 text-xs text-accent">Flex 30</span>}</td>
+                    <td className="p-3">{p.price}</td>
                     <td className="p-3">{p.term}</td>
                     <td className="p-3">{p.midRise}</td>
                     <td className="p-3">{p.credit}</td>
@@ -114,15 +112,15 @@ const NoContractBroadbandComparison = () => {
 
       <section className="py-12 bg-secondary">
         <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">Why OCCTA wins on flexibility</h2>
+          <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">How OCCTA Flex 30 works</h2>
           <ul className="space-y-2">
             {[
               "Flex 30 is 30-day rolling where eligible — normal 30-day notice",
-              "No mid-contract price rises — ever",
-              "Eligibility requirements are shown before order",
               "No remaining-month ETF on Flex 30; separately valid network charges may apply",
-              "Setup from £0 where available; exact setup is confirmed before acceptance",
-              "UK-based support, no outsourced call centres",
+              "Current eligibility requirements are shown before you commit",
+              "Setup from £0 may be available; exact setup is confirmed before acceptance",
+              "Address-specific speed information and final price are confirmed before acceptance",
+              "UK-based support",
             ].map((b) => (
               <li key={b} className="flex items-start gap-3">
                 <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -135,13 +133,15 @@ const NoContractBroadbandComparison = () => {
 
       <section className="py-12 bg-background">
         <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">What to watch out for elsewhere</h2>
+          <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">What to compare on any provider</h2>
           <ul className="space-y-2">
             {[
-              "BT and Sky bake CPI/RPI+3.9% into 12-24 month contracts — bills rise every April",
-              "NOW Broadband runs a hard credit check that shows on your file",
-              "Cuckoo's headline price is low, but their speeds and add-on pricing are less flexible than OCCTA's three-band range",
-              "Most 'no-contract' deals on price comparison sites still tie you in for 30 days notice",
+              "The exact monthly price and any scheduled pounds-and-pence increase",
+              "Minimum term and notice period",
+              "Setup, engineer, router and delivery charges",
+              "Early-termination and network cease or migration charges",
+              "Identity, credit or eligibility checks",
+              "Address-specific speed information and technology",
             ].map((b) => (
               <li key={b} className="flex items-start gap-3">
                 <X className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />

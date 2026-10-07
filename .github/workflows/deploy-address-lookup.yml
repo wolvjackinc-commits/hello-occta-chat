@@ -4,11 +4,15 @@ on:
   pull_request:
     paths:
       - 'supabase/functions/check-address/**'
+      - 'supabase/functions/check-availability/**'
+      - 'supabase/functions/_shared/icukAvailability.ts'
       - '.github/workflows/deploy-address-lookup.yml'
   push:
     branches: [main]
     paths:
       - 'supabase/functions/check-address/**'
+      - 'supabase/functions/check-availability/**'
+      - 'supabase/functions/_shared/icukAvailability.ts'
       - '.github/workflows/deploy-address-lookup.yml'
   workflow_dispatch:
 
@@ -21,8 +25,10 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Type-check address edge function
-        run: deno check supabase/functions/check-address/index.ts
+      - name: Type-check address edge functions
+        run: |
+          deno check supabase/functions/check-address/index.ts
+          deno check supabase/functions/check-availability/index.ts
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -48,5 +54,8 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy address lookup
+      - name: Deploy exact-address lookup
         run: supabase functions deploy check-address --project-ref "$PROJECT_REF"
+
+      - name: Deploy exact-address availability
+        run: supabase functions deploy check-availability --project-ref "$PROJECT_REF"

@@ -414,6 +414,7 @@ const AnimatedRoutes = () => {
         <Route path="/compare/:slug" element={<ComparisonPage />} />
 
         {/* Keyword landing pages */}
+        <Route path="/fixed-price-broadband" element={<KeywordLanding />} />
         <Route path="/cheap-broadband-near-me" element={<KeywordLanding />} />
         <Route path="/broadband-no-credit-check" element={<KeywordLanding />} />
         <Route path="/broadband-for-students" element={<KeywordLanding />} />

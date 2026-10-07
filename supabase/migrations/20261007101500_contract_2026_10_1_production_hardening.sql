@@ -411,19 +411,9 @@ BEGIN
     )
     ON CONFLICT (journey_id) DO NOTHING;
 
-    INSERT INTO public.admin_tasks (
-      title, description, priority, status, related_customer_id
-    )
-    SELECT
-      'Vulnerability review required before activation',
-      'Structured vulnerability/support information was supplied in the customer journey. Review customer_vulnerability_reviews before service activation.',
-      'high', 'open', NEW.customer_id
-    WHERE NOT EXISTS (
-      SELECT 1 FROM public.admin_tasks t
-       WHERE t.related_customer_id = NEW.customer_id
-         AND t.title = 'Vulnerability review required before activation'
-         AND t.status IN ('open','in_progress')
-    );
+    -- The structured review row above is the authoritative blocker. Notification
+    -- tasks are deliberately not created inside this evidence transaction:
+    -- a task-system failure must never corrupt contract acceptance evidence.
   END IF;
   RETURN NEW;
 END;

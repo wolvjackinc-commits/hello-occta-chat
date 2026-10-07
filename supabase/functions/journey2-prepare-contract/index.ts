@@ -131,6 +131,25 @@ Deno.serve(async (req) => {
       }).select("id, reference").single();
       if (qrIns.error) return jsonResponse({ error: "network_validation_lead_capture_failed", details: qrIns.error.message }, 500);
       quoteRequestId = qrIns.data.id;
+    } else {
+      const qrUpdate = await supabase.from("quote_requests").update({
+        full_name: details.full_name,
+        email: details.email,
+        phone: details.phone,
+        date_of_birth: details.date_of_birth ?? null,
+        postcode: String(session.postcode).toUpperCase(),
+        address_line_1: address.address_line_1,
+        address_line_2: address.address_line_2 ?? null,
+        town: address.town,
+        county: address.county ?? null,
+        plan_preference: session.plan_term === "flex_30" ? "flex" : "contract_saver",
+        current_provider: details.current_provider ?? null,
+        marketing_consent: !!details.marketing_consent,
+        status: "checking",
+        message: `Journey 2 network validation required before contract: ${session.speed_bucket} · ${session.plan_term}`,
+        updated_at: new Date().toISOString(),
+      }).eq("id", quoteRequestId);
+      if (qrUpdate.error) return jsonResponse({ error: "network_validation_lead_update_failed", details: qrUpdate.error.message }, 500);
     }
 
     await supabase.from("network_validation_cases").upsert({

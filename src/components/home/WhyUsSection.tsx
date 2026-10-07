@@ -122,7 +122,7 @@ const WhyUsSection = () => {
             </motion.span>
           </h2>
           <p className="text-xl text-muted-foreground">
-            Affordable telecom without contracts, hidden fees, or lock-ins. Simple plans,
+            Affordable telecom with clear terms. Flex 30 and Price Lock 24 broadband options where eligible, with charges shown before acceptance. Simple plans,
             transparent pricing, and freedom to leave anytime.
           </p>
         </motion.div>

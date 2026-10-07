@@ -159,7 +159,7 @@ export function RewardsTab() {
           {[
             { icon: Users, title: "Referral link", body: "Coming soon" },
             { icon: Award, title: "Points balance", body: "Coming soon" },
-            { icon: Gift, title: "Contract Saver benefits", body: "Coming soon" },
+            { icon: Gift, title: "Price Lock 24 benefits", body: "Coming soon" },
           ].map((c) => (
             <div key={c.title} className="p-4 border-2 border-foreground bg-background">
               <c.icon className="w-6 h-6 mb-2" />

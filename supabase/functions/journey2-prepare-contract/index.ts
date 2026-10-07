@@ -104,7 +104,9 @@ Deno.serve(async (req) => {
     const verifiedGate = buildContractSpeedMatrix(session.supplier_availability_snapshot, session.speed_bucket);
     const hashOk = /^[0-9a-f]{64}$/i.test(String(session.supplier_availability_sha256 ?? ""));
     const useVerified = verifiedGate.ok && verifiedGate.matrix.basis === "verified_address_network" && hashOk;
-    if (!useVerified) {
+    const reuseEstimate = verifiedGate.ok && verifiedGate.matrix.basis === "occta_plan_estimate" && hashOk &&
+      session.network_validation_status === "plan_estimate_used";
+    if (!useVerified && !reuseEstimate) {
       const est = buildPlanEstimateEvidence(session.speed_bucket, session.postcode);
       if (!est) return jsonResponse({ error: "plan_not_selected" }, 409);
       const estHash = await evidenceSha256(canonicalJson(est));
@@ -121,7 +123,7 @@ Deno.serve(async (req) => {
       const saved = await supabase.from("customer_journey_sessions").update(patchEst).eq("id", session.id).is("contract_snapshot_id", null);
       if (saved.error) return jsonResponse({ error: "speed_snapshot_save_failed", retryable: true }, 503);
       Object.assign(session, patchEst);
-    } else if (session.network_validation_status !== "verified") {
+    } else if (useVerified && session.network_validation_status !== "verified") {
       await supabase.from("customer_journey_sessions").update({ network_validation_status: "verified" }).eq("id", session.id);
       session.network_validation_status = "verified";
     }

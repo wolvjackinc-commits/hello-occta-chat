@@ -116,14 +116,23 @@ async function ensureCustomerImpl(
   const { data: cs } = await supabase
     .from("contract_summaries")
     .select(
-      "id, quote_id, quote_request_id, customer_id, customer_email_snapshot, customer_name_snapshot, service_address",
+      "id, quote_id, quote_request_id, customer_id, customer_email_snapshot, customer_name_snapshot, service_address, status, document_status, accepted_at",
     )
     .eq("id", contract_summary_id)
     .maybeSingle();
   if (!cs) return { ok: false, reason: "cs_not_found" };
 
-  // Already linked — nothing to do.
+  // Already linked — ensure an older archived/test profile is not left hidden
+  // after it has entered a genuine accepted live contract.
   if (cs.customer_id) {
+    const reactivated = await reactivateArchivedProfileForAcceptedContract(
+      supabase,
+      cs.customer_id,
+      cs,
+      contract_summary_id,
+    );
+    if (!reactivated.ok) return { ok: false, reason: reactivated.reason };
+
     await linkAll(supabase, {
       journey_id,
       contract_summary_id,
@@ -192,6 +201,14 @@ async function ensureCustomerImpl(
 
   if (!customerId) return { ok: false, reason: "customer_id_unresolved" };
 
+  const reactivated = await reactivateArchivedProfileForAcceptedContract(
+    supabase,
+    customerId,
+    cs,
+    contract_summary_id,
+  );
+  if (!reactivated.ok) return { ok: false, reason: reactivated.reason };
+
   // 5. Pull quote_request for profile backfill fields.
   const { data: qr } = await supabase
     .from("quote_requests")
@@ -230,6 +247,51 @@ async function ensureCustomerImpl(
   });
 
   return { ok: true, customer_id: customerId, account_number: accountNumber, reused };
+}
+
+async function reactivateArchivedProfileForAcceptedContract(
+  supabase: Supabase,
+  customerId: string,
+  cs: { status?: string | null; document_status?: string | null; accepted_at?: string | null },
+  contractSummaryId: string,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const accepted = cs.status === "accepted" || cs.document_status === "accepted" || !!cs.accepted_at;
+  if (!accepted) return { ok: true };
+
+  const { data: profile, error: readErr } = await supabase
+    .from("profiles")
+    .select("id, archived_at, archived_reason")
+    .eq("id", customerId)
+    .maybeSingle();
+  if (readErr) return { ok: false, reason: `profile_archive_read_failed:${readErr.message}` };
+  if (!profile?.archived_at) return { ok: true };
+
+  const { error: updateErr } = await supabase
+    .from("profiles")
+    .update({
+      archived_at: null,
+      archived_by: null,
+      archived_reason: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", customerId)
+    .not("archived_at", "is", null);
+  if (updateErr) return { ok: false, reason: `profile_reactivation_failed:${updateErr.message}` };
+
+  await supabase.rpc("log_event", {
+    _actor_type: "system",
+    _event_type: "customer_profile_reactivated_after_accepted_contract",
+    _title: "Archived customer profile reactivated after accepted live contract",
+    _details: {
+      customer_id: customerId,
+      contract_summary_id: contractSummaryId,
+      previous_archive_reason: profile.archived_reason ?? null,
+    },
+    _source_module: "journey2",
+    _severity: "info",
+  }).then(() => {}).catch(() => {});
+
+  return { ok: true };
 }
 
 async function linkAll(

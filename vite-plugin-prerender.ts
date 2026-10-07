@@ -280,7 +280,7 @@ const routes: RouteSEO[] = [
   {
     path: "/guides/no-contract-broadband-uk",
     title: "Flex 30 Broadband UK — Flexible Internet | OCCTA - Cheap UK Broadband & SIM",
-    description: "Looking for Flex 30 broadband in the UK? Learn how rolling monthly broadband works, who it suits, and how to get connected without lock-ins or exit fees.",
+    description: "Looking for Flex 30 broadband in the UK? Learn how 30-day rolling broadband works, including normal notice, setup and any separately applicable network cease/migration charge.",
     canonical: "/guides/no-contract-broadband-uk",
     keywords: "Flex 30 broadband UK, flexible broadband, cancel Flex 30 with the applicable notice broadband, rolling monthly broadband, no lock-in broadband",
     jsonLd: [localBusinessSchema],

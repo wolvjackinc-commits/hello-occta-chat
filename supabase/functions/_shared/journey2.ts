@@ -57,7 +57,7 @@ export function speedEstimate(b: SpeedBucket) {
 
 export const JOURNEY2_STEPS = [
   "address", "plan", "router", "extras", "details",
-  "start_date", "billing", "contract", "review", "complete",
+  "start_date", "contract", "billing", "review", "complete",
 ] as const;
 export type Journey2Step = typeof JOURNEY2_STEPS[number];
 

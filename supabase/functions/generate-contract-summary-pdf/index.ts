@@ -127,7 +127,11 @@ function renderPdf(cs: any): Uint8Array {
     textBlock("Not applicable — this service is not an internet access service.");
   } else {
     const s = cs.speed_estimate_snapshot as any;
-    if (
+    if (s && s.basis === "occta_plan_estimate") {
+      row("Speed basis", "OCCTA plan estimate (not address-specific)");
+      row("Plan speed estimate", `Up to ${s.advertised_download_mbps} Mbps download / up to ${s.advertised_upload_mbps} Mbps upload`);
+      textBlock("Actual line performance and availability are confirmed during provisioning. No address-specific minimum, normally available or maximum speed has been measured for this order.");
+    } else if (
       s &&
       Number(s.minimum_download_mbps) > 0 &&
       Number(s.normally_available_download_mbps) > 0 &&
@@ -143,13 +147,13 @@ function renderPdf(cs: any): Uint8Array {
       row("Normally available speed", `${s.normally_available_download_mbps} Mbps download / ${s.normally_available_upload_mbps} Mbps upload`);
       row("Maximum speed", `${s.maximum_download_mbps} Mbps download / ${s.maximum_upload_mbps} Mbps upload`);
       row("Advertised plan speed", `${s.advertised_download_mbps} Mbps download / ${s.advertised_upload_mbps} Mbps upload`);
-      textBlock(`Supplier evidence retrieved ${s.source_retrieved_at ?? "—"}. These figures are frozen from the exact-address availability check used for this order.`);
+      textBlock(`Verified network evidence retrieved ${s.source_retrieved_at ?? "—"}. These figures are frozen from the verified address-specific network evidence used for this order.`);
     } else {
-      row("Address-specific speed estimate", `Up to ${cs.estimated_download_speed ?? "—"} Mbps download / up to ${cs.estimated_upload_speed ?? "—"} Mbps upload.`);
+      row("Plan speed estimate", `Up to ${cs.estimated_download_speed ?? "—"} Mbps download / up to ${cs.estimated_upload_speed ?? "—"} Mbps upload.`);
     }
     const note = String(cs.speed_notes ?? "").split(/\n\n/)[0].trim();
     if (note) textBlock(note.slice(0, 900));
-    textBlock("If performance is materially and repeatedly below the contractual minimum, contact OCCTA. We will investigate and preserve the remedies available under your agreement and applicable rules.");
+    if (!(s && s.basis === "occta_plan_estimate")) textBlock("If performance is materially and repeatedly below the contractual minimum, contact OCCTA. We will investigate and preserve the remedies available under your agreement and applicable rules.");
   }
 
   // 3. Price

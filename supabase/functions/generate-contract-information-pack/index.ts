@@ -264,15 +264,18 @@ function renderPackPdf(opts: {
   const speedMatrix = (opts.quote as any).supplier_availability_snapshot && (opts.quote as any).speed_bucket
     ? buildContractSpeedMatrix((opts.quote as any).supplier_availability_snapshot, (opts.quote as any).speed_bucket)
     : null;
-  if (speedMatrix?.ok) {
+  if (speedMatrix?.ok && speedMatrix.matrix.basis === "occta_plan_estimate") {
+    para(speedMatrixStatement(speedMatrix.matrix));
+    para("No address-specific minimum, normally available or maximum speed has been measured for this order. If, once provisioned, your line cannot support the selected plan, OCCTA will tell you and you will not be held to a plan your line cannot deliver.");
+  } else if (speedMatrix?.ok) {
     const s = speedMatrix.matrix;
     para(
       `Technology: ${s.technology}. Address-specific download speeds: minimum ${s.minimum_download_mbps} Mbps; normally available ${s.normally_available_download_mbps} Mbps; maximum ${s.maximum_download_mbps} Mbps; advertised plan speed ${s.advertised_download_mbps} Mbps.`
     );
     para(
-      `Address-specific upload speeds: minimum ${s.minimum_upload_mbps} Mbps; normally available ${s.normally_available_upload_mbps} Mbps; maximum ${s.maximum_upload_mbps} Mbps; advertised plan speed ${s.advertised_upload_mbps} Mbps. Supplier evidence retrieved ${s.source_retrieved_at}.`
+      `Address-specific upload speeds: minimum ${s.minimum_upload_mbps} Mbps; normally available ${s.normally_available_upload_mbps} Mbps; maximum ${s.maximum_upload_mbps} Mbps; advertised plan speed ${s.advertised_upload_mbps} Mbps. Verified network evidence retrieved ${s.source_retrieved_at}.`
     );
-    para("These figures are frozen from the exact-address supplier availability check used for this order. Contact OCCTA if your service is materially and repeatedly below the contractual minimum so we can investigate and apply the remedies available under your agreement and applicable rules.");
+    para("These figures are frozen from the verified address-specific network evidence used for this order. Contact OCCTA if your service is materially and repeatedly below the contractual minimum so we can investigate and apply the remedies available under your agreement and applicable rules.");
   } else {
     para(SPEED_ESTIMATE_DISCLAIMER);
   }

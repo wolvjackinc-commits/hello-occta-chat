@@ -61,9 +61,7 @@ function positive(v: unknown): number | null {
 }
 
 function sourceAllowed(source: unknown): boolean {
-  const s = String(source ?? "").trim();
-  if (!s) return false;
-  return !/icuk|interdns/i.test(s);
+  return String(source ?? "").trim().length > 0;
 }
 
 export function buildContractSpeedMatrix(

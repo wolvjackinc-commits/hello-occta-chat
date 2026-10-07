@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2, ChevronRight, Check, Info } from "lucide-react";
 import { useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
-import { startAssignedJourney } from "@/lib/journey2/route";
+import { prewarmAssignedJourney } from "@/lib/journey2/route";
 
 interface PostcodeCheckerProps {
   variant?: "hero" | "standalone";
@@ -17,16 +17,22 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
   const { status, postcode: ctxPostcode, addresses, selectedAddress, result, errorType, checkPostcode, selectAddress, reset, triggerFallback } = useAvailability();
   const [localPostcode, setLocalPostcode] = useState(ctxPostcode || "");
   const [routing, setRouting] = useState(false);
-  const [routingError, setRoutingError] = useState<string | null>(null);
+  const [routingError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // The server decides whether this visitor gets Journey 1 or Journey 2.
-  const startJourney = async () => {
+  useEffect(() => {
+    if (!showInlineResult || !selectedAddress) return;
+    prewarmAssignedJourney();
+    void import("@/pages/order/OrderStart");
+  }, [showInlineResult, selectedAddress]);
+
+  // Navigate first so the click feels immediate. /order consumes the already
+  // prewarmed assignment (or waits on the same in-flight request).
+  const startJourney = () => {
     if (routing) return;
     setRouting(true);
-    setRoutingError(null);
-    await startAssignedJourney((path) => navigate(path), (msg) => setRoutingError(msg));
-    setRouting(false);
+    prewarmAssignedJourney();
+    navigate("/order");
   };
 
   const handleCheck = () => {

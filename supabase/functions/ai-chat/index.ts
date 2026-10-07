@@ -1080,7 +1080,7 @@ async function executeTool(
           break;
         case "landline":
           plans = businessInfo.landlinePlans;
-          recommendation = "Anytime is our most popular landline plan - unlimited UK calls 24/7.";
+          recommendation = "Digital Voice options, call allowances and current tariffs are shown in the live order journey. I won’t invent a plan or allowance.";
           break;
       }
       
@@ -1849,7 +1849,7 @@ Do NOT mention Huddersfield or Yorkshire unless referring strictly to registered
 OCCTA Philosophy:
 - Competitively priced against major UK telecoms (BT, Sky, Virgin, EE, O2)
 - Flexible monthly options available
-- No lock-ins
+- Flex 30 has no fixed minimum term where offered; Price Lock 24 has a 24-month minimum term
 - No hidden price hikes
 - Simple monthly pricing
 - Customer freedom above everything

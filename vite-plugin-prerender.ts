@@ -117,9 +117,9 @@ const globalSchemas = [organizationSchema, websiteSchema, localBusinessSchema];
 const routes: RouteSEO[] = [
   {
     path: "/",
-    title: "OCCTA — Cheap UK Broadband & SIM, Clear Terms",
+    title: "Fixed-Price & Flexible Broadband UK | OCCTA",
     description:
-      "Cheap UK broadband from £34.99/mo. Price Lock 24 or Flex 30 where offered, fibre speed bands up to 1000Mbps where available, SIM plans priced from the live catalogue and digital home phone. Cancel Flex 30 with the applicable notice.",
+      "UK broadband from £34.99/mo. Choose Price Lock 24 for price certainty or Flex 30 for a rolling option where eligible. Address-specific price, speed information, setup and charges are confirmed before acceptance.",
     canonical: "/",
     keywords:
       "cheap broadband UK, Flex 30 broadband, cancel Flex 30 with the applicable notice broadband, affordable internet UK, 5G SIM options, cheap SIM deals UK, budget broadband 2025, fibre broadband Flex 30, unlimited broadband UK, OCCTA broadband",
@@ -128,7 +128,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/broadband",
-    title: "Cheap Broadband UK - Flexible & Fixed-Term Fibre | OCCTA - Cheap UK Broadband & SIM",
+    title: "UK Broadband Plans — Price Lock 24 & Flex 30 | OCCTA",
     description:
       "Broadband headline pricing from £34.99/mo on Price Lock 24. Flex 30 is available where offered. Public speed bands run up to 1000Mbps where available; final address-specific speed, price, setup and term are confirmed before acceptance.",
     canonical: "/broadband",
@@ -215,7 +215,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/no-contract-broadband-uk",
-    title: "Flex 30 Broadband UK | Cheap & Flexible Broadband | OCCTA - Cheap UK Broadband & SIM",
+    title: "Flex 30 Broadband UK — 30-Day Rolling | OCCTA",
     description:
       "Looking for flexible broadband in the UK? OCCTA offers Flex 30 with no fixed minimum term where available, alongside Price Lock 24. Exact charges and terms are shown before acceptance.",
     canonical: "/no-contract-broadband-uk",
@@ -250,7 +250,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/about",
-    title: "About OCCTA - UK Telecom Company | OCCTA - Cheap UK Broadband & SIM",
+    title: "About OCCTA — UK Broadband & Telecom Company",
     description:
       "OCCTA is a UK telecom company providing cheap broadband, SIM, and digital home phone services. Clear customer-specific terms, pricing and support routes for broadband, SIM and Digital Voice.",
     canonical: "/about",
@@ -260,7 +260,7 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/faq",
-    title: "FAQs - Broadband, SIM & Home Phone | OCCTA - Cheap UK Broadband & SIM",
+    title: "OCCTA FAQs — Broadband, SIM & Digital Voice",
     description:
       "Answers to common questions about OCCTA broadband, SIM plans, and digital home phone services. Installation, billing, contracts, and more.",
     canonical: "/faq",
@@ -271,7 +271,7 @@ const routes: RouteSEO[] = [
   /* ─── Guide pages ─── */
   {
     path: "/guides",
-    title: "Guides — Broadband, Home Phone & SIM | OCCTA - Cheap UK Broadband & SIM",
+    title: "UK Broadband, Digital Voice & SIM Guides | OCCTA",
     description: "Helpful guides on UK broadband, Digital Voice and SIM plans, including Flex 30, Price Lock 24, switching, billing and practical setup information.",
     canonical: "/guides",
     keywords: "broadband guide UK, home phone guide, SIM guide, internet tips, switching broadband, digital voice guide",
@@ -328,7 +328,7 @@ const routes: RouteSEO[] = [
   {
     path: "/guides/how-to-get-broadband-with-bad-credit",
     title: "Broadband Eligibility with Limited Credit History | OCCTA",
-    description: "Bad credit? Learn how to get UK broadband without a hard credit check and how OCCTA's flexible no long-contract plans help.",
+    description: "Limited credit history? Learn what broadband eligibility checks can involve and how to confirm the exact ordering requirements before you commit.",
     canonical: "/guides/how-to-get-broadband-with-bad-credit",
     keywords: "broadband eligibility, broadband with limited credit history UK, broadband ordering requirements",
     jsonLd: [localBusinessSchema],
@@ -405,6 +405,15 @@ const routes: RouteSEO[] = [
     jsonLd: [localBusinessSchema],
   }))),
   /* ─── Keyword landing pages ─── */
+  {
+    path: "/fixed-price-broadband",
+    title: "Fixed-Price Broadband UK — Price Lock 24 | OCCTA",
+    description: "Price Lock 24 has a 24-month minimum term and no scheduled CPI-, RPI-, inflation-linked or percentage-based rise on the recurring residential broadband subscription under contract version 2026.10.1.",
+    canonical: "/fixed-price-broadband",
+    keywords: "fixed price broadband UK, broadband no price rise, price lock broadband, no mid contract price rise broadband",
+    price: "34.99",
+    jsonLd: [localBusinessSchema],
+  },
   {
     path: "/cheap-broadband-near-me",
     title: "Cheap Broadband Near Me — Find Affordable Internet | OCCTA",
@@ -519,10 +528,10 @@ const routes: RouteSEO[] = [
     { slug: "occta-vs-ee", competitor: "EE" },
   ].map(({ slug, competitor }): RouteSEO => ({
     path: `/compare/${slug}`,
-    title: `OCCTA vs ${competitor} — Honest Comparison | OCCTA - Cheap UK Broadband & SIM`,
-    description: `Compare OCCTA vs ${competitor} broadband. See how OCCTA offers cheaper prices, Price Lock 24 or Flex 30 where offered, and no mid-contract price rises.`,
+    title: `OCCTA vs ${competitor} Broadband — Compare Terms & Pricing`,
+    description: `Compare OCCTA with ${competitor} on current pricing, contract length, scheduled price changes, setup, equipment and termination terms. Check the latest tariff details before deciding.`,
     canonical: `/compare/${slug}`,
-    keywords: `OCCTA vs ${competitor}, ${competitor} broadband alternative, cheaper than ${competitor}, ${competitor} broadband comparison`,
+    keywords: `OCCTA vs ${competitor}, ${competitor} broadband alternative, ${competitor} broadband comparison, broadband contract comparison`,
     jsonLd: [localBusinessSchema],
   }))),
   /* ─── New guide pages ─── */

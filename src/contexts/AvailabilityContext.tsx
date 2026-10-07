@@ -31,7 +31,7 @@ export interface AvailabilityResult {
   recommendedPlan: string;
   upgradePlan?: string;
   message?: string;
-  /** No live supplier feed: exact technology/speed/availability is confirmed before the binding contract. */
+  /** No live supplier feed: plan speeds are estimates; final technology/availability is confirmed during provisioning. */
   pendingNetworkValidation?: boolean;
 }
 
@@ -296,7 +296,7 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
       eligibleOcctaPlans: ["essential", "superfast", "ultrafast", "gigabit"],
       recommendedPlan: "superfast",
       pendingNetworkValidation: true,
-      message: "Exact network technology, speed and availability at this address will be confirmed before your binding broadband contract is issued.",
+      message: "The speeds shown are OCCTA plan estimates. Final network technology, availability and actual line performance are confirmed during provisioning.",
     };
     setState((s) => {
       const next = { ...s, status: "success" as AvailabilityStatus, result };

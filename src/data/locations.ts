@@ -239,7 +239,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA in Wolverhampton?", answer: "Yes \u2014 OCCTA covers Wolverhampton and the West Midlands via the access network available at the address." },
       { question: "What speeds are available?", answer: "Available speeds depend on the exact address, access technology and supplier product. The order journey confirms the address-specific estimate and contractual speed information before acceptance." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
+      { question: "Can I choose a rolling monthly option?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -323,7 +323,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Luton?", answer: "Yes \u2014 OCCTA covers Luton and Bedfordshire via the access network available at the address." },
       { question: "What speeds can I get?", answer: "Available speeds depend on the exact address, access technology and supplier product. The order journey confirms the address-specific estimate and contractual speed information before acceptance." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
+      { question: "Can I choose a rolling monthly option?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -383,7 +383,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA in York?", answer: "Yes \u2014 OCCTA covers York and North Yorkshire via the access network available at the address." },
       { question: "What speeds are available?", answer: "Available speeds depend on the exact address, access technology and supplier product. The order journey confirms the address-specific estimate and contractual speed information before acceptance." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
+      { question: "Can I choose a rolling monthly option?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -455,7 +455,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA in Bournemouth?", answer: "Yes \u2014 OCCTA covers Bournemouth and Dorset via the access network available at the address." },
       { question: "What speeds are available?", answer: "Available speeds depend on the exact address, access technology and supplier product. The order journey confirms the address-specific estimate and contractual speed information before acceptance." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
+      { question: "Can I choose a rolling monthly option?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -539,7 +539,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Wakefield?", answer: "Yes \u2014 OCCTA covers Wakefield via the access network available at the address." },
       { question: "What speeds can I get?", answer: "Available speeds depend on the exact address, access technology and supplier product. The order journey confirms the address-specific estimate and contractual speed information before acceptance." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
+      { question: "Can I choose a rolling monthly option?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {
@@ -599,7 +599,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Can I get OCCTA in Wigan?", answer: "Yes \u2014 OCCTA covers Wigan via the access network available at the address." },
       { question: "What speeds are available?", answer: "Available speeds depend on the exact address, access technology and supplier product. The order journey confirms the address-specific estimate and contractual speed information before acceptance." },
-      { question: "Can I 30-day rolling options available where eligible?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
+      { question: "Can I choose a rolling monthly option?", answer: "Yes \u2014 no remaining-month early termination charge on Flex 30, no minimum term." },
     ],
   },
   {

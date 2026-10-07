@@ -34,7 +34,7 @@ export const helpArticles: HelpArticle[] = [
       { heading: "Connect your devices", paragraphs: ["The Wi-Fi network name (SSID) and password are printed on the back of the router. Connect once and your devices will remember it."] },
       { heading: "Run a speed test", paragraphs: ["Wait 24 hours, then run a test from speedtest.net using an Ethernet cable for the most accurate reading. The line stabilises in the first 10 days — early dips are normal."] },
       { heading: "Best Wi-Fi placement", paragraphs: ["Wi-Fi loves height and space."], bullets: ["Off the floor, away from walls and metal.", "Not in a cupboard, not behind a TV, not next to a microwave.", "Central in the home if possible."] },
-      { heading: "Set up Digital Voice (if included)", paragraphs: ["Plug your home phone into the router's green phone port. Pick up the handset — you should hear a dial tone. If you ported a number, it usually goes live within a working day."] },
+      { heading: "Set up Digital Voice (if included)", paragraphs: ["Plug your home phone into the router's green phone port. Pick up the handset — you should hear a dial tone. If you ported a number, the expected port date is confirmed for your order and can vary by provider and circumstances."] },
     ],
     faqs: [
       { question: "How long until I'm online?", answer: "Most customers are live within 10 minutes of plugging the router in on activation day." },
@@ -145,7 +145,7 @@ export const helpArticles: HelpArticle[] = [
     ],
     faqs: [
       { question: "Can I keep my existing handset?", answer: "Yes — any standard home phone works." },
-      { question: "What if my broadband goes down?", answer: "Calls will go via your mobile or the battery backup if you have one. Tell us if a household member is vulnerable and we'll prioritise restoration." },
+      { question: "What if my broadband goes down?", answer: "Digital Voice may be unavailable during a broadband or power outage. Keep an alternative way to call where possible. If anyone relies on the line for safety, healthcare or telecare, tell us so we can assess appropriate resilience and support arrangements." },
     ],
     related: ["getting-started", "vulnerable-customer-support"],
   },

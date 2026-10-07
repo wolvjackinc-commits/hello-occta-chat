@@ -33,15 +33,15 @@ const fixedPros = [
 ];
 const fixedCons = [
   "A fixed-term ETF may apply if you leave during the minimum term; the exact method is in your agreement",
-  "Most big-brand fixed deals raise prices every April (CPI/RPI + 3.9%)",
-  "Harder credit checks are common",
+  "Some tariffs include a scheduled pounds-and-pence price change; check the current disclosure before signing",
+  "Identity, credit and eligibility checks vary by provider, product and ordering process",
 ];
 
 const faqs = [
   { question: "What is Flex 30 broadband?", answer: "OCCTA Flex 30 is a 30-day rolling broadband option with no fixed minimum term where eligible. Normal notice is 30 days. There is no remaining-month ETF, but a separately valid network cease or migration charge may apply where lawful, incurred and disclosed." },
   { question: "Is rolling broadband more expensive than a fixed contract?", answer: "OCCTA Flex 30 starts at the current headline price shown on the broadband page and Price Lock 24 normally has a lower headline monthly price for the same public speed band. Final pricing depends on address, supplier product, setup and router choices." },
-  { question: "When should I pick a fixed-term contract instead?", answer: "Pick Price Lock 24 if you know you're staying put for at least two years and want the certainty of a locked monthly price with no April CPI/RPI hikes. Pick Flex 30 if you might move, are renting, or just want the freedom to leave." },
-  { question: "Do I still get full fibre on a rolling plan?", answer: "Yes. OCCTA Flex 30 uses the same full-fibre lines as our fixed plans — same speeds, same router, same UK support. The only difference is the contract length." },
+  { question: "When should I pick a fixed-term contract instead?", answer: "Pick Price Lock 24 if a 24-month minimum term suits you and you value the absence of a scheduled CPI-, RPI-, inflation-linked or percentage-based rise under contract version 2026.10.1. Pick Flex 30 if you value a rolling option with no fixed minimum term where eligible." },
+  { question: "Do I still get full fibre on a rolling plan?", answer: "Yes. The contract term does not by itself determine the physical access line. Technology, available speeds, router requirements and supplier product depend on the address and are confirmed before acceptance." },
   { question: "Are there mid-contract price rises on OCCTA Flex 30?", answer: "OCCTA contract version 2026.10.1 does not apply scheduled CPI-, RPI-, inflation-linked or percentage-based rises to residential broadband. If a later contract change gives you a right to leave without penalty, we will give the required notice and explain that right. Separately valid network charges may still apply where lawful." },
   { question: "Can I switch from a fixed contract to rolling later?", answer: "After Price Lock 24 ends, the service continues on a 30-day rolling basis unless you expressly agree another fixed term. Any internal plan change is handled by OCCTA; One Touch Switch applies when switching provider where the rules apply." },
 ];

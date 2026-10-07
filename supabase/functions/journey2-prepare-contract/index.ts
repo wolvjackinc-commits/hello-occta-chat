@@ -93,9 +93,8 @@ Deno.serve(async (req) => {
   if (!session.preferred_start_date || !session.cooling_off_acknowledged) {
     return jsonResponse({ error: "start_date_required", message: "Choose your preferred start date before we prepare your contract." }, 409);
   }
-  if (!session.billing_anchor_day || !session.dd_masked) {
-    return jsonResponse({ error: "billing_required", message: "Complete your billing day and Direct Debit details before we prepare your contract." }, 409);
-  }
+  // Direct Debit is deliberately collected after mobile verification and
+  // contract acceptance. Contract preparation must never depend on bank data.
   // Speed basis: genuine verified supplier-neutral evidence is preferred.
   // Without it, the journey continues on a deterministic server-generated
   // OCCTA plan-estimate snapshot (never browser-supplied, never presented as

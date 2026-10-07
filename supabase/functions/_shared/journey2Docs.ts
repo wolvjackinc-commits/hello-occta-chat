@@ -63,17 +63,35 @@ function promotionBlock(s: Journey2Snapshot) {
   };
 }
 
-function ddBlock(s: Journey2Snapshot, ddStatus: string) {
+type DirectDebitDocumentMeta = {
+  account_holder_name?: string | null;
+  bank_name?: string | null;
+  last4?: string | null;
+  sort_last2?: string | null;
+  billing_day?: number | null;
+  guarantee_provided?: boolean;
+};
+
+function ddBlock(s: Journey2Snapshot, ddStatus: string, override?: DirectDebitDocumentMeta | null) {
+  const accountHolder = override?.account_holder_name ?? s.direct_debit.account_holder_name;
+  const bankName = override?.bank_name ?? s.direct_debit.bank_name;
+  const last4 = override?.last4 ?? s.direct_debit.last4;
+  const sortLast2 = override?.sort_last2 ?? s.direct_debit.sort_last2;
+  const hasDetails = !!last4 && !!sortLast2;
   return {
-    account_holder_name: s.direct_debit.account_holder_name,
-    bank_name: s.direct_debit.bank_name,
-    account_number_masked: `****${s.direct_debit.last4}`,
-    sort_code_masked: `**-**-${s.direct_debit.sort_last2}`,
+    setup_timing: hasDetails ? "completed_after_contract_acceptance" : "to_be_completed_after_contract_acceptance",
+    account_holder_name: accountHolder ?? null,
+    bank_name: bankName ?? null,
+    account_number_masked: last4 ? `****${last4}` : null,
+    sort_code_masked: sortLast2 ? `**-**-${sortLast2}` : null,
     status: ddStatus,
-    billing_day: s.schedule.billing_day,
+    billing_day: override?.billing_day ?? s.schedule.billing_day ?? null,
     advance_notice_days: s.direct_debit.advance_notice_days,
     first_collection_rule: s.schedule.expected_first_collection_rule,
-    guarantee_provided: true,
+    guarantee_provided: override?.guarantee_provided ?? s.direct_debit.guarantee_provided,
+    customer_statement: hasDetails
+      ? "Direct Debit details were provided after contract acceptance."
+      : "Direct Debit will be set up securely after contract acceptance and before final order submission.",
   };
 }
 
@@ -83,7 +101,7 @@ function ddBlock(s: Journey2Snapshot, ddStatus: string) {
  */
 export function buildJourney2DocumentPack(
   s: Journey2Snapshot,
-  meta: { order_number: string; snapshot_sha256: string; dd_status: string; test: boolean },
+  meta: { order_number: string; snapshot_sha256: string; dd_status: string; test: boolean; direct_debit?: DirectDebitDocumentMeta | null },
 ): Journey2Doc[] {
   const label = meta.test ? "TEST — not a customer document" : null;
   const base = {
@@ -132,7 +150,7 @@ export function buildJourney2DocumentPack(
         pricing: pricingBlock(s),
         promotion,
         schedule,
-        direct_debit: ddBlock(s, meta.dd_status),
+        direct_debit: ddBlock(s, meta.dd_status, meta.direct_debit),
         cooling_off: s.cooling_off,
         digital_voice: s.digital_voice,
         switching: s.switching,
@@ -153,7 +171,7 @@ export function buildJourney2DocumentPack(
         cooling_off: s.cooling_off,
         digital_voice: s.digital_voice,
         care,
-        direct_debit: ddBlock(s, meta.dd_status),
+        direct_debit: ddBlock(s, meta.dd_status, meta.direct_debit),
         legal_document_versions: s.legal_document_versions,
         complaints: "Our complaints code of practice is at /legal/complaints-code.",
       },
@@ -180,7 +198,7 @@ export function buildJourney2DocumentPack(
         pricing: pricingBlock(s),
         promotion,
         schedule,
-        direct_debit: ddBlock(s, meta.dd_status),
+        direct_debit: ddBlock(s, meta.dd_status, meta.direct_debit),
         cooling_off: s.cooling_off,
       },
     },
@@ -205,7 +223,7 @@ export function buildJourney2DocumentPack(
     {
       doc_type: "dd_instruction_confirmation",
       title: `${meta.test ? "TEST " : ""}Direct Debit Instruction confirmation`,
-      content: { ...base, direct_debit: ddBlock(s, meta.dd_status), full_bank_details_included: false },
+      content: { ...base, direct_debit: ddBlock(s, meta.dd_status, meta.direct_debit), full_bank_details_included: false },
     },
     {
       doc_type: "dd_guarantee",

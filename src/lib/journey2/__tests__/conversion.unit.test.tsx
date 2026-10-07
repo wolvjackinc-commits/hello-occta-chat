@@ -36,9 +36,8 @@ describe("conversion-critical checkout", () => {
     fireEvent.change(email, { target: { value: "bad" } }); fireEvent.blur(email);
     expect(email).toHaveAttribute("aria-invalid", "true");
     fireEvent.change(email, { target: { value: "TEST@example.com" } }); fireEvent.blur(email);
-    fireEvent.click(screen.getByText("Save address and compare plans"));
-    expect(save).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("checkbox"));
+    // Privacy notice is inline (no required checkbox) since the UX cleanup.
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("Save address and compare plans"));
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ postcode: "SW1A 1AA", contact_email: "test@example.com", contact_full_name: "Test Customer" }));
   });

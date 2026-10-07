@@ -1,5 +1,12 @@
 -- Keep the supplier-neutral network-validation queue scoped to the 2026.10.1
 -- release without rewriting any historical contractual evidence.
+
+-- This migration must also work on a clean database before the later
+-- 20261007101500 production-hardening migration is reached. Create the generic
+-- status column here if it does not yet exist; the later migration uses
+-- ADD COLUMN IF NOT EXISTS and remains idempotent.
+ALTER TABLE public.customer_journey_sessions
+  ADD COLUMN IF NOT EXISTS network_validation_status text NOT NULL DEFAULT 'pending';
 DO $$
 DECLARE c record;
 BEGIN

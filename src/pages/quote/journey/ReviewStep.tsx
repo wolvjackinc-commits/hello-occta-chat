@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Loader2, Check, ShieldCheck, ScrollText, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CancelDialog from "./CancelDialog";
@@ -41,7 +40,6 @@ export default function ReviewStep({
   orderSummary?: React.ReactNode;
 }) {
   const { toast } = useToast();
-  const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idem] = useState(() => genUuid());
 
@@ -51,7 +49,7 @@ export default function ReviewStep({
   );
 
   const submit = async () => {
-    if (!agreed || submitting) return;
+    if (submitting) return;
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("journey-submit-order", {
@@ -127,15 +125,15 @@ export default function ReviewStep({
         )}
       </Section>
 
-      <label className="flex items-start gap-2 text-sm border-l-4 border-foreground pl-3 py-2">
-        <Checkbox checked={agreed} onCheckedChange={(v) => setAgreed(v === true)} />
-        <span>{FINAL_CONSENT}</span>
-      </label>
+      <div className="text-sm border-l-4 border-foreground pl-3 py-2">
+        <p>{FINAL_CONSENT}</p>
+        <p className="mt-1 text-xs text-muted-foreground">Selecting the button below records this final order confirmation.</p>
+      </div>
 
       <Button
         variant="hero"
         className="w-full font-display uppercase"
-        disabled={!agreed || submitting || !paymentMethod}
+        disabled={submitting || !paymentMethod}
         onClick={submit}
       >
         {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</> : <><ShieldCheck className="w-4 h-4 mr-2" /> Submit my order</>}

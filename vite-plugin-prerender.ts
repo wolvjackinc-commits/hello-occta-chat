@@ -133,7 +133,7 @@ const routes: RouteSEO[] = [
       "Broadband headline pricing from £34.99/mo on Price Lock 24. Flex 30 is available where offered. Public speed bands run up to 1000Mbps where available; final address-specific speed, price, setup and term are confirmed before acceptance.",
     canonical: "/broadband",
     keywords:
-      "cheap broadband UK, Flex 30 broadband, cancel Flex 30 with the applicable notice broadband, fibre broadband Flex 30, budget broadband, cheap fibre UK, unlimited broadband UK, 900Mbps broadband, affordable internet UK",
+      "cheap broadband UK, Flex 30 broadband, cancel Flex 30 with the applicable notice broadband, fibre broadband Flex 30, budget broadband, cheap fibre UK, unlimited broadband UK, 1000Mbps broadband, affordable internet UK",
     price: "34.99",
     jsonLd: [
       localBusinessSchema,
@@ -489,7 +489,7 @@ const routes: RouteSEO[] = [
     { slug: "leaving-sky", title: "Leaving Sky Broadband — how to switch away", desc: "How to leave Sky Broadband: One Touch Switch, exit fees, keeping Sky TV, and finding a cheaper Openreach provider.", kw: "leaving Sky broadband, cancel Sky broadband, switch from Sky, Sky alternative UK" },
     { slug: "leaving-virgin", title: "Leaving Virgin Media — switch to Openreach fibre", desc: "How to leave Virgin Media broadband: exit fees, cable-to-fibre switch, keeping your number, and finding a cheaper Openreach alternative.", kw: "leaving Virgin Media, cancel Virgin broadband, switch from Virgin to fibre, Virgin alternative" },
     { slug: "leaving-talktalk", title: "Leaving TalkTalk — how to switch away", desc: "Leaving TalkTalk broadband: how switching works, what to check about existing-provider charges, and how to compare an OCCTA address-specific offer.", kw: "leaving TalkTalk, cancel TalkTalk broadband, switch from TalkTalk, TalkTalk alternative" },
-    { slug: "mid-contract-price-rises", title: "Mid-contract broadband price rises explained", desc: "How scheduled telecom price changes work, what current rules require providers to show before sign-up, and how OCCTA Price Lock 24 differs.", kw: "broadband price rise, CPI + 3.9% broadband, mid-contract price rise, Ofcom price rise rules" },
+    { slug: "mid-contract-price-rises", title: "Mid-contract broadband price rises explained", desc: "How scheduled telecom price changes work, what current rules require providers to show before sign-up, and how OCCTA Price Lock 24 differs.", kw: "broadband price rise, scheduled broadband price change, mid-contract price rise, Ofcom price rise rules" },
     { slug: "esim-vs-physical-sim", title: "eSIM vs physical SIM — which should you choose?", desc: "eSIM vs physical SIM in the UK: what's the difference, which phones support it, and which is right for you.", kw: "eSIM vs physical SIM, what is eSIM, eSIM UK, how does eSIM work" },
     { slug: "best-sim-only-deals-uk", title: "Best SIM-only deals UK 2026 — what to look for", desc: "How to find the best SIM-only deal in the UK: rolling contracts, data caps, roaming, and what OCCTA offers.", kw: "best SIM only deals UK, SIM only UK 2026, cheap SIM only, 5G SIM deals UK" },
     { slug: "digital-voice-explained", title: "Digital Voice explained — the UK PSTN switch-off", desc: "The UK's PSTN switch-off means every landline moves to Digital Voice by 2027. Here's what changes and what you need to do.", kw: "digital voice UK, PSTN switch off, landline switch off 2027, VoIP home phone UK" },

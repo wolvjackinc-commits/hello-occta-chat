@@ -3,13 +3,17 @@
 // evidence server-side, hash it server-side, write it to the current
 // UNACCEPTED session (and its unaccepted quote), audit it.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3.25.76";
 import {
   buildContractSpeedMatrix, evidenceSha256, NETWORK_EVIDENCE_SOURCE, NETWORK_EVIDENCE_VERSION,
   PLAN_CAPS, type NetworkEvidence,
 } from "../_shared/networkEvidence.ts";
 import { validateStaffEvidence } from "./validate.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -59,8 +63,10 @@ Deno.serve(async (req) => {
     const { data, error } = await db.from("customer_journey_sessions")
       .select("id, created_at, postcode, service_address, speed_bucket, plan_term, customer_details, customer_id, quote_id, status, manual_review_reason, test_session")
       .eq("network_validation_status", "pending")
+      .gte("created_at", "2026-10-06T00:00:00Z")
       .is("contract_acceptance_id", null)
-      .not("status", "in", "(cancelled,expired)")
+      .is("contract_snapshot_id", null)
+      .not("status", "in", "(cancelled,expired,completed)")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) return json({ error: "list_failed" }, 500);

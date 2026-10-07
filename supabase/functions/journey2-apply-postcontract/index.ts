@@ -1,12 +1,11 @@
 /**
- * Journey 2 — apply the pre-contract start date and Direct Debit selections to
- * the shared order journey immediately after contract acceptance.
+ * Journey 2 — apply post-contract operational selections.
  *
- * Journey 2 collects the start date and billing details BEFORE the contract is
- * generated, but the shared production services deliberately refuse them until
- * an agreement exists. This function replays the customer's already captured
- * choices into those same services the moment acceptance is recorded, so
- * Journey 1 keeps its exact behaviour and Journey 2 gets the required order.
+ * The preferred start date is chosen before signing. Direct Debit details are
+ * deliberately collected only AFTER mobile verification and contract
+ * acceptance. This function is therefore called twice safely:
+ *   1) after acceptance, to apply the start date and move to billing;
+ *   2) after billing, to create the payment method and move to final review.
  *
  * Idempotent: replaying it never creates a second payment method or order.
  * Test sessions never send customer communications.
@@ -41,8 +40,8 @@ Deno.serve(async (req) => {
     .eq("public_token_hash", sessionHash)
     .maybeSingle();
   if (!session) return jsonResponse({ error: "session_not_found" }, 404);
-  if (!session.preferred_start_date || !session.billing_anchor_day) {
-    return jsonResponse({ error: "selections_incomplete" }, 409);
+  if (!session.preferred_start_date) {
+    return jsonResponse({ error: "start_date_missing" }, 409);
   }
 
   const quoteHash = await sha256Hex(quote_token);
@@ -107,8 +106,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  // 2 · Direct Debit, decrypted only here and handed to the existing service.
-  if (!journey.payment_method) {
+  // 2 · Direct Debit is optional on the first call (immediately after
+  // acceptance). It is only applied once the customer has completed the
+  // post-contract billing step.
+  const hasDdDetails = !!session.billing_anchor_day && !!session.dd_masked;
+  if (hasDdDetails && !journey.payment_method) {
     const { data: intake } = await supabase
       .from("journey2_dd_intake")
       .select("id, bank_details_ciphertext, nonce")
@@ -158,6 +160,39 @@ Deno.serve(async (req) => {
     }
   }
 
+  // If the customer has just accepted the contract, stop here and move them
+  // to Direct Debit setup. No bank data is required to sign.
+  if (!hasDdDetails) {
+    if (failures.length > 0) {
+      await supabase.from("customer_journey_sessions")
+        .update({ last_error: failures.map((f) => `${f.step}:${f.error}`).join("; ") })
+        .eq("id", session.id);
+      return jsonResponse({
+        ok: false,
+        retryable: true,
+        failures,
+        message: "Your agreement is saved. We couldn't apply your preferred start date just now — please try again.",
+      }, 503);
+    }
+
+    await supabase.from("customer_journey_sessions")
+      .update({
+        status: "contract_accepted",
+        current_step: "billing",
+        post_contract_applied_at: new Date().toISOString(),
+        last_error: null,
+        last_activity_at: new Date().toISOString(),
+      })
+      .eq("id", session.id);
+
+    await supabase.from("contract_acceptances")
+      .update({ journey_version: "v2", checkout_session_id: session.checkout_session_id })
+      .eq("quote_id", journey.quote_id)
+      .is("checkout_session_id", null);
+
+    return jsonResponse({ ok: true, applied: true, next_step: "billing" });
+  }
+
   // Traceability on the acceptance record.
   await supabase.from("contract_acceptances")
     .update({ journey_version: "v2", checkout_session_id: session.checkout_session_id })
@@ -203,5 +238,5 @@ Deno.serve(async (req) => {
     })
     .eq("id", session.id);
 
-  return jsonResponse({ ok: true, applied: true });
+  return jsonResponse({ ok: true, applied: true, next_step: "review" });
 });

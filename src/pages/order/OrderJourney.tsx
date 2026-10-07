@@ -383,7 +383,7 @@ export default function OrderJourney() {
               </div>
             )}
 
-            {!inSelection && !journeyState && (
+            {!inSelection && !postContractBilling && !journeyState && (
               <div className="border-4 border-foreground p-6 text-center">
                 <Loader2 className="w-5 h-5 animate-spin mx-auto mb-3" aria-hidden="true" />
                 <p className="font-display uppercase text-lg mb-1">Preparing your contract</p>
@@ -393,7 +393,7 @@ export default function OrderJourney() {
               </div>
             )}
 
-            {!inSelection && journeyState?.ok && quoteToken && (
+            {!inSelection && !postContractBilling && journeyState?.ok && quoteToken && (
               <>
                 {applyError && (
                   <div className="border-4 border-destructive p-4 mb-4">

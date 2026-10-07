@@ -81,7 +81,7 @@ export default function AgreementStep({
   quote: any;
   onAccepted: () => void;
   /** Journey 2 only — lets the customer go back and change details before signing. */
-  onEditStep?: (step: "address" | "plan" | "router" | "extras" | "details" | "start_date" | "billing") => void;
+  onEditStep?: (step: "address" | "plan" | "router" | "extras" | "details" | "start_date") => void;
   /** Journey 2 already captured and age-validated this at Your details. */
   dateOfBirth?: string | null;
 }) {
@@ -120,14 +120,20 @@ export default function AgreementStep({
   const ensureCs = useCallback(async () => {
     setGenerating(true); setGenError(null);
     try {
-      // This now guarantees both the Contract Summary and the paired Contract
-      // Information pack before allowing the signing screen to proceed.
-      const { data: gen, error: genErr } = await supabase.functions.invoke("journey-generate-cs", { body: { token } });
-      if (genErr || (gen as any)?.error) {
-        setGenError((gen as any)?.error || genErr?.message || "We couldn't prepare your contract documents.");
-        return;
-      }
+      // A Journey 2 prepare call may already have generated the documents.
+      // Check first so we never pay for the same generation round-trip twice.
       let detail = await loadDetail();
+      const alreadyReady = !!detail?.pdf_ready &&
+        (!detail?.contract_information_required || !!detail?.contract_information_ready);
+
+      if (!alreadyReady) {
+        const { data: gen, error: genErr } = await supabase.functions.invoke("journey-generate-cs", { body: { token } });
+        if (genErr || (gen as any)?.error) {
+          setGenError((gen as any)?.error || genErr?.message || "We couldn't prepare your contract documents.");
+          return;
+        }
+        detail = await loadDetail();
+      }
       let waited = 0;
       // Poll quickly first, then back off: the documents are usually ready in
       // well under a second, so a flat 800ms wait added avoidable latency.
@@ -230,18 +236,11 @@ export default function AgreementStep({
           variant: "destructive",
         });
       } else {
-        toast({ title: "Agreement accepted", description: "Your signed contract documents are being finalised." });
-        let detail = await loadDetail();
-        let waited = 0;
-        while (detail && !detail.certificate && waited < 10) {
-          await new Promise((r) => setTimeout(r, 800));
-          detail = await loadDetail();
-          waited += 1;
-        }
-        if (detail) {
-          setAcceptedAt(detail.accepted_at ?? new Date().toISOString());
-          setCertificate(detail.certificate ? { number: detail.certificate.number, signed_url: detail.certificate.signed_url } : null);
-        }
+        // Do not keep the customer waiting for the acceptance-certificate PDF.
+        // The backend/activation gates still require it, but it can finalise
+        // while the customer completes Direct Debit on the next screen.
+        setAcceptedAt(new Date().toISOString());
+        toast({ title: "Contract accepted", description: "Next, set up your Direct Debit. Nothing is taken today." });
         onAccepted();
       }
     } catch (e) {
@@ -402,7 +401,6 @@ export default function AgreementStep({
                   ["extras", "Extras"],
                   ["details", "Your details"],
                   ["start_date", "Start date"],
-                  ["billing", "Billing"],
                 ] as const).map(([step, label]) => (
                   <Button key={step} type="button" variant="outline" size="sm" className="text-xs"
                     onClick={() => onEditStep(step)}>
@@ -497,12 +495,15 @@ export default function AgreementStep({
 
           <Button
             variant="hero"
-            className="w-full font-display uppercase"
+            className="w-full font-semibold"
             disabled={!formValid || submitting}
             onClick={submit}
           >
-            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording…</> : "ORDER WITH OBLIGATION TO PAY"}
+            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording…</> : "Accept contract & continue — payment required"}
           </Button>
+          <p className="text-xs text-muted-foreground">
+            This accepts the agreement and the charges shown above. You'll set up Direct Debit securely on the next step before the order is finally submitted.
+          </p>
           <p className="text-[11px] text-muted-foreground mt-3">
             For your protection we record the date and time, IP address, approximate location and device details of this
             signature. We use this only to prevent fraudulent orders and identity theft, as explained in our Privacy Policy.

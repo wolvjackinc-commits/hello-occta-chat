@@ -70,7 +70,7 @@ export const comparisons: Comparison[] = [
       { feature: "TV bundle required", occta: "No \u2014 broadband only", competitor: "Often bundled with TV" },
       { feature: "Speeds available", occta: "Up to 900Mbps", competitor: "Up to 900Mbps" },
     ],
-    summary: "Sky broadband works well if you want their TV service, but for broadband-only customers, OCCTA offers better value with more flexibility. No bundles, no lock-in, and a price that stays the same.",
+    summary: "Sky and OCCTA package broadband differently. OCCTA offers Flex 30 and Price Lock 24 where eligible. Compare the current total price, term, setup, speed information and any bundle benefits before choosing.",
     faqs: [
       { question: "Is OCCTA better than Sky for broadband only?", answer: "For broadband-only, yes. OCCTA is cheaper, has Flex 30, and no mid-term price rises. Sky\u2019s value comes from TV bundles." },
       { question: "Can I switch from Sky to OCCTA?", answer: "Yes. Use the One Touch Switch process \u2014 sign up with OCCTA and we handle the switchover automatically." },
@@ -150,7 +150,7 @@ export const comparisons: Comparison[] = [
       { feature: "Network used", occta: "Openreach", competitor: "Openreach" },
       { feature: "Speeds available", occta: "Up to 900Mbps", competitor: "Up to 500Mbps" },
     ],
-    summary: "Plusnet offers decent value but still ties you into contracts with annual increases. OCCTA delivers the same Openreach broadband with faster speed options, no lock-in, and a fixed price.",
+    summary: "Plusnet and OCCTA use different commercial terms and may use overlapping wholesale infrastructure. OCCTA offers Flex 30 and Price Lock 24 where eligible; compare current tariff-specific prices, terms, technology and address-specific speed information.",
     faqs: [
       { question: "Is OCCTA better value than Plusnet?", answer: "Yes. OCCTA is cheaper, has faster top speeds, and doesn\u2019t increase your price mid-contract." },
       { question: "Does OCCTA use the same network as Plusnet?", answer: "Yes. Both use the Openreach fibre network." },
@@ -266,7 +266,7 @@ export const comparisons: Comparison[] = [
     keywords: "OCCTA vs EE, EE broadband alternative, cheaper than EE",
     heroTitle: "OCCTA vs EE",
     heroSubtitle: "Same fibre. Simpler bill.",
-    intro: "EE (part of BT Group) resells the Openreach fibre network with mobile-bundle deals. OCCTA keeps it simple: same network, no lock-in, no bundle upsell.",
+    intro: "EE and OCCTA offer different broadband and bundle structures. OCCTA offers Flex 30 and Price Lock 24 where eligible. The underlying access network depends on the address and selected product, so compare the current customer-specific terms rather than assuming identical service.",
     points: [
       { feature: "Monthly price (superfast)", occta: "From \u00A334.99/mo", competitor: "From \u00A328/mo" },
       { feature: "Contract length", occta: "Flex 30-day or Price Lock 24", competitor: "24 months" },

@@ -42,7 +42,7 @@ const NoContractBroadbandComparison = () => {
         title="Compare No-Contract Broadband UK 2026"
         description="Compare rolling and fixed broadband terms. OCCTA Flex 30 has no fixed minimum term; Price Lock 24 has a 24-month minimum term. Check current provider terms before deciding."
         canonical="/compare/no-contract-broadband"
-        keywords="no contract broadband uk, rolling broadband, 30 day broadband, flexible broadband uk, broadband no exit fee, compare no contract broadband"
+        keywords="Flex 30 broadband UK, rolling broadband, 30 day broadband, flexible broadband UK, Price Lock 24 comparison"
         type="article"
       />
       <StructuredData customOnly customSchema={combinedSchema} />

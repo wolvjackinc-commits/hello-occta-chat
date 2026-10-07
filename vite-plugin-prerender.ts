@@ -520,7 +520,7 @@ const routes: RouteSEO[] = [
   ].map(({ slug, competitor }): RouteSEO => ({
     path: `/compare/${slug}`,
     title: `OCCTA vs ${competitor} — Honest Comparison | OCCTA - Cheap UK Broadband & SIM`,
-    description: `Compare OCCTA vs ${competitor} broadband. See how OCCTA offers cheaper prices, Price Lock 24 or Flex 30 where offered, and no mid-contract price rises.`,
+    description: `Compare OCCTA with ${competitor} using current published terms. OCCTA offers Price Lock 24 or Flex 30 where eligible; verify each provider’s live price, speed and price-change information before deciding.`,
     canonical: `/compare/${slug}`,
     keywords: `OCCTA vs ${competitor}, ${competitor} broadband alternative, cheaper than ${competitor}, ${competitor} broadband comparison`,
     jsonLd: [localBusinessSchema],

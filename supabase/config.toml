@@ -51,8 +51,6 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = false
   [functions.places-autocomplete]
     verify_jwt = false
-  [functions.check-availability]
-    verify_jwt = false
   [functions.claim-dashboard-link]
     verify_jwt = false
   [functions.log-event]

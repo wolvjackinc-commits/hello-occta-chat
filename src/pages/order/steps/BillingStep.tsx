@@ -31,9 +31,7 @@ export default function BillingStep({
     addr ? [addr.address_line_1, addr.address_line_2, addr.town, addr.county].filter(Boolean).join(", ") : "",
   );
   const [postcode, setPostcode] = useState(addr?.postcode ?? session.postcode ?? "");
-  const [ukAccount, setUkAccount] = useState(false);
-  const [authorised, setAuthorised] = useState(false);
-  const [consent, setConsent] = useState(false);
+  const [ddConfirmed, setDdConfirmed] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const digitsOnly = (v: string) => v.replace(/\D/g, "");
@@ -47,7 +45,7 @@ export default function BillingStep({
     if (a.length !== 8) return setErr("Account number must be 8 digits.");
     if (bank.trim().length < 2) return setErr("Please enter your bank name.");
     if (billingAddress.trim().length < 3 || postcode.trim().length < 3) return setErr("Please enter your billing address and postcode.");
-    if (!ukAccount || !authorised || !consent) return setErr("Please tick all three confirmations to set up your Direct Debit.");
+    if (!ddConfirmed) return setErr("Please confirm the Direct Debit instruction.");
     setErr(null);
     onSave({
       billing_anchor_day: Number(day),
@@ -125,39 +123,23 @@ export default function BillingStep({
         </div>
       </div>
 
-      <fieldset className="space-y-3 border-2 border-border p-4">
-        <legend className="font-display uppercase text-xs tracking-widest px-1">Your confirmations</legend>
-        <div className="flex items-start gap-3">
-          <Checkbox id="j2-dd-uk" checked={ukAccount} onCheckedChange={(v) => setUkAccount(v === true)} className="mt-0.5" />
-          <Label htmlFor="j2-dd-uk" className="text-sm font-normal leading-relaxed">
-            This is a UK bank or building society account that accepts Direct Debits.
-          </Label>
-        </div>
-        <div className="flex items-start gap-3">
-          <Checkbox id="j2-dd-auth" checked={authorised} onCheckedChange={(v) => setAuthorised(v === true)} className="mt-0.5" />
-          <Label htmlFor="j2-dd-auth" className="text-sm font-normal leading-relaxed">
-            I am the account holder and the only person required to authorise Direct Debits on this account.
-          </Label>
-        </div>
-        <div className="flex items-start gap-3">
-          <Checkbox id="j2-dd-consent" checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" />
-          <Label htmlFor="j2-dd-consent" className="text-sm font-normal leading-relaxed">
-            I instruct OCCTA LIMITED to collect amounts due under my service agreement by Direct Debit, subject to the
-            Direct Debit Guarantee below.
-          </Label>
-        </div>
-      </fieldset>
+      <div className="flex items-start gap-3 border-2 border-foreground p-4">
+        <Checkbox id="j2-dd-confirm" checked={ddConfirmed} onCheckedChange={(v) => setDdConfirmed(v === true)} className="mt-0.5" />
+        <Label htmlFor="j2-dd-confirm" className="text-sm font-normal leading-relaxed">
+          I confirm this is a UK account that accepts Direct Debits, I am authorised to use it, and I instruct OCCTA LIMITED
+          to collect amounts due under my service agreement by Direct Debit, subject to the Direct Debit Guarantee.
+        </Label>
+      </div>
 
-      <section className="border-2 border-foreground p-4">
-        <h2 className="font-display uppercase text-sm tracking-widest mb-2">The Direct Debit Guarantee</h2>
-        <p className="text-xs text-muted-foreground mb-3">
-          A copy of this Direct Debit Instruction, including the Direct Debit Guarantee below, will be emailed to you for
-          your records.
+      <details className="border-2 border-foreground p-4">
+        <summary className="cursor-pointer font-display uppercase text-sm tracking-widest">View the Direct Debit Guarantee</summary>
+        <p className="text-xs text-muted-foreground mt-3 mb-3">
+          A copy of this Direct Debit Instruction and Guarantee will be emailed to you for your records.
         </p>
         <ul className="space-y-2 text-xs text-muted-foreground list-disc pl-5">
           {DD_GUARANTEE_TEXT.split("\n\n").map((p) => <li key={p.slice(0, 24)}>{p}</li>)}
         </ul>
-      </section>
+      </details>
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}
 

@@ -501,9 +501,12 @@ if (body.action === "get") {
     patch.dd_status = "details_received";
   }
 
-  // Re-resolve the authoritative price whenever a commercial selection changes.
+  // Re-resolve only when a price-affecting selection changes (or the
+  // session somehow lacks a price). Details/start-date/DD saves should remain
+  // fast; contract preparation performs a final authoritative price recheck.
   const merged = { ...session, ...patch } as any;
-  if (merged.speed_bucket && merged.plan_term) {
+  const priceAffectingStep = ["plan", "router", "extras"].includes(String(body.step));
+  if (merged.speed_bucket && merged.plan_term && (priceAffectingStep || !session.price_snapshot)) {
     const priced = await resolveJourney2Price(supabase, settings, {
       speed_bucket: merged.speed_bucket,
       plan_term: merged.plan_term,

@@ -47,9 +47,10 @@ export default function ReviewStep({
     () => (quote?.monthly_gross != null ? `£${Number(quote.monthly_gross).toFixed(2)}` : "—"),
     [quote?.monthly_gross],
   );
+  const paymentReady = paymentMethod?.active === true;
 
   const submit = async () => {
-    if (submitting) return;
+    if (!paymentReady || submitting) return;
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("journey-submit-order", {
@@ -123,6 +124,9 @@ export default function ReviewStep({
         ) : (
           <p className="text-xs text-destructive">No active payment method — go back to the Payment step.</p>
         )}
+        {paymentMethod && paymentMethod.active !== true && (
+          <p className="text-xs text-destructive">Your payment setup is not active yet. Please go back to Billing and complete it before submitting.</p>
+        )}
       </Section>
 
       <div className="text-sm border-l-4 border-foreground pl-3 py-2">
@@ -133,7 +137,7 @@ export default function ReviewStep({
       <Button
         variant="hero"
         className="w-full font-display uppercase"
-        disabled={submitting || !paymentMethod}
+        disabled={submitting || !paymentReady}
         onClick={submit}
       >
         {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</> : <><ShieldCheck className="w-4 h-4 mr-2" /> Submit my order</>}

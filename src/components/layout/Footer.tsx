@@ -115,7 +115,7 @@ const Footer = () => {
         <div className="container mx-auto px-4 py-3">
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-background/85">
             <span className="flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5" /> Ofcom regulated UK telecom provider
+              <Shield className="w-3.5 h-3.5" /> UK communications provider · Ofcom General Conditions apply
             </span>
             <span className="flex items-center gap-1.5">
               <Lock className="w-3.5 h-3.5" /> Secure payments (256-bit encryption)

@@ -8,6 +8,7 @@ Canonical website: https://www.occta.co.uk/
 
 - [Home](https://www.occta.co.uk/): OCCTA overview and routes to current services.
 - [Broadband](https://www.occta.co.uk/broadband): Residential broadband information and plan choices.
+- [Fixed-price broadband](https://www.occta.co.uk/fixed-price-broadband): Price Lock 24, price-certainty terms and address-specific availability.
 - [Flex 30](https://www.occta.co.uk/broadband/flex): Flexible monthly broadband information.
 - [Price Lock 24](https://www.occta.co.uk/broadband/contract-saver): Fixed-term price-certainty information.
 - [Business telecom](https://www.occta.co.uk/business): Business broadband, voice, SIM and bundles.

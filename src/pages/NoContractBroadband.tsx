@@ -46,20 +46,20 @@ const trustBadges = [
 ];
 
 const whySwitchReasons = [
-  "No 12, 18, or 24-month contracts",
-  "No CPI-linked annual price rises",
-  "No 'intro price then shock bill'",
-  "30-day rolling options where eligible",
-  "Clear monthly pricing",
-  "Human UK-based support",
+  "Flex 30 has no fixed minimum term where eligible",
+  "Normal Flex 30 notice is 30 days",
+  "No remaining-month ETF on Flex 30",
+  "No scheduled CPI/RPI/percentage rise under contract version 2026.10.1",
+  "Customer-specific charges shown before acceptance",
+  "UK-based support",
 ];
 
 const comparisonData = [
-  { feature: "Contract length", occta: "None", others: "12-24 months" },
-  { feature: "Price rises", occta: "None", others: "Annual CPI increases" },
-  { feature: "Early termination", occta: "No remaining-month ETF on Flex 30; separately valid network charges may apply", others: "Depends on provider and contract" },
-  { feature: "Transparency", occta: "Clear pricing", others: "Complex bundles" },
-  { feature: "Flexibility", occta: "Rolling monthly where eligible", others: "Locked in" },
+  { feature: "Minimum term", occta: "Flex 30: no fixed minimum term", others: "Varies by provider and tariff" },
+  { feature: "Scheduled price change", occta: "No scheduled CPI/RPI/percentage rise under v2026.10.1", others: "Check the exact pounds-and-pence disclosure" },
+  { feature: "Early termination", occta: "No remaining-month ETF on Flex 30; valid disclosed network charges may apply", others: "Depends on the accepted contract" },
+  { feature: "Upfront/setup cost", occta: "Shown before acceptance", others: "Compare the current tariff" },
+  { feature: "Flexibility", occta: "30-day rolling where eligible", others: "Rolling and fixed-term options vary" },
 ];
 
 const faqs = [
@@ -69,11 +69,11 @@ const faqs = [
   },
   {
     question: "Can I cancel whenever I want?",
-    answer: "Absolutely. Give us 30 days notice and you're free to go. No penalties, no hassle, no 'retention team' trying to convince you otherwise. We make leaving as easy as joining.",
+    answer: "Flex 30 normally requires 30 days’ notice. There is no remaining-month Early Termination Charge, although a separately valid network cease or migration charge may apply where lawful, actually incurred and disclosed.",
   },
   {
     question: "Are there price increases later?",
-    answer: "We don't do CPI-linked price rises or sneaky mid-term increases. The price you sign up for is the price you pay. If we ever need to change pricing, we'll give you proper notice and you can leave without penalty.",
+    answer: "Under residential contract version 2026.10.1 there is no scheduled CPI-, RPI-, inflation-linked or percentage-based rise on the recurring broadband subscription. Your accepted Contract Summary and Contract Information control the customer-specific terms.",
   },
   {
     question: "Is OCCTA available UK-wide?",
@@ -139,7 +139,7 @@ const NoContractBroadband = () => {
               className="text-xl md:text-2xl font-bold text-muted-foreground mb-4"
             >
               Broadband from{" "}
-              <span className="text-foreground">£{prices.broadband}/month</span>. No
+              <span className="text-foreground">£{prices.broadband}/month</span>, with
               clear term, notice and charge information before acceptance.
             </motion.p>
 
@@ -147,11 +147,9 @@ const NoContractBroadband = () => {
               variants={itemVariants}
               className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto"
             >
-              Get fast, reliable UK broadband on Flex 30 where available, with no fixed
-              credit check and no long-term commitment. Whether you are renting,
-              switching, or just tired of lock-ins, OCCTA gives you the
-              flexibility to leave whenever you want — with clear pricing and no
-              surprise rises.
+              Flex 30 is a 30-day rolling broadband option with no fixed minimum term
+              where eligible. Normal notice is 30 days. Availability, speed information,
+              setup, price and any applicable charges are confirmed before acceptance.
             </motion.p>
 
             <motion.div
@@ -241,13 +239,13 @@ const NoContractBroadband = () => {
             variants={itemVariants}
             className="text-3xl md:text-4xl font-black uppercase text-center mb-4"
           >
-            OCCTA vs Big UK Broadband Providers
+            Flex 30 vs Typical Fixed-Term Broadband
           </motion.h2>
           <motion.p
             variants={itemVariants}
             className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto"
           >
-            See how we stack up against BT, Sky, TalkTalk, and the rest
+            Compare the contract features that matter before choosing any provider.
           </motion.p>
 
           <motion.div variants={itemVariants} className="max-w-4xl mx-auto">
@@ -262,7 +260,7 @@ const NoContractBroadband = () => {
                       OCCTA
                     </TableHead>
                     <TableHead className="font-black uppercase text-muted-foreground text-center">
-                      BT / Sky / TalkTalk
+                      Typical fixed-term plan
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -308,7 +306,7 @@ const NoContractBroadband = () => {
             variants={itemVariants}
             className="text-3xl md:text-4xl font-black uppercase mb-6 text-accent-foreground"
           >
-            Ready to escape contract broadband?
+            Want a rolling broadband option?
           </motion.h2>
           <motion.p
             variants={itemVariants}

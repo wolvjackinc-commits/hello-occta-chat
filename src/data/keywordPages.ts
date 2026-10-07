@@ -41,6 +41,32 @@ const BILLING_COPY =
 
 export const keywordPages: KeywordPage[] = [
   {
+    slug: "fixed-price-broadband",
+    metaTitle: "Fixed-Price Broadband UK — Price Lock 24 | OCCTA",
+    metaDescription: "OCCTA Price Lock 24 has a 24-month minimum term and no scheduled CPI-, RPI-, inflation-linked or percentage-based rise on the recurring residential broadband subscription under contract version 2026.10.1.",
+    keywords: "fixed price broadband UK, broadband no price rise, price lock broadband, no mid contract price rise broadband, fixed broadband price",
+    heroTitle: "FIXED-PRICE BROADBAND",
+    heroHighlight: "PRICE LOCK 24",
+    heroSubtitle: "Price certainty for the minimum term, with the exact address-specific service and charges confirmed before you accept.",
+    sections: [
+      { heading: "What Price Lock 24 means", paragraphs: ["Price Lock 24 has a 24-month minimum term. Under residential contract version 2026.10.1 there is no scheduled CPI-, RPI-, inflation-linked or percentage-based increase on the recurring broadband subscription during that minimum term.", "Customer-specific price, speed information, setup and one-off charges are shown before acceptance."] },
+      { heading: "Compare total contract cost", paragraphs: [PRICE_COPY, CHARGE_COPY, "When comparing another provider, check the exact pounds-and-pence price-change disclosure, setup cost, equipment cost and total minimum-term commitment rather than only the headline monthly price."] },
+      { heading: "Need more flexibility?", paragraphs: [TERM_COPY, "Flex 30 is the rolling alternative where eligible. It normally has a higher headline monthly price but no fixed minimum term and no remaining-month Early Termination Charge."] },
+      { heading: "Check your actual line", paragraphs: [SPEED_COPY, ENDING_COPY] },
+    ],
+    faqs: [
+      { question: "Is Price Lock 24 a fixed-price broadband plan?", answer: "Under residential contract version 2026.10.1, the recurring broadband subscription has no scheduled CPI-, RPI-, inflation-linked or percentage-based rise during the 24-month minimum term. Customer-specific charges and any permitted exceptions are shown in the Contract Summary and Contract Information before acceptance." },
+      { question: "Does Price Lock 24 have a minimum term?", answer: "Yes. Price Lock 24 has a 24-month minimum term. An Early Termination Charge may apply if you leave during that minimum term, subject to the accepted agreement and any legal right to leave without penalty." },
+      { question: "How is Flex 30 different?", answer: "Flex 30 is 30-day rolling with no fixed minimum term where eligible and normally requires 30 days' notice. It has no remaining-month Early Termination Charge, although a separately valid network cease or migration charge may apply where lawful, actually incurred and disclosed." },
+      { question: "Is £34.99 available everywhere?", answer: "No. £34.99 is a headline starting price for Price Lock 24. Final price depends on the address, supplier product, setup and router choices and is confirmed before acceptance." },
+    ],
+    ctaTitle: "Check Fixed-Price Broadband at Your Address",
+    ctaText: "See whether Price Lock 24 is available and review the exact price, speed information, setup and terms before you order.",
+    ctaLink: "/broadband",
+    ctaButton: "Check Availability",
+    price: "34.99",
+  },
+  {
     slug: "cheap-broadband-near-me",
     metaTitle: "Affordable Broadband Near Me — Check Your Address | OCCTA",
     metaDescription: "Check OCCTA broadband at your address. Compare Price Lock 24 and Flex 30 where eligible, with customer-specific price, speed information, setup and charges before acceptance.",

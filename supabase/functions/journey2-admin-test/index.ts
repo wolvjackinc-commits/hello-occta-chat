@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
   gate("dedicated_test_session_table", session.label?.startsWith("TEST") === true,
     "session stored in journey2_test_sessions");
 
-  // ── 2 · The seven pre-contract stages ─────────────────────────────────────
+  // ── 2 · Pre-contract stages ────────────────────────────────────────────────
   const steps: [string, Record<string, unknown>][] = [
     ["address", { postcode: "SW1A 1AA", address_line_1: "1 Test Street", address_line_2: null, town: "London", county: "Greater London" }],
     ["plan", { speed_bucket: "superfast", plan_term: "flex_30" }],
@@ -124,15 +124,6 @@ Deno.serve(async (req) => {
       privacy_acknowledged: true,
     }],
     ["start_date", { preferred_start_date: ymd(21), cooling_off_acknowledged: true }],
-    ["billing", {
-      billing_anchor_day: 1,
-      dd_consent: true,
-      dd_details: {
-        account_holder_name: "TEST Journey Two", sort_code: "000000", account_number: "00000000",
-        bank_name: "TEST Bank", billing_address: "1 Test Street, London", postcode: "SW1A 1AA",
-        uk_account_confirmed: true, payer_authorised_confirmed: true,
-      },
-    }],
   ];
   const stageLog: string[] = [];
   for (const [step, payload] of steps) {
@@ -145,19 +136,6 @@ Deno.serve(async (req) => {
     stageLog.push(step);
     gate(`stage_${step}`, true, "saved to journey2_test_sessions");
   }
-  const ddAfterBilling = await supabase.from("journey2_test_dd_intake")
-    .select("dd_status, bank_details_ciphertext, nonce, masked_account_last4, masked_sort_last2")
-    .eq("session_id", session.id).maybeSingle();
-  gate("dd_state_details_received", ddAfterBilling.data?.dd_status === "details_received",
-    String(ddAfterBilling.data?.dd_status));
-  gate("dd_encrypted_in_test",
-    !!ddAfterBilling.data?.bank_details_ciphertext && !!ddAfterBilling.data?.nonce,
-    "AES-256-GCM ciphertext and nonce present in journey2_test_dd_intake");
-  const masked = (session.dd_masked ?? {}) as Record<string, unknown>;
-  gate("dd_masked_only",
-    String(masked.last4 ?? "").length === 4 && !("account_number" in masked) && !("sort_code" in masked),
-    "only last 4 / last 2 held on the test session");
-
   // ── 3 · Contract stage ───────────────────────────────────────────────────
   const prep = await prepareTestContract(supabase, settings, session);
   if (!prep.ok) {
@@ -167,7 +145,6 @@ Deno.serve(async (req) => {
   session = prep.session;
   stageLog.push("contract");
   gate("stage_contract", true, "test snapshot and test contract summary written");
-  gate("dd_state_pending_contract", session.dd_status === "pending_contract", String(session.dd_status));
 
   const snapRow = await supabase.from("journey2_test_snapshots")
     .select("snapshot, snapshot_sha256").eq("session_id", session.id).maybeSingle();
@@ -211,10 +188,43 @@ Deno.serve(async (req) => {
     return await finish(false, { failed_stage: "review" });
   }
   session = (await loadTestSessionByToken(supabase, token)) ?? session;
-  stageLog.push("review");
-  gate("stage_review", true, "test acceptance evidence recorded");
+  gate("stage_contract_acceptance", true, "test acceptance evidence recorded");
 
-  // ── 5 · Submit twice: exactly one of everything ──────────────────────────
+  // ── 5 · Direct Debit only after contract acceptance ───────────────────────
+  const billing = await saveTestStep(supabase, settings, session, "billing", {
+    billing_anchor_day: 1,
+    dd_consent: true,
+    dd_details: {
+      account_holder_name: "TEST Journey Two", sort_code: "000000", account_number: "00000000",
+      bank_name: "TEST Bank", billing_address: "1 Test Street, London", postcode: "SW1A 1AA",
+      uk_account_confirmed: true, payer_authorised_confirmed: true,
+    },
+  });
+  if (!billing.ok) {
+    gate("stage_billing", false, `${billing.status} ${billing.error}`);
+    return await finish(false, { failed_stage: "billing" });
+  }
+  session = billing.session;
+  stageLog.push("billing");
+  gate("stage_billing", true, "Direct Debit captured after accepted contract");
+
+  const ddAfterBilling = await supabase.from("journey2_test_dd_intake")
+    .select("dd_status, bank_details_ciphertext, nonce, masked_account_last4, masked_sort_last2")
+    .eq("session_id", session.id).maybeSingle();
+  gate("dd_state_details_received", ddAfterBilling.data?.dd_status === "details_received",
+    String(ddAfterBilling.data?.dd_status));
+  gate("dd_encrypted_in_test",
+    !!ddAfterBilling.data?.bank_details_ciphertext && !!ddAfterBilling.data?.nonce,
+    "AES-256-GCM ciphertext and nonce present in journey2_test_dd_intake");
+  const masked = (session.dd_masked ?? {}) as Record<string, unknown>;
+  gate("dd_masked_only",
+    String(masked.last4 ?? "").length === 4 && !("account_number" in masked) && !("sort_code" in masked),
+    "only last 4 / last 2 held on the test session");
+
+  stageLog.push("review");
+  gate("stage_review", true, "post-contract payment setup complete; ready for final review");
+
+  // ── 6 · Submit twice: exactly one of everything ──────────────────────────
   const sub1 = await submitTestOrder(supabase, session);
   if (!sub1.ok) {
     gate("stage_complete", false, `${sub1.status} ${sub1.error}`);

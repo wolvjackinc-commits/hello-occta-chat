@@ -17,10 +17,11 @@ import { loadJourneySettings, resolveJourney2Price, planNameFor, JOURNEY2_SETUP,
 import { RESOLVER_VERSION } from "./buildPlanResolver.ts";
 import { encryptJson } from "./ddCrypto.ts";
 import {
-  buildJourney2Snapshot, snapshotFingerprint, verifyStoredSnapshot,
+  buildJourney2Snapshot, snapshotFingerprint, verifyStoredSnapshot, canonicalJson,
   snapshotMatchesSession, type Journey2Snapshot,
 } from "./journey2Snapshot.ts";
 import { buildJourney2DocumentPack, REQUIRED_DOC_TYPES } from "./journey2Docs.ts";
+import { buildPlanEstimateEvidence, evidenceSha256 } from "./networkEvidence.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 export const TEST_LABEL = "TEST — Journey 2 isolated run";
@@ -284,8 +285,25 @@ export async function prepareTestContract(
   if (!priced) return { ok: false, error: "price_unavailable", status: 409 };
 
   const vatPercent = Number((settings as any).vat_default_rate ?? 20);
+
+  // Mirror the live no-supplier-evidence path without touching any live table:
+  // build deterministic server-side OCCTA plan-estimate evidence in memory,
+  // hash it, and feed it to the shared canonical snapshot builder.
+  const planEstimate = buildPlanEstimateEvidence(session.speed_bucket, session.postcode);
+  if (!planEstimate) return { ok: false, error: "plan_not_selected", status: 409 };
+  const planEstimateHash = await evidenceSha256(canonicalJson(planEstimate));
+  const snapshotSession = {
+    ...session,
+    supplier_availability_snapshot: planEstimate,
+    supplier_availability_sha256: planEstimateHash,
+    supplier_availability_retrieved_at: planEstimate.retrieved_at,
+    supplier_availability_source: planEstimate.source,
+    network_validation_status: "plan_estimate_used",
+    likely_service_date: session.preferred_start_date,
+  };
+
   const snapshot = buildJourney2Snapshot({
-    session,
+    session: snapshotSession,
     priced,
     vatPercent,
     pricingVersion: RESOLVER_VERSION,

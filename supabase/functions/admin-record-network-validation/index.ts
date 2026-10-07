@@ -49,13 +49,6 @@ Deno.serve(async (req) => {
   if (!parsed.success) return jsonResponse({ error: "validation", details: parsed.error.flatten() }, 400);
   const i = parsed.data;
 
-  if (/icuk|interdns/i.test(i.source_label) || /icuk|interdns/i.test(i.source_reference)) {
-    return jsonResponse({
-      error: "retired_supplier_not_allowed",
-      message: "This supplier/source has been retired from OCCTA and cannot be used for new contract evidence.",
-    }, 409);
-  }
-
   const supabase = getServiceClient();
 
   const { data: activeSupplier } = await supabase

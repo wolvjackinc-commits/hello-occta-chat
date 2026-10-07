@@ -107,8 +107,8 @@ export const guides: Guide[] = [
       {
         heading: 'What Makes Broadband "Cheap"?',
         paragraphs: [
-          'The cheapest broadband is not always the one with the lowest headline price. Watch out for setup fees, mid-contract price rises, and equipment charges that inflate the real cost.',
-          'A plan advertised at £20 per month can easily cost £25+ once you factor in annual CPI increases and router delivery fees. Always calculate the total cost over the plan length.',
+          'The cheapest broadband is not always the one with the lowest headline price. Compare setup, equipment, scheduled price changes, minimum term and termination-related charges as well as the monthly subscription.',
+          'A low headline price can still have a higher total cost once one-off charges, equipment and any scheduled pounds-and-pence price changes are included. Compare the total cost over the plan length.',
         ],
       },
       {
@@ -143,7 +143,7 @@ export const guides: Guide[] = [
     faqs: [
       { question: 'What does OCCTA broadband cost?', answer: 'OCCTA headline broadband pricing starts from £34.99 per month on Price Lock 24, with Flex 30 priced separately where offered. Public speed bands run up to 1000Mbps where available. We do not claim every address receives the headline speed or that OCCTA is always the cheapest provider.' },
       { question: 'Are all charges shown before I order?', answer: 'The applicable monthly and one-off charges for the order are shown before acceptance. Router, setup and equipment treatment depends on the selected service.' },
-      { question: 'Is cheap broadband reliable?', answer: 'Yes. Our network delivers the same fibre infrastructure used by larger providers. Speed and reliability are not compromised.' },
+      { question: 'Is lower-priced broadband less reliable?', answer: 'Price alone does not determine reliability. Access technology, the address-specific line, supplier network, home Wi-Fi and support arrangements all matter.' },
     ],
     ctaText: 'See Our Plans',
     ctaLink: '/broadband',
@@ -191,9 +191,9 @@ export const guides: Guide[] = [
       },
     ],
     faqs: [
-      { question: 'Do I need to cancel with my old provider?', answer: 'No. Under the One Touch Switch process, your new provider handles the cancellation automatically.' },
-      { question: 'Will I keep my phone number?', answer: 'In most cases, yes. If you have a landline number, it can usually be ported to your new provider.' },
-      { question: 'How long does switching take?', answer: 'Typically 10–14 working days from placing your order.' },
+      { question: 'Do I need to cancel with my old provider?', answer: 'Where One Touch Switch applies, you normally start with the gaining provider rather than cancelling the broadband service separately. Follow the service-specific switching information you receive.' },
+      { question: 'Will I keep my phone number?', answer: 'Number transfer is often possible but must be checked for the actual number and service. Do not treat it as confirmed until the order says so.' },
+      { question: 'How long does switching take?', answer: 'Timing depends on the access technology, provider coordination, engineer requirements and network capacity. Use the provisional and confirmed dates supplied for your order.' },
       { question: 'What if I am still in contract?', answer: 'You can still switch, but your old provider may charge an early termination fee. Check your contract terms.' },
     ],
     howTo: {
@@ -680,10 +680,10 @@ export const guides: Guide[] = [
     sections: [
       { heading: 'Step 1 — Pick your new provider', paragraphs: ['Check your postcode, pick a plan, and place the order. You\u2019ll be asked if you\u2019re switching from another provider — say yes.'] },
       { heading: 'Step 2 — Your new provider does the rest', paragraphs: ['Under One Touch Switch, they contact your old provider on your behalf, agree a switchover date, and tell you when it\u2019ll happen.'] },
-      { heading: 'Step 3 — Plug in on switch day', paragraphs: ['On the agreed day, your new router goes live. Your old service ends at midnight the same day. No overlap, no double bills.'] },
+      { heading: 'Step 3 — Follow the confirmed switch-day instructions', paragraphs: ['Use the confirmed date and equipment instructions for your order. A brief outage can occur, and the billing handover follows the applicable switching rules and the services actually being moved.'] },
     ],
     faqs: [
-      { question: 'Will I have any downtime?', answer: 'Usually under 30 minutes on switch day. Some FTTP switches are seamless.' },
+      { question: 'Will I have any downtime?', answer: 'A brief outage can occur. The expected date, engineer requirement and any known downtime risk depend on the actual services and are confirmed for the order.' },
       { question: 'What if I\u2019m still in contract?', answer: 'Your old provider may charge an exit fee — your new provider will tell you the figure before you commit.' },
       { question: 'Can I keep my landline number?', answer: 'Yes, it\u2019s included in the One Touch Switch process.' },
     ],

@@ -496,9 +496,9 @@ if (body.action === "get") {
     }
     patch.billing_anchor_day = p.data.billing_anchor_day;
     patch.dd_masked = masked;
-    // Details are held, but nothing is requested from the provider until the
-    // customer has accepted the contract.
-    patch.dd_status = "pending_contract";
+    // Details are held after contract acceptance. Provider setup is requested
+    // only by the post-contract application step.
+    patch.dd_status = "details_received";
   }
 
   // Re-resolve the authoritative price whenever a commercial selection changes.

@@ -61,7 +61,7 @@ const RollingVsFixedBroadbandComparison = () => {
         title="Rolling vs Fixed Broadband UK — Which Should You Pick?"
         description="Flex 30 vs Price Lock 24, compared clearly: minimum term, notice, pricing, early termination and applicable network charges."
         canonical="/rolling-vs-fixed-broadband-comparison"
-        keywords="no contract broadband uk, rolling vs fixed broadband, 30 day broadband uk, flexible broadband, price lock broadband uk, occta flex 30, occta price lock 24"
+        keywords="Flex 30 broadband UK, rolling vs fixed broadband, 30 day broadband UK, flexible broadband, price lock broadband UK, OCCTA Flex 30, OCCTA Price Lock 24"
         type="article"
       />
       <StructuredData customOnly customSchema={combinedSchema} />

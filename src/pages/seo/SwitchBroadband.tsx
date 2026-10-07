@@ -8,9 +8,9 @@ export default function SwitchBroadbandSeo() {
         title="Switch broadband provider — One Touch Switch in 14 days | OCCTA"
         metaDescription="Switch to OCCTA broadband using One Touch Switch where it applies. Current prices, dates, downtime expectations and any promotional switch credit are confirmed before you order."
         canonical="/switch-broadband-provider"
-        h1="Switch broadband — we do the paperwork, you stay online"
-        shortAnswer="OCCTA is a One Touch Switch (OTS) participant. Enter your postcode, pick a plan, and we contact your current provider for you. Most switches complete in 10–14 days with no downtime and no engineer visit."
-        intro="Since April 2024, UK broadband switches run under One Touch Switch — the new provider does the leg work. Here's exactly how it works with OCCTA."
+        h1="Switch broadband — we coordinate eligible OTS switches"
+        shortAnswer="Where One Touch Switch applies, the gaining provider coordinates the switch. Your expected activation or switch date, engineer requirement and any known downtime risk are confirmed for the actual order."
+        intro="For eligible residential broadband and landline switches, One Touch Switch lets the gaining provider coordinate the provider-to-provider steps. Here is how OCCTA handles the order-specific process."
         sections={[
           { heading: "How One Touch Switch works", body: "You order with us. Where One Touch Switch applies, the providers coordinate the switch and you receive the required switching information, including any charge from your existing provider. The expected date and any known downtime risk are confirmed for the order; we do not promise zero downtime." },
           { heading: "What we cover", body: "Any current OCCTA switching promotion or credit is shown explicitly in the order or written quote before acceptance. We do not promise reimbursement of another provider’s early-termination charge unless that specific promotion is offered and recorded for your order." },

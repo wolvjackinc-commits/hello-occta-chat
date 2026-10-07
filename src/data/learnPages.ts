@@ -71,7 +71,7 @@ export const learnPages: LearnPage[] = [
     shortAnswer: "FTTP (Fibre-to-the-Premises) is a full-fibre broadband connection that runs a fibre-optic cable all the way into your home. It's faster, more reliable, and future-proof compared to older copper-based FTTC.",
     intro: "If you're shopping for broadband in the UK, you'll see the terms FTTP, FTTC and SOGEA. They all sound similar but the technology behind them is very different — and it directly affects your speed, reliability and price. Here's a plain-English breakdown.",
     sections: [
-      { heading: "FTTP — Fibre to the Premises", body: "FTTP runs a fibre-optic cable directly to your home. There's no copper in the loop, which means far higher speeds (up to 900Mbps or more), lower latency, and much better reliability. This is what most people mean when they say 'full fibre'." },
+      { heading: "FTTP — Fibre to the Premises", body: "FTTP runs fibre to the premises rather than relying on the final copper section used by FTTC. Available speeds vary by network and product; use the provider's address-specific information rather than treating one headline figure as universal." },
       { heading: "FTTC — Fibre to the Cabinet", body: "FTTC runs fibre only as far as the green street cabinet, then copper telephone wire the rest of the way to your house. Speeds top out around 80Mbps and slow down the further you are from the cabinet." },
       { heading: "SOGEA — Single Order Generic Ethernet Access", body: "SOGEA is FTTC without a landline. Same copper-and-fibre mix, same speeds, but you don't pay for a phone line you don't use. It's Openreach's stepping-stone before FTTP rolls out to every street." },
       { heading: "Which one can I actually get?", body: "It depends entirely on your postcode. Around 70% of UK premises now have FTTP available; the rest are still on FTTC/SOGEA until Openreach reaches them. Use our free postcode checker to see exactly what's available at your address." },
@@ -80,7 +80,7 @@ export const learnPages: LearnPage[] = [
       { question: "Is FTTP better than FTTC?", answer: "Yes — FTTP is significantly faster, more reliable, and has lower latency because there's no copper in the connection. FTTC speeds also degrade with distance from the cabinet; FTTP doesn't." },
       { question: "Do I need a phone line for FTTP?", answer: "No. FTTP is a pure data connection — there's no analogue phone line involved. If you want a home phone number you can add a Digital Voice service that runs over the fibre." },
       { question: "Will FTTP work in a power cut?", answer: "The fibre itself is unaffected, but your router needs mains power. Most people use a mobile phone as a backup during outages. If you rely on a landline for medical alarms, ask us about a battery back-up unit." },
-      { question: "How fast is FTTP with OCCTA?", answer: "Speeds range from around 100Mbps up to 900Mbps depending on the plan you choose and what your line can deliver. Check availability by postcode to see what's on offer at your address." },
+      { question: "How fast is FTTP with OCCTA?", answer: "OCCTA public speed bands run up to 1000Mbps where available. The exact technology, address-specific estimate and contractual speed information are confirmed before acceptance." },
     ],
     related: [BROADBAND, CHECK, { label: "Fibre broadband explained", to: "/fibre-broadband" }, { label: "Broadband speed guide", to: "/learn/broadband-speed-guide" }],
     keywords: "FTTP, full fibre broadband UK, FTTP vs FTTC, what is FTTP, fibre to the premises",
@@ -97,7 +97,7 @@ export const learnPages: LearnPage[] = [
       { heading: "1 person, basic use — 36–50Mbps", body: "Email, browsing, HD Netflix, the odd video call. Cheaper FTTC or entry-level FTTP plans do this comfortably." },
       { heading: "2–4 people — 50–150Mbps", body: "Multiple devices streaming HD/4K at the same time, working from home, some gaming. This is the sweet spot for most UK families." },
       { heading: "Heavy household or working from home — 150–500Mbps", body: "Frequent 4K streaming on multiple TVs, large file uploads, video calls that must not glitch, home office setups. Full-fibre FTTP shines here." },
-      { heading: "Gamers and creators — 500–900Mbps", body: "Downloading 100GB game updates in minutes, streaming to Twitch/YouTube, remote workstations. Only useful if you actually generate that traffic — a fast plan doesn't make Netflix load faster." },
+      { heading: "Gamers and creators — higher-capacity plans", body: "Higher-capacity plans can help households with large downloads, uploads and multiple simultaneous users, but latency, Wi-Fi and the address-specific connection also matter." },
       { heading: "Latency matters more than speed for gaming", body: "For online gaming, the ping (round-trip time) matters more than raw Mbps. Any full-fibre connection typically gives you 5–20ms — miles better than legacy FTTC." },
     ],
     faqs: [
@@ -237,7 +237,7 @@ export const learnPages: LearnPage[] = [
     intro: "BT's prices have crept up every year while their contracts have got longer. If you're out of your minimum term (or willing to pay the exit fee), leaving is straightforward. Here's the process.",
     sections: [
       { heading: "Check if you're still in contract", body: "Log into your BT account or check your latest bill. If your minimum term has ended, you can leave with no remaining-month early termination charge on Flex 30. If you're still in contract, exit fees can be £10–£20 per remaining month." },
-      { heading: "Pick a new provider on the same network", body: "The underlying access network depends on the address and selected product. Compare the address-specific speed information, term, setup and total price shown before acceptance." },
+      { heading: "Compare the actual service at your address", body: "The underlying access network depends on the address and selected product. Compare the address-specific speed information, term, setup and total price shown before acceptance." },
       { heading: "Sign up — that's it", body: "The new provider triggers One Touch Switch, tells BT to stop the service on the switch date, and you never speak to BT retention." },
       { heading: "Return the BT hub", body: "BT will send you a return bag. Post the hub back or you'll be charged around £50." },
     ],
@@ -256,7 +256,7 @@ export const learnPages: LearnPage[] = [
     metaDescription: "How to leave Sky Broadband: One Touch Switch, exit fees, keeping your Sky TV, and finding a cheaper Openreach provider.",
     h1: "Leaving Sky Broadband",
     shortAnswer: "Sign up with a new Openreach provider — they'll trigger One Touch Switch and cancel Sky for you. Sky TV is separate and continues unaffected.",
-    intro: "Sky Broadband ties into the same Openreach network as most UK providers. You can switch broadband without losing Sky TV or your landline number.",
+    intro: "Sky broadband, TV and phone arrangements can be separate or bundled. Before switching, check the current Sky terms, number-porting position and the OCCTA service available at your exact address.",
     sections: [
       { heading: "Sky TV and Sky Broadband are separate", body: "Cancelling broadband doesn't cancel your Sky Q or Sky Glass. TV is delivered via satellite (Q) or over any broadband connection (Glass) — including your new one." },
       { heading: "Check your contract", body: "Sky Broadband contracts are typically 18 months with annual CPI+3.9% rises. If you're outside your term you can leave for free." },
@@ -288,7 +288,7 @@ export const learnPages: LearnPage[] = [
     faqs: [
       { question: "Can I use One Touch Switch to leave Virgin?", answer: "Not currently. Virgin uses its own cable network, so cross-network switches (cable-to-fibre) require you to call Virgin directly." },
       { question: "What are Virgin exit fees?", answer: "If you're in contract, Virgin charges the remaining months at the current monthly rate (often £30+/mo). Out of contract, no fee applies." },
-      { question: "Is Openreach fibre as fast as Virgin cable?", answer: "Yes — full-fibre FTTP delivers up to 900Mbps and lower latency than Virgin's cable in most cases." },
+      { question: "Is Openreach fibre as fast as Virgin cable?", answer: "Do not assume one access network is always faster. Compare the current address-specific technology, download/upload information and latency characteristics for the exact offers available." },
     ],
     related: [{ label: "OCCTA vs Virgin Media", to: "/compare/occta-vs-virgin-media" }, { label: "What is FTTP?", to: "/learn/what-is-fttp" }, BROADBAND, CHECK],
     keywords: "leaving Virgin Media, cancel Virgin broadband, switch from Virgin to fibre, Virgin alternative",
@@ -334,7 +334,7 @@ export const learnPages: LearnPage[] = [
       { question: "Does OCCTA schedule broadband price rises?", answer: "Contract version 2026.10.1 does not schedule CPI-, RPI-, inflation-linked or percentage-based rises on residential broadband. Price Lock 24 locks the recurring broadband subscription for the minimum term subject to the accepted contract." },
     ],
     related: [{ label: "Flex 30 broadband", to: "/no-contract-broadband-uk" }, { label: "How to switch", to: "/learn/how-to-switch-broadband" }, BROADBAND, CHECK],
-    keywords: "broadband price rise, CPI + 3.9% broadband, mid-contract price rise, Ofcom price rise rules",
+    keywords: "broadband price rise, scheduled broadband price change, mid-contract price rise, Ofcom price rise rules",
   },
   /* ─── SIM & voice ─── */
   {

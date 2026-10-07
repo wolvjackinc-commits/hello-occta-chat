@@ -13,9 +13,10 @@ on:
       - 'supabase/functions/accept-contract-summary-authed/**'
       - 'supabase/functions/admin-issue-revised-cs/**'
       - 'supabase/functions/_shared/journey2Snapshot.ts'
-      - 'supabase/functions/_shared/icukAvailability.ts'
+      - 'supabase/functions/_shared/networkAvailability.ts'
       - 'supabase/functions/journey2-session/**'
       - 'supabase/functions/journey-cs-detail/**'
+      - 'supabase/functions/admin-record-network-validation/**'
       - 'supabase/functions/resolve-build-plan-price/**'
       - 'supabase/functions/create-quote/**'
       - 'supabase/functions/submit-build-plan/**'
@@ -76,6 +77,8 @@ jobs:
         run: supabase functions deploy journey2-prepare-contract --project-ref "$PROJECT_REF"
       - name: Deploy Journey contract detail
         run: supabase functions deploy journey-cs-detail --project-ref "$PROJECT_REF"
+      - name: Deploy admin network validation
+        run: supabase functions deploy admin-record-network-validation --project-ref "$PROJECT_REF"
       - name: Deploy primary contract acceptance
         run: supabase functions deploy accept-contract-summary --project-ref "$PROJECT_REF"
       - name: Deploy authenticated contract acceptance

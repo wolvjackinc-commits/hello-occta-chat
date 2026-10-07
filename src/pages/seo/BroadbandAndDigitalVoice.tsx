@@ -26,7 +26,7 @@ export default function BroadbandAndDigitalVoicePage() {
         {
           heading: "What you need",
           body: (
-            <p>An active OCCTA broadband line at your address, the router we provide, and a standard handset. We'll send any setup instructions during onboarding.</p>
+            <p>An active eligible OCCTA broadband line, compatible Digital Voice equipment (for example an approved router or ATA), and a compatible handset. The order journey confirms the required equipment and any charge before acceptance.</p>
           ),
         },
       ]}
@@ -35,8 +35,8 @@ export default function BroadbandAndDigitalVoicePage() {
         { question: "What about power cuts and 999?", answer: "Because Digital Voice runs over broadband, it depends on power and your internet connection. We discuss back-up options at sign-up for households where someone relies on the phone — see /vulnerable-customers." },
       ]}
       faqs={[
-        { question: "Can I keep my existing landline number?", answer: "Usually yes. We start the number port during onboarding once your broadband is live." },
-        { question: "Do I need a special phone handset?", answer: "Any standard corded or cordless DECT handset plugs into the router." },
+        { question: "Can I keep my existing landline number?", answer: "Number porting is available where the donating provider and number are eligible. The expected porting process and timing are confirmed for the order." },
+        { question: "Do I need a special phone handset?", answer: "Many standard corded or cordless handsets can work with compatible Digital Voice equipment, but compatibility depends on the handset and router/ATA. Check before relying on specialist or telecare equipment." },
         { question: "What if my broadband goes down?", answer: "The phone will be unavailable until broadband and power are restored. If anyone in your home depends on the line, please tell us at sign-up so we can discuss back-up options." },
       ]}
       relatedLinks={[

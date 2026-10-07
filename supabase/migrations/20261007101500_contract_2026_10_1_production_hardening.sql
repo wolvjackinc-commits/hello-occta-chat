@@ -417,7 +417,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 
 DROP TRIGGER IF EXISTS trg_consumer_vulnerability_review ON public.contract_acceptances;
 CREATE TRIGGER trg_consumer_vulnerability_review
@@ -431,7 +431,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, public
-AS $
+AS $$
 DECLARE
   cs public.contract_summaries%ROWTYPE;
   ca public.contract_acceptances%ROWTYPE;
@@ -504,7 +504,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$$;
 
 DROP TRIGGER IF EXISTS trg_order_live_requires_contract_evidence ON public.orders;
 CREATE TRIGGER trg_order_live_requires_contract_evidence
@@ -520,7 +520,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, public
-AS $
+AS $$
 DECLARE
   v_actor uuid := auth.uid();
 BEGIN
@@ -542,7 +542,7 @@ BEGIN
 
   RETURN jsonb_build_object('ok',true,'review_id',_review_id,'status',_status);
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.resolve_customer_vulnerability_review(uuid,text,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.resolve_customer_vulnerability_review(uuid,text,text) TO authenticated;
 

@@ -14,18 +14,18 @@ const reasons = [
   },
   {
     icon: Zap,
-    title: "WE HANDLE THE SWITCH",
-    description: "No calls. No stress. We move everything for you.",
+    title: "SWITCHING SUPPORT",
+    description: "Where One Touch Switch applies, the providers coordinate the switch and we confirm the expected date for your order.",
   },
   {
     icon: Phone,
     title: "UK-BASED SUPPORT",
-    description: "Real humans. No scripts.",
+    description: "UK-based customer support with account, ticket and complaint tracking.",
   },
   {
     icon: Users,
-    title: "SAME NETWORK AS BIG BRANDS",
-    description: "Powered by Openreach infrastructure.",
+    title: "ADDRESS-SPECIFIC NETWORK",
+    description: "The access network and technology available at your address are confirmed before acceptance.",
   },
   {
     icon: ThumbsUp,
@@ -35,10 +35,10 @@ const reasons = [
 ];
 
 const stats = [
-  { value: "5K+", label: "Happy Customers" },
-  { value: "98%", label: "Recommend Us" },
-  { value: "<30s", label: "Avg. Call Answer" },
-  { value: "0", label: "Robot Menus" },
+  { value: "24 mo", label: "Price Lock minimum term" },
+  { value: "30 d", label: "Flex 30 rolling period" },
+  { value: "14 d", label: "Consumer cooling-off period" },
+  { value: "UK", label: "Customer support team" },
 ];
 
 const WhyUsSection = () => {
@@ -112,7 +112,7 @@ const WhyUsSection = () => {
             Why Switch?
           </motion.div>
           <h2 className="text-display-md mb-4">
-            WHY PEOPLE ARE SWITCHING
+            WHY PEOPLE CONSIDER
             <br />
             <motion.span 
               className="text-gradient inline-block"
@@ -122,8 +122,8 @@ const WhyUsSection = () => {
             </motion.span>
           </h2>
           <p className="text-xl text-muted-foreground">
-            Affordable telecom with clear terms. Flex 30 and Price Lock 24 broadband options where eligible, with charges shown before acceptance. Simple plans,
-            transparent pricing, and freedom to leave anytime.
+            Affordable telecom with clear terms. Compare Flex 30 and Price Lock 24 where eligible, with customer-specific
+            price, speed information, setup and applicable charges shown before acceptance.
           </p>
         </motion.div>
 

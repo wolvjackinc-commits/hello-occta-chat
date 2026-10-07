@@ -367,8 +367,8 @@ AFTER INSERT ON public.contract_acceptances
 FOR EACH ROW EXECUTE FUNCTION public.commit_consumer_2026_10_1_acceptance();
 
 -- Structured vulnerability review: customer-entered support needs create a
--- review record and an operations task. The review record, not the note/task,
--- is the authoritative activation blocker.
+-- structured review record. The review row, not a note/task, is the
+-- authoritative activation blocker.
 CREATE OR REPLACE FUNCTION public.create_consumer_vulnerability_review()
 RETURNS trigger
 LANGUAGE plpgsql

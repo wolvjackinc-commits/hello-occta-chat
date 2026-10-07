@@ -1,8 +1,8 @@
 const PHASES: { key: string; label: string; steps: string[] }[] = [
   { key: "choose", label: "Choose", steps: ["address", "plan", "router", "extras"] },
-  { key: "setup", label: "Your details", steps: ["details", "start_date", "billing"] },
+  { key: "setup", label: "Your details", steps: ["details", "start_date"] },
   { key: "agreement", label: "Agreement", steps: ["contract"] },
-  { key: "review", label: "Review & order", steps: ["review", "complete"] },
+  { key: "finish", label: "Payment & finish", steps: ["billing", "review", "complete"] },
 ];
 
 // Internal Journey 2 and quote/order stages stay unchanged. Customer-facing
@@ -12,7 +12,7 @@ const STEP_ALIASES: Record<string, string> = {
   quote: "contract",
   agreement: "contract",
   contract_summary: "contract",
-  payment: "review",
+  payment: "billing",
   submit: "review",
   completed: "complete",
 };
@@ -47,10 +47,12 @@ export default function Journey2Progress({ current }: { current: string }) {
           : idx === 0
             ? "Choose your service and options."
             : idx === 1
-              ? "Add your details, preferred start date and Direct Debit."
+              ? "Add your details and preferred start date."
               : idx === 2
                 ? "Review your documents, verify your mobile and accept."
-                : "One quick final check, then submit your order."}
+                : canonical === "billing"
+                  ? "Set up Direct Debit after signing, then finish your order."
+                  : "One quick final check, then submit your order."}
       </p>
       <ol className="mt-3 hidden flex-wrap gap-x-3 gap-y-1 text-[11px] uppercase tracking-wider md:flex">
         {PHASES.map((phase, i) => (

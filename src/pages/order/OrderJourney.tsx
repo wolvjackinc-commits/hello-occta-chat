@@ -23,8 +23,9 @@ import BillingStep from "./steps/BillingStep";
 import AgreementStep from "@/pages/quote/journey/AgreementStep";
 import ReviewStep, { CompletedStep } from "@/pages/quote/journey/ReviewStep";
 
-const SELECTION_STEPS = ["address", "plan", "router", "extras", "details", "start_date", "billing"] as const;
-type SelectionStep = typeof SELECTION_STEPS[number];
+const PRE_CONTRACT_STEPS = ["address", "plan", "router", "extras", "details", "start_date"] as const;
+type PreContractStep = typeof PRE_CONTRACT_STEPS[number];
+type EditableStep = PreContractStep | "billing";
 const NETWORK_RETRY_DELAY_MS = 450;
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
@@ -47,18 +48,19 @@ export default function OrderJourney() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [backStep, setBackStep] = useState<SelectionStep | null>(null);
+  const [backStep, setBackStep] = useState<PreContractStep | null>(null);
   const submittedRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const appliedRef = useRef(false);
+  const applyingRef = useRef(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const editingRef = useRef(false);
 
   const activeStep = (backStep ?? session?.current_step ?? "address") as string;
-  const inSelection = (SELECTION_STEPS as readonly string[]).includes(activeStep);
+  const inSelection = (PRE_CONTRACT_STEPS as readonly string[]).includes(activeStep);
+  const postContractBilling = activeStep === "billing" && session?.status === "contract_accepted";
   const contractStep: string = journeyState?.journey?.current_step ?? "agreement";
-  const displayStep = inSelection ? activeStep : (journeyState ? contractStep : "contract");
+  const displayStep = postContractBilling ? "billing" : inSelection ? activeStep : (journeyState ? contractStep : "contract");
   const viewedRef = useRef("");
   useEffect(() => {
     if (loading || error || !session || !token) return;
@@ -151,8 +153,12 @@ export default function OrderJourney() {
           journey2.catalogue().then((r) => r?.catalogue ?? null).catch(() => null),
         ]);
         setCatalogue(cat);
-        if (s && !(SELECTION_STEPS as readonly string[]).includes(s.current_step)) {
-          await enterContractPhase(s);
+        if (s) {
+          const preContract = (PRE_CONTRACT_STEPS as readonly string[]).includes(s.current_step);
+          const billingAfterAcceptance = s.current_step === "billing" && s.status === "contract_accepted";
+          if (!preContract && !billingAfterAcceptance) {
+            await enterContractPhase(s);
+          }
         }
       } catch {
         setError("network_error");
@@ -198,20 +204,25 @@ export default function OrderJourney() {
   }, [quoteToken, loadQuoteJourney]);
 
   /**
-   * Journey 2 captured the start date and Direct Debit before the contract, so
-   * they are applied to the shared services the moment acceptance is recorded.
+   * Post-contract setup is deliberately two-phase: acceptance applies the
+   * preferred start date and opens Direct Debit; after bank details are saved,
+   * the same idempotent service creates the payment method and opens review.
    */
   const applyPostContract = useCallback(async () => {
-    if (!token || !quoteToken || appliedRef.current) return;
-    appliedRef.current = true;
+    if (!token || !quoteToken || applyingRef.current) return;
+    applyingRef.current = true;
     setApplyError(null);
-    const res = await journey2.applyPostContract(token, quoteToken).catch(() => null);
-    if (!res?.ok) {
-      appliedRef.current = false;
-      setApplyError(res?.message ?? "We couldn't finish setting up your billing just now. Please try again.");
+    try {
+      const res = await journey2.applyPostContract(token, quoteToken).catch(() => null);
+      if (!res?.ok) {
+        setApplyError(res?.message ?? "We couldn't move to the next step just now. Please try again.");
+        return;
+      }
+      await Promise.all([loadSession(), refreshQuoteJourney()]);
+    } finally {
+      applyingRef.current = false;
     }
-    await refreshQuoteJourney();
-  }, [token, quoteToken, refreshQuoteJourney]);
+  }, [token, quoteToken, refreshQuoteJourney, loadSession]);
 
   const onContractAccepted = useCallback(async () => {
     await applyPostContract();
@@ -220,13 +231,13 @@ export default function OrderJourney() {
   // A resumed session can already be accepted but not yet applied.
   useEffect(() => {
     const step = journeyState?.journey?.current_step;
-    if (!quoteToken || appliedRef.current) return;
+    if (!quoteToken || applyingRef.current || session?.current_step === "billing") return;
     if (journeyState?.journey?.contract_accepted_at && (step === "start_date" || step === "payment")) {
       void applyPostContract();
     }
-  }, [journeyState?.journey?.current_step, journeyState?.journey?.contract_accepted_at, quoteToken, applyPostContract]);
+  }, [journeyState?.journey?.current_step, journeyState?.journey?.contract_accepted_at, quoteToken, session?.current_step, applyPostContract]);
 
-  const save = async (step: SelectionStep, payload: Record<string, unknown>) => {
+  const save = async (step: EditableStep, payload: Record<string, unknown>) => {
     if (!token || saving) return;
     setSaving(true);
     try {
@@ -251,9 +262,12 @@ export default function OrderJourney() {
         quoteTokenStore.clear(res.session.id);
         setQuoteToken(null);
         setJourneyState(null);
-        appliedRef.current = false;
       }
-      if (!(SELECTION_STEPS as readonly string[]).includes(res.session.current_step)) {
+      if (step === "billing") {
+        // Bank details are collected only after signing. Apply them to the
+        // shared journey, then move directly to final review.
+        await applyPostContract();
+      } else if (!(PRE_CONTRACT_STEPS as readonly string[]).includes(res.session.current_step)) {
         await enterContractPhase(res.session);
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -269,7 +283,7 @@ export default function OrderJourney() {
    * Pre-signature editing. Only offered while the contract has not been accepted —
    * after signing, changes are admin-only.
    */
-  const startEdit = (step: SelectionStep) => {
+  const startEdit = (step: PreContractStep) => {
     editingRef.current = true;
     setBackStep(step);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -318,7 +332,7 @@ export default function OrderJourney() {
     <Layout>
       <SEO
         title="Complete your OCCTA order | OCCTA Limited"
-        description="Your secure OCCTA order — exact prices, clear contract terms and Direct Debit set up before your order is placed."
+        description="Your secure OCCTA order — review and accept clear contract terms, then set up Direct Debit before final submission."
         canonical="/order"
         noIndex
       />
@@ -356,9 +370,9 @@ export default function OrderJourney() {
               <StartDateStep session={session} saving={saving}
                 onSave={(p) => save("start_date", p)} onBack={() => setBackStep("details")} />
             )}
-            {inSelection && activeStep === "billing" && (
+            {postContractBilling && (
               <BillingStep session={session} saving={saving}
-                onSave={(p) => save("billing", p)} onBack={() => setBackStep("start_date")} />
+                onSave={(p) => save("billing", p)} />
             )}
             {inSelection && !catalogue && ["plan", "router", "extras"].includes(activeStep) && (
               <div className="border-4 border-foreground p-6">
@@ -397,12 +411,12 @@ export default function OrderJourney() {
                     dateOfBirth={session.customer_details?.date_of_birth ?? null}
                   />
                 )}
-                {(contractStep === "start_date" || contractStep === "payment") && (
+                {(contractStep === "start_date" || contractStep === "payment") && !postContractBilling && (
                   <div className="border-4 border-foreground p-6 text-center">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto mb-3" aria-hidden="true" />
-                    <p className="font-display uppercase text-lg mb-1">Applying your start date and Direct Debit</p>
+                    <p className="font-display uppercase text-lg mb-1">Saving your accepted agreement</p>
                     <p className="text-sm text-muted-foreground">
-                      You already gave us these — we're saving them against your agreement. Nothing is taken today.
+                      Your contract is signed. We're opening the secure Direct Debit step now.
                     </p>
                   </div>
                 )}

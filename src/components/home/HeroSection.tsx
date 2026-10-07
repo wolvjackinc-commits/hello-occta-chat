@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info, FileText } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -6,7 +7,7 @@ import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/AvailabilityContext";
-import { startAssignedJourney } from "@/lib/journey2/route";
+import { prewarmAssignedJourney } from "@/lib/journey2/route";
 import { setPreferredSpeedBucket } from "@/lib/journey2/prefill";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 
@@ -38,9 +39,19 @@ const HeroSection = () => {
 
   const getSpeedLabel = (speed: number) => speed >= 1000 ? "1Gbps" : `${speed}Mbps`;
 
+  useEffect(() => {
+    if (!hasResult || !selectedAddress) return;
+    // Start the secure order-session request while the customer is reading the
+    // plan cards, and preload the small /order entry chunk. The later button
+    // click can therefore change route immediately.
+    prewarmAssignedJourney();
+    void import("@/pages/order/OrderStart");
+  }, [hasResult, selectedAddress]);
+
   const handleChoosePlan = (planId: string) => {
     setPreferredSpeedBucket(planId);
-    startAssignedJourney((path) => navigate(path));
+    prewarmAssignedJourney();
+    navigate("/order");
   };
 
   const getHeroPlanCards = () => {

@@ -142,7 +142,7 @@ export const guides: Guide[] = [
     ],
     faqs: [
       { question: 'What does OCCTA broadband cost?', answer: 'OCCTA headline broadband pricing starts from £34.99 per month on Price Lock 24, with Flex 30 priced separately where offered. Public speed bands run up to 1000Mbps where available. We do not claim every address receives the headline speed or that OCCTA is always the cheapest provider.' },
-      { question: 'Are there any hidden fees?', answer: 'Not with OCCTA. The price advertised is the price you pay, including router and unlimited data.' },
+      { question: 'Are all charges shown before I order?', answer: 'The applicable monthly and one-off charges for the order are shown before acceptance. Router, setup and equipment treatment depends on the selected service.' },
       { question: 'Is cheap broadband reliable?', answer: 'Yes. Our network delivers the same fibre infrastructure used by larger providers. Speed and reliability are not compromised.' },
     ],
     ctaText: 'See Our Plans',
@@ -1051,13 +1051,13 @@ guides.push({
 
 guides.push({
   slug: 'broadband-for-renters',
-  title: 'Broadband for Renters: Flexible Internet Without Exit Fees',
+  title: 'Broadband for Renters: Flexible vs Fixed Terms',
   metaTitle: 'Broadband for Renters UK — No Minimum Term Options',
-  description: 'Renting and need broadband? Compare flexible monthly broadband with fixed-term plans, avoid exit fees when you move, and see what to check before you sign.',
+  description: 'Renting and need broadband? Compare Flex 30 with Price Lock 24, including notice, moving-home treatment, setup and termination-related charges before you sign.',
   keywords: 'broadband for renters, Flex 30 broadband uk, flexible broadband renters, broadband when renting, moving house broadband, broadband exit fees',
   category: 'broadband',
   categoryLabel: 'Broadband',
-  intro: 'If you rent, your tenancy rarely lines up with a 24-month broadband contract. This guide explains how renters can get broadband that moves when they do, what exit fees actually are, and when a fixed-term Price Lock plan still makes sense.',
+  intro: 'If you rent, your tenancy may not line up with a 24-month broadband minimum term. This guide explains Flex 30, Price Lock 24, moving-home treatment and the charges that can apply when a service ends or moves.' ,
   sections: [
     {
       heading: 'Why Renting Changes the Broadband Maths',

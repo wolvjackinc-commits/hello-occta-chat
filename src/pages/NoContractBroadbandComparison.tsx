@@ -18,7 +18,7 @@ const providers = [
 const faqs = [
   { question: "What counts as a no-contract broadband deal?", answer: "A rolling broadband deal has no long fixed minimum term. OCCTA Flex 30 is 30-day rolling with normal 30-day notice. There is no remaining-month ETF, but a separately valid network cease or migration charge may apply where lawful, incurred and disclosed." },
   { question: "Is no-contract broadband more expensive?", answer: "OCCTA Flex 30 starts at £37.99/mo and Price Lock 24 starts at £34.99/mo for the headline Essential band. Final pricing depends on address, selected service, setup and router choices. Flex 30 has no remaining-month ETF." },
-  { question: "Do I need a credit check for no-contract broadband?", answer: "Some providers (BT, Sky, NOW) run a hard credit check. OCCTA does not run a credit check on any broadband plan." },
+  { question: "Do I need a credit check for no-contract broadband?", answer: "Credit, identity or eligibility checks vary by provider and product. OCCTA will show any check that applies in the ordering process before you commit; do not rely on a blanket no-credit-check claim." },
   { question: "Will my price go up mid-contract?", answer: "Most big providers raise prices every April by CPI+3.9% or RPI+3.9%. OCCTA has no mid-contract price hikes — what you sign up for is what you pay." },
   { question: "Can I keep my phone number if I switch?", answer: "Yes. The One Touch Switch process (UK-wide) lets you keep your number and switches you with no downtime." },
 ];
@@ -28,7 +28,7 @@ const NoContractBroadbandComparison = () => {
   const breadcrumbSchema = createBreadcrumbSchema([
     { name: "Home", url: "/" },
     { name: "Compare", url: "/compare/no-contract-broadband" },
-    { name: "No-Contract Broadband", url: "/compare/no-contract-broadband" },
+    { name: "Flexible Broadband Terms", url: "/compare/no-contract-broadband" },
   ]);
 
   const combinedSchema = {
@@ -39,7 +39,7 @@ const NoContractBroadbandComparison = () => {
   return (
     <Layout>
       <SEO
-        title="Compare No-Contract Broadband UK 2026"
+        title="Compare Flexible Broadband Terms UK 2026"
         description="Compare rolling and fixed broadband terms. OCCTA Flex 30 has no fixed minimum term; Price Lock 24 has a 24-month minimum term. Check current provider terms before deciding."
         canonical="/compare/no-contract-broadband"
         keywords="Flex 30 broadband UK, rolling broadband, 30 day broadband, flexible broadband UK, Price Lock 24 comparison"
@@ -52,7 +52,7 @@ const NoContractBroadbandComparison = () => {
           <nav className="flex items-center gap-1 text-sm text-muted-foreground" aria-label="Breadcrumb">
             <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-foreground font-medium">Compare no-contract broadband</span>
+            <span className="text-foreground font-medium">Compare flexible broadband terms</span>
           </nav>
         </div>
       </div>
@@ -71,7 +71,7 @@ const NoContractBroadbandComparison = () => {
                 <span className="text-gradient">Compared (UK 2026)</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-2xl leading-relaxed">
-                The honest side-by-side: OCCTA vs Cuckoo, NOW, BT and Sky. Rolling terms, exit fees, mid-contract price rises and credit checks — laid out so you can pick the one that actually fits.
+                Compare OCCTA Flex 30 and Price Lock 24 with the current published terms of other providers. Provider prices, checks and price-change policies can change, so verify the live pre-contract information before deciding.
               </p>
               <PostcodeChecker />
             </motion.div>
@@ -81,7 +81,7 @@ const NoContractBroadbandComparison = () => {
 
       <section className="py-12 bg-background">
         <div className="container mx-auto px-4 max-w-5xl">
-          <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">UK no-contract broadband at a glance</h2>
+          <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">UK flexible broadband terms at a glance</h2>
           <div className="overflow-x-auto border-4 border-foreground/10">
             <table className="w-full text-sm">
               <thead className="bg-secondary">
@@ -141,7 +141,7 @@ const NoContractBroadbandComparison = () => {
               "BT and Sky bake CPI/RPI+3.9% into 12-24 month contracts — bills rise every April",
               "NOW Broadband runs a hard credit check that shows on your file",
               "Cuckoo's headline price is low, but their speeds and add-on pricing are less flexible than OCCTA's three-band range",
-              "Most 'no-contract' deals on price comparison sites still tie you in for 30 days notice",
+              "Rolling broadband still normally has a notice period; OCCTA Flex 30 normally uses 30 days’ notice",
             ].map((b) => (
               <li key={b} className="flex items-start gap-3">
                 <X className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />

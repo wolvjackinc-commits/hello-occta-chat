@@ -18,14 +18,14 @@ describe("consumer contract release pause", () => {
   it.each(["accept-contract-summary", "accept-service-aware-cs"])(
     "%s gates new acceptance after handling historical accepted records", (endpoint) => {
       const source = readFileSync(`supabase/functions/${endpoint}/index.ts`, "utf8");
-      const gate = source.indexOf("consumerContractReleaseBlock(cs.customer_type)");
+      const gate = source.indexOf("consumerContractReleaseBlockForDb(supabase, cs.customer_type)");
       expect(gate).toBeGreaterThan(source.indexOf('cs.status === "accepted"'));
       expect(gate).toBeLessThan(source.indexOf('.from("contract_acceptances").insert'));
     },
   );
   it("returns stored PDFs and refuses replacement evidence before new rendering", () => {
     const source = readFileSync("supabase/functions/generate-contract-summary-pdf/index.ts", "utf8");
-    const gate = source.indexOf("consumerContractReleaseBlock(cs.customer_type)");
+    const gate = source.indexOf("consumerContractReleaseBlockForDb(supabase, cs.customer_type)");
     expect(gate).toBeGreaterThan(source.indexOf("if (storageKey)"));
     expect(gate).toBeGreaterThan(source.indexOf("accepted_cs_missing_pdf"));
     expect(gate).toBeLessThan(source.indexOf("const bytes = renderPdf(cs)"));

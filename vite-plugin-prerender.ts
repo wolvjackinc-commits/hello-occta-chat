@@ -188,7 +188,7 @@ const routes: RouteSEO[] = [
     path: "/landline",
     title: "Digital Home Phone UK - Add to Broadband | OCCTA - Cheap UK Broadband & SIM",
     description:
-      "Add Digital Home Phone from £4.95/mo to your OCCTA broadband. Crystal clear digital voice, keep your number. Price Lock 24 or Flex 30 where offered.",
+      "Add Digital Voice / Home Phone to eligible OCCTA broadband. Current price, number-porting availability, equipment requirements and call charges are shown before acceptance.",
     canonical: "/landline",
     keywords:
       "digital home phone, digital voice UK, VoIP home phone, home phone broadband, cheap home phone UK, Flex 30 home phone, digital home phone UK",
@@ -520,7 +520,7 @@ const routes: RouteSEO[] = [
   ].map(({ slug, competitor }): RouteSEO => ({
     path: `/compare/${slug}`,
     title: `OCCTA vs ${competitor} — Honest Comparison | OCCTA - Cheap UK Broadband & SIM`,
-    description: `Compare OCCTA vs ${competitor} broadband. See how OCCTA offers cheaper prices, Price Lock 24 or Flex 30 where offered, and no mid-contract price rises.`,
+    description: `Compare OCCTA with ${competitor} using current published terms. OCCTA offers Price Lock 24 or Flex 30 where eligible; verify each provider’s live price, speed and price-change information before deciding.`,
     canonical: `/compare/${slug}`,
     keywords: `OCCTA vs ${competitor}, ${competitor} broadband alternative, cheaper than ${competitor}, ${competitor} broadband comparison`,
     jsonLd: [localBusinessSchema],

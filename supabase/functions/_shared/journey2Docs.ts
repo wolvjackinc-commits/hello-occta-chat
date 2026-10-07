@@ -127,7 +127,7 @@ export function buildJourney2DocumentPack(
   };
   const schedule = {
     preferred_start_date: s.schedule.preferred_start_date,
-    billing_day: s.schedule.billing_day,
+    billing_day: meta.direct_debit?.billing_day ?? s.schedule.billing_day,
     billing_commencement_rule: s.schedule.billing_commencement_rule,
     expected_first_collection_rule: s.schedule.expected_first_collection_rule,
   };

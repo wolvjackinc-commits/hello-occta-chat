@@ -21,10 +21,10 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!showInlineResult || !selectedAddress) return;
+    if (externalAddressSelect || status !== "success" || !result || !selectedAddress) return;
     prewarmAssignedJourney();
     void import("@/pages/order/OrderStart");
-  }, [showInlineResult, selectedAddress]);
+  }, [externalAddressSelect, status, result, selectedAddress]);
 
   // Navigate first so the click feels immediate. /order consumes the already
   // prewarmed assignment (or waits on the same in-flight request).

@@ -34,7 +34,7 @@ export const keywordPages: KeywordPage[] = [
     keywords: "cheap broadband near me, affordable broadband near me, broadband deals near me, internet near me cheap, best broadband near me, local broadband deals",
     heroTitle: "CHEAP BROADBAND",
     heroHighlight: "NEAR YOU",
-    heroSubtitle: "Fast fibre internet from \u00A334.99/mo. 30-day rolling options where eligible. No credit check.",
+    heroSubtitle: "Fast fibre internet from \u00A334.99/mo. 30-day rolling options where eligible. Eligibility requirements shown before order",
     sections: [
       {
         heading: "Find Cheap Broadband at Your Address",
@@ -44,15 +44,15 @@ export const keywordPages: KeywordPage[] = [
         ],
       },
       {
-        heading: "Why OCCTA Is the Cheapest Option",
+        heading: "How to Compare Total Broadband Cost",
         paragraphs: ["Here\u2019s why OCCTA consistently beats the big providers on price:"],
         bullets: [
           "30-day rolling options available where eligible",
           "No mid-contract price rises \u2014 your price is fixed",
           "Eligibility requirements are shown before order",
           "Setup from £0 where available. Bring your own router for £0, or choose a router at checkout",
-          "No hidden setup fees or delivery charges",
-          "Speeds up to 900Mbps on full fibre",
+          "Setup, activation, router and delivery charges shown before acceptance",
+          "Public speed bands up to 1000Mbps where available; address-specific speeds confirmed before acceptance",
         ],
       },
       {
@@ -76,12 +76,12 @@ export const keywordPages: KeywordPage[] = [
   },
   {
     slug: "broadband-no-credit-check",
-    metaTitle: "Broadband No Credit Check — Get Connected Today",
-    metaDescription: "Need broadband with no credit check? OCCTA offers fast fibre broadband from \u00A334.99/mo with no credit check, 30-day rolling options where eligible, and no surprise price rises.",
-    keywords: "broadband no credit check, internet no credit check, wifi no credit check, broadband without credit check UK, no credit check broadband deals",
+    metaTitle: "Broadband Eligibility & Flexible Options | OCCTA",
+    metaDescription: "Need broadband and want to understand eligibility? OCCTA shows current ordering requirements, address availability, Price Lock 24 or Flex 30 options, setup and final price before acceptance.",
+    keywords: "broadband eligibility requirements shown before order, internet eligibility requirements shown before order, wifi eligibility requirements shown before order, broadband without credit check UK, eligibility requirements shown before order",
     heroTitle: "BROADBAND",
-    heroHighlight: "NO CREDIT CHECK",
-    heroSubtitle: "Fast fibre internet. No credit check. 30-day rolling options where eligible. From \u00A334.99/mo.",
+    heroHighlight: "CLEAR ELIGIBILITY",
+    heroSubtitle: "Clear ordering requirements. Price Lock 24 or Flex 30 where eligible. Exact charges shown before acceptance.",
     sections: [
       {
         heading: "Why We Don\u2019t Run Credit Checks",
@@ -91,18 +91,18 @@ export const keywordPages: KeywordPage[] = [
         ],
       },
       {
-        heading: "Who Benefits from No Credit Check Broadband?",
+        heading: "Who May Value a Clear Eligibility Process?",
         paragraphs: ["Eligibility requirements are shown before order"],
         bullets: [
-          "People with a low or no credit score",
-          "Those who have recently moved to the UK",
-          "Young adults setting up their first home",
-          "Anyone who has experienced financial difficulties",
-          "People who simply value privacy",
+          "Customers who want eligibility requirements explained before ordering",
+          "Customers who have recently moved and want address/service eligibility confirmed",
+          "First-time broadband customers",
+          "Customers who want payment and contract requirements explained clearly",
+          "Customers who value clear pre-contract information",
         ],
       },
       {
-        heading: "Same Speeds, Same Network",
+        heading: "Address-Specific Network and Speed",
         paragraphs: [
           "Eligibility requirements are shown before order",
         ],
@@ -110,8 +110,8 @@ export const keywordPages: KeywordPage[] = [
     ],
     faqs: [
       { question: "Can I really get broadband without a credit check?", answer: "Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit." },
-      { question: "Will no credit check broadband affect my credit score?", answer: "Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit." },
-      { question: "Is no credit check broadband slower?", answer: "No. You get the same Openreach fibre speeds as any other provider \u2014 up to 900Mbps." },
+      { question: "Will eligibility requirements shown before order", answer: "Any identity, credit or eligibility checks depend on the selected service and current ordering process. The order journey explains what applies before you commit." },
+      { question: "Is eligibility requirements shown before order", answer: "Broadband speed depends on the exact address, access technology and supplier product. We confirm the address-specific estimate and contractual speed information before acceptance." },
       { question: "Do I need to pay a deposit?", answer: "Any deposit, upfront or setup charge depends on the selected service and order. Exact one-off charges are shown before acceptance." },
     ],
     ctaTitle: "Get Connected Today",
@@ -123,7 +123,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "broadband-for-students",
     metaTitle: "Student Broadband — Flexible-Term Internet for Students",
-    metaDescription: "Best broadband for students in the UK. Flex 30, no credit check, 30-day rolling options available where eligible. OCCTA student-friendly internet from \u00A334.99/mo.",
+    metaDescription: "Best broadband for students in the UK. Flex 30, eligibility requirements shown before order, 30-day rolling options available where eligible. OCCTA student-friendly internet from \u00A334.99/mo.",
     keywords: "student broadband, broadband for students UK, student internet deals, 30-day rolling options where eligible broadband students, cheap broadband students, university broadband",
     heroTitle: "BROADBAND FOR",
     heroHighlight: "STUDENTS",
@@ -141,8 +141,8 @@ export const keywordPages: KeywordPage[] = [
         paragraphs: ["OCCTA broadband is built for how students actually use the internet:"],
         bullets: [
           "Unlimited data for streaming, gaming, and video calls",
-          "Speeds up to 900Mbps for shared houses",
-          "Flex 30 \u2014 cancel when your lease ends",
+          "Public speed bands up to 1000Mbps where available; choose using the address-specific estimate",
+          "Flex 30 \u2014 30-day rolling with normal notice; moving-home terms still apply",
           "Eligibility requirements are shown before order",
           "Bring your own router for £0, or choose a router at checkout. Setup from £0 where available",
           "Split the bill easily \u2014 one simple monthly payment",
@@ -159,7 +159,7 @@ export const keywordPages: KeywordPage[] = [
       { question: "Can students get broadband without a credit check?", answer: "Yes. OCCTA doesn\u2019t run credit checks, making it ideal for students with no credit history." },
       { question: "Can I cancel my student broadband when I move out?", answer: "Yes. OCCTA offers Price Lock 24 and Flex 30 where eligible. The accepted agreement is the binding source of truth on term, notice and charges." },
       { question: "What speed do students need?", answer: "For a shared student house, we recommend at least 100Mbps. Our 300Mbps or 500Mbps plans are ideal for 4+ people." },
-      { question: "Is there a student discount?", answer: "OCCTA\u2019s prices are already the lowest available, starting from \u00A334.99/mo with no mid-contract price hikes." },
+      { question: "Is there a student discount?", answer: "OCCTA\u2019s prices are already the lowest available, starting from \u00A334.99/mo with no scheduled CPI-, RPI-, inflation-linked or percentage-based rise on Price Lock 24 under contract version 2026.10.1." },
     ],
     ctaTitle: "Get Student Broadband",
     ctaText: "Enter your student house postcode to check what\u2019s available.",
@@ -170,7 +170,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "best-broadband-deals-uk",
     metaTitle: "Best Broadband Deals UK 2026 — Compare & Save",
-    metaDescription: "Find the best broadband deals in the UK for 2026. Compare no-contract plans from \u00A334.99/mo. No hidden fees, no mid-contract price hikes, speeds up to 900Mbps.",
+    metaDescription: "Find the best broadband deals in the UK for 2026. Compare Flex 30 and Price Lock 24 options from \u00A334.99/mo. Clear charges before acceptance, no scheduled CPI-, RPI-, inflation-linked or percentage-based rise on Price Lock 24 under contract version 2026.10.1, speeds up to 1000Mbps where available.",
     keywords: "best broadband deals UK, best broadband deals 2026, cheapest broadband UK, broadband deals comparison, best internet deals, affordable broadband UK",
     heroTitle: "BEST BROADBAND",
     heroHighlight: "DEALS UK",
@@ -192,7 +192,7 @@ export const keywordPages: KeywordPage[] = [
           "No scheduled CPI-, RPI-, inflation-linked or percentage-based rise on Price Lock 24 under contract version 2026.10.1",
           "Eligibility requirements are shown before order",
           "Setup from £0 where available; router options and any charge are shown before acceptance",
-          "Speeds up to 900Mbps on the Openreach network",
+          "Public speed bands up to 1000Mbps where available; underlying network depends on the address",
           "UK-based customer support",
         ],
       },
@@ -218,7 +218,7 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "broadband-for-gaming",
     metaTitle: "Best Broadband for Gaming UK — Low Latency Internet",
-    metaDescription: "Find the best broadband for gaming in the UK. Low latency, fast speeds up to 900Mbps, 30-day rolling options where eligible. OCCTA gaming broadband from \u00A334.99/mo.",
+    metaDescription: "Find the best broadband for gaming in the UK. Low latency, public speed bands up to 1000Mbps where available, 30-day rolling options where eligible. OCCTA gaming broadband from \u00A334.99/mo.",
     keywords: "broadband for gaming, gaming broadband UK, best internet for gaming, low latency broadband, fast broadband gaming, gaming internet UK",
     heroTitle: "BROADBAND FOR",
     heroHighlight: "GAMING",
@@ -235,7 +235,7 @@ export const keywordPages: KeywordPage[] = [
         heading: "Why OCCTA Is Great for Gaming",
         paragraphs: ["OCCTA broadband gives gamers everything they need:"],
         bullets: [
-          "Speeds up to 900Mbps \u2014 fast enough for any game",
+          "Public speed bands up to 1000Mbps where available; gaming performance also depends on latency, Wi-Fi and the address-specific line",
           "Low latency on the Openreach fibre network",
           "Unlimited data \u2014 no throttling or fair usage caps",
           "Upgrade or switch speeds where eligible",
@@ -284,7 +284,7 @@ export const keywordPages: KeywordPage[] = [
           "Stable fibre connection for uninterrupted video calls",
           "Fast upload speeds for file sharing and cloud apps",
           "Unlimited data \u2014 no caps even during peak hours",
-          "Speeds up to 900Mbps for heavy workloads",
+          "Public speed bands up to 1000Mbps where available; address-specific speeds are confirmed before acceptance",
           "Flexible if your work situation changes",
           "Bring your own router for £0, or choose a router at checkout with strong whole-home Wi-Fi",
         ],
@@ -311,11 +311,11 @@ export const keywordPages: KeywordPage[] = [
   {
     slug: "broadband-no-upfront-cost",
     metaTitle: "Broadband With No Upfront Cost — £0 Setup Where Available",
-    metaDescription: "Broadband with no upfront cost. OCCTA full-fibre from \u00A334.99/mo, £0 setup where available, bring your own router for £0. No hidden activation fees.",
+    metaDescription: "Broadband with no upfront cost. OCCTA full-fibre from \u00A334.99/mo, £0 setup where available, bring your own router for £0. activation/setup charges shown before acceptance.",
     keywords: "broadband no upfront cost, broadband no setup fee, no upfront cost broadband, free setup broadband, broadband no activation fee, no upfront broadband uk",
     heroTitle: "BROADBAND WITH",
     heroHighlight: "NO UPFRONT COST",
-    heroSubtitle: "Full-fibre broadband from \u00A334.99/mo. \u00A30 setup where available. Bring your own router for \u00A30. No hidden activation fees.",
+    heroSubtitle: "Full-fibre broadband from \u00A334.99/mo. \u00A30 setup where available. Bring your own router for \u00A30. activation/setup charges shown before acceptance.",
     sections: [
       {
         heading: "What \u201CNo Upfront Cost\u201D Actually Means",

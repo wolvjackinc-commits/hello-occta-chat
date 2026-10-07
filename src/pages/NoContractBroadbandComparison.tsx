@@ -118,7 +118,7 @@ const NoContractBroadbandComparison = () => {
           <ul className="space-y-2">
             {[
               "Flex 30 is 30-day rolling where eligible — normal 30-day notice",
-              "No mid-contract price rises — ever",
+              "Contract v2026.10.1 has no scheduled CPI/RPI/inflation-linked broadband rise",
               "Eligibility requirements are shown before order",
               "No remaining-month ETF on Flex 30; separately valid network charges may apply",
               "Setup from £0 where available; exact setup is confirmed before acceptance",

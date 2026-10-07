@@ -23,7 +23,7 @@ const LocationBroadbandPage = () => {
   const prices = getFromPrices();
   const broadbandServiceSchema = createServiceSchema({
     name: `OCCTA Broadband in ${location.city}`,
-    description: `Fast, reliable fibre broadband in ${location.city} with speeds up to 900Mbps. Price Lock 24 or Flex 30 where eligible.`,
+    description: `OCCTA broadband in ${location.city} with public speed bands up to 1000Mbps where available. Price Lock 24 or Flex 30 may be offered; exact address-specific speed information, setup and charges are confirmed before acceptance.`,
     url: `/broadband-${location.slug}`,
     price: prices.broadband,
   });
@@ -76,7 +76,7 @@ const LocationBroadbandPage = () => {
         title={`Broadband in ${location.city} - Flex 30 & Price Lock Options`}
         description={location.metaDescription}
         canonical={`/broadband-${location.slug}`}
-        keywords={`cheap broadband ${location.city}, broadband ${location.city}, fibre broadband ${location.city}, no contract broadband ${location.city}, internet ${location.city}, ${location.region} broadband`}
+        keywords={`affordable broadband ${location.city}, broadband ${location.city}, fibre broadband ${location.city}, flexible broadband ${location.city}, internet ${location.city}, ${location.region} broadband`}
         type="article"
         price={prices.broadband}
       />

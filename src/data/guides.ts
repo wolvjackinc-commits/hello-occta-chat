@@ -805,12 +805,12 @@ export const guides: Guide[] = [
         heading: 'How OCCTA works without a hard credit check',
         paragraphs: [
           'OCCTA offers Flex 30 and Price Lock 24 where eligible. Any identity, credit or eligibility requirements are explained in the current order process before you commit.',
-          'You can start service by paying your first month and any setup fee by card up front. From there you choose how to pay each month — Direct Debit, card, or bank transfer. No hard credit search, no long-term commitment.',
+          'Payment method, any upfront amount and any identity, credit or eligibility requirement depend on the selected order and current process. These are shown before you commit.',
         ],
         bullets: [
-          'No 18 or 24-month contract — leave any time with 30 days notice',
+          'Flex 30 is 30-day rolling with no fixed minimum term where eligible; normal notice is 30 days',
           'Pay your first invoice by card to get connected quickly',
-          'Optional Direct Debit later, once you are happy',
+          'Available payment methods are confirmed for the selected order',
           'Flex 30 has no remaining-month ETF; Price Lock 24 may have an ETF during the minimum term; separately valid network charges may apply where lawful',
         ],
       },

@@ -1018,7 +1018,7 @@ guides.push({
       heading: 'How OCCTA Price Lock 24 protects you',
       paragraphs: [
         'OCCTA Price Lock 24 is exactly what it sounds like: the monthly price you sign up for is the price you pay for the full 24-month term. No CPI clause, no April uplift, no small-print inflation adjustment.',
-        'If you prefer no minimum term, Flex 30 gives you a 30-day rolling option (where eligible) — you can leave any month without an exit fee. Either way, we will not push a mid-contract price rise onto you.',
+        'If you prefer no fixed minimum term, Flex 30 gives you a 30-day rolling option where eligible. It has no remaining-month ETF, while separately valid network cease or migration charges may apply where lawful, actually incurred and disclosed. Contract version 2026.10.1 has no scheduled CPI-, RPI-, inflation-linked or percentage-based rise on residential broadband.',
       ],
     },
     {
@@ -1065,13 +1065,13 @@ guides.push({
 
 guides.push({
   slug: 'broadband-for-renters',
-  title: 'Broadband for Renters: Flexible Internet Without Exit Fees',
+  title: 'Broadband for Renters: Flex 30 vs Price Lock 24',
   metaTitle: 'Broadband for Renters UK — No Minimum Term Options',
-  description: 'Renting and need broadband? Compare flexible monthly broadband with fixed-term plans, avoid exit fees when you move, and see what to check before you sign.',
+  description: 'Renting and need broadband? Compare Flex 30 with Price Lock 24, understand moving-home, notice, setup and termination terms, and see what to check before you sign.',
   keywords: 'broadband for renters, Flex 30 broadband uk, flexible broadband renters, broadband when renting, moving house broadband, broadband exit fees',
   category: 'broadband',
   categoryLabel: 'Broadband',
-  intro: 'If you rent, your tenancy rarely lines up with a 24-month broadband contract. This guide explains how renters can get broadband that moves when they do, what exit fees actually are, and when a fixed-term Price Lock plan still makes sense.',
+  intro: 'If you rent, compare the flexibility of Flex 30 with the lower headline pricing of Price Lock 24. This guide explains moving-home treatment, notice, Early Termination Charges and separately valid network charges under the accepted terms.',
   sections: [
     {
       heading: 'Why Renting Changes the Broadband Maths',

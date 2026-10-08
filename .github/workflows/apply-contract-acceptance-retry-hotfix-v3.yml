@@ -1,0 +1,142 @@
+name: Apply Contract Acceptance Retry Hotfix V3
+
+on:
+  push:
+    branches:
+      - hotfix/contract-acceptance-retry-2026-10-08
+    paths:
+      - .github/workflows/apply-contract-acceptance-retry-hotfix-v3.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: hotfix/contract-acceptance-retry-2026-10-08
+
+      - name: Patch source
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path("supabase/functions/accept-contract-summary/index.ts")
+          s = p.read_text()
+          marker = "// Idempotency: already accepted — return existing acceptance + cert ref."
+          start = s.index(marker)
+          release = s.index("  const releaseBlock = await consumerContractReleaseBlockForDb", start)
+          block = s[start:release].rstrip()
+          s = s[:start] + s[release:]
+          anchor = '  if (!cs) return jsonResponse({ error: "not_found" }, 404);'
+          s = s.replace(anchor, anchor + "\n\n  // Retry safety: return existing immutable acceptance before OTP replay checks.\n  " + block, 1)
+          s = s.replace(
+            '.select("id, quote_id, contract_summary_id, contract_accepted_at, contract_acceptance_id, status, current_step")',
+            '.select("id, quote_id, contract_summary_id, contract_accepted_at, contract_acceptance_id, status, current_step, journey_version, checkout_session_id")',
+            1,
+          )
+          a = "    contract_information_pack_template_version: currentCip?.template_version ?? null,\n"
+          s = s.replace(a, a + "    journey_version: journey?.journey_version ?? null,\n    checkout_session_id: journey?.checkout_session_id ?? null,\n", 1)
+          p.write_text(s)
+
+          p = Path("src/pages/quote/journey/AgreementStep.tsx")
+          s = p.read_text()
+          a = '''      if (error || (data as any)?.error) {
+                toast({'''
+          b = '''      if (error || (data as any)?.error) {
+                const recovered = await loadDetail();
+                if (recovered?.accepted_at) {
+                  setAcceptedAt(recovered.accepted_at);
+                  setCertificate(
+                    recovered.certificate
+                      ? { number: recovered.certificate.number, signed_url: recovered.certificate.signed_url }
+                      : null,
+                  );
+                  toast({ title: "Contract accepted", description: "Next, set up your Direct Debit. Nothing is taken today." });
+                  onAccepted();
+                  return;
+                }
+                toast({'''
+          if a not in s:
+            raise SystemExit("AgreementStep anchor missing")
+          p.write_text(s.replace(a,b,1))
+
+          p = Path("supabase/functions/journey2-apply-postcontract/index.ts")
+          s = p.read_text()
+          s = s.replace(
+            '.select("id, quote_id, current_step, status, contract_accepted_at, preferred_start_date, payment_method, billing_anchor_day, earliest_selectable_start_date")',
+            '.select("id, quote_id, contract_summary_id, contract_acceptance_id, current_step, status, contract_accepted_at, preferred_start_date, payment_method, billing_anchor_day, earliest_selectable_start_date")',
+            1,
+          )
+          s, n = re.subn(
+            r'\n\s*await supabase\.from\("contract_acceptances"\)\n\s*\.update\(\{ journey_version: "v2", checkout_session_id: session\.checkout_session_id \}\)\n\s*\.eq\("quote_id", journey\.quote_id\)\n\s*\.is\("checkout_session_id", null\);\n',
+            "\n", s,
+          )
+          if n != 2:
+            raise SystemExit(f"acceptance update blocks found={n}")
+          s = s.replace(
+            '        current_step: "billing",\n        post_contract_applied_at:',
+            '        current_step: "billing",\n        contract_summary_id: journey.contract_summary_id,\n        contract_acceptance_id: journey.contract_acceptance_id,\n        post_contract_applied_at:',
+            1,
+          )
+          s = s.replace(
+            '      current_step: "review",\n      post_contract_applied_at:',
+            '      current_step: "review",\n      contract_summary_id: journey.contract_summary_id,\n      contract_acceptance_id: journey.contract_acceptance_id,\n      post_contract_applied_at:',
+            1,
+          )
+          p.write_text(s)
+
+          p = Path(".github/workflows/deploy-contract-v4-functions.yml")
+          s = p.read_text()
+          line = "      - 'supabase/functions/journey2-prepare-contract/**'\n"
+          if "supabase/functions/journey2-apply-postcontract/**" not in s:
+            if line not in s: raise SystemExit("deploy path line missing")
+            s = s.replace(line, line + "      - 'supabase/functions/journey2-apply-postcontract/**'\n", 1)
+          deploy_line = '        run: supabase functions deploy journey2-prepare-contract --project-ref "$PROJECT_REF"\n'
+          if "Deploy Journey 2 post-contract handoff" not in s:
+            if deploy_line not in s: raise SystemExit("deploy command line missing")
+            s = s.replace(
+              deploy_line,
+              deploy_line + '      - name: Deploy Journey 2 post-contract handoff\n        run: supabase functions deploy journey2-apply-postcontract --project-ref "$PROJECT_REF"\n',
+              1,
+            )
+          p.write_text(s)
+
+          t = Path("src/lib/legal/__tests__/contract-acceptance-retry.unit.test.ts")
+          t.write_text("""import { describe, expect, it } from "vitest";
+          import fs from "node:fs";
+          import path from "node:path";
+          const root = process.cwd();
+          const read = (p: string) => fs.readFileSync(path.join(root, p), "utf8");
+
+          describe("contract acceptance retry safety", () => {
+            it("checks accepted state before OTP replay validation", () => {
+              const src = read("supabase/functions/accept-contract-summary/index.ts");
+              expect(src.indexOf("Idempotency: already accepted")).toBeLessThan(src.indexOf("Independent server-side SMS OTP gate"));
+            });
+            it("recovers UI from a committed acceptance after a lost response", () => {
+              const src = read("src/pages/quote/journey/AgreementStep.tsx");
+              expect(src).toContain("const recovered = await loadDetail()");
+              expect(src).toContain("recovered?.accepted_at");
+            });
+            it("does not update append-only acceptance evidence post-contract", () => {
+              const src = read("supabase/functions/journey2-apply-postcontract/index.ts");
+              expect(src).not.toMatch(/from\\("contract_acceptances"\\)\\s*\\n\\s*\\.update/);
+              expect(src).toContain("contract_acceptance_id: journey.contract_acceptance_id");
+            });
+          });
+          """)
+          PY
+
+      - name: Commit hotfix
+        shell: bash
+        run: |
+          git config user.name "occta-hotfix-bot"
+          git config user.email "occta-hotfix@users.noreply.github.com"
+          git add             supabase/functions/accept-contract-summary/index.ts             supabase/functions/journey2-apply-postcontract/index.ts             src/pages/quote/journey/AgreementStep.tsx             src/lib/legal/__tests__/contract-acceptance-retry.unit.test.ts             .github/workflows/deploy-contract-v4-functions.yml
+          git commit -m "Fix contract acceptance retry and session handoff"
+          git push origin HEAD:hotfix/contract-acceptance-retry-2026-10-08

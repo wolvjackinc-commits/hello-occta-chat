@@ -537,6 +537,18 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
       current_step: "start_date",
     }).eq("id", journey.id);
 
+    // Customer-facing Journey 2 should move to Direct Debit immediately after
+    // acceptance. Start-date application and account/certificate housekeeping
+    // are operational work and must not hold the next screen open.
+    await supabase.from("customer_journey_sessions").update({
+      status: "contract_accepted",
+      current_step: "billing",
+      contract_summary_id: cs.id,
+      contract_acceptance_id: acceptanceId,
+      last_activity_at: acceptedAt,
+      last_error: null,
+    }).eq("quote_id", cs.quote_id).eq("test_session", false);
+
     // Phase 2 — automatically create/reuse the customer account so that the
     // accepted Contract Summary, journey, payment method and quote become
     // visible in Customer 360 immediately. No email is sent here; the
@@ -569,51 +581,62 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     actor_type: "anon",
   });
 
-  // Generate the immutable acceptance certificate immediately. Acceptance
-  // remains legally recorded even if storage/email infrastructure is transiently
-  // unavailable, but activation is database-blocked until the certificate exists.
+  // Generate the immutable acceptance certificate in the background. The
+  // acceptance itself is already committed atomically and activation remains
+  // database-blocked until the certificate exists, so PDF generation must not
+  // delay the customer's move to Direct Debit.
   let certificate_number: string | null = null;
-  let certificate_pending = false;
+  let certificate_pending = !!acceptanceId;
   if (acceptanceId) {
+    const certificateTask = (async () => {
+      let generatedNumber: string | null = null;
+      try {
+        const projectUrl = Deno.env.get("SUPABASE_URL")!;
+        const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const r = await fetch(`${projectUrl}/functions/v1/generate-acceptance-certificate`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${svcKey}`,
+            "Content-Type": "application/json",
+            "x-internal-service": "1",
+          },
+          body: JSON.stringify({ contract_acceptance_id: acceptanceId }),
+        });
+        if (r.ok) {
+          const j = await r.json().catch(() => null);
+          generatedNumber = j?.certificate_number ?? null;
+        }
+      } catch { /* activation guard remains authoritative */ }
+
+      if (!generatedNumber && cs.terms_version === "2026.10.1") {
+        try {
+          const title = `Acceptance certificate pending — ${cs.cs_number}`;
+          const { data: existingTask } = await supabase.from("admin_tasks")
+            .select("id").eq("title", title).in("status", ["open", "in_progress"]).limit(1).maybeSingle();
+          if (!existingTask) {
+            await supabase.from("admin_tasks").insert({
+              title,
+              description: "Contract acceptance is valid, but the immutable acceptance certificate has not yet been generated. Activation is blocked until the certificate exists.",
+              status: "open",
+              priority: "high",
+              related_customer_id: cs.customer_id,
+              related_account_number: cs.account_number,
+            });
+          }
+        } catch { /* non-fatal; activation guard is authoritative */ }
+      }
+    })();
+
     try {
-      const projectUrl = Deno.env.get("SUPABASE_URL")!;
-      const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const r = await fetch(`${projectUrl}/functions/v1/generate-acceptance-certificate`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${svcKey}`,
-          "Content-Type": "application/json",
-          "x-internal-service": "1",
-        },
-        body: JSON.stringify({ contract_acceptance_id: acceptanceId }),
-      });
-      if (r.ok) {
-        const j = await r.json();
-        certificate_number = j?.certificate_number ?? null;
+      // @ts-expect-error EdgeRuntime is provided by the Supabase Deno runtime.
+      if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+        // @ts-expect-error EdgeRuntime is provided by the Supabase Deno runtime.
+        EdgeRuntime.waitUntil(certificateTask);
       } else {
-        certificate_pending = true;
+        await certificateTask;
       }
     } catch {
-      certificate_pending = true;
-    }
-
-    if (!certificate_number && cs.terms_version === "2026.10.1") {
-      certificate_pending = true;
-      try {
-        const title = `Acceptance certificate pending — ${cs.cs_number}`;
-        const { data: existingTask } = await supabase.from("admin_tasks")
-          .select("id").eq("title", title).in("status", ["open", "in_progress"]).limit(1).maybeSingle();
-        if (!existingTask) {
-          await supabase.from("admin_tasks").insert({
-            title,
-            description: "Contract acceptance is valid, but the immutable acceptance certificate has not yet been generated. Activation is blocked until the certificate exists.",
-            status: "open",
-            priority: "high",
-            related_customer_id: cs.customer_id,
-            related_account_number: cs.account_number,
-          });
-        }
-      } catch { /* task creation is non-fatal; activation guard is authoritative */ }
+      await certificateTask.catch(() => {});
     }
   }
 
@@ -655,7 +678,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     contract_acceptance_id: acceptanceId,
     certificate_number,
     certificate_pending,
-    journey_advanced_to: journey ? "start_date" : null,
+    journey_advanced_to: journey ? "billing" : null,
     // Bespoke packs carry the customer straight into Direct Debit setup.
     dd_setup_path: typeof cs.pack_sections?.dd_setup_path === "string" ? cs.pack_sections.dd_setup_path : null,
   });

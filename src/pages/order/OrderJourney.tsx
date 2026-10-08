@@ -224,9 +224,21 @@ export default function OrderJourney() {
     }
   }, [token, quoteToken, refreshQuoteJourney, loadSession]);
 
-  const onContractAccepted = useCallback(async () => {
-    await applyPostContract();
-  }, [applyPostContract]);
+  const onContractAccepted = useCallback(() => {
+    // Acceptance response already advances the server-side Journey 2 session
+    // to billing. Mirror that state locally immediately so the DD screen renders
+    // without another blocking network round-trip.
+    setApplyError(null);
+    setSession((current) => current ? {
+      ...current,
+      status: "contract_accepted",
+      current_step: "billing",
+    } : current);
+    // Refresh quietly in the background to reconcile authoritative IDs/state.
+    void loadSession();
+    void refreshQuoteJourney();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [loadSession, refreshQuoteJourney]);
 
   // A resumed session can already be accepted but not yet applied.
   useEffect(() => {

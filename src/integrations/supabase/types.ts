@@ -14756,6 +14756,7 @@ export type Database = {
       payment_method_snapshot_enum:
         | "manual_invoice_card_worldpay"
         | "direct_debit_setup_request"
+        | "direct_debit_to_be_set_up_after_contract_acceptance"
       plan_preference_kind: "flex" | "contract_saver" | "not_sure"
       plan_type_kind: "flex" | "contract_saver"
       points_ledger_source:
@@ -15114,6 +15115,7 @@ export const Constants = {
       payment_method_snapshot_enum: [
         "manual_invoice_card_worldpay",
         "direct_debit_setup_request",
+        "direct_debit_to_be_set_up_after_contract_acceptance",
       ],
       plan_preference_kind: ["flex", "contract_saver", "not_sure"],
       plan_type_kind: ["flex", "contract_saver"],

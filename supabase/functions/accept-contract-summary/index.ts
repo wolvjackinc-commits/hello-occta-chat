@@ -585,8 +585,8 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   // acceptance itself is already committed atomically and activation remains
   // database-blocked until the certificate exists, so PDF generation must not
   // delay the customer's move to Direct Debit.
-  let certificate_number: string | null = null;
-  let certificate_pending = !!acceptanceId;
+  const certificate_number: string | null = null;
+  const certificate_pending = !!acceptanceId;
   if (acceptanceId) {
     const certificateTask = (async () => {
       let generatedNumber: string | null = null;

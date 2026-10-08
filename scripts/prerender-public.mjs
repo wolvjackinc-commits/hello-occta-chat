@@ -1,11 +1,15 @@
 /**
  * Renders every public sitemap URL to dist/<route>/index.html after `vite build`.
  * Uses the real browser so Supabase-backed articles are fetched before the HTML is saved.
+ *
+ * Lovable publishes with `npm run build` in a Node sandbox that does not include
+ * Chrome. Browser download is disabled so dependency install cannot fail there.
+ * When no browser can be launched this script keeps the Vite SPA output and exits
+ * 0. CI sets PRERENDER_REQUIRE_BROWSER=1 so a missing browser fails that job.
  */
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
-import puppeteer from "puppeteer";
 
 const DIST = path.resolve("dist");
 const HOST = "127.0.0.1";
@@ -248,23 +252,91 @@ async function pool(items, limit, worker) {
   return failures;
 }
 
-const server = await startServer();
-const paths = await collectPaths();
-console.log(`Prerendering ${paths.length} public routes`);
-const browser = await puppeteer.launch({
-  headless: true,
-  args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
-});
-try {
-  const failures = await pool(paths, 2, (pathname) => renderPath(browser, pathname));
-  await render404(browser);
-  fs.writeFileSync(path.join(DIST, "prerender-manifest.json"), JSON.stringify({ count: paths.length - failures.length, paths }, null, 2));
-  if (failures.length) {
-    console.error(failures.join("\n"));
-    throw new Error(`${failures.length} routes failed to prerender`);
+const BROWSER_CANDIDATES = [
+  process.env.PUPPETEER_EXECUTABLE_PATH,
+  process.env.CHROME_PATH,
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/google-chrome",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+  "/usr/local/bin/google-chrome",
+].filter((candidate) => typeof candidate === "string" && candidate.length > 0);
+
+function writeManifest(manifest) {
+  fs.writeFileSync(path.join(DIST, "prerender-manifest.json"), JSON.stringify(manifest, null, 2));
+}
+
+async function launchBrowser() {
+  let puppeteer;
+  try {
+    puppeteer = (await import("puppeteer")).default;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const reason = `puppeteer could not be loaded (${message.split("\n")[0]})`;
+    const skipped = new Error(reason);
+    skipped.code = "PRERENDER_SKIPPED";
+    throw skipped;
   }
-  console.log(`Prerendered ${paths.length} routes plus 404.html`);
+
+  const attempts = [null, ...BROWSER_CANDIDATES.filter((candidate) => fs.existsSync(candidate))];
+  const tried = new Set();
+  let lastError = "no Chrome or Chromium executable was found";
+  for (const executablePath of attempts) {
+    if (executablePath && tried.has(executablePath)) continue;
+    if (executablePath) tried.add(executablePath);
+    try {
+      return await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+        ...(executablePath ? { executablePath } : {}),
+      });
+    } catch (error) {
+      lastError = error instanceof Error ? error.message.split("\n")[0] : String(error);
+    }
+  }
+  const skipped = new Error(`Chromium could not be launched (${lastError})`);
+  skipped.code = "PRERENDER_SKIPPED";
+  throw skipped;
+}
+
+const server = await startServer();
+try {
+  let browser;
+  try {
+    browser = await launchBrowser();
+  } catch (error) {
+    if (error && error.code === "PRERENDER_SKIPPED") {
+      const reason = error instanceof Error ? error.message : String(error);
+      if (process.env.PRERENDER_REQUIRE_BROWSER === "1") {
+        console.error(`SEO prerender required but unavailable: ${reason}`);
+        process.exitCode = 1;
+      } else {
+        console.warn(`SEO prerender skipped: ${reason}`);
+        console.warn("Shipping the Vite SPA without browser-rendered HTML. The build will still succeed.");
+        writeManifest({ skipped: true, count: 0, reason, paths: [] });
+      }
+      browser = null;
+    } else {
+      throw error;
+    }
+  }
+
+  if (browser) {
+    try {
+      const paths = await collectPaths();
+      console.log(`Prerendering ${paths.length} public routes`);
+      const failures = await pool(paths, 2, (pathname) => renderPath(browser, pathname));
+      await render404(browser);
+      writeManifest({ skipped: false, count: paths.length - failures.length, paths });
+      if (failures.length) {
+        console.error(failures.join("\n"));
+        throw new Error(`${failures.length} routes failed to prerender`);
+      }
+      console.log(`Prerendered ${paths.length} routes plus 404.html`);
+    } finally {
+      await browser.close();
+    }
+  }
 } finally {
-  await browser.close();
   await new Promise((resolve) => server.close(resolve));
 }

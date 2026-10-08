@@ -59,6 +59,15 @@ async function pathsToCheck() {
   return paths;
 }
 
+const manifestPath = path.join(DIST, "prerender-manifest.json");
+if (fs.existsSync(manifestPath)) {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  if (manifest.skipped) {
+    console.warn(`SEO check skipped: ${manifest.reason || "browser prerender did not run"}`);
+    process.exit(0);
+  }
+}
+
 const paths = await pathsToCheck();
 const errors = [];
 const titles = new Map();

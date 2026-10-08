@@ -98,7 +98,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
   if (i.journey_mode) {
     const { data: j } = await supabase
       .from("order_journeys")
-      .select("id, quote_id, contract_summary_id, contract_accepted_at, contract_acceptance_id, status, current_step")
+      .select("id, quote_id, contract_summary_id, contract_accepted_at, contract_acceptance_id, status, current_step, journey_version, checkout_session_id")
       .eq("token_hash", hash)
       .neq("status", "cancelled")
       .maybeSingle();
@@ -118,6 +118,63 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     cs = data;
   }
   if (!cs) return jsonResponse({ error: "not_found" }, 404);
+
+  // Retry safety: return existing immutable acceptance before OTP replay checks.
+  // Idempotency: already accepted — return existing acceptance + cert ref.
+  if (cs.status === "accepted") {
+    const { data: existingAcc } = await supabase
+      .from("contract_acceptances")
+      .select("id")
+      .eq("contract_summary_id", cs.id)
+      .order("accepted_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    let certificate_number: string | null = null;
+    let certificate_pending = false;
+    if (existingAcc) {
+      const { data: cert } = await supabase
+        .from("acceptance_certificates")
+        .select("certificate_number")
+        .eq("contract_acceptance_id", existingAcc.id)
+        .maybeSingle();
+      certificate_number = cert?.certificate_number ?? null;
+
+      // Idempotent repair for a transient certificate-generation failure.
+      // This never changes accepted contract evidence; it creates the separate
+      // immutable certificate from the already-recorded acceptance.
+      if (!certificate_number && cs.terms_version === "2026.10.1") {
+        try {
+          const projectUrl = Deno.env.get("SUPABASE_URL")!;
+          const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const certRes = await fetch(`${projectUrl}/functions/v1/generate-acceptance-certificate`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${svcKey}`,
+              "Content-Type": "application/json",
+              "x-internal-service": "1",
+            },
+            body: JSON.stringify({ contract_acceptance_id: existingAcc.id }),
+          });
+          if (certRes.ok) {
+            const certJson = await certRes.json();
+            certificate_number = certJson?.certificate_number ?? null;
+          } else {
+            certificate_pending = true;
+          }
+        } catch {
+          certificate_pending = true;
+        }
+      }
+    }
+    return jsonResponse({
+      ok: true, already_accepted: true,
+      quote_id: cs.quote_id,
+      contract_summary_id: cs.id,
+      contract_acceptance_id: existingAcc?.id ?? null,
+      certificate_number,
+      certificate_pending,
+    });
+  }
 
   // Phase C journey-mode strict validation
   if (i.journey_mode) {
@@ -192,64 +249,7 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     }, 409);
   }
 
-  // Idempotency: already accepted — return existing acceptance + cert ref.
-  if (cs.status === "accepted") {
-    const { data: existingAcc } = await supabase
-      .from("contract_acceptances")
-      .select("id")
-      .eq("contract_summary_id", cs.id)
-      .order("accepted_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    let certificate_number: string | null = null;
-    let certificate_pending = false;
-    if (existingAcc) {
-      const { data: cert } = await supabase
-        .from("acceptance_certificates")
-        .select("certificate_number")
-        .eq("contract_acceptance_id", existingAcc.id)
-        .maybeSingle();
-      certificate_number = cert?.certificate_number ?? null;
-
-      // Idempotent repair for a transient certificate-generation failure.
-      // This never changes accepted contract evidence; it creates the separate
-      // immutable certificate from the already-recorded acceptance.
-      if (!certificate_number && cs.terms_version === "2026.10.1") {
-        try {
-          const projectUrl = Deno.env.get("SUPABASE_URL")!;
-          const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-          const certRes = await fetch(`${projectUrl}/functions/v1/generate-acceptance-certificate`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${svcKey}`,
-              "Content-Type": "application/json",
-              "x-internal-service": "1",
-            },
-            body: JSON.stringify({ contract_acceptance_id: existingAcc.id }),
-          });
-          if (certRes.ok) {
-            const certJson = await certRes.json();
-            certificate_number = certJson?.certificate_number ?? null;
-          } else {
-            certificate_pending = true;
-          }
-        } catch {
-          certificate_pending = true;
-        }
-      }
-    }
-    return jsonResponse({
-      ok: true, already_accepted: true,
-      quote_id: cs.quote_id,
-      contract_summary_id: cs.id,
-      contract_acceptance_id: existingAcc?.id ?? null,
-      certificate_number,
-      certificate_pending,
-    });
-  }
-
-
-  const releaseBlock = await consumerContractReleaseBlockForDb(supabase, cs.customer_type);
+    const releaseBlock = await consumerContractReleaseBlockForDb(supabase, cs.customer_type);
   if (releaseBlock) return jsonResponse(releaseBlock, 409);
 
   if (cs.customer_type !== "business" && cs.terms_version === "2026.10.1" && !i.journey_mode) {
@@ -392,6 +392,8 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     contract_information_pack_body_sha256: currentCip?.body_snapshot_sha256 ?? null,
     contract_summary_template_version: cs.terms_version,
     contract_information_pack_template_version: currentCip?.template_version ?? null,
+    journey_version: journey?.journey_version ?? null,
+    checkout_session_id: journey?.checkout_session_id ?? null,
     otp_challenge_id: otpChallengeRowId,
     otp_verified_at: otpChallengeVerifiedAt,
     early_start_requested: false,

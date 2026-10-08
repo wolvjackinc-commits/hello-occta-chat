@@ -24,6 +24,7 @@ on:
       - 'supabase/functions/generate-contract-information-pack/**'
       - 'supabase/functions/journey-generate-cs/**'
       - 'supabase/functions/journey2-prepare-contract/**'
+      - 'supabase/functions/journey2-apply-postcontract/**'
       - 'supabase/functions/accept-contract-summary/**'
       - 'supabase/functions/accept-service-aware-cs/**'
       - 'supabase/functions/generate-acceptance-certificate/**'
@@ -74,6 +75,8 @@ jobs:
         run: supabase functions deploy journey2-session --project-ref "$PROJECT_REF"
       - name: Deploy Journey 2 contract preparation
         run: supabase functions deploy journey2-prepare-contract --project-ref "$PROJECT_REF"
+      - name: Deploy Journey 2 post-contract handoff
+        run: supabase functions deploy journey2-apply-postcontract --project-ref "$PROJECT_REF"
       - name: Deploy Journey contract detail
         run: supabase functions deploy journey-cs-detail --project-ref "$PROJECT_REF"
       - name: Deploy primary contract acceptance

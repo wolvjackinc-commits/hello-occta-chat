@@ -230,6 +230,14 @@ export default function AgreementStep({
         },
       });
       if (error || (data as any)?.error) {
+        const recovered = await loadDetail();
+        if (recovered?.accepted_at) {
+          setAcceptedAt(recovered.accepted_at);
+          setCertificate(recovered.certificate ? { number: recovered.certificate.number, signed_url: recovered.certificate.signed_url } : null);
+          toast({ title: "Contract accepted", description: "Next, set up your Direct Debit. Nothing is taken today." });
+          onAccepted();
+          return;
+        }
         toast({
           title: "We couldn't record your acceptance",
           description: (data as any)?.message || (data as any)?.error || error?.message || "Please try again.",

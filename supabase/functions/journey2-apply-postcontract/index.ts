@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
   const { data: journey } = await supabase
     .from("order_journeys")
-    .select("id, quote_id, current_step, status, contract_accepted_at, preferred_start_date, payment_method, billing_anchor_day, earliest_selectable_start_date")
+    .select("id, quote_id, contract_summary_id, contract_acceptance_id, current_step, status, contract_accepted_at, preferred_start_date, payment_method, billing_anchor_day, earliest_selectable_start_date")
     .eq("token_hash", quoteHash)
     .maybeSingle();
   if (!journey) return jsonResponse({ error: "no_journey" }, 404);
@@ -179,25 +179,18 @@ Deno.serve(async (req) => {
       .update({
         status: "contract_accepted",
         current_step: "billing",
+        contract_summary_id: journey.contract_summary_id,
+        contract_acceptance_id: journey.contract_acceptance_id,
         post_contract_applied_at: new Date().toISOString(),
         last_error: null,
         last_activity_at: new Date().toISOString(),
       })
       .eq("id", session.id);
 
-    await supabase.from("contract_acceptances")
-      .update({ journey_version: "v2", checkout_session_id: session.checkout_session_id })
-      .eq("quote_id", journey.quote_id)
-      .is("checkout_session_id", null);
-
     return jsonResponse({ ok: true, applied: true, next_step: "billing" });
   }
 
   // Traceability on the acceptance record.
-  await supabase.from("contract_acceptances")
-    .update({ journey_version: "v2", checkout_session_id: session.checkout_session_id })
-    .eq("quote_id", journey.quote_id)
-    .is("checkout_session_id", null);
 
   if (failures.length > 0) {
     // The session is preserved and retryable — never converted into a quote.
@@ -232,6 +225,8 @@ Deno.serve(async (req) => {
     .update({
       status: "contract_accepted",
       current_step: "review",
+      contract_summary_id: journey.contract_summary_id,
+      contract_acceptance_id: journey.contract_acceptance_id,
       post_contract_applied_at: new Date().toISOString(),
       last_error: null,
       last_activity_at: new Date().toISOString(),

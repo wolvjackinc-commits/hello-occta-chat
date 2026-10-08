@@ -178,14 +178,22 @@ export default function OrderJourney() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await journey2.submit(token);
-      if (res?.ok) {
+      // ReviewStep already creates the canonical order through journey-submit-order.
+      // At this point we only mirror that completed journey back to Journey 2.
+      // Calling journey2-submit here would attempt a second order-commit path and
+      // can show a false failure after the order has already been created.
+      const res = await journey2.finalise(token);
+      if (res?.ok && res.submitted) {
         if (session) void trackConversion(session, token, "complete", "submitted");
         navigate(`/order/${token}/complete`, { replace: true });
         return;
       }
       submittedRef.current = false;
-      setSubmitError(res?.message ?? "We couldn't complete your order just now. Nothing has been charged — please try again.");
+      setSubmitError(
+        res?.error
+          ? `We couldn't open your confirmation yet (${res.error}). Your submitted order is safe — please try again.`
+          : "We couldn't open your confirmation yet. Your submitted order is safe — please try again.",
+      );
     } catch {
       submittedRef.current = false;
       setSubmitError("We couldn't reach our ordering service. Nothing has been charged — please try again.");

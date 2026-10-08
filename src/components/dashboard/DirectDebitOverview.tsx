@@ -134,7 +134,7 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
           Something changed with your bank? Update your details or talk to us — most fixes take under 5 minutes.
         </p>
         <div className="flex flex-wrap gap-2">
-          <Link to="/dd-setup">
+          <Link to="/dd/setup">
             <Button variant="hero" size="sm">
               <RefreshCw className="w-4 h-4 mr-1" /> Update payment details
             </Button>
@@ -281,7 +281,7 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
                         <Button size="sm" variant="hero">Retry now</Button>
                       </Link>
                     )}
-                    <Link to="/dd-setup">
+                    <Link to="/dd/setup">
                       <Button size="sm" variant="outline" className="border-2 border-foreground">
                         Update details
                       </Button>
@@ -358,7 +358,7 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
                       <Button size="sm" variant="hero">Retry payment</Button>
                     </Link>
                   )}
-                  <Link to="/dd-setup">
+                  <Link to="/dd/setup">
                     <Button size="sm" variant="outline" className="border-2 border-foreground">
                       <RefreshCw className="w-4 h-4 mr-1" /> Update details
                     </Button>
@@ -432,7 +432,7 @@ export function DirectDebitOverview({ userId }: { userId: string }) {
                     </Link>
                   )}
                   {failedStatus && (
-                    <Link to="/dd-setup" onClick={() => setDetail(null)}>
+                    <Link to="/dd/setup" onClick={() => setDetail(null)}>
                       <Button size="sm" variant="outline" className="border-2 border-foreground">
                         <RefreshCw className="w-3.5 h-3.5 mr-1" /> Update details
                       </Button>

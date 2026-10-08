@@ -18,6 +18,7 @@ import { logError } from "@/lib/logger";
 import { Loader2 } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
+import { SEO } from "@/components/seo";
 
 const salesSchema = z.object({
   businessName: z.string().min(2, "Business name is required").max(120, "Business name too long"),
@@ -199,6 +200,11 @@ const BusinessSales = () => {
 
   return (
     <LayoutComponent>
+      <SEO
+        title="Talk to the OCCTA business team"
+        description="Tell OCCTA what your business needs and we will build a bundle. Prices, service levels and contract terms are confirmed in a written quote before you order."
+        canonical="/business-sales"
+      />
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-center">

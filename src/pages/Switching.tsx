@@ -13,7 +13,7 @@ export default function SwitchingPage() {
   return (
     <Layout>
       <SEO
-        title="Switching to OCCTA"
+        title="Switching your broadband to OCCTA"
         description="How OCCTA handles your broadband switch using One Touch Switch. Your current provider, dates, fees and any downtime risks are confirmed in your Contract Summary before you pay."
         canonical="/switching"
       />

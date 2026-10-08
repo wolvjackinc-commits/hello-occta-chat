@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
+import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -115,6 +116,7 @@ export default function OrderLookup() {
 
   return (
     <Layout>
+      <SEO title="Track an OCCTA order" description="Look up an OCCTA order with the order number and the email address used at checkout." canonical="/track-order" noIndex />
       <div className="min-h-screen bg-background py-12">
         <div className="container mx-auto px-4">
           <motion.div

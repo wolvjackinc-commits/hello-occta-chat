@@ -119,6 +119,12 @@ jobs:
       - name: SWITCH50 PostgreSQL lifecycle tests
         run: npm run test:switch50-db
 
+      - name: Install browser libraries used by the HTML prerender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libgtk-3-0 libxshmfence1
+          sudo apt-get install -y libasound2t64 || sudo apt-get install -y libasound2
+
       - name: Production build
         run: npm run build
 

@@ -10,7 +10,7 @@ import { seoArticles } from "./src/data/seoArticles";
 import { seoGrowthArticles } from "./src/data/seoGrowthArticles";
 
 const BASE_URL = "https://www.occta.co.uk";
-const OG_IMAGE = `${BASE_URL}/og-image.png`;
+const OG_IMAGE = `${BASE_URL}/og-image.jpg`;
 const authorityArticles = [...seoArticles, ...seoGrowthArticles];
 
 type AuthorityArticle = (typeof authorityArticles)[number];

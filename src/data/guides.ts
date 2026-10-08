@@ -45,7 +45,7 @@ export const guides: Guide[] = [
   {
     slug: 'no-contract-broadband-uk',
     title: 'Flex 30 Broadband UK: 30-Day Rolling, No Fixed Minimum Term',
-    metaTitle: 'Flex 30 Broadband UK: 30-Day Rolling, No Fixed Minimum Term',
+    metaTitle: 'How Flex 30 broadband works',
     description: 'Learn how OCCTA Flex 30 works: a 30-day rolling broadband option with no fixed minimum term where available. Exact address-specific price, speed, setup and any applicable network charge are shown before acceptance.',
     keywords: 'Flex 30 broadband UK, rolling monthly broadband UK, flexible broadband, Price Lock 24, broadband eligibility',
     category: 'broadband',

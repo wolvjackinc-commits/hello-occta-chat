@@ -1,6 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { companyConfig } from '@/lib/companyConfig';
 import { getFromPrices } from '@/lib/pricing/engine';
+import { breadcrumbLabel } from '@/lib/seo/breadcrumbLabel';
 
 const BASE_URL = companyConfig.website.url;
 
@@ -13,7 +14,7 @@ export const organizationSchema = {
   alternateName: companyConfig.tradingName,
   url: `${BASE_URL}/`,
   logo: `${BASE_URL}/pwa-512x512.png`,
-  image: `${BASE_URL}/og-image.png`,
+  image: `${BASE_URL}/og-image.jpg`,
   description: `UK fibre broadband, 5G SIM plans, and digital home phone services. Price Lock 24 or Flex 30 where eligible. Affordable internet from £${getFromPrices().broadband}/month with clear terms.`,
   ...(companyConfig.foundingYear ? { foundingDate: String(companyConfig.foundingYear) } : {}),
   address: {
@@ -80,11 +81,6 @@ const websiteSchema = {
       '@type': 'ImageObject',
       url: `${BASE_URL}/pwa-512x512.png`,
     },
-  },
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: `${BASE_URL}/broadband?search={search_term_string}`,
-    'query-input': 'required name=search_term_string',
   },
 };
 
@@ -249,7 +245,7 @@ export const createBreadcrumbSchema = (
   itemListElement: items.map((item, index) => ({
     '@type': 'ListItem',
     position: index + 1,
-    name: item.name,
+    name: breadcrumbLabel(item.name),
     item: `${BASE_URL}${item.url}`,
   })),
 });

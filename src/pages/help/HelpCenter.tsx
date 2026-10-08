@@ -27,7 +27,7 @@ const HelpCenter = () => {
   return (
     <Layout>
       <SEO
-        title="Help Centre — OCCTA"
+        title="OCCTA Help Centre for broadband and SIM"
         description="Self-service guides for OCCTA customers. Getting started, billing, Wi-Fi fixes, Digital Voice, moving home and more. No queues, no jargon."
         canonical="/help"
         keywords="occta help, broadband help uk, self service broadband, occta support"

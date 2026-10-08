@@ -3,7 +3,7 @@ import LegalPage from "./LegalPage";
 export default function NetworkManagement() {
   return (
     <LegalPage
-      title="Traffic Management &amp; Network Policy"
+      title="Traffic management and network policy"
       description="OCCTA's approach to traffic management, net neutrality and the wholesale networks we use to deliver broadband and voice services."
       canonical="/legal/network-management"
       lastUpdated="June 2026"

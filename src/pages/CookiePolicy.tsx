@@ -107,7 +107,7 @@ const CookiePolicy = () => {
   return (
     <Layout>
       <SEO 
-        title="Cookie Policy"
+        title="OCCTA cookie policy and choices"
         description="OCCTA Cookie Policy. How we use cookies on our website. Compliant with UK GDPR and PECR regulations."
         canonical="/cookies"
       />

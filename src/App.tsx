@@ -10,6 +10,7 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { StructuredData } from "@/components/seo";
 import { CookieConsent } from "@/components/legal/CookieConsent";
 import PrivateRouteNoIndex from "@/components/seo/PrivateRouteNoIndex";
+import CanonicalPath from "@/components/seo/CanonicalPath";
 import { captureReferralFromUrl } from "@/lib/referral";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import Index from "./pages/Index";
@@ -65,7 +66,6 @@ import CookiePolicy from "./pages/CookiePolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 import ServiceStatus from "./pages/ServiceStatus";
-import Business from "./pages/Business";
 import BusinessOffers from "./pages/BusinessOffers";
 import BusinessCheckout from "./pages/BusinessCheckout";
 import BusinessSales from "./pages/BusinessSales";
@@ -93,7 +93,6 @@ const SimOnlyPlansSeo = lazy(() => import("./pages/seo/SimOnlyPlans"));
 const SwitchBroadbandSeo = lazy(() => import("./pages/seo/SwitchBroadband"));
 const Switch50OfferSeo = lazy(() => import("./pages/seo/Switch50Offer"));
 const LandlinePlansSeo = lazy(() => import("./pages/seo/LandlinePlans"));
-import LocationBroadband from "./pages/LocationBroadband";
 import ComparisonPage from "./pages/ComparisonPage";
 import NoContractBroadbandComparison from "./pages/NoContractBroadbandComparison";
 import RollingVsFixedBroadbandComparison from "./pages/RollingVsFixedBroadbandComparison";
@@ -177,9 +176,15 @@ import PriceTransparency from "./pages/legal/PriceTransparency";
 import SwitchingPolicy from "./pages/legal/SwitchingPolicy";
 import NetworkManagement from "./pages/legal/NetworkManagement";
 
+const LocationBroadband = lazy(() => import("./pages/LocationBroadband"));
 const queryClient = new QueryClient();
 
 const AdminRouteFallback = () => <OcctaLoader context="admin" variant="page" showTips={false} />;
+const CityPage = () => (
+  <Suspense fallback={<div className="container mx-auto px-4 py-16 text-muted-foreground">Opening this city page…</div>}>
+    <LocationBroadband />
+  </Suspense>
+);
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -208,6 +213,7 @@ const AnimatedRoutes = () => {
   return (
     <>
       <ScrollToTop />
+      <CanonicalPath />
       <PrivateRouteNoIndex />
       <Routes location={location}>
         <Route path="/" element={<Index />} />
@@ -314,7 +320,7 @@ const AnimatedRoutes = () => {
         <Route path="/about" element={<About />} />
         <Route path="/install" element={<Install />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
         <Route path="/cookies" element={<CookiePolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/status" element={<ServiceStatus />} />
@@ -332,7 +338,7 @@ const AnimatedRoutes = () => {
         <Route path="/business/quote" element={<Suspense fallback={<AdminRouteFallback />}><BusinessQuotePage /></Suspense>} />
         <Route path="/business/contacts" element={<Suspense fallback={<AdminRouteFallback />}><BusinessContactsPage /></Suspense>} />
         <Route path="/business/notifications" element={<Suspense fallback={<AdminRouteFallback />}><BusinessNotificationPreferencesPage /></Suspense>} />
-        <Route path="/business-legacy" element={<Business />} />
+        <Route path="/business-legacy" element={<Navigate to="/business" replace />} />
         <Route path="/business-offers" element={<BusinessOffers />} />
         <Route path="/business-checkout" element={<BusinessCheckout />} />
         <Route path="/business-sales" element={<BusinessSales />} />
@@ -357,56 +363,56 @@ const AnimatedRoutes = () => {
         <Route path="/learn/:slug" element={<Suspense fallback={null}><LearnPage /></Suspense>} />
 
         {/* Location broadband pages (50 cities) — explicit routes keep the sitemap and SEO scans in sync. */}
-        <Route path="/broadband-london" element={<LocationBroadband />} />
-        <Route path="/broadband-manchester" element={<LocationBroadband />} />
-        <Route path="/broadband-birmingham" element={<LocationBroadband />} />
-        <Route path="/broadband-leeds" element={<LocationBroadband />} />
-        <Route path="/broadband-glasgow" element={<LocationBroadband />} />
-        <Route path="/broadband-liverpool" element={<LocationBroadband />} />
-        <Route path="/broadband-sheffield" element={<LocationBroadband />} />
-        <Route path="/broadband-bristol" element={<LocationBroadband />} />
-        <Route path="/broadband-leicester" element={<LocationBroadband />} />
-        <Route path="/broadband-nottingham" element={<LocationBroadband />} />
-        <Route path="/broadband-edinburgh" element={<LocationBroadband />} />
-        <Route path="/broadband-cardiff" element={<LocationBroadband />} />
-        <Route path="/broadband-newcastle" element={<LocationBroadband />} />
-        <Route path="/broadband-southampton" element={<LocationBroadband />} />
-        <Route path="/broadband-coventry" element={<LocationBroadband />} />
-        <Route path="/broadband-brighton" element={<LocationBroadband />} />
-        <Route path="/broadband-plymouth" element={<LocationBroadband />} />
-        <Route path="/broadband-stoke-on-trent" element={<LocationBroadband />} />
-        <Route path="/broadband-wolverhampton" element={<LocationBroadband />} />
-        <Route path="/broadband-derby" element={<LocationBroadband />} />
-        <Route path="/broadband-swansea" element={<LocationBroadband />} />
-        <Route path="/broadband-aberdeen" element={<LocationBroadband />} />
-        <Route path="/broadband-reading" element={<LocationBroadband />} />
-        <Route path="/broadband-sunderland" element={<LocationBroadband />} />
-        <Route path="/broadband-norwich" element={<LocationBroadband />} />
-        <Route path="/broadband-luton" element={<LocationBroadband />} />
-        <Route path="/broadband-preston" element={<LocationBroadband />} />
-        <Route path="/broadband-milton-keynes" element={<LocationBroadband />} />
-        <Route path="/broadband-northampton" element={<LocationBroadband />} />
-        <Route path="/broadband-dundee" element={<LocationBroadband />} />
-        <Route path="/broadband-york" element={<LocationBroadband />} />
-        <Route path="/broadband-portsmouth" element={<LocationBroadband />} />
-        <Route path="/broadband-exeter" element={<LocationBroadband />} />
-        <Route path="/broadband-cambridge" element={<LocationBroadband />} />
-        <Route path="/broadband-oxford" element={<LocationBroadband />} />
-        <Route path="/broadband-bath" element={<LocationBroadband />} />
-        <Route path="/broadband-bournemouth" element={<LocationBroadband />} />
-        <Route path="/broadband-middlesbrough" element={<LocationBroadband />} />
-        <Route path="/broadband-bolton" element={<LocationBroadband />} />
-        <Route path="/broadband-blackpool" element={<LocationBroadband />} />
-        <Route path="/broadband-ipswich" element={<LocationBroadband />} />
-        <Route path="/broadband-peterborough" element={<LocationBroadband />} />
-        <Route path="/broadband-huddersfield" element={<LocationBroadband />} />
-        <Route path="/broadband-wakefield" element={<LocationBroadband />} />
-        <Route path="/broadband-hull" element={<LocationBroadband />} />
-        <Route path="/broadband-warrington" element={<LocationBroadband />} />
-        <Route path="/broadband-doncaster" element={<LocationBroadband />} />
-        <Route path="/broadband-stockport" element={<LocationBroadband />} />
-        <Route path="/broadband-wigan" element={<LocationBroadband />} />
-        <Route path="/broadband-cheltenham" element={<LocationBroadband />} />
+        <Route path="/broadband-london" element={<CityPage />} />
+        <Route path="/broadband-manchester" element={<CityPage />} />
+        <Route path="/broadband-birmingham" element={<CityPage />} />
+        <Route path="/broadband-leeds" element={<CityPage />} />
+        <Route path="/broadband-glasgow" element={<CityPage />} />
+        <Route path="/broadband-liverpool" element={<CityPage />} />
+        <Route path="/broadband-sheffield" element={<CityPage />} />
+        <Route path="/broadband-bristol" element={<CityPage />} />
+        <Route path="/broadband-leicester" element={<CityPage />} />
+        <Route path="/broadband-nottingham" element={<CityPage />} />
+        <Route path="/broadband-edinburgh" element={<CityPage />} />
+        <Route path="/broadband-cardiff" element={<CityPage />} />
+        <Route path="/broadband-newcastle" element={<CityPage />} />
+        <Route path="/broadband-southampton" element={<CityPage />} />
+        <Route path="/broadband-coventry" element={<CityPage />} />
+        <Route path="/broadband-brighton" element={<CityPage />} />
+        <Route path="/broadband-plymouth" element={<CityPage />} />
+        <Route path="/broadband-stoke-on-trent" element={<CityPage />} />
+        <Route path="/broadband-wolverhampton" element={<CityPage />} />
+        <Route path="/broadband-derby" element={<CityPage />} />
+        <Route path="/broadband-swansea" element={<CityPage />} />
+        <Route path="/broadband-aberdeen" element={<CityPage />} />
+        <Route path="/broadband-reading" element={<CityPage />} />
+        <Route path="/broadband-sunderland" element={<CityPage />} />
+        <Route path="/broadband-norwich" element={<CityPage />} />
+        <Route path="/broadband-luton" element={<CityPage />} />
+        <Route path="/broadband-preston" element={<CityPage />} />
+        <Route path="/broadband-milton-keynes" element={<CityPage />} />
+        <Route path="/broadband-northampton" element={<CityPage />} />
+        <Route path="/broadband-dundee" element={<CityPage />} />
+        <Route path="/broadband-york" element={<CityPage />} />
+        <Route path="/broadband-portsmouth" element={<CityPage />} />
+        <Route path="/broadband-exeter" element={<CityPage />} />
+        <Route path="/broadband-cambridge" element={<CityPage />} />
+        <Route path="/broadband-oxford" element={<CityPage />} />
+        <Route path="/broadband-bath" element={<CityPage />} />
+        <Route path="/broadband-bournemouth" element={<CityPage />} />
+        <Route path="/broadband-middlesbrough" element={<CityPage />} />
+        <Route path="/broadband-bolton" element={<CityPage />} />
+        <Route path="/broadband-blackpool" element={<CityPage />} />
+        <Route path="/broadband-ipswich" element={<CityPage />} />
+        <Route path="/broadband-peterborough" element={<CityPage />} />
+        <Route path="/broadband-huddersfield" element={<CityPage />} />
+        <Route path="/broadband-wakefield" element={<CityPage />} />
+        <Route path="/broadband-hull" element={<CityPage />} />
+        <Route path="/broadband-warrington" element={<CityPage />} />
+        <Route path="/broadband-doncaster" element={<CityPage />} />
+        <Route path="/broadband-stockport" element={<CityPage />} />
+        <Route path="/broadband-wigan" element={<CityPage />} />
+        <Route path="/broadband-cheltenham" element={<CityPage />} />
 
         {/* Comparison pages */}
         <Route path="/compare/no-contract-broadband" element={<NoContractBroadbandComparison />} />

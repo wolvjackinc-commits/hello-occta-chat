@@ -31,7 +31,7 @@ export default function LearnHub() {
   return (
     <Layout>
       <SEO
-        title="UK Broadband Guides, Landline Switch-Off 2027 & Digital Voice | OCCTA"
+        title="UK broadband guides and Digital Voice | OCCTA"
         description="Practical UK guides on broadband deals, fibre, switching, the 2027 landline switch-off, Digital Voice, broadband for pensioners, Wi-Fi, SIM and billing."
         canonical="/learn"
         keywords="UK broadband guides, broadband deals UK, landline switch off 2027, broadband for pensioners, digital landline, fibre broadband deals, broadband comparison, broadband speed test, One Touch Switch"

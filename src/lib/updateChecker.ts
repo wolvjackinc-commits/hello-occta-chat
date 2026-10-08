@@ -6,7 +6,7 @@
 import { BUILD_VERSION } from "./buildVersion";
 
 const CHECK_INTERVAL_MS = 30_000; // every 30 s
-const UNSAFE_PATHS = ["/checkout", "/business-checkout", "/pay", "/dd-setup", "/pay-invoice"];
+const UNSAFE_PATHS = ["/checkout", "/business-checkout", "/pay", "/dd/setup", "/dd-setup", "/pay-invoice"];
 
 let timer: ReturnType<typeof setInterval> | null = null;
 

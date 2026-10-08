@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 import { getKeywordPageBySlug } from "@/data/keywordPages";
 import NotFound from "@/pages/NotFound";
 import { motion } from "framer-motion";
 
-const KeywordLanding = () => {
+const KeywordLandingPage = () => {
   const { pathname } = useLocation();
   const slug = pathname.replace(/^\//, "");
   const page = slug ? getKeywordPageBySlug(slug) : undefined;
@@ -153,5 +154,11 @@ const KeywordLanding = () => {
     </Layout>
   );
 };
+
+const KeywordLanding = () => (
+  <AvailabilityProvider>
+    <KeywordLandingPage />
+  </AvailabilityProvider>
+);
 
 export default KeywordLanding;

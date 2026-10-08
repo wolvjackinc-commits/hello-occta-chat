@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import Header from "./Header";
 import { MessageCircle, Phone, ShieldCheck } from "lucide-react";
 import CheckoutJourneyTracker from "@/components/checkout/CheckoutJourneyTracker";
+import TopicCrosslink from "@/components/seo/TopicCrosslink";
 import Switch50CampaignStrip from "@/components/campaigns/Switch50CampaignStrip";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 
@@ -65,6 +66,7 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen flex flex-col">
       <CheckoutJourneyTracker />
       {isCheckout ? <CheckoutHeader /> : <Header />}
+      {!isCheckout && <TopicCrosslink />}
       {!isCheckout && <Switch50CampaignStrip />}
       <main className="flex-1">{children}</main>
       {!isCheckout && (

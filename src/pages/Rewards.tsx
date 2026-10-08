@@ -29,7 +29,7 @@ export default function RewardsPage() {
   return (
     <Layout>
       <SEO
-        title="OCCTA Rewards"
+        title="OCCTA Rewards for broadband and SIM"
         description="The OCCTA Rewards programme is launching soon. Final reward values, eligibility and unlock rules will be published before activation."
         canonical="/rewards"
       />

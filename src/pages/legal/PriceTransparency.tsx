@@ -3,7 +3,7 @@ import LegalPage from "./LegalPage";
 export default function PriceTransparency() {
   return (
     <LegalPage
-      title="Price Transparency"
+      title="OCCTA price transparency policy"
       description="OCCTA's approach to price transparency, including how indicative pricing, your Contract Summary and any supplier charges are communicated before you pay."
       canonical="/legal/price-transparency"
       lastUpdated="6 October 2026"

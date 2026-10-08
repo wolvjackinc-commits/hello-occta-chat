@@ -8,6 +8,7 @@ import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 import { broadbandPlans } from "@/lib/plans";
 import { getLocationBySlug } from "@/data/locations";
+import { citySeoTitle, getLocationLocal } from "@/data/locationLocal";
 import { getFromPrices } from "@/lib/pricing/engine";
 import NotFound from "@/pages/NotFound";
 
@@ -21,10 +22,13 @@ const LocationBroadbandPage = () => {
   if (!location) return <NotFound />;
 
   const prices = getFromPrices();
+  const local = getLocationLocal(location.slug);
+  const pageFaqs = local ? [...local.faqs, ...location.faqs.filter((faq) => !faq.answer.startsWith("Available speeds depend on the exact address"))] : location.faqs;
+  const cityPageUrl = `/broadband-${location.slug}`;
   const broadbandServiceSchema = createServiceSchema({
     name: `OCCTA Broadband in ${location.city}`,
     description: `OCCTA broadband in ${location.city} with public speed bands up to 1000Mbps where available. Price Lock 24 or Flex 30 may be offered; exact address-specific speed information, setup and charges are confirmed before acceptance.`,
-    url: `/broadband-${location.slug}`,
+    url: cityPageUrl,
     price: prices.broadband,
   });
 
@@ -32,12 +36,12 @@ const LocationBroadbandPage = () => {
     name: `OCCTA ${plan.name}`,
     description: `Fibre broadband speed band up to ${plan.speed}Mbps in ${location.city}. Price Lock 24 or Flex 30 where offered. Final address-specific availability, speeds, term and charges are confirmed before acceptance. ${plan.features.slice(0, 3).join(', ')}.`,
     price: plan.price.toString(),
-    url: `/pre-checkout?plans=${plan.id}`,
+    url: cityPageUrl,
     sku: plan.id,
     category: 'Broadband',
   }));
 
-  const faqSchema = createFAQSchema(location.faqs);
+  const faqSchema = createFAQSchema(pageFaqs);
   const breadcrumbSchema = createBreadcrumbSchema([
     { name: "Home", url: "/" },
     { name: "Broadband", url: "/broadband" },
@@ -73,8 +77,8 @@ const LocationBroadbandPage = () => {
   return (
     <Layout>
       <SEO
-        title={`Broadband in ${location.city} - Flex 30 & Price Lock Options`}
-        description={location.metaDescription}
+        title={citySeoTitle(location.city)}
+        description={local?.metaDescription || location.metaDescription}
         canonical={`/broadband-${location.slug}`}
         keywords={`affordable broadband ${location.city}, broadband ${location.city}, fibre broadband ${location.city}, flexible broadband ${location.city}, internet ${location.city}, ${location.region} broadband`}
         type="article"
@@ -114,7 +118,7 @@ const LocationBroadbandPage = () => {
                 <span className="text-gradient">{location.city.toUpperCase()}</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-6 max-w-2xl leading-relaxed">
-                {location.intro}
+                {local?.intro || location.intro}
               </p>
               <div className="flex flex-wrap gap-2 mb-6">
                 {features.map((feature) => (
@@ -132,6 +136,29 @@ const LocationBroadbandPage = () => {
           </div>
         </div>
       </section>
+
+      {local && (
+        <section className="py-12 bg-background border-y-4 border-foreground/10">
+          <div className="container mx-auto px-4 max-w-3xl">
+            <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">
+              {location.city} areas and postcodes
+            </h2>
+            <p className="text-muted-foreground leading-relaxed mb-4">{local.guidance}</p>
+            <p className="text-sm leading-relaxed mb-3">
+              <span className="font-display uppercase">Local areas: </span>
+              {local.areas.join(", ")}.
+            </p>
+            <p className="text-sm leading-relaxed mb-3">
+              <span className="font-display uppercase">Postcode districts: </span>
+              {local.postcodes.join(", ")}. These are Royal Mail districts, not a coverage guarantee.
+            </p>
+            <p className="text-sm leading-relaxed">
+              <span className="font-display uppercase">Nearby towns: </span>
+              {local.nearby.join(", ")}. Use the checker on the full address if you live just outside {location.city}.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Plans */}
       <section className="py-16 bg-secondary stripes">
@@ -197,14 +224,14 @@ const LocationBroadbandPage = () => {
       </section>
 
       {/* FAQs */}
-      {location.faqs.length > 0 && (
+      {pageFaqs.length > 0 && (
         <section className="py-12 bg-background">
           <div className="container mx-auto px-4 max-w-3xl">
             <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">
               Broadband in {location.city} — FAQs
             </h2>
             <Accordion type="single" collapsible className="space-y-2">
-              {location.faqs.map((faq, i) => (
+              {pageFaqs.map((faq, i) => (
                 <AccordionItem key={i} value={`faq-${i}`} className="border-4 border-foreground/10 bg-card px-4">
                   <AccordionTrigger className="font-display text-left text-base hover:no-underline">
                     {faq.question}

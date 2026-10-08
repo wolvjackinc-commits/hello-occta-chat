@@ -15,6 +15,7 @@ import {
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { companyConfig } from "@/lib/companyConfig";
+import { SEO } from "@/components/seo";
 
 const Complaints = () => {
   const steps = [
@@ -104,6 +105,11 @@ const Complaints = () => {
 
   return (
     <Layout>
+      <SEO
+        title="OCCTA complaints process and ADR"
+        description="How to log a complaint with OCCTA, what happens next, and when you can go to the approved alternative dispute resolution scheme."
+        canonical="/complaints"
+      />
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 hero-pattern">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-10 items-center">

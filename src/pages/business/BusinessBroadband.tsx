@@ -11,8 +11,8 @@ import { ArrowRight, CheckCircle2, ShieldCheck, Workflow } from "lucide-react";
 const BusinessBroadbandPage = () => (
   <Layout>
     <SEO
-      title="Business Broadband UK — SoGEA, Full Fibre, Gigabit & Leased Lines"
-      description="Business broadband from £34.99/mo ex VAT (£41.99 inc VAT). Address-led quoting for SoGEA, full fibre up to 1Gb and dedicated connectivity, with final network, setup and care terms confirmed before order."
+      title="Business broadband for UK companies"
+      description="Business broadband from £34.99/mo ex VAT (£41.99 inc VAT). Address-led quotes for SoGEA and full fibre, with network, setup and care confirmed before order."
       canonical="/business/broadband"
       keywords="business broadband UK, business fibre broadband, sogea business, gigabit business broadband, leased line UK, static IP broadband"
     />

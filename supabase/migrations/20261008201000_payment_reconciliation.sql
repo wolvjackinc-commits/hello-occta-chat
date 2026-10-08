@@ -74,6 +74,7 @@ create table if not exists public.payment_recon_payments (
   name_aliases text[] not null default '{}',
   occta_ref text,
   payment_ref text,
+  mandate_ref text,
   invoice_number text,
   method text,
   occta_method text,

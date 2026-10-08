@@ -7,6 +7,7 @@ import {
   CASE_LABELS,
   STATUS_LABELS,
   accountBelongsToCustomer,
+  bankLinesForAccount,
   type AccountRow,
   type BankLine,
   type MandateRow,
@@ -28,7 +29,7 @@ export function customerReconSlice(state: ReconState, customer: { accountNumber:
   const refs = new Set(accounts.map((account) => account.occtaRef).filter(Boolean));
   const payments = state.payments.filter((payment) => (payment.accountKey && keys.has(payment.accountKey)) || (payment.occtaRef && refs.has(payment.occtaRef)) || accounts.some((account) => payment.customerName && account.customerName === payment.customerName && !payment.occtaRef));
   const mandates = state.mandates.filter((mandate) => (mandate.accountKey && keys.has(mandate.accountKey)) || (mandate.occtaRef && refs.has(mandate.occtaRef)));
-  const bankLines = state.bankLines.filter((line) => (line.matchedAccountKey && keys.has(line.matchedAccountKey)) || (line.linkedAccountNumber && refs.has(line.linkedAccountNumber)));
+  const bankLines = [...new Map(accounts.flatMap((account) => bankLinesForAccount(account, state)).map((line) => [line.lineKey, line])).values()];
   const timeline = state.timeline.filter((entry) => payments.some((payment) => payment.eventKey === entry.subjectKey) || mandates.some((mandate) => mandate.mandateKey === entry.subjectKey) || bankLines.some((line) => line.lineKey === entry.subjectKey));
   return { accounts, payments, mandates, bankLines, timeline };
 }
@@ -108,9 +109,17 @@ export function CustomerReconCard({
       {bankLines.length > 0 && (
         <div className="text-sm">
           <div className="font-medium mb-1">Bank statement match</div>
-          {bankLines.map((line) => (
-            <div key={line.lineKey}>{line.bankDateRaw || "—"} · {line.payerName || line.description || "—"} · {money(line.amount)} · batch {line.payoutRef || line.matchedPayoutRef || "—"}</div>
-          ))}
+          {bankLines.map((line) => {
+            const batch = line.matchedPayoutRef || line.payoutRef;
+            const sharedBatch = Boolean(batch && !line.matchedAccountKey);
+            return (
+              <div key={line.lineKey}>
+                {sharedBatch
+                  ? `Payout batch ${batch} · bank credit ${money(line.amount)} · ${line.bankDateRaw || "—"} · ${line.description || line.payerName || "—"}`
+                  : `${line.bankDateRaw || "—"} · ${line.payerName || line.description || "—"} · ${money(line.amount)} · batch ${batch || "—"}`}
+              </div>
+            );
+          })}
         </div>
       )}
       {timeline.length > 0 && (

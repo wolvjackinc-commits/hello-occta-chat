@@ -56,6 +56,7 @@ export const CASE_LABELS: Record<string, string> = {
   opening_balance_uninvoiced: "Opening balance includes uninvoiced months",
   mandate_cancelled_occta_active: "AccessPay mandate cancelled; Occta still active",
   failed_attempt_existing_charge: "Failed DD on an existing charge, not extra debt",
+  failed_attempt_resolved: "Failed attempt collected on a later retry",
   bank_receipt_not_in_occta: "Bank receipt not recorded in Occta",
   mislabeled_card_was_transfer: "Occta says card; payment was a bank transfer",
   accesspay_only_no_occta_record: "AccessPay only — no Occta customer",
@@ -121,6 +122,7 @@ export interface PaymentRow {
   nameAliases: string[];
   occtaRef: string | null;
   paymentRef: string | null;
+  mandateRef: string | null;
   invoiceNumber: string | null;
   method: string | null;
   occtaMethod: string | null;
@@ -822,6 +824,7 @@ function paymentFromParts(input: {
   bankPayerName: string | null;
   aliases: string[];
   paymentRef: string | null;
+  mandateRef: string | null;
   invoiceNumber: string | null;
   method: string | null;
   occtaMethod: string | null;
@@ -863,6 +866,7 @@ function paymentFromParts(input: {
     nameAliases: input.aliases,
     occtaRef: input.ref ? normaliseRef(input.ref) : null,
     paymentRef: input.paymentRef ? input.paymentRef.trim().toUpperCase() : null,
+    mandateRef: input.mandateRef ? input.mandateRef.trim().toUpperCase() : null,
     invoiceNumber: input.invoiceNumber,
     method: input.method,
     occtaMethod: input.occtaMethod,
@@ -953,6 +957,126 @@ function upsertPayment(state: ReconState, row: PaymentRow): void {
   else state.payments.push(row);
 }
 
+function keepText(incoming: string | null | undefined, prior: string | null | undefined): string | null {
+  if (incoming != null && incoming.trim() !== "") return incoming.trim();
+  return prior ?? null;
+}
+
+function keepNum(incoming: number | null | undefined, prior: number | null | undefined): number | null {
+  if (incoming == null || Number.isNaN(incoming)) return prior ?? null;
+  return incoming;
+}
+
+function recomputePayment(row: PaymentRow, explicit: string | null): void {
+  row.submittedOn = parseUnambiguousDate(row.submittedAtRaw);
+  row.collectionOn = parseUnambiguousDate(row.collectionDateRaw);
+  row.failedOn = parseUnambiguousDate(row.failedAtRaw);
+  row.processedOn = parseUnambiguousDate(row.processedAtRaw);
+  row.bankReceivedOn = parseUnambiguousDate(row.bankReceivedAtRaw);
+  row.reconciledStatus = mapStatus(row.statusRaw);
+  row.matchCategory = resolveCategory({
+    status: row.reconciledStatus,
+    explicitCategory: explicit,
+    caseCodes: row.caseCodes,
+    customerKnown: Boolean(row.accountKey || row.occtaRef || row.linkedAccountNumber || row.customerName) && row.reconciledStatus !== "unallocated",
+  });
+}
+
+/** Incoming blanks never erase a stored payment value. A non-empty incoming value still replaces it. */
+function mergePayment(prior: PaymentRow | null, incoming: PaymentRow, explicit: string | null): PaymentRow {
+  if (!prior) {
+    recomputePayment(incoming, explicit);
+    return incoming;
+  }
+  const merged: PaymentRow = {
+    ...incoming,
+    eventKey: prior.eventKey,
+    accountKey: keepText(incoming.accountKey, prior.accountKey),
+    customerName: keepText(incoming.customerName, prior.customerName),
+    payerName: keepText(incoming.payerName, prior.payerName),
+    bankPayerName: keepText(incoming.bankPayerName, prior.bankPayerName),
+    nameAliases: incoming.nameAliases.length ? incoming.nameAliases : prior.nameAliases,
+    occtaRef: keepText(incoming.occtaRef, prior.occtaRef),
+    paymentRef: keepText(incoming.paymentRef, prior.paymentRef),
+    mandateRef: keepText(incoming.mandateRef, prior.mandateRef),
+    invoiceNumber: keepText(incoming.invoiceNumber, prior.invoiceNumber),
+    method: keepText(incoming.method, prior.method),
+    occtaMethod: keepText(incoming.occtaMethod, prior.occtaMethod),
+    amount: keepNum(incoming.amount, prior.amount),
+    chargeKind: keepText(incoming.chargeKind, prior.chargeKind),
+    submittedAtRaw: keepText(incoming.submittedAtRaw, prior.submittedAtRaw),
+    collectionDateRaw: keepText(incoming.collectionDateRaw, prior.collectionDateRaw),
+    failedAtRaw: keepText(incoming.failedAtRaw, prior.failedAtRaw),
+    failureReason: keepText(incoming.failureReason, prior.failureReason),
+    failureTreatment: keepText(incoming.failureTreatment, prior.failureTreatment),
+    processedAtRaw: keepText(incoming.processedAtRaw, prior.processedAtRaw),
+    payoutRef: keepText(incoming.payoutRef, prior.payoutRef),
+    bankReceivedAtRaw: keepText(incoming.bankReceivedAtRaw, prior.bankReceivedAtRaw),
+    bankDescription: keepText(incoming.bankDescription, prior.bankDescription),
+    statusRaw: keepText(incoming.statusRaw, prior.statusRaw),
+    caseCodes: [...new Set([...prior.caseCodes, ...incoming.caseCodes])],
+    balanceAfter: keepNum(incoming.balanceAfter, prior.balanceAfter),
+    occtaRecorded: incoming.occtaRecorded == null ? prior.occtaRecorded : incoming.occtaRecorded,
+    linkedAccountNumber: keepText(incoming.linkedAccountNumber, prior.linkedAccountNumber),
+    linkedInvoiceNumber: keepText(incoming.linkedInvoiceNumber, prior.linkedInvoiceNumber),
+  };
+  recomputePayment(merged, explicit);
+  return merged;
+}
+
+function isFailureAttempt(payment: PaymentRow): boolean {
+  return payment.reconciledStatus === "failed" || (Boolean(payment.failedAtRaw) && payment.reconciledStatus !== "paid");
+}
+
+function isSuccessfulCollection(payment: PaymentRow): boolean {
+  if (payment.matchCategory === "genuine_unmatched" || payment.reconciledStatus === "genuine_unmatched") return false;
+  if (isFailureAttempt(payment)) return false;
+  return payment.reconciledStatus === "paid" || Boolean(payment.processedAtRaw || payment.bankReceivedAtRaw);
+}
+
+function sameCustomerPayment(a: PaymentRow, b: PaymentRow): boolean {
+  if (a.accountKey && b.accountKey && a.accountKey === b.accountKey) return true;
+  if (a.occtaRef && b.occtaRef && normaliseRef(a.occtaRef) === normaliseRef(b.occtaRef)) return true;
+  const left = normaliseMatchText(a.customerName);
+  const right = normaliseMatchText(b.customerName);
+  return Boolean(left && left === right);
+}
+
+function sameCharge(failure: PaymentRow, success: PaymentRow): boolean {
+  const invA = normaliseRef(failure.invoiceNumber || failure.linkedInvoiceNumber);
+  const invB = normaliseRef(success.invoiceNumber || success.linkedInvoiceNumber);
+  if (invA && invB && invA === invB) return true;
+  const manA = normaliseRef(failure.mandateRef);
+  const manB = normaliseRef(success.mandateRef);
+  return Boolean(manA && manB && manA === manB && amountsEqual(failure.amount, success.amount));
+}
+
+function successNotBeforeFailure(success: PaymentRow, failure: PaymentRow): boolean {
+  const successOn = success.collectionOn || success.processedOn || success.bankReceivedOn || success.submittedOn;
+  const failureOn = failure.failedOn || failure.collectionOn || failure.submittedOn;
+  if (successOn && failureOn) return successOn >= failureOn;
+  return true;
+}
+
+export function settleRetriedFailures(state: ReconState): void {
+  for (const failure of state.payments) {
+    if (!isFailureAttempt(failure)) continue;
+    const resolved = state.payments.some((other) => other.eventKey !== failure.eventKey && isSuccessfulCollection(other) && sameCustomerPayment(failure, other) && sameCharge(failure, other) && successNotBeforeFailure(other, failure));
+    if (!resolved) continue;
+    failure.matchCategory = "matched";
+    if (!failure.caseCodes.includes("failed_attempt_resolved")) failure.caseCodes.push("failed_attempt_resolved");
+  }
+  for (const account of state.accounts) {
+    const payments = state.payments.filter((payment) => payment.accountKey === account.rowKey || (account.occtaRef && payment.occtaRef === account.occtaRef));
+    const failures = payments.filter((payment) => isFailureAttempt(payment));
+    if (!failures.length || !failures.every((payment) => payment.caseCodes.includes("failed_attempt_resolved"))) continue;
+    const blocking = account.caseCodes.filter((code) => code !== "failed_attempt_existing_charge" && code !== "failed_attempt_resolved");
+    if (blocking.length || account.matchCategory !== "discrepancy") continue;
+    account.matchCategory = "matched";
+    if (!account.caseCodes.includes("failed_attempt_resolved")) account.caseCodes.push("failed_attempt_resolved");
+  }
+}
+
 export async function importPaymentEvents(previous: ReconState, meta: ImportMeta): Promise<ImportResult> {
   const state = clone(previous);
   const table = parseCsv(meta.csvText);
@@ -973,13 +1097,15 @@ export async function importPaymentEvents(previous: ReconState, meta: ImportMeta
     const bankPayer = blank(cell(raw, index, "bank_payer_name"));
     if (bankPayer) aliases.push(bankPayer);
     const ref = blank(cell(raw, index, "occta_ref"));
-    const built = await assignEventKey(paymentFromParts({
+    const explicitCategory = blank(cell(raw, index, "match_category"));
+    const built = mergePayment(prior, await assignEventKey(paymentFromParts({
       customer: cell(raw, index, "customer"),
       ref,
       payerName: blank(cell(raw, index, "payer_name")),
       bankPayerName: bankPayer,
       aliases,
       paymentRef,
+      mandateRef: blank(cell(raw, index, "mandate_ref")),
       invoiceNumber: blank(cell(raw, index, "invoice_number")),
       method: blank(cell(raw, index, "method")),
       occtaMethod: blank(cell(raw, index, "occta_method")),
@@ -995,19 +1121,19 @@ export async function importPaymentEvents(previous: ReconState, meta: ImportMeta
       bankRaw: blank(cell(raw, index, "bank_received_at")),
       bankDescription: blank(cell(raw, index, "bank_description")),
       statusRaw: blank(cell(raw, index, "status")),
-      explicitCategory: blank(cell(raw, index, "match_category")),
+      explicitCategory,
       casesRaw: blank(cell(raw, index, "cases")),
       balanceAfter: parseAmount(cell(raw, index, "balance_after")),
       occtaRecorded: parseBool(cell(raw, index, "occta_recorded")),
       accountKey: findAccountKey(state, ref, cell(raw, index, "customer"), aliases) ?? prior?.accountKey ?? null,
       prior,
-    }));
-    if (prior) built.eventKey = prior.eventKey;
+    })), explicitCategory);
     trackPaymentChanges(state, prior, built, meta, hash, meta.importedAt);
     upsertPayment(state, built);
     count++;
   }
   if (!count) return { state: previous, errors: ["No payment event rows were found."], warnings, rowCount: 0 };
+  settleRetriedFailures(state);
   rememberImport(state, meta, "payment_events", hash, count);
   return { state, errors: [], warnings, rowCount: count };
 }
@@ -1108,13 +1234,14 @@ export async function importAccessPayDaily(previous: ReconState, meta: ImportMet
       const aliases = splitList(cell(raw, index, "name_aliases"));
       const ref = blank(cell(raw, index, "occta_ref"));
       const statusRaw = blank(cell(raw, index, "status")) ?? (recordType === "failure" ? "Failed" : null);
-      const built = await assignEventKey(paymentFromParts({
+      const built = mergePayment(prior, await assignEventKey(paymentFromParts({
         customer: cell(raw, index, "customer"),
         ref,
         payerName: blank(cell(raw, index, "payer_name")),
         bankPayerName: null,
         aliases,
         paymentRef,
+        mandateRef: blank(cell(raw, index, "mandate_ref")),
         invoiceNumber: blank(cell(raw, index, "invoice_number")),
         method: blank(cell(raw, index, "method")),
         occtaMethod: null,
@@ -1136,13 +1263,7 @@ export async function importAccessPayDaily(previous: ReconState, meta: ImportMet
         occtaRecorded: null,
         accountKey: findAccountKey(state, ref, cell(raw, index, "customer"), aliases) ?? prior?.accountKey ?? null,
         prior,
-      }));
-      if (prior) {
-        built.eventKey = prior.eventKey;
-        built.bankReceivedAtRaw = built.bankReceivedAtRaw ?? prior.bankReceivedAtRaw;
-        built.bankReceivedOn = built.bankReceivedOn ?? prior.bankReceivedOn;
-        built.bankDescription = built.bankDescription ?? prior.bankDescription;
-      }
+      })), null);
       trackPaymentChanges(state, prior, built, meta, hash, meta.importedAt);
       upsertPayment(state, built);
       count++;
@@ -1151,6 +1272,7 @@ export async function importAccessPayDaily(previous: ReconState, meta: ImportMet
     warnings.push(`Skipped unsupported AccessPay record_type "${recordType}".`);
   }
   if (!count) return { state: previous, errors: ["No AccessPay rows were imported."], warnings, rowCount: 0 };
+  settleRetriedFailures(state);
   rememberImport(state, meta, "accesspay_daily", hash, count);
   return { state, errors: [], warnings, rowCount: count };
 }
@@ -1219,9 +1341,10 @@ function matchBankLine(line: { bankOn: string | null; amount: number | null; des
     || null;
   if (payoutRef) {
     const payments = state.payments.filter((payment) => payment.payoutRef === payoutRef);
+    const accountKeys = [...new Set(payments.map((payment) => payment.accountKey).filter((key): key is string => Boolean(key)))];
     return {
       category: "matched",
-      accountKey: payments.find((payment) => payment.accountKey)?.accountKey ?? null,
+      accountKey: accountKeys.length === 1 ? accountKeys[0] : null,
       paymentRef: payments.length === 1 ? payments[0].paymentRef : null,
       payoutRef,
     };
@@ -1365,6 +1488,14 @@ export interface ReconSummary {
   matchedCount: number;
 }
 
+function paymentWasReceived(payment: PaymentRow): boolean {
+  if (payment.matchCategory === "unlinked") return false;
+  if (payment.matchCategory === "genuine_unmatched" || payment.reconciledStatus === "genuine_unmatched") return true;
+  if (isFailureAttempt(payment)) return false;
+  if (payment.reconciledStatus === "paid") return true;
+  return Boolean(payment.processedAtRaw || payment.bankReceivedAtRaw);
+}
+
 export function summarise(state: ReconState): ReconSummary {
   let collected = 0;
   let failedAttempts = 0;
@@ -1374,6 +1505,10 @@ export function summarise(state: ReconState): ReconSummary {
   let genuineReceived = 0;
   let discrepancyCount = 0;
   let matchedCount = 0;
+  const received = state.payments.filter(paymentWasReceived);
+  collected = received.reduce((sum, payment) => sum + (payment.amount ?? 0), 0);
+  const countedPayouts = new Set(received.map((payment) => payment.payoutRef).filter((ref): ref is string => Boolean(ref)));
+  const countedPaymentRefs = new Set(received.map((payment) => payment.paymentRef).filter((ref): ref is string => Boolean(ref)));
   const genuinePaymentNames = new Set(
     state.payments.filter((payment) => payment.matchCategory === "genuine_unmatched").map((payment) => normaliseMatchText(payment.customerName)),
   );
@@ -1385,7 +1520,6 @@ export function summarise(state: ReconState): ReconSummary {
     } else if ((account.balanceOutstanding ?? 0) > 0 && account.reconciledStatus !== "closed") {
       outstanding += account.balanceOutstanding ?? 0;
     }
-    if (account.reconciledStatus === "paid") collected += extractAmount(account.lastPaymentReceived) ?? 0;
     if (account.matchCategory === "unlinked") unlinked += extractAmount(account.lastPaymentReceived) ?? account.amountDue ?? 0;
     if (account.matchCategory === "discrepancy") discrepancyCount++;
     if (account.matchCategory === "matched") matchedCount++;
@@ -1394,7 +1528,8 @@ export function summarise(state: ReconState): ReconSummary {
     if (payment.matchCategory === "genuine_unmatched") genuineReceived += payment.amount ?? 0;
     if (payment.reconciledStatus === "failed" || payment.failedAtRaw) {
       failedAttempts += payment.amount ?? 0;
-      if (!/existing/i.test(payment.failureTreatment ?? "") && !payment.caseCodes.includes("failed_attempt_existing_charge")) {
+      const resolved = payment.caseCodes.includes("failed_attempt_resolved");
+      if (!resolved && !/existing/i.test(payment.failureTreatment ?? "") && !payment.caseCodes.includes("failed_attempt_existing_charge")) {
         failedExtraDebt += payment.amount ?? 0;
       }
     }
@@ -1405,8 +1540,30 @@ export function summarise(state: ReconState): ReconSummary {
     if (line.matchCategory === "unlinked") unlinked += line.amount ?? 0;
     if (line.matchCategory === "genuine_unmatched") genuineReceived += line.amount ?? 0;
     if (line.matchCategory === "discrepancy") discrepancyCount++;
+    if (line.matchCategory === "matched" || line.matchCategory === "genuine_unmatched") {
+      const batch = line.matchedPayoutRef || line.payoutRef;
+      const alreadyCounted = (batch != null && countedPayouts.has(batch)) || (line.matchedPaymentRef != null && countedPaymentRefs.has(line.matchedPaymentRef));
+      if (!alreadyCounted) collected += line.amount ?? 0;
+    }
   }
   return { collected, failedAttempts, failedExtraDebt, outstanding, unlinked, genuineReceived, discrepancyCount, matchedCount };
+}
+
+export function bankLinesForAccount(account: AccountRow, state: ReconState): BankLine[] {
+  const payouts = new Set(
+    state.payments
+      .filter((payment) => payment.accountKey === account.rowKey || (account.occtaRef && payment.occtaRef === account.occtaRef))
+      .map((payment) => payment.payoutRef)
+      .filter((ref): ref is string => Boolean(ref)),
+  );
+  return state.bankLines.filter((line) => {
+    const batch = line.matchedPayoutRef || line.payoutRef;
+    if (batch && payouts.has(batch)) return true;
+    if (batch) return false;
+    if (line.matchedAccountKey === account.rowKey) return true;
+    if (line.linkedAccountNumber && (normaliseRef(line.linkedAccountNumber) === normaliseRef(account.occtaRef) || normaliseRef(line.linkedAccountNumber) === normaliseRef(account.linkedAccountNumber))) return true;
+    return textHitsNames(line.payerName, accountNames(account)) || textHitsNames(line.description, accountNames(account));
+  });
 }
 
 export function itemsInCategory(state: ReconState, category: MatchCategory): Array<{ kind: string; key: string; title: string; amount: number | null; category: MatchCategory }> {
@@ -1475,7 +1632,7 @@ export function paymentToDb(row: PaymentRow): Record<string, unknown> {
   return {
     event_key: row.eventKey, account_key: row.accountKey, customer_name: row.customerName, payer_name: row.payerName,
     bank_payer_name: row.bankPayerName, name_aliases: row.nameAliases, occta_ref: row.occtaRef, payment_ref: row.paymentRef,
-    invoice_number: row.invoiceNumber, method: row.method, occta_method: row.occtaMethod, amount: row.amount, charge_kind: row.chargeKind,
+    mandate_ref: row.mandateRef, invoice_number: row.invoiceNumber, method: row.method, occta_method: row.occtaMethod, amount: row.amount, charge_kind: row.chargeKind,
     submitted_at_raw: row.submittedAtRaw, submitted_on: row.submittedOn, collection_date_raw: row.collectionDateRaw, collection_on: row.collectionOn,
     failed_at_raw: row.failedAtRaw, failed_on: row.failedOn, failure_reason: row.failureReason, failure_treatment: row.failureTreatment,
     processed_at_raw: row.processedAtRaw, processed_on: row.processedOn, payout_ref: row.payoutRef, bank_received_at_raw: row.bankReceivedAtRaw,
@@ -1488,7 +1645,7 @@ export function paymentFromDb(row: Record<string, unknown>): PaymentRow {
   return {
     eventKey: String(row.event_key), accountKey: str(row.account_key), customerName: str(row.customer_name), payerName: str(row.payer_name),
     bankPayerName: str(row.bank_payer_name), nameAliases: list(row.name_aliases), occtaRef: str(row.occta_ref), paymentRef: str(row.payment_ref),
-    invoiceNumber: str(row.invoice_number), method: str(row.method), occtaMethod: str(row.occta_method), amount: num(row.amount),
+    mandateRef: str(row.mandate_ref), invoiceNumber: str(row.invoice_number), method: str(row.method), occtaMethod: str(row.occta_method), amount: num(row.amount),
     chargeKind: str(row.charge_kind), submittedAtRaw: str(row.submitted_at_raw), submittedOn: str(row.submitted_on),
     collectionDateRaw: str(row.collection_date_raw), collectionOn: str(row.collection_on), failedAtRaw: str(row.failed_at_raw), failedOn: str(row.failed_on),
     failureReason: str(row.failure_reason), failureTreatment: str(row.failure_treatment), processedAtRaw: str(row.processed_at_raw), processedOn: str(row.processed_on),
@@ -1637,7 +1794,7 @@ export async function loadReconState(db: any): Promise<ReconState> {
     readAll(db, "payment_recon_imports"),
     readAll(db, "payment_recon_audit"),
   ]);
-  return {
+  const state: ReconState = {
     accounts: accounts.map(accountFromDb),
     payments: payments.map(paymentFromDb),
     mandates: mandates.map(mandateFromDb),
@@ -1647,6 +1804,8 @@ export async function loadReconState(db: any): Promise<ReconState> {
     imports: imports.map(importFromDb),
     audit: audit.map(auditFromDb),
   };
+  settleRetriedFailures(state);
+  return state;
 }
 
 export async function executeSyncPlan(db: any, plan: SyncPlan): Promise<void> {

@@ -11,12 +11,10 @@ import {
   CASE_LABELS,
   PAYER_ALIAS_HELP,
   STATUS_LABELS,
+  bankLinesForAccount,
   itemsInCategory,
   summarise,
-  textHitsNames,
-  accountNames,
   type AccountRow,
-  type BankLine,
   type MatchCategory,
   type PaymentRow,
   type ProfileRef,
@@ -35,11 +33,13 @@ function show(value: string | null | undefined): string {
 }
 
 function bankMatchLabel(account: AccountRow, state: ReconState): string {
-  const lines = state.bankLines.filter((line) => line.matchedAccountKey === account.rowKey || textHitsNames(line.payerName, accountNames(account)) || textHitsNames(line.description, accountNames(account)));
-  if (lines.length) {
-    return lines.map((line) => [line.bankDateRaw, line.payerName || line.description, line.payoutRef ? `batch ${line.payoutRef}` : ""].filter(Boolean).join(" · ")).join("; ");
-  }
-  return account.seenIn || "No bank match";
+  const lines = bankLinesForAccount(account, state);
+  if (!lines.length) return account.seenIn || "No bank match";
+  return lines.map((line) => {
+    const batch = line.matchedPayoutRef || line.payoutRef;
+    if (batch && !line.matchedAccountKey) return [line.bankDateRaw, `payout batch ${batch}`, line.description].filter(Boolean).join(" · ");
+    return [line.bankDateRaw, line.payerName || line.description, batch ? `batch ${batch}` : ""].filter(Boolean).join(" · ");
+  }).join("; ");
 }
 
 function CaseBadges({ codes }: { codes: string[] }) {
@@ -165,7 +165,7 @@ export function PaymentReconScreen({
       </div>
       <p className="text-sm border-2 border-foreground p-3">{PAYER_ALIAS_HELP}</p>
       <Card className="border-2 border-foreground p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-        <div><div className="text-xs uppercase text-muted-foreground">Collected</div><div className="font-display text-xl">{money(summary.collected)}</div></div>
+        <div><div className="text-xs uppercase text-muted-foreground">Collected</div><div className="font-display text-xl">{money(summary.collected)}</div><div className="text-xs text-muted-foreground">All received payments and bank credits. Genuine receipts are included. Unlinked is separate.</div></div>
         <div><div className="text-xs uppercase text-muted-foreground">Failed attempts</div><div className="font-display text-xl">{money(summary.failedAttempts)}</div><div className="text-xs text-muted-foreground">Extra debt {money(summary.failedExtraDebt)}. Existing-charge failures are not added again.</div></div>
         <div><div className="text-xs uppercase text-muted-foreground">Outstanding</div><div className="font-display text-xl">{money(summary.outstanding)}</div></div>
         <div><div className="text-xs uppercase text-muted-foreground">Unlinked</div><div className="font-display text-xl">{money(summary.unlinked)}</div></div>
@@ -376,6 +376,3 @@ function ItemList({
   );
 }
 
-export function bankLinesForAccount(account: AccountRow, lines: BankLine[]): BankLine[] {
-  return lines.filter((line) => line.matchedAccountKey === account.rowKey);
-}

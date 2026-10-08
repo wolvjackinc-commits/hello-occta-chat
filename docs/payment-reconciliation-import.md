@@ -72,7 +72,7 @@ Upserts by `payment_ref` when present, otherwise by a hash of the lifecycle fiel
 customer,occta_ref,payment_ref,method,amount,submitted_at,collection_date,failed_at,failure_reason,processed_at,payout_ref,bank_received_at,bank_description,status
 ```
 
-Optional: invoice_number, charge_kind (`invoiced` or `uninvoiced`), payer_name, bank_payer_name, name_aliases, failure_treatment, occta_recorded, occta_method, cases, match_category, balance_after.
+Optional: invoice_number, mandate_ref, charge_kind (`invoiced` or `uninvoiced`), payer_name, bank_payer_name, name_aliases, failure_treatment, occta_recorded, occta_method, cases, match_category, balance_after.
 
 `failure_reason` holds the BACS reason, for example an ARUDD code or an ADDACS cancellation. `status` accepts `genuine_unmatched`.
 
@@ -99,6 +99,24 @@ Auto-match order:
 3. A single payer-alias match when the statement name is listed for one customer.
 
 Anything else is `unlinked`. Use **Link** on that section to attach an Occta account and/or invoice number. The link is stored on the reconciliation row and an audit entry is written. The invoice ledger is not updated.
+
+A bank line that matches an AccessPay payout is linked to that payout batch. It is shown on every customer who has a collection in the batch. The batch credit is not stored as one customer's receipt.
+
+## References when the export has no IDs
+
+Use these patterns so the same payment or payout matches across files:
+
+| Kind | Pattern | Example |
+| --- | --- | --- |
+| Direct Debit payment | `mandate_ref` + `-` + due date `YYYYMMDD` | `MAN-DEMO-21-20261008` |
+| AccessPay payout | `APS-DISB-` + date `YYYYMMDD` | `APS-DISB-20261010` |
+| Bank transfer | `BT-` + date `YYYYMMDD` + `-` + Occta account ref | `BT-20261006-OCC10000031` |
+
+An upsert never replaces a stored payment value with an empty incoming value. A later file can fill blanks and can replace a value when the new cell is non-empty. Import order does not wipe `occta_recorded`, `occta_method`, `invoice_number`, bank dates, or the bank description.
+
+Collected is the total of money received: every received payment, including `genuine_unmatched`, plus bank-matched lines that are not already represented by those payments. Unlinked money stays on the unlinked total.
+
+A failed Direct Debit stays in the payment history. It leaves discrepancies when a later successful collection exists for the same account and charge: the same invoice, or the same mandate and amount.
 
 ## Worked example
 

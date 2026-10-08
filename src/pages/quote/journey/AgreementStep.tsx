@@ -499,7 +499,7 @@ export default function AgreementStep({
             disabled={!formValid || submitting}
             onClick={submit}
           >
-            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording…</> : "Accept contract & continue — payment required"}
+            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording…</> : "Accept contract & continue"}
           </Button>
           <p className="text-xs text-muted-foreground">
             This accepts the agreement and the charges shown above. You'll set up Direct Debit securely on the next step before the order is finally submitted.

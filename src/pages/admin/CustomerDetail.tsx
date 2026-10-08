@@ -24,6 +24,7 @@ import { CustomerActionsCard } from "@/components/admin/CustomerActionsCard";
 import { CustomerSendEmailDialog } from "@/components/admin/CustomerSendEmailDialog";
 import { CustomerCreateTicketDialog } from "@/components/admin/CustomerCreateTicketDialog";
 import { BillingSchedulePanel } from "@/components/admin/BillingSchedulePanel";
+import { CustomerPaymentReconPanel } from "@/components/admin/paymentRecon/CustomerPaymentReconPanel";
 import { useEffect } from "react";
 
 function ReconciliationWarnings(_: { userId: string }) { return null; }
@@ -426,6 +427,7 @@ const CustomerDetailContent = ({
 
         <TabsContent value="overview" className="mt-4">
           <div className="space-y-4">
+            <CustomerPaymentReconPanel accountNumber={overview.account_number} fullName={overview.full_name} />
             <Customer360Header
               profile={overview}
               cs={(data?.contractSummaries ?? []).find((c: any) => c?.is_information_update !== true) ?? null}
@@ -801,6 +803,7 @@ const CustomerDetailContent = ({
         </TabsContent>
 
         <TabsContent value="billing" className="mt-4 space-y-4">
+          <CustomerPaymentReconPanel accountNumber={overview.account_number} fullName={overview.full_name} />
           <BillingSchedulePanel userId={overview.id} />
           <CustomerBillingSettings
             userId={overview.id}

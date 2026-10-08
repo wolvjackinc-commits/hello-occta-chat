@@ -84,3 +84,6 @@ project_id = "oexgjmuvgdndizsufipe"
 
 [functions.switch50-message-worker]
 verify_jwt = false
+
+[functions.admin-payment-recon-import]
+verify_jwt = true

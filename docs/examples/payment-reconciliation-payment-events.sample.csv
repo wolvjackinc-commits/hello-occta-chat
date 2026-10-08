@@ -1,0 +1,4 @@
+customer,occta_ref,payment_ref,method,amount,submitted_at,collection_date,failed_at,failure_reason,processed_at,payout_ref,bank_received_at,bank_description,status,invoice_number,charge_kind,payer_name,bank_payer_name,name_aliases,failure_treatment,occta_recorded,occta_method,cases
+Nina Example,OCC10000007,PAY-DEMO-7,Bank transfer,20.00,28 Sep 2026,5 Oct 2026,,,6 Oct 2026,BATCH-DEMO-1,6 Oct 2026,HAIRMONIC HEAD SPA,Paid,INV-DEMO-1007,invoiced,Harmonic Spa,HAIRMONIC HEAD SPA,HAIRMONIC HEAD SPA,,yes,Bank transfer,
+Riley Example,OCC10000003,PAY-DEMO-3,DD,25.00,1 Oct 2026,8 Oct 2026,9 Oct 2026,ARUDD 0 - Refer to payer,,,,,Failed,INV-DEMO-1003,invoiced,,,,existing charge,yes,DD,failed_attempt_existing_charge
+Sample Civic Hall,,PAY-DEMO-HALL,Bank transfer,40.00,,1 Sep 2026,,,,,,SAMPLE CIVIC HALL,genuine_unmatched,,,Sample Civic Hall,,,,,,genuine_unmatched

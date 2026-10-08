@@ -28,6 +28,8 @@ const AdminOrders = lazy(() => import("./pages/admin/Orders").then(m => ({ defau
 const AdminTickets = lazy(() => import("./pages/admin/Tickets").then(m => ({ default: m.AdminTickets })));
 const AdminBilling = lazy(() => import("./pages/admin/Billing").then(m => ({ default: m.AdminBilling })));
 const AdminBillingReconciliation = lazy(() => import("./pages/admin/BillingReconciliation").then(m => ({ default: m.AdminBillingReconciliation })));
+const AdminPaymentReconciliation = lazy(() => import("./pages/admin/PaymentReconciliation").then(m => ({ default: m.AdminPaymentReconciliation })));
+const AdminPaymentDetails = lazy(() => import("./pages/admin/PaymentReconciliation").then(m => ({ default: m.AdminPaymentDetails })));
 const AdminBillingChainCheck = lazy(() => import("./pages/admin/BillingChainCheck").then(m => ({ default: m.AdminBillingChainCheck })));
 const AdminLegacyRemediation = lazy(() => import("./pages/admin/LegacyRemediation").then(m => ({ default: m.AdminLegacyRemediation })));
 const AdminAbhayRemediation = lazy(() => import("./pages/admin/AbhayRemediation").then(m => ({ default: m.AdminAbhayRemediation })));
@@ -225,6 +227,8 @@ const AnimatedRoutes = () => {
             <Route path="tickets" element={<Suspense fallback={<AdminRouteFallback />}><AdminTickets /></Suspense>} />
             <Route path="billing" element={<Suspense fallback={<AdminRouteFallback />}><AdminBilling /></Suspense>} />
             <Route path="billing/reconciliation" element={<Suspense fallback={<AdminRouteFallback />}><AdminBillingReconciliation /></Suspense>} />
+            <Route path="billing/payment-reconciliation" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentReconciliation /></Suspense>} />
+            <Route path="billing/payment-details" element={<Suspense fallback={<AdminRouteFallback />}><AdminPaymentDetails /></Suspense>} />
             <Route path="billing/chain-check" element={<Suspense fallback={<AdminRouteFallback />}><AdminBillingChainCheck /></Suspense>} />
             <Route path="legacy-remediation" element={<Suspense fallback={<AdminRouteFallback />}><AdminLegacyRemediation /></Suspense>} />
             <Route path="abhay-remediation" element={<Suspense fallback={<AdminRouteFallback />}><AdminAbhayRemediation /></Suspense>} />

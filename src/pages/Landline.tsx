@@ -63,7 +63,7 @@ const Landline = () => {
     name: 'OCCTA Digital Voice Line',
     description: 'Digital home phone with HD calls, caller display, free voicemail. Requires OCCTA broadband.',
     price: getFromPrices().landline,
-    url: `/pre-checkout?plans=${plan.id}`,
+    url: "/landline",
     sku: plan.id,
     category: 'Digital Home Phone',
   });

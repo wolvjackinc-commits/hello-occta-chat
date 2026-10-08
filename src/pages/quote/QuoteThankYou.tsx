@@ -44,7 +44,7 @@ export default function QuoteThankYou() {
     return () => { cancelled = true; };
   }, [ref, attempt]);
   if (verification !== 'received') return <Layout>
-    <SEO title="Check your quote request" description="Verify your OCCTA quote request." canonical="/quote/thank-you" />
+    <SEO title="Check your quote request" description="Verify your OCCTA quote request before you treat this page as confirmation." canonical="/quote/thank-you" noIndex />
     <section className="container mx-auto px-4 py-12 max-w-2xl space-y-4">
       <h1 className="font-display text-2xl">{verification === 'checking' ? 'Checking your request…' : 'We cannot verify this request from this page'}</h1>
       <p role="status">{verification === 'checking' ? 'Please wait while we check your saved receipt.' : 'Opening this page does not submit a quote. If you already submitted one, check your confirmation email or contact us with your reference. Please do not submit again solely because this page cannot verify it.'}</p>
@@ -55,7 +55,7 @@ export default function QuoteThankYou() {
   </Layout>;
   return (
     <Layout>
-      <SEO title="Quote request received" description="Thanks — OCCTA will check the best available option for your address." canonical="/quote/thank-you" />
+      <SEO title="Quote request received" description="Thanks. OCCTA will check the best available option for your address and email you the next step." canonical="/quote/thank-you" noIndex />
       <section className="container mx-auto px-4 py-12 max-w-2xl">
         <div className="text-center">
           <div className="w-14 h-14 mx-auto mb-6 border-4 border-foreground bg-primary text-primary-foreground flex items-center justify-center">

@@ -3,7 +3,7 @@ import LegalPage from "./LegalPage";
 export default function AcceptableUse() {
   return (
     <LegalPage
-      title="Acceptable Use Policy"
+      title="Acceptable use of OCCTA services"
       description="OCCTA Acceptable Use Policy — how our broadband, voice and SIM services may be used and the activities that are not permitted."
       canonical="/legal/acceptable-use"
       lastUpdated="June 2026"

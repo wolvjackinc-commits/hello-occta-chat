@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 import { motion } from "framer-motion";
 
 const providers = [
@@ -21,7 +22,7 @@ const faqs = [
   { question: "Can I keep my phone number if I switch?", answer: "Number-porting eligibility depends on the service and switch. Confirm the porting option for your specific order before relying on it." },
 ];
 
-const NoContractBroadbandComparison = () => {
+const NoContractBroadbandComparisonPage = () => {
   const faqSchema = createFAQSchema(faqs);
   const breadcrumbSchema = createBreadcrumbSchema([
     { name: "Home", url: "/" },
@@ -183,5 +184,11 @@ const NoContractBroadbandComparison = () => {
     </Layout>
   );
 };
+
+const NoContractBroadbandComparison = () => (
+  <AvailabilityProvider>
+    <NoContractBroadbandComparisonPage />
+  </AvailabilityProvider>
+);
 
 export default NoContractBroadbandComparison;

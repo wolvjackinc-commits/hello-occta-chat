@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArrowRight, MessageCircle, PhoneCall, Mail } from "lucide-react";
 import { companyConfig } from "@/lib/companyConfig";
+import { breadcrumbLabel } from "@/lib/seo/breadcrumbLabel";
 
 export interface SeoSection {
   heading: string;
@@ -65,7 +66,7 @@ export default function SeoContentLayout({
   const faqSchema = faqs.length > 0 ? createFAQSchema(faqs.map(f => ({ question: f.question, answer: f.answer }))) : null;
   const breadcrumb = createBreadcrumbSchema([
     { name: "Home", url: "/" },
-    { name: h1, url: canonical },
+    { name: breadcrumbLabel(h1), url: canonical },
   ]);
 
   return (
@@ -78,7 +79,7 @@ export default function SeoContentLayout({
         <nav aria-label="Breadcrumb" className="text-xs font-display uppercase tracking-[0.18em] text-muted-foreground mb-4">
           <Link to="/" className="hover:text-foreground">Home</Link>
           <span className="mx-2">/</span>
-          <span className="text-foreground">{h1}</span>
+          <span className="text-foreground">{breadcrumbLabel(h1)}</span>
         </nav>
 
         <h1 className="font-display uppercase text-4xl md:text-5xl leading-[0.95] mb-6 text-foreground">

@@ -130,7 +130,7 @@ const PrivacyPolicy = () => {
   return (
     <Layout>
       <SEO 
-        title="Privacy Policy"
+        title="OCCTA privacy policy and your data"
         description="OCCTA's Privacy Policy. Learn how we collect, use, and protect your personal data in compliance with UK GDPR and Data Protection Act 2018."
         canonical="/privacy"
       />

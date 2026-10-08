@@ -19,7 +19,7 @@ import path from "path";
 
 const BASE_URL = "https://www.occta.co.uk";
 const SITE_NAME = "OCCTA";
-const OG_IMAGE = `${BASE_URL}/og-image.png`;
+const OG_IMAGE = `${BASE_URL}/og-image.jpg`;
 const OG_IMAGE_ALT = "OCCTA - Affordable UK Broadband and SIM Plans";
 
 interface RouteSEO {
@@ -42,7 +42,7 @@ const organizationSchema = {
   legalName: "OCCTA LIMITED",
   url: `${BASE_URL}/`,
   logo: `${BASE_URL}/pwa-512x512.png`,
-  image: `${BASE_URL}/og-image.png`,
+  image: `${BASE_URL}/og-image.jpg`,
   description:
     "Cheap UK broadband, SIM plans, and digital home phone services with Price Lock 24 or Flex 30 where offered. Broadband from £34.99/month on Price Lock 24, with Flex 30 available where offered.",
   address: {
@@ -80,11 +80,6 @@ const websiteSchema = {
     "@type": "Organization",
     name: "OCCTA LIMITED",
     logo: { "@type": "ImageObject", url: `${BASE_URL}/pwa-512x512.png` },
-  },
-  potentialAction: {
-    "@type": "SearchAction",
-    target: `${BASE_URL}/broadband?search={search_term_string}`,
-    "query-input": "required name=search_term_string",
   },
 };
 
@@ -671,7 +666,12 @@ const routes: RouteSEO[] = [
 /* ------------------------------------------------------------------ */
 
 function escapeHtml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const decoded = str
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+  return decoded.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function injectSEO(template: string, route: RouteSEO): string {

@@ -3,7 +3,7 @@ import LegalPage from "./LegalPage";
 export default function SwitchingPolicy() {
   return (
     <LegalPage
-      title="Switching Policy"
+      title="OCCTA broadband switching policy"
       description="How OCCTA handles One Touch Switch and what happens before, during and after your switch."
       canonical="/legal/switching-policy"
       lastUpdated="October 2026"

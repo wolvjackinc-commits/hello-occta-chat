@@ -25,7 +25,7 @@ const GuidePage = () => {
   ]);
 
   const SITE = "https://www.occta.co.uk";
-  const OG_IMAGE = `${SITE}/og-image.png`;
+  const OG_IMAGE = `${SITE}/og-image.jpg`;
   const datePublished = guide.datePublished ?? "2025-01-15";
   const dateModified = guide.dateModified ?? guide.datePublished ?? "2026-07-10";
 

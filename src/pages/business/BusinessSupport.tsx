@@ -153,7 +153,7 @@ const BusinessSupport = () => {
 
   return (
     <Layout>
-      <SEO title="Business Support" description="Raise a business support ticket and track updates." canonical="/business/support" />
+      <SEO title="OCCTA business support and tickets" description="Raise an OCCTA business support ticket and track fault, billing and account updates in one place." canonical="/business/support" />
       <section className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
           <div>

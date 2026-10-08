@@ -13,7 +13,8 @@ import { Helmet } from "react-helmet-async";
  *  - /dashboard/contract/*, /dashboard/receipt/*, /receipt/*
  *
  * Public funnel pages (KEEP indexable):
- *  - /quote/start, /quote/thank-you, /order
+ *  - /quote/start, /order
+ * /quote/thank-you is a confirmation page and stays noindex.
  */
 const EXACT_PRIVATE = new Set<string>([
   "/auth",
@@ -30,6 +31,12 @@ const EXACT_PRIVATE = new Set<string>([
   "/payment-result",
   "/dd/setup",
   "/pay/_internal",
+  "/business-legacy",
+  "/business/contacts",
+  "/business/notifications",
+  "/track-order",
+  "/status",
+  "/quote/thank-you",
 ]);
 
 const PRIVATE_PREFIXES = [
@@ -38,13 +45,14 @@ const PRIVATE_PREFIXES = [
   "/dashboard/",
   "/quote/contract-summary/",
   "/quote/payment/",
+  "/quote/two-doc/",
   "/receipt/",
 ];
 
 /** Tokenised Journey 2 order links (/order/:token) must never be indexed. */
 const PRIVATE_TOKEN_ROOTS = ["/order/"];
 
-const PUBLIC_QUOTE_PATHS = new Set<string>(["/quote/start", "/quote/thank-you"]);
+const PUBLIC_QUOTE_PATHS = new Set<string>(["/quote/start"]);
 
 function isPrivate(pathname: string): boolean {
   if (EXACT_PRIVATE.has(pathname)) return true;

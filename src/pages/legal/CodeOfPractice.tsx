@@ -3,7 +3,7 @@ import LegalPage from "./LegalPage";
 export default function CodeOfPractice() {
   return (
     <LegalPage
-      title="Code of Practice"
+      title="OCCTA customer code of practice"
       description="OCCTA's general Code of Practice for residential and small-business customers, covering sales, service, billing, complaints and the rights you have as an OCCTA customer."
       canonical="/legal/code-of-practice"
       lastUpdated="June 2026"

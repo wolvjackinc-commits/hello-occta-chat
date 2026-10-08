@@ -9,8 +9,9 @@ import NotFound from "@/pages/NotFound";
 import { motion } from "framer-motion";
 import LeadCaptureWidget from "@/components/marketing/LeadCaptureWidget";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 
-const ComparisonPage = () => {
+const ComparisonPageView = () => {
   const { slug } = useParams<{ slug: string }>();
   const comparison = slug ? getComparisonBySlug(slug) : undefined;
 
@@ -211,5 +212,11 @@ const ComparisonPage = () => {
     </Layout>
   );
 };
+
+const ComparisonPage = () => (
+  <AvailabilityProvider>
+    <ComparisonPageView />
+  </AvailabilityProvider>
+);
 
 export default ComparisonPage;

@@ -1,4 +1,5 @@
 import Layout from "@/components/layout/Layout";
+import { SEO } from "@/components/seo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,6 +79,7 @@ const ServiceStatus = () => {
 
   return (
     <Layout>
+      <SEO title="OCCTA service status" description="Live-style service status is not a public report. Check your account or contact OCCTA if a service is affected." canonical="/status" noIndex />
       <section className="bg-secondary/30 py-16">
         <div className="container mx-auto px-4">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">

@@ -37,7 +37,7 @@ export default function LearnPage() {
         datePublished: article.datePublished,
         dateModified: article.dateModified,
         mainEntityOfPage: `${SITE_URL}${canonical}`,
-        image: `${SITE_URL}/og-image.png`,
+        image: `${SITE_URL}/og-image.jpg`,
         author: {
           "@type": "Organization",
           name: article.authorName,

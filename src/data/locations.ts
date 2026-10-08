@@ -186,7 +186,7 @@ export const locations: Location[] = [
     slug: "coventry",
     city: "Coventry",
     region: "West Midlands",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Coventry from OCCTA. Get fibre public speed bands up to 1000Mbps where available across the West Midlands with Setup from £0 where available with contract-specific pricing shown before acceptance.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Coventry from OCCTA. Get fibre public speed bands up to 1000Mbps where available across the West Midlands with Setup from £0 where available with contract-specific pricing shown before acceptance.",
     metaDescription: "OCCTA broadband in Coventry. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Can I get OCCTA in Coventry?", answer: "Yes \u2014 OCCTA covers Coventry and the West Midlands via the access network available at the address. Check your postcode." },
@@ -234,7 +234,7 @@ export const locations: Location[] = [
     slug: "wolverhampton",
     city: "Wolverhampton",
     region: "West Midlands",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Wolverhampton. OCCTA delivers fibre internet across the West Midlands with public speed bands up to 1000Mbps where available, Setup from £0 where available, with contract-specific pricing shown before acceptance.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Wolverhampton. OCCTA delivers fibre internet across the West Midlands with public speed bands up to 1000Mbps where available, Setup from £0 where available, with contract-specific pricing shown before acceptance.",
     metaDescription: "OCCTA broadband in Wolverhampton. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Can I get OCCTA in Wolverhampton?", answer: "Yes \u2014 OCCTA covers Wolverhampton and the West Midlands via the access network available at the address." },
@@ -306,7 +306,7 @@ export const locations: Location[] = [
     slug: "norwich",
     city: "Norwich",
     region: "Norfolk",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Norwich. OCCTA delivers fibre internet across Norfolk with public speed bands up to 1000Mbps where available, Setup from £0 where available, and a fixed monthly price.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Norwich. OCCTA delivers fibre internet across Norfolk with public speed bands up to 1000Mbps where available, Setup from £0 where available, and a fixed monthly price.",
     metaDescription: "OCCTA broadband in Norwich. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Can I get OCCTA in Norwich?", answer: "Yes \u2014 OCCTA covers Norwich and Norfolk via the access network available at the address." },
@@ -354,7 +354,7 @@ export const locations: Location[] = [
     slug: "northampton",
     city: "Northampton",
     region: "Northamptonshire",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Northampton. OCCTA provides fibre internet across Northamptonshire with public speed bands up to 1000Mbps where available with contract-specific pricing shown before acceptance.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Northampton. OCCTA provides fibre internet across Northamptonshire with public speed bands up to 1000Mbps where available with contract-specific pricing shown before acceptance.",
     metaDescription: "OCCTA broadband in Northampton. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Can I get OCCTA in Northampton?", answer: "Yes \u2014 OCCTA covers Northampton via the access network available at the address." },
@@ -426,7 +426,7 @@ export const locations: Location[] = [
     slug: "oxford",
     city: "Oxford",
     region: "Oxfordshire",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Oxford. OCCTA offers fibre internet across Oxfordshire with public speed bands up to 1000Mbps where available, Setup from £0 where available, and honest pricing.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Oxford. OCCTA offers fibre internet across Oxfordshire with public speed bands up to 1000Mbps where available, Setup from £0 where available, and honest pricing.",
     metaDescription: "OCCTA broadband in Oxford. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Can I get OCCTA in Oxford?", answer: "Yes \u2014 OCCTA covers Oxford and Oxfordshire via the access network available at the address." },
@@ -462,7 +462,7 @@ export const locations: Location[] = [
     slug: "middlesbrough",
     city: "Middlesbrough",
     region: "North Yorkshire",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Middlesbrough. OCCTA delivers fibre internet with public speed bands up to 1000Mbps where available with contract-specific pricing shown before acceptance across Teesside.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Middlesbrough. OCCTA delivers fibre internet with public speed bands up to 1000Mbps where available with contract-specific pricing shown before acceptance across Teesside.",
     metaDescription: "OCCTA broadband in Middlesbrough. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Is OCCTA available in Middlesbrough?", answer: "Yes \u2014 OCCTA covers Middlesbrough via the access network available at the address." },
@@ -498,7 +498,7 @@ export const locations: Location[] = [
     slug: "ipswich",
     city: "Ipswich",
     region: "Suffolk",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Ipswich. OCCTA provides fibre internet across Suffolk with public speed bands up to 1000Mbps where available and honest pricing.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Ipswich. OCCTA provides fibre internet across Suffolk with public speed bands up to 1000Mbps where available and honest pricing.",
     metaDescription: "OCCTA broadband in Ipswich. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Can I get OCCTA in Ipswich?", answer: "Yes \u2014 OCCTA covers Ipswich and Suffolk via the access network available at the address." },
@@ -534,7 +534,7 @@ export const locations: Location[] = [
     slug: "wakefield",
     city: "Wakefield",
     region: "West Yorkshire",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Wakefield. OCCTA delivers fibre internet across West Yorkshire with public speed bands up to 1000Mbps where available and honest pricing.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Wakefield. OCCTA delivers fibre internet across West Yorkshire with public speed bands up to 1000Mbps where available and honest pricing.",
     metaDescription: "OCCTA broadband in Wakefield. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Is OCCTA available in Wakefield?", answer: "Yes \u2014 OCCTA covers Wakefield via the access network available at the address." },
@@ -570,7 +570,7 @@ export const locations: Location[] = [
     slug: "doncaster",
     city: "Doncaster",
     region: "South Yorkshire",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Doncaster. OCCTA serves South Yorkshire with fibre public speed bands up to 1000Mbps where available with contract-specific pricing shown before acceptance.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Doncaster. OCCTA serves South Yorkshire with fibre public speed bands up to 1000Mbps where available with contract-specific pricing shown before acceptance.",
     metaDescription: "OCCTA broadband in Doncaster. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Can I get OCCTA in Doncaster?", answer: "Yes \u2014 OCCTA covers Doncaster via the access network available at the address." },
@@ -606,7 +606,7 @@ export const locations: Location[] = [
     slug: "cheltenham",
     city: "Cheltenham",
     region: "Gloucestershire",
-    intro: "broadband with Flex 30 and Price Lock 24 options in Cheltenham. OCCTA delivers fibre internet across Gloucestershire with public speed bands up to 1000Mbps where available with contract-specific pricing shown before acceptance.",
+    intro: "Broadband with Flex 30 and Price Lock 24 options in Cheltenham. OCCTA delivers fibre internet across Gloucestershire with public speed bands up to 1000Mbps where available with contract-specific pricing shown before acceptance.",
     metaDescription: "OCCTA broadband in Cheltenham. Price Lock 24 and Flex 30 are available where eligible. Exact address-specific technology, speeds, setup and charges are confirmed before acceptance.",
     faqs: [
       { question: "Is OCCTA available in Cheltenham?", answer: "Yes \u2014 OCCTA covers Cheltenham and Gloucestershire via the access network available at the address." },

@@ -122,7 +122,7 @@ const BusinessBilling = () => {
 
   return (
     <Layout>
-      <SEO title="Business Billing" description="Business invoices, payment history, and downloads." canonical="/business/billing" />
+      <SEO title="Business billing and invoices" description="View OCCTA business invoices, payment history and downloads for your company account." canonical="/business/billing" />
       <section className="container mx-auto px-4 py-12 max-w-6xl">
         <div className="mb-8">
           <h1 className="font-display text-4xl mb-2">Business billing</h1>

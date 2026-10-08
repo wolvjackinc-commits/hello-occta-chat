@@ -38,4 +38,18 @@ export default defineConfig(() => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("/src/data/locations") || id.includes("/src/data/locationLocal")) {
+            return "locations";
+          }
+          if (id.includes("/src/pages/admin/") || id.includes("/src/components/admin/")) {
+            return "admin";
+          }
+        },
+      },
+    },
+  },
 }));

@@ -1,5 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { getFromPrices } from '@/lib/pricing/engine';
+import { buildDocumentTitle, fitMetaDescription } from '@/lib/seo/documentTitle';
+import { resolveCanonicalPath } from '@/lib/seo/topicCanonicals';
 
 interface SEOProps {
   title?: string;
@@ -14,7 +16,7 @@ interface SEOProps {
 }
 
 const BASE_URL = 'https://www.occta.co.uk';
-const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
+const DEFAULT_IMAGE = `${BASE_URL}/og-image.jpg`;
 const SITE_NAME = 'OCCTA';
 const DEFAULT_KEYWORDS = 'UK broadband, price lock broadband, 30 day rolling broadband, flexible broadband, fibre broadband UK, 5G SIM UK, SIM only deals UK, OCCTA';
 
@@ -38,24 +40,17 @@ export const SEO = ({
 }: SEOProps) => {
   const currentPrices = getFromPrices();
   const defaultDesc = `UK fibre broadband from £${currentPrices.broadband}/mo. Price Lock 24 or Flex 30 where eligible. Clear first bill. UK-based support.`;
-  
-  const fullTitle = title
-    ? `${title} | ${SITE_NAME}`
-    : `${SITE_NAME} — UK Broadband, 5G SIM & Digital Home Phone`;
+
+  const fullTitle = buildDocumentTitle(title);
 
   const browserPath = typeof window !== 'undefined'
     ? window.location.pathname
     : '/';
-  
-  // Clean up the canonical path - remove trailing slashes except for root
-  let canonicalPath = (canonical || browserPath || '/').split('?')[0];
-  if (canonicalPath.length > 1 && canonicalPath.endsWith('/')) {
-    canonicalPath = canonicalPath.slice(0, -1);
-  }
-  
+
+  const canonicalPath = resolveCanonicalPath(canonical || browserPath || '/');
   const canonicalUrl = toAbsoluteUrl(canonicalPath);
   const socialImage = toAbsoluteUrl(image);
-  const metaDescription = description || defaultDesc;
+  const metaDescription = fitMetaDescription(description || defaultDesc);
   
   const robotsContent = noIndex
     ? 'noindex, nofollow'

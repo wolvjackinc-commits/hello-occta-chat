@@ -24,7 +24,7 @@ export default function BlogIndex() {
   return (
     <Layout>
       <SEO
-        title="OCCTA Blog — Broadband Deals, Landline Switch-Off 2027 & Digital Voice"
+        title="OCCTA Blog — broadband, switching and voice"
         description="UK broadband guides covering broadband deals, fibre, speed tests, switching, the 2027 landline switch-off, Digital Voice, pensioners and home phone help."
         canonical="/blog"
         keywords="broadband deals UK, landline switch off 2027, broadband for pensioners, digital landline, fibre broadband deals, broadband comparison, broadband speed test"

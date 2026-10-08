@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
+import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 import { motion } from "framer-motion";
 
 const rows = [
@@ -46,7 +47,7 @@ const faqs = [
   { question: "Can I switch from a fixed contract to rolling later?", answer: "After Price Lock 24 ends, the service continues on a 30-day rolling basis unless you expressly agree another fixed term. Any internal plan change is handled by OCCTA; One Touch Switch applies when switching provider where the rules apply." },
 ];
 
-const RollingVsFixedBroadbandComparison = () => {
+const RollingVsFixedBroadbandComparisonPage = () => {
   const faqSchema = createFAQSchema(faqs);
   const breadcrumbSchema = createBreadcrumbSchema([
     { name: "Home", url: "/" },
@@ -186,5 +187,11 @@ const RollingVsFixedBroadbandComparison = () => {
     </Layout>
   );
 };
+
+const RollingVsFixedBroadbandComparison = () => (
+  <AvailabilityProvider>
+    <RollingVsFixedBroadbandComparisonPage />
+  </AvailabilityProvider>
+);
 
 export default RollingVsFixedBroadbandComparison;

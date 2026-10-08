@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Cloud, Globe, Phone, Server, ShieldCheck, Wifi } from "lucide-react";
 import { useAppMode } from "@/hooks/useAppMode";
 import { businessPlans, businessServices } from "@/lib/businessData";
+import { SEO } from "@/components/seo";
 
 const serviceIcons: Record<string, typeof Wifi> = {
   "hosted-voip": Phone,
@@ -54,6 +55,11 @@ const BusinessOffers = () => {
 
   return (
     <LayoutComponent>
+      <SEO
+        title="OCCTA business plans and offers"
+        description="Explore OCCTA business plans, stacked services and current offers. Prices, terms and any promotional credits are confirmed in a written quote before you order."
+        canonical="/business-offers"
+      />
       <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">

@@ -64,7 +64,7 @@ export default function CoverageAreas() {
     <Layout>
       <SEO
         title="Broadband coverage areas — every UK region we serve"
-        description="Find OCCTA fibre broadband, 5G SIM and digital home phone in your area. 50+ UK cities and towns, checked by postcode. Public broadband speed bands up to 1000Mbps where available; exact address-specific service and speed information are confirmed before acceptance."
+        description="Find OCCTA broadband, SIM and Digital Voice by postcode across 50 UK cities. The checker confirms the address-specific service before you accept."
         canonical="/coverage-areas"
         keywords="broadband near me, uk broadband coverage, fibre broadband areas, occta coverage, broadband by city"
       />

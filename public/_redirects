@@ -96,5 +96,42 @@ http://www.occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 /robots.txt              /robots.txt                          200
 /manifest.webmanifest    /manifest.webmanifest                200
 
-# SPA fallback for all other routes (auth, admin, dashboard, etc.)
-/*                       /index.html                          200
+# Client-only routes stay on the SPA shell. Prerendered files are served first.
+/auth                      /index.html                          200
+/dashboard                 /index.html                          200
+/dashboard/*               /index.html                          200
+/admin/*                   /index.html                          200
+/checkout                  /index.html                          200
+/pre-checkout              /index.html                          200
+/thank-you                 /index.html                          200
+/business-checkout         /index.html                          200
+/business-legacy           /business                            301
+/pay                       /index.html                          200
+/pay/*                     /index.html                          200
+/pay-invoice               /index.html                          200
+/payment-result            /index.html                          200
+/dd/setup                  /index.html                          200
+/install                   /index.html                          200
+/offline                   /index.html                          200
+/billing-settings          /index.html                          200
+/track-order               /index.html                          200
+/status                    /index.html                          200
+/quote/start               /quote/start/index.html              200
+/quote/thank-you           /index.html                          200
+/quote/two-doc/*           /index.html                          200
+/quote/contract-summary/*  /index.html                          200
+/quote/payment/*           /index.html                          200
+/quote/*                   /index.html                          200
+/order/*                   /index.html                          200
+/receipt/*                 /index.html                          200
+/sim/checkout              /index.html                          200
+/sim/order-success/*       /index.html                          200
+/business/contacts         /index.html                          200
+/business/notifications    /index.html                          200
+
+# Alias that already redirects in the app. Hosts that ignore this still load the SPA.
+/privacy-policy            /privacy                             301
+/privacy-policy/           /privacy                             301
+
+# Unknown paths. Hosts that ignore _redirects will still SPA-fallback to index.html.
+/*                         /404.html                            404

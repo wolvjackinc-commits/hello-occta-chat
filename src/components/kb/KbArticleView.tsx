@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import Layout from "@/components/layout/Layout";
 import FeedbackWidget from "@/components/kb/FeedbackWidget";
 import { companyConfig } from "@/lib/companyConfig";
+import { breadcrumbLabel } from "@/lib/seo/breadcrumbLabel";
 
 export type KbFaq = { question: string; answer: string };
 export type KbRelated = { slug: string; title: string; kind: string };
@@ -70,12 +71,13 @@ function slugifyHeading(children: React.ReactNode): string {
 export default function KbArticleView({ article }: { article: KbArticle }) {
   const toc = extractToc(article.content);
   const canonical = routeForKind(article.kind, article.slug);
-  const kindLabel = labelForKind(article.kind);
+  const kindLabel = breadcrumbLabel(labelForKind(article.kind));
+  const articleLabel = breadcrumbLabel(article.title);
 
   const breadcrumb = createBreadcrumbSchema([
     { name: "Home", url: "/" },
     { name: kindLabel, url: article.kind === "blog" ? "/blog" : article.kind === "guide" ? "/guides" : "/help" },
-    { name: article.title, url: canonical },
+    { name: articleLabel, url: canonical },
   ]);
   const faqSchema = article.faqs && article.faqs.length > 0 ? createFAQSchema(article.faqs) : null;
 
@@ -104,7 +106,7 @@ export default function KbArticleView({ article }: { article: KbArticle }) {
             {kindLabel}
           </Link>
           <span className="mx-2">/</span>
-          <span className="text-foreground">{article.title}</span>
+          <span className="text-foreground">{articleLabel}</span>
         </nav>
 
         <span className="inline-block text-xs font-display uppercase tracking-[0.18em] text-primary mb-2">

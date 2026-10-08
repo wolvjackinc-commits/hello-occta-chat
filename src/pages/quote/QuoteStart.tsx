@@ -185,7 +185,7 @@ export default function QuoteStart() {
   return (
     <Layout>
       <SEO
-        title="Request a quote — OCCTA"
+        title="Request an OCCTA broadband quote"
         description="Tell us what you need and we'll prepare a confirmed quote and Contract Summary before you pay. No commitment until you accept your Contract Summary."
         canonical="/quote/start"
       />

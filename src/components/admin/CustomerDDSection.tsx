@@ -19,6 +19,7 @@ import {
 import { DDMandateDetailDialog } from "./DDMandateDetailDialog";
 import { DDWorkflowDialog } from "./DDWorkflowDialog";
 import { generateDDMandatePdf } from "@/lib/generateDDMandatePdf";
+import { nextCollectionAmount } from "@/lib/dd/nextCollectionAmount";
 import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
 import { FileText, ShieldCheck, Unlock, Copy } from "lucide-react";
 import {
@@ -146,7 +147,7 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
       const [{ data: profile }, { data: billing }, { data: cs }] = await Promise.all([
         supabase.from("profiles").select("full_name, email, address_line1, city, postcode").eq("id", userId).maybeSingle(),
         supabase.from("billing_settings").select("next_invoice_date, payment_terms_days, billing_mode, billing_day").eq("user_id", userId).maybeSingle(),
-        supabase.from("contract_summaries").select("cs_number, plan_name, monthly_price_incl_vat, contract_length").eq("customer_id", userId).eq("status", "accepted").order("accepted_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("contract_summaries").select("cs_number, plan_name, monthly_price_incl_vat, contract_length, payment_schedule").eq("customer_id", userId).eq("status", "accepted").order("accepted_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
       return { profile, billing, cs };
     },
@@ -161,14 +162,13 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
     return d.toISOString().slice(0, 10);
   })();
 
-  const nextAmount = (() => {
-    const monthly = Number(ctx?.cs?.monthly_price_incl_vat ?? 0);
-    if (!monthly) return null;
-    // Quarterly cadence when payment_terms + monthly plan implies 3-month billing.
-    // We infer 3× when billing_mode = fixed_day and there is a gap of ~3 months between invoices.
-    // Safe default: show 3× for legacy quarterly (existing OCCTA policy).
-    return Number((monthly * 3).toFixed(2));
-  })();
+  const nextAmount = nextCollectionAmount({
+    monthlyPriceInclVat: ctx?.cs?.monthly_price_incl_vat,
+    paymentSchedule: ctx?.cs?.payment_schedule,
+    contractLength: ctx?.cs?.contract_length,
+    billingMode: ctx?.billing?.billing_mode,
+    paymentTermsDays: ctx?.billing?.payment_terms_days,
+  });
 
   const openMandatePdf = (mandate: DDMandateView) => {
     const p = ctx?.profile as any;

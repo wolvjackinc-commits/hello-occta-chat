@@ -296,7 +296,7 @@ serve(async (req) => {
           user_id
         `)
         .eq('due_date', dateStr)
-        .in('status', ['sent', 'issued', 'overdue', 'awaiting_dd_collection']);
+        .in('status', ['sent', 'issued', 'overdue', 'issued']);
 
       if (invError) {
         console.error(`Error fetching invoices for ${dateStr}:`, invError);

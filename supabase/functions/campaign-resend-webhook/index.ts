@@ -53,17 +53,9 @@ serve(async req=>{
   }
   const {error:eventError}=await db.from("campaign_events").insert({campaign_id:r.campaign_id,recipient_id:r.id,provider_event_id:eid,event_type:type,metadata:{provider_message_id:providerId}});
   if(eventError?.code!=="23505"&&eventError)throw eventError;
-  // Counters are calculated from recipient truth, never incremented twice on retries.
-  const {data:recipients}=await db.from("campaign_recipients").select("sent_at,delivered_at,bounced_at,opened_at,status").eq("campaign_id",r.campaign_id);
-  if(recipients){
-   await db.from("campaigns").update({
-    sent_count:recipients.filter(x=>!!x.sent_at).length,
-    delivered_count:recipients.filter(x=>!!x.delivered_at).length,
-    bounced_count:recipients.filter(x=>!!x.bounced_at).length,
-    opened_count:recipients.filter(x=>!!x.opened_at).length,
-    failed_count:recipients.filter(x=>x.status==="failed").length
-   }).eq("id",r.campaign_id);
-  }
+  // Recompute all recipients atomically, including audiences beyond 1,000 rows.
+  const {error:metricsError}=await db.rpc("refresh_campaign_metrics",{p_campaign_id:r.campaign_id});
+  if(metricsError)throw metricsError;
   return json({ok:true});
  }catch(e){console.error("campaign webhook:",e);return json({error:"PROCESSING_FAILED"},500);}
 });

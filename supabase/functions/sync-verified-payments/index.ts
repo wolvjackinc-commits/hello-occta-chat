@@ -23,6 +23,14 @@ Deno.serve(async (req) => {
   const dryRun = body.dry_run !== false;
   const db = getServiceClient();
 
+  if (!dryRun) {
+    // Deployment ordering: never post a receipt unless durable notifications
+    // and the idempotent receipt index have been provisioned.
+    const { error: outboxError } = await db.from("billing_notifications_outbox")
+      .select("id").limit(1);
+    if (outboxError) return jsonResponse({ error: "notification_outbox_not_ready" }, 503);
+  }
+
   const { data: payments, error } = await db.from("payment_recon_payments")
     .select("id, payment_ref, invoice_number, occta_ref, method, amount, bank_received_on, failed_on, reconciled_status, match_category")
     .eq("reconciled_status", "paid")

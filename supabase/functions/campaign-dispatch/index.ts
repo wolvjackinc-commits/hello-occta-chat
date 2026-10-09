@@ -55,14 +55,17 @@ async function processOne(r:any){
  const {data:c,error:cErr}=await db.from("campaigns").select("id,status,approved_at,subject_snapshot,html_snapshot,text_snapshot,track_opens,track_clicks").eq("id",r.campaign_id).single();
  if(cErr||!c||c.status!=="sending"||!c.approved_at){await mark(r.id,"queued");return "paused";}
  const email=String(r.email).trim().toLowerCase();
- const {data:blocked}=await db.from("marketing_suppressions").select("email").eq("email",email).maybeSingle();
+ const {data:blocked,error:suppressionError}=await db.from("marketing_suppressions").select("email").eq("email",email).maybeSingle();
+ if(suppressionError)throw new Error("Cannot verify global suppression: "+suppressionError.message);
  if(blocked){await mark(r.id,"suppressed",{error_message:"Address suppressed"});return "suppressed";}
  if(r.user_id){
-  const {data:user}=await db.from("profiles").select("marketing_email_consent,archived_at").eq("id",r.user_id).maybeSingle();
+  const {data:user,error:consentError}=await db.from("profiles").select("marketing_email_consent,archived_at").eq("id",r.user_id).maybeSingle();
+  if(consentError)throw new Error("Cannot verify customer consent: "+consentError.message);
   if(!user?.marketing_email_consent||user.archived_at){await mark(r.id,"suppressed",{error_message:"Customer consent withdrawn or archived"});return "suppressed";}
  }
  if(r.contact_id){
-  const {data:contact}=await db.from("marketing_contacts").select("consent_status").eq("id",r.contact_id).maybeSingle();
+  const {data:contact,error:consentError}=await db.from("marketing_contacts").select("consent_status").eq("id",r.contact_id).maybeSingle();
+  if(consentError)throw new Error("Cannot verify imported consent: "+consentError.message);
   if(contact?.consent_status!=="subscribed"){await mark(r.id,"suppressed",{error_message:"Contact consent withdrawn"});return "suppressed";}
  }
  const unsubscribe=BASE+"/functions/v1/campaign-unsubscribe?token="+encodeURIComponent(r.unsubscribe_token);

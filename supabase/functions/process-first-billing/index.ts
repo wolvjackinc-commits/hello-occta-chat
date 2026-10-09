@@ -368,9 +368,9 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           .select("id, status").eq("user_id", svc.user_id).eq("status", "active").maybeSingle();
         if (activeMandate && pm.dd_setup_status === "active") {
           await supabase.from("invoices").update({
-            status: "awaiting_dd_collection",
+            status: "issued",
           }).eq("id", invoiceId);
-          invoiceStatus = "awaiting_dd_collection";
+          invoiceStatus = "issued";
         } else if (!ddTaskId) {
           const { data: task } = await supabase.from("admin_tasks").insert({
             title: `DD not active for first invoice ${invoiceNumber}`,
@@ -385,13 +385,13 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       }
 
       if (invoiceStatus === "draft") {
-        await supabase.from("invoices").update({ status: "ready_to_send" }).eq("id", invoiceId);
-        invoiceStatus = "ready_to_send";
+        await supabase.from("invoices").update({ status: "issued" }).eq("id", invoiceId);
+        invoiceStatus = "issued";
       }
 
       // Dashboard-only billing: save the validated PDF and invoice record.
       // Do NOT email invoice/receipt documents or claim that an email was sent.
-      if (!alreadyEmailed && ["draft", "ready_to_send"].includes(invoiceStatus ?? "")) {
+      if (!alreadyEmailed && ["draft", "issued"].includes(invoiceStatus ?? "")) {
         const { error: issueError } = await supabase.from("invoices")
           .update({ status: "issued" }).eq("id", invoiceId);
         if (issueError) throw issueError;

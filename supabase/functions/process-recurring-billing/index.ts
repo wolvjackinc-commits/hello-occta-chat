@@ -10,6 +10,7 @@ import {
   type VatMode,
 } from "../_shared/billingHelpers.ts";
 import { assertServiceLive } from "../_shared/billingGate.ts";
+import { billingReconciliationHold } from "../_shared/billingSafety.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,6 +79,11 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
   const results: any[] = [];
 
   for (const svc of services ?? []) {
+    const safety = await billingReconciliationHold(supabase, svc.user_id);
+    if (safety.held) {
+      results.push({ service_id: svc.id, skipped: "financial_hold", reason: safety.reason });
+      continue;
+    }
     try {
       // Two-doc billing gate. Legacy flow (flag off) is unchanged.
       const gate = await assertServiceLive({
@@ -143,7 +149,6 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       const recipientEmail = profile?.email ?? "";
       const customerName = profile?.full_name ?? "Customer";
       const accountNumber = profile?.account_number ?? "";
-      if (!recipientEmail) throw new Error("customer_email_missing");
 
       let pmMethod: string | null = null;
       let ddStatus: string | null = null;
@@ -285,9 +290,9 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           .select("id, status").eq("user_id", svc.user_id).eq("status", "active").maybeSingle();
         if (activeMandate && ddStatus === "active") {
           await supabase.from("invoices").update({
-            status: "awaiting_dd_collection",
+            status: "issued",
           }).eq("id", invoiceId);
-          invoiceStatus = "awaiting_dd_collection";
+          invoiceStatus = "issued";
         } else {
           await supabase.from("admin_tasks").insert({
             title: `DD not active for monthly invoice ${invoiceNumber}`,
@@ -301,67 +306,19 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       }
 
       if (invoiceStatus === "draft") {
-        await supabase.from("invoices").update({ status: "ready_to_send" }).eq("id", invoiceId);
-        invoiceStatus = "ready_to_send";
+        await supabase.from("invoices").update({ status: "issued" }).eq("id", invoiceId);
+        invoiceStatus = "issued";
       }
 
-      // Email once
-      if (!alreadyEmailed) {
-        let pdfSignedUrl: string | null = null;
-        if (pdfStorageKey) {
-          const { data: signed } = await supabase.storage
-            .from("invoice-pdfs").createSignedUrl(pdfStorageKey, 60 * 60 * 24 * 14);
-          pdfSignedUrl = signed?.signedUrl ?? null;
-        }
-        const dueDateStr = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-        const emailLines = totals.lines.map((l) => ({
-          description: l.period_label ? `${l.description} (${l.period_label})` : l.description,
-          qty: 1,
-          line_total: l.gross_minor / 100,
-        }));
-        const sendResp = await supabase.functions.invoke("send-email", {
-          body: {
-            type: "invoice_sent",
-            to: recipientEmail,
-            invoiceId,
-            logToCommunications: true,
-            userId: svc.user_id,
-            data: {
-              customer_name: customerName,
-              account_number: accountNumber,
-              invoice_number: invoiceNumber,
-              invoice_id: invoiceId,
-              issue_date: fmtDate(today),
-              due_date: fmtDate(dueDateStr),
-              billing_period: fmtInclusivePeriod(periodStart, periodEnd),
-              lines: emailLines,
-              subtotal: totals.subtotal_net_minor / 100,
-              vat_total: totals.vat_total_minor / 100,
-              total,
-              pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${invoiceId}`,
-              invoice_pdf_url: pdfSignedUrl,
-              dashboard_url: dashboardUrl,
-            },
-          },
-          headers: { "idempotency-key": `invoice-monthly:${invoiceId}` } as any,
-        });
-        if (sendResp.error) {
-          await supabase.from("invoices").update({
-            email_error: String(sendResp.error.message || "send_failed").slice(0, 1000),
-          }).eq("id", invoiceId);
-          throw new Error("invoice_email_failed");
-        }
-        const emailMessageId = (sendResp.data as any)?.message_id ?? null;
-        const nextStatus = invoiceStatus === "awaiting_dd_collection" ? "awaiting_dd_collection" : "sent";
-        await supabase.from("invoices").update({
-          status: nextStatus,
-          email_sent_at: new Date().toISOString(),
-          email_provider_message_id: emailMessageId,
-          email_error: null,
-        }).eq("id", invoiceId);
+      // Persist new invoices only in the customer's dashboard.
+      // No invoice/receipt email is sent. DD collection is never initiated here.
+      if (["draft", "issued"].includes(invoiceStatus ?? "")) {
+        const { error: issueError } = await supabase.from("invoices")
+          .update({ status: "issued" }).eq("id", invoiceId);
+        if (issueError) throw issueError;
       }
 
-      // Advance cursor only after email accepted (or already emailed).
+      // Advance only after an invoice PDF has been persisted successfully.
       await supabase.from("services").update({
         next_billing_date: periodEnd,
       }).eq("id", svc.id);

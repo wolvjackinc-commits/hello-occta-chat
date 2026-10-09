@@ -22,6 +22,7 @@ type Receipt = {
   paid_at: string;
   method: string | null;
   reference: string | null;
+  pdf_storage_key?: string | null;
   invoice_id: string;
   invoice?: {
     invoice_number: string;
@@ -97,6 +98,21 @@ export function PaymentHistory({ userId, limit, showTitle = true }: PaymentHisto
   const handleDownloadReceipt = async (receipt: Receipt) => {
     setGeneratingPdf(receipt.id);
     try {
+      // Serve the original verified receipt PDF, not an altered reprint.
+      if (receipt.pdf_storage_key) {
+        const { data, error } = await supabase.functions
+          .invoke<{ url: string }>("get-customer-receipt-pdf", {
+            body: { receipt_id: receipt.id },
+          });
+        if (error || !data?.url) throw error ?? new Error("Receipt document is unavailable");
+        const anchor = document.createElement("a");
+        anchor.href = data.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.click();
+        return;
+      }
+      // Historical receipts without archived PDFs use existing print view.
       // Fetch profile for customer info
       const { data: profile } = await supabase
         .from('profiles')

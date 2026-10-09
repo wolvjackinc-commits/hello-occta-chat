@@ -53,6 +53,15 @@ export function AdminPaymentReconPage({ initialTab }: { initialTab?: string }) {
       onImport={(fileKind: FileKind, fileName, csvText) => run(async () => {
         const result = await importReconFile(fileKind, fileName, csvText);
         if (result.errors.length) throw new Error(result.errors.join(" "));
+        // UI imports and Grok bot imports must follow identical settlement rules.
+        // The server only posts a payment if the provider/bank settlement,
+        // invoice reference, account and exact balance all match.
+        const { error: syncError } = await supabase.functions.invoke("sync-verified-payments", {
+          body: { dry_run: false },
+        });
+        if (syncError) throw new Error(
+          "Import saved, but verified payment posting needs a retry. No unverified payment was marked paid."
+        );
       }, "Import saved")}
       onLink={(subjectType, subjectKey, accountNumber, invoiceNumber) => run(
         () => linkReconSubject({ subjectType, subjectKey, accountNumber, invoiceNumber }),

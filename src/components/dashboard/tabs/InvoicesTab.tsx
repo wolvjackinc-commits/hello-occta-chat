@@ -57,6 +57,23 @@ export function InvoicesTab({ userId }: { userId: string }) {
       ]);
     if (invRes.error || !invRes.data) throw invRes.error ?? new Error("invoice_missing");
       const inv: any = invRes.data;
+      // Use the original immutable stored bill whenever possible. Never
+      // regenerate an altered historical invoice for the customer.
+      if (inv.pdf_storage_key) {
+        const { data: link, error: pdfError } = await supabase.functions
+          .invoke<{ url: string }>("get-customer-invoice-pdf", {
+            body: { invoice_id: invoiceId },
+          });
+        if (pdfError || !link?.url) {
+          throw pdfError ?? new Error("Original invoice PDF is unavailable");
+        }
+        const anchor = document.createElement("a");
+        anchor.href = link.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.click();
+        return;
+      }
       const profile: any = profileRes.data ?? {};
       const lines = (linesRes.data as any[]) ?? [];
       generateInvoicePdf({
@@ -180,7 +197,7 @@ export function InvoicesTab({ userId }: { userId: string }) {
     logClientEvent({ event_type: "tab_view", title: "dashboard:invoices", source_module: "dashboard" });
     (async () => {
       const [u, p, c] = await Promise.all([
-        supabase.from("invoices").select("id,invoice_number,total,status,due_date,issue_date").eq("user_id", userId).not("status", "in", "(paid,cancelled,void,written_off)").order("due_date", { ascending: true }),
+        supabase.from("invoices").select("id,invoice_number,total,status,due_date,issue_date").eq("user_id", userId).not("status", "in", "(paid,cancelled,void,written_off,draft,ready_to_send)").order("due_date", { ascending: true }),
         supabase.from("invoices").select("id,invoice_number,total,status,due_date,issue_date").eq("user_id", userId).eq("status", "paid").order("issue_date", { ascending: false }).limit(100),
         supabase.from("credit_notes").select("id,invoice_id,amount,reason,created_at").eq("user_id", userId).order("created_at", { ascending: false }),
       ]);

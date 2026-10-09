@@ -9,6 +9,7 @@ import {
   type VatMode,
 } from "../_shared/billingHelpers.ts";
 import { assertServiceLive } from "../_shared/billingGate.ts";
+import { billingReconciliationHold } from "../_shared/billingSafety.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,6 +68,13 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       "first_billing_job_is_eligible", { _job_id: job.id });
     if (!eligible) {
       results.push({ id: job.id, skipped: "not_eligible", blocker: job.blocker ?? null });
+      continue;
+    }
+
+    // A failed or unallocated provider payment is not permission to invoice.
+    const safety = await billingReconciliationHold(supabase, job.customer_id);
+    if (safety.held) {
+      results.push({ id: job.id, skipped: "financial_hold", reason: safety.reason });
       continue;
     }
 
@@ -130,7 +138,6 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       const recipientEmail = profile?.email ?? "";
       const customerName = profile?.full_name ?? "Customer";
       const accountNumber = profile?.account_number ?? "";
-      if (!recipientEmail) throw new Error("customer_email_missing");
 
       // ── Compose invoice lines from job snapshot ──
       const vatMode: VatMode = (job.vat_mode as VatMode) ?? "inclusive";
@@ -361,9 +368,9 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           .select("id, status").eq("user_id", svc.user_id).eq("status", "active").maybeSingle();
         if (activeMandate && pm.dd_setup_status === "active") {
           await supabase.from("invoices").update({
-            status: "awaiting_dd_collection",
+            status: "issued",
           }).eq("id", invoiceId);
-          invoiceStatus = "awaiting_dd_collection";
+          invoiceStatus = "issued";
         } else if (!ddTaskId) {
           const { data: task } = await supabase.from("admin_tasks").insert({
             title: `DD not active for first invoice ${invoiceNumber}`,
@@ -378,79 +385,16 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       }
 
       if (invoiceStatus === "draft") {
-        await supabase.from("invoices").update({ status: "ready_to_send" }).eq("id", invoiceId);
-        invoiceStatus = "ready_to_send";
+        await supabase.from("invoices").update({ status: "issued" }).eq("id", invoiceId);
+        invoiceStatus = "issued";
       }
 
-      let emailMessageId: string | null = null;
-      if (!alreadyEmailed) {
-        let pdfSignedUrl: string | null = null;
-        if (pdfStorageKey) {
-          const { data: signed } = await supabase.storage
-            .from("invoice-pdfs").createSignedUrl(pdfStorageKey, 60 * 60 * 24 * 14);
-          pdfSignedUrl = signed?.signedUrl ?? null;
-        }
-        const dueDateStr = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-        const emailLines = totals.lines.map((l) => ({
-          description: l.period_label ? `${l.description} (${l.period_label})` : l.description,
-          qty: 1,
-          line_total: l.gross_minor / 100,
-        }));
-        const sendResp = await supabase.functions.invoke("send-email", {
-          body: {
-            type: "invoice_sent",
-            to: recipientEmail,
-            invoiceId,
-            logToCommunications: true,
-            userId: svc.user_id,
-            data: {
-              customer_name: customerName,
-              account_number: accountNumber,
-              invoice_number: invoiceNumber,
-              invoice_id: invoiceId,
-              issue_date: fmtDate(today),
-              due_date: fmtDate(dueDateStr),
-              billing_period: fmtInclusivePeriod(job.period_start, job.period_end),
-              lines: emailLines,
-              subtotal: totals.subtotal_net_minor / 100,
-              vat_total: totals.vat_total_minor / 100,
-              total,
-              pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${invoiceId}`,
-              invoice_pdf_url: pdfSignedUrl,
-              dashboard_url: dashboardUrl,
-            },
-          },
-          headers: { "idempotency-key": `invoice-first:${invoiceId}` } as any,
-        });
-        if (sendResp.error) {
-          await supabase.from("invoices").update({
-            email_error: String(sendResp.error.message || "send_failed").slice(0, 1000),
-            email_attempts: (existingInv as any)?.email_attempts != null
-              ? (existingInv as any).email_attempts + 1 : 1,
-          }).eq("id", invoiceId);
-          throw new Error("invoice_email_failed");
-        }
-        emailMessageId = (sendResp.data as any)?.message_id ?? null;
-
-        const nextStatus = invoiceStatus === "awaiting_dd_collection" ? "awaiting_dd_collection" : "sent";
-        await supabase.from("invoices").update({
-          status: nextStatus,
-          email_sent_at: new Date().toISOString(),
-          email_provider_message_id: emailMessageId,
-          email_error: null,
-        }).eq("id", invoiceId);
-
-        await supabase.from("communications_log").insert({
-          invoice_id: invoiceId,
-          user_id: svc.user_id,
-          payment_request_id: prId,
-          template_name: "invoice_first_send",
-          recipient_email: recipientEmail,
-          status: "sent",
-          provider_message_id: emailMessageId,
-          sent_at: new Date().toISOString(),
-          metadata: { invoice_number: invoiceNumber, total, is_pro_rata: !!job.is_pro_rata },
-        });
+      // Dashboard-only billing: save the validated PDF and invoice record.
+      // Do NOT email invoice/receipt documents or claim that an email was sent.
+      if (!alreadyEmailed && ["draft", "issued"].includes(invoiceStatus ?? "")) {
+        const { error: issueError } = await supabase.from("invoices")
+          .update({ status: "issued" }).eq("id", invoiceId);
+        if (issueError) throw issueError;
       }
 
       await supabase.from("first_billing_jobs").update({

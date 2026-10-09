@@ -11,6 +11,7 @@
 // - Sends one invoice email through the existing send-email pipeline.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { billingReconciliationHold } from "../_shared/billingSafety.ts";
 import { nextAnchorBillingDate, sha256Hex } from "../_shared/billingHelpers.ts";
 
 const corsHeaders = {
@@ -61,6 +62,11 @@ Deno.serve(async (req) => {
     try {
       if (!o.customer_id || !o.email) {
         results.push({ sim_order_id: o.id, skipped: "no_customer_or_email" });
+        continue;
+      }
+      const safety = await billingReconciliationHold(supabase, o.customer_id);
+      if (safety.held) {
+        results.push({ sim_order_id: o.id, skipped: "financial_hold", reason: safety.reason });
         continue;
       }
       const anchor = Math.max(1, Math.min(28, Number(o.billing_anchor_day ?? 1)));
@@ -196,7 +202,7 @@ Deno.serve(async (req) => {
         if (mandate) {
           await supabase
             .from("invoices")
-            .update({ status: "awaiting_dd_collection" })
+            .update({ status: "issued" })
             .eq("id", inv.id);
         } else {
           await supabase.from("admin_tasks").insert({
@@ -211,40 +217,12 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Send one invoice email (idempotency via existing header pattern).
+      // Dashboard-only invoice; no invoice or receipt document is emailed.
+      // 'awaiting_dd_collection' is NOT an allowed invoices.status value.
       if (dueMinor > 0) {
-        await supabase.functions.invoke("send-email", {
-          body: {
-            type: "invoice_sent",
-            to: o.email,
-            invoiceId: inv.id,
-            userId: o.customer_id,
-            logToCommunications: true,
-            data: {
-              customer_name: o.full_name,
-              invoice_number: invoiceNumber,
-              invoice_id: inv.id,
-              issue_date: today,
-              due_date: dueDate.toISOString().slice(0, 10),
-              billing_period: `${periodStart} to ${periodEnd}`,
-              lines: [{
-                description: `${o.plan_name_snapshot} — monthly service`,
-                qty: 1,
-                line_total: gross / 100,
-              }],
-              subtotal: netMajor,
-              vat_total: 0,
-              total: totalMajor,
-              pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${inv.id}`,
-              dashboard_url: `${appOrigin}/dashboard`,
-            },
-          },
-          headers: { "idempotency-key": `sim-monthly:${inv.id}` } as any,
-        });
-        await supabase
-          .from("invoices")
-          .update({ status: o.payment_method === "direct_debit" ? "awaiting_dd_collection" : "sent", email_sent_at: new Date().toISOString() })
-          .eq("id", inv.id);
+        const { error: issueError } = await supabase.from("invoices")
+          .update({ status: "issued" }).eq("id", inv.id);
+        if (issueError) throw issueError;
       }
 
       await supabase
@@ -261,56 +239,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ============ Overdue / reminder scan ============
-  // Sends sim-payment-reminder at 3 days before due, and sim-overdue-reminder
-  // at 3 and 10 days past due. Idempotency via idempotency-key on the send.
-  const reminders: unknown[] = [];
-  try {
-    const { data: openInvs } = await supabase
-      .from("invoices")
-      .select("id, invoice_number, total, due_date, status, user_id, sim_order_id, sim_orders:sim_order_id(order_number, email, full_name)")
-      .not("sim_order_id", "is", null)
-      .in("status", ["sent", "awaiting_dd_collection"])
-      .limit(200);
-    const todayD = new Date(today + "T00:00:00Z").getTime();
-    for (const inv of openInvs ?? []) {
-      const so = (inv as any).sim_orders;
-      if (!so?.email) continue;
-      if (!inv.due_date) continue;
-      const dueD = new Date(inv.due_date + "T00:00:00Z").getTime();
-      const daysUntilDue = Math.round((dueD - todayD) / 86400000);
-      let template: string | null = null;
-      let key: string | null = null;
-      if (daysUntilDue === 3) { template = "sim-payment-reminder"; key = `sim-reminder-pre:${inv.id}`; }
-      else if (daysUntilDue === -3) { template = "sim-overdue-reminder"; key = `sim-overdue-3:${inv.id}`; }
-      else if (daysUntilDue === -10) { template = "sim-overdue-reminder"; key = `sim-overdue-10:${inv.id}`; }
-      if (!template) continue;
-      const payNowUrl = `${appOrigin}/pay-invoice?id=${inv.id}`;
-      await supabase.functions.invoke("send-email", {
-        body: {
-          type: "sim_lifecycle",
-          to: so.email,
-          userId: inv.user_id,
-          logToCommunications: true,
-          data: {
-            template,
-            customer_name: so.full_name,
-            order_number: so.order_number,
-            invoice_number: inv.invoice_number,
-            due_date: inv.due_date,
-            amount_due: Number(inv.total ?? 0).toFixed(2),
-            pay_now_url: payNowUrl,
-            dashboard_url: `${appOrigin}/dashboard`,
-          },
-        },
-        headers: { "idempotency-key": key } as any,
-      }).catch(() => null);
-      reminders.push({ invoice_id: inv.id, template });
-    }
-  } catch (e) {
-    console.error("sim reminder scan failed", e);
-  }
-
+  // All payment reminders use the single guarded payment-reminders worker.
+  // A SIM invoice must never be auto-chased separately or create extra links.
   return new Response(JSON.stringify({ processed: results.length, results, reminders }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });

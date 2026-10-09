@@ -60,14 +60,15 @@ export function InvoicesTab({ userId }: { userId: string }) {
       // Use the original immutable stored bill whenever possible. Never
       // regenerate an altered historical invoice for the customer.
       if (inv.pdf_storage_key) {
-        const { data: link, error: pdfError } = await supabase.storage
-          .from("invoice-pdfs")
-          .createSignedUrl(inv.pdf_storage_key, 120);
-        if (pdfError || !link?.signedUrl) {
+        const { data: link, error: pdfError } = await supabase.functions
+          .invoke<{ url: string }>("get-customer-invoice-pdf", {
+            body: { invoice_id: invoiceId },
+          });
+        if (pdfError || !link?.url) {
           throw pdfError ?? new Error("Original invoice PDF is unavailable");
         }
         const anchor = document.createElement("a");
-        anchor.href = link.signedUrl;
+        anchor.href = link.url;
         anchor.target = "_blank";
         anchor.rel = "noopener noreferrer";
         anchor.click();

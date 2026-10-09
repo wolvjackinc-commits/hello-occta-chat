@@ -316,6 +316,81 @@ export function buildInvoicePdfBytes(args: {
   return new Uint8Array(doc.output("arraybuffer"));
 }
 
+/**
+ * Receipt PDF. Only call after verified funds have been matched and written to
+ * receipts. Never derive a receipt from a pending/failed DD attempt.
+ */
+export function buildVerifiedReceiptPdfBytes(args: {
+  receiptReference: string;
+  accountNumber: string;
+  customerName: string;
+  invoiceNumber: string;
+  amountMinor: number;
+  paidDate: string;
+  method: string;
+  transactionReference: string;
+}): Uint8Array {
+  const doc = new jsPDF();
+  const w = doc.internal.pageSize.getWidth();
+  const right = w - 18;
+  doc.setFillColor(25, 36, 48);
+  doc.rect(0, 0, w, 34, "F");
+  doc.setFillColor(233, 182, 50);
+  doc.rect(18, 32.5, 25, 1.5, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("OCCTA", 18, 21);
+  doc.setFontSize(10);
+  doc.text("PAYMENT RECEIPT", right, 21, { align: "right" });
+
+  doc.setTextColor(25, 36, 48);
+  doc.setFontSize(15);
+  doc.text("Payment confirmed", 18, 53);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("This receipt records a cleared payment credited to your OCCTA account.", 18, 61);
+  doc.setDrawColor(221, 227, 232);
+  doc.line(18, 70, right, 70);
+
+  const rows: Array<[string, string]> = [
+    ["Receipt reference", args.receiptReference],
+    ["Customer", args.customerName || "Account holder"],
+    ["OCCTA account", args.accountNumber],
+    ["Invoice reference", args.invoiceNumber],
+    ["Payment received", fmtDate(args.paidDate)],
+    ["Payment method", args.method],
+    ["Transaction reference", args.transactionReference],
+  ];
+  let y = 82;
+  rows.forEach(([label, value]) => {
+    doc.setTextColor(95, 109, 122);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(label, 18, y);
+    doc.setTextColor(25, 36, 48);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(doc.splitTextToSize(value || "-", 105).slice(0, 2), 81, y);
+    y += 15;
+  });
+
+  doc.setFillColor(242, 245, 247);
+  doc.rect(18, y + 2, right - 18, 20, "F");
+  doc.setFontSize(10);
+  doc.text("Amount received", 24, y + 14);
+  doc.setFontSize(15);
+  doc.text(fmtPounds(args.amountMinor), right - 8, y + 14, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(95, 109, 122);
+  doc.text("Your account dashboard contains your invoice, payment history and current balance.", 18, y + 39);
+  doc.line(18, 259, right, 259);
+  doc.text("OCCTA LIMITED | Company No. 13828933 | VAT No. 520 6072 30", 18, 269);
+  doc.text("22 Pavilion View, Huddersfield, HD3 3WU | occta.co.uk", 18, 276);
+  return new Uint8Array(doc.output("arraybuffer"));
+}
+
 /** VAT-itemised invoice email HTML. */
 export function buildInvoiceEmailHtml(args: {
   customerName: string;

@@ -21,12 +21,19 @@ export async function billingReconciliationHold(
 
   const { data: account, error } = await supabase
     .from("payment_recon_accounts")
-    .select("occta_ref, reconciled_status, match_category, case_codes, next_action")
+    .select("occta_ref, reconciled_status, match_category, case_codes, next_action, updated_at")
     .eq("occta_ref", accountNumber)
     .maybeSingle();
 
   if (error || !account) {
     return { held: true, reason: "payment_reconciliation_missing", accountNumber };
+  }
+
+  // Stale reconciliation is NOT proof that nothing new was paid.
+  const lastSync = account.updated_at ? new Date(account.updated_at).getTime() : NaN;
+  if (!Number.isFinite(lastSync) ||
+      Date.now() - lastSync > 48 * 60 * 60 * 1000) {
+    return { held: true, reason: "reconciliation_not_recent", accountNumber };
   }
 
   const codes: string[] = Array.isArray(account.case_codes) ? account.case_codes : [];

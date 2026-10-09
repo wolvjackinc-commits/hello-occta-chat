@@ -63,7 +63,7 @@ export function CampaignManagerTab(){
  const {data:campaigns=[],isLoading:loading,refetch}=useQuery({
   queryKey:["email-campaigns"],queryFn:async()=>{
    const {data,error}=await supabase.from("campaigns").select("*, email_templates(template_name)").order("created_at",{ascending:false}).limit(200);
-   if(error)throw error;return data as Campaign[];
+   if(error)throw error;return data as unknown as Campaign[];
   }
  });
  const {data:templates=[]}=useQuery({queryKey:["email-templates-campaign"],queryFn:async()=>{

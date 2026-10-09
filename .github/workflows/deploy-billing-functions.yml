@@ -11,6 +11,7 @@ on:
       - 'supabase/functions/process-billing-notifications/**'
       - 'supabase/functions/sync-verified-payments/**'
       - 'supabase/functions/get-customer-invoice-pdf/**'
+      - 'supabase/functions/get-customer-receipt-pdf/**'
       - 'supabase/functions/admin-payment-recon-import/**'
       - 'supabase/functions/_shared/billingSafety.ts'
       - 'supabase/functions/_shared/billingHelpers.ts'
@@ -48,6 +49,8 @@ jobs:
         run: supabase functions deploy payment-reminders --project-ref "$PROJECT_REF"
       - name: Deploy private invoice access
         run: supabase functions deploy get-customer-invoice-pdf --project-ref "$PROJECT_REF"
+      - name: Deploy private receipt access
+        run: supabase functions deploy get-customer-receipt-pdf --project-ref "$PROJECT_REF"
       - name: Deploy verified payment processor
         run: supabase functions deploy sync-verified-payments --project-ref "$PROJECT_REF"
       - name: Deploy status notification worker

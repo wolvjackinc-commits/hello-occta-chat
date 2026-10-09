@@ -21,6 +21,8 @@ import { DDWorkflowDialog } from "./DDWorkflowDialog";
 import { generateDDMandatePdf } from "@/lib/generateDDMandatePdf";
 import { nextCollectionAmount } from "@/lib/dd/nextCollectionAmount";
 import { nextCollectionDate } from "@/lib/dd/nextCollectionDate";
+import { resolveNextCollectionDisplay } from "@/lib/dd/nextCollectionFallback";
+import { fetchReconState } from "@/lib/paymentRecon/db";
 import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
 import { FileText, ShieldCheck, Unlock, Copy } from "lucide-react";
 import {
@@ -59,7 +61,7 @@ interface CustomerDDSectionProps {
   accountNumber: string | null;
 }
 
-export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
+export function CustomerDDSection({ userId, accountNumber }: CustomerDDSectionProps) {
   const [selectedMandate, setSelectedMandate] = useState<DDMandateView | null>(null);
   const [workflowAction, setWorkflowAction] = useState<{ mandate: DDMandateView; action: WorkflowAction } | null>(null);
   const [showGuarantee, setShowGuarantee] = useState(false);
@@ -154,13 +156,13 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
     },
   });
 
-  const nextCollection = nextCollectionDate({
+  const nextCollection = ctx ? nextCollectionDate({
     today: format(new Date(), "yyyy-MM-dd"),
-    billingMode: ctx?.billing?.billing_mode,
-    billingDay: ctx?.billing?.billing_day,
-    nextInvoiceDate: ctx?.billing?.next_invoice_date,
-    paymentTermsDays: ctx?.billing?.payment_terms_days,
-  });
+    billingMode: ctx.billing?.billing_mode,
+    billingDay: ctx.billing?.billing_day,
+    nextInvoiceDate: ctx.billing?.next_invoice_date,
+    paymentTermsDays: ctx.billing?.payment_terms_days,
+  }) : null;
 
   const nextAmount = nextCollectionAmount({
     monthlyPriceInclVat: ctx?.cs?.monthly_price_incl_vat,
@@ -170,9 +172,29 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
     paymentTermsDays: ctx?.billing?.payment_terms_days,
   });
 
+  const { data: accessPaySchedules } = useQuery({
+    queryKey: ["customer-dd-accesspay-schedule", accountNumber],
+    enabled: Boolean(ctx) && nextCollection == null && Boolean(accountNumber),
+    queryFn: async () => {
+      const state = await fetchReconState();
+      return state.accounts.map((account) => ({
+        occtaRef: account.occtaRef,
+        nextDdOn: account.nextDdOn,
+        nextDdAmount: account.nextDdAmount,
+      }));
+    },
+  });
+
   const openMandatePdf = (mandate: DDMandateView) => {
     const p = ctx?.profile as any;
     const address = p ? [p.address_line1, p.city, p.postcode].filter(Boolean).join(", ") : "";
+    const collection = resolveNextCollectionDisplay({
+      mandateStatus: mandate.status,
+      billingDate: nextCollection,
+      contractAmount: nextAmount,
+      accountNumber,
+      schedules: accessPaySchedules ?? [],
+    });
     generateDDMandatePdf({
       mandate_reference: mandate.mandate_reference || "—",
       status: mandate.status,
@@ -186,8 +208,8 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
       customer_name: p?.full_name ?? null,
       customer_email: p?.email ?? null,
       customer_address: address || null,
-      next_collection_date: nextCollection,
-      next_collection_amount: nextAmount,
+      next_collection_date: collection?.date ?? nextCollection,
+      next_collection_amount: collection?.amount ?? nextAmount,
       contract_reference: ctx?.cs?.cs_number ?? null,
     });
   };
@@ -328,23 +350,38 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
                 </div>
 
                 {/* Next collection summary */}
-                {mandate.status !== "cancelled" && mandate.status !== "failed" && nextCollection && nextAmount && (
-                  <div className="mt-3 border-2 border-foreground bg-foreground text-background p-3 flex items-center justify-between gap-3 flex-wrap">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest opacity-80">Next collection</p>
-                      <p className="text-xs mt-1">
-                        £{nextAmount.toFixed(2)} on {format(new Date(nextCollection), "dd MMM yyyy")}
-                      </p>
-                      <p className="text-[10px] opacity-70 mt-1">Advance notice sent 10 working days beforehand.</p>
-                    </div>
-                    {ctx?.cs?.cs_number && (
-                      <div className="text-right">
-                        <p className="text-[10px] uppercase tracking-widest opacity-80">Contract</p>
-                        <p className="text-xs font-mono mt-1">{ctx.cs.cs_number}</p>
+                {(() => {
+                  const collection = resolveNextCollectionDisplay({
+                    mandateStatus: mandate.status,
+                    billingDate: nextCollection,
+                    contractAmount: nextAmount,
+                    accountNumber,
+                    schedules: accessPaySchedules ?? [],
+                  });
+                  if (!collection) return null;
+                  return (
+                    <div className="mt-3 border-2 border-foreground bg-foreground text-background p-3 flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest opacity-80">Next collection</p>
+                        <p className="text-xs mt-1">
+                          {collection.amount != null ? `£${collection.amount.toFixed(2)} on ` : ""}
+                          {format(new Date(collection.date), "dd MMM yyyy")}
+                          {collection.perAccessPay ? " (per AccessPay)" : ""}
+                        </p>
+                        {collection.accessPayAmountNote != null && (
+                          <p className="text-[10px] text-amber-300 mt-1">AccessPay schedule shows £{collection.accessPayAmountNote.toFixed(2)}</p>
+                        )}
+                        <p className="text-[10px] opacity-70 mt-1">Advance notice sent 10 working days beforehand.</p>
                       </div>
-                    )}
-                  </div>
-                )}
+                      {ctx?.cs?.cs_number && (
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase tracking-widest opacity-80">Contract</p>
+                          <p className="text-xs font-mono mt-1">{ctx.cs.cs_number}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Admin Workflow Actions */}
                 {!["cancelled", "failed"].includes(mandate.status) && (

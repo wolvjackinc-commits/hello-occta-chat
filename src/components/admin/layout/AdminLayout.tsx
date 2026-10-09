@@ -111,6 +111,7 @@ const navSections: NavSection[] = [
       { label: "Tickets",          to: "/admin/tickets" },
       { label: "Complaints",       to: "/admin/complaints" },
       { label: "Communications",   to: "/admin/communications" },
+      { label: "Campaign Manager", to: "/admin/communications?tab=campaigns" },
       { label: "Chat Transcripts", to: "/admin/chat-transcripts" },
       { label: "Live Chat",        to: "/admin/live-chat" },
       { label: "Knowledge Base",   to: "/admin/knowledge-base" },

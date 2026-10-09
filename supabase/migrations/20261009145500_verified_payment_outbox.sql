@@ -6,6 +6,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS receipts_unique_verified_source
   ON public.receipts (reference)
   WHERE reference LIKE 'RECON:%';
 
+ALTER TABLE public.receipts
+  ADD COLUMN IF NOT EXISTS pdf_storage_key text,
+  ADD COLUMN IF NOT EXISTS pdf_hash text,
+  ADD COLUMN IF NOT EXISTS pdf_generated_at timestamptz;
+
 CREATE TABLE IF NOT EXISTS public.billing_notifications_outbox (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   event_key text NOT NULL UNIQUE,

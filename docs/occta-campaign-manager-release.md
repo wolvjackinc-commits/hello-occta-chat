@@ -14,8 +14,8 @@ Adds the email marketing Campaign Manager at **Admin → Support → Campaign Ma
 
 ## Preconditions — no implicit activation
 1. Merge PR after **green CI** and application owner review.
-2. Before replacing the old sending function, stage both database migrations in order:
-   `20261009190000_email_campaign_manager.sql`, `20261009190001_campaign_click_tracking.sql`.
+2. Before replacing the old sending function, stage all three database migrations in order:
+   `20261009190000_email_campaign_manager.sql`, `20261009190001_campaign_click_tracking.sql`, `20261009190002_campaign_metrics.sql`.
    Apply in a managed migration transaction; record the versions in Supabase migration history. Do **not** run `db reset`, backfill customer data, or apply unrelated pending migrations. Run on staging first.
 3. Deploy the functions `campaign-manager`, `campaign-dispatch`, `campaign-unsubscribe`, `campaign-track`, `campaign-open` and `campaign-resend-webhook`, plus the **410 compatibility endpoint** `bulk-send-email`; verify `supabase/config.toml` JWT settings are honoured.
 4. Confirm the existing Resend sending identity with `RESEND_API_KEY` and `RESEND_FROM_EMAIL`. Set long, random secrets `CAMPAIGN_WORKER_SECRET` and `CAMPAIGN_TRACK_SECRET` on the **Supabase functions environment only**. Never place them in frontend Vite variables or repository files.
@@ -46,5 +46,5 @@ Adds the email marketing Campaign Manager at **Admin → Support → Campaign Ma
 
 ## Change and rollback
 Affected frontend: `CampaignManagerTab`, `CampaignsTab` wrapper, Communications route tab, AdminLayout child navigation, CSV helpers.
-Affected backend: 6 dedicated campaign functions and legacy `bulk-send-email` compatibility response; two additive marketing schema migrations and an artwork bucket. Existing customers/transactional tables get **no mass changes**.
+Affected backend: 6 dedicated campaign functions and legacy `bulk-send-email` compatibility response; three additive marketing schema migrations and an artwork bucket. Existing customers/transactional tables get **no mass changes**.
 Rollback: first pause/stop the scheduler and campaigns, then revert UI and functions to the previous GitHub commit; re-enable the legacy sender only after formal review since it permits direct sends without approval. Leave additive marketing tables and recipient evidence intact for audit; don't drop data or restore withdrawn consents. Database schema cleanup, if later required, is a separately approved migration.

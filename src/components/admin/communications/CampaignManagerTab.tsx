@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowUpRight, BarChart3, CheckCircle, Download, FileImage, History, Mail, PauseCircle, Play, Plus, ShieldCheck, Upload, Users } from "lucide-react";
+import { ArrowUpRight, BarChart3, CheckCircle, Download, History, Mail, Play, Plus, ShieldCheck, Upload } from "lucide-react";
 import { CampaignDetailDialog } from "./CampaignDetailDialog";
 import { RecipientPicker } from "./RecipientPicker";
 
@@ -23,46 +23,11 @@ type Campaign = {
  email_templates?:{template_name:string}|null;
 };
 type Template={id:string;template_name:string;subject:string;html_body:string;category:string;is_active:boolean};
-type ImportRow={email:string;full_name?:string;company?:string;tags?:string[];consent_at?:string};
-const columns=["email","full_name","company","tags","consent_at"];
-function csvRows(input:string):string[][]{
- const result:string[][]=[];let row:string[]=[],field="",quoted=false;
- const text=input.replace(/^\uFEFF/,"");
- for(let i=0;i<text.length;i++){
-  const c=text[i];
-  if(c==='"'){
-   if(quoted&&text[i+1]==='"'){field+='"';i++;}
-   else quoted=!quoted;
-  }else if(c===","&&!quoted){row.push(field);field="";}
-  else if((c==="\n"||c==="\r")&&!quoted){
-   if(c==="\r"&&text[i+1]==="\n")i++;
-   row.push(field);field="";if(row.some(v=>v.trim()))result.push(row);row=[];
-  }else field+=c;
- }
- if(quoted)throw new Error("The CSV has an unclosed quoted field.");
- row.push(field);if(row.some(v=>v.trim()))result.push(row);
- return result;
-}
-function parsedContacts(text:string):ImportRow[]{
- const rows=csvRows(text);if(rows.length<2)throw new Error("The CSV has no contact rows.");
- const headers=rows[0].map(h=>h.trim().toLowerCase().replace(/\s+/g,"_"));
- if(!headers.includes("email"))throw new Error("The CSV must contain an email column.");
- if(rows.length>5001)throw new Error("Maximum 5,000 contact rows per file.");
- return rows.slice(1).map(row=>{
-  const val=(name:string)=>row[headers.indexOf(name)]?.trim()||"";
-  return {email:val("email").toLowerCase(),full_name:val("full_name"),company:val("company"),
-   tags:val("tags").split(/[;|]/).map(t=>t.trim()).filter(Boolean),
-   consent_at:val("consent_at")};
- });
-}
-function excelSafe(value:unknown){
- const text=String(value??"");
- const safe=/^[=+\-@\t\r]/.test(text)?"'"+text:text;
- return '"'+safe.replace(/"/g,'""')+'"';
-}
+import { parseCampaignCsv, toCampaignCsv, CAMPAIGN_CSV_HEADERS, type CampaignImportRow } from "@/lib/campaigns/csv";
+const columns=CAMPAIGN_CSV_HEADERS;
 function downloadCsv(filename:string,headers:string[],rows:unknown[][]){
- const csv=[headers,...rows].map(row=>row.map(excelSafe).join(",")).join("\r\n");
- const url=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}));
+ const csv=toCampaignCsv(headers,rows);
+ const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
  const link=document.createElement("a");link.href=url;link.download=filename;link.click();
  URL.revokeObjectURL(url);
 }
@@ -86,7 +51,7 @@ export function CampaignManagerTab(){
  const [userIds,setUserIds]=useState<string[]>([]);
  const [openTracking,setOpenTracking]=useState(false);
  const [clickTracking,setClickTracking]=useState(false);
- const [csv,setCsv]=useState<ImportRow[]>([]);
+ const [csv,setCsv]=useState<CampaignImportRow[]>([]);
  const [source,setSource]=useState("");
  const [evidence,setEvidence]=useState("");
  const [consentDate,setConsentDate]=useState("");
@@ -274,7 +239,7 @@ export function CampaignManagerTab(){
    <TabsContent value="contacts" className="space-y-4 rounded border p-5">
     <h3 className="font-semibold">Bulk import opted-in email contacts</h3>
     <p className="text-sm text-muted-foreground">CSV columns: {columns.join(", ")}. Tags are separated with semicolons. Consent date must be provided per row or below. Previously unsubscribed addresses never become subscribed through import.</p>
-    <Input type="file" accept=".csv,text/csv" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>2*1024*1024)throw new Error("CSV must be 2 MB or smaller");setCsv(parsedContacts(await file.text()));}catch(err:any){setCsv([]);toast({title:"CSV import error",description:err.message,variant:"destructive"});}}}/>
+    <Input type="file" accept=".csv,text/csv" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>2*1024*1024)throw new Error("CSV must be 2 MB or smaller");setCsv(parseCampaignCsv(await file.text()));}catch(err:any){setCsv([]);toast({title:"CSV import error",description:err.message,variant:"destructive"});}}}/>
     {csv.length>0&&<p className="text-sm font-medium">{csv.length} rows ready for review — {csv.slice(0,3).map(x=>x.email).join(", ")}{csv.length>3?" …":""}</p>}
     <div className="grid gap-3 md:grid-cols-2">
      <div><label className="text-xs font-medium">Consent source</label><Input value={source} onChange={e=>setSource(e.target.value)} placeholder="Website opt-in form / event signup"/></div>

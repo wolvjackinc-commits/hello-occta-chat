@@ -86,7 +86,7 @@ const getTemplateConfig = (template: ReminderTemplate): { subject: string; urgen
         urgencyColor: '#3b82f6',
         icon: '📅',
         title: 'Payment Due Soon',
-        bodyText: 'Your invoice is due in 3 days. Please ensure payment is made on time to avoid any late fees or service interruptions.',
+        bodyText: 'Your invoice is due in 3 days. Please review your account payment options before the due date.',
       };
     case 'due_today':
       return {
@@ -94,7 +94,7 @@ const getTemplateConfig = (template: ReminderTemplate): { subject: string; urgen
         urgencyColor: '#f59e0b',
         icon: '⏰',
         title: 'Payment Due Today',
-        bodyText: 'Your payment is due today. Please complete your payment now to avoid any late fees.',
+        bodyText: 'Your payment is due today. Please review your account to confirm whether payment is needed.',
       };
     case 'overdue_7':
       return {
@@ -102,7 +102,7 @@ const getTemplateConfig = (template: ReminderTemplate): { subject: string; urgen
         urgencyColor: '#ef4444',
         icon: '⚠️',
         title: 'Payment Overdue',
-        bodyText: 'Your payment is now 7 days overdue. Please settle this invoice immediately to avoid additional late fees and potential service suspension.',
+        bodyText: 'Your payment is now 7 days overdue. Please review the recorded balance in your account. Contact billing if it is incorrect or already paid.',
       };
     default: {
       // Recurring overdue_N reminders (every 7 days)
@@ -113,7 +113,7 @@ const getTemplateConfig = (template: ReminderTemplate): { subject: string; urgen
         urgencyColor: '#b91c1c',
         icon: '⚠️',
         title: 'Payment Still Outstanding',
-        bodyText: `Your payment is now ${days} days overdue. Please settle this invoice immediately. Continued non-payment may result in additional late fees and service suspension.`,
+        bodyText: `Your payment is now ${days} days overdue. Please settle this invoice immediately. Please contact the billing team if there is a dispute or repayment arrangement.`,
       };
     }
   }
@@ -296,7 +296,7 @@ serve(async (req) => {
           user_id
         `)
         .eq('due_date', dateStr)
-        .in('status', ['sent', 'issued', 'overdue', 'issued']);
+        .in('status', ['sent', 'issued', 'overdue']);
 
       if (invError) {
         console.error(`Error fetching invoices for ${dateStr}:`, invError);

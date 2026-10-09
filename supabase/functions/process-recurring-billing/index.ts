@@ -290,9 +290,9 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           .select("id, status").eq("user_id", svc.user_id).eq("status", "active").maybeSingle();
         if (activeMandate && ddStatus === "active") {
           await supabase.from("invoices").update({
-            status: "awaiting_dd_collection",
+            status: "issued",
           }).eq("id", invoiceId);
-          invoiceStatus = "awaiting_dd_collection";
+          invoiceStatus = "issued";
         } else {
           await supabase.from("admin_tasks").insert({
             title: `DD not active for monthly invoice ${invoiceNumber}`,
@@ -306,13 +306,13 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       }
 
       if (invoiceStatus === "draft") {
-        await supabase.from("invoices").update({ status: "ready_to_send" }).eq("id", invoiceId);
-        invoiceStatus = "ready_to_send";
+        await supabase.from("invoices").update({ status: "issued" }).eq("id", invoiceId);
+        invoiceStatus = "issued";
       }
 
       // Persist new invoices only in the customer's dashboard.
       // No invoice/receipt email is sent. DD collection is never initiated here.
-      if (["draft", "ready_to_send"].includes(invoiceStatus ?? "")) {
+      if (["draft", "issued"].includes(invoiceStatus ?? "")) {
         const { error: issueError } = await supabase.from("invoices")
           .update({ status: "issued" }).eq("id", invoiceId);
         if (issueError) throw issueError;

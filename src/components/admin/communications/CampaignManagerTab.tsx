@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { ArrowUpRight, BarChart3, CheckCircle, Download, History, Mail, Play, Plus, ShieldCheck, Upload } from "lucide-react";
 import { CampaignDetailDialog } from "./CampaignDetailDialog";
-import { RecipientPicker } from "./RecipientPicker";
+import { RecipientPicker } from "./RecipientPicker";\nimport { parseCampaignCsv, toCampaignCsv, CAMPAIGN_CSV_HEADERS, type CampaignImportRow } from "@/lib/campaigns/csv";
 
 type Campaign = {
  id:string;campaign_name:string;template_id:string;status:string;created_at:string;created_by:string|null;
@@ -35,7 +35,7 @@ const label=(s:string)=>s.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
 const date=(s:string|null)=>s?new Date(s).toLocaleString("en-GB"):"—";
 
 export function CampaignManagerTab(){
- const {toast}=useToast();const cache=useQueryClient();
+ const {toast}=useToast();
  const [tab,setTab]=useState("overview");
  const [selected,setSelected]=useState<Campaign|null>(null);
  const [selectedEvents,setSelectedEvents]=useState<Campaign|null>(null);

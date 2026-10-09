@@ -144,6 +144,21 @@ Deno.serve(async (req) => {
     else accepted.push({ payment_ref: paymentRef, invoice_number: invoiceNumber, action: "settled_and_queued" });
   }
 
+  // Send approved payment-status notifications as soon as the import is
+  // committed; the scheduled outbox worker retries failures independently.
+  let notificationDispatch: string = "not_needed";
+  if (!dryRun && accepted.some((x) => x.action === "settled_and_queued")) {
+    const cronSecret = Deno.env.get("CRON_JOB_SECRET");
+    if (cronSecret) {
+      const { error: notifyError } = await db.functions.invoke("process-billing-notifications", {
+        body: {},
+        headers: { "x-cron-secret": cronSecret },
+      });
+      notificationDispatch = notifyError ? "queued_for_retry" : "dispatched";
+    } else notificationDispatch = "queued_for_retry";
+  }
+
   return jsonResponse({ ok: failures.length === 0, dry_run: dryRun,
-    accepted, skipped, failures }, failures.length ? 207 : 200);
+    accepted, skipped, failures, notification_dispatch: notificationDispatch },
+    failures.length ? 207 : 200);
 });

@@ -5,6 +5,7 @@
  */
 import { corsHeaders, jsonResponse, getServiceClient, requireStaff } from "../_shared/quoteHelpers.ts";
 import { billingReconciliationHold } from "../_shared/billingSafety.ts";
+import { buildVerifiedReceiptPdfBytes, sha256Hex } from "../_shared/billingHelpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -58,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: profile } = await db.from("profiles")
-      .select("id").eq("account_number", accountRef).maybeSingle();
+      .select("id, full_name, account_number").eq("account_number", accountRef).maybeSingle();
     const { data: inv } = await db.from("invoices")
       .select("id, user_id, status, total")
       .eq("invoice_number", invoiceNumber).maybeSingle();
@@ -77,7 +78,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: prior, error: priorError } = await db.from("receipts")
-      .select("id, amount, reference")
+      .select("id, amount, reference, pdf_storage_key")
       .eq("invoice_id", inv.id);
     if (priorError) {
       failures.push({ payment_ref: paymentRef, reason: "receipt_lookup_failed" });
@@ -120,6 +121,43 @@ Deno.serve(async (req) => {
         continue;
       }
       inserted = true;
+    }
+
+    // Persist a private customer-named receipt PDF; never email it.
+    const { data: receipt } = await db.from("receipts")
+      .select("id, pdf_storage_key")
+      .eq("invoice_id", inv.id).eq("reference", reference).maybeSingle();
+    if (!receipt) {
+      failures.push({ payment_ref: paymentRef, reason: "verified_receipt_missing" });
+      continue;
+    }
+    if (!receipt.pdf_storage_key) {
+      try {
+        const pdf = buildVerifiedReceiptPdfBytes({
+          receiptReference: "RCP-" + receipt.id.slice(0, 8).toUpperCase(),
+          accountNumber: accountRef,
+          customerName: profile.full_name || "Account holder",
+          invoiceNumber,
+          amountMinor,
+          paidDate: payment.bank_received_on,
+          method: /bank|transfer/i.test(String(payment.method)) ? "Bank transfer" : "Direct Debit",
+          transactionReference: paymentRef,
+        });
+        const key = inv.user_id + "/receipts/" + receipt.id + "/receipt.pdf";
+        const { error: uploadError } = await db.storage.from("invoice-pdfs")
+          .upload(key, pdf, { upsert: false, contentType: "application/pdf" });
+        if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) {
+          throw uploadError;
+        }
+        const { error: pdfRecordError } = await db.from("receipts").update({
+          pdf_storage_key: key, pdf_hash: await sha256Hex(pdf),
+          pdf_generated_at: new Date().toISOString(),
+        }).eq("id", receipt.id);
+        if (pdfRecordError) throw pdfRecordError;
+      } catch (_e) {
+        failures.push({ payment_ref: paymentRef, reason: "receipt_pdf_persistence_failed" });
+        continue;
+      }
     }
 
     const { error: statusError } = await db.from("invoices")

@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { ArrowUpRight, BarChart3, CheckCircle, Download, History, Mail, Play, Plus, ShieldCheck, Upload } from "lucide-react";
 import { CampaignDetailDialog } from "./CampaignDetailDialog";
-import { RecipientPicker } from "./RecipientPicker";\nimport { parseCampaignCsv, toCampaignCsv, CAMPAIGN_CSV_HEADERS, type CampaignImportRow } from "@/lib/campaigns/csv";
+import { RecipientPicker } from "./RecipientPicker";
+import { parseCampaignCsv, toCampaignCsv, CAMPAIGN_CSV_HEADERS, type CampaignImportRow } from "@/lib/campaigns/csv";
 
 type Campaign = {
  id:string;campaign_name:string;template_id:string;status:string;created_at:string;created_by:string|null;

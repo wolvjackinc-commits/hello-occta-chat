@@ -20,6 +20,7 @@ import { DDMandateDetailDialog } from "./DDMandateDetailDialog";
 import { DDWorkflowDialog } from "./DDWorkflowDialog";
 import { generateDDMandatePdf } from "@/lib/generateDDMandatePdf";
 import { nextCollectionAmount } from "@/lib/dd/nextCollectionAmount";
+import { nextCollectionDate } from "@/lib/dd/nextCollectionDate";
 import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
 import { FileText, ShieldCheck, Unlock, Copy } from "lucide-react";
 import {
@@ -153,14 +154,13 @@ export function CustomerDDSection({ userId }: CustomerDDSectionProps) {
     },
   });
 
-  const nextCollection = (() => {
-    const nextInv = ctx?.billing?.next_invoice_date as string | undefined;
-    const terms = (ctx?.billing?.payment_terms_days as number | undefined) ?? 14;
-    if (!nextInv) return null;
-    const d = new Date(nextInv);
-    d.setDate(d.getDate() + terms);
-    return d.toISOString().slice(0, 10);
-  })();
+  const nextCollection = nextCollectionDate({
+    today: format(new Date(), "yyyy-MM-dd"),
+    billingMode: ctx?.billing?.billing_mode,
+    billingDay: ctx?.billing?.billing_day,
+    nextInvoiceDate: ctx?.billing?.next_invoice_date,
+    paymentTermsDays: ctx?.billing?.payment_terms_days,
+  });
 
   const nextAmount = nextCollectionAmount({
     monthlyPriceInclVat: ctx?.cs?.monthly_price_incl_vat,

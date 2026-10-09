@@ -92,14 +92,8 @@ async function processOne(r:any){
 }
 async function refreshCounters(ids:string[]){
  for(const id of [...new Set(ids)]){
-  const {data:rows,error}=await db.from("campaign_recipients").select("status,opened_at,delivered_at,bounced_at").eq("campaign_id",id);
-  if(error||!rows)continue;
-  const counts={sent_count:rows.filter(r=>["sent","delivered","opened","clicked"].includes(r.status)).length,
-   delivered_count:rows.filter(r=>!!r.delivered_at).length,opened_count:rows.filter(r=>!!r.opened_at).length,
-   bounced_count:rows.filter(r=>!!r.bounced_at).length,failed_count:rows.filter(r=>r.status==="failed").length};
-  const pending=rows.some(r=>["queued","processing"].includes(r.status));
-  const {data:c}=await db.from("campaigns").select("status").eq("id",id).single();
-  await db.from("campaigns").update({...counts,...(!pending && c?.status==="sending"?{status:"completed",completed_at:new Date().toISOString()}:{}),updated_at:new Date().toISOString()}).eq("id",id);
+  const {error}=await db.rpc("refresh_campaign_metrics",{p_campaign_id:id});
+  if(error)throw error;
  }
 }
 async function handler(req:Request){
@@ -115,7 +109,7 @@ async function handler(req:Request){
    ids.push(r.campaign_id);
    const outcome=await processOne(r);
    stats[outcome as keyof typeof stats]++;
-   await sleep(350);
+   await sleep(750);
   }
   if(ids.length)await refreshCounters(ids);
   return json({processed:(rows||[]).length,...stats,more_possible:(rows||[]).length===30});

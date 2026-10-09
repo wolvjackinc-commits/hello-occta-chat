@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
 import { generateDDMandatePdf } from "@/lib/generateDDMandatePdf";
+import { nextCollectionAmount } from "@/lib/dd/nextCollectionAmount";
+import { nextCollectionDate } from "@/lib/dd/nextCollectionDate";
 import { format } from "date-fns";
 
 interface Props {
@@ -44,12 +46,12 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
           .maybeSingle(),
         supabase
           .from("billing_settings")
-          .select("next_invoice_date, payment_terms_days")
+          .select("next_invoice_date, payment_terms_days, billing_mode, billing_day")
           .eq("user_id", customer.id)
           .maybeSingle(),
         supabase
           .from("contract_summaries")
-          .select("cs_number, plan_name, monthly_price_incl_vat, contract_length")
+          .select("cs_number, plan_name, monthly_price_incl_vat, contract_length, payment_schedule")
           .eq("customer_id", customer.id)
           .eq("status", "accepted")
           .order("accepted_at", { ascending: false })
@@ -65,21 +67,21 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
     },
   });
 
-  const nextCollectionDate = (() => {
-    const nextInv = ddCtx?.billing?.next_invoice_date as string | undefined;
-    const terms = (ddCtx?.billing?.payment_terms_days as number | undefined) ?? 14;
-    if (!nextInv) return null;
-    const d = new Date(nextInv);
-    d.setDate(d.getDate() + terms);
-    return d.toISOString().slice(0, 10);
-  })();
+  const collectionDate = nextCollectionDate({
+    today: format(new Date(), "yyyy-MM-dd"),
+    billingMode: ddCtx?.billing?.billing_mode,
+    billingDay: ddCtx?.billing?.billing_day,
+    nextInvoiceDate: ddCtx?.billing?.next_invoice_date,
+    paymentTermsDays: ddCtx?.billing?.payment_terms_days,
+  });
 
-  const nextCollectionAmount = (() => {
-    const monthly = Number(ddCtx?.cs?.monthly_price_incl_vat ?? 0);
-    if (!monthly) return null;
-    // Quarterly cadence (matches CustomerDDSection default).
-    return Number((monthly * 3).toFixed(2));
-  })();
+  const collectionAmount = nextCollectionAmount({
+    monthlyPriceInclVat: ddCtx?.cs?.monthly_price_incl_vat,
+    paymentSchedule: ddCtx?.cs?.payment_schedule,
+    contractLength: ddCtx?.cs?.contract_length,
+    billingMode: ddCtx?.billing?.billing_mode,
+    paymentTermsDays: ddCtx?.billing?.payment_terms_days,
+  });
 
   const mandate = ddCtx?.mandate as any;
   const hasMandate = !!mandate;
@@ -100,9 +102,9 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
          <p style="font-size:13px;color:#555">You can view and download your full Direct Debit mandate from your OCCTA dashboard under <em>Direct Debit</em>.</p>`
       : "";
 
-    const nextBlock = nextCollectionDate && nextCollectionAmount
+    const nextBlock = collectionDate && collectionAmount
       ? `<h3 style="font-family:'Bebas Neue',sans-serif;letter-spacing:2px;margin-top:24px">Your next collection</h3>
-         <p><strong>£${nextCollectionAmount.toFixed(2)}</strong> will be collected by Direct Debit on <strong>${format(new Date(nextCollectionDate), "dd MMMM yyyy")}</strong>.</p>
+         <p><strong>£${collectionAmount.toFixed(2)}</strong> will be collected by Direct Debit on <strong>${format(new Date(collectionDate), "dd MMMM yyyy")}</strong>.</p>
          <p style="font-size:13px;color:#555">Advance notice will be issued at least 10 working days beforehand.</p>`
       : "";
 
@@ -145,8 +147,8 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
       customer_name: p?.full_name ?? null,
       customer_email: p?.email ?? null,
       customer_address: address || null,
-      next_collection_date: nextCollectionDate,
-      next_collection_amount: nextCollectionAmount,
+      next_collection_date: collectionDate,
+      next_collection_amount: collectionAmount,
       contract_reference: ddCtx?.cs?.cs_number ?? null,
     });
   };
@@ -248,8 +250,8 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
               {hasMandate ? (
                 <p className="text-[11px] text-muted-foreground mt-1">
                   Adds mandate ref <span className="font-mono">{mandate?.mandate_reference}</span>
-                  {nextCollectionDate && nextCollectionAmount ? (
-                    <> · next collection <strong>£{nextCollectionAmount.toFixed(2)}</strong> on <strong>{format(new Date(nextCollectionDate), "dd MMM yyyy")}</strong></>
+                  {collectionDate && collectionAmount ? (
+                    <> · next collection <strong>£{collectionAmount.toFixed(2)}</strong> on <strong>{format(new Date(collectionDate), "dd MMM yyyy")}</strong></>
                   ) : null}
                   {" "}and the full Direct Debit Guarantee text.
                 </p>
@@ -287,14 +289,14 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
             <span className="font-display text-xs uppercase text-muted-foreground">Recipient</span>
             <span className="font-mono">{customer.email}</span>
 
-            {includeMandate && nextCollectionDate && nextCollectionAmount && (
+            {includeMandate && collectionDate && collectionAmount && (
               <>
                 <span className="font-display text-xs uppercase text-muted-foreground flex items-center gap-1">
                   <CalendarClock className="h-3 w-3" />
                   Next collection
                 </span>
                 <span className="font-medium">
-                  £{nextCollectionAmount.toFixed(2)} on {format(new Date(nextCollectionDate), "dd MMMM yyyy")}
+                  £{collectionAmount.toFixed(2)} on {format(new Date(collectionDate), "dd MMMM yyyy")}
                   <span className="text-xs text-muted-foreground"> (10 working days' notice)</span>
                 </span>
               </>

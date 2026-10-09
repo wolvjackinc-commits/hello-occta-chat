@@ -558,6 +558,7 @@ const CustomerDetailContent = ({
         </TabsContent>
 
         <TabsContent value="payments" className="mt-4 space-y-3">
+          <CustomerPaymentReconPanel accountNumber={overview.account_number} fullName={overview.full_name} />
           <Card className="border-2 border-foreground p-4">
             <h3 className="font-display text-lg mb-3">Payment requests</h3>
             {(!data?.paymentRequests || data.paymentRequests.length === 0) ? (

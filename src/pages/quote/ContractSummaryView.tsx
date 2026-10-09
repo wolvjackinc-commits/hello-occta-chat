@@ -235,7 +235,16 @@ export default function ContractSummaryView() {
         ))}
 
         <div className="mb-5">
-          <FullContractTermsBlock collapsibleHeading={false} />
+          {isBusiness && String(cs.plan_name ?? "").includes("Existing Business Fixed 12") ? (
+            <div className="border-4 border-foreground p-5 bg-background">
+              <h2 className="font-display uppercase text-sm mb-3">Existing business agreement — important information</h2>
+              <p className="text-sm mb-3">This electronic confirmation relates to broadband already live from 1 October 2026 under the business paper agreement dated 30 September 2026. It is not a fresh broadband installation order or a request for another first payment.</p>
+              <p className="text-sm mb-3">The original signed business paper agreement remains the controlling source for the service installation address, VAT treatment, cancellation and early termination charges, notice requirements, price changes, and other detailed terms. This confirmation does not vary those terms or create a new Direct Debit mandate.</p>
+              <p className="text-sm">The business's authorised representative will sign on the actual date and time recorded by OCCTA; no signature is backdated. Please contact OCCTA if any details on this page do not agree with the original signed agreement.</p>
+            </div>
+          ) : (
+            <FullContractTermsBlock collapsibleHeading={false} />
+          )}
         </div>
 
         {accepted ? (

@@ -1,0 +1,7 @@
+record_type,customer,occta_ref,payer_name,name_aliases,payment_ref,mandate_ref,invoice_number,method,amount,submitted_at,collection_date,failed_at,failure_reason,processed_at,payout_ref,fee_amount,status,accesspay_status,mandate_status,mandate_created_at,mandate_submitted_at,mandate_cancelled_at,is_test,is_duplicate,never_submitted,charge_kind,failure_treatment
+collection,Nina Example,OCC10000007,Harmonic Spa,HAIRMONIC HEAD SPA,PAY-DEMO-7,,INV-DEMO-1007,Bank transfer,20.00,28 Sep 2026,5 Oct 2026,,,6 Oct 2026,BATCH-DEMO-1,,Paid,Active,,,,,,,,invoiced,
+failure,Riley Example,OCC10000003,,,PAY-DEMO-3,,INV-DEMO-1003,DD,25.00,1 Oct 2026,8 Oct 2026,9 Oct 2026,ARUDD 0 - Refer to payer,,,,Failed,Active,,,,,,,,invoiced,existing charge
+mandate,Sam Example,OCC10000002,,,MAN-DEMO-2,MAN-DEMO-2,,DD,,,,,,,,,Cancelled,Cancelled ADDACS,Cancelled,1 Jan 2026,2 Jan 2026,3 Oct 2026,no,no,no,,
+mandate,Northwind Workshops,,Northwind Workshops,,,MAN-DEMO-NW,,DD,50.00,,,,,,,,Pending,Active,Pending,1 Sep 2026,,,no,no,yes,,
+mandate,Casey Example,OCC10000006,,,,MAN-DEMO-6,,DD,,,,,,,,,Active,Active,Active,1 Aug 2026,,,yes,no,no,,
+payout,,,,,,,,,20.00,,,,,6 Oct 2026,BATCH-DEMO-1,1.50,Paid,,,,,,,,,,

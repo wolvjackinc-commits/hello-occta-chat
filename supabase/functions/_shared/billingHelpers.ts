@@ -161,107 +161,159 @@ export function buildInvoicePdfBytes(args: {
 }): Uint8Array {
   const doc = new jsPDF();
   const w = doc.internal.pageSize.getWidth();
-  const displayEnd = toDisplayPeriodEndIso(args.periodEndExclusive);
+  const h = doc.internal.pageSize.getHeight();
+  const left = 18;
+  const right = w - 18;
+  const periodEnd = toDisplayPeriodEndIso(args.periodEndExclusive);
+  const dark: [number, number, number] = [25, 36, 48];
+  const muted: [number, number, number] = [94, 107, 119];
 
-  // Header
-  doc.setFillColor(13, 13, 13);
-  doc.rect(0, 0, w, 32, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
+  const footer = () => {
+    doc.setDrawColor(218, 224, 228);
+    doc.setLineWidth(0.25);
+    doc.line(left, h - 35, right, h - 35);
+    doc.setTextColor(...muted);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.3);
+    doc.text("OCCTA LIMITED  |  Company No. 13828933" +
+      (args.issueDate >= "2026-07-01" ? "  |  VAT No. 520 6072 30" : ""),
+      left, h - 27);
+    doc.text("22 Pavilion View, Huddersfield, HD3 3WU  |  occta.co.uk", left, h - 21);
+    doc.text("Your invoice and payment history are available securely in your OCCTA dashboard.", left, h - 15);
+  };
+
+  const header = (continued = false) => {
+    doc.setFillColor(...dark);
+    doc.rect(0, 0, w, 31, "F");
+    // A restrained OCCTA gold accent, not a decorative billing banner.
+    doc.setFillColor(233, 182, 50);
+    doc.rect(left, 29.7, 25, 1.3, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text("OCCTA", left, 18);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(222, 228, 233);
+    doc.text("Simple telecom. Clear terms.", left, 24);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text(continued ? "INVOICE - CONTINUED" : "INVOICE", right, 18, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(args.invoiceNumber, right, 24, { align: "right" });
+  };
+
+  header();
+  doc.setTextColor(...dark);
   doc.setFont("helvetica", "bold");
-  doc.text("OCCTA", 14, 20);
-  doc.setFillColor(250, 204, 21);
-  doc.rect(44, 11, 38, 13, "F");
-  doc.setTextColor(13, 13, 13);
-  doc.setFontSize(11);
-  doc.text("TELECOM", 47, 20);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text("INVOICE", w - 14, 20, { align: "right" });
-
-  // Meta
-  let y = 46;
-  doc.setTextColor(13, 13, 13);
-  doc.setFontSize(9);
-  doc.text(`Invoice #: ${args.invoiceNumber}`, 14, y);
-  doc.text(`Account: ${args.accountNumber || ""}`, 14, y + 6);
-  doc.text(`Issue date: ${fmtDate(args.issueDate)}`, w - 14, y, { align: "right" });
-  doc.text(`Due date: ${fmtDate(args.dueDate)}`, w - 14, y + 6, { align: "right" });
-
-  y += 22;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("Bill to", 14, y);
+  doc.setFontSize(8.5);
+  doc.text("BILL TO", left, 45);
+  doc.text("INVOICE DETAILS", 123, 45);
   doc.setFont("helvetica", "normal");
-  doc.text(args.customerName || "Customer", 14, y + 6);
-  doc.text(`Billing period: ${fmtDate(args.periodStart)} – ${fmtDate(displayEnd)}`, 14, y + 12);
+  doc.setFontSize(10.5);
+  const name = doc.splitTextToSize(args.customerName || "Account holder", 92);
+  doc.text(name.slice(0, 2), left, 52);
+  doc.setFontSize(8.5);
+  doc.setTextColor(...muted);
+  doc.text("Account reference", left, 64);
+  doc.setTextColor(...dark);
+  doc.text(args.accountNumber || "-", left, 70);
+  const meta: Array<[string, string]> = [
+    ["Invoice date", fmtDate(args.issueDate)],
+    ["Payment due", fmtDate(args.dueDate)],
+    ["Service period", fmtDate(args.periodStart) + " - " + fmtDate(periodEnd)],
+  ];
+  let metaY = 52;
+  meta.forEach(([label, value]) => {
+    doc.setTextColor(...muted);
+    doc.text(label, 123, metaY);
+    doc.setTextColor(...dark);
+    doc.text(doc.splitTextToSize(value, right - 123)[0] ?? "-", 123, metaY + 4.3);
+    metaY += 12;
+  });
 
-  // Table header
-  y += 22;
-  doc.setFillColor(245, 245, 240);
-  doc.rect(14, y, w - 28, 8, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("Description", 18, y + 5);
-  doc.text("Net", w - 82, y + 5, { align: "right" });
-  doc.text("VAT", w - 50, y + 5, { align: "right" });
-  doc.text("Total", w - 18, y + 5, { align: "right" });
-
-  // Lines
-  y += 12;
+  let y = 98;
+  const tableHeader = () => {
+    doc.setFillColor(240, 243, 245);
+    doc.rect(left, y, right - left, 10, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...dark);
+    doc.text("DESCRIPTION / SERVICE", left + 3, y + 6.5);
+    doc.text("NET", 139, y + 6.5, { align: "right" });
+    doc.text("VAT", 164, y + 6.5, { align: "right" });
+    doc.text("TOTAL", right - 3, y + 6.5, { align: "right" });
+    y += 16;
+  };
+  tableHeader();
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+
   for (const line of args.totals.lines) {
-    doc.text(line.description, 18, y);
-    if (line.period_label) {
-      doc.setFontSize(8);
-      doc.setTextColor(102, 102, 102);
-      doc.text(line.period_label, 18, y + 4);
-      doc.setFontSize(9);
-      doc.setTextColor(13, 13, 13);
+    const lines = doc.splitTextToSize(String(line.description ?? ""), 86);
+    const subtitle = line.period_label ? doc.splitTextToSize(String(line.period_label), 85) : [];
+    const height = Math.max(10, lines.length * 4.5 + subtitle.length * 3.6 + 4);
+    if (y + height > h - 90) {
+      footer();
+      doc.addPage();
+      header(true);
+      y = 43;
+      tableHeader();
     }
-    doc.text(fmtPounds(line.net_minor), w - 82, y, { align: "right" });
-    doc.text(fmtPounds(line.vat_minor), w - 50, y, { align: "right" });
-    doc.text(fmtPounds(line.gross_minor), w - 18, y, { align: "right" });
-    y += line.period_label ? 10 : 6;
+    doc.setTextColor(...dark);
+    doc.setFont("helvetica", "normal");
+    doc.text(lines, left + 3, y);
+    if (subtitle.length) {
+      doc.setFontSize(7.5);
+      doc.setTextColor(...muted);
+      doc.text(subtitle, left + 3, y + lines.length * 4.5);
+      doc.setFontSize(8.5);
+      doc.setTextColor(...dark);
+    }
+    doc.text(fmtPounds(line.net_minor), 139, y, { align: "right" });
+    doc.text(fmtPounds(line.vat_minor), 164, y, { align: "right" });
+    doc.text(fmtPounds(line.gross_minor), right - 3, y, { align: "right" });
+    y += height;
+    doc.setDrawColor(231, 235, 238);
+    doc.line(left, y - 3, right, y - 3);
   }
 
-  // Totals block
-  y += 6;
-  doc.setDrawColor(13, 13, 13);
-  doc.setLineWidth(0.3);
-  doc.line(w - 90, y, w - 14, y);
-  y += 5;
-  doc.text("Subtotal (net)", w - 82, y, { align: "left" });
-  doc.text(fmtPounds(args.totals.subtotal_net_minor), w - 18, y, { align: "right" });
-  y += 6;
-  doc.text(`VAT (${args.totals.vat_rate}%)`, w - 82, y, { align: "left" });
-  doc.text(fmtPounds(args.totals.vat_total_minor), w - 18, y, { align: "right" });
-  y += 4;
-
-  y += 4;
-  doc.setFillColor(13, 13, 13);
-  doc.rect(14, y, w - 28, 10, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.text("TOTAL DUE (inc. VAT)", 18, y + 7);
-  doc.text(fmtPounds(args.totals.total_gross_minor), w - 18, y + 7, { align: "right" });
-
-  // Footer note
-  doc.setTextColor(102, 102, 102);
-  doc.setFontSize(8);
+  if (y + 65 > h - 38) {
+    footer();
+    doc.addPage();
+    header(true);
+    y = 43;
+  }
+  y += 9;
+  doc.setTextColor(...muted);
   doc.setFont("helvetica", "normal");
-  const note = args.isFirstInvoice
-    ? "Billing starts only once your service is confirmed live. Your first invoice may include your activation fee and a pro-rata charge from your live date to your chosen billing date. After that, your monthly service is billed in advance on your selected billing date."
-    : "Monthly service is billed in advance on your selected billing date.";
-  doc.text(doc.splitTextToSize(note, w - 28), 14, 270);
-  doc.text(
-    "OCCTA Limited · Company No. 13828933 · VAT No. 520 6072 30 · 22 Pavilion View, Huddersfield, HD3 3WU",
-    w / 2,
-    288,
-    { align: "center" },
-  );
+  doc.setFontSize(9);
+  doc.text("Subtotal excluding VAT", 119, y);
+  doc.text(fmtPounds(args.totals.subtotal_net_minor), right - 2, y, { align: "right" });
+  y += 8;
+  doc.text("VAT (" + args.totals.vat_rate + "%)", 119, y);
+  doc.text(fmtPounds(args.totals.vat_total_minor), right - 2, y, { align: "right" });
+  y += 8;
+  doc.setDrawColor(170, 182, 191);
+  doc.line(119, y - 2.5, right, y - 2.5);
+  doc.setTextColor(...dark);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Invoice total", 119, y + 5);
+  doc.text(fmtPounds(args.totals.total_gross_minor), right - 2, y + 5, { align: "right" });
 
-  return doc.output("arraybuffer") as unknown as Uint8Array;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...muted);
+  doc.text(doc.splitTextToSize(
+    args.isFirstInvoice
+      ? "Your first invoice may include one-off charges and a part-month charge from confirmed service activation. Subsequent services are billed monthly in advance."
+      : "Regular service charges are billed monthly in advance. Payments and account credits are shown separately in your dashboard.",
+    right - left), left, Math.min(y + 22, h - 52));
+  footer();
+  return new Uint8Array(doc.output("arraybuffer"));
 }
 
 /** VAT-itemised invoice email HTML. */

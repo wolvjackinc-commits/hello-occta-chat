@@ -71,7 +71,7 @@ async function processOne(r:any){
  let html=render(String(c.html_snapshot||""),vars,true);
  if(c.track_clicks)html=await signLinks(html,r.id);
  html+=`<div style="border-top:1px solid #ddd;margin-top:32px;padding-top:16px;color:#555;font-size:12px">OCCTA Limited · <a href="https://www.occta.co.uk/privacy-policy">Privacy</a> · <a href="${esc(unsubscribe)}">Unsubscribe from marketing emails</a></div>`;
- if(c.track_opens)html+=`<img src="${BASE}/functions/v1/email-open-track?id=${encodeURIComponent(r.id)}" width="1" height="1" alt="" />`;
+ if(c.track_opens)html+=`<img src="${BASE}/functions/v1/campaign-open?id=${encodeURIComponent(r.id)}" width="1" height="1" alt="" />`;
  const subject=render(String(c.subject_snapshot||""),vars,false).replace(/[\r\n]/g," ").slice(0,250);
  const text=render(String(c.text_snapshot||""),vars,false)+"\n\nOCCTA Limited | Unsubscribe: "+unsubscribe;
  try {

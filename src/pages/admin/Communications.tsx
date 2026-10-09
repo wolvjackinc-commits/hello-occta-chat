@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Send, Zap, Inbox, History } from "lucide-react";
 import { TemplatesTab } from "@/components/admin/communications/TemplatesTab";
@@ -8,7 +9,9 @@ import { InboxTab } from "@/components/admin/communications/InboxTab";
 import { LogsTab } from "@/components/admin/communications/LogsTab";
 
 export const AdminCommunications = () => {
-  const [activeTab, setActiveTab] = useState("inbox");
+  const [params, setParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => params.get("tab") === "campaigns" ? "campaigns" : "inbox");
+  const changeTab = (tab: string) => { setActiveTab(tab); setParams(tab === "inbox" ? {} : { tab }, { replace: true }); };
 
   return (
     <div className="space-y-6">
@@ -21,7 +24,7 @@ export const AdminCommunications = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={changeTab} className="space-y-4">
         <TabsList className="border-2 border-foreground">
           <TabsTrigger value="inbox" className="gap-2">
             <Inbox className="h-4 w-4" />

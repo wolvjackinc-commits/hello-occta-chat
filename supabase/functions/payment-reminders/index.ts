@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { billingReconciliationHold } from "../_shared/billingSafety.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 
@@ -191,7 +192,7 @@ const getReminderHtml = (data: {
         ${data.template === 'overdue_7' ? `
         <div style="background: #fef2f2; border: 2px solid #ef4444; padding: 16px; margin: 24px 0;">
           <p style="margin: 0; font-size: 13px; color: #991b1b; line-height: 1.6;">
-            <strong>⚠️ Important:</strong> Late payments may incur a £5.00 fee. Services may be suspended after 30 days of non-payment.
+            <strong>⚠️ Important:</strong> Please sign in to review your statement, payment arrangements and any applied adjustments. Contact our billing team if you believe this balance is incorrect.
           </p>
         </div>
         ` : ''}
@@ -234,7 +235,7 @@ serve(async (req) => {
 
   // Verify cron job secret for protection
   const cronSecret = req.headers.get("x-cron-secret");
-  if (CRON_SECRET && cronSecret !== CRON_SECRET) {
+  if (!CRON_SECRET || cronSecret !== CRON_SECRET) {
     console.log("SECURITY: Unauthorized cron job request - invalid or missing secret");
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
@@ -291,10 +292,11 @@ serve(async (req) => {
           total,
           due_date,
           status,
+          reminder_count,
           user_id
         `)
         .eq('due_date', dateStr)
-        .in('status', ['sent', 'draft', 'overdue']);
+        .in('status', ['sent', 'issued', 'overdue', 'awaiting_dd_collection']);
 
       if (invError) {
         console.error(`Error fetching invoices for ${dateStr}:`, invError);
@@ -308,6 +310,12 @@ serve(async (req) => {
       }
 
       for (const invoice of invoices) {
+        // Financial exceptions and manual holds are authoritative.
+        const safety = await billingReconciliationHold(supabase, invoice.user_id);
+        if (safety.held) {
+          skipped.push(`${invoice.invoice_number}: ${safety.reason}`);
+          continue;
+        }
         // Fetch profile for customer name and email
         const { data: profile } = await supabase
           .from('profiles')
@@ -327,6 +335,7 @@ serve(async (req) => {
           .select('id')
           .eq('invoice_id', invoice.id)
           .eq('template_name', template)
+          .in('status', ['sent', 'opened', 'delivered'])
           .limit(1)
           .maybeSingle();
 
@@ -348,46 +357,11 @@ serve(async (req) => {
             .eq('id', invoice.id);
         }
 
-        // IMPORTANT: token_hash stores a SHA-256 hash, so we cannot reuse an existing request
-        // (we don't keep raw tokens). Always create a new payment request for email reminders.
-        const rawToken = crypto.randomUUID();
-        const tokenHash = await hashToken(rawToken);
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
-
-        // Optional: mark any previous active requests as cancelled to reduce confusion
-        await supabase
-          .from('payment_requests')
-          .update({ status: 'cancelled' })
-          .eq('invoice_id', invoice.id)
-          .in('status', ['sent', 'opened'])
-          .gt('expires_at', new Date().toISOString());
-
-        const { data: newPaymentRequest, error: prError } = await supabase
-          .from('payment_requests')
-          .insert({
-            type: 'card_payment',
-            invoice_id: invoice.id,
-            user_id: invoice.user_id,
-            customer_name: profile.full_name || 'Customer',
-            customer_email: profile.email,
-            amount: invoice.total,
-            currency: 'GBP',
-            status: 'sent',
-            token_hash: tokenHash,
-            expires_at: expiresAt.toISOString(),
-          })
-          .select('id')
-          .single();
-
-        if (prError || !newPaymentRequest) {
-          console.error(`Failed to create payment request for ${invoice.invoice_number}:`, prError);
-          errors.push(`Failed to create payment request for ${invoice.invoice_number}`);
-          continue;
-        }
-
-        const paymentRequestId = newPaymentRequest.id;
-        const payUrl = `${siteUrl}/pay?token=${rawToken}`;
+        // A reminder is a notification, not a collection operation.
+        // Existing payment requests are never cancelled or duplicated.
+        // Customers authenticate to review their bill and payment options.
+        const paymentRequestId = null;
+        const payUrl = `${siteUrl}/dashboard?tab=invoices`;
 
         const html = getReminderHtml({
           customer_name: profile.full_name || 'Customer',
@@ -421,6 +395,9 @@ serve(async (req) => {
             html: htmlWithHelp,
           });
 
+          if (emailResponse.error || !emailResponse.data?.id) {
+            throw new Error(emailResponse.error?.message || "Email provider did not accept reminder");
+          }
           // Log to communications_log
           await supabase.from('communications_log').insert({
             invoice_id: invoice.id,
@@ -429,7 +406,7 @@ serve(async (req) => {
             template_name: template,
             recipient_email: profile.email,
             status: 'sent',
-            provider_message_id: (emailResponse as { id?: string })?.id || null,
+            provider_message_id: emailResponse.data.id,
             sent_at: new Date().toISOString(),
             metadata: { subject, pay_url: payUrl },
           });
@@ -442,7 +419,7 @@ serve(async (req) => {
             .from('invoices')
             .update({
               last_reminder_sent_at: new Date().toISOString(),
-              reminder_count: (((invoice as unknown as { reminder_count?: number }).reminder_count) || 0) + 1,
+              reminder_count: Number(invoice.reminder_count ?? 0) + 1,
             })
             .eq('id', invoice.id);
         } catch (emailErr) {

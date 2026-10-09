@@ -10,8 +10,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const auth = await requireStaff(req, ["admin", "super_admin"]);
-  if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+  // Grok's authenticated import worker may hand off to this endpoint
+  // with the server-side secret; human callers require staff JWT.
+  const expected = Deno.env.get("CRON_JOB_SECRET");
+  const internal = Boolean(expected) && req.headers.get("x-cron-secret") === expected;
+  if (!internal) {
+    const auth = await requireStaff(req, ["admin", "super_admin"]);
+    if ("error" in auth) return jsonResponse({ error: auth.error }, auth.status);
+  }
   const body = await req.json().catch(() => ({})) as { dry_run?: boolean };
   // Explicit false required to change any records.
   const dryRun = body.dry_run !== false;
@@ -57,7 +63,7 @@ Deno.serve(async (req) => {
       skipped.push({ payment_ref: paymentRef, reason: hold.reason });
       continue;
     }
-    if (!["issued", "sent", "overdue"].includes(inv.status)) {
+    if (!["issued", "sent", "overdue", "paid"].includes(inv.status)) {
       skipped.push({ payment_ref: paymentRef, reason: "invoice_not_collectable" });
       continue;
     }
@@ -71,6 +77,10 @@ Deno.serve(async (req) => {
     }
     const reference = "RECON:" + paymentRef;
     const matchedReceipt = (prior ?? []).find((r: any) => r.reference === reference);
+    if (inv.status === "paid" && !matchedReceipt) {
+      skipped.push({ payment_ref: paymentRef, reason: "invoice_already_paid_by_other_source" });
+      continue;
+    }
     const otherReceivedMinor = (prior ?? [])
       .filter((r: any) => r.reference !== reference)
       .reduce((sum: number, r: any) => sum + Math.round(Number(r.amount) * 100), 0);

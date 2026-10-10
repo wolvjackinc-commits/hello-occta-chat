@@ -1,3 +1,4 @@
+import { getStoredCampaignCode, normaliseReferenceCode } from "@/lib/campaignAttribution";
 import { contactError } from "@/lib/journey2/conversion";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -52,6 +53,7 @@ export default function DetailsStep({
   const [access, setAccess] = useState(d?.accessibility_needs ?? "");
   const [vulnerability, setVulnerability] = useState(d?.vulnerability_support_needs ?? "");
   const [marketing, setMarketing] = useState(!!d?.marketing_consent);
+  const [offerCode, setOfferCode] = useState(d?.offer_code ?? getStoredCampaignCode() ?? "");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -72,6 +74,10 @@ export default function DetailsStep({
     }
     if (voiceSelected && numberAction === "port_in" && numberToPort.replace(/\D/g, "").length < 10) {
       return setErr("Please enter the number you'd like to bring with you.");
+    }
+    const typedOffer = offerCode.trim();
+    if (typedOffer && !normaliseReferenceCode(typedOffer)) {
+      return setErr("Offer or reference codes use 3–24 letters, numbers or hyphens.");
     }
     setErr(null);
     onSave({
@@ -96,6 +102,7 @@ export default function DetailsStep({
       accessibility_needs: access.trim() || null,
       vulnerability_support_needs: vulnerability.trim() || null,
       marketing_consent: marketing,
+      offer_code: normaliseReferenceCode(typedOffer),
       // The privacy notice is presented directly beside the continue action.
       privacy_acknowledged: true,
     });
@@ -233,6 +240,20 @@ export default function DetailsStep({
           </div>
         </div>
       </details>
+
+      <div>
+        <Label htmlFor="j2-offer">Offer or reference code <span className="font-sans normal-case tracking-normal text-muted-foreground">(optional)</span></Label>
+        <Input
+          id="j2-offer"
+          value={offerCode}
+          onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
+          maxLength={24}
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="For example LOCK-A"
+        />
+        <p className="mt-1 text-[10px] text-muted-foreground">If your flyer or QR code included a reference, it is filled in here. You can change it or leave it blank.</p>
+      </div>
 
       <div className="flex items-start gap-3 border-2 border-border p-4">
         <Checkbox id="j2-marketing" checked={marketing} onCheckedChange={(v) => setMarketing(v === true)} className="mt-0.5" />

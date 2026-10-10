@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Download, RefreshCw, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { campaignFilterMatch, campaignSearchText, formatCampaignQrLabel, type CampaignFilter } from "@/lib/campaignAttribution";
 
 type Lead = {
   id: string;
@@ -35,6 +36,7 @@ type Lead = {
   site_postcode: string | null;
   assigned_to: string | null;
   internal_notes: string | null;
+  utm: Record<string, unknown> | null;
 };
 
 type Rep = { user_id: string; email: string | null; full_name: string | null };
@@ -54,6 +56,7 @@ const BusinessLeads = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [campaignFilter, setCampaignFilter] = useState<CampaignFilter>("all");
   const [repFilter, setRepFilter] = useState<string>("all");
   const [reps, setReps] = useState<Rep[]>([]);
   const [detail, setDetail] = useState<Lead | null>(null);
@@ -110,15 +113,17 @@ const BusinessLeads = () => {
       if (repFilter === "unassigned" && l.assigned_to) return false;
       if (repFilter !== "unassigned" && l.assigned_to !== repFilter) return false;
     }
+    if (!campaignFilterMatch(l.utm, null, campaignFilter)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
       l.company_name?.toLowerCase().includes(q) ||
       l.contact_name?.toLowerCase().includes(q) ||
       l.email?.toLowerCase().includes(q) ||
-      (l.postcode ?? l.site_postcode ?? "").toLowerCase().includes(q)
+      (l.postcode ?? l.site_postcode ?? "").toLowerCase().includes(q) ||
+      campaignSearchText(l.utm).includes(q)
     );
-  }), [leads, statusFilter, repFilter, search]);
+  }), [leads, statusFilter, repFilter, campaignFilter, search]);
 
   const repLabel = (id: string | null) => {
     if (!id) return "Unassigned";
@@ -127,8 +132,8 @@ const BusinessLeads = () => {
   };
 
   const exportCsv = () => {
-    const headers = ["Company","Contact","Email","Phone","Postcode","Team","Interest","SLA","Status","Assigned","Received"];
-    const lines = filtered.map((l) => [l.company_name, l.contact_name, l.email, l.phone ?? "", l.postcode ?? l.site_postcode ?? "", l.team_size ?? "", l.interest ?? "", l.sla_preference ?? "standard", l.status, repLabel(l.assigned_to), l.created_at].map((v) => `"${String(v).replace(/"/g,'""')}"`).join(","));
+    const headers = ["Company","Contact","Email","Phone","Postcode","Team","Interest","SLA","Campaign / QR","UTM source","UTM campaign","QR","Reference code","Status","Assigned","Received"];
+    const lines = filtered.map((l) => [l.company_name, l.contact_name, l.email, l.phone ?? "", l.postcode ?? l.site_postcode ?? "", l.team_size ?? "", l.interest ?? "", l.sla_preference ?? "standard", formatCampaignQrLabel(l.utm), String(l.utm?.utm_source ?? ""), String(l.utm?.utm_campaign ?? ""), String(l.utm?.qr_id ?? ""), String(l.utm?.cc ?? ""), l.status, repLabel(l.assigned_to), l.created_at].map((v) => `"${String(v).replace(/"/g,'""')}"`).join(","));
     const csv = [headers.join(","), ...lines].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -161,6 +166,15 @@ const BusinessLeads = () => {
               <SelectItem value="lost">Lost</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={campaignFilter} onValueChange={(v) => setCampaignFilter(v as CampaignFilter)}>
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All campaigns</SelectItem>
+              <SelectItem value="tagged">With campaign / QR</SelectItem>
+              <SelectItem value="qr">QR / flyer</SelectItem>
+              <SelectItem value="code">With reference code</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={repFilter} onValueChange={setRepFilter}>
             <SelectTrigger className="w-44"><SelectValue placeholder="Rep" /></SelectTrigger>
             <SelectContent>
@@ -180,6 +194,7 @@ const BusinessLeads = () => {
               <TableHead>Company</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Interest</TableHead>
+              <TableHead>Campaign / QR</TableHead>
               <TableHead>SLA</TableHead>
               <TableHead>Assigned</TableHead>
               <TableHead>Received</TableHead>
@@ -188,7 +203,7 @@ const BusinessLeads = () => {
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && !loading && (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">No leads match.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-10">No leads match.</TableCell></TableRow>
             )}
             {filtered.map((l) => (
               <TableRow key={l.id} className="cursor-pointer" onClick={() => setDetail(l)}>
@@ -204,6 +219,7 @@ const BusinessLeads = () => {
                   </div>
                 </TableCell>
                 <TableCell><Badge variant="outline">{l.interest ?? "—"}</Badge></TableCell>
+                <TableCell className="text-xs max-w-[220px]">{formatCampaignQrLabel(l.utm)}</TableCell>
                 <TableCell><Badge variant="outline">{l.sla_preference ?? "standard"}</Badge></TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Select value={l.assigned_to ?? "unassigned"} onValueChange={(v) => assignRep(l.id, v === "unassigned" ? null : v)}>
@@ -259,6 +275,11 @@ const BusinessLeads = () => {
                   {[detail.site_address_line1, detail.site_address_line2, detail.site_city, detail.site_postcode ?? detail.postcode].filter(Boolean).join(", ")}
                 </div>
               )}
+              <div>
+                <div className="text-xs text-muted-foreground">Campaign / QR</div>
+                <div>{formatCampaignQrLabel(detail.utm)}</div>
+                {detail.utm?.landing_path && <div className="text-xs text-muted-foreground break-all">{String(detail.utm.landing_path)}</div>}
+              </div>
               <div>
                 <div className="text-xs text-muted-foreground">SLA preference</div>
                 <Badge variant="outline">{detail.sla_preference ?? "standard"}</Badge>

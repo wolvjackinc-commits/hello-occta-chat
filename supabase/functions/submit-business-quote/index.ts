@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { z } from "npm:zod@3.23.8";
+import { campaignAlertHtml, sanitizeCampaignUtm } from "../_shared/campaignAttribution.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +21,7 @@ const BodySchema = z.object({
   message: z.string().max(4000).optional().nullable(),
   source: z.string().max(100).optional().nullable(),
   consent: z.literal(true),
+  utm: z.unknown().optional().nullable(),
 });
 
 type QualificationStatus = "auto_qualified" | "needs_review" | "complex";
@@ -168,7 +170,8 @@ Deno.serve(async (req) => {
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) return new Response(JSON.stringify({ error: parsed.error.flatten().fieldErrors }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { consent: _consent, ...quote } = parsed.data;
+    const { consent: _consent, utm: rawUtm, ...quote } = parsed.data;
+    const utm = sanitizeCampaignUtm(rawUtm);
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const qualification = await qualifyBroadband(supabase, parsed.data);
     const reference = makeReference();
@@ -176,6 +179,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase.from("business_quote_requests").insert({
       ...quote,
+      utm,
       status: "new",
       reference,
       qualification_status: qualification.status,
@@ -208,7 +212,7 @@ Deno.serve(async (req) => {
             subject: internalSubject,
             title: "New business quote request",
             greeting: "Business team",
-            message_html: `<p><strong>Reference:</strong> ${escapeHtml(reference)}</p><p><strong>Company:</strong> ${escapeHtml(quote.company_name)}</p><p><strong>Contact:</strong> ${escapeHtml(quote.contact_name)} — ${escapeHtml(quote.email)}${quote.phone ? " · " + escapeHtml(quote.phone) : ""}</p><p><strong>Sites:</strong> ${quote.site_count} · <strong>Qualification:</strong> ${escapeHtml(qualification.status)}</p><p><strong>Reasons:</strong> ${escapeHtml(qualification.reasons.join(", ") || "none")}</p><p><strong>Services:</strong> ${servicesList}</p>${reqLines ? `<p><strong>Requirements:</strong></p><ul>${reqLines}</ul>` : ""}${commercialHtml}<p><strong>Follow-up due:</strong> ${escapeHtml(followUpDueAt)}</p><p><strong>Message:</strong><br/>${escapeHtml(quote.message ?? "—").replace(/\n/g, "<br/>")}</p>`,
+            message_html: `<p><strong>Reference:</strong> ${escapeHtml(reference)}</p><p><strong>Company:</strong> ${escapeHtml(quote.company_name)}</p><p><strong>Contact:</strong> ${escapeHtml(quote.contact_name)} — ${escapeHtml(quote.email)}${quote.phone ? " · " + escapeHtml(quote.phone) : ""}</p><p><strong>Sites:</strong> ${quote.site_count} · <strong>Qualification:</strong> ${escapeHtml(qualification.status)}</p><p><strong>Reasons:</strong> ${escapeHtml(qualification.reasons.join(", ") || "none")}</p><p><strong>Services:</strong> ${servicesList}</p>${reqLines ? `<p><strong>Requirements:</strong></p><ul>${reqLines}</ul>` : ""}${commercialHtml}<p><strong>Follow-up due:</strong> ${escapeHtml(followUpDueAt)}</p><p><strong>Message:</strong><br/>${escapeHtml(quote.message ?? "—").replace(/\n/g, "<br/>")}</p>${campaignAlertHtml(utm)}`,
           },
         },
       });

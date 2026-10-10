@@ -22,6 +22,7 @@ import {
 import { RESOLVER_VERSION } from "../_shared/buildPlanResolver.ts";
 import { encryptJson } from "../_shared/ddCrypto.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { mergeUtmSnapshot, normaliseOfferCode } from "../_shared/campaignAttribution.ts";
 
 const SESSION_COLS = `
   id, journey_version, status, current_step, last_completed_step, test_session,
@@ -90,6 +91,7 @@ const DetailsPayload = z.object({
   vulnerability_support_needs: z.string().trim().max(600).optional().nullable(),
   marketing_consent: z.boolean().default(false),
   privacy_acknowledged: z.literal(true),
+  offer_code: z.string().trim().max(24).optional().nullable(),
 });
 
 const StartDatePayload = z.object({
@@ -228,7 +230,7 @@ Deno.serve(async (req) => {
         public_token_hash: hash,
         last_activity_at: new Date().toISOString(),
         utm_snapshot: body.utm
-          ? { ...(((existing as any).utm_snapshot ?? {}) as Record<string, unknown>), latest_touch: body.utm }
+          ? mergeUtmSnapshot((existing as any).utm_snapshot, body.utm)
           : ((existing as any).utm_snapshot ?? { source_type: "direct", captured_at: new Date().toISOString() }),
       })
         .eq("id", existing.id);
@@ -264,7 +266,7 @@ Deno.serve(async (req) => {
         journey_assigned_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + expiryDays * 86400_000).toISOString(),
         ip, user_agent: ua,
-        utm_snapshot: body.utm ?? { source_type: "direct", captured_at: new Date().toISOString() },
+        utm_snapshot: mergeUtmSnapshot(null, body.utm ?? { source_type: "direct", captured_at: new Date().toISOString() }),
       })
       .select(SESSION_COLS)
       .single();
@@ -296,16 +298,13 @@ Deno.serve(async (req) => {
   }
 
   if ((body.action === "get" || body.action === "save_step") && body.attribution) {
-  const mergedAttribution = {
-    ...(((session as any).utm_snapshot ?? { source_type: "direct", captured_at: new Date().toISOString() }) as Record<string, unknown>),
-    latest_touch: body.attribution,
-  };
-  await supabase.from("customer_journey_sessions").update({ utm_snapshot: mergedAttribution }).eq("id", session.id);
-  (session as any).utm_snapshot = mergedAttribution;
-}
+    const mergedAttribution = mergeUtmSnapshot((session as any).utm_snapshot, body.attribution);
+    await supabase.from("customer_journey_sessions").update({ utm_snapshot: mergedAttribution }).eq("id", session.id);
+    (session as any).utm_snapshot = mergedAttribution;
+  }
 
-if (body.action === "get") {
-  return jsonResponse({
+  if (body.action === "get") {
+    return jsonResponse({
       ok: true,
       session,
       quote_token_available: !!session.quote_id,
@@ -410,7 +409,9 @@ if (body.action === "get") {
     if (p.data.number_action === "port_in" && !p.data.number_to_port) {
       return jsonResponse({ error: "number_to_port_required" }, 400);
     }
-    patch.customer_details = p.data;
+    const offer = normaliseOfferCode(p.data.offer_code);
+    if (!offer.ok) return jsonResponse({ error: "validation", details: { offer_code: ["Use 3-24 letters, numbers or hyphens."] } }, 400);
+    patch.customer_details = { ...p.data, offer_code: offer.code };
   } else if (body.step === "start_date") {
     const p = StartDatePayload.safeParse(body.payload);
     if (!p.success) return jsonResponse({ error: "validation", details: p.error.flatten() }, 400);

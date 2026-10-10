@@ -11,6 +11,7 @@ import { StructuredData } from "@/components/seo";
 import { CookieConsent } from "@/components/legal/CookieConsent";
 import PrivateRouteNoIndex from "@/components/seo/PrivateRouteNoIndex";
 import CanonicalPath from "@/components/seo/CanonicalPath";
+import { captureCampaignFromLocation } from "@/lib/campaignAttribution";
 import { captureReferralFromUrl } from "@/lib/referral";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import Index from "./pages/Index";
@@ -206,6 +207,10 @@ const AnimatedRoutes = () => {
   useEffect(() => {
     captureReferralFromUrl();
   }, []);
+
+  useEffect(() => {
+    captureCampaignFromLocation();
+  }, [location.pathname, location.search]);
 
   // Show offline page when not connected (except for cached pages)
   if (!isOnline && !navigator.onLine) {

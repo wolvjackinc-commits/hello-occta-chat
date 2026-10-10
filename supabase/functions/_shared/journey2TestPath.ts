@@ -13,6 +13,7 @@
  * physically separated at the table level.
  */
 import { generateTokenPair, sha256Hex } from "./quoteHelpers.ts";
+import { normaliseOfferCode } from "./campaignAttribution.ts";
 import { loadJourneySettings, resolveJourney2Price, planNameFor, JOURNEY2_SETUP, type JourneySettings } from "./journey2.ts";
 import { RESOLVER_VERSION } from "./buildPlanResolver.ts";
 import { encryptJson } from "./ddCrypto.ts";
@@ -87,6 +88,7 @@ const DetailsPayload = z.object({
   vulnerability_support_needs: z.string().trim().max(600).optional().nullable(),
   marketing_consent: z.boolean().default(false),
   privacy_acknowledged: z.literal(true),
+  offer_code: z.string().trim().max(24).optional().nullable(),
 });
 const StartDatePayload = z.object({
   preferred_start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -188,7 +190,9 @@ export async function saveTestStep(
     const eighteen = new Date(Date.UTC(dob.getUTCFullYear() + 18, dob.getUTCMonth(), dob.getUTCDate()));
     if (!(eighteen.getTime() <= Date.now())) return fail("must_be_18", 400);
     if (p.data.number_action === "port_in" && !p.data.number_to_port) return fail("number_to_port_required", 400);
-    patch.customer_details = p.data;
+    const offer = normaliseOfferCode(p.data.offer_code);
+    if (!offer.ok) return fail("validation", 400, { offer_code: ["Use 3-24 letters, numbers or hyphens."] });
+    patch.customer_details = { ...p.data, offer_code: offer.code };
     patch.current_step = "start_date";
   } else if (step === "start_date") {
     const p = StartDatePayload.safeParse(payload);

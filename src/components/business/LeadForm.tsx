@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getCampaignUtmForSubmit } from "@/lib/campaignAttribution";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -54,7 +55,7 @@ export const LeadForm = ({ source = "business_hub", interest, compact = false, h
       return;
     }
     setSubmitting(true);
-    const payload = { ...form, postcode: form.site_postcode, source };
+    const payload = { ...form, postcode: form.site_postcode, source, utm: getCampaignUtmForSubmit() };
     const { data, error } = await supabase.functions.invoke("submit-business-lead", { body: payload });
     setSubmitting(false);
     if (error || !data?.ok) {

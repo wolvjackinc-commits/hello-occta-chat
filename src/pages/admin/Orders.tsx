@@ -22,10 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { campaignFilterMatch, campaignSearchText, formatCampaignQrLabel, type CampaignFilter } from "@/lib/campaignAttribution";
 import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
 import { logAudit } from "@/lib/audit";
-import { CheckSquare, Square, Loader2, UserPlus, ExternalLink, StickyNote, Package } from "lucide-react";
+import { CheckSquare, Download, Square, Loader2, UserPlus, ExternalLink, StickyNote, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import {
@@ -68,14 +70,25 @@ export const AdminOrders = () => {
   const [selectedGuestOrders, setSelectedGuestOrders] = useState<Set<string>>(new Set());
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [campaignFilter, setCampaignFilter] = useState<CampaignFilter>("all");
+  const [campaignSearch, setCampaignSearch] = useState("");
   const [noteOrder, setNoteOrder] = useState<Order | null>(null);
 
   const { data, refetch } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
-      const [orders, guestOrders] = await Promise.all([
+      const sessionSelect = "order_id, guest_order_id, utm_snapshot, offer_code:customer_details->>offer_code";
+      // The generated session row is too wide for this chained select to typecheck.
+      const sessionPromise = (supabase as any)
+        .from("customer_journey_sessions")
+        .select(sessionSelect)
+        .or("order_id.not.is.null,guest_order_id.not.is.null")
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      const [orders, guestOrders, sessions] = await Promise.all([
         supabase.from("orders").select("id, service_type, plan_name, status, notes, created_at").order("created_at", { ascending: false }),
         supabase.from("guest_orders").select("*").order("created_at", { ascending: false }),
+        sessionPromise,
       ]);
 
       return {
@@ -84,6 +97,12 @@ export const AdminOrders = () => {
           admin_notes: order.notes ?? null,
         })) as Order[],
         guestOrders: (guestOrders.data || []) as GuestOrder[],
+        sessions: (sessions.data || []) as Array<{
+          order_id: string | null;
+          guest_order_id: string | null;
+          utm_snapshot: Record<string, unknown> | null;
+          offer_code: string | null;
+        }>,
       };
     },
   });
@@ -228,32 +247,85 @@ export const AdminOrders = () => {
     setSelectedGuestOrders(newSet);
   };
 
+  const orders = useMemo(() => data?.orders ?? [], [data?.orders]);
+  const guestOrders = useMemo(() => data?.guestOrders ?? [], [data?.guestOrders]);
+  const attribution = useMemo(() => {
+    const byOrder = new Map<string, { utm: Record<string, unknown> | null; offer: string | null }>();
+    const byGuest = new Map<string, { utm: Record<string, unknown> | null; offer: string | null }>();
+    for (const session of data?.sessions ?? []) {
+      const entry = {
+        utm: session.utm_snapshot,
+        offer: typeof session.offer_code === "string" ? session.offer_code : null,
+      };
+      if (session.order_id) byOrder.set(session.order_id, entry);
+      if (session.guest_order_id) byGuest.set(session.guest_order_id, entry);
+    }
+    for (const guest of guestOrders) {
+      const linked = guest?.linked_order_id as string | null | undefined;
+      if (linked && !byOrder.has(linked) && byGuest.has(guest.id)) byOrder.set(linked, byGuest.get(guest.id)!);
+    }
+    return { byOrder, byGuest };
+  }, [data?.sessions, guestOrders]);
+  const visibleOrders = useMemo(
+    () => (includeArchived ? orders : orders.filter((o) => !isArchivedLike(o.status))).filter((order) => {
+      const entry = attribution.byOrder.get(order.id);
+      const utm = entry?.utm ?? null;
+      const offer = entry?.offer ?? null;
+      if (!campaignFilterMatch(utm, offer, campaignFilter)) return false;
+      const query = campaignSearch.trim().toLowerCase();
+      return !query || campaignSearchText(utm, offer).includes(query);
+    }),
+    [orders, includeArchived, attribution, campaignFilter, campaignSearch],
+  );
+  const visibleGuestOrders = useMemo(
+    () => (includeArchived ? guestOrders : guestOrders.filter((o: any) => !isArchivedLike(o?.status))).filter((order: any) => {
+      const entry = attribution.byGuest.get(order.id);
+      const utm = entry?.utm ?? null;
+      const offer = entry?.offer ?? null;
+      if (!campaignFilterMatch(utm, offer, campaignFilter)) return false;
+      const query = campaignSearch.trim().toLowerCase();
+      return !query || campaignSearchText(utm, offer).includes(query);
+    }),
+    [guestOrders, includeArchived, attribution, campaignFilter, campaignSearch],
+  );
+
   const selectAllOrders = () => {
-    if (selectedOrders.size === orders.length) {
+    if (selectedOrders.size === visibleOrders.length) {
       setSelectedOrders(new Set());
     } else {
-      setSelectedOrders(new Set(orders.map((o) => o.id)));
+      setSelectedOrders(new Set(visibleOrders.map((o) => o.id)));
     }
   };
 
   const selectAllGuestOrders = () => {
-    if (selectedGuestOrders.size === guestOrders.length) {
+    if (selectedGuestOrders.size === visibleGuestOrders.length) {
       setSelectedGuestOrders(new Set());
     } else {
-      setSelectedGuestOrders(new Set(guestOrders.map((o) => o.id)));
+      setSelectedGuestOrders(new Set(visibleGuestOrders.map((o: any) => o.id)));
     }
   };
 
-  const orders = useMemo(() => data?.orders ?? [], [data?.orders]);
-  const guestOrders = useMemo(() => data?.guestOrders ?? [], [data?.guestOrders]);
-  const visibleOrders = useMemo(
-    () => (includeArchived ? orders : orders.filter((o) => !isArchivedLike(o.status))),
-    [orders, includeArchived],
-  );
-  const visibleGuestOrders = useMemo(
-    () => (includeArchived ? guestOrders : guestOrders.filter((o: any) => !isArchivedLike(o?.status))),
-    [guestOrders, includeArchived],
-  );
+  const exportCsv = () => {
+    const headers = ["Type", "Id", "Name", "Status", "Created", "Campaign / QR", "UTM campaign", "QR", "Reference code"];
+    const orderLines = visibleOrders.map((order) => {
+      const entry = attribution.byOrder.get(order.id);
+      const touch = (entry?.utm ?? {}) as Record<string, unknown>;
+      return [order.service_type, order.id, order.plan_name, order.status, order.created_at, formatCampaignQrLabel(entry?.utm, entry?.offer), touch.utm_campaign ?? "", touch.qr_id ?? "", entry?.offer || touch.cc || ""];
+    });
+    const guestLines = visibleGuestOrders.map((order: any) => {
+      const entry = attribution.byGuest.get(order.id);
+      const touch = (entry?.utm ?? {}) as Record<string, unknown>;
+      return ["guest", order.id, order.full_name ?? "", order.status ?? "", order.created_at ?? "", formatCampaignQrLabel(entry?.utm, entry?.offer), touch.utm_campaign ?? "", touch.qr_id ?? "", entry?.offer || touch.cc || ""];
+    });
+    const lines = [...orderLines, ...guestLines].map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","));
+    const blob = new Blob([[headers.join(","), ...lines].join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-campaign-${format(new Date(), "yyyyMMdd-HHmm")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
@@ -267,6 +339,20 @@ export const AdminOrders = () => {
           />
         }
       />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Input value={campaignSearch} onChange={(event) => setCampaignSearch(event.target.value)} placeholder="Campaign, QR or code" className="w-56 border-2 border-foreground" />
+        <Select value={campaignFilter} onValueChange={(value) => setCampaignFilter(value as CampaignFilter)}>
+          <SelectTrigger className="w-48 border-2 border-foreground"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All campaigns</SelectItem>
+            <SelectItem value="tagged">With campaign / QR</SelectItem>
+            <SelectItem value="qr">QR / flyer</SelectItem>
+            <SelectItem value="code">With reference code</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" className="border-2 border-foreground" onClick={exportCsv}><Download className="mr-1 h-4 w-4" /> CSV</Button>
+      </div>
 
       <Tabs defaultValue="orders">
         <TabsList>
@@ -285,12 +371,12 @@ export const AdminOrders = () => {
                   onClick={selectAllOrders}
                   className="border-2 border-foreground gap-2"
                 >
-                  {selectedOrders.size === orders.length ? (
+                  {selectedOrders.size === visibleOrders.length && visibleOrders.length > 0 ? (
                     <CheckSquare className="w-4 h-4" />
                   ) : (
                     <Square className="w-4 h-4" />
                   )}
-                  {selectedOrders.size === orders.length ? "Deselect All" : "Select All"}
+                  {selectedOrders.size === visibleOrders.length && visibleOrders.length > 0 ? "Deselect All" : "Select All"}
                 </Button>
                 
                 {selectedOrders.size > 0 && (
@@ -338,6 +424,7 @@ export const AdminOrders = () => {
                     <TableHead className="font-display uppercase">Order</TableHead>
                     <TableHead className="font-display uppercase">Plan</TableHead>
                     <TableHead className="font-display uppercase">Status</TableHead>
+                    <TableHead className="font-display uppercase">Campaign / QR</TableHead>
                     <TableHead className="font-display uppercase">Created</TableHead>
                     <TableHead className="font-display uppercase text-right">Actions</TableHead>
                   </TableRow>
@@ -375,6 +462,9 @@ export const AdminOrders = () => {
                           </SelectContent>
                         </Select>
                       </TableCell>
+                      <TableCell className="max-w-[220px] text-xs">
+                        {formatCampaignQrLabel(attribution.byOrder.get(order.id)?.utm, attribution.byOrder.get(order.id)?.offer)}
+                      </TableCell>
                       <TableCell className="text-xs">
                         {format(new Date(order.created_at), "dd MMM yyyy")}
                       </TableCell>
@@ -411,12 +501,12 @@ export const AdminOrders = () => {
                   onClick={selectAllGuestOrders}
                   className="border-2 border-foreground gap-2"
                 >
-                  {selectedGuestOrders.size === guestOrders.length ? (
+                  {selectedGuestOrders.size === visibleGuestOrders.length && visibleGuestOrders.length > 0 ? (
                     <CheckSquare className="w-4 h-4" />
                   ) : (
                     <Square className="w-4 h-4" />
                   )}
-                  {selectedGuestOrders.size === guestOrders.length ? "Deselect All" : "Select All"}
+                  {selectedGuestOrders.size === visibleGuestOrders.length && visibleGuestOrders.length > 0 ? "Deselect All" : "Select All"}
                 </Button>
                 
                 {selectedGuestOrders.size > 0 && (
@@ -464,6 +554,7 @@ export const AdminOrders = () => {
                         <Badge variant="secondary" className="border-2 border-foreground text-[10px]">No customer account</Badge>
                       )}
                       <span className="text-[11px] text-muted-foreground">{order.email}</span>
+                      <span className="text-[11px] text-muted-foreground">Campaign / QR: {formatCampaignQrLabel(attribution.byGuest.get(order.id)?.utm, attribution.byGuest.get(order.id)?.offer)}</span>
                     </div>
                   </div>
                 </div>

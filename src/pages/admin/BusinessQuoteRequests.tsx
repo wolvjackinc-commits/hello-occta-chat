@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Download, RefreshCw, Search, ShieldCheck, TriangleAlert } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { campaignFilterMatch, campaignSearchText, formatCampaignQrLabel, type CampaignFilter } from "@/lib/campaignAttribution";
 
 type QuoteReq = {
   id: string; reference: string | null; company_name: string; contact_name: string; email: string; phone: string | null;
@@ -17,6 +18,7 @@ type QuoteReq = {
   status: string; assigned_to: string | null; internal_notes: string | null; created_at: string;
   qualification_status: "auto_qualified" | "needs_review" | "complex"; qualification_reasons: string[];
   qualification_snapshot: Record<string, any>; customer_acknowledged_at: string | null; follow_up_due_at: string | null;
+  utm: Record<string, unknown> | null;
 };
 
 const statusStyles: Record<string, string> = { new: "bg-blue-100 text-blue-800", reviewing: "bg-amber-100 text-amber-800", quoted: "bg-purple-100 text-purple-800", won: "bg-green-100 text-green-800", lost: "bg-gray-100 text-gray-700" };
@@ -30,6 +32,7 @@ export const AdminBusinessQuoteRequests = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [qualFilter, setQualFilter] = useState("all");
+  const [campaignFilter, setCampaignFilter] = useState<CampaignFilter>("all");
   const [detail, setDetail] = useState<QuoteReq | null>(null);
   const [notes, setNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState("");
@@ -68,14 +71,15 @@ export const AdminBusinessQuoteRequests = () => {
   const filtered = useMemo(() => rows.filter((r) => {
     if (statusFilter !== "all" && r.status !== statusFilter) return false;
     if (qualFilter !== "all" && r.qualification_status !== qualFilter) return false;
+    if (!campaignFilterMatch(r.utm, null, campaignFilter)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
-    return r.reference?.toLowerCase().includes(q) || r.company_name?.toLowerCase().includes(q) || r.contact_name?.toLowerCase().includes(q) || r.email?.toLowerCase().includes(q);
-  }), [rows, statusFilter, qualFilter, search]);
+    return r.reference?.toLowerCase().includes(q) || r.company_name?.toLowerCase().includes(q) || r.contact_name?.toLowerCase().includes(q) || r.email?.toLowerCase().includes(q) || campaignSearchText(r.utm).includes(q);
+  }), [rows, statusFilter, qualFilter, campaignFilter, search]);
 
   const exportCsv = () => {
-    const headers = ["Reference","Company","Contact","Email","Phone","Sites","Services","Care","Qualification","Reasons","Safe monthly ex VAT","Follow-up due","Status","Received"];
-    const lines = filtered.map((r) => [r.reference ?? "", r.company_name, r.contact_name, r.email, r.phone ?? "", r.site_count, r.services.join("|"), r.sla_preference, r.qualification_status, (r.qualification_reasons ?? []).join("|"), r.qualification_snapshot?.safe_retail_floor_monthly_ex_vat ?? "", r.follow_up_due_at ?? "", r.status, r.created_at].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    const headers = ["Reference","Company","Contact","Email","Phone","Sites","Services","Care","Campaign / QR","UTM source","UTM campaign","QR","Reference code","Qualification","Reasons","Safe monthly ex VAT","Follow-up due","Status","Received"];
+    const lines = filtered.map((r) => [r.reference ?? "", r.company_name, r.contact_name, r.email, r.phone ?? "", r.site_count, r.services.join("|"), r.sla_preference, formatCampaignQrLabel(r.utm), String(r.utm?.utm_source ?? ""), String(r.utm?.utm_campaign ?? ""), String(r.utm?.qr_id ?? ""), String(r.utm?.cc ?? ""), r.qualification_status, (r.qualification_reasons ?? []).join("|"), r.qualification_snapshot?.safe_retail_floor_monthly_ex_vat ?? "", r.follow_up_due_at ?? "", r.status, r.created_at].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
     const blob = new Blob([[headers.join(","), ...lines].join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `business-quote-requests-${format(new Date(), "yyyyMMdd-HHmm")}.csv`; a.click(); URL.revokeObjectURL(url);
   };
@@ -86,6 +90,7 @@ export const AdminBusinessQuoteRequests = () => {
         <div><h1 className="font-display text-3xl">Business quote requests</h1><p className="text-sm text-muted-foreground">{filtered.length} of {rows.length} · automated qualification is triage, never supplier-order confirmation</p></div>
         <div className="flex gap-2 flex-wrap">
           <div className="relative"><Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ref, company, contact…" className="pl-8 w-64" /></div>
+          <Select value={campaignFilter} onValueChange={(v) => setCampaignFilter(v as CampaignFilter)}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All campaigns</SelectItem><SelectItem value="tagged">With campaign / QR</SelectItem><SelectItem value="qr">QR / flyer</SelectItem><SelectItem value="code">With reference code</SelectItem></SelectContent></Select>
           <Select value={qualFilter} onValueChange={setQualFilter}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All qualification</SelectItem><SelectItem value="auto_qualified">Auto-qualified</SelectItem><SelectItem value="needs_review">Needs review</SelectItem><SelectItem value="complex">Complex</SelectItem></SelectContent></Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="new">New</SelectItem><SelectItem value="reviewing">Reviewing</SelectItem><SelectItem value="quoted">Quoted</SelectItem><SelectItem value="won">Won</SelectItem><SelectItem value="lost">Lost</SelectItem></SelectContent></Select>
           <Button variant="outline" onClick={exportCsv}><Download className="w-4 h-4 mr-1" /> CSV</Button>
@@ -95,9 +100,9 @@ export const AdminBusinessQuoteRequests = () => {
 
       <div className="border-4 border-foreground bg-background shadow-brutal overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>Reference / company</TableHead><TableHead>Services</TableHead><TableHead>Qualification</TableHead><TableHead>Guardrail</TableHead><TableHead>Follow-up</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Reference / company</TableHead><TableHead>Services</TableHead><TableHead>Campaign / QR</TableHead><TableHead>Qualification</TableHead><TableHead>Guardrail</TableHead><TableHead>Follow-up</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
-            {filtered.length === 0 && !loading && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">No quote requests yet.</TableCell></TableRow>}
+            {filtered.length === 0 && !loading && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-10">No quote requests yet.</TableCell></TableRow>}
             {filtered.map((r) => {
               const due = r.follow_up_due_at ? new Date(r.follow_up_due_at) : null;
               const overdue = due ? due.getTime() < Date.now() && !["quoted","won","lost"].includes(r.status) : false;
@@ -105,6 +110,7 @@ export const AdminBusinessQuoteRequests = () => {
                 <TableRow key={r.id} className="cursor-pointer" onClick={() => setDetail(r)}>
                   <TableCell><div className="font-mono text-xs">{r.reference ?? "legacy"}</div><div className="font-semibold">{r.company_name}</div><div className="text-xs text-muted-foreground">{r.contact_name} · {r.email}</div></TableCell>
                   <TableCell className="text-xs">{r.services.join(", ")}</TableCell>
+                  <TableCell className="text-xs max-w-[220px]">{formatCampaignQrLabel(r.utm)}</TableCell>
                   <TableCell><Badge className={qualStyles[r.qualification_status] ?? ""}>{r.qualification_status ?? "legacy"}</Badge>{r.customer_acknowledged_at && <div className="text-[10px] text-muted-foreground mt-1">ack sent</div>}</TableCell>
                   <TableCell><div className="font-semibold">{money(r.qualification_snapshot?.safe_retail_floor_monthly_ex_vat)} ex VAT</div><div className="text-[10px] text-muted-foreground">internal floor, not customer quote</div></TableCell>
                   <TableCell className={overdue ? "text-destructive font-semibold text-xs" : "text-xs"}>{due ? format(due, "dd MMM HH:mm") : "—"}{overdue && <div>OVERDUE</div>}</TableCell>
@@ -130,6 +136,7 @@ export const AdminBusinessQuoteRequests = () => {
                 <p className="text-[11px] text-muted-foreground mt-3 flex gap-2"><TriangleAlert className="w-4 h-4 flex-shrink-0" />This is an internal margin floor calculated conservatively against active catalogue rows. It is not a supplier availability result and must not be copied to a customer as a final quote without route validation.</p>
               </div>
 
+              <div><div className="text-xs text-muted-foreground mb-1">Campaign / QR</div><div className="text-sm">{formatCampaignQrLabel(detail.utm)}</div>{detail.utm?.landing_path && <div className="text-xs text-muted-foreground break-all">{String(detail.utm.landing_path)}</div>}</div>
               <div><div className="text-xs text-muted-foreground mb-1">Services</div><div className="flex flex-wrap gap-1">{detail.services.map((s) => <Badge key={s} variant="outline">{s}</Badge>)}</div></div>
               <div><div className="text-xs text-muted-foreground mb-1">Customer requirements</div><pre className="bg-muted p-3 text-xs overflow-x-auto whitespace-pre-wrap">{JSON.stringify(detail.requirements ?? {}, null, 2)}</pre></div>
               {detail.message && <div><div className="text-xs text-muted-foreground mb-1">Message</div><p className="text-sm whitespace-pre-wrap">{detail.message}</p></div>}

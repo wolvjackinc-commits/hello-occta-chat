@@ -1,3 +1,4 @@
+import { attributionRecordForJourney } from "@/lib/campaignAttribution";
 import { getConsent } from "@/lib/consent";
 /**
  * Customer Journey 2.0 — browser client.
@@ -130,6 +131,7 @@ export type Journey2Session = {
     number_to_port?: string | null;
     accessibility_needs?: string | null;
     vulnerability_support_needs?: string | null;
+    offer_code?: string | null;
   } | null;
   price_snapshot: PriceSnapshot | null;
   campaign_code?: string | null;
@@ -176,49 +178,14 @@ function readAttribution(): Record<string, string> {
     captured_at: new Date().toISOString(),
   });
   try {
-    const p = new URLSearchParams(window.location.search);
-    const out: Record<string, string> = {};
-    const campaignKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "offer"];
-    const clickKeys = ["gclid", "fbclid", "msclkid", "ttclid"];
-    for (const k of campaignKeys) {
-      const v = p.get(k);
-      if (v) out[k] = v.slice(0, 300);
-    }
-    if (getConsent() === "granted") {
-      for (const k of clickKeys) {
-        const v = p.get(k);
-        if (v) out[k] = v.slice(0, 300);
-      }
-    }
-    const qrId = p.get("qr") || p.get("qr_id") || p.get("flyer");
-    if (qrId) out.qr_id = qrId.slice(0, 120);
-    const safeQuery = new URLSearchParams();
-    for (const k of [...campaignKeys, "qr", "qr_id", "flyer"]) {
-      const v = p.get(k);
-      if (v) safeQuery.set(k, v.slice(0, 160));
-    }
-    out.landing_path = `${window.location.pathname}${safeQuery.size ? `?${safeQuery.toString()}` : ""}`.slice(0, 300);
-    if (document.referrer) {
-      try {
-        const ref = new URL(document.referrer);
-        if (ref.hostname && ref.hostname !== window.location.hostname) {
-          out.referrer_host = ref.hostname.slice(0, 200);
-          out.referrer_path = ref.pathname.slice(0, 300);
-        }
-      } catch { /* ignore malformed referrer */ }
-    }
-    const medium = (out.utm_medium ?? "").toLowerCase();
-    const source = (out.utm_source ?? "").toLowerCase();
-    if (out.qr_id || ["qr", "qrcode"].includes(medium) || ["flyer", "leaflet", "qr"].includes(source)) out.source_type = "qr_flyer";
-    else if (out.gclid) out.source_type = "google_ads";
-    else if (out.fbclid) out.source_type = "meta_ads";
-    else if (out.msclkid) out.source_type = "microsoft_ads";
-    else if (out.ttclid) out.source_type = "tiktok_ads";
-    else if (out.utm_source || out.utm_medium || out.utm_campaign) out.source_type = "campaign";
-    else if (out.referrer_host) out.source_type = "referral";
-    else out.source_type = "direct";
-    out.captured_at = new Date().toISOString();
-    return out;
+    return attributionRecordForJourney({
+      search: window.location.search,
+      pathname: window.location.pathname,
+      hostname: window.location.hostname,
+      referrer: document.referrer,
+      consentGranted: getConsent() === "granted",
+      now: Date.now(),
+    });
   } catch { return fallback(); }
 }
 

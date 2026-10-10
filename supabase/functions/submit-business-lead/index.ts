@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { z } from "npm:zod@3.23.8";
+import { campaignAlertHtml, sanitizeCampaignUtm } from "../_shared/campaignAttribution.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,6 +30,7 @@ const BodySchema = z.object({
   site_address_line2: z.string().max(200).optional().nullable(),
   site_city: z.string().max(100).optional().nullable(),
   site_postcode: z.string().max(20).optional().nullable(),
+  utm: z.unknown().optional().nullable(),
 });
 
 function escapeHtml(value: unknown) {
@@ -43,11 +45,12 @@ Deno.serve(async (req) => {
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) return new Response(JSON.stringify({ error: parsed.error.flatten().fieldErrors }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { consent: _consent, ...lead } = parsed.data;
+    const { consent: _consent, utm: rawUtm, ...lead } = parsed.data;
+    const utm = sanitizeCampaignUtm(rawUtm);
     const cleaned = Object.fromEntries(Object.entries(lead).map(([k, v]) => [k, v === "" ? null : v])) as typeof lead;
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { data, error } = await supabase.from("business_leads").insert({ ...cleaned, status: "new" }).select("id").single();
+    const { data, error } = await supabase.from("business_leads").insert({ ...cleaned, utm, status: "new" }).select("id").single();
     if (error) {
       console.error("business lead insert failed", error);
       return new Response(JSON.stringify({ error: "Failed to save lead" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -66,7 +69,7 @@ Deno.serve(async (req) => {
             subject,
             title: "New business lead",
             greeting: "Business team",
-            message_html: `<p><strong>Company:</strong> ${escapeHtml(lead.company_name)}</p><p><strong>Contact:</strong> ${escapeHtml(lead.contact_name)} — ${escapeHtml(lead.email)}${lead.phone ? " · " + escapeHtml(lead.phone) : ""}</p><p><strong>Postcode:</strong> ${escapeHtml(lead.postcode ?? lead.site_postcode ?? "—")} · <strong>Team:</strong> ${escapeHtml(lead.team_size ?? "—")} · <strong>Interest:</strong> ${escapeHtml(lead.interest ?? "—")}</p><p><strong>Care preference:</strong> ${escapeHtml(lead.sla_preference ?? "standard")}</p>${lead.billing_contact_name || lead.billing_contact_email ? `<p><strong>Billing contact:</strong> ${escapeHtml(lead.billing_contact_name)} — ${escapeHtml(lead.billing_contact_email)}</p>` : ""}${lead.secondary_contact_name ? `<p><strong>Secondary contact:</strong> ${escapeHtml(lead.secondary_contact_name)} — ${escapeHtml(lead.secondary_contact_email)}</p>` : ""}${lead.site_address_line1 ? `<p><strong>Site:</strong> ${escapeHtml(lead.site_address_line1)}${lead.site_address_line2 ? ", " + escapeHtml(lead.site_address_line2) : ""}, ${escapeHtml(lead.site_city)} ${escapeHtml(lead.site_postcode)}</p>` : ""}<p><strong>Message:</strong><br/>${escapeHtml(lead.message ?? "—").replace(/\n/g, "<br/>")}</p><p><strong>Source:</strong> ${escapeHtml(lead.source ?? "—")}</p><p style="color:#666;font-size:12px">Lead ID: ${escapeHtml(data.id)}</p>`,
+            message_html: `<p><strong>Company:</strong> ${escapeHtml(lead.company_name)}</p><p><strong>Contact:</strong> ${escapeHtml(lead.contact_name)} — ${escapeHtml(lead.email)}${lead.phone ? " · " + escapeHtml(lead.phone) : ""}</p><p><strong>Postcode:</strong> ${escapeHtml(lead.postcode ?? lead.site_postcode ?? "—")} · <strong>Team:</strong> ${escapeHtml(lead.team_size ?? "—")} · <strong>Interest:</strong> ${escapeHtml(lead.interest ?? "—")}</p><p><strong>Care preference:</strong> ${escapeHtml(lead.sla_preference ?? "standard")}</p>${lead.billing_contact_name || lead.billing_contact_email ? `<p><strong>Billing contact:</strong> ${escapeHtml(lead.billing_contact_name)} — ${escapeHtml(lead.billing_contact_email)}</p>` : ""}${lead.secondary_contact_name ? `<p><strong>Secondary contact:</strong> ${escapeHtml(lead.secondary_contact_name)} — ${escapeHtml(lead.secondary_contact_email)}</p>` : ""}${lead.site_address_line1 ? `<p><strong>Site:</strong> ${escapeHtml(lead.site_address_line1)}${lead.site_address_line2 ? ", " + escapeHtml(lead.site_address_line2) : ""}, ${escapeHtml(lead.site_city)} ${escapeHtml(lead.site_postcode)}</p>` : ""}<p><strong>Message:</strong><br/>${escapeHtml(lead.message ?? "—").replace(/\n/g, "<br/>")}</p><p><strong>Source:</strong> ${escapeHtml(lead.source ?? "—")}</p>${campaignAlertHtml(utm)}<p style="color:#666;font-size:12px">Lead ID: ${escapeHtml(data.id)}</p>`,
           },
         },
       });

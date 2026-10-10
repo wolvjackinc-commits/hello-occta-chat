@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
+import { getCampaignUtmForSubmit } from "@/lib/campaignAttribution";
 import { supabase } from "@/integrations/supabase/client";
 import { AvailabilityProvider, getAddressLabel, useAvailability } from "@/contexts/AvailabilityContext";
 import { Button } from "@/components/ui/button";
@@ -132,6 +133,7 @@ const BusinessQuoteInner = () => {
         services: Array.from(services),
         requirements,
         source: "business_quote_page_v2",
+        utm: getCampaignUtmForSubmit(),
       },
     });
     setSubmitting(false);

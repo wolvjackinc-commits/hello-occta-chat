@@ -1,11 +1,15 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { z } from "npm:zod@3.23.8";
 import { campaignAlertHtml, sanitizeCampaignUtm } from "../_shared/campaignAttribution.ts";
+import { fnVersionHeaders, fnVersionProbe, fnVersionValue } from "../_shared/fnVersion.ts";
+
+const FN_ID = "submit-business-quote" as const;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  ...fnVersionHeaders(FN_ID),
 };
 
 const RequirementValue = z.union([z.string().max(1000), z.number().finite(), z.boolean(), z.null()]);
@@ -163,7 +167,13 @@ async function qualifyBroadband(supabase: any, quote: z.infer<typeof BodySchema>
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS" || req.method === "GET") {
+    console.log(JSON.stringify({ occta_fn_version: fnVersionValue(FN_ID), method: req.method }));
+    return new Response(JSON.stringify(fnVersionProbe(FN_ID)), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   if (req.method !== "POST") return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   try {

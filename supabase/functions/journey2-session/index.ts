@@ -12,9 +12,10 @@
  * later Journey 2 functions do that through the existing shared services.
  */
 import {
-  corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit,
+  corsHeaders, jsonResponse as baseJsonResponse, getServiceClient, sha256Hex, checkRateLimit,
   getRequestIp, generateTokenPair,
 } from "../_shared/quoteHelpers.ts";
+import { fnVersionHeaders, fnVersionProbe, fnVersionValue } from "../_shared/fnVersion.ts";
 import {
   assignJourneyVersion, loadJourneySettings, hashAnon, resolveJourney2Price,
   JOURNEY2_SETUP, preflightPassed, JOURNEY2_STEPS,
@@ -23,6 +24,15 @@ import { RESOLVER_VERSION } from "../_shared/buildPlanResolver.ts";
 import { encryptJson } from "../_shared/ddCrypto.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { mergeUtmSnapshot, normaliseOfferCode } from "../_shared/campaignAttribution.ts";
+
+const FN_ID = "journey2-session" as const;
+
+function jsonResponse(body: unknown, status = 200) {
+  const res = baseJsonResponse(body, status);
+  const headers = new Headers(res.headers);
+  for (const [key, value] of Object.entries(fnVersionHeaders(FN_ID))) headers.set(key, value);
+  return new Response(res.body, { status: res.status, headers });
+}
 
 const SESSION_COLS = `
   id, journey_version, status, current_step, last_completed_step, test_session,
@@ -170,7 +180,13 @@ function isCrawler(ua: string): boolean {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS" || req.method === "GET") {
+    console.log(JSON.stringify({ occta_fn_version: fnVersionValue(FN_ID), method: req.method }));
+    return new Response(JSON.stringify(fnVersionProbe(FN_ID)), {
+      status: 200,
+      headers: { ...corsHeaders, ...fnVersionHeaders(FN_ID), "Content-Type": "application/json" },
+    });
+  }
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
   const parsed = Schema.safeParse(await req.json().catch(() => null));

@@ -114,7 +114,7 @@ export function AdminBanksRemediation() {
     if (!window.confirm(
       "Create/refresh the Janet Banks records and mint live links?\n\n" +
       "• Customer A00001 and landline service (created only if missing)\n" +
-      "• Account agreement (Contract Summary) with a real signing link\n" +
+      "• Current 2026.10.1 agreement journey with a fresh secure link\n" +
       "• Direct Debit mandate setup link\n\n" +
       "NO email is sent by this step.",
     )) return;
@@ -157,8 +157,7 @@ export function AdminBanksRemediation() {
         <h1 className="text-3xl font-display uppercase tracking-tight">Janet Banks — Account Setup (A00001)</h1>
         <p className="text-muted-foreground mt-2">
           Live legacy telephone account. Mrs Janet Banks is the account holder; all correspondence goes to
-          her authorised Court of Protection deputy, <strong>Debbie Syphas</strong>. Preview, prepare the records
-          and links, then send the email manually.
+          her authorised Court of Protection deputy contacts, <strong>Debbie Syphas</strong> and co-deputy <strong>Gary Banks</strong>. Preview the account, refresh the current agreement/DD links, then send correspondence manually.
         </p>
       </header>
 
@@ -239,8 +238,7 @@ export function AdminBanksRemediation() {
           <Card className="p-6 border-4 border-foreground space-y-4">
             <h2 className="text-lg font-semibold uppercase tracking-wide">Step 1 — Prepare records &amp; links</h2>
             <p className="text-sm">
-              Creates anything missing and mints a live account agreement signing link plus a live Direct Debit
-              mandate setup link. Nothing is emailed.
+              Creates anything missing and mints a fresh link into the current 2026.10.1 agreement journey plus a live Direct Debit mandate setup link. Superseded historical Contract Summary evidence is preserved and not rewritten. Nothing is emailed.
             </p>
             <Button onClick={prepareRecords} disabled={working} className="border-2 border-foreground">
               {working ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Working…</> : <><Link2 className="w-4 h-4 mr-2" />Prepare records &amp; mint links</>}
@@ -251,9 +249,9 @@ export function AdminBanksRemediation() {
                 <Row label="Account number" value={prepared.account_number} />
                 <Row label="Service ID" value={prepared.service_id} mono />
                 <Row label="Quote" value={prepared.quote_number} />
-                <Row label="Agreement (Contract Summary)" value={prepared.cs_number} highlight />
+                <Row label="Historical Contract Summary (preserved)" value={prepared.cs_number} />
                 <Row label="DD request" value={prepared.dd_request_number} />
-                <Row label="Signing link" value={prepared.sign_url} mono />
+                <Row label="Current agreement link" value={prepared.sign_url} mono />
                 <Row label="Direct Debit link" value={prepared.dd_url} mono />
                 <p className="text-xs text-muted-foreground">
                   Records created this run: {Object.entries(prepared.created).filter(([, v]) => v).map(([k]) => k).join(", ") || "none (all existed already)"}
@@ -279,7 +277,7 @@ export function AdminBanksRemediation() {
             </details>
             <p className="text-xs text-muted-foreground">
               Before preparing, the two links show as placeholders in this preview. After preparing, the preview
-              shows the real links that will be emailed.
+              shows the real current agreement and Direct Debit links.
             </p>
           </Card>
 

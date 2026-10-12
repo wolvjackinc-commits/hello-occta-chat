@@ -42,7 +42,7 @@ const POSTCODE = "BN14 8BA";
 const SERVICE_ADDRESS_TEXT = `${ADDR_LINE1}, ${CITY}, ${POSTCODE}`;
 
 const CONTACT_EMAIL = "debbie.syphas@hmrc.gov.uk";
-const OTP_PHONE = "07815 743969";
+const OTP_PHONE = "07860 800205";
 const DEPUTY_NAME = "Debbie Syphas";
 const DEPUTY_ROLE = "Joint Deputy for Property and Financial Affairs";
 const CO_DEPUTY = "Gary Banks";

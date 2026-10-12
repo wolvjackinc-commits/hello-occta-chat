@@ -21,7 +21,8 @@
     "test:j2-engine": "vitest run src/lib/journey2/__tests__/db/journey2-engine.db.test.ts",
     "test:dd": "vitest run src/lib/dd/__tests__/db/dd-manual-providers.db.test.ts",
     "test:switch50-db": "node --test scripts/switch50-db.test.mjs",
-    "test:switch50": "vitest run src/lib/switch50/__tests__"
+    "test:switch50": "vitest run src/lib/switch50/__tests__",
+    "test:outreach-db": "node --test scripts/outreach-db.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -153,6 +153,8 @@ const AdminBusinessLeads = lazy(() => import("./pages/admin/BusinessLeads"));
 const AdminBusinessQuoteRequests = lazy(() => import("./pages/admin/BusinessQuoteRequests"));
 const AdminBusinessActivityLog = lazy(() => import("./pages/admin/BusinessActivityLog"));
 const AdminRolesPermissions = lazy(() => import("./pages/admin/RolesPermissions"));
+const AdminOutreach = lazy(() => import("./pages/admin/Outreach"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 // New business hub (replaces legacy /business page)
 const BusinessHub = lazy(() => import("./pages/business/BusinessHub"));
 const BusinessBroadbandPage = lazy(() => import("./pages/business/BusinessBroadband"));
@@ -283,6 +285,10 @@ const AnimatedRoutes = () => {
               <Route path="business-quotes" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessQuoteRequests /></Suspense>} />
               <Route path="business-activity" element={<Suspense fallback={<AdminRouteFallback />}><AdminBusinessActivityLog /></Suspense>} />
             </Route>
+            {/* Outreach campaign manager */}
+            <Route element={<ProtectedAdminRoute requiredRoles={["super_admin", "admin"]} />}>
+              <Route path="outreach" element={<Suspense fallback={<AdminRouteFallback />}><AdminOutreach /></Suspense>} />
+            </Route>
             {/* Super-admin only: role management */}
             <Route element={<ProtectedAdminRoute requiredRoles={["super_admin", "admin"]} />}>
               <Route path="roles" element={<Suspense fallback={<AdminRouteFallback />}><AdminRolesPermissions /></Suspense>} />
@@ -330,6 +336,7 @@ const AnimatedRoutes = () => {
         <Route path="/install" element={<Install />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
+        <Route path="/unsubscribe" element={<Suspense fallback={<AdminRouteFallback />}><Unsubscribe /></Suspense>} />
         <Route path="/cookies" element={<CookiePolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/status" element={<ServiceStatus />} />

@@ -82,6 +82,7 @@ const navSections: NavSection[] = [
       { label: "Quotes",         to: "/admin/quotes" },
       { label: "Business Leads", to: "/admin/business-leads" },
       { label: "Business Quotes", to: "/admin/business-quotes" },
+      { label: "Outreach",       to: "/admin/outreach" },
       ...(FEATURE_CAMPAIGNS ? [{ label: "Campaigns", to: "/admin/campaigns" }] : []),
     ],
   },

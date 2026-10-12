@@ -42,6 +42,7 @@ const POSTCODE = "BN14 8BA";
 const SERVICE_ADDRESS_TEXT = `${ADDR_LINE1}, ${CITY}, ${POSTCODE}`;
 
 const CONTACT_EMAIL = "debbie.syphas@hmrc.gov.uk";
+const OTP_PHONE = "07815 743969";
 const DEPUTY_NAME = "Debbie Syphas";
 const DEPUTY_ROLE = "Joint Deputy for Property and Financial Affairs";
 const CO_DEPUTY = "Gary Banks";
@@ -73,18 +74,18 @@ const LIVE_DATE = "03 March 2022";
 const WELCOME_PACK_DATE = "04 March 2022";
 const ORIGINAL_TERM = "03 March 2022 to 02 March 2024";
 
-const PAYMENT_AMOUNT = 719.66;
-const PAYMENT_DATE = "10 August 2026";
-const PAYMENT_DATE_ISO = "2026-08-10";
+const PAYMENT_AMOUNT = 171.0;
+const PAYMENT_DATE = "28 September 2026";
+const PAYMENT_DATE_ISO = "2026-09-28";
 const PAYMENT_NOTE =
-  `£${PAYMENT_AMOUNT.toFixed(2)} received on ${PAYMENT_DATE}, allocated to the outstanding balance calculated up to July 2026.`;
+  `£${PAYMENT_AMOUNT.toFixed(2)} received on ${PAYMENT_DATE}, covering the August, September and October 2026 service charges.`;
 
 const DD_DAY = 1;
-const DD_FIRST_DATE = "01 September 2026";
-const DD_FIRST_DATE_ISO = "2026-09-01";
-const DD_FIRST_AMOUNT = 114.0;
-const DD_REGULAR_FROM = "01 October 2026";
-const DD_REGULAR_FROM_ISO = "2026-10-01";
+const DD_FIRST_DATE = "01 November 2026";
+const DD_FIRST_DATE_ISO = "2026-11-01";
+const DD_FIRST_AMOUNT = 57.0;
+const DD_REGULAR_FROM = "01 December 2026";
+const DD_REGULAR_FROM_ISO = "2026-12-01";
 
 const NOTICE_TEXT = "30 days";
 const CEASE_TEXT =
@@ -181,10 +182,10 @@ function buildEmailHtml(opts: { signUrl: string; ddUrl: string }) {
     </div>
     <h1 style="font-size:19px;margin:0 0 14px;">Payment received, account agreement and Direct Debit setup</h1>
     <p style="font-size:14px;line-height:1.6;">Dear ${escapeHtml(DEPUTY_NAME)},</p>
-    <p style="font-size:14px;line-height:1.6;">Thank you for your payment of <strong>£${PAYMENT_AMOUNT.toFixed(2)}</strong>, received on <strong>${PAYMENT_DATE}</strong>. This has been allocated to the balance previously calculated up to <strong>July 2026</strong> for ${escapeHtml(HOLDER_NAME)}, account <strong>${ACCOUNT_NUMBER}</strong>, telephone number <strong>${escapeHtml(CLI)}</strong>.</p>
+    <p style="font-size:14px;line-height:1.6;">Thank you for your payment of <strong>£${PAYMENT_AMOUNT.toFixed(2)}</strong>, received on <strong>${PAYMENT_DATE}</strong>. This covers the <strong>August, September and October 2026</strong> service charges for ${escapeHtml(HOLDER_NAME)}, account <strong>${ACCOUNT_NUMBER}</strong>, telephone number <strong>${escapeHtml(CLI)}</strong>.</p>
 
     <h2 style="font-size:15px;margin:24px 0 8px;border-bottom:2px solid #111;padding-bottom:6px;">Direct Debit — what happens next</h2>
-    <p style="font-size:14px;line-height:1.6;">The next amount required by Direct Debit is <strong>£${DD_FIRST_AMOUNT.toFixed(2)}</strong>. This covers the August 2026 monthly service charge of £${MONTHLY_GROSS.toFixed(2)} and the September 2026 monthly service charge of £${MONTHLY_GROSS.toFixed(2)}.</p>
+    <p style="font-size:14px;line-height:1.6;">The next amount required by Direct Debit is <strong>£${DD_FIRST_AMOUNT.toFixed(2)}</strong>, covering the November 2026 monthly service charge.</p>
     <p style="font-size:14px;line-height:1.6;">The first Direct Debit collection will be taken on or after <strong>${DD_FIRST_DATE}</strong>. From <strong>${DD_REGULAR_FROM}</strong> onward, the regular Direct Debit will be <strong>£${MONTHLY_GROSS.toFixed(2)} per month</strong> while the service remains active, collected on the ${DD_DAY}st of each month.</p>
 
     <h2 style="font-size:15px;margin:24px 0 8px;border-bottom:2px solid #111;padding-bottom:6px;">Current package</h2>
@@ -267,7 +268,7 @@ Deno.serve(async (req) => {
       dd_schedule: {
         first_amount: DD_FIRST_AMOUNT,
         first_date: DD_FIRST_DATE,
-        first_covers: `August 2026 £${MONTHLY_GROSS.toFixed(2)} + September 2026 £${MONTHLY_GROSS.toFixed(2)}`,
+        first_covers: `November 2026 £${MONTHLY_GROSS.toFixed(2)}`,
         regular_from: DD_REGULAR_FROM,
         regular_amount: MONTHLY_GROSS,
       },
@@ -338,7 +339,7 @@ Deno.serve(async (req) => {
     const svcNotes =
       `[${TAG}] ${SERVICE_WORDING}. £${MONTHLY_GROSS.toFixed(2)}/month inc VAT, monthly billing by Direct Debit on the ${DD_DAY}st. ` +
       `Included: ${INCLUDED.join("; ")}. ${PAYMENT_NOTE} ` +
-      `DD schedule: first collection £${DD_FIRST_AMOUNT.toFixed(2)} on or after ${DD_FIRST_DATE} (covers Aug 2026 £${MONTHLY_GROSS.toFixed(2)} + Sep 2026 £${MONTHLY_GROSS.toFixed(2)}); ` +
+      `DD schedule: first collection £${DD_FIRST_AMOUNT.toFixed(2)} on or after ${DD_FIRST_DATE} (covers November 2026); ` +
       `then £${MONTHLY_GROSS.toFixed(2)} per month from ${DD_REGULAR_FROM}. ` +
       `Recurring billing stays disabled until the agreement is signed and the Direct Debit mandate is active.`;
     const svcIdentifiers = {
@@ -349,12 +350,12 @@ Deno.serve(async (req) => {
       dd_schedule: {
         first_collection_date: DD_FIRST_DATE_ISO,
         first_collection_amount: DD_FIRST_AMOUNT,
-        first_collection_covers: ["2026-08", "2026-09"],
+        first_collection_covers: ["2026-11"],
         regular_from: DD_REGULAR_FROM_ISO,
         regular_amount: MONTHLY_GROSS,
         collection_day: DD_DAY,
       },
-      payment_history_note: { amount: PAYMENT_AMOUNT, received_on: PAYMENT_DATE_ISO, allocated_to: "balance up to July 2026" },
+      payment_history_note: { amount: PAYMENT_AMOUNT, received_on: PAYMENT_DATE_ISO, allocated_to: "August, September and October 2026 service charges" },
     };
     if (!serviceId) {
       const { data: svc, error: sErr } = await supabase
@@ -394,7 +395,7 @@ Deno.serve(async (req) => {
           customer_id: profileId,
           full_name: HOLDER_NAME,
           email: CONTACT_EMAIL,
-          phone: CLI,
+          phone: OTP_PHONE,
           postcode: POSTCODE,
           address_line_1: ADDR_LINE1,
           town: CITY,
@@ -442,7 +443,7 @@ Deno.serve(async (req) => {
           admin_notes:
             `[${TAG}] Legacy telephone account agreement for ${HOLDER_NAME} (${ACCOUNT_NUMBER}), CLI ${CLI}. ` +
             `£${MONTHLY_GROSS.toFixed(2)}/month inc VAT, rolling monthly, 30 days' notice. Included: ${INCLUDED.join("; ")}. ` +
-            `Signed by authorised deputy ${DEPUTY_NAME} (${DEPUTY_ROLE}). ${PAYMENT_NOTE} ` +
+            `Authorised deputy on file: ${DEPUTY_NAME} (${DEPUTY_ROLE}); co-deputy ${CO_DEPUTY}. ${PAYMENT_NOTE} ` +
             `DD: £${DD_FIRST_AMOUNT.toFixed(2)} on/after ${DD_FIRST_DATE}, then £${MONTHLY_GROSS.toFixed(2)} monthly from ${DD_REGULAR_FROM}.`,
           created_by: auth.userId,
         })
@@ -459,78 +460,31 @@ Deno.serve(async (req) => {
         .eq("id", qr.id);
     }
 
-    // 4. Contract Summary with a real signing token.
-    const projectUrl = Deno.env.get("SUPABASE_URL")!;
-    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    let csId = state.contract_summary?.id ?? null;
-    let csNumber = state.contract_summary?.cs_number ?? null;
-    let csToken: string | null = null;
-
-    if (state.contract_summary?.status === "accepted") {
-      return jsonResponse({
-        error: "already_accepted",
-        message: `Contract Summary ${csNumber} has already been signed. Nothing further to issue.`,
-      }, 409);
-    }
-
-    if (!csId) {
-      const genRes = await fetch(`${projectUrl}/functions/v1/generate-contract-summary`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${svcKey}`, "Content-Type": "application/json", "x-internal-service": "1" },
-        body: JSON.stringify({ quote_id: quoteId, internal: true, actor_id: auth.userId }),
-      });
-      const genBody = await genRes.json().catch(() => ({}));
-      if (!genRes.ok || !genBody?.contract_summary_id) {
-        return jsonResponse({ error: "contract_summary_failed", details: genBody?.error ?? genBody?.message ?? `HTTP ${genRes.status}` }, 502);
-      }
-      csId = genBody.contract_summary_id;
-      csNumber = genBody.cs_number;
-      csToken = genBody.public_token;
-      created.contract_summary = true;
-    } else {
-      const { raw, hash } = await generateTokenPair();
-      const { error: rotErr } = await supabase
-        .from("contract_summaries")
-        .update({
-          public_token_hash: hash,
-          token_expires_at: new Date(Date.now() + 14 * 86400_000).toISOString(),
-          status: "issued",
-        })
-        .eq("id", csId);
-      if (rotErr) return jsonResponse({ error: "cs_token_rotate_failed", details: rotErr.message }, 500);
-      csToken = raw;
-    }
-
-    // Deputy signing + care wording on the document, then refresh the PDF.
-    const { data: csRow } = await supabase
-      .from("contract_summaries")
-      .select("vulnerable_customer_note")
-      .eq("id", csId)
-      .maybeSingle();
-    const baseVulnerable = String(csRow?.vulnerable_customer_note ?? "").trim();
-    const vulnerableNote = baseVulnerable.includes("Court of Protection")
-      ? baseVulnerable
-      : `${baseVulnerable}${baseVulnerable ? " " : ""}${CARE_NOTE}`;
-    await supabase
-      .from("contract_summaries")
+    // 4. Current agreement journey link.
+    //
+    // Never revive or rewrite a superseded historical Contract Summary. The
+    // public /quote/:token journey generates the current 2026.10.1 two-document
+    // contract pack while preserving older evidence exactly as issued.
+    const { raw: quoteRaw, hash: quoteHash } = await generateTokenPair();
+    const quoteExpires = new Date(Date.now() + 30 * 86400_000).toISOString();
+    const { error: quoteTokenErr } = await supabase
+      .from("quotes")
       .update({
-        authorised_signatory_note: SIGNATORY_NOTE,
-        vulnerable_customer_note: vulnerableNote,
-        cease_cancellation_charges: CEASE_TEXT,
-        service_address: SERVICE_ADDRESS_TEXT,
-        account_number: ACCOUNT_NUMBER,
-        payment_schedule:
-          `£${MONTHLY_GROSS.toFixed(2)} per month inc VAT by Direct Debit on the ${DD_DAY}st. ` +
-          `First collection £${DD_FIRST_AMOUNT.toFixed(2)} on or after ${DD_FIRST_DATE} (August 2026 £${MONTHLY_GROSS.toFixed(2)} + September 2026 £${MONTHLY_GROSS.toFixed(2)}); ` +
-          `then £${MONTHLY_GROSS.toFixed(2)} per month from ${DD_REGULAR_FROM} while the service remains active.`,
+        public_token_hash: quoteHash,
+        token_expires_at: quoteExpires,
+        expires_at: quoteExpires,
+        status: "sent",
+        unified_journey_opt_in: true,
       })
-      .eq("id", csId);
+      .eq("id", quoteId);
+    if (quoteTokenErr) {
+      return jsonResponse({ error: "quote_token_rotate_failed", details: quoteTokenErr.message }, 500);
+    }
 
-    await fetch(`${projectUrl}/functions/v1/generate-contract-summary-pdf`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${svcKey}`, "Content-Type": "application/json", "x-internal-service": "1" },
-      body: JSON.stringify({ contract_summary_id: csId, internal: true, actor_id: auth.userId }),
-    }).catch(() => {});
+    // Historical CS identifiers remain visible in admin but are not changed.
+    const csId = state.contract_summary?.id ?? null;
+    const csNumber = state.contract_summary?.cs_number ?? null;
+    const signUrl = `${APP_BASE}/quote/${quoteRaw}`;
 
     // 5. Direct Debit mandate setup link (reuse the row, rotate the token).
     const { raw: ddRaw, hash: ddHash } = await generateTokenPair();
@@ -583,7 +537,6 @@ Deno.serve(async (req) => {
       if (ddUpdErr) return jsonResponse({ error: "dd_link_rotate_failed", details: ddUpdErr.message }, 500);
     }
 
-    const signUrl = `${APP_BASE}/quote/contract-summary/${csToken}`;
     const ddUrl = `${APP_BASE}/dd/setup?token=${encodeURIComponent(ddRaw)}`;
 
     // 6. Audit trail (no bank details, no tokens).

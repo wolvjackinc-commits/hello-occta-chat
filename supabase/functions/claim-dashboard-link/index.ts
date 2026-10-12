@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
   }
 
   // Let the managed auth email pipeline send the actual message. It now uses
-  // the corrected notify.www.occta.co.uk sender in auth-email-hook.
+  // the corrected robots.www.occta.co.uk sender in auth-email-hook.
   const sent = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${PUBLIC_APP_ORIGIN}/auth?welcome=1&next=%2Fdashboard`,
   })

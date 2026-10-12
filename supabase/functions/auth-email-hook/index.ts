@@ -36,9 +36,9 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 // Configuration
 const SITE_NAME = "OCCTA"
-const SENDER_DOMAIN = "notify.www.occta.co.uk"
+const SENDER_DOMAIN = "robots.www.occta.co.uk"
 const ROOT_DOMAIN = "www.occta.co.uk"
-const FROM_DOMAIN = "notify.www.occta.co.uk" // Domain shown in From address (must match the configured sender domain)
+const FROM_DOMAIN = "robots.www.occta.co.uk" // Domain shown in From address (must match the configured sender domain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.

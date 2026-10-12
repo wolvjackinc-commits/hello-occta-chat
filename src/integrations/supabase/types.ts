@@ -7490,6 +7490,529 @@ export type Database = {
           },
         ]
       }
+      outreach_campaigns: {
+        Row: {
+          audience: Json
+          body_html: string | null
+          body_text: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          cta_label: string | null
+          cta_path: string | null
+          flyer_ref: string | null
+          hero_image_url: string | null
+          id: string
+          launched_at: string | null
+          launched_by: string | null
+          links: Json
+          name: string
+          notes: string | null
+          paused_reason: string | null
+          preheader: string | null
+          scheduled_at: string | null
+          slug: string
+          started_at: string | null
+          status: string
+          subject: string | null
+          template_id: string | null
+          template_key: string | null
+          total_recipients: number
+          updated_at: string
+        }
+        Insert: {
+          audience?: Json
+          body_html?: string | null
+          body_text?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_path?: string | null
+          flyer_ref?: string | null
+          hero_image_url?: string | null
+          id?: string
+          launched_at?: string | null
+          launched_by?: string | null
+          links?: Json
+          name: string
+          notes?: string | null
+          paused_reason?: string | null
+          preheader?: string | null
+          scheduled_at?: string | null
+          slug: string
+          started_at?: string | null
+          status?: string
+          subject?: string | null
+          template_id?: string | null
+          template_key?: string | null
+          total_recipients?: number
+          updated_at?: string
+        }
+        Update: {
+          audience?: Json
+          body_html?: string | null
+          body_text?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_path?: string | null
+          flyer_ref?: string | null
+          hero_image_url?: string | null
+          id?: string
+          launched_at?: string | null
+          launched_by?: string | null
+          links?: Json
+          name?: string
+          notes?: string | null
+          paused_reason?: string | null
+          preheader?: string | null
+          scheduled_at?: string | null
+          slug?: string
+          started_at?: string | null
+          status?: string
+          subject?: string | null
+          template_id?: string | null
+          template_key?: string | null
+          total_recipients?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_contacts: {
+        Row: {
+          address: string | null
+          area: string | null
+          business_name: string
+          category: string | null
+          companies_house_match_basis: string | null
+          companies_house_number: string | null
+          companies_house_verified: boolean
+          consent_evidence: string | null
+          created_at: string
+          created_by: string | null
+          district: string | null
+          eligible: boolean | null
+          email: string
+          email_type: string
+          id: string
+          import_batch: string | null
+          last_contacted_at: string | null
+          lawful_basis: string
+          legal_form: string
+          notes: string | null
+          phone: string | null
+          postcode: string | null
+          priority: string | null
+          source: string | null
+          source_urls: string | null
+          status: string
+          subcategory: string | null
+          tags: string[]
+          updated_at: string
+          website: string | null
+          why_good_fit: string | null
+        }
+        Insert: {
+          address?: string | null
+          area?: string | null
+          business_name: string
+          category?: string | null
+          companies_house_match_basis?: string | null
+          companies_house_number?: string | null
+          companies_house_verified?: boolean
+          consent_evidence?: string | null
+          created_at?: string
+          created_by?: string | null
+          district?: string | null
+          eligible?: boolean | null
+          email: string
+          email_type?: string
+          id?: string
+          import_batch?: string | null
+          last_contacted_at?: string | null
+          lawful_basis?: string
+          legal_form?: string
+          notes?: string | null
+          phone?: string | null
+          postcode?: string | null
+          priority?: string | null
+          source?: string | null
+          source_urls?: string | null
+          status?: string
+          subcategory?: string | null
+          tags?: string[]
+          updated_at?: string
+          website?: string | null
+          why_good_fit?: string | null
+        }
+        Update: {
+          address?: string | null
+          area?: string | null
+          business_name?: string
+          category?: string | null
+          companies_house_match_basis?: string | null
+          companies_house_number?: string | null
+          companies_house_verified?: boolean
+          consent_evidence?: string | null
+          created_at?: string
+          created_by?: string | null
+          district?: string | null
+          eligible?: boolean | null
+          email?: string
+          email_type?: string
+          id?: string
+          import_batch?: string | null
+          last_contacted_at?: string | null
+          lawful_basis?: string
+          legal_form?: string
+          notes?: string | null
+          phone?: string | null
+          postcode?: string | null
+          priority?: string | null
+          source?: string | null
+          source_urls?: string | null
+          status?: string
+          subcategory?: string | null
+          tags?: string[]
+          updated_at?: string
+          website?: string | null
+          why_good_fit?: string | null
+        }
+        Relationships: []
+      }
+      outreach_events: {
+        Row: {
+          campaign_id: string | null
+          event_type: string
+          id: number
+          message_id: string | null
+          meta: Json
+          occurred_at: string
+          provider_event_id: string | null
+          suspected_bot: boolean
+          url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          event_type: string
+          id?: never
+          message_id?: string | null
+          meta?: Json
+          occurred_at?: string
+          provider_event_id?: string | null
+          suspected_bot?: boolean
+          url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          event_type?: string
+          id?: never
+          message_id?: string | null
+          meta?: Json
+          occurred_at?: string
+          provider_event_id?: string | null
+          suspected_bot?: boolean
+          url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaign_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "outreach_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_events_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_messages: {
+        Row: {
+          attempt_count: number
+          bounced_at: string | null
+          business_name: string | null
+          campaign_id: string
+          click_count: number
+          complained_at: string | null
+          contact_id: string | null
+          converted_at: string | null
+          converted_lead_id: string | null
+          converted_source: string | null
+          created_at: string
+          delivered_at: string | null
+          email: string
+          first_clicked_at: string | null
+          first_opened_at: string | null
+          id: string
+          last_clicked_at: string | null
+          last_error: string | null
+          last_opened_at: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          open_count: number
+          provider_message_id: string | null
+          replied_at: string | null
+          sent_at: string | null
+          status: string
+          token: string
+          unsubscribed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          bounced_at?: string | null
+          business_name?: string | null
+          campaign_id: string
+          click_count?: number
+          complained_at?: string | null
+          contact_id?: string | null
+          converted_at?: string | null
+          converted_lead_id?: string | null
+          converted_source?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          email: string
+          first_clicked_at?: string | null
+          first_opened_at?: string | null
+          id?: string
+          last_clicked_at?: string | null
+          last_error?: string | null
+          last_opened_at?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          open_count?: number
+          provider_message_id?: string | null
+          replied_at?: string | null
+          sent_at?: string | null
+          status?: string
+          token: string
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          bounced_at?: string | null
+          business_name?: string | null
+          campaign_id?: string
+          click_count?: number
+          complained_at?: string | null
+          contact_id?: string | null
+          converted_at?: string | null
+          converted_lead_id?: string | null
+          converted_source?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          email?: string
+          first_clicked_at?: string | null
+          first_opened_at?: string | null
+          id?: string
+          last_clicked_at?: string | null
+          last_error?: string | null
+          last_opened_at?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          open_count?: number
+          provider_message_id?: string | null
+          replied_at?: string | null
+          sent_at?: string | null
+          status?: string
+          token?: string
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaign_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "outreach_messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_settings: {
+        Row: {
+          daily_cap: number
+          from_email: string | null
+          from_name: string
+          hourly_cap: number
+          id: number
+          last_worker_result: Json | null
+          last_worker_run_at: string | null
+          postal_address: string
+          recontact_cooldown_days: number
+          reply_to: string
+          sending_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          weekdays_only: boolean
+          window_end_hour: number
+          window_start_hour: number
+        }
+        Insert: {
+          daily_cap?: number
+          from_email?: string | null
+          from_name?: string
+          hourly_cap?: number
+          id?: number
+          last_worker_result?: Json | null
+          last_worker_run_at?: string | null
+          postal_address?: string
+          recontact_cooldown_days?: number
+          reply_to?: string
+          sending_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          weekdays_only?: boolean
+          window_end_hour?: number
+          window_start_hour?: number
+        }
+        Update: {
+          daily_cap?: number
+          from_email?: string | null
+          from_name?: string
+          hourly_cap?: number
+          id?: number
+          last_worker_result?: Json | null
+          last_worker_run_at?: string | null
+          postal_address?: string
+          recontact_cooldown_days?: number
+          reply_to?: string
+          sending_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          weekdays_only?: boolean
+          window_end_hour?: number
+          window_start_hour?: number
+        }
+        Relationships: []
+      }
+      outreach_suppressions: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          created_by: string | null
+          email: string
+          message_id: string | null
+          note: string | null
+          reason: string
+          source: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email: string
+          message_id?: string | null
+          note?: string | null
+          reason: string
+          source?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          message_id?: string | null
+          note?: string | null
+          reason?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
+      outreach_templates: {
+        Row: {
+          body_html: string
+          body_text: string
+          created_at: string
+          created_by: string | null
+          cta_label: string
+          cta_path: string
+          flyer_ref: string | null
+          hero_image_url: string | null
+          id: string
+          is_active: boolean
+          name: string
+          preheader: string | null
+          subject: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          body_text: string
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string
+          cta_path?: string
+          flyer_ref?: string | null
+          hero_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          preheader?: string | null
+          subject: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          body_text?: string
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string
+          cta_path?: string
+          flyer_ref?: string | null
+          hero_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          preheader?: string | null
+          subject?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_attempts: {
         Row: {
           amount: number
@@ -13781,6 +14304,25 @@ export type Database = {
         }
         Relationships: []
       }
+      outreach_campaign_stats: {
+        Row: {
+          bounced: number | null
+          campaign_id: string | null
+          clicked: number | null
+          complained: number | null
+          converted: number | null
+          delivered: number | null
+          failed: number | null
+          opened: number | null
+          pending: number | null
+          replied: number | null
+          sent: number | null
+          suppressed: number | null
+          total: number | null
+          unsubscribed: number | null
+        }
+        Relationships: []
+      }
       platform_settings_public: {
         Row: {
           api_mode: string | null
@@ -14995,6 +15537,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_outreach_staff: { Args: { _uid: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       is_two_doc_flow_enabled_for: {
         Args: { _user_id: string }
@@ -15089,6 +15632,101 @@ export type Database = {
             Args: { _extra?: Json; _id: string; _type: string }
             Returns: undefined
           }
+      outreach_claim_batch: {
+        Args: { p_limit: number }
+        Returns: {
+          attempt_count: number
+          bounced_at: string | null
+          business_name: string | null
+          campaign_id: string
+          click_count: number
+          complained_at: string | null
+          contact_id: string | null
+          converted_at: string | null
+          converted_lead_id: string | null
+          converted_source: string | null
+          created_at: string
+          delivered_at: string | null
+          email: string
+          first_clicked_at: string | null
+          first_opened_at: string | null
+          id: string
+          last_clicked_at: string | null
+          last_error: string | null
+          last_opened_at: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          open_count: number
+          provider_message_id: string | null
+          replied_at: string | null
+          sent_at: string | null
+          status: string
+          token: string
+          unsubscribed_at: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "outreach_messages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      outreach_record_engagement: {
+        Args: {
+          p_suspected_bot: boolean
+          p_token: string
+          p_type: string
+          p_url: string
+          p_user_agent: string
+        }
+        Returns: {
+          attempt_count: number
+          bounced_at: string | null
+          business_name: string | null
+          campaign_id: string
+          click_count: number
+          complained_at: string | null
+          contact_id: string | null
+          converted_at: string | null
+          converted_lead_id: string | null
+          converted_source: string | null
+          created_at: string
+          delivered_at: string | null
+          email: string
+          first_clicked_at: string | null
+          first_opened_at: string | null
+          id: string
+          last_clicked_at: string | null
+          last_error: string | null
+          last_opened_at: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          open_count: number
+          provider_message_id: string | null
+          replied_at: string | null
+          sent_at: string | null
+          status: string
+          token: string
+          unsubscribed_at: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "outreach_messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      outreach_suppress: {
+        Args: {
+          p_email: string
+          p_message_id: string
+          p_reason: string
+          p_source: string
+        }
+        Returns: undefined
+      }
       process_checkout_tracking: { Args: never; Returns: Json }
       quote_below_retail_floor: {
         Args: { _quote_id: string }

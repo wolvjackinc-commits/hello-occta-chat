@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -7655,6 +7655,579 @@ export type Database = {
           },
         ]
       }
+      payment_recon_accounts: {
+        Row: {
+          accesspay_status: string | null
+          amount_due: number | null
+          balance_kind: string | null
+          balance_outstanding: number | null
+          bank_payer_name: string | null
+          bank_payments: string | null
+          case_codes: string[]
+          created_at: string
+          customer_name: string
+          dd_status: string | null
+          draft_marked_due_at: string | null
+          due_date_raw: string | null
+          due_on: string | null
+          failure_treatment: string | null
+          id: string
+          invoice_balance: number | null
+          invoice_state: string | null
+          invoiced_amount: number | null
+          last_dd_amount: number | null
+          last_dd_date_raw: string | null
+          last_dd_on: string | null
+          last_dd_result: string | null
+          last_payment_received: string | null
+          linked_account_number: string | null
+          linked_invoice_number: string | null
+          match_category: string
+          matched_payout: string | null
+          method: string | null
+          name_aliases: string[]
+          next_action: string | null
+          next_dd_amount: number | null
+          next_dd_date_raw: string | null
+          next_dd_on: string | null
+          notes: string | null
+          occta_mandate_status: string | null
+          occta_method: string | null
+          occta_recorded: boolean | null
+          occta_ref: string | null
+          payer_name: string | null
+          reconciled_status: string
+          row_key: string
+          seen_in: string | null
+          status_raw: string | null
+          uninvoiced_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          accesspay_status?: string | null
+          amount_due?: number | null
+          balance_kind?: string | null
+          balance_outstanding?: number | null
+          bank_payer_name?: string | null
+          bank_payments?: string | null
+          case_codes?: string[]
+          created_at?: string
+          customer_name: string
+          dd_status?: string | null
+          draft_marked_due_at?: string | null
+          due_date_raw?: string | null
+          due_on?: string | null
+          failure_treatment?: string | null
+          id?: string
+          invoice_balance?: number | null
+          invoice_state?: string | null
+          invoiced_amount?: number | null
+          last_dd_amount?: number | null
+          last_dd_date_raw?: string | null
+          last_dd_on?: string | null
+          last_dd_result?: string | null
+          last_payment_received?: string | null
+          linked_account_number?: string | null
+          linked_invoice_number?: string | null
+          match_category: string
+          matched_payout?: string | null
+          method?: string | null
+          name_aliases?: string[]
+          next_action?: string | null
+          next_dd_amount?: number | null
+          next_dd_date_raw?: string | null
+          next_dd_on?: string | null
+          notes?: string | null
+          occta_mandate_status?: string | null
+          occta_method?: string | null
+          occta_recorded?: boolean | null
+          occta_ref?: string | null
+          payer_name?: string | null
+          reconciled_status: string
+          row_key: string
+          seen_in?: string | null
+          status_raw?: string | null
+          uninvoiced_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accesspay_status?: string | null
+          amount_due?: number | null
+          balance_kind?: string | null
+          balance_outstanding?: number | null
+          bank_payer_name?: string | null
+          bank_payments?: string | null
+          case_codes?: string[]
+          created_at?: string
+          customer_name?: string
+          dd_status?: string | null
+          draft_marked_due_at?: string | null
+          due_date_raw?: string | null
+          due_on?: string | null
+          failure_treatment?: string | null
+          id?: string
+          invoice_balance?: number | null
+          invoice_state?: string | null
+          invoiced_amount?: number | null
+          last_dd_amount?: number | null
+          last_dd_date_raw?: string | null
+          last_dd_on?: string | null
+          last_dd_result?: string | null
+          last_payment_received?: string | null
+          linked_account_number?: string | null
+          linked_invoice_number?: string | null
+          match_category?: string
+          matched_payout?: string | null
+          method?: string | null
+          name_aliases?: string[]
+          next_action?: string | null
+          next_dd_amount?: number | null
+          next_dd_date_raw?: string | null
+          next_dd_on?: string | null
+          notes?: string | null
+          occta_mandate_status?: string | null
+          occta_method?: string | null
+          occta_recorded?: boolean | null
+          occta_ref?: string | null
+          payer_name?: string | null
+          reconciled_status?: string
+          row_key?: string
+          seen_in?: string | null
+          status_raw?: string | null
+          uninvoiced_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_recon_audit: {
+        Row: {
+          account_number: string | null
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          audit_key: string
+          created_at: string
+          detail: string | null
+          id: string
+          invoice_number: string | null
+          subject_key: string
+          subject_type: string
+        }
+        Insert: {
+          account_number?: string | null
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          audit_key: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          invoice_number?: string | null
+          subject_key: string
+          subject_type: string
+        }
+        Update: {
+          account_number?: string | null
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          audit_key?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          invoice_number?: string | null
+          subject_key?: string
+          subject_type?: string
+        }
+        Relationships: []
+      }
+      payment_recon_bank_lines: {
+        Row: {
+          amount: number | null
+          bank_date_raw: string | null
+          bank_on: string | null
+          created_at: string
+          description: string | null
+          id: string
+          line_key: string
+          linked_account_number: string | null
+          linked_invoice_number: string | null
+          match_category: string
+          matched_account_key: string | null
+          matched_payment_ref: string | null
+          matched_payout_ref: string | null
+          payer_name: string | null
+          payout_ref: string | null
+          reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          bank_date_raw?: string | null
+          bank_on?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          line_key: string
+          linked_account_number?: string | null
+          linked_invoice_number?: string | null
+          match_category: string
+          matched_account_key?: string | null
+          matched_payment_ref?: string | null
+          matched_payout_ref?: string | null
+          payer_name?: string | null
+          payout_ref?: string | null
+          reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          bank_date_raw?: string | null
+          bank_on?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          line_key?: string
+          linked_account_number?: string | null
+          linked_invoice_number?: string | null
+          match_category?: string
+          matched_account_key?: string | null
+          matched_payment_ref?: string | null
+          matched_payout_ref?: string | null
+          payer_name?: string | null
+          payout_ref?: string | null
+          reference?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_recon_imports: {
+        Row: {
+          content_sha256: string
+          file_kind: string
+          file_name: string
+          first_imported_at: string
+          id: string
+          import_count: number
+          imported_by: string | null
+          imported_by_email: string | null
+          last_imported_at: string
+          row_count: number
+        }
+        Insert: {
+          content_sha256: string
+          file_kind: string
+          file_name: string
+          first_imported_at?: string
+          id?: string
+          import_count?: number
+          imported_by?: string | null
+          imported_by_email?: string | null
+          last_imported_at?: string
+          row_count: number
+        }
+        Update: {
+          content_sha256?: string
+          file_kind?: string
+          file_name?: string
+          first_imported_at?: string
+          id?: string
+          import_count?: number
+          imported_by?: string | null
+          imported_by_email?: string | null
+          last_imported_at?: string
+          row_count?: number
+        }
+        Relationships: []
+      }
+      payment_recon_mandates: {
+        Row: {
+          accesspay_status: string | null
+          account_key: string | null
+          cancelled_on: string | null
+          cancelled_raw: string | null
+          created_at: string
+          created_on: string | null
+          created_raw: string | null
+          customer_name: string | null
+          id: string
+          is_duplicate: boolean
+          is_test: boolean
+          linked_account_number: string | null
+          mandate_key: string
+          mandate_reference: string | null
+          never_submitted: boolean
+          occta_ref: string | null
+          payer_name: string | null
+          status: string | null
+          submitted_on: string | null
+          submitted_raw: string | null
+          updated_at: string
+        }
+        Insert: {
+          accesspay_status?: string | null
+          account_key?: string | null
+          cancelled_on?: string | null
+          cancelled_raw?: string | null
+          created_at?: string
+          created_on?: string | null
+          created_raw?: string | null
+          customer_name?: string | null
+          id?: string
+          is_duplicate?: boolean
+          is_test?: boolean
+          linked_account_number?: string | null
+          mandate_key: string
+          mandate_reference?: string | null
+          never_submitted?: boolean
+          occta_ref?: string | null
+          payer_name?: string | null
+          status?: string | null
+          submitted_on?: string | null
+          submitted_raw?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accesspay_status?: string | null
+          account_key?: string | null
+          cancelled_on?: string | null
+          cancelled_raw?: string | null
+          created_at?: string
+          created_on?: string | null
+          created_raw?: string | null
+          customer_name?: string | null
+          id?: string
+          is_duplicate?: boolean
+          is_test?: boolean
+          linked_account_number?: string | null
+          mandate_key?: string
+          mandate_reference?: string | null
+          never_submitted?: boolean
+          occta_ref?: string | null
+          payer_name?: string | null
+          status?: string | null
+          submitted_on?: string | null
+          submitted_raw?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_recon_payments: {
+        Row: {
+          account_key: string | null
+          amount: number | null
+          balance_after: number | null
+          bank_description: string | null
+          bank_payer_name: string | null
+          bank_received_at_raw: string | null
+          bank_received_on: string | null
+          case_codes: string[]
+          charge_kind: string | null
+          collection_date_raw: string | null
+          collection_on: string | null
+          created_at: string
+          customer_name: string | null
+          event_key: string
+          failed_at_raw: string | null
+          failed_on: string | null
+          failure_reason: string | null
+          failure_treatment: string | null
+          id: string
+          invoice_number: string | null
+          linked_account_number: string | null
+          linked_invoice_number: string | null
+          mandate_ref: string | null
+          match_category: string
+          method: string | null
+          name_aliases: string[]
+          occta_method: string | null
+          occta_recorded: boolean | null
+          occta_ref: string | null
+          payer_name: string | null
+          payment_ref: string | null
+          payout_ref: string | null
+          processed_at_raw: string | null
+          processed_on: string | null
+          reconciled_status: string
+          status_raw: string | null
+          submitted_at_raw: string | null
+          submitted_on: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_key?: string | null
+          amount?: number | null
+          balance_after?: number | null
+          bank_description?: string | null
+          bank_payer_name?: string | null
+          bank_received_at_raw?: string | null
+          bank_received_on?: string | null
+          case_codes?: string[]
+          charge_kind?: string | null
+          collection_date_raw?: string | null
+          collection_on?: string | null
+          created_at?: string
+          customer_name?: string | null
+          event_key: string
+          failed_at_raw?: string | null
+          failed_on?: string | null
+          failure_reason?: string | null
+          failure_treatment?: string | null
+          id?: string
+          invoice_number?: string | null
+          linked_account_number?: string | null
+          linked_invoice_number?: string | null
+          mandate_ref?: string | null
+          match_category: string
+          method?: string | null
+          name_aliases?: string[]
+          occta_method?: string | null
+          occta_recorded?: boolean | null
+          occta_ref?: string | null
+          payer_name?: string | null
+          payment_ref?: string | null
+          payout_ref?: string | null
+          processed_at_raw?: string | null
+          processed_on?: string | null
+          reconciled_status: string
+          status_raw?: string | null
+          submitted_at_raw?: string | null
+          submitted_on?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_key?: string | null
+          amount?: number | null
+          balance_after?: number | null
+          bank_description?: string | null
+          bank_payer_name?: string | null
+          bank_received_at_raw?: string | null
+          bank_received_on?: string | null
+          case_codes?: string[]
+          charge_kind?: string | null
+          collection_date_raw?: string | null
+          collection_on?: string | null
+          created_at?: string
+          customer_name?: string | null
+          event_key?: string
+          failed_at_raw?: string | null
+          failed_on?: string | null
+          failure_reason?: string | null
+          failure_treatment?: string | null
+          id?: string
+          invoice_number?: string | null
+          linked_account_number?: string | null
+          linked_invoice_number?: string | null
+          mandate_ref?: string | null
+          match_category?: string
+          method?: string | null
+          name_aliases?: string[]
+          occta_method?: string | null
+          occta_recorded?: boolean | null
+          occta_ref?: string | null
+          payer_name?: string | null
+          payment_ref?: string | null
+          payout_ref?: string | null
+          processed_at_raw?: string | null
+          processed_on?: string | null
+          reconciled_status?: string
+          status_raw?: string | null
+          submitted_at_raw?: string | null
+          submitted_on?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_recon_payouts: {
+        Row: {
+          amount: number | null
+          bank_amount: number | null
+          bank_date_raw: string | null
+          bank_description: string | null
+          bank_on: string | null
+          created_at: string
+          fee_amount: number | null
+          id: string
+          match_category: string
+          payout_ref: string
+          processed_on: string | null
+          processed_raw: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          bank_amount?: number | null
+          bank_date_raw?: string | null
+          bank_description?: string | null
+          bank_on?: string | null
+          created_at?: string
+          fee_amount?: number | null
+          id?: string
+          match_category: string
+          payout_ref: string
+          processed_on?: string | null
+          processed_raw?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          bank_amount?: number | null
+          bank_date_raw?: string | null
+          bank_description?: string | null
+          bank_on?: string | null
+          created_at?: string
+          fee_amount?: number | null
+          id?: string
+          match_category?: string
+          payout_ref?: string
+          processed_on?: string | null
+          processed_raw?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_recon_timeline: {
+        Row: {
+          field_name: string
+          file_kind: string | null
+          file_sha: string | null
+          id: string
+          new_value: string | null
+          note: string | null
+          previous_value: string | null
+          recorded_at: string
+          subject_key: string
+          subject_type: string
+          timeline_key: string
+        }
+        Insert: {
+          field_name: string
+          file_kind?: string | null
+          file_sha?: string | null
+          id?: string
+          new_value?: string | null
+          note?: string | null
+          previous_value?: string | null
+          recorded_at?: string
+          subject_key: string
+          subject_type: string
+          timeline_key: string
+        }
+        Update: {
+          field_name?: string
+          file_kind?: string | null
+          file_sha?: string | null
+          id?: string
+          new_value?: string | null
+          note?: string | null
+          previous_value?: string | null
+          recorded_at?: string
+          subject_key?: string
+          subject_type?: string
+          timeline_key?: string
+        }
+        Relationships: []
+      }
       payment_request_events: {
         Row: {
           created_at: string
@@ -14756,6 +15329,7 @@ export type Database = {
       payment_method_snapshot_enum:
         | "manual_invoice_card_worldpay"
         | "direct_debit_setup_request"
+        | "direct_debit_to_be_set_up_after_contract_acceptance"
       plan_preference_kind: "flex" | "contract_saver" | "not_sure"
       plan_type_kind: "flex" | "contract_saver"
       points_ledger_source:
@@ -15114,6 +15688,7 @@ export const Constants = {
       payment_method_snapshot_enum: [
         "manual_invoice_card_worldpay",
         "direct_debit_setup_request",
+        "direct_debit_to_be_set_up_after_contract_acceptance",
       ],
       plan_preference_kind: ["flex", "contract_saver", "not_sure"],
       plan_type_kind: ["flex", "contract_saver"],

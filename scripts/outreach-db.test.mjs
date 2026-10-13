@@ -8,6 +8,7 @@ import { test, before, after, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 
 const MIGRATION = "supabase/migrations/20261012140000_outreach_campaign_manager.sql";
+const PREMIUM_TEMPLATES = "supabase/migrations/20261013090000_outreach_premium_templates.sql";
 let db;
 const admin = randomUUID();
 const outsider = randomUUID();
@@ -88,6 +89,27 @@ test("migration installs settings, templates and the 5-minute sender schedule", 
   assert.equal(job.schedule, "*/5 * * * *");
   assert.match(job.command, /functions\/v1\/outreach-worker/);
   assert.match(job.command, /x-cron-secret/);
+});
+
+test("premium template migration updates templates and refreshes drafts only", async () => {
+  const tpl = await one("SELECT id FROM outreach_templates WHERE template_key = 'last-orders-landline'");
+  const draft = await one("INSERT INTO outreach_campaigns (name, slug, status, template_id, subject, body_html) VALUES ('d','premium-draft','draft',$1,'old','<p>old</p>') RETURNING id", [tpl.id]);
+  const sent = await one("INSERT INTO outreach_campaigns (name, slug, status, template_id, subject, body_html) VALUES ('s','premium-sent','completed',$1,'old','<p>old</p>') RETURNING id", [tpl.id]);
+  await db.exec(readFileSync(PREMIUM_TEMPLATES, "utf8"));
+
+  const t = await rows("SELECT template_key, subject, hero_image_url, body_html, body_text FROM outreach_templates ORDER BY template_key");
+  for (const row of t) {
+    assert.match(row.hero_image_url, /^https:\/\/www\.occta\.co\.uk\/email\/.+\.jpg$/);
+    assert.match(row.body_html, /Why Huddersfield businesses choose OCCTA/);
+    assert.match(row.body_html, /href="\{\{cta_url\}\}"/);
+    assert.match(row.body_text, /\{\{cta_url\}\}/);
+    assert.doesNotMatch(`${row.subject} ${row.body_html} ${row.body_text}`, /\{\{(?!business_name|cta_url|flyer_ref)[a-z_]+\}\}/);
+  }
+  const d = await one("SELECT subject, hero_image_url FROM outreach_campaigns WHERE id = $1", [draft.id]);
+  assert.equal(d.subject, "Is {{business_name}} ready for the January 2027 landline switch-off?");
+  assert.equal(d.hero_image_url, "https://www.occta.co.uk/email/occta-last-orders.jpg");
+  const s = await one("SELECT subject FROM outreach_campaigns WHERE id = $1", [sent.id]);
+  assert.equal(s.subject, "old", "campaigns already sent keep their content");
 });
 
 test("eligible: verified companies with a role inbox, or recorded consent only", async () => {

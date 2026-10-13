@@ -6,6 +6,7 @@ import {
   complianceFooterHtml,
   complianceFooterText,
   isOutreachEligible,
+  isOwnSiteUrl,
   isWithinSendWindow,
   listUnsubscribeHeaders,
   OUTREACH_MAX_ATTEMPTS,
@@ -15,6 +16,7 @@ import {
   sendAllowance,
   startOfZonedDay,
   withCampaignParams,
+  withOnSiteClickTracking,
   wrapEmailHtml,
   type OutreachVars,
 } from "./outreach.ts";
@@ -151,7 +153,12 @@ export function renderOutreachEmail(opts: {
   const { campaign: c, settings: s, recipient: r, token, tracking } = opts;
   const urls = trackingUrls(token);
   const links = c.links.length ? c.links : buildCampaignLinks(c);
-  const ctaUrl = tracking ? urls.click(0) : links[0].target;
+  // Our own pages report clicks themselves; only other sites go via the redirect tracker.
+  const linkFor = (i: number) => {
+    if (!tracking) return links[i].target;
+    return isOwnSiteUrl(links[i].target) ? withOnSiteClickTracking(links[i].target, token, i) : urls.click(i);
+  };
+  const ctaUrl = linkFor(0);
 
   const vars: OutreachVars = {
     business_name: r.business_name,
@@ -168,7 +175,7 @@ export function renderOutreachEmail(opts: {
   const bodyHtml = rewriteLinksForTracking(
     renderPlaceholders(c.body_html, vars, "html"),
     originals,
-    (i) => (tracking ? urls.click(i) : links[i].target),
+    linkFor,
   );
 
   const footer = {

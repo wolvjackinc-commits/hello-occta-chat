@@ -127,9 +127,14 @@ describe("runOutreachTick", () => {
     expect(body.subject).toBe("Hi Biz c1 Ltd");
     expect(body.headers["List-Unsubscribe"]).toBe("<https://proj.supabase.co/functions/v1/outreach-unsubscribe?t=tok_one_1234567890ab>");
     expect(body.headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
-    expect(body.html).toContain("outreach-track?t=tok_one_1234567890ab&amp;l=0");
-    expect(body.html).toContain("outreach-track?t=tok_one_1234567890ab&amp;l=1");
+    // Links stay on occta.co.uk (no tracking domain); the landing page reports the click.
+    expect(body.html).not.toContain("outreach-track?t=tok_one_1234567890ab&amp;l=");
+    expect(body.html).toContain("https://www.occta.co.uk/business/contact-sales?utm_source=occta_outreach");
+    expect(body.html).toContain("utm_term=ob-tok_one_1234567890ab&amp;ot=tok_one_1234567890ab&amp;ol=0");
+    expect(body.html).toContain("https://www.occta.co.uk/business/voice?utm_source=occta_outreach");
+    expect(body.html).toContain("ot=tok_one_1234567890ab&amp;ol=1");
     expect(body.html).toContain("outreach-track?t=tok_one_1234567890ab&amp;o=1");
+    expect(body.text).toContain("ot=tok_one_1234567890ab&ol=0");
     expect(body.html).toContain("https://www.occta.co.uk/unsubscribe?t=tok_one_1234567890ab");
     expect(body.html).toContain("13828933");
     expect(body.text).toContain("Unsubscribe with one click");

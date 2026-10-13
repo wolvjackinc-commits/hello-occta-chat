@@ -245,6 +245,44 @@ export function withRecipientTerm(rawUrl: string, token: string): string {
   }
 }
 
+export function isOwnSiteUrl(rawUrl: string): boolean {
+  try {
+    return TRACKED_HOSTS.has(new URL(rawUrl).hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+/** Query parameters the website reads to record an email click (see src/lib/outreach/clickBeacon.ts). */
+export const ONSITE_CLICK_PARAMS = { token: "ot", link: "ol" } as const;
+
+/**
+ * Link straight to our own site and let the page report the click, instead of
+ * bouncing through a tracking domain. Links whose domain differs from the
+ * sender's are a strong spam signal, so this keeps every link on occta.co.uk.
+ */
+export function withOnSiteClickTracking(rawUrl: string, token: string, index: number): string {
+  try {
+    const url = new URL(rawUrl);
+    if (!TRACKED_HOSTS.has(url.hostname.toLowerCase())) return rawUrl;
+    url.searchParams.set("utm_term", `ob-${token}`);
+    url.searchParams.set(ONSITE_CLICK_PARAMS.token, token);
+    url.searchParams.set(ONSITE_CLICK_PARAMS.link, String(index));
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
+/** Read an on-site email click from a page's query string, or null. */
+export function readOnSiteClick(search: string): { token: string; link: number } | null {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const token = params.get(ONSITE_CLICK_PARAMS.token) ?? "";
+  const link = Number(params.get(ONSITE_CLICK_PARAMS.link));
+  if (!/^[A-Za-z0-9_-]{16,64}$/.test(token) || !Number.isInteger(link) || link < 0 || link > 99) return null;
+  return { token, link };
+}
+
 const HREF_RE = /href\s*=\s*"(https?:\/\/[^"]+)"/gi;
 
 /** Collect the distinct absolute links in a body, in order of first appearance. */
@@ -307,9 +345,11 @@ export function wrapEmailHtml(e: EmailShellInput): string {
   const pre = e.preheader
     ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeHtml(e.preheader)}</div>`
     : "";
-  const hero = e.heroImageUrl
-    ? `<tr><td style="padding:0"><a href="${escapeHtml(e.ctaUrl)}"><img src="${escapeHtml(e.heroImageUrl)}" width="600" alt="OCCTA flyer" style="display:block;width:100%;max-width:600px;height:auto;border:0" /></a></td></tr>`
-    : "";
+  // The flyer artwork already carries the OCCTA logo, so the plain header bar
+  // is only used when there is no image.
+  const header = e.heroImageUrl
+    ? `<tr><td style="padding:0"><a href="${escapeHtml(e.ctaUrl)}"><img src="${escapeHtml(e.heroImageUrl)}" width="600" alt="${escapeHtml(e.subject)}" style="display:block;width:100%;max-width:600px;height:auto;border:0" /></a></td></tr>`
+    : `<tr><td style="background:#0d0d0d;padding:20px 28px"><span style="display:inline-block;background:#ffe500;color:#0d0d0d;font:900 20px Arial,Helvetica,sans-serif;letter-spacing:1px;padding:4px 10px">OCCTA</span><span style="color:#ffffff;font:600 11px Arial,Helvetica,sans-serif;letter-spacing:2px;margin-left:12px">FOR UK BUSINESS</span></td></tr>`;
   const pixel = e.pixelUrl
     ? `<img src="${escapeHtml(e.pixelUrl)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`
     : "";
@@ -318,8 +358,7 @@ export function wrapEmailHtml(e: EmailShellInput): string {
 <body style="margin:0;padding:0;background:#f5f4ef">${pre}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f4ef"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border:3px solid #0d0d0d">
-<tr><td style="background:#0d0d0d;padding:20px 28px"><span style="display:inline-block;background:#ffe500;color:#0d0d0d;font:900 20px Arial,Helvetica,sans-serif;letter-spacing:1px;padding:4px 10px">OCCTA</span><span style="color:#ffffff;font:600 11px Arial,Helvetica,sans-serif;letter-spacing:2px;margin-left:12px">FOR UK BUSINESS</span></td></tr>
-${hero}
+${header}
 <tr><td style="padding:28px;font:15px/1.6 Arial,Helvetica,sans-serif;color:#1a1a1a">
 ${e.bodyHtml}
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0"><tr><td style="background:#0d0d0d;border-radius:4px"><a href="${escapeHtml(e.ctaUrl)}" style="display:inline-block;padding:14px 26px;color:#ffe500;font:700 16px Arial,Helvetica,sans-serif;text-decoration:none">${escapeHtml(e.ctaLabel)}</a></td></tr></table>

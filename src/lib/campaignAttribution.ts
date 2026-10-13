@@ -1,4 +1,5 @@
 import { getConsent } from "@/lib/consent";
+import { readOutreachVisitToken } from "@/lib/outreach/clickBeacon";
 import {
   CAMPAIGN_TOUCH_STORAGE_KEY,
   type CampaignTouch,
@@ -121,5 +122,10 @@ export function getStoredCampaignCode(now = Date.now()): string | null {
 
 export function getCampaignUtmForSubmit(now = Date.now()): Record<string, string> | null {
   const touch = readStoredCampaignTouch(now);
-  return touch ? touchToRecord(touch) : null;
+  const record = touch ? touchToRecord(touch) : null;
+  // An outreach email clicked on this visit links the enquiry to that email
+  // (utm_term=ob-<token>), without replacing the first-touch campaign.
+  const outreachToken = typeof window === "undefined" ? null : readOutreachVisitToken();
+  if (!outreachToken || record?.utm_term?.startsWith("ob-")) return record;
+  return { ...(record ?? {}), utm_term: `ob-${outreachToken}` };
 }

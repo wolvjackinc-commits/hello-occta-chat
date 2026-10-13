@@ -2,7 +2,8 @@ declare global {
   interface Window { gtag?: (...args: any[]) => void; }
 }
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import AddressAutocomplete, { type ParsedAddress } from "@/components/address/AddressAutocomplete";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,8 +36,25 @@ export const LeadForm = ({ source = "business_hub", interest, compact = false, h
     sla_preference: "standard",
   });
 
+  const [manualAddress, setManualAddress] = useState(false);
+  const [changeAddress, setChangeAddress] = useState(false);
+
   const update = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
   const totalSteps = compact ? 1 : 3;
+  const hasSiteAddress = Boolean(form.site_address_line1.trim() && form.site_city.trim() && form.site_postcode.trim());
+
+  // Same address search as the order journey, so customers pick their address instead of typing it.
+  const applyLookup = useCallback((addr: ParsedAddress) => {
+    setForm((f) => ({
+      ...f,
+      site_address_line1: addr.line1,
+      site_address_line2: addr.line2 ?? "",
+      site_city: addr.city,
+      site_postcode: addr.postcode.toUpperCase(),
+    }));
+    setManualAddress(false);
+    setChangeAddress(false);
+  }, []);
 
   const canAdvance = () => {
     if (compact) return true;
@@ -109,12 +127,66 @@ export const LeadForm = ({ source = "business_hub", interest, compact = false, h
       {!compact && step === 2 && (
         <div className="space-y-4">
           <div className="border-l-4 border-primary pl-3"><h4 className="font-display text-lg">Service site</h4><p className="text-xs text-muted-foreground">Useful for broadband qualification; the full business quote journey performs the live address check.</p></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="md:col-span-2"><Label>Address line 1</Label><Input value={form.site_address_line1} onChange={(e) => update("site_address_line1", e.target.value)} /></div>
-            <div className="md:col-span-2"><Label>Address line 2</Label><Input value={form.site_address_line2} onChange={(e) => update("site_address_line2", e.target.value)} /></div>
-            <div><Label>City / town</Label><Input value={form.site_city} onChange={(e) => update("site_city", e.target.value)} /></div>
-            <div><Label>Postcode</Label><Input value={form.site_postcode} onChange={(e) => update("site_postcode", e.target.value.toUpperCase())} /></div>
-          </div>
+          {(!hasSiteAddress || changeAddress) && !manualAddress && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor={`site-postcode-search-${source}`}>Business postcode</Label>
+                <Input
+                  id={`site-postcode-search-${source}`}
+                  value={form.site_postcode}
+                  onChange={(e) => setForm((f) => ({ ...f, site_postcode: e.target.value.toUpperCase(), site_address_line1: "", site_address_line2: "", site_city: "" }))}
+                  autoComplete="postal-code"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  maxLength={10}
+                  className="uppercase"
+                  placeholder="e.g. HD1 2EN"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Then choose your building and street below.</p>
+              </div>
+              <AddressAutocomplete
+                onSelect={applyLookup}
+                onManualFallback={() => setManualAddress(true)}
+                expectedPostcode={form.site_postcode}
+                label="Find your business address"
+                helperText="Start typing the building number or name and street, e.g. 22 Market Street."
+              />
+              <Button type="button" variant="outline" onClick={() => setManualAddress(true)} className="w-full sm:w-auto">
+                Can't find it? Enter address manually
+              </Button>
+            </div>
+          )}
+
+          {hasSiteAddress && !manualAddress && !changeAddress && (
+            <div className="border-2 border-foreground bg-muted/30 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-display text-xs uppercase tracking-wider text-muted-foreground">Service address</p>
+                  <p className="mt-1 text-sm font-medium">
+                    {[form.site_address_line1, form.site_address_line2, form.site_city, form.site_postcode].filter(Boolean).join(", ")}
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setChangeAddress(true)}>Change address</Button>
+              </div>
+            </div>
+          )}
+
+          {manualAddress && (
+            <div className="space-y-3 border-2 border-foreground/20 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-display text-sm uppercase">Enter address manually</p>
+                <button type="button" onClick={() => { setManualAddress(false); setChangeAddress(false); }} className="text-xs underline text-muted-foreground hover:text-foreground">
+                  {hasSiteAddress ? "Done" : "Search instead"}
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="md:col-span-2"><Label>Address line 1</Label><Input value={form.site_address_line1} onChange={(e) => update("site_address_line1", e.target.value)} autoComplete="address-line1" /></div>
+                <div className="md:col-span-2"><Label>Address line 2</Label><Input value={form.site_address_line2} onChange={(e) => update("site_address_line2", e.target.value)} autoComplete="address-line2" /></div>
+                <div><Label>City / town</Label><Input value={form.site_city} onChange={(e) => update("site_city", e.target.value)} autoComplete="address-level2" /></div>
+                <div><Label>Postcode</Label><Input value={form.site_postcode} onChange={(e) => update("site_postcode", e.target.value.toUpperCase())} autoComplete="postal-code" /></div>
+              </div>
+            </div>
+          )}
           <details className="border-2 border-foreground/30 p-3">
             <summary className="font-display cursor-pointer">Additional / billing contacts (optional)</summary>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">

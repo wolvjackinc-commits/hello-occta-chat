@@ -25,6 +25,37 @@ Deno.serve(async (req) => {
   const linkIndex = Number(url.searchParams.get("l"));
   const validToken = /^[A-Za-z0-9_-]{16,64}$/.test(token);
 
+  // Click reported by our own website (navigator.sendBeacon from the landing
+  // page), used for links that go straight to occta.co.uk.
+  if (req.method === "POST") {
+    const beaconHeaders = { "Access-Control-Allow-Origin": "*", ...noStore };
+    try {
+      const body = JSON.parse((await req.text()).slice(0, 500)) as { t?: unknown; l?: unknown };
+      const t = typeof body.t === "string" ? body.t : "";
+      const l = Number(body.l);
+      if (!/^[A-Za-z0-9_-]{16,64}$/.test(t) || !Number.isInteger(l) || l < 0 || l > 99) {
+        return new Response(null, { status: 204, headers: beaconHeaders });
+      }
+      const db = getServiceClient();
+      const { data: message } = await db.from("outreach_messages").select("campaign_id, sent_at").eq("token", t).maybeSingle();
+      if (message) {
+        const { data: campaign } = await db.from("outreach_campaigns").select("links").eq("id", message.campaign_id).maybeSingle();
+        const links = (campaign?.links ?? []) as CampaignLink[];
+        const userAgent = req.headers.get("user-agent");
+        await db.rpc("outreach_record_engagement", {
+          p_token: t,
+          p_type: "click",
+          p_url: l < links.length ? links[l].target : null,
+          p_user_agent: userAgent,
+          p_suspected_bot: isSuspectedBot({ userAgent, sentAt: message.sent_at, now: new Date(), type: "click" }),
+        });
+      }
+    } catch (e) {
+      console.error("outreach-track beacon failed", (e as Error)?.message ?? String(e));
+    }
+    return new Response(null, { status: 204, headers: beaconHeaders });
+  }
+
   if (req.method !== "GET" && req.method !== "HEAD") {
     return new Response("method not allowed", { status: 405 });
   }

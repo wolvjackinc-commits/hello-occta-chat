@@ -7,11 +7,13 @@ import {
   complianceFooterText,
   generateOutreachToken,
   isOutreachEligible,
+  isOwnSiteUrl,
   isSuspectedBot,
   isWithinSendWindow,
   legalFormFromHint,
   listUnsubscribeHeaders,
   normaliseEmail,
+  readOnSiteClick,
   outreachIneligibleReason,
   renderPlaceholders,
   retryDelayMinutes,
@@ -21,6 +23,7 @@ import {
   startOfZonedDay,
   unknownPlaceholders,
   withCampaignParams,
+  withOnSiteClickTracking,
   withRecipientTerm,
   wrapEmailHtml,
   OUTREACH_PLACEHOLDERS,
@@ -211,6 +214,38 @@ describe("rendering", () => {
     expect(html).toContain("Pre");
     expect(html).toContain(`src="https://t/o?t=abc"`);
     expect(html.indexOf("<p>Footer</p>")).toBeGreaterThan(html.indexOf("<p>Body</p>"));
+    expect(html).toContain("FOR UK BUSINESS");
+  });
+
+  it("uses the flyer image instead of the logo bar when there is one", () => {
+    const html = wrapEmailHtml({
+      subject: "Is X ready?",
+      preheader: null,
+      bodyHtml: "<p>Body</p>",
+      ctaLabel: "Book",
+      ctaUrl: "https://www.occta.co.uk/b",
+      heroImageUrl: "https://www.occta.co.uk/email/hero.jpg",
+      footerHtml: "",
+      pixelUrl: null,
+    });
+    expect(html).toContain(`src="https://www.occta.co.uk/email/hero.jpg"`);
+    expect(html).toContain(`alt="Is X ready?"`);
+    expect(html).not.toContain("FOR UK BUSINESS");
+  });
+
+  it("tracks clicks on our own site without a redirect domain", () => {
+    const url = withOnSiteClickTracking("https://www.occta.co.uk/business/contact-sales?utm_source=occta_outreach", "TOKEN1234567890abcd", 2);
+    const u = new URL(url);
+    expect(u.hostname).toBe("www.occta.co.uk");
+    expect(u.searchParams.get("utm_term")).toBe("ob-TOKEN1234567890abcd");
+    expect(readOnSiteClick(u.search)).toEqual({ token: "TOKEN1234567890abcd", link: 2 });
+    expect(withOnSiteClickTracking("https://example.com/x", "TOKEN1234567890abcd", 0)).toBe("https://example.com/x");
+    expect(isOwnSiteUrl("https://occta.co.uk/a")).toBe(true);
+    expect(isOwnSiteUrl("https://evil.example/occta.co.uk")).toBe(false);
+    expect(readOnSiteClick("?ot=short&ol=1")).toBeNull();
+    expect(readOnSiteClick("?ot=TOKEN1234567890abcd&ol=abc")).toBeNull();
+    expect(readOnSiteClick("?ot=TOKEN1234567890abcd&ol=500")).toBeNull();
+    expect(readOnSiteClick("")).toBeNull();
   });
 
   it("builds RFC 8058 one-click unsubscribe headers", () => {

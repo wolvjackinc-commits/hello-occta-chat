@@ -5,6 +5,7 @@ import {
   collectLinks,
   complianceFooterHtml,
   complianceFooterText,
+  isConsumerCategory,
   isOutreachEligible,
   isOwnSiteUrl,
   isWithinSendWindow,
@@ -159,6 +160,9 @@ export function renderOutreachEmail(opts: {
     return isOwnSiteUrl(links[i].target) ? withOnSiteClickTracking(links[i].target, token, i) : urls.click(i);
   };
   const ctaUrl = linkFor(0);
+  // Opted-in customers hear from "OCCTA", not the business sales team.
+  const consumer = isConsumerCategory(r.category);
+  const fromName = consumer ? "OCCTA" : s.from_name;
 
   const vars: OutreachVars = {
     business_name: r.business_name,
@@ -168,7 +172,7 @@ export function renderOutreachEmail(opts: {
     flyer_ref: c.flyer_ref ?? "",
     cta_url: ctaUrl,
     unsubscribe_url: urls.unsubscribePage,
-    sender_name: s.from_name,
+    sender_name: fromName,
   };
 
   const originals = links.map((l) => l.original ?? "");
@@ -183,6 +187,7 @@ export function renderOutreachEmail(opts: {
     postalAddress: s.postal_address,
     unsubscribeUrl: urls.unsubscribePage,
     privacyUrl: PRIVACY_URL,
+    audience: consumer ? "consumer" as const : "business" as const,
   };
 
   const subject = renderPlaceholders(c.subject, vars, "text").replace(/\s+/g, " ").trim();
@@ -195,11 +200,12 @@ export function renderOutreachEmail(opts: {
     heroImageUrl: c.hero_image_url,
     footerHtml: complianceFooterHtml(footer),
     pixelUrl: tracking ? urls.pixel : null,
+    tagline: consumer ? "TELECOM THAT GETS IT" : undefined,
   });
   const text = `${renderPlaceholders(c.body_text, vars, "text").trim()}\n\n${complianceFooterText(footer)}\n`;
 
   return {
-    from: `${s.from_name} <${s.from_email}>`,
+    from: `${fromName} <${s.from_email}>`,
     to: r.email,
     replyTo: s.reply_to,
     subject,

@@ -5,6 +5,7 @@ import {
   collectLinks,
   complianceFooterHtml,
   complianceFooterText,
+  isConsumerCategory,
   generateOutreachToken,
   isOutreachEligible,
   isOwnSiteUrl,
@@ -276,5 +277,21 @@ describe("provider responses and engagement quality", () => {
     expect(isSuspectedBot({ userAgent: "Mimecast URL protect", sentAt, now: new Date("2026-10-12T12:00:00Z"), type: "click" })).toBe(true);
     expect(isSuspectedBot({ userAgent: "Mozilla/5.0", sentAt, now: new Date("2026-10-12T10:00:05Z"), type: "click" })).toBe(true);
     expect(isSuspectedBot({ userAgent: null, sentAt: null, now: new Date(), type: "open" })).toBe(false);
+  });
+});
+
+describe("consumer contacts", () => {
+  it("recognises the consumer category however it is cased", () => {
+    expect(isConsumerCategory("consumer")).toBe(true);
+    expect(isConsumerCategory(" Consumer ")).toBe(true);
+    expect(isConsumerCategory("Retail")).toBe(false);
+    expect(isConsumerCategory(null)).toBe(false);
+  });
+
+  it("uses consent wording in the consumer footer", () => {
+    const f = { businessName: "Sam", postalAddress: "OCCTA Limited, Huddersfield", unsubscribeUrl: "https://u", privacyUrl: "https://p", audience: "consumer" as const };
+    expect(complianceFooterText(f)).toContain("you said yes to offers and news from OCCTA by email");
+    expect(complianceFooterText(f)).not.toContain("published as a general contact");
+    expect(complianceFooterText({ ...f, audience: undefined })).toContain("We emailed Sam at this address because it is published");
   });
 });

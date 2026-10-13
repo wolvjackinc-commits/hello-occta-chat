@@ -304,16 +304,34 @@ export function rewriteLinksForTracking(html: string, links: readonly string[], 
   });
 }
 
+/**
+ * Contacts in this category are OCCTA customers who opted in to marketing
+ * emails from their account (lawful basis: consent). They are kept out of
+ * business campaigns and get a consumer footer.
+ */
+export const CONSUMER_CATEGORY = "consumer";
+
+export function isConsumerCategory(category: string | null | undefined): boolean {
+  return (category ?? "").trim().toLowerCase() === CONSUMER_CATEGORY;
+}
+
 export type ComplianceFooterInput = {
   businessName: string;
   postalAddress: string;
   unsubscribeUrl: string;
   privacyUrl: string;
+  audience?: "business" | "consumer";
 };
+
+function whyThisEmail(f: ComplianceFooterInput): string {
+  return f.audience === "consumer"
+    ? "You're getting this because you said yes to offers and news from OCCTA by email in your account. You can change this any time in My OCCTA › Account."
+    : `We emailed ${f.businessName} at this address because it is published as a general contact for the business. We only use it to tell you about OCCTA business services.`;
+}
 
 export function complianceFooterHtml(f: ComplianceFooterInput): string {
   return `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #ddd;font-size:12px;line-height:1.6;color:#666">
-<p style="margin:0 0 8px">We emailed ${escapeHtml(f.businessName)} at this address because it is published as a general contact for the business. We only use it to tell you about OCCTA business services.</p>
+<p style="margin:0 0 8px">${escapeHtml(whyThisEmail(f))}</p>
 <p style="margin:0 0 8px">Don't want these emails? <a href="${escapeHtml(f.unsubscribeUrl)}" style="color:#666;text-decoration:underline">Unsubscribe with one click</a> and we won't email this address again. See our <a href="${escapeHtml(f.privacyUrl)}" style="color:#666;text-decoration:underline">privacy notice</a> for how we got your details and your rights.</p>
 <p style="margin:0">${escapeHtml(f.postalAddress)} · Company No. 13828933 · VAT No. 520 6072 30</p>
 </div>`;
@@ -322,7 +340,7 @@ export function complianceFooterHtml(f: ComplianceFooterInput): string {
 export function complianceFooterText(f: ComplianceFooterInput): string {
   return [
     "--",
-    `We emailed ${f.businessName} at this address because it is published as a general contact for the business. We only use it to tell you about OCCTA business services.`,
+    whyThisEmail(f),
     `Unsubscribe with one click: ${f.unsubscribeUrl}`,
     `Privacy notice (how we got your details and your rights): ${f.privacyUrl}`,
     `${f.postalAddress} · Company No. 13828933 · VAT No. 520 6072 30`,
@@ -338,6 +356,8 @@ export type EmailShellInput = {
   heroImageUrl: string | null;
   footerHtml: string;
   pixelUrl: string | null;
+  /** Words beside the logo in the plain header bar. */
+  tagline?: string;
 };
 
 /** Simple, table-based layout that renders consistently in Outlook, Gmail and Apple Mail. */
@@ -349,7 +369,7 @@ export function wrapEmailHtml(e: EmailShellInput): string {
   // is only used when there is no image.
   const header = e.heroImageUrl
     ? `<tr><td style="padding:0"><a href="${escapeHtml(e.ctaUrl)}"><img src="${escapeHtml(e.heroImageUrl)}" width="600" alt="${escapeHtml(e.subject)}" style="display:block;width:100%;max-width:600px;height:auto;border:0" /></a></td></tr>`
-    : `<tr><td style="background:#0d0d0d;padding:20px 28px"><span style="display:inline-block;background:#ffe500;color:#0d0d0d;font:900 20px Arial,Helvetica,sans-serif;letter-spacing:1px;padding:4px 10px">OCCTA</span><span style="color:#ffffff;font:600 11px Arial,Helvetica,sans-serif;letter-spacing:2px;margin-left:12px">FOR UK BUSINESS</span></td></tr>`;
+    : `<tr><td style="background:#0d0d0d;padding:20px 28px"><span style="display:inline-block;background:#ffe500;color:#0d0d0d;font:900 20px Arial,Helvetica,sans-serif;letter-spacing:1px;padding:4px 10px">OCCTA</span><span style="color:#ffffff;font:600 11px Arial,Helvetica,sans-serif;letter-spacing:2px;margin-left:12px">${escapeHtml(e.tagline ?? "FOR UK BUSINESS")}</span></td></tr>`;
   const pixel = e.pixelUrl
     ? `<img src="${escapeHtml(e.pixelUrl)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`
     : "";

@@ -39,3 +39,14 @@ CREATE TABLE public.business_quote_requests(
   utm jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Customer accounts (marketing consent lives here; see 20261013160000_outreach_customer_optins.sql).
+CREATE TABLE public.profiles(
+  id uuid PRIMARY KEY,
+  email text,
+  full_name text,
+  marketing_email_consent boolean NOT NULL DEFAULT false,
+  consent_updated_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);

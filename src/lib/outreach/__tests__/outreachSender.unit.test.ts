@@ -235,3 +235,30 @@ describe("renderOutreachEmail without tracking (previews and tests)", () => {
     expect(e.headers).toEqual({});
   });
 });
+
+describe("renderOutreachEmail for opted-in customers", () => {
+  const render = (category: string | null) => renderOutreachEmail({
+    campaign: { ...campaign, links: buildCampaignLinks(campaign) },
+    settings,
+    recipient: { email: "sam@home.example", business_name: "Sam", category },
+    token: "tok_consumer_000000000000",
+    tracking: true,
+  });
+
+  it("comes from OCCTA with the consent footer and one-click unsubscribe", () => {
+    const e = render("consumer");
+    expect(e.from).toBe("OCCTA <business@mail.occta.co.uk>");
+    expect(e.html).toContain("you said yes to offers and news from OCCTA by email");
+    expect(e.html).not.toContain("published as a general contact for the business");
+    expect(e.html).toContain("TELECOM THAT GETS IT");
+    expect(e.html).not.toContain("FOR UK BUSINESS");
+    expect(e.text).toContain("you said yes to offers and news from OCCTA by email");
+    expect(e.headers["List-Unsubscribe"]).toBeTruthy();
+  });
+
+  it("keeps the business sender and footer for business contacts", () => {
+    const e = render("Retail");
+    expect(e.from).toBe("OCCTA Business <business@mail.occta.co.uk>");
+    expect(e.html).toContain("published as a general contact for the business");
+  });
+});

@@ -34,6 +34,7 @@ import { DocumentsTab } from "@/components/dashboard/tabs/DocumentsTab";
 import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsTab";
 import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
 import { PaidStateBanner } from "@/components/dashboard/PaidStateBanner";
+import { MarketingOptInCard } from "@/components/dashboard/MarketingOptInCard";
 import { logClientEvent } from "@/lib/activityLog";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import { getReadMap, isTicketUnread, TICKETS_READ_EVENT } from "@/lib/ticketRead";
@@ -712,6 +713,10 @@ const Dashboard = () => {
           {/* Customer-safe payment / fulfilment state banner */}
           <motion.div variants={itemVariants}>
             <PaidStateBanner userId={user.id} />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <MarketingOptInCard userId={user.id} />
           </motion.div>
 
           {/* Phase 7 (corrected): consolidate to 7 approved top-level sections.

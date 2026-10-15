@@ -14,7 +14,9 @@
 import { corsHeaders, getServiceClient, jsonResponse, requireStaff } from "../_shared/quoteHelpers.ts";
 import {
   classifyEmailType,
+  CONSUMER_CATEGORY,
   generateOutreachToken,
+  isConsumerCategory,
   normaliseEmail,
   OUTREACH_PLACEHOLDERS,
   unknownPlaceholders,
@@ -58,6 +60,10 @@ function parseAudience(raw: unknown): Audience {
   };
 }
 
+function isConsumerAudience(audience: Audience): boolean {
+  return (audience.categories ?? []).some((c) => isConsumerCategory(c));
+}
+
 type AudienceRow = { id: string; email: string; business_name: string; category: string | null; district: string | null; priority: string | null };
 
 /** Eligible, not suppressed, not contacted within the cooldown. */
@@ -68,7 +74,13 @@ async function resolveAudience(db: Db, audience: Audience, cooldownDays: number)
     .order("priority", { ascending: true, nullsFirst: false })
     .order("business_name")
     .limit(MAX_CAMPAIGN_RECIPIENTS + 1);
-  if (audience.categories?.length) q = q.in("category", audience.categories);
+  // Opted-in customers only ever receive campaigns aimed at them, and those
+  // campaigns go to nobody else.
+  if (isConsumerAudience(audience)) q = q.eq("category", CONSUMER_CATEGORY);
+  else {
+    q = q.or(`category.is.null,category.neq.${CONSUMER_CATEGORY}`);
+    if (audience.categories?.length) q = q.in("category", audience.categories);
+  }
   if (audience.priorities?.length) q = q.in("priority", audience.priorities);
   if (audience.districts?.length) q = q.in("district", audience.districts);
   if (audience.tags?.length) q = q.overlaps("tags", audience.tags);
@@ -115,6 +127,12 @@ function contentProblems(c: Partial<OutreachCampaign>): string[] {
 }
 
 const SAMPLE_RECIPIENT = { email: "info@example.co.uk", business_name: "Example Bakery Ltd", area: "Town centre / HD1", district: "HD1", category: "Food & Drink" };
+// Consumer contacts store the customer's first name in business_name.
+const SAMPLE_CONSUMER = { email: "sam@example.co.uk", business_name: "Sam", area: "", district: "", category: CONSUMER_CATEGORY };
+
+function sampleRecipientFor(campaign: { audience: unknown }) {
+  return isConsumerAudience(parseAudience(campaign.audience)) ? SAMPLE_CONSUMER : SAMPLE_RECIPIENT;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -146,7 +164,7 @@ Deno.serve(async (req) => {
         const campaign = await loadCampaign(db, body.campaign_id);
         if (!campaign) return jsonResponse({ error: "campaign_not_found" }, 404);
         const settings = await loadSettings(db);
-        let recipient = SAMPLE_RECIPIENT;
+        let recipient = sampleRecipientFor(campaign);
         if (typeof body.contact_id === "string") {
           const { data: c } = await db.from("outreach_contacts").select("email, business_name, area, district, category").eq("id", body.contact_id).maybeSingle();
           if (c) recipient = c;
@@ -178,7 +196,7 @@ Deno.serve(async (req) => {
         const email = renderOutreachEmail({
           campaign: { ...campaign, links: buildCampaignLinks(campaign) },
           settings,
-          recipient: { ...SAMPLE_RECIPIENT, email: to },
+          recipient: { ...sampleRecipientFor(campaign), email: to },
           token: "test-token-00000000000",
           tracking: false,
         });

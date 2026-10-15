@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 
 const MIGRATION = "supabase/migrations/20261012140000_outreach_campaign_manager.sql";
 const PREMIUM_TEMPLATES = "supabase/migrations/20261013090000_outreach_premium_templates.sql";
+const CUSTOMER_OPTINS = "supabase/migrations/20261013160000_outreach_customer_optins.sql";
 let db;
 const admin = randomUUID();
 const outsider = randomUUID();
@@ -19,6 +20,7 @@ before(async () => {
   db = new PGlite();
   await db.exec(readFileSync("supabase/tests/outreach-fixture.sql", "utf8"));
   await db.exec(readFileSync(MIGRATION, "utf8"));
+  await db.exec(readFileSync(CUSTOMER_OPTINS, "utf8"));
   await db.query("INSERT INTO auth.users VALUES ($1,'admin@occta.test'),($2,'someone@example.test')", [admin, outsider]);
   await db.query("INSERT INTO user_roles VALUES ($1,'admin'),($2,'user')", [admin, outsider]);
 });
@@ -83,7 +85,7 @@ test("migration installs settings, templates and the 5-minute sender schedule", 
   const s = await one("SELECT * FROM outreach_settings WHERE id = 1");
   assert.equal(s.sending_enabled, false);
   assert.equal(s.from_email, null);
-  const t = await rows("SELECT template_key, flyer_ref FROM outreach_templates ORDER BY template_key");
+  const t = await rows("SELECT template_key, flyer_ref FROM outreach_templates WHERE flyer_ref LIKE 'LAST-%' ORDER BY template_key");
   assert.deepEqual(t.map((r) => `${r.template_key}:${r.flyer_ref}`), ["card-machine-checklist:LAST-B", "last-orders-landline:LAST-A"]);
   const job = await one("SELECT schedule, command FROM cron.job WHERE jobname = 'outreach-worker'");
   assert.equal(job.schedule, "*/5 * * * *");
@@ -97,7 +99,7 @@ test("premium template migration updates templates and refreshes drafts only", a
   const sent = await one("INSERT INTO outreach_campaigns (name, slug, status, template_id, subject, body_html) VALUES ('s','premium-sent','completed',$1,'old','<p>old</p>') RETURNING id", [tpl.id]);
   await db.exec(readFileSync(PREMIUM_TEMPLATES, "utf8"));
 
-  const t = await rows("SELECT template_key, subject, hero_image_url, body_html, body_text FROM outreach_templates ORDER BY template_key");
+  const t = await rows("SELECT template_key, subject, hero_image_url, body_html, body_text FROM outreach_templates WHERE flyer_ref LIKE 'LAST-%' ORDER BY template_key");
   for (const row of t) {
     assert.match(row.hero_image_url, /^https:\/\/www\.occta\.co\.uk\/email\/.+\.jpg$/);
     assert.match(row.body_html, /Why Huddersfield businesses choose OCCTA/);
@@ -270,4 +272,78 @@ test("row-level security: staff only, drafts editable, opt-outs permanent", asyn
     assert.equal(manualDel.affectedRows, 1, "staff-added entries can be removed");
     await rejects("SELECT * FROM outreach_claim_batch(5)", [], /permission denied/);
   });
+});
+
+// --- Customer opt-ins (20261013160000) ---------------------------------------
+async function customer(over = {}) {
+  const p = { id: randomUUID(), email: `cust${++n}@home.example`, full_name: "Sam Taylor", marketing_email_consent: false, ...over };
+  await db.query("INSERT INTO profiles (id, email, full_name, marketing_email_consent, consent_updated_at) VALUES ($1,$2,$3,$4,now())", [p.id, p.email, p.full_name, p.marketing_email_consent]);
+  return p;
+}
+const consumerContact = (email) => one("SELECT * FROM outreach_contacts WHERE email = $1", [email]);
+
+test("customer opt-in creates an eligible consumer contact with consent evidence", async () => {
+  const p = await customer();
+  assert.equal(await consumerContact(p.email), undefined, "no contact until they opt in");
+  await db.query("UPDATE profiles SET marketing_email_consent = true WHERE id = $1", [p.id]);
+  const c = await consumerContact(p.email);
+  assert.equal(c.category, "consumer");
+  assert.equal(c.lawful_basis, "consent");
+  assert.equal(c.source, "customer_optin");
+  assert.equal(c.business_name, "Sam", "first name is used in the greeting");
+  assert.match(c.consent_evidence, /marketing_email_consent = true/);
+  assert.equal(c.eligible, true);
+});
+
+test("customer opt-out suppresses the address and cancels queued emails", async () => {
+  const p = await customer({ marketing_email_consent: true });
+  const c = await consumerContact(p.email);
+  const camp = await campaign("sending");
+  const m = await message(camp.id, c);
+  await db.query("UPDATE profiles SET marketing_email_consent = false WHERE id = $1", [p.id]);
+  assert.equal((await consumerContact(p.email)).status, "unsubscribed");
+  assert.equal((await consumerContact(p.email)).eligible, false);
+  assert.ok(await one("SELECT 1 FROM outreach_suppressions WHERE email = $1 AND reason = 'unsubscribed'", [p.email]));
+  assert.equal((await one("SELECT status FROM outreach_messages WHERE id = $1", [m.id])).status, "suppressed");
+});
+
+test("unsubscribing from an email turns the account setting off", async () => {
+  const p = await customer({ marketing_email_consent: true });
+  await db.query("SELECT outreach_suppress($1, 'unsubscribed', 'unsubscribe_link', NULL)", [p.email]);
+  assert.equal((await one("SELECT marketing_email_consent FROM profiles WHERE id = $1", [p.id])).marketing_email_consent, false);
+  assert.equal((await consumerContact(p.email)).status, "unsubscribed");
+});
+
+test("opting in again never overrides an earlier unsubscribe", async () => {
+  const p = await customer({ marketing_email_consent: true });
+  await db.query("SELECT outreach_suppress($1, 'unsubscribed', 'unsubscribe_link', NULL)", [p.email]);
+  await db.query("UPDATE profiles SET marketing_email_consent = true WHERE id = $1", [p.id]);
+  assert.ok(await one("SELECT 1 FROM outreach_suppressions WHERE email = $1", [p.email]), "suppression stays");
+  assert.equal((await consumerContact(p.email)).eligible, false);
+});
+
+test("a customer opt-in never takes over a business prospect with the same address", async () => {
+  const biz = await contact();
+  const p = await customer({ email: biz.email });
+  await db.query("UPDATE profiles SET marketing_email_consent = true WHERE id = $1", [p.id]);
+  const c = await consumerContact(biz.email);
+  assert.equal(c.category, "Retail");
+  assert.equal(c.lawful_basis, "corporate_subscriber");
+});
+
+test("changing email while opted in moves consent to the new address", async () => {
+  const p = await customer({ marketing_email_consent: true });
+  const newEmail = `moved${++n}@home.example`;
+  await db.query("UPDATE profiles SET email = $2 WHERE id = $1", [p.id, newEmail]);
+  assert.equal((await consumerContact(p.email)).status, "do_not_contact");
+  assert.equal((await consumerContact(newEmail)).eligible, true);
+});
+
+test("consumer template is valid and uses only known placeholders", async () => {
+  const t = await one("SELECT * FROM outreach_templates WHERE template_key = 'customer-home-switch-offer'");
+  assert.ok(t);
+  assert.equal(t.cta_path, "/landline");
+  assert.match(t.body_text, /\{\{cta_url\}\}/);
+  assert.doesNotMatch(`${t.subject} ${t.preheader} ${t.body_html} ${t.body_text}`, /\{\{(?!business_name|cta_url)[a-z_]+\}\}/);
+  assert.doesNotMatch(`${t.body_html} ${t.body_text}`, /£/, "no prices in the consumer email");
 });

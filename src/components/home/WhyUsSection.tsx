@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
-import { HomeContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/home/homeKit";
-import { revealItem } from "@/components/home/homeMotion";
-import { AddressPinArt, ContractDocArt, SupportChatArt, SwitchArt } from "@/components/home/illustrations";
+import { BrandContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
+import { AddressPinArt, ContractDocArt, SupportChatArt, SwitchArt } from "@/components/brand/illustrations";
 
 type Tile = {
   title: string;
@@ -60,7 +60,7 @@ const tiles: Tile[] = [
 
 const WhyUsSection = () => (
   <section className="bg-background">
-    <HomeContainer className="py-20 md:py-28">
+    <BrandContainer className="py-20 md:py-28">
       <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:items-end">
         <div>
           <SectionEyebrow index="05" label="Why switch" />
@@ -98,7 +98,7 @@ const WhyUsSection = () => (
           </motion.article>
         ))}
       </Reveal>
-    </HomeContainer>
+    </BrandContainer>
   </section>
 );
 

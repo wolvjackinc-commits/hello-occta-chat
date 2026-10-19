@@ -1,7 +1,7 @@
 import { useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Gamepad2, User, Users, Briefcase, PiggyBank } from "lucide-react";
-import { HomeContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/home/homeKit";
+import { BrandContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/brand/kit";
 
 const reasons = [
   {
@@ -57,7 +57,7 @@ const CustomerLoveSection = () => {
 
   return (
     <section className="bg-[hsl(0_0%_5%)] text-white">
-      <HomeContainer className="py-20 md:py-28">
+      <BrandContainer className="py-20 md:py-28">
         <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-end">
           <div>
             <SectionEyebrow index="06" label="Find your fit" tone="dark" />
@@ -137,7 +137,7 @@ const CustomerLoveSection = () => {
         <p className="mt-8 max-w-2xl text-xs leading-relaxed text-white/45">
           Genuine customer reviews should be displayed only when they are sourced and verifiable. Product examples above explain who each option may suit.
         </p>
-      </HomeContainer>
+      </BrandContainer>
     </section>
   );
 };

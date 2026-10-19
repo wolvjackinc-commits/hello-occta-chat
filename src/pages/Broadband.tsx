@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import BundleBuilder from "@/components/bundle/BundleBuilder";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, Wifi, Zap, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star, ChevronRight } from "lucide-react";
+import { Check, Wifi, Shield, Clock, ArrowRight, X, PhoneCall, Phone, Star, ChevronRight } from "lucide-react";
 import { broadbandPlans, landlinePlans } from "@/lib/plans";
 import { useAppMode } from "@/hooks/useAppMode";
 import { SEO, StructuredData, createServiceSchema, createOfferSchema, createBreadcrumbSchema, createFAQSchema } from "@/components/seo";
@@ -18,6 +18,9 @@ import { getFromPrices } from "@/lib/pricing/engine";
 import { AvailabilityProvider, useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 import { startAssignedJourney } from "@/lib/journey2/route";
 import { setPreferredSpeedBucket } from "@/lib/journey2/prefill";
+import { BrandSection, HeroKicker, HeroTitle, NumberedLinkList, PosterStage, Reveal, SectionEyebrow, SectionTitle, TicketSlab } from "@/components/brand/kit";
+import { revealItem, revealParent } from "@/components/brand/motion";
+import { RouterArt, VoiceArt } from "@/components/brand/illustrations";
 
 const BroadbandInner = () => {
   const [showVoiceDialog, setShowVoiceDialog] = useState(false);
@@ -222,489 +225,481 @@ const BroadbandInner = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Hero - Compact */}
-      <section className="flex items-center py-6 sm:py-12 grid-pattern">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-5 sm:gap-8 items-start">
-            {/* Left - Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
-                <Zap className="w-4 h-4 inline mr-2" />
-                Setup from £0 where available for a limited time
-              </div>
-              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display uppercase leading-[0.9] mb-3 sm:mb-4 text-foreground">
-                BROADBAND
-                <br />
-                <span className="text-gradient">THAT WORKS</span>
-              </h1>
-              <p className="text-sm sm:text-lg text-muted-foreground mb-4 sm:mb-6 max-w-lg">
-                Fast, reliable internet without the corporate nonsense. From £{getFromPrices().broadband}/month,
-                with no mid-contract broadband price rises on Price Lock. Flex 30 is available on eligible combinations.
-              </p>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
-                Want flexible terms?{" "}
-                <Link to="/no-contract-broadband-uk" className="font-medium text-accent hover:text-accent/80 transition-colors">
-                  Explore rolling broadband options
-                </Link>
-                .
-              </p>
-              
-              {/* Benefits */}
-              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
-                {features.map((feature) => (
-                  <div
-                    key={feature.text}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border-2 border-foreground/20 bg-background"
-                  >
-                    <feature.icon className="w-3.5 h-3.5" />
-                    <span>{feature.text}</span>
+      <MotionConfig reducedMotion="user">
+      {/* Hero — dark poster stage, as on the homepage */}
+      <PosterStage ghost="Mbps">
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_440px] xl:grid-cols-[minmax(0,1fr)_480px] xl:gap-20">
+          {/* Left - Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <HeroKicker>Setup from £0 where available for a limited time</HeroKicker>
+            <HeroTitle>
+              Broadband
+              <span className="block text-primary">that works</span>
+            </HeroTitle>
+            <p className="mt-6 max-w-[560px] text-lg leading-relaxed text-white/70">
+              Fast, reliable internet without the corporate nonsense. From £{getFromPrices().broadband}/month,
+              with no mid-contract broadband price rises on Price Lock. Flex 30 is available on eligible combinations.
+            </p>
+            <p className="mt-3 text-sm text-white/60">
+              Want flexible terms?{" "}
+              <Link to="/no-contract-broadband-uk" className="font-medium text-white underline decoration-primary underline-offset-4 hover:text-primary transition-colors">
+                Explore rolling broadband options
+              </Link>
+              .
+            </p>
+
+            {/* Benefits */}
+            <ul className="mt-6 mb-7 flex flex-wrap gap-2">
+              {features.map((feature) => (
+                <li
+                  key={feature.text}
+                  className="flex items-center gap-1.5 border border-white/20 bg-white/[0.04] px-3 py-1.5 text-sm font-medium text-white/85"
+                >
+                  <feature.icon className="w-3.5 h-3.5 text-primary" />
+                  <span>{feature.text}</span>
+                </li>
+              ))}
+            </ul>
+
+            <PostcodeChecker variant="hero" externalAddressSelect />
+
+            {/* Inline confirmation */}
+            {hasPersonalisedResult && selectedAddress && (
+              <motion.p
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex max-w-[640px] items-center gap-2 text-sm font-medium text-white mt-4"
+              >
+                <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                Address selected — {getShortAddress(selectedAddress)}
+                <button onClick={reset} className="text-xs text-primary hover:underline ml-auto font-medium">Change</button>
+              </motion.p>
+            )}
+          </motion.div>
+
+          {/* Right - Panel Replacement (like homepage) */}
+          <motion.div
+            className="space-y-3 lg:sticky lg:top-24 lg:self-start"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+          >
+            {/* LOADING STATE */}
+            {(status === "loading-postcode" || status === "checking-address") && (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card min-h-[200px] sm:min-h-[320px]"
+              >
+                <OcctaLoader
+                  context={status === "loading-postcode" ? "address" : "availability"}
+                  className="w-full"
+                />
+              </motion.div>
+            )}
+
+            {/* ADDRESS SELECT STATE */}
+            {status === "addresses" && addresses.length > 0 && (
+              <motion.div
+                key="addresses"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-brutal bg-card p-4 sm:p-5 md:p-6"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-display text-sm uppercase tracking-wider text-foreground">
+                      Select your address
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {addresses.length} addresses found for {postcode}
+                    </p>
                   </div>
-                ))}
-              </div>
-              
-              <PostcodeChecker externalAddressSelect />
+                  <button
+                    onClick={reset}
+                    className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap"
+                  >
+                    Change postcode
+                  </button>
+                </div>
 
-              {/* Inline confirmation */}
-              {hasPersonalisedResult && selectedAddress && (
-                <motion.p
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-2 text-sm font-medium text-foreground mt-3"
-                >
-                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                  Address selected — {getShortAddress(selectedAddress)}
-                  <button onClick={reset} className="text-xs text-primary hover:underline ml-auto font-medium">Change</button>
-                </motion.p>
-              )}
-            </motion.div>
+                <div className="border-[3px] border-foreground bg-background overflow-hidden">
+                  <div className="max-h-[240px] sm:max-h-[340px] overflow-y-auto">
+                    {addresses.map((addr, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => selectAddress(addr)}
+                        className="w-full text-left px-4 py-3 hover:bg-primary/10 transition-colors border-b-2 border-foreground/10 last:border-b-0 flex items-center justify-between gap-2 group"
+                      >
+                        <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Right - Panel Replacement (like homepage) */}
-            <motion.div
-              className="space-y-3"
-              initial="hidden"
-              animate="visible"
-              variants={containerVariants}
-            >
-              {/* LOADING STATE */}
-              {(status === "loading-postcode" || status === "checking-address") && (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="card-brutal bg-card min-h-[200px] sm:min-h-[320px]"
-                >
-                  <OcctaLoader
-                    context={status === "loading-postcode" ? "address" : "availability"}
-                    className="w-full"
-                  />
-                </motion.div>
-              )}
+                <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+                  Select the exact property to continue. We show the current OCCTA plan range; final network, supplier, speed and technology availability is validated before provisioning.
+                </p>
+              </motion.div>
+            )}
 
-              {/* ADDRESS SELECT STATE */}
-              {status === "addresses" && addresses.length > 0 && (
-                <motion.div
-                  key="addresses"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="card-brutal bg-card p-4 sm:p-5 md:p-6"
-                >
-                  <div className="flex items-center justify-between mb-3">
+            {/* DEFAULT: Plans Preview (idle, error, or success) */}
+            {status !== "loading-postcode" && status !== "checking-address" && !(status === "addresses" && addresses.length > 0) && (
+              <>
+                {status === "error" && postcode && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="border-[3px] border-primary bg-primary/10 p-4 flex items-center gap-3 mb-1"
+                  >
+                    <Check className="w-5 h-5 text-primary flex-shrink-0" />
                     <div>
                       <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                        Select your address
+                        Browse OCCTA broadband for {postcode}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {addresses.length} addresses found for {postcode}
+                        Live availability could not be confirmed here. You can still select an OCCTA speed band; final service availability is validated before provisioning.
                       </p>
                     </div>
-                    <button
-                      onClick={reset}
-                      className="text-[11px] text-primary hover:underline font-medium whitespace-nowrap"
-                    >
-                      Change postcode
-                    </button>
-                  </div>
+                  </motion.div>
+                )}
 
-                  <div className="border-2 border-foreground/10 overflow-hidden">
-                    <div className="max-h-[240px] sm:max-h-[340px] overflow-y-auto">
-                      {addresses.map((addr, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => selectAddress(addr)}
-                          className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-foreground/5 last:border-b-0 flex items-center justify-between gap-2 group"
-                        >
-                          <span className="text-sm font-medium">{getAddressLabel(addr)}</span>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55">
+                  {hasPersonalisedResult ? "OCCTA Plans for Your Address" : "Choose Your Speed"}
+                </p>
+                {displayedPlans.map((plan) => {
+                  const planKey = plan.id.replace("broadband-", "");
+                  const isSuggested = hasPersonalisedResult && planKey === result?.recommendedPlan;
+                  const isHighlighted = isSuggested || (plan.popular && !hasPersonalisedResult);
 
-                  <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                    Select the exact property to continue. We show the current OCCTA plan range; final network, supplier, speed and technology availability is validated before provisioning.
-                  </p>
-                </motion.div>
-              )}
-
-              {/* DEFAULT: Plans Preview (idle, error, or success) */}
-              {status !== "loading-postcode" && status !== "checking-address" && !(status === "addresses" && addresses.length > 0) && (
-                <>
-                  {status === "error" && postcode && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="card-brutal bg-primary/10 border-primary p-4 flex items-center gap-3 mb-1"
-                    >
-                      <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                      <div>
-                        <p className="font-display text-sm uppercase tracking-wider text-foreground">
-                          Browse OCCTA broadband for {postcode}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Live availability could not be confirmed here. You can still select an OCCTA speed band; final service availability is validated before provisioning.
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  <p className="font-display text-sm uppercase tracking-wider text-muted-foreground">
-                    {hasPersonalisedResult ? "OCCTA Plans for Your Address" : "Choose Your Speed"}
-                  </p>
-                  {displayedPlans.map((plan) => {
-                    const planKey = plan.id.replace("broadband-", "");
-                    const isSuggested = hasPersonalisedResult && planKey === result?.recommendedPlan;
-                    
-                    return (
-                      <motion.div
-                        key={plan.id}
-                        variants={cardVariants}
-                        whileHover={{ x: 4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
-                        transition={{ duration: 0.12 }}
+                  return (
+                    <motion.div key={plan.id} variants={cardVariants}>
+                      <button
+                        onClick={() => handleChoosePlan(plan.id)}
+                        className={`relative block w-full text-left p-4 border-[3px] ${
+                          isHighlighted ? 'border-primary bg-primary/[0.06]' : 'border-white/20 bg-white/[0.03]'
+                        } hover:border-primary hover:bg-white/[0.06] transition-colors group`}
                       >
-                        <button
-                          onClick={() => handleChoosePlan(plan.id)}
-                          className={`block w-full text-left p-4 bg-card border-4 ${
-                            isSuggested ? 'border-primary' : plan.popular && !hasPersonalisedResult ? 'border-primary' : 'border-foreground'
-                          } hover:bg-secondary transition-colors group relative`}
-                        >
-                          {isSuggested && (
-                            <div className="absolute -top-2.5 left-3 bg-primary text-primary-foreground px-2 py-0.5 font-display uppercase tracking-wider text-[10px] border border-foreground flex items-center gap-1">
-                              <Star className="w-2.5 h-2.5" />
-                              Suggested speed band
-                            </div>
-                          )}
-                          {!hasPersonalisedResult && plan.popular && (
-                            <span className="absolute -top-2.5 left-3 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-display uppercase border border-foreground">
-                              Popular
-                            </span>
-                          )}
-                          <div className={`flex items-center justify-between mb-3 ${isSuggested || (!hasPersonalisedResult && plan.popular) ? "pt-1" : ""}`}>
+                        {isSuggested && (
+                          <div className="absolute -top-2.5 left-3 bg-primary text-primary-foreground px-2 py-0.5 font-display uppercase tracking-wider text-[10px] border border-black flex items-center gap-1">
+                            <Star className="w-2.5 h-2.5" />
+                            Suggested speed band
+                          </div>
+                        )}
+                        {!hasPersonalisedResult && plan.popular && (
+                          <span className="absolute -top-2.5 left-3 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-display uppercase border border-black">
+                            Popular
+                          </span>
+                        )}
+                        <div className={`flex items-center justify-between gap-3 ${isHighlighted ? "pt-1" : ""}`}>
+                          <div className="min-w-0">
+                            <h2 className="font-display text-2xl uppercase leading-none text-white">{plan.name}</h2>
+                            <p className="mt-1 text-xs text-white/60">Up to {plan.speed}Mbps speed band</p>
+                          </div>
+                          <div className="text-right flex items-center gap-3">
                             <div>
-                              <h2 className="font-display text-lg uppercase text-foreground">{plan.name}</h2>
-                              <p className="text-xs text-muted-foreground">Up to {plan.speed}Mbps speed band</p>
+                              <p className="font-display text-3xl leading-none text-primary">£{plan.price}</p>
+                              <p className="mt-1 text-[10px] text-white font-semibold">/mo · Price Lock 24 headline</p>
+                              {plan.flex30Price && (
+                                <p className="text-[10px] text-white/55">Flex 30 headline £{plan.flex30Price}</p>
+                              )}
                             </div>
-                            <div className="text-right flex items-center gap-3">
-                              <div>
-                                <p className="font-display text-2xl text-primary">£{plan.price}</p>
-                                <p className="text-[10px] text-foreground font-semibold">/mo · Price Lock 24 headline</p>
-                                {plan.flex30Price && (
-                                  <p className="text-[10px] text-muted-foreground">Flex 30 headline £{plan.flex30Price}</p>
-                                )}
-                              </div>
-                              <ArrowRight className="w-5 h-5 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
+                            <ArrowRight className="hidden w-5 h-5 text-primary transition-transform group-hover:translate-x-1 sm:block" />
                           </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {plan.features.slice(0, 6).map((feature) => (
-                              <span key={feature} className="inline-flex items-center gap-1 px-2 py-0.5 bg-secondary text-xs text-foreground border border-foreground/10">
-                                <Check className="w-3.5 h-3.5 text-primary" />
-                                {feature}
-                              </span>
-                            ))}
-                          </div>
-                        </button>
-                      </motion.div>
-                    );
-                  })}
-                  <p className="text-[11px] leading-relaxed text-muted-foreground border-2 border-foreground/15 p-3">
-                    <strong>Availability note:</strong> These are current OCCTA plan options and may not all be available at every address. Final availability, speed and network technology are subject to network and supplier validation for your installation address. If your selected plan cannot be supplied, we’ll email you with available options before provisioning. We won’t move you to a different plan or price without your agreement. If your selection is confirmed, your order continues as submitted.
-                  </p>
-                  <Link to="#plans" className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    Compare plan details ↓
-                  </Link>
-                </>
-              )}
-            </motion.div>
-          </div>
+                        </div>
+                        <div className="mt-3 h-1 bg-white/10" aria-hidden>
+                          <div className="h-full bg-primary" style={{ width: `${Math.min(Math.max(Number(plan.speed) / 10, 6), 100)}%` }} />
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {plan.features.slice(0, 6).map((feature) => (
+                            <span key={feature} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-white/80 border border-white/15">
+                              <Check className="w-3.5 h-3.5 text-primary" />
+                              {feature}
+                            </span>
+                          ))}
+                        </div>
+                      </button>
+                    </motion.div>
+                  );
+                })}
+                <p className="text-[11px] leading-relaxed text-white/55 border border-white/15 p-3">
+                  <strong className="text-white/80">Availability note:</strong> These are current OCCTA plan options and may not all be available at every address. Final availability, speed and network technology are subject to network and supplier validation for your installation address. If your selected plan cannot be supplied, we’ll email you with available options before provisioning. We won’t move you to a different plan or price without your agreement. If your selection is confirmed, your order continues as submitted.
+                </p>
+                <Link to="#plans" className="block text-center text-sm text-white/60 hover:text-primary transition-colors">
+                  Compare plan details ↓
+                </Link>
+              </>
+            )}
+          </motion.div>
         </div>
-      </section>
-
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="card-brutal bg-card p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-display uppercase mb-2">
-                Flex 30 where offered / no fixed minimum term
-              </h2>
-              <p className="text-muted-foreground max-w-2xl">
-                Need broadband without a long tie-in? See the rolling option and its notice terms, where Flex 30 is offered for your selected plan.
-              </p>
-            </div>
-            <Link to="/no-contract-broadband-uk" className="font-display uppercase tracking-wider text-accent hover:text-accent/80 transition-colors">
-              Learn about rolling broadband →
-            </Link>
-          </div>
-        </div>
-      </section>
+      </PosterStage>
 
       {/* All Plans */}
-      <section id="plans" className="py-16 bg-secondary stripes">
-        <div className="container mx-auto px-4">
-          <motion.div
-            className="mb-8"
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-display-md mb-2">
-              {hasPersonalisedResult ? "OCCTA PLANS FOR YOUR ADDRESS" : "ALL OCCTA PLANS"}
-            </h2>
-            <p className="text-muted-foreground">
+      <BrandSection id="plans" tone="paper">
+        <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)] lg:items-end">
+          <div>
+            <SectionEyebrow index="01" label="Speed bands" />
+            <SectionTitle className="mt-5">
+              {hasPersonalisedResult ? "OCCTA plans for your address" : "All OCCTA plans"}
+            </SectionTitle>
+          </div>
+          <div>
+            <p className="text-lg leading-relaxed text-foreground/70">
               {hasPersonalisedResult
                 ? `Current OCCTA plan options shown for ${postcode}. Final service availability is validated before provisioning.`
                 : "Choose your speed band — final service availability is validated before provisioning."}
             </p>
-            <p className="text-sm text-muted-foreground mt-2 max-w-4xl">
+            <p className="text-sm text-muted-foreground mt-2">
               If the exact plan you select cannot be supplied at the installation address, we’ll contact you with the available options before provisioning. We will not substitute a different plan or price without your agreement.
             </p>
             {hasPersonalisedResult && (
               <button
                 onClick={reset}
-                className="text-sm text-primary hover:underline mt-2 font-medium"
+                className="text-sm font-medium underline decoration-primary decoration-2 underline-offset-4 mt-2"
               >
                 Clear address selection
               </button>
             )}
-          </motion.div>
+          </div>
+        </Reveal>
 
-          <motion.div
-            className={`grid md:grid-cols-2 ${displayedPlans.length >= 4 ? "lg:grid-cols-4" : displayedPlans.length === 3 ? "lg:grid-cols-3" : displayedPlans.length === 2 ? "lg:grid-cols-2" : ""} gap-4`}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={containerVariants}
-          >
-            {displayedPlans.map((plan) => {
-              const planKey = plan.id.replace("broadband-", "");
-              const isSuggested = hasPersonalisedResult && planKey === result?.recommendedPlan;
-              const isUpgrade = hasPersonalisedResult && planKey === result?.upgradePlan;
-              
-              return (
-                <motion.div
-                  key={plan.id}
-                  className={`relative card-brutal bg-card p-5 flex flex-col ${
-                    isSuggested ? "border-primary" : plan.popular && !hasPersonalisedResult ? "border-primary" : ""
-                  }`}
-                  variants={cardVariants}
-                  whileHover={{ y: -6, x: -3, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
-                >
-                  {isSuggested && (
-                    <div className="absolute -top-3 left-3 bg-primary text-primary-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground flex items-center gap-1">
-                      <Star className="w-3 h-3" />
-                      Suggested speed band
-                    </div>
-                  )}
-                  {isUpgrade && !isSuggested && (
-                    <div className="absolute -top-3 left-3 bg-accent text-accent-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
-                      Higher speed option
-                    </div>
-                  )}
-                  {!hasPersonalisedResult && plan.popular && (
-                    <div className="absolute -top-3 left-3 bg-primary text-primary-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
-                      Most Popular
-                    </div>
-                  )}
-                  
-                  <div className={(isSuggested || isUpgrade || (!hasPersonalisedResult && plan.popular)) ? "pt-2" : ""}>
-                    <h2 className="font-display text-2xl mb-1">{plan.name}</h2>
-                    
-                    <div className="flex items-baseline gap-1 mb-2">
-                      <span className="font-display text-4xl">£{plan.price}</span>
-                      <span className="text-foreground/70 text-sm font-medium">/mo</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mb-3 text-[11px] font-medium">
-                      <span className="px-2 py-0.5 bg-primary/10 border border-primary/30 text-foreground">Price Lock 24 headline</span>
-                      {plan.flex30Price && (
-                        <span className="px-2 py-0.5 bg-secondary border border-foreground/15 text-muted-foreground">Flex 30 headline £{plan.flex30Price}/mo</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-accent border-2 border-foreground inline-block">
-                      <Wifi className="w-3 h-3 text-accent-foreground" />
-                      <span className="font-display text-accent-foreground text-sm">Up to {plan.speed}Mbps</span>
-                    </div>
-                    
-                    <ul className="space-y-1.5 mb-4 flex-grow">
-                      {plan.features.slice(0, 6).map((feature) => (
-                        <li key={feature} className="flex items-center gap-2 text-xs">
-                          <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    
-                    <Button
-                      variant={isSuggested || (!hasPersonalisedResult && plan.popular) ? "hero" : "outline"}
-                      className="w-full"
-                      size="sm"
-                      onClick={() => handleChoosePlan(plan.id)}
-                    >
-                      Choose Plan
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
+        <motion.div
+          className={`mt-12 grid md:grid-cols-2 ${displayedPlans.length >= 4 ? "lg:grid-cols-4" : displayedPlans.length === 3 ? "lg:grid-cols-3" : displayedPlans.length === 2 ? "lg:grid-cols-2" : ""} gap-5`}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={revealParent}
+        >
+          {displayedPlans.map((plan) => {
+            const planKey = plan.id.replace("broadband-", "");
+            const isSuggested = hasPersonalisedResult && planKey === result?.recommendedPlan;
+            const isUpgrade = hasPersonalisedResult && planKey === result?.upgradePlan;
+            const isHighlighted = isSuggested || (!hasPersonalisedResult && plan.popular);
+
+            return (
+              <motion.article
+                key={plan.id}
+                className="relative flex flex-col border-[3px] border-foreground bg-card transition-shadow duration-300 hover:shadow-[8px_8px_0_0_hsl(var(--foreground))]"
+                variants={revealItem}
+              >
+                {isSuggested && (
+                  <div className="absolute -top-3 left-3 z-10 bg-black text-primary px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-black flex items-center gap-1">
+                    <Star className="w-3 h-3" />
+                    Suggested speed band
                   </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+                )}
+                {isUpgrade && !isSuggested && (
+                  <div className="absolute -top-3 left-3 z-10 bg-accent text-accent-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
+                    Higher speed option
+                  </div>
+                )}
+                {!hasPersonalisedResult && plan.popular && (
+                  <div className="absolute -top-3 left-3 z-10 bg-black text-primary px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-black">
+                    Most Popular
+                  </div>
+                )}
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            Setup method, activation timing and switching steps depend on the service selected and network requirements.
-          </p>
-          <p className="text-center text-xs text-muted-foreground mt-2">
-            Price Lock 24 or Flex 30 where offered. Your exact contractual charges are shown before you accept the agreement.
-          </p>
-        </div>
-      </section>
+                {/* Ticket head: name and speed band */}
+                <div className={`border-b-[3px] border-foreground px-5 pt-6 pb-4 ${isHighlighted ? "bg-primary text-black" : "bg-secondary"}`}>
+                  <h2 className="font-display text-3xl uppercase leading-none">{plan.name}</h2>
+                  <div className="mt-3 flex items-center gap-2">
+                    <Wifi className="w-4 h-4" />
+                    <span className="font-display text-lg leading-none">Up to {plan.speed}Mbps</span>
+                  </div>
+                  <div className="mt-3 h-1.5 bg-black/10" aria-hidden>
+                    <div className="h-full bg-black" style={{ width: `${Math.min(Math.max(Number(plan.speed) / 10, 6), 100)}%` }} />
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col p-5">
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-display text-5xl leading-none">£{plan.price}</span>
+                    <span className="text-foreground/70 text-sm font-medium">/mo</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1 text-[11px] font-medium">
+                    <span className="px-2 py-0.5 bg-primary/20 border border-foreground/30 text-foreground">Price Lock 24 headline</span>
+                    {plan.flex30Price && (
+                      <span className="px-2 py-0.5 bg-secondary border border-foreground/15 text-muted-foreground">Flex 30 headline £{plan.flex30Price}/mo</span>
+                    )}
+                  </div>
+
+                  <ul className="mt-4 mb-5 flex-grow space-y-1.5 border-t-2 border-foreground/10 pt-4">
+                    {plan.features.slice(0, 6).map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-xs">
+                        <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Button
+                    variant={isHighlighted ? "hero" : "outline"}
+                    className="w-full"
+                    size="sm"
+                    onClick={() => handleChoosePlan(plan.id)}
+                  >
+                    Choose Plan
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </motion.article>
+            );
+          })}
+        </motion.div>
+
+        <p className="text-center text-xs text-muted-foreground mt-8">
+          Setup method, activation timing and switching steps depend on the service selected and network requirements.
+        </p>
+        <p className="text-center text-xs text-muted-foreground mt-2">
+          Price Lock 24 or Flex 30 where offered. Your exact contractual charges are shown before you accept the agreement.
+        </p>
+      </BrandSection>
+
+      {/* Flex 30 */}
+      <BrandSection tone="yellow" className="border-y-[3px] border-black" containerClassName="!py-14 md:!py-20">
+        <Reveal className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div>
+            <SectionEyebrow index="02" label="Rolling option" tone="yellow" />
+            <SectionTitle className="mt-5">Flex 30 where offered / no fixed minimum term</SectionTitle>
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-black/75">
+              Need broadband without a long tie-in? See the rolling option and its notice terms, where Flex 30 is offered for your selected plan.
+            </p>
+            <Link
+              to="/no-contract-broadband-uk"
+              className="group mt-6 inline-flex items-center gap-2 border-[3px] border-black bg-black px-5 py-3 font-display text-lg uppercase tracking-wider text-primary transition-colors hover:bg-white hover:text-black"
+            >
+              Learn about rolling broadband
+              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+          <div className="flex flex-col items-start gap-2" aria-hidden>
+            <span className="border-[3px] border-black bg-white px-4 py-3 font-display text-3xl leading-none text-black">Flex 30</span>
+            <span className="ml-6 border-[3px] border-black bg-black px-4 py-3 font-display text-3xl leading-none text-primary">Price Lock 24</span>
+          </div>
+        </Reveal>
+      </BrandSection>
 
       {/* Add Digital Voice (Home Phone over broadband) */}
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-display-md mb-4">ADD DIGITAL VOICE (OPTIONAL ADD-ON)</h2>
-              <p className="text-lg text-muted-foreground mb-6">
-                Home Phone over broadband — keep your number where porting is available and plug into a compatible router. Add-on to your broadband, from <span className="font-bold text-foreground">£{getFromPrices().landline}/month</span>.
-              </p>
-              <ul className="space-y-3 mb-6">
-                {[
-                  "Works with your broadband connection",
-                  "Keep your existing phone number where porting is available",
-                  "Use most standard home phones with compatible equipment",
-                  "Optional call plans available",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link to="/landline">
-                <Button variant="outline" size="lg">
-                  View Digital Home Phone
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
-              <EmergencyCallNote className="mt-4" />
-            </motion.div>
-            <motion.div
-              className="card-brutal bg-card p-6"
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <div className="w-12 h-12 bg-warning border-4 border-foreground flex items-center justify-center mb-4">
-                <PhoneCall className="w-6 h-6" />
+      <BrandSection tone="dark">
+        <div className="grid gap-12 md:grid-cols-2 md:items-center lg:gap-20">
+          <Reveal>
+            <SectionEyebrow index="03" label="Home phone" tone="dark" />
+            <SectionTitle className="mt-5">Add Digital Voice (optional add-on)</SectionTitle>
+            <p className="mt-5 text-lg leading-relaxed text-white/70">
+              Home Phone over broadband — keep your number where porting is available and plug into a compatible router. Add-on to your broadband, from <span className="font-bold text-white">£{getFromPrices().landline}/month</span>.
+            </p>
+            <ul className="mt-6 mb-7 space-y-3">
+              {[
+                "Works with your broadband connection",
+                "Keep your existing phone number where porting is available",
+                "Use most standard home phones with compatible equipment",
+                "Optional call plans available",
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2 text-sm text-white/85">
+                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <Link to="/landline">
+              <Button variant="outline" size="lg">
+                View Digital Home Phone
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </Link>
+            <EmergencyCallNote className="mt-6 text-white" />
+          </Reveal>
+          <Reveal>
+            <TicketSlab className="mr-3 mb-3">
+              <div className="border-[3px] border-white bg-[hsl(0_0%_8%)]">
+                <div className="border-b-[3px] border-white bg-primary p-6">
+                  <VoiceArt className="mx-auto h-auto w-full max-w-[280px]" />
+                </div>
+                <div className="p-6">
+                  <h3 className="font-display text-3xl uppercase leading-none text-white">Digital Voice Add-on</h3>
+                  <div className="mt-3 flex items-baseline gap-1">
+                    <span className="font-display text-5xl leading-none text-primary">£4.99</span>
+                    <span className="text-white/70 text-sm font-medium">/mo</span>
+                  </div>
+                  <p className="mt-4 text-sm text-white/65">Digital calling through your broadband connection. Equipment compatibility and number porting are confirmed as part of setup.</p>
+                </div>
               </div>
-              <h3 className="font-display text-2xl mb-2">Digital Voice Add-on</h3>
-              <div className="flex items-baseline gap-1 mb-4">
-                <span className="font-display text-4xl text-primary">£4.99</span>
-                <span className="text-foreground/70 text-sm font-medium">/mo</span>
-              </div>
-              <p className="text-muted-foreground text-sm">Digital calling through your broadband connection. Equipment compatibility and number porting are confirmed as part of setup.</p>
-            </motion.div>
-          </div>
+            </TicketSlab>
+          </Reveal>
         </div>
-      </section>
+      </BrandSection>
 
       {/* Router Choice */}
-      <section className="py-12 bg-secondary">
-        <div className="container mx-auto px-4">
-          <div className="card-brutal bg-card p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-accent border-4 border-foreground flex items-center justify-center flex-shrink-0">
-                <Wifi className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl md:text-3xl font-display uppercase mb-2">
-                  Router Choice
-                </h2>
-                <p className="text-muted-foreground max-w-2xl">
-                  Bring your own compatible router for £0, or choose an available router option during your order. Digital Voice requires compatible equipment; the order journey shows the applicable options and charges before acceptance.
-                </p>
-              </div>
-            </div>
+      <BrandSection tone="paper">
+        <Reveal className="grid items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:gap-20">
+          <div>
+            <SectionEyebrow index="04" label="Equipment" />
+            <SectionTitle className="mt-5">Router Choice</SectionTitle>
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-foreground/70">
+              Bring your own compatible router for £0, or choose an available router option during your order. Digital Voice requires compatible equipment; the order journey shows the applicable options and charges before acceptance.
+            </p>
           </div>
-        </div>
-      </section>
+          <div className="border-[3px] border-foreground bg-white p-8">
+            <RouterArt className="mx-auto h-auto w-full max-w-[300px]" />
+          </div>
+        </Reveal>
+      </BrandSection>
 
       {/* Bundle Builder */}
       {!isAppMode && <BundleBuilder currentService="broadband" />}
 
-      {/* Related Guides */}
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4">
-          <h2 className="text-xl font-display uppercase mb-4">Broadband Guides</h2>
-          <div className="grid sm:grid-cols-3 gap-4">
-            {[
-              { title: "Flexible Broadband UK", desc: "How rolling monthly broadband works and who it suits.", path: "/guides/no-contract-broadband-uk" },
-              { title: "Affordable Broadband UK", desc: "How to compare broadband costs and contract terms.", path: "/guides/cheap-broadband-uk" },
-              { title: "How to Switch Broadband", desc: "Step-by-step guide to switching provider.", path: "/guides/how-to-switch-broadband" },
-            ].map((g) => (
-              <Link key={g.path} to={g.path} className="card-brutal bg-card p-4 hover:bg-secondary transition-colors group">
-                <h3 className="font-display text-base mb-1 group-hover:text-primary transition-colors">{g.title}</h3>
-                <p className="text-sm text-muted-foreground">{g.desc}</p>
-              </Link>
-            ))}
+      {/* Related Guides and cities */}
+      <BrandSection tone="light">
+        <div className="grid gap-14 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-20">
+          <div>
+            <Reveal>
+              <SectionEyebrow index="05" label="Keep reading" />
+              <SectionTitle className="mt-5">Broadband Guides</SectionTitle>
+            </Reveal>
+            <div className="mt-10">
+              <NumberedLinkList
+                items={[
+                  { title: "Flexible Broadband UK", desc: "How rolling monthly broadband works and who it suits.", path: "/guides/no-contract-broadband-uk" },
+                  { title: "Affordable Broadband UK", desc: "How to compare broadband costs and contract terms.", path: "/guides/cheap-broadband-uk" },
+                  { title: "How to Switch Broadband", desc: "Step-by-step guide to switching provider.", path: "/guides/how-to-switch-broadband" },
+                ]}
+              />
+            </div>
           </div>
+          <Reveal>
+            <h2 className="font-display text-3xl uppercase leading-none">Broadband by City</h2>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {[
+                { name: "London", path: "/broadband-london" },
+                { name: "Manchester", path: "/broadband-manchester" },
+                { name: "Birmingham", path: "/broadband-birmingham" },
+                { name: "Leeds", path: "/broadband-leeds" },
+                { name: "Glasgow", path: "/broadband-glasgow" },
+                { name: "Liverpool", path: "/broadband-liverpool" },
+                { name: "Sheffield", path: "/broadband-sheffield" },
+                { name: "Bristol", path: "/broadband-bristol" },
+                { name: "Leicester", path: "/broadband-leicester" },
+                { name: "Nottingham", path: "/broadband-nottingham" },
+              ].map((city) => (
+                <Link
+                  key={city.path}
+                  to={city.path}
+                  className="border-[3px] border-foreground bg-card px-3 py-2 font-display text-lg uppercase leading-none transition-colors hover:bg-primary hover:text-black"
+                >
+                  {city.name}
+                </Link>
+              ))}
+            </div>
+          </Reveal>
         </div>
-      </section>
-
-      {/* Broadband by City */}
-      <section className="py-12 bg-secondary">
-        <div className="container mx-auto px-4">
-          <h2 className="text-xl font-display uppercase mb-4">Broadband by City</h2>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { name: "London", path: "/broadband-london" },
-              { name: "Manchester", path: "/broadband-manchester" },
-              { name: "Birmingham", path: "/broadband-birmingham" },
-              { name: "Leeds", path: "/broadband-leeds" },
-              { name: "Glasgow", path: "/broadband-glasgow" },
-              { name: "Liverpool", path: "/broadband-liverpool" },
-              { name: "Sheffield", path: "/broadband-sheffield" },
-              { name: "Bristol", path: "/broadband-bristol" },
-              { name: "Leicester", path: "/broadband-leicester" },
-              { name: "Nottingham", path: "/broadband-nottingham" },
-            ].map((city) => (
-              <Link
-                key={city.path}
-                to={city.path}
-                className="px-3 py-1.5 text-sm font-medium border-2 border-foreground/20 bg-card hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-              >
-                {city.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      </BrandSection>
+      </MotionConfig>
     </LayoutComponent>
   );
 };

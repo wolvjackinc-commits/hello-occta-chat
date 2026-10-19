@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Phone, ArrowRight, Search, FileCheck2 } from "lucide-react";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
-import { HomeContainer, SectionEyebrow } from "@/components/home/homeKit";
-import { revealItem, revealParent } from "@/components/home/homeMotion";
+import { BrandContainer, SectionEyebrow } from "@/components/brand/kit";
+import { revealItem, revealParent } from "@/components/brand/motion";
 
 /** Sends the visitor back to the hero checker rather than duplicating it (both share one availability state). */
 const focusHeroChecker = () => {
@@ -24,7 +24,7 @@ const CTASection = () => (
         backgroundSize: "64px 64px",
       }}
     />
-    <HomeContainer className="relative py-20 md:py-28">
+    <BrandContainer className="relative py-20 md:py-28">
       <motion.div
         className="grid gap-14 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center"
         initial="hidden"
@@ -109,7 +109,7 @@ const CTASection = () => (
           </button>
         </motion.div>
       </motion.div>
-    </HomeContainer>
+    </BrandContainer>
   </section>
 );
 

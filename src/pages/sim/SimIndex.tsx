@@ -1,10 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { SEO, StructuredData, createServiceSchema, createBreadcrumbSchema, createFAQSchema } from "@/components/seo";
 import { loadSimCatalogue, formatGbp, type SimPlanPublic, type SimSettingsPublic } from "@/lib/sim/catalogue";
-import { Check, Signal, Smartphone, ArrowRight } from "lucide-react";
+import { Check, Smartphone, ArrowRight, ArrowDown } from "lucide-react";
+import { BrandSection, HeroKicker, HeroTitle, PosterStage, Reveal, SectionEyebrow, SectionTitle, TicketSlab } from "@/components/brand/kit";
+import { SimArt } from "@/components/brand/illustrations";
+
+const simFaqs = [
+  { question: 'Which networks do OCCTA SIMs use?', answer: 'OCCTA SIM plans are available on O2, Vodafone and EE — pick the coverage that works best at your address.' },
+  { question: 'Can I keep my mobile number?', answer: 'Yes. Request a PAC code from your current provider and enter it during checkout to transfer your number.' },
+  { question: 'Do you offer eSIM?', answer: 'Yes. Select eSIM at checkout on compatible devices and get connected without waiting for a physical SIM.' },
+  { question: 'Is there a minimum term?', answer: '30-day rolling SIM plans are available alongside 24-month plans on eligible tariffs.' },
+];
+
+const FilterGroup = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div role="group" aria-label={label} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+    <span className="w-32 flex-shrink-0 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">{label}</span>
+    <div className="flex flex-wrap gap-2">{children}</div>
+  </div>
+);
 
 const SimIndex = () => {
   const [plans, setPlans] = useState<SimPlanPublic[]>([]);
@@ -37,7 +54,7 @@ const SimIndex = () => {
   ), [plans, segment, network, term, category]);
 
   const pill = (active: boolean) =>
-    `px-3 py-1.5 text-xs font-display uppercase border-2 border-foreground ${active ? "bg-foreground text-background" : "bg-card"}`;
+    `px-3 py-2 text-xs font-display uppercase tracking-wider border-[3px] border-foreground transition-colors ${active ? "bg-foreground text-background" : "bg-card hover:bg-primary hover:text-black"}`;
 
   return (
     <Layout>
@@ -60,64 +77,82 @@ const SimIndex = () => {
               { name: 'Home', url: '/' },
               { name: 'SIM Plans', url: '/sim' },
             ]),
-            createFAQSchema([
-              { question: 'Which networks do OCCTA SIMs use?', answer: 'OCCTA SIM plans are available on O2, Vodafone and EE — pick the coverage that works best at your address.' },
-              { question: 'Can I keep my mobile number?', answer: 'Yes. Request a PAC code from your current provider and enter it during checkout to transfer your number.' },
-              { question: 'Do you offer eSIM?', answer: 'Yes. Select eSIM at checkout on compatible devices and get connected without waiting for a physical SIM.' },
-              { question: 'Is there a minimum term?', answer: '30-day rolling SIM plans are available alongside 24-month plans on eligible tariffs.' },
-            ]),
+            createFAQSchema(simFaqs),
           ],
         }}
       />
-      <section className="min-h-[60vh] flex items-center py-12 grid-pattern">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl">
-            <div className="inline-block stamp text-accent border-accent mb-4">
-              <Signal className="w-4 h-4 inline mr-2" />
-              SIM only
+      <MotionConfig reducedMotion="user">
+        <PosterStage ghost="SIM">
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_420px] xl:gap-20">
+            <div>
+              <HeroKicker>SIM only</HeroKicker>
+              <HeroTitle>
+                <span className="sm:block">SIM plans.</span>{" "}
+                <span className="sm:block">Simple telecom.</span>{" "}
+                <span className="block text-primary">Clear terms.</span>
+              </HeroTitle>
+              <p className="mt-6 max-w-[560px] text-lg leading-relaxed text-white/70">
+                eSIM or physical SIM. Keep your number or start fresh. Card or Direct Debit.
+                Admin activates your service before billing starts — no surprise charges.
+              </p>
+              <a
+                href="#plans"
+                className="group mt-7 inline-flex items-center gap-2 text-sm font-semibold text-white transition-colors hover:text-primary"
+              >
+                <span className="underline decoration-white/30 underline-offset-4 group-hover:decoration-primary">Choose a plan</span>
+                <ArrowDown className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
+              </a>
             </div>
-            <h1 className="text-5xl md:text-6xl font-display uppercase leading-[0.95] mb-4">
-              SIM plans. Simple telecom.<br /><span className="text-gradient">Clear terms.</span>
-            </h1>
-            <p className="text-lg text-muted-foreground mb-6 max-w-2xl">
-              eSIM or physical SIM. Keep your number or start fresh. Card or Direct Debit.
-              Admin activates your service before billing starts — no surprise charges.
-            </p>
-          </div>
-        </div>
-      </section>
 
-      <section id="plans" className="py-12 bg-secondary stripes">
-        <div className="container mx-auto px-4">
-          <h2 className="text-display-md mb-4">Choose a plan</h2>
+            <TicketSlab className="mr-3 mb-3">
+              <div className="border-[3px] border-white bg-white">
+                <div className="flex items-center justify-center bg-secondary px-6 py-8">
+                  <SimArt className="h-auto w-full max-w-[300px]" />
+                </div>
+                <ul className="border-t-[3px] border-black">
+                  {["eSIM or physical SIM", "Keep your number or start fresh", "Card or Direct Debit"].map((line) => (
+                    <li key={line} className="flex items-center gap-3 border-b border-black/10 px-5 py-3 text-sm font-semibold text-black last:border-b-0">
+                      <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center bg-black text-primary" aria-hidden>
+                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                      </span>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </TicketSlab>
+          </div>
+        </PosterStage>
+
+        <BrandSection id="plans" tone="paper">
+          <Reveal>
+            <SectionEyebrow index="01" label="Plans" />
+            <SectionTitle className="mt-5">Choose a plan</SectionTitle>
+          </Reveal>
 
           {!loading && isOpen && (
-            <div className="mb-6 space-y-3">
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-xs uppercase text-muted-foreground mr-2">I'm buying for</span>
-                <button className={pill(segment === "consumer")} onClick={() => setSegment("consumer")}>Personal</button>
-                <button className={pill(segment === "business")} onClick={() => setSegment("business")}>Business</button>
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-xs uppercase text-muted-foreground mr-2">Network</span>
+            <div className="mt-10 space-y-4 border-[3px] border-foreground bg-card p-4 sm:p-6">
+              <FilterGroup label="I'm buying for">
+                <button className={pill(segment === "consumer")} aria-pressed={segment === "consumer"} onClick={() => setSegment("consumer")}>Personal</button>
+                <button className={pill(segment === "business")} aria-pressed={segment === "business"} onClick={() => setSegment("business")}>Business</button>
+              </FilterGroup>
+              <FilterGroup label="Network">
                 {(["all", "O2", "Vodafone", "EE"] as const).map((n) => (
-                  <button key={n} className={pill(network === n)} onClick={() => setNetwork(n)}>{n === "all" ? "All" : n}</button>
+                  <button key={n} className={pill(network === n)} aria-pressed={network === n} onClick={() => setNetwork(n)}>{n === "all" ? "All" : n}</button>
                 ))}
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-xs uppercase text-muted-foreground mr-2">Term</span>
-                <button className={pill(term === "all")} onClick={() => setTerm("all")}>All</button>
-                <button className={pill(term === "30_day")} onClick={() => setTerm("30_day")}>30-day rolling</button>
-                <button className={pill(term === "24_month")} onClick={() => setTerm("24_month")}>24 months</button>
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-xs uppercase text-muted-foreground mr-2">Type</span>
-                <button className={pill(category === "all")} onClick={() => setCategory("all")}>All</button>
-                <button className={pill(category === "single_user")} onClick={() => setCategory("single_user")}>Voice + data</button>
-                <button className={pill(category === "mobile_broadband")} onClick={() => setCategory("mobile_broadband")}>Mobile broadband</button>
-                <button className={pill(category === "promo_unlimited")} onClick={() => setCategory("promo_unlimited")}>Promo unlimited</button>
-              </div>
-              <p className="text-xs text-muted-foreground pt-1">
+              </FilterGroup>
+              <FilterGroup label="Term">
+                <button className={pill(term === "all")} aria-pressed={term === "all"} onClick={() => setTerm("all")}>All</button>
+                <button className={pill(term === "30_day")} aria-pressed={term === "30_day"} onClick={() => setTerm("30_day")}>30-day rolling</button>
+                <button className={pill(term === "24_month")} aria-pressed={term === "24_month"} onClick={() => setTerm("24_month")}>24 months</button>
+              </FilterGroup>
+              <FilterGroup label="Type">
+                <button className={pill(category === "all")} aria-pressed={category === "all"} onClick={() => setCategory("all")}>All</button>
+                <button className={pill(category === "single_user")} aria-pressed={category === "single_user"} onClick={() => setCategory("single_user")}>Voice + data</button>
+                <button className={pill(category === "mobile_broadband")} aria-pressed={category === "mobile_broadband"} onClick={() => setCategory("mobile_broadband")}>Mobile broadband</button>
+                <button className={pill(category === "promo_unlimited")} aria-pressed={category === "promo_unlimited"} onClick={() => setCategory("promo_unlimited")}>Promo unlimited</button>
+              </FilterGroup>
+              <p className="border-t-2 border-foreground/10 pt-3 text-xs text-muted-foreground">
                 {segment === "consumer"
                   ? "Consumer prices shown include VAT."
                   : "Business prices shown exclude VAT. VAT-compliant invoice provided."}
@@ -126,13 +161,13 @@ const SimIndex = () => {
           )}
 
           {loading && (
-            <div className="text-center py-16 text-muted-foreground">Loading plans…</div>
+            <div className="py-16 text-center text-muted-foreground">Loading plans…</div>
           )}
 
           {!loading && !isOpen && (
-            <div className="card-brutal bg-card p-8 max-w-2xl">
-              <h3 className="font-display text-2xl mb-2 uppercase">Not currently available</h3>
-              <p className="text-muted-foreground mb-4">
+            <div className="mt-10 max-w-2xl border-[3px] border-foreground bg-card p-8 shadow-[8px_8px_0_0_hsl(var(--foreground))]">
+              <h3 className="mb-2 font-display text-3xl uppercase leading-none">Not currently available</h3>
+              <p className="mb-5 text-muted-foreground">
                 SIM-only plans are not open for online ordering right now. Our team can confirm
                 current availability and options for you.
               </p>
@@ -143,57 +178,78 @@ const SimIndex = () => {
           {!loading && isOpen && (
             <>
             {filtered.length === 0 && (
-              <div className="card-brutal bg-card p-6 max-w-xl">
+              <div className="mt-8 max-w-xl border-[3px] border-foreground bg-card p-6">
                 <p className="text-sm text-muted-foreground">No plans match those filters. Try changing network or term.</p>
               </div>
             )}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {filtered.map((plan) => (
-                <div key={plan.id} className="card-brutal bg-card p-5 flex flex-col">
-                  <h3 className="font-display text-2xl mb-1">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="font-display text-4xl">{formatGbp(plan.monthly_price_minor)}</span>
-                    <span className="text-foreground/70 text-sm font-medium">/mo</span>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      {plan.vat_mode === "included" ? "(incl. VAT)" : "(ex VAT)"}
-                    </span>
+                <article
+                  key={plan.id}
+                  className="group flex flex-col border-[3px] border-foreground bg-card transition-shadow duration-300 hover:shadow-[8px_8px_0_0_hsl(var(--foreground))]"
+                >
+                  <div className="flex items-start justify-between gap-3 border-b-[3px] border-foreground bg-primary px-5 py-4 text-black">
+                    <h3 className="font-display text-2xl uppercase leading-none">{plan.name}</h3>
+                    <span className="flex-shrink-0 border-2 border-black bg-white px-2 py-0.5 font-display text-lg leading-none">{plan.data_label}</span>
                   </div>
-                  {plan.vat_mode === "excluded" && plan.retail_price_inc_vat_minor != null && (
-                    <p className="text-xs text-muted-foreground -mt-1 mb-2">{formatGbp(plan.retail_price_inc_vat_minor)}/mo incl. VAT</p>
-                  )}
-                  <div className="inline-block px-2 py-1 bg-accent border-2 border-foreground mb-3 w-fit">
-                    <span className="font-display text-lg text-accent-foreground">{plan.data_label}</span>
-                  </div>
-                  <ul className="space-y-1.5 mb-4 flex-grow text-sm">
-                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" />{plan.calls_label}</li>
-                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-primary" />{plan.texts_label}</li>
-                    {plan.esim_available && <li className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-primary" />eSIM available</li>}
-                    <li className="flex items-center gap-2 text-muted-foreground">
-                      {plan.is_rolling ? "Rolling monthly" : `${plan.min_term_months}-month term`}
-                    </li>
-                    {plan.plan_category === "promo_unlimited" && (
-                      <li className="text-xs text-muted-foreground">Promo: port-in only. Fair usage applies.</li>
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="flex flex-wrap items-baseline gap-1">
+                      <span className="font-display text-5xl leading-none">{formatGbp(plan.monthly_price_minor)}</span>
+                      <span className="text-sm font-medium text-foreground/70">/mo</span>
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        {plan.vat_mode === "included" ? "(incl. VAT)" : "(ex VAT)"}
+                      </span>
+                    </div>
+                    {plan.vat_mode === "excluded" && plan.retail_price_inc_vat_minor != null && (
+                      <p className="mt-1 text-xs text-muted-foreground">{formatGbp(plan.retail_price_inc_vat_minor)}/mo incl. VAT</p>
                     )}
-                  </ul>
-                  <Button
-                    variant="hero"
-                    className="w-full"
-                    onClick={() => navigate(`/sim/checkout?plan_id=${plan.id}`)}
-                  >
-                    Get this SIM <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </div>
+                    <ul className="mb-5 mt-4 flex-grow space-y-2 border-t-2 border-foreground/10 pt-4 text-sm">
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 flex-shrink-0" />{plan.calls_label}</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 flex-shrink-0" />{plan.texts_label}</li>
+                      {plan.esim_available && <li className="flex items-center gap-2"><Smartphone className="h-4 w-4 flex-shrink-0" />eSIM available</li>}
+                      <li className="flex items-center gap-2 text-muted-foreground">
+                        {plan.is_rolling ? "Rolling monthly" : `${plan.min_term_months}-month term`}
+                      </li>
+                      {plan.plan_category === "promo_unlimited" && (
+                        <li className="text-xs text-muted-foreground">Promo: port-in only. Fair usage applies.</li>
+                      )}
+                    </ul>
+                    <Button
+                      variant="hero"
+                      className="w-full"
+                      onClick={() => navigate(`/sim/checkout?plan_id=${plan.id}`)}
+                    >
+                      Get this SIM <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </article>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-6 max-w-3xl">
+            <p className="mt-8 max-w-3xl text-xs text-muted-foreground">
               Available on selected O2, Vodafone or EE network options. All mobile plans are subject to network
               availability, fair usage policies and annual price adjustments. 24-month plans may have early
               termination charges. 30-day plans may have cease charges depending on the service and circumstances.
             </p>
             </>
           )}
-        </div>
-      </section>
+        </BrandSection>
+
+        <BrandSection tone="yellow" className="border-t-[3px] border-black">
+          <Reveal>
+            <SectionEyebrow index="02" label="Good to know" tone="yellow" />
+            <SectionTitle className="mt-5">SIM questions, answered.</SectionTitle>
+          </Reveal>
+          <Reveal as="ol" className="mt-12 grid gap-[3px] border-[3px] border-black bg-black md:grid-cols-2">
+            {simFaqs.map((faq, i) => (
+              <li key={faq.question} className="bg-white p-6 text-black md:p-8">
+                <span className="inline-flex h-7 min-w-7 items-center justify-center bg-black px-1.5 font-display text-sm leading-none text-primary">{String(i + 1).padStart(2, "0")}</span>
+                <h3 className="mt-4 font-display text-2xl uppercase leading-none sm:text-3xl">{faq.question}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-black/70">{faq.answer}</p>
+              </li>
+            ))}
+          </Reveal>
+        </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 };

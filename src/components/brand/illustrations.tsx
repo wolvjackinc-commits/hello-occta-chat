@@ -1,4 +1,4 @@
-/* Hand-built homepage illustrations. Pure SVG/CSS so they stay crisp, theme with
+/* Hand-built brand illustrations. Pure SVG/CSS so they stay crisp, theme with
    the brand tokens and animate via the `occ-*` keyframes in index.css (all of
    which are disabled under prefers-reduced-motion). */
 
@@ -157,4 +157,47 @@ export const ContractDocArt = () => (
       </div>
     ))}
   </div>
+);
+
+/** A business premises with lit windows and a rooftop antenna — used for business services. */
+export const BuildingArt = ({ className = "" }: { className?: string }) => (
+  <svg viewBox="0 0 240 170" className={className} role="img" aria-label="Illustration of a business premises connected to the network">
+    {[14, 26, 38].map((r, i) => (
+      <path
+        key={r}
+        d={`M ${172 - r} ${30 - r * 0.2} A ${r} ${r} 0 0 1 ${172 + r} ${30 - r * 0.2}`}
+        fill="none"
+        stroke={INK}
+        strokeWidth={5}
+        strokeLinecap="square"
+        className="occ-wave"
+        style={{ animationDelay: `${i * 220}ms` }}
+      />
+    ))}
+    <line x1="172" y1="30" x2="172" y2="56" stroke={INK} strokeWidth={5} />
+    <rect x="120" y="56" width="92" height="104" fill={PAPER} stroke={INK} strokeWidth={5} />
+    <rect x="28" y="84" width="92" height="76" fill={INK} />
+    {[0, 1, 2].map((row) =>
+      [0, 1, 2].map((col) => (
+        <rect
+          key={`r${row}c${col}`}
+          x={134 + col * 24}
+          y={70 + row * 22}
+          width={14}
+          height={12}
+          fill={YELLOW}
+          stroke={INK}
+          strokeWidth={2}
+          className="occ-blink"
+          style={{ animationDelay: `${(row * 3 + col) * 170}ms` }}
+        />
+      )),
+    )}
+    {[0, 1, 2].map((col) => (
+      <rect key={col} x={42 + col * 24} y={98} width={14} height={12} fill={YELLOW} opacity={0.85} />
+    ))}
+    <rect x="54" y="126" width="40" height="34" fill={YELLOW} stroke={INK} strokeWidth={3} />
+    <rect x="154" y="134" width="24" height="26" fill={INK} />
+    <line x1="10" y1="160" x2="230" y2="160" stroke={INK} strokeWidth={5} strokeLinecap="square" />
+  </svg>
 );

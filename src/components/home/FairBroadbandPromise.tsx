@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 import { Lock } from "lucide-react";
 import { getFromPrices } from "@/lib/pricing/engine";
-import { HomeContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/home/homeKit";
-import { revealItem, revealParent } from "@/components/home/homeMotion";
+import { BrandContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/brand/kit";
+import { revealItem, revealParent } from "@/components/brand/motion";
 
 const promises = [
   {
@@ -122,7 +122,7 @@ const FirstBillReceipt = () => {
 export default function FairBroadbandPromise() {
   return (
     <section className="overflow-x-clip border-t-[3px] border-foreground bg-secondary">
-      <HomeContainer className="py-20 md:py-28">
+      <BrandContainer className="py-20 md:py-28">
         <div className="grid gap-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
           <div className="lg:sticky lg:top-28 lg:self-start">
             <Reveal>
@@ -165,7 +165,7 @@ export default function FairBroadbandPromise() {
             ))}
           </Reveal>
         </div>
-      </HomeContainer>
+      </BrandContainer>
     </section>
   );
 }

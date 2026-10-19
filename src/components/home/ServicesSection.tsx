@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { getFromPrices } from "@/lib/pricing/engine";
-import { HomeContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/home/homeKit";
-import { revealItem } from "@/components/home/homeMotion";
-import { RouterArt, SimArt, VoiceArt } from "@/components/home/illustrations";
+import { BrandContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
+import { RouterArt, SimArt, VoiceArt } from "@/components/brand/illustrations";
 
 const ServicesSection = () => {
   const prices = getFromPrices();
@@ -53,7 +53,7 @@ const ServicesSection = () => {
 
   return (
     <section className="bg-[hsl(0_0%_5%)] text-white">
-      <HomeContainer className="py-20 md:py-28">
+      <BrandContainer className="py-20 md:py-28">
         <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-end">
           <div>
             <SectionEyebrow index="03" label="What we do" tone="dark" />
@@ -101,7 +101,7 @@ const ServicesSection = () => {
             </motion.div>
           ))}
         </Reveal>
-      </HomeContainer>
+      </BrandContainer>
     </section>
   );
 };

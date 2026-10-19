@@ -365,14 +365,18 @@
 .admin-dense [data-slot="card"] { padding-top: 0.75rem; padding-bottom: 0.75rem; }
 
 /* -----------------------------------------------------------
-   Homepage hero stage (dark poster).
+   Hero stage (dark poster) and dark brand sections
+   (components/brand/kit.tsx: PosterStage, BrandSection tone="dark").
    ----------------------------------------------------------- */
 /* The global .text-primary outline uses --foreground, which is white inside
    the dark hero; yellow-on-black needs no outline. */
-.hero-stage .text-primary { text-shadow: none; }
+.hero-stage .text-primary,
+.brand-dark .text-primary { text-shadow: none; }
 /* State panels (loader, address list, plans) match the idle ticket's yellow offset. */
 .hero-stage .card-brutal,
-.hero-stage .card-brutal:hover {
+.hero-stage .card-brutal:hover,
+.brand-dark .card-brutal,
+.brand-dark .card-brutal:hover {
   border-width: 3px;
   background-color: hsl(0 0% 8%);
   box-shadow: 12px 12px 0 0 hsl(var(--primary));
@@ -420,7 +424,7 @@
 }
 
 /* -----------------------------------------------------------
-   Homepage illustration motion (components/home/illustrations.tsx).
+   Brand illustration motion (components/brand/illustrations.tsx).
    Loops are gentle and always end in a readable resting state.
    ----------------------------------------------------------- */
 .occ-wave { animation: occ-wave 1.8s ease-in-out infinite; }

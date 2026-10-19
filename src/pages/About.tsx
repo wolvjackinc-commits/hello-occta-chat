@@ -1,56 +1,51 @@
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { MapPin, Users, Award, Heart, ArrowRight, Phone, X } from "lucide-react";
+import { MotionConfig, motion } from "framer-motion";
+import { ArrowRight, Phone } from "lucide-react";
 import { SEO, StructuredData } from "@/components/seo";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
+import { BrandSection, HeroTitle, PosterStage, Reveal, SectionEyebrow, SectionTitle, TicketSlab } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
 
 const About = () => {
   const stats = [
-    { icon: MapPin, label: "Market", value: "United Kingdom" },
-    { icon: Users, label: "Services", value: "Consumer & Business" },
-    { icon: Award, label: "Contract Approach", value: "Clear Terms" },
-    { icon: X, label: "Broadband Options", value: "Flex 30 & Price Lock 24" },
+    { label: "Market", value: "United Kingdom" },
+    { label: "Services", value: "Consumer & Business" },
+    { label: "Contract Approach", value: "Clear Terms" },
+    { label: "Broadband Options", value: "Flex 30 & Price Lock 24" },
   ];
 
   const values = [
-    { emoji: "🎯", title: "Honesty first", description: "We show the applicable price, minimum term, notice and one-off charges before you accept an agreement." },
-    { emoji: "👋", title: "Humans over bots", description: "When you call us, a real person answers. They're probably drinking tea and genuinely want to help." },
-    { emoji: "⚡", title: "Keep it simple", description: "If your nan can't understand it, we haven't done our job. Simple plans, simple prices." },
-    { emoji: "🌍", title: "Give a toss", description: "About our customers and communities. We avoid unsupported environmental or social-impact claims and publish material commitments when they are verified." },
+    { title: "Honesty first", description: "We show the applicable price, minimum term, notice and one-off charges before you accept an agreement." },
+    { title: "Humans over bots", description: "When you call us, a real person answers. They're probably drinking tea and genuinely want to help." },
+    { title: "Keep it simple", description: "If your nan can't understand it, we haven't done our job. Simple plans, simple prices." },
+    { title: "Give a toss", description: "About our customers and communities. We avoid unsupported environmental or social-impact claims and publish material commitments when they are verified." },
   ];
 
   return (
     <Layout>
-      <SEO 
+      <SEO
         title="About OCCTA - UK Telecom Company"
         description="OCCTA is a UK telecom company offering broadband, SIM and Digital Voice services with clear customer-specific pricing and contract terms."
         canonical="/about"
         keywords="OCCTA, UK telecom company, cheap broadband provider, affordable internet UK, honest broadband, UK internet provider"
       />
       <StructuredData type="organization" />
-      {/* Hero - Compact */}
-      <section className="min-h-[calc(100vh-80px)] flex items-center py-12 hero-pattern">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
-            {/* Left - Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-                ABOUT OCCTA —
-                <br />
-                <span className="text-gradient">UK BROADBAND & TELECOM</span>
-              </h1>
-              <p className="text-lg text-muted-foreground mb-6 max-w-lg">
+      <MotionConfig reducedMotion="user">
+        <PosterStage ghost="UK">
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_440px] xl:gap-20">
+            <div>
+              <HeroTitle>
+                About OCCTA —
+                <span className="block text-primary">UK broadband &amp; telecom</span>
+              </HeroTitle>
+              <p className="mt-6 max-w-[560px] text-lg leading-relaxed text-white/70">
                 We built OCCTA to be the cheaper, simpler alternative to the big brands.
                 Affordable telecom with Flex 30 and Price Lock 24 broadband options where offered, plus clear customer-specific terms before acceptance.
               </p>
-              
-              <div className="flex flex-wrap gap-3">
+
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/broadband">
                   <Button size="lg" variant="hero">
                     View Our Services
@@ -64,76 +59,65 @@ const About = () => {
                   </Button>
                 </a>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Right - Stats */}
-            <motion.div
-              className="grid grid-cols-2 gap-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-            >
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  className="p-6 bg-secondary rounded-xl border-4 border-foreground"
-                  whileHover={{ y: -4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + i * 0.05 }}
-                >
-                  <stat.icon className="w-8 h-8 text-primary mb-3" />
-                  <p className="font-display text-2xl">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                </motion.div>
+            {/* The company at a glance, printed as a spec sheet */}
+            <TicketSlab className="mr-3 mb-3">
+              <div className="border-[3px] border-white bg-[hsl(0_0%_8%)]">
+                <div className="flex items-center justify-between border-b-[3px] border-white bg-primary px-5 py-3 font-sans text-[11px] font-bold uppercase tracking-[0.18em] text-black">
+                  <span>OCCTA Limited</span>
+                  <span>At a glance</span>
+                </div>
+                <dl>
+                  {stats.map((stat) => (
+                    <div key={stat.label} className="border-b border-white/15 px-5 py-4 last:border-b-0">
+                      <dt className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55">{stat.label}</dt>
+                      <dd className="mt-1 font-display text-3xl leading-none text-white">{stat.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </TicketSlab>
+          </div>
+        </PosterStage>
+
+        {/* Values */}
+        <BrandSection tone="paper">
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+            <Reveal className="lg:sticky lg:top-28 lg:self-start">
+              <SectionEyebrow index="01" label="Our values" />
+              <SectionTitle className="mt-5">What we believe in</SectionTitle>
+            </Reveal>
+            <Reveal as="ol" stagger className="border-t-[3px] border-foreground">
+              {values.map((value, i) => (
+                <motion.li key={value.title} variants={revealItem} className="group relative isolate border-b-[3px] border-foreground">
+                  <span aria-hidden className="absolute inset-0 -z-10 origin-left scale-x-0 bg-primary transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100" />
+                  <div className="grid grid-cols-[3.5rem_1fr] gap-4 px-1 py-7 sm:grid-cols-[5.5rem_1fr] md:py-9">
+                    <span aria-hidden className="font-display text-5xl leading-[0.8] text-foreground/25 transition-colors group-hover:text-black sm:text-7xl">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div>
+                      <h3 className="font-display text-2xl uppercase leading-none transition-colors group-hover:text-black sm:text-3xl">{value.title}</h3>
+                      <p className="mt-2 max-w-[520px] text-base leading-relaxed text-foreground/70 transition-colors group-hover:text-black/80">{value.description}</p>
+                    </div>
+                  </div>
+                </motion.li>
               ))}
-            </motion.div>
+            </Reveal>
           </div>
-        </div>
-      </section>
+        </BrandSection>
 
-      {/* Values - Compact Grid */}
-      <section className="py-16 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <motion.h2 
-            className="text-display-md text-center mb-8"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-          >
-            WHAT WE BELIEVE IN
-          </motion.h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-            {values.map((value, i) => (
-              <motion.div
-                key={value.title}
-                className="bg-card rounded-xl p-6 border-4 border-foreground"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                whileHover={{ y: -4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
-              >
-                <span className="text-3xl mb-3 block">{value.emoji}</span>
-                <h3 className="font-display text-lg mb-2">{value.title}</h3>
-                <p className="text-sm text-muted-foreground">{value.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Legal Info - Compact */}
-      <section className="py-8 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center text-sm text-muted-foreground">
-            <p>
-              <strong className="text-foreground">OCCTA LIMITED</strong> is registered in England and Wales (Company No. 13828933).
+        {/* Legal info */}
+        <BrandSection tone="yellow" containerClassName="!py-12 md:!py-16">
+          <Reveal className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center md:gap-12">
+            <SectionEyebrow index="02" label="Company details" tone="yellow" />
+            <p className="max-w-4xl text-sm leading-relaxed text-black/75 md:text-base">
+              <strong className="text-black">OCCTA LIMITED</strong> is registered in England and Wales (Company No. 13828933).
               We comply with GDPR and all UK telecommunications regulations.
             </p>
-          </div>
-        </div>
-      </section>
+          </Reveal>
+        </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 };

@@ -1,6 +1,6 @@
 import type { Variants } from "framer-motion";
 
-/* Reveal motion shared by the homepage sections (see homeKit.tsx). */
+/* Reveal motion shared by the brand kit (see kit.tsx). */
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 

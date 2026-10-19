@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { HomeContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/home/homeKit";
+import { BrandContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/brand/kit";
 
 const items = [
   "Router compatibility check",
@@ -33,7 +33,7 @@ const Ticket = ({ label, dark }: { label: string; dark: boolean }) => (
 export default function IncludedFreeSection() {
   return (
     <section className="overflow-hidden border-y-[3px] border-black bg-primary text-black">
-      <HomeContainer className="pt-16 md:pt-20">
+      <BrandContainer className="pt-16 md:pt-20">
         <Reveal className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <SectionEyebrow index="04" label="Always with OCCTA" tone="yellow" />
@@ -43,7 +43,7 @@ export default function IncludedFreeSection() {
             Eleven useful extras that come with OCCTA, from your first bill preview to power-cut guidance.
           </p>
         </Reveal>
-      </HomeContainer>
+      </BrandContainer>
 
       {/* Accessible, crawlable list; the moving rows below are decorative copies */}
       <ul className="sr-only">

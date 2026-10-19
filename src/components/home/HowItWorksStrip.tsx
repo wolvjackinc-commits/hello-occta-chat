@@ -2,8 +2,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Search, FileText, CreditCard } from "lucide-react";
-import { HomeContainer, SectionEyebrow } from "@/components/home/homeKit";
-import { revealItem, revealParent } from "@/components/home/homeMotion";
+import { BrandContainer, SectionEyebrow } from "@/components/brand/kit";
+import { revealItem, revealParent } from "@/components/brand/motion";
 
 const steps = [
   { num: "01", title: "Check availability", desc: "Enter your postcode and build your plan", icon: Search },
@@ -16,7 +16,7 @@ const HowItWorksStrip = () => {
 
   return (
     <section className="bg-background">
-      <HomeContainer className="py-14 md:py-20">
+      <BrandContainer className="py-14 md:py-20">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <SectionEyebrow index="01" label="How it works" />
@@ -59,7 +59,7 @@ const HowItWorksStrip = () => {
             </motion.li>
           ))}
         </motion.ol>
-      </HomeContainer>
+      </BrandContainer>
     </section>
   );
 };

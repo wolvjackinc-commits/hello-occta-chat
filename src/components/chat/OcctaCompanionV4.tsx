@@ -203,8 +203,8 @@ function welcome(signedIn: boolean, name?: string): Message {
     id: crypto.randomUUID(),
     role: "assistant",
     content: signedIn
-      ? `Hi${name ? ` ${name}` : ""} — I'm Ollie. Tell me what you need. I can use your signed-in OCCTA account, troubleshoot broadband step by step, and send you the right OCCTA guide or how-to page.`
-      : `Hi — I'm Ollie from OCCTA. Tell me what you need in normal words. I’ll try to solve it here first and link only to OCCTA pages. If you’re still not satisfied, you can speak to an OCCTA advisor without starting again.`,
+      ? `Hiya${name ? ` ${name}` : ""}, I'm Ollie. I can see your OCCTA account, so ask me anything: bills explained line by line, orders, Direct Debits, tickets, or why the Wi-Fi has gone on strike. Kettle's on, what can I sort for you?`
+      : `Hiya, I'm Ollie from OCCTA. Broadband, bills, SIMs or a router having a sulk, just tell me in normal words and I'll sort it here. Sign in and I can check your actual account too.`,
     createdAt: new Date().toISOString(),
     agent: "ollie",
   };
@@ -620,7 +620,10 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const endpointMessages: CoreMessage[] = [...core];
-        const canonical = canonicalAccountMessage(accountIntent);
+        // Verified customers get the AI with account tools, which needs their real question.
+        // The canonical phrasing only helps start the verification flow for everyone else.
+        const verified = Boolean(session?.access_token) || Boolean(sessionStorage.getItem(VERIFICATION_KEY));
+        const canonical = verified ? null : canonicalAccountMessage(accountIntent);
         if (canonical) endpointMessages.push({ role: "user", content: canonical });
         if (verificationMemory.current.accountNumber) endpointMessages.push({ role: "user", content: verificationMemory.current.accountNumber });
         if (verificationMemory.current.dob) endpointMessages.push({ role: "user", content: verificationMemory.current.dob });
@@ -738,7 +741,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
               </div>
             </div>
           ))}
-          {(loading || uploading) && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{uploading ? "Scanning and attaching…" : humanLive ? "Sending to your advisor…" : "Ollie is checking OCCTA information…"}</div>}
+          {(loading || uploading) && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{uploading ? "Scanning and attaching…" : humanLive ? "Sending to your advisor…" : "Ollie's on it…"}</div>}
           <div ref={endRef} />
         </div>
       </ScrollArea>

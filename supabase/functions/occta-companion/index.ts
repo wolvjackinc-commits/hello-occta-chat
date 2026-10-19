@@ -17,7 +17,8 @@ import {
   redactSensitiveText,
   withOptions,
 } from "../_shared/companionCore.ts";
-import { runOcctaBrain } from "./brain.ts";
+import { claudeEnabled, runOcctaBrain } from "./brain.ts";
+import { type CustomerScope, type OrdersResult, createAccountToolkit } from "./accountTools.ts";
 
 const OCCTA_PHONE = "0800 260 6626";
 const OCCTA_EMAIL = "hello@occta.co.uk";
@@ -37,25 +38,10 @@ type VerificationClaims = {
   exp: number;
 };
 
-type CustomerScope = {
-  userId: string | null;
-  accountNumber: string | null;
-  email: string | null;
-  fullName: string | null;
-  phone: string | null;
-  signedIn: boolean;
-};
-
 type CompanionReply = {
   content: string;
   verificationToken?: string;
   source?: "account" | "approved_content" | "knowledge_base" | "ai";
-};
-
-type OrdersResult = {
-  canonical: any[];
-  guest: any[];
-  failed: boolean;
 };
 
 const encoder = new TextEncoder();
@@ -74,10 +60,12 @@ function toBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function fromBase64Url(value: string): Uint8Array {
+function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
   const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
   const binary = atob(padded);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
 }
 
 async function hmacKey(secret: string): Promise<CryptoKey> {
@@ -736,74 +724,80 @@ serve(async (request) => {
     const publicIntent = detectPublicIntent(latestUserText);
     let reply: CompanionReply | null = null;
 
-    if (accountIntent) {
-      if (authUser?.id) {
-        const scope = await scopeFromSignedInUser(serviceClient, authUser);
-        reply = { content: await accountReply(serviceClient, scope, accountIntent), source: "account" };
+    // Identity comes only from the signed-in session or a server-signed verification token.
+    let scope: CustomerScope | null = null;
+    if (authUser?.id) {
+      scope = await scopeFromSignedInUser(serviceClient, authUser);
+    } else {
+      const claims = await verifyVerification(body.verificationToken, sessionId, serviceRoleKey);
+      if (claims) scope = await scopeFromClaims(serviceClient, claims);
+    }
+
+    if (accountIntent && scope && !claudeEnabled()) {
+      reply = { content: await accountReply(serviceClient, scope, accountIntent), source: "account" };
+    } else if (accountIntent && !scope) {
+      // Verification stays deterministic: the AI never decides who someone is.
+      const accountNumber = extractAccountNumber(messages);
+      const dob = extractDateOfBirth(messages);
+      if (!accountNumber) {
+        reply = {
+          content: withOptions(
+            `Happy to dig into that. First, the boring-but-important bit: what's your OCCTA account number? It starts with **OCC**. The quickest route is to **sign in**, and then I can see everything, bills included. Please don't send bank details, passwords or one-time codes.`,
+            ["Sign in instead", "I need help finding it", "Talk to a human"],
+          ),
+          source: "account",
+        };
+      } else if (!dob) {
+        reply = {
+          content: withOptions(
+            `Lovely, I've got account ${maskAccountNumber(accountNumber)}. Now the account holder's date of birth as **DD/MM/YYYY**, please. It's only used for this check and isn't shown back in the chat.`,
+            ["Sign in instead", "Talk to a human"],
+          ),
+          source: "account",
+        };
       } else {
-        const claims = await verifyVerification(body.verificationToken, sessionId, serviceRoleKey);
-        if (claims) {
-          const scope = await scopeFromClaims(serviceClient, claims);
-          reply = { content: await accountReply(serviceClient, scope, accountIntent), source: "account" };
+        const verified = await verifyGuestAccount(serviceClient, accountNumber, dob);
+        if (!verified) {
+          reply = {
+            content: withOptions(
+              `I couldn't verify those details. Check the account number and date of birth. For security, I won't say which detail did not match.`,
+              ["Try verification again", "Sign in instead", "Talk to a human"],
+            ),
+            source: "account",
+          };
         } else {
-          const accountNumber = extractAccountNumber(messages);
-          const dob = extractDateOfBirth(messages);
-          if (!accountNumber) {
-            reply = {
-              content: withOptions(
-                `I can check that securely. What is the OCCTA account number? It starts with **OCC**. Please do not send bank details, passwords or one-time codes.`,
-                ["I need help finding it", "Sign in instead", "Talk to a human"],
-              ),
-              source: "account",
-            };
-          } else if (!dob) {
-            reply = {
-              content: withOptions(
-                `Thanks — I have account ${maskAccountNumber(accountNumber)}. For a secure check, enter the account holder's date of birth as **DD/MM/YYYY**. It is used only for this verification and is not shown back in chat history.`,
-                ["Sign in instead", "Talk to a human"],
-              ),
-              source: "account",
-            };
-          } else {
-            const verified = await verifyGuestAccount(serviceClient, accountNumber, dob);
-            if (!verified) {
-              reply = {
-                content: withOptions(
-                  `I couldn't verify those details. Check the account number and date of birth. For security, I won't say which detail did not match.`,
-                  ["Try verification again", "Sign in instead", "Talk to a human"],
-                ),
-                source: "account",
-              };
-            } else {
-              const verificationToken = await signVerification({
-                v: 1,
-                sessionId,
-                accountNumber: verified.accountNumber ?? accountNumber,
-                exp: Math.floor(Date.now() / 1000) + VERIFICATION_TTL_SECONDS,
-              }, serviceRoleKey);
-              reply = {
-                content: await accountReply(serviceClient, verified, accountIntent),
-                verificationToken,
-                source: "account",
-              };
-            }
-          }
+          const verificationToken = await signVerification({
+            v: 1,
+            sessionId,
+            accountNumber: verified.accountNumber ?? accountNumber,
+            exp: Math.floor(Date.now() / 1000) + VERIFICATION_TTL_SECONDS,
+          }, serviceRoleKey);
+          reply = {
+            content: await accountReply(serviceClient, verified, accountIntent),
+            verificationToken,
+            source: "account",
+          };
         }
       }
     }
 
     if (!reply) {
       const knowledgeContext = await searchKnowledgeBase(serviceClient, latestUserText, Boolean(authUser?.id));
+      const account = scope
+        ? createAccountToolkit(serviceClient, scope, {
+          loadOrders,
+          authorization: request.headers.get("Authorization"),
+        })
+        : undefined;
       let aiContent: string | null = null;
       try {
         aiContent = await runOcctaBrain(messages, {
           signedIn: Boolean(authUser?.id),
-          customerName: authUser?.user_metadata?.full_name
-            ? firstName(String(authUser.user_metadata.full_name))
-            : null,
+          customerName: scope?.fullName ? firstName(scope.fullName) : null,
           knowledgeContext,
           searchKnowledge: (query: string) =>
             searchKnowledgeBase(serviceClient, query, Boolean(authUser?.id)),
+          account,
         });
       } catch (aiError) {
         console.error("occta brain failed", (aiError as Error).message);
@@ -811,6 +805,8 @@ serve(async (request) => {
 
       if (aiContent) {
         reply = { content: aiContent, source: "ai" };
+      } else if (accountIntent && scope) {
+        reply = { content: await accountReply(serviceClient, scope, accountIntent), source: "account" };
       } else {
         const approved = approvedPublicReply(publicIntent);
         reply = approved

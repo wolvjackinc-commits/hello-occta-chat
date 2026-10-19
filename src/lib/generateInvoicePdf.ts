@@ -294,6 +294,31 @@ export function generateInvoicePdf(invoice: InvoiceData): void {
       body { padding: 0; background: white; }
       .container { box-shadow: none; border: 2px solid #0d0d0d; }
     }
+  
+    /* OCCTA institutional billing style: restrained, printable, and consistent with
+       the server-generated PDF. This also styles historical invoices generated
+       locally when no immutable archived PDF exists. */
+    body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #192430; padding: 20px; }
+    .container { border: 1px solid #dde2e7; box-shadow: none; max-width: 820px; }
+    .header { background: #192430; padding: 28px 32px; }
+    .logo, .invoice-badge { font-family: Arial, Helvetica, sans-serif; letter-spacing: .025em; font-weight: 700; }
+    .logo { font-size: 26px; }
+    .logo span { background: transparent; color: #e9b632; font-size: 12px; padding: 0 0 0 10px; transform: none; }
+    .invoice-badge { font-size: 17px; font-weight: 600; }
+    .content { padding: 30px 32px; }
+    .customer-box, .notes-section { background: #f7f9fa; border: 1px solid #e1e6eb; }
+    .customer-title, .notes-title { font-family: Arial, Helvetica, sans-serif; letter-spacing: .02em; border-bottom: 1px solid #e1e6eb; }
+    .line-items { border: 0; }
+    .line-items thead { background: #eef2f4; color: #192430; }
+    .line-items th { font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+    .line-items td { border-bottom: 1px solid #e1e6eb !important; }
+    .totals-box { border: 0; border-top: 1px solid #bec8d0; }
+    .total-row.grand { font-family: Arial, Helvetica, sans-serif; font-size: 17px; font-weight: 700; }
+    .total-row:last-child { background: #192430; }
+    .status-badge { font-family: Arial, Helvetica, sans-serif; border: 1px solid #b8c2c9; font-weight: 600; letter-spacing: .02em; }
+    .footer { background: #fff; border-top: 1px solid #e1e6eb; font-size: 10px; }
+    @media print { body { padding: 0; } .container { border: 0; box-shadow: none; } }
+
   </style>
 </head>
 <body>

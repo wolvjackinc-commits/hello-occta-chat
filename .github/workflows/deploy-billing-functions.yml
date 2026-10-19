@@ -6,6 +6,14 @@ on:
     paths:
       - 'supabase/functions/process-first-billing/**'
       - 'supabase/functions/process-recurring-billing/**'
+      - 'supabase/functions/process-sim-recurring-billing/**'
+      - 'supabase/functions/payment-reminders/**'
+      - 'supabase/functions/process-billing-notifications/**'
+      - 'supabase/functions/sync-verified-payments/**'
+      - 'supabase/functions/get-customer-invoice-pdf/**'
+      - 'supabase/functions/get-customer-receipt-pdf/**'
+      - 'supabase/functions/admin-payment-recon-import/**'
+      - 'supabase/functions/_shared/billingSafety.ts'
       - 'supabase/functions/_shared/billingHelpers.ts'
       - 'supabase/functions/_shared/billingGate.ts'
       - '.github/workflows/deploy-billing-functions.yml'
@@ -35,3 +43,17 @@ jobs:
         run: supabase functions deploy process-first-billing --project-ref "$PROJECT_REF"
       - name: Deploy recurring-billing worker
         run: supabase functions deploy process-recurring-billing --project-ref "$PROJECT_REF"
+      - name: Deploy SIM recurring-billing worker
+        run: supabase functions deploy process-sim-recurring-billing --project-ref "$PROJECT_REF"
+      - name: Deploy payment reminders
+        run: supabase functions deploy payment-reminders --project-ref "$PROJECT_REF"
+      - name: Deploy private invoice access
+        run: supabase functions deploy get-customer-invoice-pdf --project-ref "$PROJECT_REF"
+      - name: Deploy private receipt access
+        run: supabase functions deploy get-customer-receipt-pdf --project-ref "$PROJECT_REF"
+      - name: Deploy verified payment processor
+        run: supabase functions deploy sync-verified-payments --project-ref "$PROJECT_REF"
+      - name: Deploy status notification worker
+        run: supabase functions deploy process-billing-notifications --project-ref "$PROJECT_REF"
+      - name: Deploy reconciled import endpoint
+        run: supabase functions deploy admin-payment-recon-import --project-ref "$PROJECT_REF"

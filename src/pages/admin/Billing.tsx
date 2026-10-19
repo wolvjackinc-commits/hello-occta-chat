@@ -275,65 +275,15 @@ export const AdminBilling = () => {
     }
   };
 
-  const handleMarkPaid = async (invoice: Invoice) => {
-    setIsMarkingPaid(true);
-    try {
-      const { error } = await supabase
-        .from("invoices")
-        .update({ status: "paid" })
-        .eq("id", invoice.id);
-
-      if (error) throw error;
-
-      // Create receipt
-      const receiptRef = `RECEIPT-${Date.now().toString(36).toUpperCase()}`;
-      await supabase.from("receipts").insert({
-        invoice_id: invoice.id,
-        user_id: invoice.user_id,
-        amount: invoice.total,
-        method: "manual",
-        reference: receiptRef,
-      });
-
-      await logAudit({
-        action: "mark_paid",
-        entity: "invoice",
-        entityId: invoice.id,
-        metadata: { invoice_number: invoice.invoice_number, amount: invoice.total },
-      });
-
-      // Send payment confirmation email
-      const profile = profileMap.get(invoice.user_id);
-      if (profile?.email) {
-        try {
-          await supabase.functions.invoke("send-email", {
-            body: {
-              type: "invoice_paid",
-              to: profile.email,
-              data: {
-                customer_name: profile.full_name || "Customer",
-                invoice_number: invoice.invoice_number,
-                total: invoice.total,
-                paid_date: format(new Date(), "dd MMM yyyy"),
-                receipt_reference: receiptRef,
-              },
-            },
-          });
-          toast({ title: "Invoice marked as paid", description: "Payment confirmation email sent" });
-        } catch (emailErr) {
-          console.error("Failed to send payment email:", emailErr);
-          toast({ title: "Invoice marked as paid", description: "Email notification failed" });
-        }
-      } else {
-        toast({ title: "Invoice marked as paid" });
-      }
-
-      refetch();
-    } catch (err: any) {
-      toast({ title: "Failed to update invoice", description: err.message, variant: "destructive" });
-    } finally {
-      setIsMarkingPaid(false);
-    }
+  const handleMarkPaid = async (_invoice: Invoice) => {
+    // Provider-cleared funds are posted via sync-verified-payments.
+    // Never create receipts from an unchecked admin status toggle.
+    toast({
+      title: "Use verified payment reconciliation",
+      description: "Bank or DD settlement must be matched to the exact customer invoice first.",
+      variant: "destructive",
+    });
+    navigate("/admin/billing/payment-reconciliation");
   };
 
   const handleSendInvoice = async (invoice: Invoice) => {

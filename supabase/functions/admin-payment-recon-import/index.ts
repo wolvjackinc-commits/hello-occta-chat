@@ -27,10 +27,28 @@ Deno.serve(async (req) => {
   });
   if (result.errors.length) return jsonResponse({ error: "invalid_csv", errors: result.errors, warnings: result.warnings }, 400);
   await executeSyncPlan(supabase, buildSyncPlan(previous, result.state));
+
+  // Grok uploads and admin bank uploads enter the SAME exact-match ledger
+  // processor. Unmatched/held rows remain untouched; receipts require verified
+  // bank settlement, exact invoice ID and amount, and unique provider reference.
+  const cronSecret = Deno.env.get("CRON_JOB_SECRET");
+  if (!cronSecret) {
+    return jsonResponse({ ok: true, row_count: result.rowCount,
+      warnings: [...result.warnings, "Verified posting unavailable: cron secret missing"],
+      settlement_status: "not_run" });
+  }
+  const { data: settlement, error: settlementError } = await supabase.functions
+    .invoke("sync-verified-payments", {
+      body: { dry_run: false },
+      headers: { "x-cron-secret": cronSecret },
+    });
   return jsonResponse({
     ok: true,
     row_count: result.rowCount,
-    warnings: result.warnings,
-    note: "Stored on reconciliation tables only. Invoices were not changed and no email was sent.",
+    warnings: settlementError
+      ? [...result.warnings, "Import saved, settlement processing failed. Retry required."]
+      : result.warnings,
+    settlement_status: settlementError ? "failed" : "processed",
+    settlement: settlementError ? null : settlement,
   });
 });

@@ -316,7 +316,7 @@ async function buildSignedInAccountReply(
         ["Raise a ticket", "Check my orders", "Check my services"],
       );
     }
-    const lines = (ticketsRaw ?? []).slice(0, 5).map((ticket) =>
+    const lines = (ticketsRaw ?? []).slice(0, 5).map((ticket: any) =>
       `• ${ticket.subject}: ${ticket.status} — ${ticket.priority ?? "normal"} priority — opened ${formatDate(ticket.created_at)}`,
     );
     return withOptions(
@@ -325,7 +325,7 @@ async function buildSignedInAccountReply(
     );
   }
 
-  const acceptedSummary = (contractSummaries ?? []).find((summary) => summary.status === "accepted");
+  const acceptedSummary = (contractSummaries ?? []).find((summary: any) => summary.status === "accepted");
   return withOptions(
     `Hi ${firstName} — your account is ${profile?.account_number ?? acceptedSummary?.account_number ?? "linked"}. Email: ${profile?.email ?? "not set"}. Phone: ${profile?.phone ?? "not set"}. ${acceptedSummary ? `Latest accepted contract summary: ${acceptedSummary.cs_number} for ${acceptedSummary.plan_name}.` : "No accepted contract summary is showing yet."}`,
     ["Check my orders", "View my invoices", "Check my services"],
@@ -2055,7 +2055,7 @@ Reinforce this philosophy naturally in conversation.
 ${businessInfo.features.map(f => `- ${f}`).join("\n")}
 
 ## BROADBAND PLANS
-${businessInfo.broadbandPlans.map(p => `- ${p.name}: ${p.speed} @ ${p.price} - ${p.description}${p.popular ? " (POPULAR)" : ""}`).join("\n")}
+${businessInfo.broadbandPlans.map(p => `- ${p.name}: ${p.speed} @ ${p.price} - ${p.description}${"popular" in p && p.popular ? " (POPULAR)" : ""}`).join("\n")}
 
 ## SIM PLANS
 SIM plans are live and orderable at https://www.occta.co.uk/sim.
@@ -2079,7 +2079,7 @@ SIM plans are live and orderable at https://www.occta.co.uk/sim.
 - Fair usage, annual price adjustments, and (for 24-month plans) potential early termination charges apply.
 
 ## LANDLINE PLANS
-${businessInfo.landlinePlans.map(p => `- ${p.name}: ${p.price} - ${p.callRate}${p.popular ? " (POPULAR)" : ""}`).join("\n")}
+${businessInfo.landlinePlans.map(p => `- ${p.name}: ${p.price} - ${p.callRate}${"popular" in p && p.popular ? " (POPULAR)" : ""}`).join("\n")}
 
 ## BUNDLE DISCOUNT
 ${businessInfo.bundleDiscounts}

@@ -1,5 +1,12 @@
 // Monthly service lines for an invoice, built from the accepted Contract
 // Summary. Pure (no jsPDF import) so it can be unit tested.
+//
+// The Contract Summary's monthly price already includes the monthly add-ons:
+// every quote path stores monthly_gross = resolver monthly_total_incl_vat
+// (broadband + router + add-ons) and generate-contract-summary copies it to
+// monthly_price_incl_vat alongside selected_addons. So add-ons are itemised
+// out of the contracted price, never charged on top of it. The invoice total
+// for the period always equals the (pro-rated) contracted price.
 
 export interface MonthlyLine {
   description: string;
@@ -27,22 +34,39 @@ export function buildContractMonthlyLines(args: {
   prorate?: (monthlyMinor: number) => number;
 }): { lines: MonthlyLine[]; addons: ContractAddonCharge[] } {
   const prorate = args.prorate ?? ((m: number) => m);
-  const lines: MonthlyLine[] = [];
-  const baseMinor = prorate(args.contractMonthlyMinor);
-  if (baseMinor > 0) {
-    lines.push({ description: args.serviceDescription, amount_minor: baseMinor, period_label: args.periodLabel });
-  }
+  const totalMinor = prorate(args.contractMonthlyMinor);
+  if (!(totalMinor > 0)) return { lines: [], addons: [] };
+
+  const factor = 1 + (Number(args.vatRate) || 0) / 100;
   const charges: ContractAddonCharge[] = [];
   const list = Array.isArray(args.addons) ? args.addons as Array<{ id?: string; label?: string; monthly?: number }> : [];
   for (const addon of list) {
     const monthly = Number(addon?.monthly ?? 0);
     if (!Number.isFinite(monthly) || monthly <= 0) continue;
-    const monthlyMinor = Math.round(monthly * 100);
+    const inclMinor = Math.round(monthly * 100);
+    const monthlyMinor = args.vatMode === "exclusive" ? Math.round(inclMinor / factor) : inclMinor;
     const amountMinor = prorate(monthlyMinor);
     if (amountMinor <= 0) continue;
-    const label = String(addon?.label ?? addon?.id ?? "Monthly add-on");
-    lines.push({ description: label, amount_minor: amountMinor, period_label: args.periodLabel });
-    charges.push({ id: addon?.id ? String(addon.id) : null, label, monthly_minor: monthlyMinor, amount_minor: amountMinor });
+    charges.push({
+      id: addon?.id ? String(addon.id) : null,
+      label: String(addon?.label ?? addon?.id ?? "Monthly add-on"),
+      monthly_minor: monthlyMinor,
+      amount_minor: amountMinor,
+    });
   }
-  return { lines, addons: charges };
+
+  const addonsMinor = charges.reduce((s, c) => s + c.amount_minor, 0);
+  const baseLine = { description: args.serviceDescription, period_label: args.periodLabel };
+  // Add-ons that don't fit inside the contracted price mean the snapshot
+  // doesn't match the pricing model; bill the contracted price as one line.
+  if (addonsMinor >= totalMinor) {
+    return { lines: [{ ...baseLine, amount_minor: totalMinor }], addons: [] };
+  }
+  return {
+    lines: [
+      { ...baseLine, amount_minor: totalMinor - addonsMinor },
+      ...charges.map((c) => ({ description: c.label, amount_minor: c.amount_minor, period_label: args.periodLabel })),
+    ],
+    addons: charges,
+  };
 }

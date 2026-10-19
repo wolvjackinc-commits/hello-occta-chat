@@ -9,6 +9,7 @@ import {
   type VatMode,
 } from "../_shared/billingHelpers.ts";
 import { assertServiceLive } from "../_shared/billingGate.ts";
+import { buildContractMonthlyLines } from "../_shared/contractMonthlyLines.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -136,56 +137,32 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       const vatMode: VatMode = (job.vat_mode as VatMode) ?? "inclusive";
       const vatRate = Number(job.vat_rate ?? 20);
 
-      const proRataMinor = computeProRataMinor(
-        Number(job.amount_minor),
+      const prorate = (monthlyMinor: number) => computeProRataMinor(
+        monthlyMinor,
         Number(job.billable_days),
         Number(job.full_cycle_days),
         !!job.is_pro_rata,
       );
+      const proRataMinor = prorate(Number(job.amount_minor));
 
-      const rawLines: RawLine[] = [];
       const billingPeriodLabel = job.is_pro_rata
         ? `${fmtInclusivePeriod(job.period_start, job.period_end)} · ${job.billable_days} of ${job.full_cycle_days} days`
         : `${fmtInclusivePeriod(job.period_start, job.period_end)}`;
 
-      if (proRataMinor > 0) {
-        rawLines.push({
-          description: `${svc.plan_name ?? svc.service_type} — ${job.is_pro_rata ? "pro-rata service" : "monthly service"}`,
-          amount_minor: proRataMinor,
-          period_label: billingPeriodLabel,
-        });
-      }
-
-      // Contract-selected monthly add-ons must follow the same first-period
-      // pro-rata rule as the base service. The accepted CS is authoritative.
-      const contractAddons = Array.isArray(acceptedCs?.selected_addons)
-        ? acceptedCs!.selected_addons as Array<{ id?: string; label?: string; monthly?: number }>
-        : [];
-      const contractAddonSnapshot: Array<{ id: string | null; label: string; monthly_minor: number; amount_minor: number }> = [];
-      for (const addon of contractAddons) {
-        const monthly = Number(addon?.monthly ?? 0);
-        if (!Number.isFinite(monthly) || monthly <= 0) continue;
-        const monthlyMinor = Math.round(monthly * 100);
-        const amountMinor = computeProRataMinor(
-          monthlyMinor,
-          Number(job.billable_days),
-          Number(job.full_cycle_days),
-          !!job.is_pro_rata,
-        );
-        if (amountMinor <= 0) continue;
-        const label = String(addon?.label ?? addon?.id ?? "Monthly add-on");
-        rawLines.push({
-          description: label,
-          amount_minor: amountMinor,
-          period_label: billingPeriodLabel,
-        });
-        contractAddonSnapshot.push({
-          id: addon?.id ? String(addon.id) : null,
-          label,
-          monthly_minor: monthlyMinor,
-          amount_minor: amountMinor,
-        });
-      }
+      // job.amount_minor is the accepted CS monthly price, which already
+      // includes the contract-selected add-ons. They are itemised out of it
+      // under the same pro-rata rule — never added on top.
+      const monthlyLines = buildContractMonthlyLines({
+        serviceDescription: `${svc.plan_name ?? svc.service_type} — ${job.is_pro_rata ? "pro-rata service" : "monthly service"}`,
+        contractMonthlyMinor: Number(job.amount_minor),
+        addons: acceptedCs?.selected_addons,
+        periodLabel: billingPeriodLabel,
+        vatMode,
+        vatRate,
+        prorate,
+      });
+      const rawLines: RawLine[] = [...monthlyLines.lines];
+      const contractAddonSnapshot = monthlyLines.addons;
 
       // One-off charges: prefer the itemised `one_off_lines` snapshot when
       // present, otherwise fall back to a single `activation_fee_minor` line.

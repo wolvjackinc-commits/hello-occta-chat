@@ -10,6 +10,7 @@ import {
   type VatMode,
 } from "../_shared/billingHelpers.ts";
 import { assertServiceLive } from "../_shared/billingGate.ts";
+import { buildContractMonthlyLines } from "../_shared/contractMonthlyLines.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -160,25 +161,16 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       }
 
       const periodLabel = `${fmtInclusivePeriod(periodStart, periodEnd)} (billed in advance)`;
-      const rawLines: RawLine[] = [
-        {
-          description: `${svc.plan_name ?? svc.service_type} — monthly service`,
-          amount_minor: monthlyMinor,
-          period_label: periodLabel,
-        },
-      ];
-
-      // Contract-selected monthly add-ons are separately itemised and billed.
-      // The accepted Contract Summary is the immutable source of truth.
-      for (const addon of contractAddons) {
-        const monthly = Number(addon?.monthly ?? 0);
-        if (!Number.isFinite(monthly) || monthly <= 0) continue;
-        rawLines.push({
-          description: String(addon?.label ?? addon?.id ?? "Monthly add-on"),
-          amount_minor: poundsToMinor(monthly),
-          period_label: periodLabel,
-        });
-      }
+      // Contract-selected monthly add-ons are itemised out of the contracted
+      // monthly price, which already includes them — never added on top.
+      const rawLines: RawLine[] = buildContractMonthlyLines({
+        serviceDescription: `${svc.plan_name ?? svc.service_type} — monthly service`,
+        contractMonthlyMinor: monthlyMinor,
+        addons: contractAddons,
+        periodLabel,
+        vatMode,
+        vatRate: 20,
+      }).lines;
 
       const totals = itemiseInvoice(rawLines, vatMode, 20);
       const total = totals.total_gross_minor / 100;

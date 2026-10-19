@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Shield, Wifi, Phone, RefreshCcw, Star, ChevronRight, Loader2, Lock, Receipt, Info, FileText } from "lucide-react";
+import { ArrowRight, Check, Wifi, Star, ChevronRight, Lock, Info, FileText } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getFromPrices, getRetailBroadbandCards } from "@/lib/pricing/engine";
@@ -29,12 +29,11 @@ const HeroSection = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] } },
   };
 
-  const benefits = [
-    { icon: Lock, text: "Price Lock 24" },
-    { icon: RefreshCcw, text: "Flex 30 where eligible" },
-    { icon: Shield, text: "No confusing mid-contract rises on Price Lock" },
-    { icon: Receipt, text: "Estimated price before order" },
-    { icon: Phone, text: "UK-based support" },
+  const proofPoints = [
+    { value: "24", suffix: "mo", label: "Fixed monthly price on Price Lock 24 for the agreed term" },
+    { value: "30", suffix: "day", label: "Rolling Flex 30 plans, where eligible" },
+    { value: "£0", suffix: "", label: "In confusing mid-contract rises on Price Lock" },
+    { value: "14", suffix: "day", label: "Cooling-off period, plus an estimated price before you order" },
   ];
 
   const getSpeedLabel = (speed: number) => speed >= 1000 ? "1Gbps" : `${speed}Mbps`;
@@ -93,52 +92,59 @@ const HeroSection = () => {
     (errorType === "no-addresses" || errorType === "backend-unavailable");
 
   return (
-    <section className="relative flex items-center bg-gradient-to-br from-background via-background to-muted/30">
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/20 -skew-x-12 translate-x-20 hidden lg:block" />
+    // `dark` flips the design tokens for everything inside the hero (checker,
+    // address list, loader, plan cards) so the stage reads as one black poster.
+    <section className="dark hero-stage relative overflow-clip bg-background text-foreground border-b-4 border-primary">
+      <div aria-hidden className="hero-grid pointer-events-none absolute inset-0" />
+      <div aria-hidden className="pointer-events-none absolute -right-24 top-0 hidden lg:block font-display text-[34rem] leading-[0.8] text-white/[0.025] select-none">
+        24
+      </div>
 
-      <div className="container mx-auto px-4 sm:px-6 md:px-12 py-6 lg:pt-8 lg:pb-10 relative z-10" style={{ maxWidth: 1440 }}>
-        <div className="grid lg:grid-cols-[52fr_48fr] gap-5 lg:gap-10 items-start">
+      <div className="container mx-auto px-4 sm:px-6 md:px-12 pt-8 pb-0 lg:pt-10 relative z-10" style={{ maxWidth: 1440 }}>
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,1fr)_460px] gap-12 xl:gap-20 items-start">
           {/* ─── LEFT COLUMN ─── */}
-          <motion.div className="space-y-3" variants={containerVariants} initial="hidden" animate="visible">
-            <motion.p variants={itemVariants} className="font-display text-[10px] sm:text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
-              Price Lock 24 • Flex 30 • Clear Estimated Price • UK-based Support
+          <motion.div variants={containerVariants} initial="hidden" animate="visible">
+            <motion.p
+              variants={itemVariants}
+              className="inline-flex items-center gap-2.5 border border-white/20 bg-white/[0.04] px-3 py-1.5 font-sans text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] sm:tracking-[0.2em] text-white/80 whitespace-nowrap"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="hero-pulse absolute inline-flex h-full w-full animate-ping bg-primary opacity-70" />
+                <span className="relative inline-flex h-2 w-2 bg-primary" />
+              </span>
+              Price Lock 24 · Flex 30 · UK-based support
             </motion.p>
 
             {/* H1 renders without motion opacity fade so it paints immediately as the LCP element */}
-            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[72px] xl:text-[88px] font-display uppercase leading-[0.9] tracking-tight text-gradient">
-              Finally. Broadband without the price-rise nonsense.
+            <h1 className="mt-5 font-display uppercase text-white leading-[0.86] tracking-[-0.01em] text-[3.25rem] sm:text-[4.5rem] lg:text-[3.6rem] xl:text-[5rem] min-[1400px]:text-[5.75rem]">
+              <span className="block text-[hsl(var(--primary))]">Finally.</span>
+              {/* Lines are fixed from sm up; on phones the words reflow so "the" never strands */}
+              <span className="sm:block">Broadband without the</span>{" "}
+              <span className="sm:block">
+                <span className="hero-strike text-white/55">price-rise</span> nonsense.
+              </span>
             </h1>
 
-            <motion.p variants={itemVariants} className="text-base text-muted-foreground max-w-[580px]">
-              Choose Price Lock 24 for a fixed monthly broadband price for the agreed term, or Flex 30 where available. See your first bill before you order.
+            <motion.p variants={itemVariants} className="mt-5 text-lg leading-relaxed text-white/70 max-w-[560px]">
+              Price Lock 24 fixes your monthly price for the agreed term. Prefer freedom? Flex 30 rolls monthly where available.{" "}
+              <span className="text-white font-medium">Either way, you see your first bill before you order.</span>
             </motion.p>
 
-            <motion.div variants={itemVariants} className="flex flex-wrap gap-1.5">
-              {benefits.map((b, i) => (
-                <div
-                  key={b.text}
-                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium border-2 ${
-                    i === 0 ? "border-primary bg-primary text-primary-foreground" : "border-foreground/20 bg-background"
-                  }`}
-                >
-                  <b.icon className="w-3 h-3" />
-                  {b.text}
-                </div>
-              ))}
-            </motion.div>
-
             {/* Checker — always visible */}
-            <motion.div variants={itemVariants}>
+            <motion.div variants={itemVariants} className="mt-7">
               <PostcodeChecker variant="hero" externalAddressSelect />
             </motion.div>
 
-            <motion.div variants={itemVariants} className="mt-2">
+            <motion.div variants={itemVariants} className="mt-5">
               <Link
                 to="/order"
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                className="group inline-flex items-center gap-2 text-sm font-semibold text-white hover:text-[hsl(var(--primary))] transition-colors"
               >
-                <FileText className="w-3.5 h-3.5" />
-                Start your order — review everything before confirming
+                <FileText className="w-4 h-4" />
+                <span className="underline decoration-white/30 underline-offset-4 group-hover:decoration-[hsl(var(--primary))]">
+                  Start your order — review everything before confirming
+                </span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </motion.div>
 
@@ -147,7 +153,7 @@ const HeroSection = () => {
               <motion.p
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 text-sm font-medium text-success"
+                className="mt-4 flex items-center gap-2 text-sm font-medium text-[hsl(145_70%_55%)]"
               >
                 <Check className="w-4 h-4 flex-shrink-0" />
                 {inlineConfirmation}
@@ -155,7 +161,7 @@ const HeroSection = () => {
             )}
 
             {status === "error" && errorType === "invalid-postcode" && (
-              <p className="text-sm text-destructive">That doesn't look like a proper postcode — please check and try again.</p>
+              <p className="mt-4 text-sm font-medium text-[hsl(0_90%_68%)]">That doesn't look like a proper postcode — please check and try again.</p>
             )}
           </motion.div>
 
@@ -411,67 +417,111 @@ const HeroSection = () => {
 
             {/* IDLE / DEFAULT STATE — price anchor card */}
             {!isAddressSelect && !isLoadingState && !hasResult && status !== "error" && (
-              <motion.div
-                key="idle"
-                variants={itemVariants}
-                className="card-brutal bg-card p-4 sm:p-5 md:p-6"
-              >
-                <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground mb-1 sm:mb-2">
-                  FROM
-                </p>
-                <p className="font-display text-4xl sm:text-5xl md:text-6xl text-primary leading-none">
-                  £{prices.broadband}
-                </p>
-                <p className="font-display text-sm sm:text-base font-semibold text-foreground mt-1">
-                  /month
-                </p>
-                <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-1 mb-1">
-                  *Plan and service availability varies by address
-                </p>
-                <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
-                  Price Lock 24 or Flex 30 • Contractual price shown before acceptance
-                </p>
-                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mb-3 sm:mb-4">
-                  Choose the OCCTA speed band that fits you
-                </p>
+              <motion.div key="idle" variants={itemVariants} className="relative">
+                {/* Offset yellow slab — the card sits on it like a printed ticket */}
+                <div aria-hidden className="absolute inset-0 translate-x-3 translate-y-3 bg-primary" />
 
-                <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-                  {[
-                    { name: "Essential", tagline: "Up to 80Mbps" },
-                    { name: "Superfast", tagline: "Up to 330Mbps" },
-                    { name: "Ultrafast", tagline: "Up to 550Mbps" },
-                    { name: "Gigabit", tagline: "Up to 1000Mbps" },
-                  ].map(cat => (
-                     <div key={cat.name} className="flex items-center gap-3 px-3 py-2 border-2 border-foreground/15 bg-background">
-                       <span className="font-sans text-sm uppercase font-extrabold tracking-wide text-foreground min-w-[78px]">{cat.name}</span>
-                       <span className="text-xs sm:text-sm text-foreground/75 font-medium">— {cat.tagline}</span>
-                     </div>
-                  ))}
-                </div>
+                <div className="relative border-[3px] border-white bg-[hsl(0_0%_8%)]">
+                  {/* Ticket top: the price, and proof it doesn't move */}
+                  <div className="bg-primary text-black px-5 pt-5 pb-6 sm:px-7 sm:pt-6 border-b-[3px] border-white">
+                    <div className="flex items-center justify-between gap-3 font-sans text-[11px] font-bold uppercase tracking-[0.18em]">
+                      <span>Price Lock 24</span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5" />
+                        Fixed for the term
+                      </span>
+                    </div>
 
-                <div className="space-y-1.5 sm:space-y-2.5 mb-3 sm:mb-4">
-                  {[
-                    "Full Fibre where available",
-                    "Network and technology depend on your address",
-                    "UK-based support when you need it",
-                    "Installation costs (if any) shown in your Contract Summary",
-                  ].map(line => (
-                    <p key={line} className="flex items-center gap-2 sm:gap-2.5 text-[13px] sm:text-[15px] font-semibold text-foreground">
-                      <Check className="w-4 sm:w-[18px] h-4 sm:h-[18px] text-primary flex-shrink-0" />
-                      {line}
+                    <div className="mt-4 flex items-end gap-2">
+                      <span className="font-sans text-xs font-bold uppercase tracking-[0.18em] pb-3 sm:pb-4">From</span>
+                      <span className="font-display text-[5.5rem] sm:text-[6.5rem] leading-[0.78]">£{prices.broadband}</span>
+                      <span className="font-display text-2xl pb-1.5 sm:pb-2">/mo</span>
+                    </div>
+
+                    <div className="mt-6">
+                      <div className="flex h-12 items-end gap-[3px] border-t-2 border-dashed border-black/60 pt-0" aria-hidden>
+                        {Array.from({ length: 24 }, (_, i) => (
+                          <span
+                            key={i}
+                            className="hero-bar flex-1 h-full bg-black"
+                            style={{ animationDelay: `${450 + i * 28}ms` }}
+                          />
+                        ))}
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-2 whitespace-nowrap font-sans text-[10px] font-bold uppercase tracking-[0.06em] sm:tracking-[0.16em]">
+                        <span>Month 1</span>
+                        <span className="text-black/70">Same price, every month</span>
+                        <span>Month 24</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Speed bands */}
+                  <div className="px-5 py-5 sm:px-7 sm:py-6">
+                    <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55 mb-3">
+                      Choose your OCCTA speed band
                     </p>
-                  ))}
-                </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { name: "Essential", speed: 80 },
+                        { name: "Superfast", speed: 330 },
+                        { name: "Ultrafast", speed: 550 },
+                        { name: "Gigabit", speed: 1000 },
+                      ].map(band => (
+                        <div key={band.name} className="border border-white/15 bg-white/[0.03] px-3 py-3">
+                          <p className="font-display text-xl leading-none text-white tracking-wide">{band.name}</p>
+                          <p className="mt-1 text-xs text-white/60">Up to {band.speed}Mbps</p>
+                          <div className="mt-2.5 h-1 bg-white/10" aria-hidden>
+                            <div className="h-full bg-primary" style={{ width: `${Math.max(band.speed / 10, 6)}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
 
-                <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-[11px] sm:text-xs text-muted-foreground pt-2 border-t border-foreground/20">
-                  <span>14-day cooling-off period</span>
-                  <span>Keep your number with Digital Voice where porting is available</span>
-                  <span>No confusing mid-contract rises on Price Lock</span>
+                    <div className="mt-4 space-y-1.5">
+                      {[
+                        "Full Fibre where available",
+                        "Installation costs (if any) shown in your Contract Summary",
+                        "Keep your number with Digital Voice where porting is available",
+                      ].map(line => (
+                        <p key={line} className="flex items-start gap-2 text-[13px] font-medium text-white/85">
+                          <Check className="w-4 h-4 mt-0.5 text-[hsl(var(--primary))] flex-shrink-0" />
+                          {line}
+                        </p>
+                      ))}
+                    </div>
+
+                    <p className="mt-4 pt-3 border-t border-white/10 text-[11px] leading-relaxed text-white/45">
+                      *Plan and service availability varies by address. Network and technology depend on your address. Price Lock 24 or Flex 30 — contractual price shown before acceptance.
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             )}
           </motion.div>
         </div>
+
+        {/* ─── PROOF BAND — the promise in four numbers ─── */}
+        <motion.dl
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="mt-14 lg:mt-20 grid grid-cols-2 lg:grid-cols-4 border-t border-white/15"
+        >
+          {proofPoints.map((p, i) => (
+            <motion.div
+              key={p.label}
+              variants={itemVariants}
+              className={`py-6 lg:py-8 pr-4 ${i % 2 === 1 ? "pl-4 border-l border-white/15" : ""} ${i >= 2 ? "border-t lg:border-t-0 border-white/15" : ""} ${i === 2 ? "lg:pl-4 lg:border-l" : ""} ${i > 0 ? "lg:pl-6" : ""}`}
+            >
+              <dt className="font-display text-5xl lg:text-6xl leading-none text-white">
+                {p.value}
+                <span className="ml-1 text-2xl lg:text-3xl text-[hsl(var(--primary))]">{p.suffix}</span>
+              </dt>
+              <dd className="mt-2 text-sm text-white/60 max-w-[220px]">{p.label}</dd>
+            </motion.div>
+          ))}
+        </motion.dl>
       </div>
     </section>
   );

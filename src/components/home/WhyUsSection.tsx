@@ -1,206 +1,105 @@
 import { motion } from "framer-motion";
-import { Phone, Lock, PoundSterling, Users, Zap, ThumbsUp } from "lucide-react";
+import type { ReactNode } from "react";
+import { HomeContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/home/homeKit";
+import { revealItem } from "@/components/home/homeMotion";
+import { AddressPinArt, ContractDocArt, SupportChatArt, SwitchArt } from "@/components/home/illustrations";
 
-const reasons = [
-  {
-    icon: Lock,
-    title: "PRICE LOCK 24 OR FLEX 30",
-    description: "Pick a fixed Price Lock plan, or a 30-day rolling option where available.",
-  },
-  {
-    icon: PoundSterling,
-    title: "NO CONFUSING MID-CONTRACT RISES",
-    description: "On Price Lock 24 your monthly broadband price stays fixed for the agreed term.",
-  },
-  {
-    icon: Zap,
-    title: "SWITCHING SUPPORT",
-    description: "Where One Touch Switch applies, the providers coordinate the switch and we confirm the expected date for your order.",
-  },
-  {
-    icon: Phone,
-    title: "UK-BASED SUPPORT",
-    description: "UK-based customer support with account, ticket and complaint tracking.",
-  },
-  {
-    icon: Users,
-    title: "ADDRESS-SPECIFIC NETWORK",
-    description: "The access network and technology available at your address are confirmed before acceptance.",
-  },
-  {
-    icon: ThumbsUp,
-    title: "QUOTE-LED SIGN-UP",
-    description: "You see a full Contract Summary before any payment is taken.",
-  },
-];
-
-const stats = [
-  { value: "24 mo", label: "Price Lock minimum term" },
-  { value: "30 d", label: "Flex 30 rolling period" },
-  { value: "14 d", label: "Consumer cooling-off period" },
-  { value: "UK", label: "Customer support team" },
-];
-
-const WhyUsSection = () => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30, rotate: -1 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      rotate: 0,
-      transition: {
-        duration: 0.4,
-        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
-      },
-    },
-  };
-
-  const headerVariants = {
-    hidden: { opacity: 0, scale: 0.9 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 0.5,
-        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
-      },
-    },
-  };
-
-  const statsVariants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
-      },
-    },
-  };
-
-  return (
-    <section className="py-24 grid-pattern">
-      <div className="container mx-auto px-4">
-        {/* Section Header */}
-        <motion.div
-          className="max-w-3xl mx-auto text-center mb-16"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={headerVariants}
-        >
-          <motion.div
-            className="inline-block stamp text-primary border-primary mb-6"
-            initial={{ rotate: 0, scale: 0 }}
-            whileInView={{ rotate: -2, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            whileHover={{ rotate: 2, scale: 1.05 }}
-          >
-            Why Switch?
-          </motion.div>
-          <h2 className="text-display-md mb-4">
-            WHY PEOPLE CONSIDER
-            <br />
-            <motion.span 
-              className="text-gradient inline-block"
-              whileHover={{ scale: 1.02 }}
-            >
-              TO OCCTA
-            </motion.span>
-          </h2>
-          <p className="text-xl text-muted-foreground">
-            Affordable telecom with clear terms. Compare Flex 30 and Price Lock 24 where eligible, with customer-specific
-            price, speed information, setup and applicable charges shown before acceptance.
-          </p>
-        </motion.div>
-
-        {/* Reasons Grid */}
-        <motion.div
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          variants={containerVariants}
-        >
-          {reasons.map((reason) => (
-            <motion.div
-              key={reason.title}
-              className="group p-6 border-4 border-transparent hover:border-foreground hover:bg-card transition-colors duration-150"
-              variants={itemVariants}
-              whileHover={{
-                y: -6,
-                x: -4,
-                boxShadow: "10px 10px 0px 0px hsl(var(--foreground))",
-                transition: { duration: 0.15, ease: "easeOut" },
-              }}
-            >
-              <div className="flex items-start gap-4">
-                <motion.div
-                  className="w-12 h-12 bg-foreground text-background flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                  whileHover={{ rotate: 5, scale: 1.1 }}
-                >
-                  <reason.icon className="w-6 h-6" />
-                </motion.div>
-                <div>
-                  <h3 className="font-display text-xl mb-2">{reason.title}</h3>
-                  <p className="text-muted-foreground">{reason.description}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Stats Bar */}
-        <motion.div
-          className="mt-20 border-4 border-foreground bg-foreground text-background overflow-hidden"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          variants={statsVariants}
-        >
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x-4 divide-background">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                className="p-6 text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 * index, duration: 0.4 }}
-                whileHover={{ 
-                  backgroundColor: "hsl(var(--primary))",
-                  transition: { duration: 0.2 }
-                }}
-              >
-                <motion.div
-                  className="font-display text-display-md text-primary"
-                  whileHover={{ scale: 1.1 }}
-                >
-                  {stat.value}
-                </motion.div>
-                <div className="font-display uppercase tracking-wider text-sm">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
+type Tile = {
+  title: string;
+  description: ReactNode;
+  art: ReactNode;
+  span: string;
+  dark?: boolean;
 };
+
+const PlanChips = () => (
+  <div className="flex flex-col items-start gap-2" aria-hidden>
+    <span className="border-[3px] border-black bg-primary px-3 py-2 font-display text-2xl leading-none text-black">24 mo · fixed price</span>
+    <span className="border-[3px] border-black bg-white px-3 py-2 font-display text-2xl leading-none text-black">30 day · rolling</span>
+  </div>
+);
+
+const tiles: Tile[] = [
+  {
+    title: "Switching support",
+    description:
+      "Where One Touch Switch applies, the providers coordinate the switch and we confirm the expected date for your order.",
+    art: <SwitchArt />,
+    span: "lg:col-span-3",
+  },
+  {
+    title: "UK-based support",
+    description: "UK-based customer support with account, ticket and complaint tracking.",
+    art: <SupportChatArt />,
+    span: "lg:col-span-3",
+    dark: true,
+  },
+  {
+    title: "Price Lock 24 or Flex 30",
+    description: (
+      <>
+        Pick a fixed Price Lock plan, or a 30-day rolling option where available. No confusing mid-contract rises — on Price Lock 24 your monthly broadband price stays fixed for the agreed term.
+      </>
+    ),
+    art: <PlanChips />,
+    span: "lg:col-span-2",
+  },
+  {
+    title: "Address-specific network",
+    description: "The access network and technology available at your address are confirmed before acceptance.",
+    art: <AddressPinArt />,
+    span: "lg:col-span-2",
+  },
+  {
+    title: "Quote-led sign-up",
+    description: "You see a full Contract Summary before any payment is taken.",
+    art: <ContractDocArt />,
+    span: "lg:col-span-2",
+  },
+];
+
+const WhyUsSection = () => (
+  <section className="bg-background">
+    <HomeContainer className="py-20 md:py-28">
+      <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:items-end">
+        <div>
+          <SectionEyebrow index="05" label="Why switch" />
+          <SectionTitle className="mt-5">
+            Reasons people
+            <br />
+            consider OCCTA.
+          </SectionTitle>
+        </div>
+        <p className="text-lg leading-relaxed text-foreground/70">
+          Affordable telecom with clear terms. Compare Flex 30 and Price Lock 24 where eligible, with customer-specific price, speed information, setup and applicable charges shown before acceptance.
+        </p>
+      </Reveal>
+
+      <Reveal stagger className="mt-12 md:mt-16 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+        {tiles.map((t) => (
+          <motion.article
+            key={t.title}
+            variants={revealItem}
+            className={`group flex flex-col border-[3px] border-foreground transition-shadow duration-300 hover:shadow-[8px_8px_0_0_hsl(var(--foreground))] ${t.span} ${
+              t.dark ? "bg-[hsl(0_0%_5%)] text-white" : "bg-white text-black"
+            }`}
+          >
+            <div
+              className={`flex min-h-[176px] items-center justify-center border-b-[3px] border-foreground p-6 ${
+                t.dark ? "bg-[hsl(0_0%_10%)]" : "bg-secondary"
+              }`}
+            >
+              <div className="w-full max-w-[320px]">{t.art}</div>
+            </div>
+            <div className="flex-1 p-6">
+              <h3 className="font-display text-3xl uppercase leading-none">{t.title}</h3>
+              <p className={`mt-3 text-sm leading-relaxed ${t.dark ? "text-white/70" : "text-black/70"}`}>{t.description}</p>
+            </div>
+          </motion.article>
+        ))}
+      </Reveal>
+    </HomeContainer>
+  </section>
+);
 
 export default WhyUsSection;

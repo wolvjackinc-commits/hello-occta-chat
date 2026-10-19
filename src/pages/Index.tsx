@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
+import { MotionConfig } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
 import HeroSection from "@/components/home/HeroSection";
@@ -63,16 +64,19 @@ const Index = () => {
           price={getFromPrices().broadband}
         />
         <StructuredData type="all" />
-        <HeroSection />
-        <HowItWorksStrip />
-        <Suspense fallback={null}>
-          <FairBroadbandPromise />
-          <ServicesSection />
-          <IncludedFreeSection />
-          <WhyUsSection />
-          <CustomerLoveSection />
-          <CTASection />
-        </Suspense>
+        {/* Section reveals honour the visitor's reduced-motion setting */}
+        <MotionConfig reducedMotion="user">
+          <HeroSection />
+          <HowItWorksStrip />
+          <Suspense fallback={null}>
+            <FairBroadbandPromise />
+            <ServicesSection />
+            <IncludedFreeSection />
+            <WhyUsSection />
+            <CustomerLoveSection />
+            <CTASection />
+          </Suspense>
+        </MotionConfig>
       </Layout>
     </AvailabilityProvider>
   );

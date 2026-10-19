@@ -1,171 +1,107 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Wifi, Smartphone, PhoneCall, ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { getFromPrices } from "@/lib/pricing/engine";
+import { HomeContainer, Reveal, SectionEyebrow, SectionTitle } from "@/components/home/homeKit";
+import { revealItem } from "@/components/home/homeMotion";
+import { RouterArt, SimArt, VoiceArt } from "@/components/home/illustrations";
 
 const ServicesSection = () => {
   const prices = getFromPrices();
 
   const services = [
     {
-      icon: Wifi,
-      title: "BROADBAND",
+      key: "broadband",
+      title: "Broadband",
       subtitle: "Internet that actually works",
       description: "From everyday browsing to full-fibre speeds. Actual speeds depend on your address — confirmed in your Contract Summary.",
       price: `Indicative from £${prices.broadband}/mo`,
       link: "/broadband",
-      color: "bg-primary",
-      accent: "border-primary",
+      Art: RouterArt,
+      tile: "bg-primary text-black lg:col-span-7 lg:row-span-2",
+      art: "w-full max-w-[460px] lg:max-w-[520px]",
+      pill: "bg-black text-primary",
+      large: true,
     },
     {
-      icon: Smartphone,
-      title: "SIM PLANS",
+      key: "sim",
+      title: "SIM Plans",
       subtitle: "Mobile without the mobile drama",
       description: "Unlimited texts, plenty of data, and calls that don't drop mid-sentence. Plan, network and price confirmed in your Contract Summary.",
       price: `Indicative from £${prices.sim}/mo`,
       link: "/sim-plans",
-      color: "bg-accent",
-      accent: "border-accent",
+      Art: SimArt,
+      tile: "bg-white text-black lg:col-span-5",
+      art: "w-44 sm:w-52",
+      pill: "bg-primary text-black",
+      large: false,
     },
     {
-      icon: PhoneCall,
-      title: "DIGITAL VOICE",
+      key: "voice",
+      title: "Digital Voice",
       subtitle: "Home Phone over broadband",
       description: "Crystal clear calls through your broadband. Keep your number, use your existing phone. Add-on — requires an active OCCTA broadband connection.",
       price: `Indicative from £${prices.landline}/mo`,
       link: "/landline",
-      color: "bg-warning",
-      accent: "border-warning",
+      Art: VoiceArt,
+      tile: "bg-accent text-white lg:col-span-5",
+      art: "w-44 sm:w-52",
+      pill: "bg-black text-white",
+      large: false,
     },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const headerVariants = {
-    hidden: { opacity: 0, x: -40 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        duration: 0.6,
-        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
-      },
-    },
-  };
-
-  const cardVariants = {
-    hidden: { opacity: 0, y: 60, rotate: -2 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      rotate: 0,
-      transition: {
-        duration: 0.5,
-        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
-      },
-    },
-  };
-
   return (
-    <section className="py-24 bg-secondary stripes">
-      <div className="container mx-auto px-4">
-        {/* Section Header */}
-        <motion.div
-          className="max-w-3xl mb-16"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={headerVariants}
-        >
-          <h2 className="text-display-md mb-4">
-            WHAT WE
-            <motion.span 
-              className="text-gradient ml-4 inline-block"
-              whileHover={{ scale: 1.05 }}
-            >
-              ACTUALLY DO
-            </motion.span>
-          </h2>
-          <p className="text-xl text-muted-foreground">
-            Three services. Zero nonsense. UK-wide coverage with straightforward,
-            clear contract options. Looking for affordable broadband, flexible monthly broadband,
-            or SIM only deals UK? You're in the right place.
+    <section className="bg-[hsl(0_0%_5%)] text-white">
+      <HomeContainer className="py-20 md:py-28">
+        <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-end">
+          <div>
+            <SectionEyebrow index="03" label="What we do" tone="dark" />
+            <SectionTitle className="mt-5 text-white">
+              Three services.
+              <br />
+              <span className="text-[hsl(var(--primary))]">Zero nonsense.</span>
+            </SectionTitle>
+          </div>
+          <p className="text-lg leading-relaxed text-white/65">
+            UK-wide coverage with straightforward, clear contract options — whether you're after affordable broadband, flexible monthly broadband or a SIM only deal.
           </p>
-        </motion.div>
+        </Reveal>
 
-        {/* Services Grid */}
-        <motion.div
-          className="grid lg:grid-cols-3 gap-8"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          variants={containerVariants}
-        >
-          {services.map((service, index) => (
-            <motion.div
-              key={service.title}
-              className="group card-brutal bg-card p-8 flex flex-col"
-              variants={cardVariants}
-              whileHover={{
-                y: -12,
-                x: -6,
-                boxShadow: "14px 14px 0px 0px hsl(var(--foreground))",
-                transition: { duration: 0.2, ease: "easeOut" },
-              }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {/* Icon */}
-              <motion.div
-                className={`w-16 h-16 ${service.color} border-4 border-foreground flex items-center justify-center mb-6`}
-                whileHover={{ rotate: 5, scale: 1.1 }}
-                transition={{ duration: 0.2 }}
+        <Reveal stagger className="mt-12 md:mt-16 grid gap-4 lg:grid-cols-12 lg:grid-rows-2">
+          {services.map(({ key, Art, ...s }) => (
+            <motion.div key={key} variants={revealItem} className={s.tile}>
+              <Link
+                to={s.link}
+                className={`group relative flex h-full flex-col overflow-hidden border-[3px] border-white/10 p-6 sm:p-8 transition-transform duration-300 hover:-translate-y-1 ${
+                  s.large ? "lg:p-10" : ""
+                }`}
               >
-                <service.icon className="w-8 h-8 text-foreground" />
-              </motion.div>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className={`font-display uppercase leading-[0.85] ${s.large ? "text-6xl sm:text-7xl lg:text-8xl" : "text-5xl"}`}>
+                      {s.title}
+                    </h3>
+                    <p className="mt-2 font-sans text-xs font-bold uppercase tracking-[0.18em] opacity-70">{s.subtitle}</p>
+                  </div>
+                  <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center border-[3px] border-current transition-all duration-300 group-hover:bg-black group-hover:text-primary group-hover:border-black">
+                    <ArrowUpRight className="w-6 h-6 transition-transform duration-300 group-hover:rotate-45" />
+                  </span>
+                </div>
 
-              {/* Content */}
-              <h3 className="text-display-md mb-2">{service.title}</h3>
-              <p className="font-display text-lg text-muted-foreground uppercase tracking-wide mb-4">
-                {service.subtitle}
-              </p>
-              <p className="text-muted-foreground flex-grow mb-6">
-                {service.description}
-              </p>
+                <div className={`flex flex-1 items-center justify-center ${s.large ? "py-10 lg:py-6" : "py-6"}`}>
+                  <Art className={`${s.art} h-auto transition-transform duration-500 group-hover:scale-[1.04]`} />
+                </div>
 
-              {/* Price */}
-              <motion.div
-                className={`inline-block self-start px-4 py-2 ${service.color} border-4 border-foreground mb-6`}
-                whileHover={{ scale: 1.05 }}
-              >
-                <span className="font-display text-lg text-foreground">{service.price}</span>
-              </motion.div>
-
-              {/* CTA */}
-              <Link to={service.link}>
-                <Button variant="outline" className="w-full group-hover:bg-foreground group-hover:text-background transition-colors">
-                  View Plans
-                  <motion.span
-                    className="inline-block"
-                    whileHover={{ x: 5 }}
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                  </motion.span>
-                </Button>
+                <div className={s.large ? "grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end" : "space-y-4"}>
+                  <p className={`leading-relaxed opacity-80 ${s.large ? "text-base max-w-[440px]" : "text-sm"}`}>{s.description}</p>
+                  <span className={`inline-block self-start px-3 py-2 font-display text-lg leading-none ${s.pill}`}>{s.price}</span>
+                </div>
               </Link>
             </motion.div>
           ))}
-        </motion.div>
-      </div>
+        </Reveal>
+      </HomeContainer>
     </section>
   );
 };

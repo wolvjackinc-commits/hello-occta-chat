@@ -1,164 +1,116 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Phone, ArrowRight, Sparkles } from "lucide-react";
+import { Phone, ArrowRight, Search, FileCheck2 } from "lucide-react";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
+import { HomeContainer, SectionEyebrow } from "@/components/home/homeKit";
+import { revealItem, revealParent } from "@/components/home/homeMotion";
 
-const CTASection = () => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.12,
-        delayChildren: 0.1,
-      },
-    },
-  };
+/** Sends the visitor back to the hero checker rather than duplicating it (both share one availability state). */
+const focusHeroChecker = () => {
+  const input = document.getElementById("hero-postcode") as HTMLInputElement | null;
+  if (!input) return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  input.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+  window.setTimeout(() => input.focus({ preventScroll: true }), reduce ? 0 : 450);
+};
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
-      },
-    },
-  };
-
-  const decorativeVariants = {
-    hidden: { opacity: 0, scale: 0, rotate: 0 },
-    visible: (i: number) => ({
-      opacity: 0.2,
-      scale: 1,
-      rotate: i,
-      transition: {
-        duration: 0.6,
-        delay: 0.3,
-        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
-      },
-    }),
-  };
-
-  return (
-    <section className="py-24 bg-foreground text-background relative overflow-hidden">
-      {/* Animated Decorative Elements */}
+const CTASection = () => (
+  <section className="relative overflow-hidden bg-primary text-black">
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 opacity-[0.07]"
+      style={{
+        backgroundImage: "linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)",
+        backgroundSize: "64px 64px",
+      }}
+    />
+    <HomeContainer className="relative py-20 md:py-28">
       <motion.div
-        custom={12}
-        variants={decorativeVariants}
+        className="grid gap-14 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center"
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true }}
-        className="absolute top-10 right-20 w-32 h-32 border-4 border-primary hidden lg:block"
-      />
-      <motion.div
-        custom={-6}
-        variants={decorativeVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        className="absolute bottom-10 left-20 w-24 h-24 border-4 border-accent hidden lg:block"
-      />
-
-      <div className="container mx-auto px-4 relative z-10">
-        <motion.div
-          className="max-w-4xl mx-auto"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={containerVariants}
-        >
-          {/* Badge */}
-          <motion.div variants={itemVariants} className="inline-block mb-8">
-            <motion.div
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 border-4 border-primary"
-              whileHover={{ scale: 1.05, rotate: -1 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Sparkles className="w-5 h-5" />
-              <span className="font-display uppercase tracking-wider">Quote-led signup — confirmed in your Contract Summary</span>
-            </motion.div>
+        viewport={{ once: true, margin: "-80px" }}
+        variants={revealParent}
+      >
+        <div>
+          <motion.div variants={revealItem}>
+            <SectionEyebrow index="07" label="Ready when you are" tone="yellow" />
           </motion.div>
 
-          {/* Headline */}
-          <motion.h2 variants={itemVariants} className="text-display-lg mb-6">
-            READY TO CHECK YOUR
+          <motion.p
+            variants={revealItem}
+            className="mt-6 inline-flex items-center gap-2 border-[3px] border-black bg-white px-3 py-1.5 font-sans text-[11px] font-bold uppercase tracking-[0.14em]"
+          >
+            <FileCheck2 className="w-4 h-4" />
+            Quote-led signup — confirmed in your Contract Summary
+          </motion.p>
+
+          <motion.h2
+            variants={revealItem}
+            className="mt-6 font-display uppercase leading-[0.86] text-[3rem] sm:text-7xl lg:text-[6.5rem]"
+          >
+            Ready to check
             <br />
-            UK BROADBAND
+            your UK broadband
             <br />
-            <motion.span 
-              className="text-primary inline-block"
-              whileHover={{ x: 10, scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              &amp; SIM OPTIONS?
-            </motion.span>
+            <span className="mt-2 inline-block bg-black px-3 pt-1 text-[hsl(var(--primary))]">&amp; SIM options?</span>
           </motion.h2>
 
-          {/* Subtext */}
-          <motion.p
-            variants={itemVariants}
-            className="text-xl text-background/85 max-w-xl mb-10"
-          >
+          <motion.p variants={revealItem} className="mt-8 max-w-[560px] text-lg leading-relaxed text-black/75">
             Compare the broadband and SIM options currently available to you. For broadband, Flex 30 and Price Lock 24 are offered where eligible, with customer-specific price, speed information, setup and applicable charges shown before acceptance.
           </motion.p>
 
-          {/* CTA Buttons */}
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col sm:flex-row gap-4"
-          >
-            <Link to="/order">
-              <motion.div
-                whileHover={{ 
-                  y: -6, 
-                  x: -4,
-                  boxShadow: "10px 10px 0px 0px hsl(var(--background))",
-                }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Button variant="hero" size="xl" className="w-full sm:w-auto border-background">
-                  Start your broadband order
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </motion.div>
+          <motion.div variants={revealItem} className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <Link
+              to="/order"
+              className="group inline-flex h-16 items-center justify-center gap-3 border-[3px] border-black bg-black px-8 font-display text-xl uppercase tracking-wide text-primary transition-transform hover:-translate-y-0.5"
+            >
+              Start your broadband order
+              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </Link>
-            <a href={CONTACT_PHONE_TEL}>
-              <motion.div
-                whileHover={{ 
-                  y: -6, 
-                  x: -4,
-                  boxShadow: "10px 10px 0px 0px hsl(var(--background) / 0.3)",
-                }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Button 
-                  variant="outline" 
-                  size="xl" 
-                  className="w-full sm:w-auto bg-transparent border-background text-background hover:bg-background hover:text-foreground"
-                >
-                  <Phone className="w-5 h-5" />
-                  Call {CONTACT_PHONE_DISPLAY}
-                </Button>
-              </motion.div>
+            <a
+              href={CONTACT_PHONE_TEL}
+              className="inline-flex h-16 items-center justify-center gap-3 border-[3px] border-black bg-transparent px-8 font-display text-xl uppercase tracking-wide text-black transition-colors hover:bg-black hover:text-primary"
+            >
+              <Phone className="w-5 h-5" />
+              Call {CONTACT_PHONE_DISPLAY}
             </a>
           </motion.div>
 
-          {/* Trust Note */}
-          <motion.p
-            variants={itemVariants}
-            className="mt-4 text-sm text-background/70 font-display uppercase tracking-wider"
-          >
+          <motion.p variants={revealItem} className="mt-5 font-sans text-[11px] font-semibold uppercase tracking-[0.18em] text-black/60">
             Price Lock 24 • Flex 30 where eligible • Customer-specific terms before acceptance
           </motion.p>
+        </div>
+
+        {/* Postcode ticket — a big, friendly way back to the checker */}
+        <motion.div variants={revealItem} className="relative mx-auto w-full max-w-[440px]">
+          <div aria-hidden className="absolute inset-0 translate-x-4 translate-y-4 border-[3px] border-black bg-white" />
+          <button
+            type="button"
+            onClick={focusHeroChecker}
+            className="group relative block w-full rotate-[-2deg] border-[3px] border-black bg-black p-7 text-left text-white transition-transform duration-300 hover:rotate-0"
+          >
+            <span className="flex items-center justify-between font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55">
+              <span>Address check</span>
+              <span>Takes 10 seconds</span>
+            </span>
+            <span className="mt-8 flex items-center gap-3 border-[3px] border-white px-4 py-4">
+              <Search className="w-6 h-6 text-primary" />
+              <span className="font-display text-4xl tracking-[0.12em] text-white/35">Your postcode</span>
+              <span aria-hidden className="occ-blink ml-auto h-9 w-3 bg-primary" />
+            </span>
+            <span className="mt-4 flex h-14 items-center justify-center gap-2 bg-primary font-display text-xl uppercase tracking-wide text-black transition-colors group-hover:bg-white">
+              Check my address
+              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            </span>
+            <span className="mt-6 block border-t border-dashed border-white/25 pt-4 font-sans text-xs text-white/55">
+              ✓ No commitment &nbsp; ✓ Final service availability validated before provisioning
+            </span>
+          </button>
         </motion.div>
-      </div>
-    </section>
-  );
-};
+      </motion.div>
+    </HomeContainer>
+  </section>
+);
 
 export default CTASection;

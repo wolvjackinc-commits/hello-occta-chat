@@ -87,3 +87,17 @@ verify_jwt = false
 
 [functions.admin-payment-recon-import]
 verify_jwt = true
+
+# OCCTA campaign manager: browser actions enforce admin JWT in handler.
+[functions.campaign-manager]
+verify_jwt = true
+[functions.campaign-dispatch]
+verify_jwt = false
+[functions.campaign-unsubscribe]
+verify_jwt = false
+[functions.campaign-track]
+verify_jwt = false
+[functions.campaign-open]
+verify_jwt = false
+[functions.campaign-resend-webhook]
+verify_jwt = false

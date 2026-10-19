@@ -1,8 +1,8 @@
 name: Chat Functions Verification and Deploy
 
-# Lovable "Publish" ships the website only; edge functions changed through
-# GitHub need their own deploy. This covers Ollie (occta-companion), the live
-# chat handoff and the admin AI assistant.
+# Type-checks Ollie (occta-companion), the live chat handoff and the admin AI
+# assistant. Lovable "Publish" ships the website only; the deploy job runs only
+# if a SUPABASE_ACCESS_TOKEN secret exists, otherwise Lovable deploys them.
 on:
   pull_request:
     paths:
@@ -48,25 +48,34 @@ jobs:
       PROJECT_REF: oexgjmuvgdndizsufipe
 
     steps:
+      # Supabase is managed by Lovable Cloud, so there is normally no token here
+      # and Lovable deploys the functions. Skip quietly rather than fail the run.
+      - name: Check deployment credential
+        id: credential
+        shell: bash
+        run: |
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "::notice title=Deploy skipped::SUPABASE_ACCESS_TOKEN is not configured. Nothing was deployed; ask Lovable to deploy occta-companion, chat-handoff and ai-chat."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.credential.outputs.available == 'true'
       - uses: supabase/setup-cli@v1
+        if: steps.credential.outputs.available == 'true'
         with:
           version: 2.98.0
 
-      - name: Confirm deployment credential exists
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
-            echo "SUPABASE_ACCESS_TOKEN is not configured in GitHub Actions. Nothing was deployed."
-            exit 1
-          fi
-
       - name: Deploy Ollie customer companion
+        if: steps.credential.outputs.available == 'true'
         run: supabase functions deploy occta-companion --project-ref "$PROJECT_REF"
 
       - name: Deploy live chat handoff
+        if: steps.credential.outputs.available == 'true'
         run: supabase functions deploy chat-handoff --project-ref "$PROJECT_REF"
 
       - name: Deploy admin AI assistant
+        if: steps.credential.outputs.available == 'true'
         run: supabase functions deploy ai-chat --project-ref "$PROJECT_REF"

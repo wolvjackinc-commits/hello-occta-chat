@@ -204,7 +204,7 @@ function welcome(signedIn: boolean, name?: string): Message {
     role: "assistant",
     content: signedIn
       ? `Hiya${name ? ` ${name}` : ""}, I'm Ollie. I can see your OCCTA account, so ask me anything: bills explained line by line, orders, Direct Debits, tickets, or why the Wi-Fi has gone on strike. Kettle's on, what can I sort for you?`
-      : `Hiya, I'm Ollie from OCCTA. Broadband, bills, SIMs or a router having a sulk, just tell me in normal words and I'll sort it here. Sign in and I can check your actual account too.`,
+      : `Hiya, I'm Ollie from OCCTA. Broadband, bills, SIMs or a router having a sulk, just tell me in normal words and I'll sort it here. Share your account number and date of birth (or sign in, if you prefer) and I can check your actual account too.`,
     createdAt: new Date().toISOString(),
     agent: "ollie",
   };
@@ -458,7 +458,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
     return () => window.clearInterval(timer);
   }, [handoffStatus, pollAdvisor]);
 
-  const logConversation = useCallback(async (turns: { role: string; content: string }[], reason?: string) => {
+  const logConversation = useCallback(async (turns: { role: string; content: string }[], reason?: string, summaryOverride?: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -469,7 +469,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
           sessionId: sessionId.current,
           mode: reason ? "handoff" : "log",
           reason,
-          summary: redact(turns.find((turn) => turn.role === "user")?.content || "OCCTA customer chat"),
+          summary: redact(summaryOverride || turns.find((turn) => turn.role === "user")?.content || "OCCTA customer chat"),
           lastMessage: redact([...turns].reverse().find((turn) => turn.role === "user")?.content || ""),
           transcript: turns.map((turn) => ({ ...turn, content: redact(occtaOnlyLinks(turn.content)) })),
         }),
@@ -487,11 +487,13 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
     return await logConversation(messages.slice(-8).map((m) => ({ role: m.role, content: m.content }))) ?? null;
   }, [conversationId, logConversation, messages]);
 
-  const requestHuman = useCallback(async () => {
-    const recent = messages.slice(-16).map((m) => ({ role: m.role, content: m.content }));
+  const requestHuman = useCallback(async (handoff?: { reason: string; summary: string; turns: { role: string; content: string }[] }) => {
+    const recent = handoff?.turns ?? messages.slice(-16).map((m) => ({ role: m.role, content: m.content }));
     pollSince.current = new Date(Date.now() - 60_000).toISOString();
-    const id = await logConversation(recent, "requested_human");
+    const id = await logConversation(recent, handoff ? `ollie_${handoff.reason}` : "requested_human", handoff?.summary);
     if (id) setHandoffStatus("awaiting_human");
+    // Ollie already told the customer about its own transfer; only speak up if it failed.
+    if (handoff && id) return;
     setMessages((current) => [...current, {
       id: crypto.randomUUID(), role: "assistant", agent: "ollie", createdAt: new Date().toISOString(),
       content: id
@@ -572,12 +574,15 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
       return;
     }
 
-    if (/\b(?:raise|create|open|log|submit)\b.{0,35}\b(?:ticket|support case|case)\b|\bbilling ticket\b/i.test(raw)) {
+    // Signed-in customers get the ticket form; everyone else can have Ollie verify them and raise it.
+    if (signedIn && /\b(?:raise|create|open|log|submit)\b.{0,35}\b(?:ticket|support case|case)\b|\bbilling ticket\b/i.test(raw)) {
       openTicket();
       return;
     }
 
-    if (isExplicitHumanRequest(raw)) {
+    // The first ask for a person goes to Ollie, who offers to sort it first. Asking again connects straight away.
+    const humanAsk = isExplicitHumanRequest(raw);
+    if (humanAsk && messages.some((m) => m.role === "user" && isExplicitHumanRequest(m.rawContent ?? m.content))) {
       void requestHuman();
       return;
     }
@@ -615,6 +620,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
       const expandedIntent = expandedPublicIntent(raw);
       let answer: string | null = null;
       let intent = expandedIntent || "general";
+      let handoff: { reason: string; summary: string } | null = null;
 
       {
         const { data: { session } } = await supabase.auth.getSession();
@@ -642,6 +648,9 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
           }
           answer = String(payload?.content || "").trim() || null;
           intent = String(payload?.source || expandedIntent || "general");
+          if (payload?.handoff && typeof payload.handoff.reason === "string") {
+            handoff = { reason: payload.handoff.reason, summary: String(payload.handoff.summary || "") };
+          }
 
           if (answer && /couldn['’]?t verify those details/i.test(answer)) {
             answer = verificationFailureFallback();
@@ -656,6 +665,12 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
         } catch (endpointError) {
           console.warn("companion endpoint unavailable, using local fallback", endpointError);
         }
+      }
+
+      // If Ollie is unavailable, a request for a person must still get through.
+      if (!answer && humanAsk) {
+        void requestHuman();
+        return;
       }
 
       // Local fallbacks only if the AI assistant could not answer.
@@ -679,7 +694,12 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
         ...current.map((message) => ({ ...message, rawContent: undefined })),
         { id: crypto.randomUUID(), role: "assistant", agent: "ollie", content: answer, createdAt: new Date().toISOString() },
       ]);
-      void logConversation([{ role: "user", content: redact(raw) }, { role: "assistant", content: answer }]);
+      if (handoff) {
+        const turns = [...before, userMessage].slice(-15).map((m) => ({ role: m.role, content: redact(m.content) }));
+        void requestHuman({ ...handoff, turns: [...turns, { role: "assistant", content: answer }] });
+      } else {
+        void logConversation([{ role: "user", content: redact(raw) }, { role: "assistant", content: answer }]);
+      }
     } catch (error) {
       const text = error instanceof Error ? error.message : "request_failed";
       setMessages((current) => [...current.map((message) => ({ ...message, rawContent: undefined })), {
@@ -689,7 +709,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
     } finally {
       setLoading(false);
     }
-  }, [awaitingSecureEmail, conversationId, humanLive, loading, logConversation, messages, openTicket, requestHuman, uploading]);
+  }, [awaitingSecureEmail, conversationId, humanLive, loading, logConversation, messages, openTicket, requestHuman, signedIn, uploading]);
 
   const clearChat = useCallback(() => {
     sessionStorage.removeItem(HISTORY_KEY);

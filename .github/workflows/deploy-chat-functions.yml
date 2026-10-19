@@ -11,6 +11,9 @@ on:
       - 'supabase/functions/ai-chat/**'
       - 'supabase/functions/_shared/companionCore.ts'
       - 'supabase/functions/_shared/aiSafety.ts'
+      - 'supabase/functions/_shared/supportTickets.ts'
+      - 'supabase/functions/_shared/quoteHelpers.ts'
+      - 'supabase/functions/submit-support-ticket/**'
       - '.github/workflows/deploy-chat-functions.yml'
   push:
     branches: [main]
@@ -20,6 +23,9 @@ on:
       - 'supabase/functions/ai-chat/**'
       - 'supabase/functions/_shared/companionCore.ts'
       - 'supabase/functions/_shared/aiSafety.ts'
+      - 'supabase/functions/_shared/supportTickets.ts'
+      - 'supabase/functions/_shared/quoteHelpers.ts'
+      - 'supabase/functions/submit-support-ticket/**'
       - '.github/workflows/deploy-chat-functions.yml'
   workflow_dispatch:
 
@@ -37,6 +43,7 @@ jobs:
           deno check --no-lock supabase/functions/occta-companion/index.ts
           deno check --no-lock supabase/functions/chat-handoff/index.ts
           deno check --no-lock supabase/functions/ai-chat/index.ts
+          deno check --no-lock supabase/functions/submit-support-ticket/index.ts
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -55,7 +62,7 @@ jobs:
         shell: bash
         run: |
           if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
-            echo "::notice title=Deploy skipped::SUPABASE_ACCESS_TOKEN is not configured. Nothing was deployed; ask Lovable to deploy occta-companion, chat-handoff and ai-chat."
+            echo "::notice title=Deploy skipped::SUPABASE_ACCESS_TOKEN is not configured. Nothing was deployed; ask Lovable to deploy occta-companion, chat-handoff, ai-chat and submit-support-ticket."
             echo "available=false" >> "$GITHUB_OUTPUT"
           else
             echo "available=true" >> "$GITHUB_OUTPUT"
@@ -79,3 +86,7 @@ jobs:
       - name: Deploy admin AI assistant
         if: steps.credential.outputs.available == 'true'
         run: supabase functions deploy ai-chat --project-ref "$PROJECT_REF"
+
+      - name: Deploy support ticket intake
+        if: steps.credential.outputs.available == 'true'
+        run: supabase functions deploy submit-support-ticket --project-ref "$PROJECT_REF"

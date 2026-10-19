@@ -17,7 +17,7 @@ import {
   redactSensitiveText,
   withOptions,
 } from "../_shared/companionCore.ts";
-import { claudeEnabled, runOcctaBrain } from "./brain.ts";
+import { type BrainReply, claudeEnabled, runOcctaBrain } from "./brain.ts";
 import { type CustomerScope, type OrdersResult, createAccountToolkit } from "./accountTools.ts";
 
 const OCCTA_PHONE = "0800 260 6626";
@@ -42,6 +42,8 @@ type CompanionReply = {
   content: string;
   verificationToken?: string;
   source?: "account" | "approved_content" | "knowledge_base" | "ai";
+  engine?: "claude" | "lovable";
+  handoff?: { reason: string; summary: string };
 };
 
 const encoder = new TextEncoder();
@@ -301,7 +303,7 @@ async function accountReply(
       scope.userId
         ? serviceClient.from("services").select("id, status").eq("user_id", scope.userId).limit(50)
         : Promise.resolve({ data: [], error: null }),
-      scope.signedIn && scope.userId
+      scope.userId
         ? serviceClient.from("support_tickets").select("id, status").eq("user_id", scope.userId).limit(50)
         : Promise.resolve({ data: [], error: null }),
     ]);
@@ -316,7 +318,7 @@ async function accountReply(
       ? "\n\nSome account sections were temporarily unavailable, so I have not estimated them."
       : "";
     return withOptions(
-      `Hi ${name} — your account is securely verified.\n\n**Account:** ${maskAccountNumber(scope.accountNumber)}\n**Email:** ${maskEmail(scope.email)}\n**Phone:** ${maskPhone(scope.phone)}\n**Orders on file:** ${failed ? "not available" : orderCount}\n**Services on file:** ${servicesResult.error ? "not available" : (servicesResult.data ?? []).length}\n**Open support cases:** ${scope.signedIn ? (ticketsResult.error ? "not available" : openTickets) : "sign in to view"}${sectionWarning}`,
+      `Hi ${name} — your account is securely verified.\n\n**Account:** ${maskAccountNumber(scope.accountNumber)}\n**Email:** ${maskEmail(scope.email)}\n**Phone:** ${maskPhone(scope.phone)}\n**Orders on file:** ${failed ? "not available" : orderCount}\n**Services on file:** ${servicesResult.error ? "not available" : (servicesResult.data ?? []).length}\n**Open support cases:** ${scope.userId ? (ticketsResult.error ? "not available" : openTickets) : "not available"}${sectionWarning}`,
       ["Check my latest invoice", "Track my order", "Check my services", "Raise a ticket"],
     );
   }
@@ -361,9 +363,9 @@ async function accountReply(
   }
 
   if (intent === "invoices") {
-    if (!scope.signedIn || !scope.userId) {
+    if (!scope.userId) {
       return withOptions(
-        `Hi ${name} — invoice amounts and billing documents require a signed-in account session. Date-of-birth verification alone does not unlock them.`,
+        `Hi ${name} — I can't see an online billing record linked to this account yet, so I won't guess. I can raise it with the billing team for you.`,
         ["Sign in", "Raise a billing ticket", "Talk to a human"],
       );
     }
@@ -428,9 +430,9 @@ async function accountReply(
   }
 
   if (intent === "tickets") {
-    if (!scope.signedIn || !scope.userId) {
+    if (!scope.userId) {
       return withOptions(
-        `Hi ${name} — support-case subjects and notes require sign-in. Date-of-birth verification alone does not unlock them.`,
+        `Hi ${name} — I can't see an online support record linked to this account yet. I can raise a new case with the team for you.`,
         ["Sign in", "Raise a ticket", "Talk to a human"],
       );
     }
@@ -457,9 +459,9 @@ async function accountReply(
   }
 
   if (intent === "documents") {
-    if (!scope.signedIn || !scope.userId) {
+    if (!scope.userId) {
       return withOptions(
-        `Hi ${name} — contracts, receipts and account documents require sign-in because they contain personal and commercial information.`,
+        `Hi ${name} — I can't see online documents linked to this account yet. The team can send them to you.`,
         ["Sign in", "Check my order", "Talk to a human"],
       );
     }
@@ -726,6 +728,8 @@ serve(async (request) => {
 
     // Identity comes only from the signed-in session or a server-signed verification token.
     let scope: CustomerScope | null = null;
+    let issuedToken: string | undefined;
+    let justVerified = false;
     if (authUser?.id) {
       scope = await scopeFromSignedInUser(serviceClient, authUser);
     } else {
@@ -742,8 +746,8 @@ serve(async (request) => {
       if (!accountNumber) {
         reply = {
           content: withOptions(
-            `Happy to dig into that. First, the boring-but-important bit: what's your OCCTA account number? It starts with **OCC**. The quickest route is to **sign in**, and then I can see everything, bills included. Please don't send bank details, passwords or one-time codes.`,
-            ["Sign in instead", "I need help finding it", "Talk to a human"],
+            `Happy to dig into that. First, the boring-but-important bit: what's your OCCTA account number? It starts with **OCC**. Then I'll ask for the account holder's date of birth, and I can see everything, bills included. (Signing in works too, if you'd rather.) Please don't send bank details, passwords or one-time codes.`,
+            ["I need help finding it", "Sign in instead", "Talk to a human"],
           ),
           source: "account",
         };
@@ -766,45 +770,42 @@ serve(async (request) => {
             source: "account",
           };
         } else {
-          const verificationToken = await signVerification({
+          issuedToken = await signVerification({
             v: 1,
             sessionId,
             accountNumber: verified.accountNumber ?? accountNumber,
             exp: Math.floor(Date.now() / 1000) + VERIFICATION_TTL_SECONDS,
           }, serviceRoleKey);
-          reply = {
-            content: await accountReply(serviceClient, verified, accountIntent),
-            verificationToken,
-            source: "account",
-          };
+          // Verified: hand over to the AI with this customer's tools to answer the original question.
+          scope = verified;
+          justVerified = true;
+          if (!claudeEnabled()) {
+            reply = { content: await accountReply(serviceClient, verified, accountIntent), source: "account" };
+          }
         }
       }
     }
 
     if (!reply) {
-      const knowledgeContext = await searchKnowledgeBase(serviceClient, latestUserText, Boolean(authUser?.id));
-      const account = scope
-        ? createAccountToolkit(serviceClient, scope, {
-          loadOrders,
-          authorization: request.headers.get("Authorization"),
-        })
-        : undefined;
-      let aiContent: string | null = null;
+      const knowledgeContext = await searchKnowledgeBase(serviceClient, latestUserText, Boolean(scope?.userId));
+      const account = scope ? createAccountToolkit(serviceClient, scope, { loadOrders }) : undefined;
+      let brainReply: BrainReply | null = null;
       try {
-        aiContent = await runOcctaBrain(messages, {
+        brainReply = await runOcctaBrain(messages, {
           signedIn: Boolean(authUser?.id),
           customerName: scope?.fullName ? firstName(scope.fullName) : null,
           knowledgeContext,
           searchKnowledge: (query: string) =>
-            searchKnowledgeBase(serviceClient, query, Boolean(authUser?.id)),
+            searchKnowledgeBase(serviceClient, query, Boolean(scope?.userId)),
           account,
+          justVerified,
         });
       } catch (aiError) {
         console.error("occta brain failed", (aiError as Error).message);
       }
 
-      if (aiContent) {
-        reply = { content: aiContent, source: "ai" };
+      if (brainReply) {
+        reply = { content: brainReply.content, source: "ai", engine: brainReply.engine, handoff: brainReply.handoff };
       } else if (accountIntent && scope) {
         reply = { content: await accountReply(serviceClient, scope, accountIntent), source: "account" };
       } else {
@@ -829,8 +830,10 @@ serve(async (request) => {
     return jsonResponse({
       content: reply.content,
       role: "assistant",
-      verificationToken: reply.verificationToken,
+      verificationToken: reply.verificationToken ?? issuedToken,
       source: reply.source,
+      engine: reply.engine,
+      handoff: reply.handoff,
     });
   } catch (error) {
     if ((error as Error).message === "verification_rate_limited") {

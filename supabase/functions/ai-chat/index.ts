@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import Anthropic from "npm:@anthropic-ai/sdk@0.130.0";
 import { redact, safeJson, containsForbiddenContent } from "../_shared/aiSafety.ts";
 
 // CORS headers (public web app calls)
@@ -1612,6 +1613,185 @@ function detectIntent(message: string): { intent: string; category: string } {
   return { intent: "general_inquiry", category: "general" };
 }
 
+// === AI providers ===
+// Claude via the Anthropic API is primary (no Lovable credits). The Lovable gateway
+// is only used when ANTHROPIC_API_KEY is missing, so the assistant keeps working
+// until that secret is added.
+
+type ToolRunner = (toolName: string, toolArgs: Record<string, unknown>) => Promise<string>;
+type OpenAiTool = { type: string; function: { name: string; description: string; parameters: unknown } };
+type ChatTurn = { role: string; content: string };
+type ProviderReply = { content: string; errorStatus?: undefined } | { content?: undefined; errorStatus: 429 | 402 };
+
+const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const GATEWAY_MODEL = "google/gemini-2.5-flash";
+const CLAUDE_MODEL = Deno.env.get("AI_CHAT_MODEL")?.trim() || "claude-opus-5-5";
+// Server-side refusal fallbacks are only offered on these model lines.
+const SUPPORTS_FALLBACKS = /^claude-(?:opus-5|fable-5|sonnet-5-5)/.test(CLAUDE_MODEL);
+// Safety cap on model round trips per user message (each tool batch is one round trip).
+const MAX_CLAUDE_STEPS = 10;
+const CLAUDE_REFUSAL_REPLY =
+  "Hmm — I don't want to guess and give you wrong info. Let me help another way or connect you to support 🙂";
+
+// The tool definitions above are OpenAI-style; Claude takes the same JSON Schema as input_schema.
+function toClaudeTools(tools: OpenAiTool[]): Anthropic.Beta.BetaTool[] {
+  return tools.map((tool) => ({
+    name: tool.function.name,
+    description: tool.function.description,
+    input_schema: tool.function.parameters as Anthropic.Beta.BetaTool.InputSchema,
+  }));
+}
+
+async function runClaudeChat(
+  apiKey: string,
+  systemPrompt: string,
+  messages: ChatTurn[],
+  tools: OpenAiTool[],
+  runTool: ToolRunner,
+): Promise<ProviderReply> {
+  // The widget history opens with IRA's welcome; the API conversation must start with the user.
+  const conversation: Anthropic.Beta.BetaMessageParam[] = messages
+    .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
+    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+  while (conversation.length && conversation[0].role !== "user") conversation.shift();
+  if (!conversation.length) throw new Error("No user message to answer");
+
+  const client = new Anthropic({ apiKey, timeout: 60_000, maxRetries: 1 });
+  const claudeTools = toClaudeTools(tools);
+
+  try {
+    for (let step = 0; step < MAX_CLAUDE_STEPS; step += 1) {
+      const response = await client.beta.messages.create({
+        model: CLAUDE_MODEL,
+        max_tokens: 16000,
+        output_config: { effort: "medium" },
+        ...(SUPPORTS_FALLBACKS ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
+        system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+        tools: claudeTools,
+        tool_choice: { type: "auto" },
+        messages: conversation,
+      });
+
+      if (response.stop_reason === "refusal") {
+        console.warn("Claude refusal", response.stop_details?.category ?? null);
+        return { content: CLAUDE_REFUSAL_REPLY };
+      }
+
+      if (response.stop_reason === "tool_use") {
+        // Keep the full assistant content (thinking + tool_use blocks) and answer every call in one user turn.
+        conversation.push({ role: "assistant", content: response.content });
+        const results: Anthropic.Beta.BetaToolResultBlockParam[] = [];
+        for (const block of response.content) {
+          if (block.type !== "tool_use") continue;
+          const toolArgs = (block.input && typeof block.input === "object" ? block.input : {}) as Record<string, unknown>;
+          results.push({ type: "tool_result", tool_use_id: block.id, content: await runTool(block.name, toolArgs) });
+        }
+        conversation.push({ role: "user", content: results });
+        continue;
+      }
+
+      const text = response.content
+        .flatMap((block) => (block.type === "text" ? [block.text] : []))
+        .join("\n")
+        .trim();
+      return { content: text };
+    }
+  } catch (error) {
+    if (error instanceof Anthropic.RateLimitError) return { errorStatus: 429 };
+    if (error instanceof Anthropic.APIError) {
+      console.error("Claude API error:", error.status, error.message.slice(0, 500));
+      throw new Error("AI service error");
+    }
+    throw error;
+  }
+
+  console.error(`Claude tool loop exceeded ${MAX_CLAUDE_STEPS} steps`);
+  throw new Error("AI service error during tool follow-up");
+}
+
+async function runGatewayChat(
+  apiKey: string,
+  systemPrompt: string,
+  messages: ChatTurn[],
+  tools: OpenAiTool[],
+  runTool: ToolRunner,
+): Promise<ProviderReply> {
+  const currentMessages = [
+    { role: "system", content: systemPrompt },
+    ...messages,
+  ];
+
+  let response = await fetch(GATEWAY_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: GATEWAY_MODEL,
+      messages: currentMessages,
+      tools,
+      tool_choice: "auto",
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 429 || response.status === 402) {
+      return { errorStatus: response.status };
+    }
+    const errorText = await response.text();
+    console.error("AI gateway error:", response.status, errorText);
+    throw new Error("AI service error");
+  }
+
+  let data = await response.json();
+  let assistantMessage = data.choices[0].message;
+
+  // Handle tool calls in a loop
+  while (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+    const toolResults: Array<{ role: string; tool_call_id: string; content: string }> = [];
+
+    for (const toolCall of assistantMessage.tool_calls) {
+      const toolName = toolCall.function.name;
+      const toolArgs = JSON.parse(toolCall.function.arguments);
+
+      toolResults.push({
+        role: "tool",
+        tool_call_id: toolCall.id,
+        content: await runTool(toolName, toolArgs),
+      });
+    }
+
+    // Add assistant message with tool calls and tool results
+    currentMessages.push(assistantMessage);
+    currentMessages.push(...toolResults);
+
+    // Call AI again with tool results
+    response = await fetch(GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: GATEWAY_MODEL,
+        messages: currentMessages,
+        tools,
+        tool_choice: "auto",
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("AI service error during tool follow-up");
+    }
+
+    data = await response.json();
+    assistantMessage = data.choices[0].message;
+  }
+
+  return { content: assistantMessage.content ?? "" };
+}
+
 serve(async (req) => {
   const origin = req.headers.get('Origin');
   const corsHeaders = getCorsHeaders(origin);
@@ -1624,10 +1804,13 @@ serve(async (req) => {
 
   try {
     const { messages, userId: _clientUserId, sessionId } = await req.json();
+    // Claude (Anthropic API) is the primary provider; the Lovable gateway is only a
+    // legacy fallback until ANTHROPIC_API_KEY is added.
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+
+    if (!ANTHROPIC_API_KEY && !LOVABLE_API_KEY) {
+      throw new Error("Neither ANTHROPIC_API_KEY nor LOVABLE_API_KEY is configured");
     }
 
     // Create Supabase clients - use service role ONLY for verification queries
@@ -2024,103 +2207,42 @@ After chatting with IRA, users should feel:
 
 IRA's success is clarity + trust, not conversion at all costs.`;
 
-    const currentMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages,
-    ];
+    // Runs one tool call with the caller's verified identity; shared by both providers.
+    const runTool: ToolRunner = async (toolName, toolArgs) => {
+      console.log(`Executing tool: ${toolName}`, toolArgs);
+
+      const result = await executeTool(
+        toolName,
+        toolArgs,
+        supabaseServiceClient,
+        supabaseAnonClient,
+        userId ?? undefined,
+        isAdmin,
+      );
+      // Last-line defence: if anything resembling a credential slipped through, scrub it.
+      return containsForbiddenContent(result)
+        ? JSON.stringify({ success: false, message: "Result blocked by safety filter." })
+        : result;
+    };
 
     // Call AI with available tools (includes admin tools if admin)
-    let response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: currentMessages,
-        tools: availableTools,
-        tool_choice: "auto",
-      }),
-    });
+    const reply = ANTHROPIC_API_KEY
+      ? await runClaudeChat(ANTHROPIC_API_KEY, systemPrompt, messages, availableTools, runTool)
+      : await runGatewayChat(LOVABLE_API_KEY!, systemPrompt, messages, availableTools, runTool);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Service temporarily unavailable. Please call us at 0800 260 6626." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("AI service error");
-    }
-
-    let data = await response.json();
-    let assistantMessage = data.choices[0].message;
-
-    // Handle tool calls in a loop
-    while (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-      const toolResults: Array<{ role: string; tool_call_id: string; content: string }> = [];
-      
-      for (const toolCall of assistantMessage.tool_calls) {
-        const toolName = toolCall.function.name;
-        const toolArgs = JSON.parse(toolCall.function.arguments);
-        
-        console.log(`Executing tool: ${toolName}`, toolArgs);
-        
-        const result = await executeTool(
-          toolName, 
-          toolArgs, 
-          supabaseServiceClient, 
-          supabaseAnonClient, 
-          userId ?? undefined,
-          isAdmin,
-        );
-        // Last-line defence: if anything resembling a credential slipped through, scrub it.
-        const safeResult = containsForbiddenContent(result)
-          ? JSON.stringify({ success: false, message: "Result blocked by safety filter." })
-          : result;
-
-        toolResults.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: safeResult,
-        });
-      }
-
-      // Add assistant message with tool calls and tool results
-      currentMessages.push(assistantMessage);
-      currentMessages.push(...toolResults);
-
-      // Call AI again with tool results
-      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: currentMessages,
-          tools: availableTools,
-          tool_choice: "auto",
-        }),
+    if (reply.errorStatus === 429) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-
-      if (!response.ok) {
-        throw new Error("AI service error during tool follow-up");
-      }
-
-      data = await response.json();
-      assistantMessage = data.choices[0].message;
     }
+    if (reply.errorStatus === 402) {
+      return new Response(JSON.stringify({ error: "Service temporarily unavailable. Please call us at 0800 260 6626." }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const assistantContent = reply.content;
 
     const responseTime = Date.now() - startTime;
 
@@ -2144,7 +2266,7 @@ IRA's success is clarity + trust, not conversion at all costs.`;
                 session_id: sessionId,
                 user_id: userId || null,
                 message_type: "assistant",
-                message_content: assistantMessage.content || "",
+                message_content: assistantContent,
                 detected_intent: intent,
                 detected_category: category,
                 response_time_ms: responseTime,
@@ -2160,7 +2282,7 @@ IRA's success is clarity + trust, not conversion at all costs.`;
 
     return new Response(
       JSON.stringify({ 
-        content: assistantMessage.content,
+        content: assistantContent,
         role: "assistant"
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

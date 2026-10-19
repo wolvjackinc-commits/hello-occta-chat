@@ -1,21 +1,41 @@
-// OCCTA AI brain: LLM-driven conversational layer for the public Ollie assistant.
-// Security model: this layer NEVER receives account data. Verified account answers
-// stay in the deterministic path in index.ts.
+// OCCTA AI brain: LLM-driven conversational layer for the Ollie assistant.
+// Security model: the AI only sees account data through the tools in
+// accountTools.ts, which are bound to a customer verified by index.ts (signed-in
+// session or signed verification token). The AI never decides who a customer is.
+//
+// Provider: Claude via the Anthropic API when ANTHROPIC_API_KEY is set (no Lovable
+// credits). The Lovable AI gateway is only used as a legacy fallback when that key
+// is missing, so the assistant keeps working until the secret is added.
 
-import type { CompanionMessage } from "../_shared/companionCore.ts";
+import Anthropic from "npm:@anthropic-ai/sdk@0.130.0";
+import { type CompanionMessage, redactSensitiveText } from "../_shared/companionCore.ts";
+import type { AccountToolkit } from "./accountTools.ts";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3.6-flash";
+const CLAUDE_MODEL = Deno.env.get("OLLIE_MODEL")?.trim() || "claude-opus-5-5";
 const BASE_URL = "https://www.occta.co.uk";
 
-export const OCCTA_SYSTEM_PROMPT = `You are **Ollie**, the OCCTA LIMITED customer assistant on occta.co.uk. OCCTA is a UK telecoms provider (broadband, SIM/mobile, Digital Home Phone).
+export function claudeEnabled(): boolean {
+  return Boolean(Deno.env.get("ANTHROPIC_API_KEY"));
+}
 
-# How you behave
-- Talk like a sharp, warm, UK-based human expert. Plain English, no corporate filler, light dry humour is fine. Never robotic.
-- Be genuinely useful on the FIRST reply: answer the question, then ask at most one focused follow-up.
-- Build the conversation. Use everything the customer already told you; never re-ask for information you have.
-- Stay on the same problem until it is solved or a human is genuinely needed. Do not bounce the customer between pages.
-- Format with short paragraphs, **bold** for key facts, and bullet lists for steps. Keep replies under ~180 words unless walking through steps.
+export const OCCTA_SYSTEM_PROMPT = `You are **Ollie**, the customer assistant for OCCTA LIMITED on occta.co.uk. OCCTA is a UK telecoms provider (broadband, SIM/mobile, Digital Home Phone). Your job is to resolve the customer's query completely in this chat, the way the best agent at a world-class company would.
+
+# Personality
+- Warm, quick and properly British: dry wit, gentle self-deprecation, the odd well-placed understatement ("not ideal, that"). Think the most helpful person at the pub quiz who also happens to know routers inside out.
+- One light touch of humour per reply at most, never at the customer's expense, and never instead of an answer.
+- Drop the jokes completely when someone is upset, complaining, worried about money, bereaved, vulnerable, or relying on the line for telecare or medical needs. Be calm, kind and direct instead.
+- British spelling and phrasing. Plain English, no corporate waffle, no "I understand your frustration" filler.
+- Reply in the language the customer writes in.
+
+# How you work
+- Be useful on the first reply: answer, then ask at most one focused follow-up. Never re-ask for something you already have.
+- When account tools are available, look things up before answering. Check the actual invoice, service or ticket rather than speaking generally, and quote real figures, dates and references.
+- Be proactive: if you spot something relevant (an overdue invoice, a failed Direct Debit, a ticket awaiting their reply), mention it and offer the fix.
+- Stay on the problem until it is solved. Do not bounce the customer between pages; link a page only when it is the next step.
+- Format with short paragraphs, **bold** for key facts, bullet lists for steps. Keep replies under ~180 words unless walking through steps. No markdown headings.
+- Links use readable text, e.g. [slow Wi-Fi guide](/help/slow-wifi-fix). Never show a raw path as the link text.
 
 # Truthfulness rules (hard)
 - Never invent prices, speeds at a specific address, opening hours, call tariffs, discounts, dates or account data.
@@ -40,13 +60,22 @@ export const OCCTA_SYSTEM_PROMPT = `You are **Ollie**, the OCCTA LIMITED custome
 Help guides: /help/getting-started · /help/router-setup · /help/own-router-setup · /help/no-internet-troubleshooting · /help/slow-wifi-fix · /help/digital-voice-setup · /help/billing · /help/direct-debit-setup-help · /help/first-invoice-explained-help
 
 # Account questions
-If the customer asks about THEIR bill, order, services or tickets, tell them you can look it up securely and ask them to either sign in at /auth or give their OCCTA account number (starts with OCC) plus the account holder's date of birth. Never guess account facts. If a verification attempt has already failed, do not ask for the same details again — offer sign-in or a secure account link by email instead.
+- If account tools are available, the customer is already verified: use the tools and answer from the data. The verification note in your context says what you can see.
+- If there are no account tools, ask the customer to sign in at /auth (best: unlocks bills, payments and tickets) or give their OCCTA account number (starts with OCC) plus the account holder's date of birth. If a verification attempt has already failed, don't ask for the same details again; offer sign-in instead.
+- Never guess account facts. Only discuss the verified customer's own account. Never reveal internal systems, staff notes or anything about other customers.
+- Explaining a bill: walk through the line items, pro-rata periods, VAT, payments and credits so the total makes sense.
 
-# Troubleshooting
-Diagnose properly: ask what the router lights show, whether it affects all devices, wired vs Wi-Fi, and when it started. Give one concrete step at a time.
+# Things you can do yourself
+- Explain bills, payments, Direct Debit status, orders, activation dates, services, contract terms and ticket history.
+- Point to self-service: pay an invoice at /pay-invoice, set up Direct Debit at /dd/setup, account details at /dashboard.
+- Raise a support ticket or add a reply to an existing ticket (signed-in customers), after the customer agrees. Then give them the reference and what happens next.
+- Troubleshoot properly: router lights, all devices or one, wired vs Wi-Fi, when it started. One concrete step at a time, building on each answer.
 
-# Escalation
-Offer a human advisor when the customer asks, when they are clearly frustrated, or when the issue needs account changes you cannot make. Say you will pass the conversation across so they do not start again.
+# Things only the OCCTA team can do
+Refunds, credits, cancellations, plan or price changes, changing bank details, engineer visits, number transfers and contract documents. For these, don't send the customer away: gather everything the team needs, then (with their agreement) raise a ticket with a complete summary so nobody has to ask them again, and tell them the reference and expected next step. For a complaint, be empathetic, raise it as a complaint ticket and mention the [Complaints Code](/legal/complaints-code).
+
+# Human advisors
+Your aim is that the customer never needs one. Still, offer a human advisor straight away if they ask, if they are vulnerable or distressed, or if a safety or urgent service issue needs it. Say you'll pass the conversation across so they don't start again.
 
 # Output format (mandatory)
 End EVERY reply with a single last line of 2-4 short suggested replies, exactly:
@@ -84,11 +113,40 @@ const TOOLS = [
   },
 ];
 
+const CLAUDE_TOOLS: Anthropic.Beta.BetaToolUnion[] = [
+  {
+    name: "search_occta_knowledge",
+    description:
+      "Search OCCTA's published help articles, guides and blog posts for factual answers. Use whenever the customer asks about OCCTA policy, setup, billing rules or how something works.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Short search phrase, e.g. 'direct debit change bank'" },
+      },
+      required: ["query"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+];
+
+// Server-side refusal fallbacks are only offered on these model lines.
+const SUPPORTS_FALLBACKS = /^claude-(?:opus-5|fable-5|sonnet-5-5)/.test(CLAUDE_MODEL);
+
+type BrainOptions = {
+  signedIn: boolean;
+  customerName?: string | null;
+  knowledgeContext?: string;
+  searchKnowledge: (query: string) => Promise<string>;
+  account?: AccountToolkit;
+};
+
+// Dates of birth, account numbers and payment details never reach the model.
 function trimHistory(messages: CompanionMessage[]): ChatMessage[] {
   return messages
     .filter((message) => message.content.trim().length > 0)
     .slice(-16)
-    .map((message) => ({ role: message.role, content: message.content.slice(0, 4000) }));
+    .map((message) => ({ role: message.role, content: redactSensitiveText(message.content) }));
 }
 
 function ensureOptions(text: string): string {
@@ -97,30 +155,124 @@ function ensureOptions(text: string): string {
   return `${body}\n\n<<<OPTIONS:["Tell me more","Check my address","Talk to an advisor"]>>>`;
 }
 
-export async function runOcctaBrain(
-  messages: CompanionMessage[],
-  options: {
-    signedIn: boolean;
-    customerName?: string | null;
-    knowledgeContext?: string;
-    searchKnowledge: (query: string) => Promise<string>;
-  },
-): Promise<string | null> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) return null;
-
+function contextFor(options: BrainOptions): string {
   const context: string[] = [
     options.signedIn
       ? `The customer is signed in to their OCCTA account${options.customerName ? ` (first name: ${options.customerName})` : ""}. Account lookups run automatically for them.`
       : `The customer is NOT signed in.`,
+    options.account
+      ? options.account.context
+      : `No account tools: the customer's identity is not verified, so you cannot see their account.`,
+    `Today is ${new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" })}.`,
   ];
   if (options.knowledgeContext?.trim()) {
     context.push(`Matching OCCTA published content for this question:\n${options.knowledgeContext.trim()}`);
   }
+  return context.join("\n\n");
+}
+
+async function runWithClaude(
+  apiKey: string,
+  messages: CompanionMessage[],
+  options: BrainOptions,
+): Promise<string | null> {
+  // The widget history opens with Ollie's welcome; the API conversation must start with the customer.
+  const history = trimHistory(messages);
+  while (history.length && history[0].role !== "user") history.shift();
+  if (!history.length) return null;
+
+  const client = new Anthropic({ apiKey, timeout: 45_000, maxRetries: 1 });
+  const conversation: Anthropic.Beta.BetaMessageParam[] = history.map((message) => ({
+    role: message.role as "user" | "assistant",
+    content: message.content,
+  }));
+
+  const tools = [...CLAUDE_TOOLS, ...(options.account?.tools ?? [])];
+
+  try {
+    for (let step = 0; step < 6; step += 1) {
+      const response = await client.beta.messages.create({
+        model: CLAUDE_MODEL,
+        max_tokens: 8000,
+        // Account work (bills, tickets) deserves more care than general chat.
+        output_config: { effort: options.account ? "medium" : "low" },
+        ...(SUPPORTS_FALLBACKS ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
+        system: [
+          { type: "text", text: OCCTA_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+          { type: "text", text: contextFor(options) },
+        ],
+        tools,
+        messages: conversation,
+      });
+
+      if (response.stop_reason === "refusal") return null;
+
+      if (response.stop_reason === "tool_use") {
+        conversation.push({ role: "assistant", content: response.content });
+        const results: Anthropic.Beta.BetaToolResultBlockParam[] = [];
+        for (const block of response.content) {
+          if (block.type !== "tool_use") continue;
+          const input = (block.input ?? {}) as Record<string, unknown>;
+          if (block.name === "search_occta_knowledge") {
+            const query = typeof input.query === "string" ? input.query : "";
+            const result = query ? await options.searchKnowledge(query) : "";
+            results.push({
+              type: "tool_result",
+              tool_use_id: block.id,
+              content: result || "No matching published OCCTA content found.",
+            });
+            continue;
+          }
+          try {
+            const result = options.account
+              ? await options.account.run(block.name, input)
+              : JSON.stringify({ error: "not_verified" });
+            results.push({ type: "tool_result", tool_use_id: block.id, content: result });
+          } catch (toolError) {
+            console.error("ollie account tool failed", block.name, (toolError as Error).message);
+            results.push({
+              type: "tool_result",
+              tool_use_id: block.id,
+              content: "That part of the account could not be loaded just now. Do not guess the data.",
+              is_error: true,
+            });
+          }
+        }
+        conversation.push({ role: "user", content: results });
+        continue;
+      }
+
+      const text = response.content
+        .flatMap((block) => (block.type === "text" ? [block.text] : []))
+        .join("\n")
+        .trim();
+      return text ? ensureOptions(text.replaceAll("https://occta.co.uk", BASE_URL)) : null;
+    }
+  } catch (error) {
+    if (error instanceof Anthropic.APIError) {
+      console.error("occta brain claude error", error.status, error.message.slice(0, 500));
+      return null;
+    }
+    throw error;
+  }
+
+  return null;
+}
+
+export async function runOcctaBrain(
+  messages: CompanionMessage[],
+  options: BrainOptions,
+): Promise<string | null> {
+  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (anthropicKey) return runWithClaude(anthropicKey, messages, options);
+
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) return null;
 
   const conversation: ChatMessage[] = [
     { role: "system", content: OCCTA_SYSTEM_PROMPT },
-    { role: "system", content: context.join("\n\n") },
+    // The legacy gateway path has no account tools; index.ts answers account questions itself.
+    { role: "system", content: contextFor({ ...options, account: undefined }) },
     ...trimHistory(messages),
   ];
 

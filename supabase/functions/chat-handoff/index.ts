@@ -200,11 +200,16 @@ Deno.serve(async (req) => {
         .gt("created_at", since)
         .order("created_at", { ascending: true })
         .limit(50);
+      // System notes about the customer's own actions are for advisors, not the customer.
+      const visible = (rows ?? []).filter((row) =>
+        row.role === "admin" || !/^Customer\b/.test(String(row.content ?? ""))
+      );
       return jsonOut(200, {
         ok: true,
+        conversationId: convId,
         status: conv.status,
         assigned: Boolean(conv.assigned_admin_id),
-        messages: rows ?? [],
+        messages: visible,
         serverTime: new Date().toISOString(),
       });
     }

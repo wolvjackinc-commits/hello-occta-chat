@@ -364,6 +364,61 @@
 .admin-dense table tbody tr:hover { background-color: hsl(var(--muted) / 0.4); }
 .admin-dense [data-slot="card"] { padding-top: 0.75rem; padding-bottom: 0.75rem; }
 
+/* -----------------------------------------------------------
+   Homepage hero stage (dark poster).
+   ----------------------------------------------------------- */
+/* The global .text-primary outline uses --foreground, which is white inside
+   the dark hero; yellow-on-black needs no outline. */
+.hero-stage .text-primary { text-shadow: none; }
+/* State panels (loader, address list, plans) match the idle ticket's yellow offset. */
+.hero-stage .card-brutal,
+.hero-stage .card-brutal:hover {
+  border-width: 3px;
+  background-color: hsl(0 0% 8%);
+  box-shadow: 12px 12px 0 0 hsl(var(--primary));
+  transform: none;
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(hsl(0 0% 100% / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(0 0% 100% / 0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 70% 35%, #000 20%, transparent 80%);
+  mask-image: radial-gradient(ellipse 75% 65% at 70% 35%, #000 20%, transparent 80%);
+}
+
+.hero-strike { position: relative; white-space: nowrap; }
+.hero-strike::after {
+  content: "";
+  position: absolute;
+  left: -0.05em;
+  right: -0.05em;
+  top: 52%;
+  height: 0.13em;
+  background: hsl(var(--primary));
+  transform: translateY(-50%) rotate(-4deg) scaleX(0);
+  transform-origin: left center;
+  animation: hero-strike 650ms cubic-bezier(0.65, 0, 0.35, 1) 500ms forwards;
+}
+@keyframes hero-strike {
+  to { transform: translateY(-50%) rotate(-4deg) scaleX(1); }
+}
+
+.hero-bar {
+  transform-origin: bottom;
+  animation: hero-bar 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes hero-bar {
+  from { transform: scaleY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-strike::after { animation: none; transform: translateY(-50%) rotate(-4deg); }
+  .hero-bar { animation: none; }
+  .hero-pulse { animation: none; }
+}
+
 /* OCCTA wait system: quiet skeletons, then one editorial fact for long waits. */
 @keyframes occta-skeleton-shimmer {
   0% { transform: translateX(-110%); }

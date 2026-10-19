@@ -40,6 +40,7 @@ const STATUS_STYLES: Record<string, string> = {
   awaiting_human: "bg-yellow-100 text-yellow-900 border-yellow-500",
   live: "bg-emerald-100 text-emerald-900 border-emerald-600",
   bot: "bg-muted text-foreground border-border",
+  ai: "bg-muted text-foreground border-border",
   resolved: "bg-slate-100 text-slate-700 border-slate-400",
   closed: "bg-slate-100 text-slate-500 border-slate-300",
 };
@@ -165,7 +166,8 @@ export default function AdminLiveChat() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${activeId}` },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as ChatRow]);
+          const row = payload.new as ChatRow;
+          setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
         },
       )
       .subscribe();
@@ -224,9 +226,17 @@ export default function AdminLiveChat() {
     if (!adminId) return;
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `user/${adminId}/${activeId}/${Date.now()}-${safe}`;
-    const { error } = await supabase.storage.from("chat-attachments").upload(path, file, { upsert: false });
+    const { error } = await supabase.storage.from("chat-attachments").upload(path, file, { upsert: false, contentType: file.type || undefined });
     if (error) {
       toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    // Customers can only open attachments that passed the safety scan.
+    const { data: scan, error: scanError } = await supabase.functions.invoke("chat-attachment-scan", {
+      body: { path, conversation_id: activeId, content_type: file.type || undefined },
+    });
+    if (scanError || scan?.status !== "clean") {
+      toast({ title: "Attachment blocked", description: "The file did not pass the attachment safety check.", variant: "destructive" });
       return;
     }
     await sendReply(path, file.name);
@@ -341,8 +351,8 @@ export default function AdminLiveChat() {
 
   const sendGuide = async (g: { title: string; slug: string; summary: string | null }) => {
     if (!activeId) return;
-    const origin = window.location.origin;
-    const url = `${origin}/help/${g.slug}`;
+    // The customer chat strips non-OCCTA links, so always send the public domain.
+    const url = `https://www.occta.co.uk/help/${g.slug}`;
     const content = `📘 Here's a guide that should help:\n\n**${g.title}**\n${g.summary || ""}\n\n${url}`;
     const { data: userRes } = await supabase.auth.getUser();
     const adminId = userRes.user?.id ?? null;
@@ -483,7 +493,7 @@ export default function AdminLiveChat() {
                     >
                       <div className="text-[10px] uppercase tracking-widest opacity-70 mb-1">
                         {m.role === "assistant" || m.role === "bot"
-                          ? "IRA (bot)"
+                          ? "Ollie (bot)"
                           : m.role === "user" || m.role === "customer"
                             ? "Customer"
                             : m.role}{" "}

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, ChevronRight, Check, Info } from "lucide-react";
+import { Search, Loader2, ChevronRight, Check, Info, ArrowRight } from "lucide-react";
 import { useAvailability, getAddressLabel, getShortAddress } from "@/contexts/AvailabilityContext";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import { prewarmAssignedJourney } from "@/lib/journey2/route";
@@ -61,47 +61,98 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
   };
 
   return (
-    <div className={`w-full ${isHero ? "max-w-[700px]" : "max-w-xl"}`}>
-      {/* Label */}
-      <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">
-        {showInlineResult ? "Checked for" : "Enter your postcode"}
-      </p>
+    <div className={`w-full ${isHero ? "max-w-[640px]" : "max-w-xl"}`}>
+      {isHero ? (
+        <>
+          <label
+            htmlFor="hero-postcode"
+            className="block font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60 mb-3"
+          >
+            {showInlineResult ? "Checked for" : "Check your address"}
+          </label>
 
-      {/* Input row */}
-      <div className={`flex gap-4 ${isHero ? "flex-col sm:flex-row" : "flex-col sm:flex-row"}`}>
-        <div className={`relative ${isHero ? "sm:w-[68%] w-full" : "flex-1"}`}>
-          <Input
-            type="text"
-            aria-label="Postcode"
-            placeholder="E.g. HD3 3WU"
-            value={localPostcode}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            className="h-14 pl-12 text-lg font-display uppercase tracking-wider border-4 border-foreground focus:ring-0 focus:border-foreground bg-background placeholder:text-muted-foreground"
-          />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-        </div>
-        <Button
-          onClick={handleCheck}
-          disabled={!localPostcode || isLoading}
-          size="lg"
-          className={`h-14 font-display uppercase tracking-wider ${isHero ? "sm:w-[32%] w-full" : ""}`}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              Checking…
-            </>
-          ) : showInlineResult ? (
-            "Check Again"
-          ) : (
-            "Check Availability"
-          )}
-        </Button>
-      </div>
+          {/* One joined command bar: input and action share a single frame */}
+          <div className="group flex flex-col sm:flex-row border-[3px] border-white bg-white/[0.04] transition-colors focus-within:border-primary">
+            <div className="relative flex-1">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50 transition-colors group-focus-within:text-primary" />
+              <Input
+                id="hero-postcode"
+                type="text"
+                aria-label="Postcode"
+                placeholder="Your postcode"
+                autoComplete="postal-code"
+                value={localPostcode}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                className="h-16 pl-14 pr-4 text-2xl md:text-2xl font-display uppercase tracking-[0.12em] border-0 bg-transparent text-white placeholder:text-white/35 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </div>
+            <Button
+              onClick={handleCheck}
+              disabled={!localPostcode || isLoading}
+              size="lg"
+              className="h-16 px-7 text-lg border-0 border-t-[3px] sm:border-t-0 sm:border-l-[3px] border-white shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0 hover:bg-white active:translate-x-0 active:translate-y-0 disabled:opacity-100"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Checking…
+                </>
+              ) : showInlineResult ? (
+                "Check again"
+              ) : (
+                <>
+                  Check availability
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Label */}
+          <p className="font-display text-xs uppercase tracking-wider text-muted-foreground mb-2">
+            {showInlineResult ? "Checked for" : "Enter your postcode"}
+          </p>
 
-      <p className="text-[11px] leading-relaxed text-muted-foreground mt-2">
-        <strong>Availability note:</strong> Plans shown are current OCCTA offers and may not all be available at every address. Final availability, speed and network technology are subject to network and supplier validation. If your selected plan cannot be supplied, we’ll email you with available options before provisioning and won’t change your plan or price without your agreement. If confirmed, your order proceeds as submitted.
+          {/* Input row */}
+          <div className="flex gap-4 flex-col sm:flex-row">
+            <div className="relative flex-1">
+              <Input
+                type="text"
+                aria-label="Postcode"
+                placeholder="E.g. HD3 3WU"
+                value={localPostcode}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                className="h-14 pl-12 text-lg font-display uppercase tracking-wider border-4 border-foreground focus:ring-0 focus:border-foreground bg-background placeholder:text-muted-foreground"
+              />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            </div>
+            <Button
+              onClick={handleCheck}
+              disabled={!localPostcode || isLoading}
+              size="lg"
+              className="h-14 font-display uppercase tracking-wider"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Checking…
+                </>
+              ) : showInlineResult ? (
+                "Check Again"
+              ) : (
+                "Check Availability"
+              )}
+            </Button>
+          </div>
+        </>
+      )}
+
+      <p className={isHero ? "text-[11px] leading-relaxed text-white/45 mt-3" : "text-[11px] leading-relaxed text-muted-foreground mt-2"}>
+        <strong className={isHero ? "text-white/70" : undefined}>Availability note:</strong> Plans shown are current OCCTA offers and may not all be available at every address. Final availability, speed and network technology are subject to network and supplier validation. If your selected plan cannot be supplied, we’ll email you with available options before provisioning and won’t change your plan or price without your agreement. If confirmed, your order proceeds as submitted.
       </p>
 
       {showManualAddressLookup && (
@@ -209,7 +260,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
 
       {/* Helper line */}
       {!showInlineAddresses && !showInlineResult && !showFallback && (
-        <p className="text-xs text-muted-foreground mt-3 flex flex-wrap gap-x-3 gap-y-1">
+        <p className={`text-xs mt-3 flex flex-wrap gap-x-3 gap-y-1 ${isHero ? "text-white/70" : "text-muted-foreground"}`}>
           <span>✓ Takes 10 seconds</span>
           <span>✓ No commitment</span>
           <span>✓ Final service availability validated before provisioning</span>

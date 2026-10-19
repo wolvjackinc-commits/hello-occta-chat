@@ -2,13 +2,16 @@
 // scope: the model never chooses whose data it reads, and any id it passes
 // (invoice number, ticket id) is re-checked against that customer.
 //
-// Access levels:
-// - signed in: full self-service (billing, payments, tickets, ticket replies)
-// - account number + date of birth: orders, services and a masked overview only
+// Access: once index.ts has verified the customer (signed in, or account number
+// + date of birth), they get full self-service: billing, payments, tickets and
+// ticket replies. Signing in is optional. Verified customers without an online
+// account record (guest orders only) can see orders and services.
 // Internal staff notes (profiles.admin_notes, ticket_internal_notes) are never exposed.
 
 import type Anthropic from "npm:@anthropic-ai/sdk@0.130.0";
 import { maskAccountNumber, maskEmail, maskPhone } from "../_shared/companionCore.ts";
+import { checkRateLimit } from "../_shared/quoteHelpers.ts";
+import { createSupportTicket } from "../_shared/supportTickets.ts";
 
 export type CustomerScope = {
   userId: string | null;
@@ -33,7 +36,6 @@ export type AccountToolkit = {
 
 type ToolDeps = {
   loadOrders: (serviceClient: any, scope: CustomerScope) => Promise<OrdersResult>;
-  authorization: string | null;
 };
 
 const TICKET_CATEGORIES = ["broadband", "billing", "payments", "mobile", "landline", "account", "complaint", "other"];
@@ -58,7 +60,7 @@ const VERIFIED_TOOLS = [
   tool("list_services", "The customer's services: plan, status, monthly price, activation, contract and minimum term, notice period, next billing date and service address."),
 ];
 
-const SIGNED_IN_TOOLS = [
+const FULL_ACCESS_TOOLS = [
   tool("list_invoices", "The customer's 12 most recent invoices with status, dates, billing period, totals, amount paid and credits."),
   tool(
     "get_invoice",
@@ -122,7 +124,8 @@ async function findTicket(serviceClient: any, userId: string, ticketId: string) 
 }
 
 export function createAccountToolkit(serviceClient: any, scope: CustomerScope, deps: ToolDeps): AccountToolkit {
-  const fullAccess = scope.signedIn && Boolean(scope.userId);
+  // Any verified customer with an online account record gets full self-service.
+  const fullAccess = Boolean(scope.userId);
   const userId = scope.userId;
 
   const run = async (name: string, input: Record<string, unknown>): Promise<string> => {
@@ -130,7 +133,7 @@ export function createAccountToolkit(serviceClient: any, scope: CustomerScope, d
       case "get_account_overview": {
         if (!fullAccess) {
           return json({
-            access: "verified by account number and date of birth",
+            access: "verified, no online customer record",
             name: scope.fullName,
             account_number: maskAccountNumber(scope.accountNumber),
             email: maskEmail(scope.email),
@@ -143,7 +146,7 @@ export function createAccountToolkit(serviceClient: any, scope: CustomerScope, d
           .eq("id", userId)
           .maybeSingle();
         if (error) throw new Error("account_unavailable");
-        return json({ access: "signed in", ...(profile ?? {}) });
+        return json({ access: scope.signedIn ? "signed in" : "verified by account number and date of birth", ...(profile ?? {}) });
       }
 
       case "list_orders": {
@@ -183,7 +186,7 @@ export function createAccountToolkit(serviceClient: any, scope: CustomerScope, d
     }
 
     if (!fullAccess || !userId) {
-      return json({ error: "sign_in_required", message: "Billing, payments and tickets need the customer to sign in at /auth." });
+      return json({ error: "no_online_account_record", message: "This account has no online customer record, so bills and tickets are not visible here." });
     }
 
     switch (name) {
@@ -298,29 +301,31 @@ export function createAccountToolkit(serviceClient: any, scope: CustomerScope, d
       }
 
       case "create_support_ticket": {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL");
-        const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-        if (!supabaseUrl || !anonKey || !deps.authorization) throw new Error("ticket_service_unavailable");
-        const category = TICKET_CATEGORIES.includes(String(input.category)) ? String(input.category) : "other";
-        const response = await fetch(`${supabaseUrl}/functions/v1/submit-support-ticket`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: anonKey, Authorization: deps.authorization },
-          body: JSON.stringify({
-            name: scope.fullName ?? "",
-            subject: String(input.subject ?? "").slice(0, 100),
-            message: String(input.description ?? "").slice(0, 2000),
-            category,
-            priority: String(input.priority ?? "normal"),
-          }),
-        });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || !payload?.ticket_id) {
-          return json({ error: payload?.error ?? "ticket_create_failed" });
+        const subject = String(input.subject ?? "").trim().slice(0, 100);
+        const message = String(input.description ?? "").trim().slice(0, 2000);
+        if (subject.length < 5 || message.length < 20) return json({ error: "subject_or_description_too_short" });
+        if (/\b\d{13,19}\b/.test(message) || /cvv|sort code|account number\s*[:=]/i.test(message)) {
+          return json({ error: "sensitive_data_not_allowed" });
         }
+        if (!(await checkRateLimit(userId, "ollie_create_ticket", 5, 60))) return json({ error: "rate_limited" });
+        const category = TICKET_CATEGORIES.includes(String(input.category)) ? String(input.category) : "other";
+        const priority = ["low", "normal", "high", "urgent"].includes(String(input.priority)) ? String(input.priority) : "normal";
+        // The customer is already verified by index.ts; the acknowledgement goes to the email on file.
+        const result = await createSupportTicket(serviceClient, {
+          userId,
+          registeredEmail: scope.email?.trim().toLowerCase() || null,
+          name: scope.fullName ?? "",
+          subject,
+          message,
+          category,
+          priority,
+          channel: "ollie",
+        });
+        if (!result.ok) return json({ error: result.error });
         return json({
           created: true,
-          reference: ticketRef(payload.ticket_id),
-          acknowledgement_email_sent: Boolean(payload.customer_email_sent),
+          reference: ticketRef(result.ticketId),
+          acknowledgement_email_sent: result.customerEmailSent,
         });
       }
 
@@ -356,11 +361,12 @@ export function createAccountToolkit(serviceClient: any, scope: CustomerScope, d
     return json({ error: "unknown_tool" });
   };
 
+  const how = scope.signedIn ? "signed in" : "account number and date of birth";
   return {
-    tools: fullAccess ? [...VERIFIED_TOOLS, ...SIGNED_IN_TOOLS] : VERIFIED_TOOLS,
+    tools: fullAccess ? [...VERIFIED_TOOLS, ...FULL_ACCESS_TOOLS] : VERIFIED_TOOLS,
     context: fullAccess
-      ? `Identity verified: signed in${scope.fullName ? ` as ${scope.fullName}` : ""}. You have full self-service access to this customer's account through your account tools. Look things up before answering; never guess account facts.`
-      : `Identity verified by account number and date of birth${scope.fullName ? ` (${scope.fullName})` : ""}. You can see orders, services and a masked overview. Invoices, payments and tickets need the customer to sign in at /auth.`,
+      ? `Identity verified (${how})${scope.fullName ? `: ${scope.fullName}` : ""}. You have full self-service access to this customer's account through your account tools. Look things up before answering; never guess account facts.`
+      : `Identity verified (${how})${scope.fullName ? `: ${scope.fullName}` : ""}, but this account has no online customer record yet, so you can only see orders and services. For bills or tickets, raise it with the team via an advisor transfer.`,
     run,
   };
 }

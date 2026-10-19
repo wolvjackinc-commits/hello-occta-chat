@@ -61,21 +61,26 @@ Help guides: /help/getting-started · /help/router-setup · /help/own-router-set
 
 # Account questions
 - If account tools are available, the customer is already verified: use the tools and answer from the data. The verification note in your context says what you can see.
-- If there are no account tools, ask the customer to sign in at /auth (best: unlocks bills, payments and tickets) or give their OCCTA account number (starts with OCC) plus the account holder's date of birth. If a verification attempt has already failed, don't ask for the same details again; offer sign-in instead.
+- If there are no account tools, ask for their OCCTA account number (starts with OCC) and the account holder's date of birth; that unlocks everything, bills and tickets included. Signing in at /auth is an optional alternative, never a requirement. If a verification attempt has already failed, don't ask for the same details again; offer sign-in instead.
 - Never guess account facts. Only discuss the verified customer's own account. Never reveal internal systems, staff notes or anything about other customers.
 - Explaining a bill: walk through the line items, pro-rata periods, VAT, payments and credits so the total makes sense.
 
 # Things you can do yourself
 - Explain bills, payments, Direct Debit status, orders, activation dates, services, contract terms and ticket history.
 - Point to self-service: pay an invoice at /pay-invoice, set up Direct Debit at /dd/setup, account details at /dashboard.
-- Raise a support ticket or add a reply to an existing ticket (signed-in customers), after the customer agrees. Then give them the reference and what happens next.
+- Raise a support ticket or add a reply to an existing ticket for any verified customer, after they agree. Then give them the reference and what happens next.
+- Never claim you've done something (raised a ticket, passed on a message) unless a tool confirmed it.
 - Troubleshoot properly: router lights, all devices or one, wired vs Wi-Fi, when it started. One concrete step at a time, building on each answer.
 
 # Things only the OCCTA team can do
 Refunds, credits, cancellations, plan or price changes, changing bank details, engineer visits, number transfers and contract documents. For these, don't send the customer away: gather everything the team needs, then (with their agreement) raise a ticket with a complete summary so nobody has to ask them again, and tell them the reference and expected next step. For a complaint, be empathetic, raise it as a complaint ticket and mention the [Complaints Code](/legal/complaints-code).
 
 # Human advisors
-Your aim is that the customer never needs one. Still, offer a human advisor straight away if they ask, if they are vulnerable or distressed, or if a safety or urgent service issue needs it. Say you'll pass the conversation across so they don't start again.
+Your aim is that the customer never needs one, because you sort it first time.
+- The first time someone asks for a person, offer to sort it yourself in one friendly line and ask what it's about, e.g. "Happy to fetch a human, but I can probably fix this faster myself. What's going on?" Include "Yes, connect me" as an option.
+- If they ask again, insist, or decline your help, call transfer_to_human_advisor straight away. Never argue or refuse.
+- Transfer immediately, without the offer, if they are distressed or vulnerable, or for an urgent safety issue (for example telecare or a medical need affected by an outage).
+- For staff-only actions (refunds, cancellations and so on), a fully summarised ticket is usually better than a transfer; explain that and offer both.
 
 # Output format (mandatory)
 End EVERY reply with a single last line of 2-4 short suggested replies, exactly:
@@ -128,6 +133,27 @@ const CLAUDE_TOOLS: Anthropic.Beta.BetaToolUnion[] = [
     },
     strict: true,
   },
+  {
+    name: "transfer_to_human_advisor",
+    description:
+      "Pass this chat to a human OCCTA advisor, who joins this same conversation with the full history. Use it when the customer insists on a person after you've offered to help, when they are distressed or vulnerable, or for an urgent safety or service issue you cannot resolve. In the same reply, tell the customer an advisor will pick it up here.",
+    input_schema: {
+      type: "object",
+      properties: {
+        reason: {
+          type: "string",
+          enum: ["customer_insisted", "vulnerable_or_distressed", "urgent_issue", "needs_staff_now"],
+        },
+        summary: {
+          type: "string",
+          description: "Two or three sentences for the advisor: the issue, what you've checked or tried, and what the customer wants.",
+        },
+      },
+      required: ["reason", "summary"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
 ];
 
 // Server-side refusal fallbacks are only offered on these model lines.
@@ -139,6 +165,13 @@ type BrainOptions = {
   knowledgeContext?: string;
   searchKnowledge: (query: string) => Promise<string>;
   account?: AccountToolkit;
+  justVerified?: boolean;
+};
+
+export type BrainReply = {
+  content: string;
+  engine: "claude" | "lovable";
+  handoff?: { reason: string; summary: string };
 };
 
 // Dates of birth, account numbers and payment details never reach the model.
@@ -158,11 +191,14 @@ function ensureOptions(text: string): string {
 function contextFor(options: BrainOptions): string {
   const context: string[] = [
     options.signedIn
-      ? `The customer is signed in to their OCCTA account${options.customerName ? ` (first name: ${options.customerName})` : ""}. Account lookups run automatically for them.`
-      : `The customer is NOT signed in.`,
+      ? `The customer is signed in to their OCCTA account${options.customerName ? ` (first name: ${options.customerName})` : ""}.`
+      : `The customer is not signed in. Signing in is optional; verifying by account number and date of birth gives the same access.`,
     options.account
       ? options.account.context
       : `No account tools: the customer's identity is not verified, so you cannot see their account.`,
+    ...(options.justVerified
+      ? [`The customer has just passed identity verification. Answer the account question they asked before verifying, using your tools.`]
+      : []),
     `Today is ${new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" })}.`,
   ];
   if (options.knowledgeContext?.trim()) {
@@ -175,7 +211,7 @@ async function runWithClaude(
   apiKey: string,
   messages: CompanionMessage[],
   options: BrainOptions,
-): Promise<string | null> {
+): Promise<BrainReply | null> {
   // The widget history opens with Ollie's welcome; the API conversation must start with the customer.
   const history = trimHistory(messages);
   while (history.length && history[0].role !== "user") history.shift();
@@ -188,6 +224,7 @@ async function runWithClaude(
   }));
 
   const tools = [...CLAUDE_TOOLS, ...(options.account?.tools ?? [])];
+  let handoff: BrainReply["handoff"];
 
   try {
     for (let step = 0; step < 6; step += 1) {
@@ -223,6 +260,18 @@ async function runWithClaude(
             });
             continue;
           }
+          if (block.name === "transfer_to_human_advisor") {
+            handoff = {
+              reason: String(input.reason ?? "customer_insisted").slice(0, 60),
+              summary: redactSensitiveText(String(input.summary ?? "")).slice(0, 1500),
+            };
+            results.push({
+              type: "tool_result",
+              tool_use_id: block.id,
+              content: "Transfer queued. An OCCTA advisor will join this chat with the full history. Tell the customer briefly, and that you can keep helping while they wait.",
+            });
+            continue;
+          }
           try {
             const result = options.account
               ? await options.account.run(block.name, input)
@@ -246,7 +295,8 @@ async function runWithClaude(
         .flatMap((block) => (block.type === "text" ? [block.text] : []))
         .join("\n")
         .trim();
-      return text ? ensureOptions(text.replaceAll("https://occta.co.uk", BASE_URL)) : null;
+      if (!text) return null;
+      return { content: ensureOptions(text.replaceAll("https://occta.co.uk", BASE_URL)), engine: "claude", handoff };
     }
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
@@ -262,7 +312,7 @@ async function runWithClaude(
 export async function runOcctaBrain(
   messages: CompanionMessage[],
   options: BrainOptions,
-): Promise<string | null> {
+): Promise<BrainReply | null> {
   const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (anthropicKey) return runWithClaude(anthropicKey, messages, options);
 
@@ -327,7 +377,7 @@ export async function runOcctaBrain(
 
     const content = String(choice.content ?? "").trim();
     if (!content) return null;
-    return ensureOptions(content.replaceAll("https://occta.co.uk", BASE_URL));
+    return { content: ensureOptions(content.replaceAll("https://occta.co.uk", BASE_URL)), engine: "lovable" };
   }
 
   return null;

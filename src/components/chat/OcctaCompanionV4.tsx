@@ -123,10 +123,18 @@ const signedQuick = ["Check my latest invoice", "Track my order", "Check my serv
 function getSessionId(): string {
   const existing = sessionStorage.getItem(SESSION_KEY);
   if (existing) return existing;
+  return newSessionId();
+}
+
+function newSessionId(): string {
   const created = crypto.randomUUID();
   sessionStorage.setItem(SESSION_KEY, created);
   return created;
 }
+
+type AdvisorRow = { id?: string; role?: string; content?: string | null; attachments?: unknown; created_at?: string };
+
+const HANDOFF_STATUSES = new Set(["awaiting_human", "live"]);
 
 function redact(value: string): string {
   return redactSensitiveText(value)
@@ -261,7 +269,7 @@ function captureVerification(raw: string, memory: VerificationMemory): void {
 }
 
 function appendGuides(answer: string, query: string, intent: string): string {
-  if (/occta\.co\.uk\/help\//i.test(answer)) return answer;
+  if (/\]\((?:https:\/\/(?:www\.)?occta\.co\.uk)?\/help\//i.test(answer)) return answer;
   const guides = guideLinksMarkdown(query, intent, 2);
   if (!guides) return answer;
   return `${answer.trim()}\n\n**Relevant OCCTA guide${guides.includes("\n") ? "s" : ""}:**\n${guides}`;
@@ -357,7 +365,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
   const [userId, setUserId] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string | undefined>();
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [humanLive, setHumanLive] = useState(false);
+  const [handoffStatus, setHandoffStatus] = useState<string | null>(null);
   const [ticketOpen, setTicketOpen] = useState(false);
   const [ticketPrefill, setTicketPrefill] = useState<TicketPrefill>();
   const [awaitingSecureEmail, setAwaitingSecureEmail] = useState(false);
@@ -366,7 +374,10 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const pollSince = useRef<string | null>(null);
 
+  const humanLive = handoffStatus === "live";
+  const awaitingHuman = handoffStatus === "awaiting_human";
   const signedIn = Boolean(userId);
   const allowHuman = humanLive || customerDissatisfied(messages);
   const quickActions = signedIn ? signedQuick : guestQuick;
@@ -402,17 +413,50 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
     if (open) window.setTimeout(() => inputRef.current?.focus(), 60);
   }, [open]);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const { data } = await supabase.from("chat_conversations").select("id,status").eq("session_id", sessionId.current).maybeSingle();
-      if (!cancelled && data?.id) {
-        setConversationId(data.id);
-        setHumanLive(data.status === "live");
-      }
-    })();
-    return () => { cancelled = true; };
+  // Advisor replies arrive by polling chat-handoff. Realtime cannot be used here:
+  // guest chats are only readable with an x-session-id header, which Realtime never sends.
+  const pollAdvisor = useCallback(async () => {
+    const { data, error } = await supabase.functions.invoke("chat-handoff", {
+      body: { sessionId: sessionId.current, mode: "poll", since: pollSince.current ?? undefined },
+    });
+    if (error || !data?.ok) return;
+    if (typeof data.conversationId === "string") setConversationId(data.conversationId);
+    setHandoffStatus(typeof data.status === "string" ? data.status : null);
+    const rows: AdvisorRow[] = Array.isArray(data.messages) ? data.messages : [];
+    if (!rows.length) return;
+    const latest = rows[rows.length - 1]?.created_at;
+    if (latest) pollSince.current = latest;
+    setMessages((current) => {
+      const seen = new Set(current.map((message) => message.id));
+      const fresh: Message[] = rows
+        .filter((row) => row.id && !seen.has(String(row.id)))
+        .map((row) => ({
+          id: String(row.id),
+          role: "assistant",
+          agent: "human",
+          createdAt: row.created_at || new Date().toISOString(),
+          content: occtaOnlyLinks(row.content || "Your OCCTA advisor sent an attachment."),
+          attachments: safeAttachments(row.attachments),
+        }));
+      return fresh.length ? [...current, ...fresh] : current;
+    });
   }, []);
+
+  // After a reload, pick the handoff back up if this chat already has one.
+  useEffect(() => {
+    const history = loadHistory();
+    if (history.length <= 1) return;
+    pollSince.current = new Date(Date.parse(history[0].createdAt) - 5 * 60_000).toISOString();
+    void pollAdvisor();
+  }, [pollAdvisor]);
+
+  useEffect(() => {
+    if (!handoffStatus || !HANDOFF_STATUSES.has(handoffStatus)) return;
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void pollAdvisor();
+    }, handoffStatus === "live" ? 4000 : 8000);
+    return () => window.clearInterval(timer);
+  }, [handoffStatus, pollAdvisor]);
 
   const logConversation = useCallback(async (turns: { role: string; content: string }[], reason?: string) => {
     try {
@@ -445,35 +489,16 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
 
   const requestHuman = useCallback(async () => {
     const recent = messages.slice(-16).map((m) => ({ role: m.role, content: m.content }));
+    pollSince.current = new Date(Date.now() - 60_000).toISOString();
     const id = await logConversation(recent, "requested_human");
+    if (id) setHandoffStatus("awaiting_human");
     setMessages((current) => [...current, {
       id: crypto.randomUUID(), role: "assistant", agent: "ollie", createdAt: new Date().toISOString(),
       content: id
-        ? `I’ve passed this conversation to an **OCCTA advisor** with the recent context, so you should not need to repeat yourself. Keep this chat open for their reply. For an urgent service-impacting issue, call ${CONTACT_PHONE_DISPLAY}.`
+        ? `I’ve passed this conversation to an **OCCTA advisor** with the recent context, so you should not need to repeat yourself. Keep this chat open: their reply will appear here, and I can keep helping while you wait. For an urgent service-impacting issue, call ${CONTACT_PHONE_DISPLAY}.`
         : `I couldn’t confirm the live handoff just now. For urgent help call ${CONTACT_PHONE_DISPLAY}.`,
     }]);
   }, [logConversation, messages]);
-
-  useEffect(() => {
-    if (!conversationId) return;
-    const channel = supabase
-      .channel(`ollie-v4-${conversationId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
-        const row = payload.new as { role?: string; content?: string; attachments?: unknown; created_at?: string };
-        if (row.role !== "admin") return;
-        setHumanLive(true);
-        setMessages((current) => [...current, {
-          id: crypto.randomUUID(), role: "assistant", agent: "human", createdAt: row.created_at || new Date().toISOString(),
-          content: occtaOnlyLinks(row.content || "Your OCCTA advisor sent an attachment."), attachments: safeAttachments(row.attachments),
-        }]);
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "chat_conversations", filter: `id=eq.${conversationId}` }, (payload) => {
-        const status = (payload.new as { status?: string }).status;
-        setHumanLive(status === "live");
-      })
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [conversationId]);
 
   const openTicket = useCallback(() => {
     if (!signedIn) {
@@ -642,8 +667,9 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
 
       if (!answer) answer = internalFallback(raw, expandedIntent || "general");
 
+      // The AI picks its own links; extra guide lists only help the scripted fallbacks.
       const topicForGuides = expandedIntent || (accountIntent ? "account" : intent);
-      if (!accountIntent) answer = appendGuides(answer, raw, topicForGuides);
+      if (!accountIntent && intent !== "ai") answer = appendGuides(answer, raw, topicForGuides);
       answer = occtaOnlyLinks(answer);
 
       setMessages((current) => [
@@ -668,7 +694,9 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
     verificationMemory.current = {};
     setAwaitingSecureEmail(false);
     setConversationId(null);
-    setHumanLive(false);
+    setHandoffStatus(null);
+    pollSince.current = null;
+    sessionId.current = newSessionId();
     setMessages([welcome(signedIn, firstName)]);
   }, [firstName, signedIn]);
 
@@ -717,7 +745,13 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
 
       {messages.length <= 1 && <div className="flex flex-wrap gap-2 border-t-2 border-foreground/20 px-4 py-3">{quickActions.map((action) => <button key={action} type="button" onClick={() => void send(action)} className="border-2 border-foreground bg-background px-3 py-2 text-xs font-display uppercase hover:bg-secondary">{action}</button>)}</div>}
 
-      {allowHuman && !humanLive && messages.length > 2 && (
+      {awaitingHuman && (
+        <div className="flex items-center gap-2 border-t-2 border-foreground/15 bg-secondary/40 px-3 py-2 text-xs">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />Waiting for an OCCTA advisor. Their reply will appear here.
+        </div>
+      )}
+
+      {allowHuman && !humanLive && !awaitingHuman && messages.length > 2 && (
         <div className="border-t-2 border-foreground/15 px-3 py-2 text-xs">
           <button type="button" onClick={() => void requestHuman()} className="inline-flex items-center gap-2 font-medium underline underline-offset-4"><UserRound className="h-3.5 w-3.5" />Still not satisfied? Speak to an OCCTA advisor</button>
         </div>

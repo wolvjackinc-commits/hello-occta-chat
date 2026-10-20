@@ -134,7 +134,7 @@ Deno.serve(perfServe("journey-start-date", async (req) => {
     },
     _source_module: "journey",
     _quote_id: journey.quote_id,
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   await supabase.from("quote_events").insert({
     quote_id: journey.quote_id,
@@ -142,7 +142,7 @@ Deno.serve(perfServe("journey-start-date", async (req) => {
     title: `Preferred start date selected (${i.preferred_start_date})`,
     details: { preferred_start_date: i.preferred_start_date, earliest_selectable_start_date: earliest },
     actor_type: "public",
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   return jsonResponse({
     ok: true,

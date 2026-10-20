@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
     _customer_id: userId,
     _source_module: "customers",
     _severity: "info",
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   // 8. Welcome email with set-password link + signed CS PDF + DD guarantee
   try {

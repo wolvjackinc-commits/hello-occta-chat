@@ -63,7 +63,7 @@ function bytesToB64(b: Uint8Array): string {
   let s = ""; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
   return btoa(s);
 }
-function hexToBytes(hex: string): Uint8Array {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
   const clean = hex.replace(/[^0-9a-f]/gi, "");
   const out = new Uint8Array(clean.length / 2);
   for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.substr(i * 2, 2), 16);
@@ -81,7 +81,7 @@ async function encryptBankDetails(plain: Record<string, unknown>) {
     rawKey = rawKey.slice(1, -1);
   }
   const noWs = rawKey.replace(/\s+/g, "");
-  let keyBytes: Uint8Array | null = null;
+  let keyBytes: Uint8Array<ArrayBuffer> | null = null;
 
   if (/^[0-9a-f]{64}$/i.test(noWs)) {
     keyBytes = hexToBytes(noWs);
@@ -279,7 +279,7 @@ Deno.serve(perfServe("journey-payment-method", async (req) => {
     },
     _source_module: "journey",
     _quote_id: journey.quote_id,
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   // Suppression is only honoured for trusted service-role callers, so a public
   // caller can never silence their own Direct Debit confirmation.

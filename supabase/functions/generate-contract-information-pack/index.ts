@@ -150,7 +150,9 @@ Deno.serve(async (req) => {
 
   // ── Render PDF ────────────────────────────────────────────────────────────
   const pdfBytes = renderPackPdf({ components, segment, quote: q as any });
-  const pdfSha = await sha256Hex(new Uint8Array(pdfBytes));
+  // sha256Hex takes a string, so this hashes the comma-joined byte list, not
+  // the raw PDF bytes. Kept as-is: stored pdf_sha256 values depend on it.
+  const pdfSha = await sha256Hex(String(new Uint8Array(pdfBytes)));
   const storagePath = `contract-information-packs/${quoteId}/v${nextVersion}-${pdfSha.slice(0, 12)}.pdf`;
 
   const up = await supabase.storage.from("contract-documents").upload(storagePath, new Uint8Array(pdfBytes), {

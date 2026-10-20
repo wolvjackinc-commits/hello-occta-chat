@@ -11,7 +11,7 @@ const APP_ORIGIN = Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk
 
 /** Fire-and-forget SIM lifecycle email via existing send-email pipeline. */
 async function sendSimEmail(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any>>,
   order: Record<string, unknown>,
   template: string,
   extra: Record<string, unknown> = {},

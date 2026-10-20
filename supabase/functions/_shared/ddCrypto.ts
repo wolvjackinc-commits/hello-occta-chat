@@ -6,7 +6,7 @@
  * mandate request is handed to the existing Direct Debit service. The key
  * parsing mirrors `journey-payment-method` so the same secret works for both.
  */
-function hexToBytes(hex: string): Uint8Array {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
   const clean = hex.replace(/[^0-9a-f]/gi, "");
   const out = new Uint8Array(clean.length / 2);
   for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.substr(i * 2, 2), 16);
@@ -14,7 +14,7 @@ function hexToBytes(hex: string): Uint8Array {
 }
 const toHex = (b: Uint8Array) => Array.from(b).map((x) => x.toString(16).padStart(2, "0")).join("");
 
-async function keyBytes(): Promise<Uint8Array> {
+async function keyBytes(): Promise<Uint8Array<ArrayBuffer>> {
   let rawKey = (Deno.env.get("DD_FIELD_ENC_KEY") ?? "").trim();
   if (!rawKey) throw new Error("DD_FIELD_ENC_KEY_missing");
   if ((rawKey.startsWith('"') && rawKey.endsWith('"')) || (rawKey.startsWith("'") && rawKey.endsWith("'"))) {

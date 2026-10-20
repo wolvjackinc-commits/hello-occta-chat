@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       _details: { journey_id: journey.id, attempted_user: authedUser.id, ip, ua },
       _source_module: "journey",
       _user_id: authedUser.id,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
     return jsonResponse({ error: "linked_to_other_account" }, 403);
   }
 
@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
     .update({ customer_id: authedUser.id })
     .ilike("admin_notes", `%journey:${journey.id}%`)
     .is("customer_id", null)
-    .then(() => {}).catch(() => {});
+    .then(() => {}, () => {});
 
   await supabase.rpc("log_event", {
     _actor_type: "customer",
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     _details: { journey_id: journey.id, user_id: authedUser.id },
     _source_module: "journey",
     _user_id: authedUser.id,
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   return jsonResponse({ ok: true, linked_at: claim.data.linked_at });
 });

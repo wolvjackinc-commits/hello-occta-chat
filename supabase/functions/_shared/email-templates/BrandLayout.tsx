@@ -67,7 +67,8 @@ export const BrandLayout: React.FC<BrandLayoutProps> = ({
 
         {/* Body */}
         <Section style={content}>
-          <Heading style={h1}>{heading}</Heading>
+          {/* Heading's types resolve a different csstype copy than @types/react 18. */}
+          <Heading style={h1 as React.ComponentProps<typeof Heading>['style']}>{heading}</Heading>
           {intro ? <Text style={text}>{intro}</Text> : null}
           {bodyChildren}
 

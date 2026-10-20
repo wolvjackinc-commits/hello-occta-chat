@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
     _title: `Cooling-off cancellation${orderNumber ? ` — ${orderNumber}` : ""}`,
     _details: { journey_id: journey.id, reason_code, order_number: orderNumber },
     _source_module: "journey",
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   return jsonResponse({ ok: true, cancelled_at: flip.data.cancelled_at });
 });

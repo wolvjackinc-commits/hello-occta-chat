@@ -139,13 +139,16 @@ Deno.serve(async (req) => {
       push("failed", `${(res as any).status}: ${raw.slice(0, 200)}`);
     }
 
-    await supabase.rpc("log_event", {
+    // FIXME: query builders have no .catch, so this optional call is a no-op and
+    // the builder is never awaited — the log_event RPC is never actually sent.
+    // Left unchanged here (type-only cleanup); fixing it starts writing audit rows.
+    await (supabase.rpc("log_event", {
       _actor_type: "admin", _event_type: "quote_bulk_resend",
       _title: `Bulk quote resend ${q.quote_number} → ${(res as any).ok ? "sent" : "failed"}`,
       _details: { quote_id: q.id, email, expired_extended: expired, margin_overridden: needsOverride },
       _quote_id: q.id, _source_module: "quote",
       _severity: (res as any).ok ? "info" : "warn",
-    }).catch?.(() => {});
+    }) as unknown as { catch?: (onrejected: () => void) => unknown }).catch?.(() => {});
   }
 
   console.log(`[bulk-resend] sent=${sent} failed=${failed} skipped=${skipped} overridden=${overridden}`);

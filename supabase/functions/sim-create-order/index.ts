@@ -17,7 +17,7 @@ async function sha256Hex(s: string) {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function hexToBytes(hex: string): Uint8Array {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
   const clean = hex.replace(/[^0-9a-f]/gi, "");
   const out = new Uint8Array(clean.length / 2);
   for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.substr(i * 2, 2), 16);
@@ -31,7 +31,7 @@ async function encryptBankDetails(plain: Record<string, unknown>) {
   if (!rawKey) throw new Error("DD_FIELD_ENC_KEY_missing");
   if ((rawKey.startsWith('"') && rawKey.endsWith('"')) || (rawKey.startsWith("'") && rawKey.endsWith("'"))) rawKey = rawKey.slice(1, -1);
   const noWs = rawKey.replace(/\s+/g, "");
-  let keyBytes: Uint8Array | null = null;
+  let keyBytes: Uint8Array<ArrayBuffer> | null = null;
   if (/^[0-9a-f]{64}$/i.test(noWs)) keyBytes = hexToBytes(noWs);
   if (!keyBytes) {
     const hexOnly = noWs.replace(/^0x/i, "").replace(/[^0-9a-f]/gi, "");

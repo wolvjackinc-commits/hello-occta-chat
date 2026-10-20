@@ -17,7 +17,7 @@ function renderGuarantee(opts: {
   providerName: string | null;
   serviceUserNumber: string | null;
   guaranteeText: string;
-}): Uint8Array {
+}): Uint8Array<ArrayBuffer> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const width = doc.internal.pageSize.getWidth();
   const margin = 48;

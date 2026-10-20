@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   itemiseInvoice,
@@ -32,9 +33,8 @@ Deno.serve(async (req) => {
 
   const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   const cronSecret = req.headers.get("x-cron-secret");
-  const expectedCron = Deno.env.get("CRON_JOB_SECRET");
   let actorUserId: string | null = null;
-  if (cronSecret && expectedCron && cronSecret === expectedCron) {
+  if (await isCronSecret(cronSecret)) {
     actorUserId = null; // admin task via cron secret
   } else if (jwt) {
     const { data: userData, error: userErr } = await supabase.auth.getUser(jwt);

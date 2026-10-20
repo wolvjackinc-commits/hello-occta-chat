@@ -1,3 +1,4 @@
+import { isCronSecret } from "../_shared/cronSecret.ts";
 // SIM-only recurring monthly billing worker.
 //
 // - Iterates sim_orders where status='live' AND next_billing_date <= today.
@@ -28,8 +29,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const cronSecret = req.headers.get("x-cron-secret");
-  const expected = Deno.env.get("CRON_JOB_SECRET");
-  if (!expected || cronSecret !== expected) {
+  if (!(await isCronSecret(cronSecret))) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

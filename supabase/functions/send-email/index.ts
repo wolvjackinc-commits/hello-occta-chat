@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
@@ -88,7 +89,7 @@ const getStandardFooter = (options?: { showUnsubscribe?: boolean; accentColor?: 
             Need help? Call <strong style="color: #fff;">0800 260 6626</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
           </p>
           <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
-            Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm
+            Lines open Monday–Friday, 8am–6pm
           </p>
         </div>
         
@@ -690,7 +691,7 @@ const getPaymentLinkHtml = (data: Record<string, unknown>) => {
         
         <p class="text" style="text-align: center; color: #666; font-size: 13px;">
           Prefer to pay by phone? Call us on <strong>0800 260 6626</strong><br>
-          Lines open Monday–Friday 9am–6pm
+          Lines open Monday–Friday, 8am–6pm
         </p>
       </div>
       
@@ -1216,8 +1217,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Check for internal secret authentication (for programmatic/cron calls)
       const internalSecret = req.headers.get("x-internal-secret");
-      const cronJobSecret = Deno.env.get("CRON_JOB_SECRET");
-      const isInternalAuth = internalSecret && cronJobSecret && internalSecret === cronJobSecret;
+      const isInternalAuth = await isCronSecret(internalSecret);
 
       if (isServiceRoleAuth || isInternalAuth) {
 

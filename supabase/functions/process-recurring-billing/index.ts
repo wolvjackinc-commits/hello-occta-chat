@@ -1,3 +1,4 @@
+import { isCronSecret } from "../_shared/cronSecret.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { perfServe } from "../_shared/perfLog.ts";
 import {
@@ -36,8 +37,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const cronSecret = req.headers.get("x-cron-secret");
-  const expected = Deno.env.get("CRON_JOB_SECRET");
-  if (!expected || cronSecret !== expected) {
+  if (!(await isCronSecret(cronSecret))) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

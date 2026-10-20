@@ -3,6 +3,7 @@ import {
   type CompanionMessage,
 } from "../../../supabase/functions/_shared/companionCore.ts";
 import { resolvePublicConversationReply } from "./ollieConversation";
+import { companyConfig } from "@/lib/companyConfig";
 
 const BASE_URL = "https://www.occta.co.uk";
 
@@ -85,7 +86,7 @@ function companyReply(): string {
 
 function supportHoursReply(): string {
   return withOptions(
-    `I don't want to invent opening hours. The reliable contact routes are kept on OCCTA's support/contact pages.\n\n[**Open OCCTA Support →**](${BASE_URL}/support)\n\nIf you tell me what you need help with, I'll try to resolve it here first rather than sending you away.`,
+    `Our phone lines are open ${companyConfig.supportHours.phone} (UK time), closed weekends and bank holidays. Call free on ${companyConfig.phone.display}, or see every way to reach us on the support page.\n\n[**Open OCCTA Support →**](${BASE_URL}/support)\n\nIf you tell me what you need help with, I'll try to resolve it here first rather than sending you away.`,
     ["Open Help Centre", "Tell you my problem"],
   );
 }

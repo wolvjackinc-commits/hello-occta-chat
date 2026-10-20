@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 /**
  * Journey 2 — abandoned-checkout recovery worker (3 stages).
  *
@@ -70,8 +71,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
   const provided = req.headers.get("x-cron-secret");
-  const expected = Deno.env.get("CRON_JOB_SECRET") || Deno.env.get("CRON_SECRET");
-  if (!expected || !provided || provided !== expected) {
+  if (!(await isCronSecret(provided))) {
     return jsonResponse({ error: "forbidden" }, 403);
   }
 

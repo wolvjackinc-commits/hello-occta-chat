@@ -128,7 +128,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       const invoiceType = "monthly";
       const { data: existingInv } = await supabase
         .from("invoices")
-        .select("id, invoice_number, status, pdf_storage_key, email_sent_at")
+        .select("id, invoice_number, status, total, issue_date, due_date, pdf_storage_key, email_sent_at")
         .eq("service_id", svc.id)
         .eq("billing_period_start", periodStart)
         .eq("billing_period_end", periodEnd)
@@ -175,7 +175,19 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       const totals = itemiseInvoice(rawLines, vatMode, 20);
       const total = totals.total_gross_minor / 100;
 
+      // An invoice already issued for this period keeps its own amounts; never
+      // email totals that differ from what was stored on it.
+      if (existingInv && !existingInv.email_sent_at &&
+          Math.round(Number(existingInv.total) * 100) !== totals.total_gross_minor) {
+        throw new Error(`existing_invoice_total_mismatch:${existingInv.invoice_number}`);
+      }
+
       let invoiceId = existingInv?.id ?? null;
+      // Issue/due dates are fixed when the invoice is created; a retry on a
+      // later day must render the same dates on the PDF and email.
+      const issueDate: string = existingInv?.issue_date ?? today;
+      const dueDateIso: string = existingInv?.due_date ??
+        new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
       let invoiceNumber = existingInv?.invoice_number ?? null;
       let invoiceStatus = existingInv?.status ?? null;
       let pdfStorageKey: string | null = existingInv?.pdf_storage_key ?? null;
@@ -184,7 +196,6 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       if (!invoiceId) {
         const { data: invNumData } = await supabase.rpc("generate_invoice_number");
         invoiceNumber = invNumData || `INV-${Date.now().toString(36).toUpperCase()}`;
-        const dueDate = new Date(); dueDate.setDate(dueDate.getDate() + 14);
         invoiceStatus = "draft";
 
         const { data: inv, error: invErr } = await supabase.from("invoices").insert({
@@ -193,8 +204,8 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           order_id: svc.order_id,
           invoice_number: invoiceNumber,
           status: invoiceStatus,
-          issue_date: today,
-          due_date: dueDate.toISOString().slice(0, 10),
+          issue_date: issueDate,
+          due_date: dueDateIso,
           billing_period_start: periodStart,
           billing_period_end: periodEnd,
           invoice_type: invoiceType,
@@ -224,8 +235,8 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       if (!pdfStorageKey) {
         const pdfBytes = buildInvoicePdfBytes({
           invoiceNumber: invoiceNumber!, accountNumber, customerName,
-          issueDate: today,
-          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+          issueDate,
+          dueDate: dueDateIso,
           periodStart, periodEndExclusive: periodEnd, totals,
           isFirstInvoice: false,
         });
@@ -248,7 +259,8 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       if (pmMethod === "invoice_link") {
         const { data: existingPR } = await supabase
           .from("payment_requests").select("id, provider_checkout_url")
-          .eq("invoice_id", invoiceId).maybeSingle();
+          .eq("invoice_id", invoiceId).neq("status", "cancelled")
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
         if (existingPR) {
           payNowUrl = (existingPR as any).provider_checkout_url ?? null;
         } else {
@@ -274,13 +286,15 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
         }
       } else if (pmMethod === "direct_debit") {
         const { data: activeMandate } = await supabase.from("dd_mandates")
-          .select("id, status").eq("user_id", svc.user_id).eq("status", "active").maybeSingle();
+          .select("id, status").eq("user_id", svc.user_id).eq("status", "active").limit(1).maybeSingle();
         if (activeMandate && ddStatus === "active") {
           await supabase.from("invoices").update({
             status: "awaiting_dd_collection",
           }).eq("id", invoiceId);
           invoiceStatus = "awaiting_dd_collection";
-        } else {
+        } else if (!existingInv) {
+          // Once per invoice — retries (e.g. after an email failure) must not
+          // open a fresh task every day.
           await supabase.from("admin_tasks").insert({
             title: `DD not active for monthly invoice ${invoiceNumber}`,
             description: `Customer's Direct Debit mandate is not active. Monthly invoice ${invoiceNumber} has been generated but no collection has been attempted. Issue a Worldpay fallback link if appropriate.`,
@@ -305,7 +319,6 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
             .from("invoice-pdfs").createSignedUrl(pdfStorageKey, 60 * 60 * 24 * 14);
           pdfSignedUrl = signed?.signedUrl ?? null;
         }
-        const dueDateStr = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
         const emailLines = totals.lines.map((l) => ({
           description: l.period_label ? `${l.description} (${l.period_label})` : l.description,
           qty: 1,
@@ -323,8 +336,8 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
               account_number: accountNumber,
               invoice_number: invoiceNumber,
               invoice_id: invoiceId,
-              issue_date: fmtDate(today),
-              due_date: fmtDate(dueDateStr),
+              issue_date: fmtDate(issueDate),
+              due_date: fmtDate(dueDateIso),
               billing_period: fmtInclusivePeriod(periodStart, periodEnd),
               lines: emailLines,
               subtotal: totals.subtotal_net_minor / 100,

@@ -343,31 +343,7 @@ export async function sha256Hex(input: string | Uint8Array): Promise<string> {
     .join("");
 }
 
-/**
- * Roll `_from` forward to the next occurrence of `_anchor_day`, clamped
- * to the last valid day of the target month (mirrors the SQL helper).
- * Handles billing days 29/30/31 in short months.
- */
-export function nextAnchorBillingDate(fromIso: string, anchorDay: number): string {
-  const from = new Date(fromIso + "T00:00:00Z");
-  const year = from.getUTCFullYear();
-  const month = from.getUTCMonth();
-  const day = Math.min(Math.max(anchorDay || 1, 1), 31);
-
-  function lastDay(y: number, m: number): number {
-    return new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-  }
-
-  let cy = year;
-  let cm = month;
-  let candidate = new Date(Date.UTC(cy, cm, Math.min(day, lastDay(cy, cm))));
-  if (candidate < from) {
-    cm += 1;
-    if (cm > 11) { cm = 0; cy += 1; }
-    candidate = new Date(Date.UTC(cy, cm, Math.min(day, lastDay(cy, cm))));
-  }
-  return candidate.toISOString().slice(0, 10);
-}
+export { nextAnchorBillingDate, vatRatePercent } from "./billingCycle.ts";
 
 /**
  * Convert a pounds decimal (numeric) to integer pence. Returns 0 for null/NaN.

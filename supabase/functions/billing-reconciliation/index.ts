@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
         .eq("service_id", (s as any).id)
         .order("issue_date", { ascending: true }),
       svc.from("payment_requests").select("id, invoice_id, status").eq("user_id", (s as any).user_id),
-      svc.from("first_billing_jobs").select("id, status, blocker, invoice_id").eq("service_id", (s as any).id),
+      svc.from("first_billing_jobs").select("id, status, blocker, invoice_id, amount_minor, vat_mode").eq("service_id", (s as any).id),
     ]);
     const invoices = invRes.data ?? [];
     const firstInvoice = invoices[0] ?? null;
@@ -139,7 +139,16 @@ Deno.serve(async (req) => {
           applied = "next_billing_date_backfilled";
           autoFixed++;
         } else if (classification === "missing_first_invoice") {
-          const blockedJob = firstBillingJobs.find((j: any) => j.status !== "done" && j.blocker);
+          // Only release jobs blocked for missing inputs that the job snapshot
+          // now actually has. Never release a deliberate hold (manual_hold,
+          // test_account_archived) or a job that would bill a £0 service line.
+          const blockedJob = firstBillingJobs.find((j: any) =>
+            j.status !== "done" &&
+            j.blocker &&
+            String(j.blocker).split(",").every((b: string) => b === "missing_monthly_price" || b === "missing_vat_mode") &&
+            Number(j.amount_minor) > 0 &&
+            !!j.vat_mode
+          );
           if (blockedJob) {
             await svc.from("first_billing_jobs").update({ blocker: null, status: "pending", next_attempt_at: new Date().toISOString() }).eq("id", blockedJob.id);
             applied = "first_billing_job_unblocked";

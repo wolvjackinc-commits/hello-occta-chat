@@ -11,7 +11,12 @@
 // - Sends one invoice email through the existing send-email pipeline.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { nextAnchorBillingDate, sha256Hex } from "../_shared/billingHelpers.ts";
+import {
+  nextAnchorBillingDate,
+  sha256Hex,
+  toDisplayPeriodEndIso,
+  vatRatePercent,
+} from "../_shared/billingHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -126,7 +131,7 @@ Deno.serve(async (req) => {
           subtotal: netMajor,
           total: totalMajor,
           vat_enabled: false,
-          vat_rate: Number(o.vat_rate_snapshot ?? 0.2),
+          vat_rate: vatRatePercent(o.vat_rate_snapshot),
           vat_total: 0,
           notes: `SIM monthly — ${o.plan_name_snapshot} (${periodStart} → ${periodEnd})${
             creditUsed > 0 ? ` — credit applied £${(creditUsed / 100).toFixed(2)}` : ""
@@ -192,6 +197,7 @@ Deno.serve(async (req) => {
           .select("id, status")
           .eq("user_id", o.customer_id)
           .eq("status", "active")
+          .limit(1)
           .maybeSingle();
         if (mandate) {
           await supabase
@@ -213,7 +219,7 @@ Deno.serve(async (req) => {
 
       // Send one invoice email (idempotency via existing header pattern).
       if (dueMinor > 0) {
-        await supabase.functions.invoke("send-email", {
+        const sendResp = await supabase.functions.invoke("send-email", {
           body: {
             type: "invoice_sent",
             to: o.email,
@@ -226,7 +232,7 @@ Deno.serve(async (req) => {
               invoice_id: inv.id,
               issue_date: today,
               due_date: dueDate.toISOString().slice(0, 10),
-              billing_period: `${periodStart} to ${periodEnd}`,
+              billing_period: `${periodStart} to ${toDisplayPeriodEndIso(periodEnd)}`,
               lines: [{
                 description: `${o.plan_name_snapshot} — monthly service`,
                 qty: 1,
@@ -241,10 +247,21 @@ Deno.serve(async (req) => {
           },
           headers: { "idempotency-key": `sim-monthly:${inv.id}` } as any,
         });
-        await supabase
-          .from("invoices")
-          .update({ status: o.payment_method === "direct_debit" ? "awaiting_dd_collection" : "sent", email_sent_at: new Date().toISOString() })
-          .eq("id", inv.id);
+        if (sendResp.error) {
+          // Leave email_sent_at empty so the invoice shows as not yet emailed.
+          await supabase
+            .from("invoices")
+            .update({
+              status: o.payment_method === "direct_debit" ? "awaiting_dd_collection" : "ready_to_send",
+              email_error: String(sendResp.error.message || "send_failed").slice(0, 1000),
+            })
+            .eq("id", inv.id);
+        } else {
+          await supabase
+            .from("invoices")
+            .update({ status: o.payment_method === "direct_debit" ? "awaiting_dd_collection" : "sent", email_sent_at: new Date().toISOString() })
+            .eq("id", inv.id);
+        }
       }
 
       await supabase

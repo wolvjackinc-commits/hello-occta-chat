@@ -581,7 +581,8 @@ const BroadbandInner = () => {
       </section>
 
       {/* Add Digital Voice (Home Phone over broadband) */}
-      <section className="py-16 bg-background">
+      {/* overflow-x-clip: the right card's x: 20 reveal offset would otherwise widen the page until it animates in */}
+      <section className="py-16 bg-background overflow-x-clip">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <motion.div

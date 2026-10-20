@@ -661,6 +661,13 @@ serve(async (req) => {
           .update({ status: "paid", updated_at: nowIso })
           .eq("id", pr.invoice_id)
           .neq("status", "paid");
+        // Retire the invoice's other open links so it can't be paid twice.
+        await supabase
+          .from("payment_requests")
+          .update({ status: "cancelled" })
+          .eq("invoice_id", pr.invoice_id)
+          .neq("id", pr.id)
+          .in("status", ["sent", "opened"]);
         await supabase.from("payment_attempts").insert({
           user_id: pr.user_id,
           invoice_id: pr.invoice_id,

@@ -101,8 +101,8 @@ export default function ReceiptView({ mode }: { mode: Mode }) {
                 <div className="font-display text-5xl mt-2">£{Number(data.amount).toFixed(2)}</div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => generatePaymentReceiptPdf(data)} className="border-4 border-foreground">
-                  <Printer className="w-4 h-4 mr-2" /> Print / save PDF
+                <Button onClick={() => { void generatePaymentReceiptPdf(data); }} className="border-4 border-foreground">
+                  <Download className="w-4 h-4 mr-2" /> Download PDF receipt
                 </Button>
                 <Link to="/dashboard"><Button variant="outline" className="border-4 border-foreground">Back to dashboard</Button></Link>
               </div>

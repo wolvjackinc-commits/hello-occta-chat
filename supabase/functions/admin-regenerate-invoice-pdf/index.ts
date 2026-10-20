@@ -2,11 +2,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   itemiseInvoice,
   buildInvoicePdfBytes,
+  customerPdfExtras,
+  DD_MANDATE_PDF_COLUMNS,
+  mandatePdfExtras,
   poundsToMinor,
+  PROFILE_PDF_COLUMNS,
   sha256Hex,
+  vatRatePercent,
   type RawLine,
   type VatMode,
 } from "../_shared/billingHelpers.ts";
+import { splitStoredDescription } from "../_shared/billingDocument.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,13 +54,29 @@ Deno.serve(async (req) => {
 
   const { data: inv, error: invErr } = await supabase
     .from("invoices")
-    .select("id, user_id, invoice_number, issue_date, due_date, billing_period_start, billing_period_end, subtotal, vat_total, total, vat_rate, invoice_type, pdf_storage_key")
+    .select("id, user_id, invoice_number, issue_date, due_date, billing_period_start, billing_period_end, subtotal, vat_total, total, vat_rate, invoice_type, pdf_storage_key, status, notes, service_id, order_id")
     .eq("id", invoiceId).maybeSingle();
   if (invErr || !inv) return json({ error: "invoice_not_found" }, 404);
   if (!inv.pdf_storage_key) return json({ error: "no_storage_key" }, 400);
 
   const { data: profile } = await supabase
-    .from("profiles").select("full_name, account_number").eq("id", inv.user_id).maybeSingle();
+    .from("profiles").select(PROFILE_PDF_COLUMNS).eq("id", inv.user_id).maybeSingle();
+
+  const { data: svc } = inv.service_id
+    ? await supabase.from("services").select("plan_name, service_address").eq("id", inv.service_id).maybeSingle()
+    : { data: null };
+  const { data: ord } = inv.order_id
+    ? await supabase.from("orders").select("payment_method_id").eq("id", inv.order_id).maybeSingle()
+    : { data: null };
+  const { data: pm } = ord?.payment_method_id
+    ? await supabase.from("payment_methods").select("method, dd_setup_status").eq("id", ord.payment_method_id).maybeSingle()
+    : { data: null };
+  const { data: mandate } = pm?.method === "direct_debit"
+    ? await supabase.from("dd_mandates").select(DD_MANDATE_PDF_COLUMNS)
+      .eq("user_id", inv.user_id).eq("status", "active").limit(1).maybeSingle()
+    : { data: null };
+  const { data: receipts } = await supabase.from("receipts").select("amount").eq("invoice_id", invoiceId);
+  const amountPaidMinor = (receipts ?? []).reduce((s: number, r: any) => s + poundsToMinor(r.amount), 0);
 
   const { data: lines } = await supabase
     .from("invoice_lines")
@@ -62,13 +84,13 @@ Deno.serve(async (req) => {
     .eq("invoice_id", invoiceId)
     .order("created_at", { ascending: true });
 
-  const rawLines: RawLine[] = (lines ?? []).map((l: any) => ({
-    description: String(l.description),
-    amount_minor: poundsToMinor(l.line_total),
-  }));
+  const rawLines: RawLine[] = (lines ?? []).map((l: any) => {
+    const { description, period } = splitStoredDescription(String(l.description));
+    return { description, period_label: period, amount_minor: poundsToMinor(l.line_total) };
+  });
 
   // Rebuild totals from stored gross line amounts (VAT inclusive) — same math, same numbers.
-  const totals = itemiseInvoice(rawLines, "inclusive" as VatMode, Number(inv.vat_rate ?? 20));
+  const totals = itemiseInvoice(rawLines, "inclusive" as VatMode, vatRatePercent(inv.vat_rate ?? 20));
 
   // Sanity: preserve the stored total exactly. Refuse to overwrite if any drift.
   const storedTotalMinor = poundsToMinor(inv.total);
@@ -90,6 +112,14 @@ Deno.serve(async (req) => {
     periodEndExclusive: inv.billing_period_end as string,
     totals,
     isFirstInvoice: inv.invoice_type === "first_pro_rata",
+    ...customerPdfExtras(profile),
+    planName: svc?.plan_name ?? null,
+    serviceAddress: svc?.service_address ?? null,
+    status: inv.status,
+    notes: null,
+    amountPaidMinor,
+    paymentMethod: pm?.method ?? null,
+    ...mandatePdfExtras(mandate, !!mandate && pm?.dd_setup_status === "active"),
   });
 
   const { error: upErr } = await supabase.storage

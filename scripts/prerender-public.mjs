@@ -220,6 +220,22 @@ async function renderPath(browser, pathname) {
   }
 }
 
+// A route can time out on a slow CI runner while the live articles load, so
+// retry before failing the build. A route that never renders still fails it.
+const RENDER_ATTEMPTS = 3;
+
+async function renderWithRetry(browser, pathname) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await renderPath(browser, pathname);
+    } catch (error) {
+      if (attempt >= RENDER_ATTEMPTS) throw error;
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`retry ${pathname} (attempt ${attempt} of ${RENDER_ATTEMPTS} failed: ${message})`);
+    }
+  }
+}
+
 async function render404(browser) {
   const page = await browser.newPage();
   try {
@@ -325,7 +341,7 @@ try {
     try {
       const paths = await collectPaths();
       console.log(`Prerendering ${paths.length} public routes`);
-      const failures = await pool(paths, 2, (pathname) => renderPath(browser, pathname));
+      const failures = await pool(paths, 2, (pathname) => renderWithRetry(browser, pathname));
       await render404(browser);
       writeManifest({ skipped: false, count: paths.length - failures.length, paths });
       if (failures.length) {

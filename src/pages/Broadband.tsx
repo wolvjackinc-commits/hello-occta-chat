@@ -625,7 +625,7 @@ const BroadbandInner = () => {
               </div>
               <h3 className="font-display text-2xl mb-2">Digital Voice Add-on</h3>
               <div className="flex items-baseline gap-1 mb-4">
-                <span className="font-display text-4xl text-primary">£4.99</span>
+                <span className="font-display text-4xl text-primary">£{getFromPrices().landline}</span>
                 <span className="text-foreground/70 text-sm font-medium">/mo</span>
               </div>
               <p className="text-muted-foreground text-sm">Digital calling through your broadband connection. Equipment compatibility and number porting are confirmed as part of setup.</p>

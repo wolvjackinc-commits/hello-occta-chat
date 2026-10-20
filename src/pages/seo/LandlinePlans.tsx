@@ -1,15 +1,16 @@
 import SeoContentLayout from "@/components/seo/SeoContentLayout";
 import LeadCaptureWidget from "@/components/marketing/LeadCaptureWidget";
+import { getFromPrices } from "@/lib/pricing/engine";
 
 export default function LandlinePlansSeo() {
   return (
     <>
       <SeoContentLayout
         title="Digital home phone plans — keep your landline number | OCCTA"
-        metaDescription="Digital Home Phone from £5/mo. Keep your existing landline number, unlimited UK calls, works over fibre. Ready for the 2027 PSTN switch-off."
+        metaDescription={`Digital Home Phone from £${getFromPrices().landline}/mo. Keep your existing landline number, unlimited UK calls, works over fibre. Ready for the 2027 PSTN switch-off.`}
         canonical="/landline-plans"
         h1="Landline plans that survive the PSTN switch-off"
-        shortAnswer="OCCTA Digital Home Phone runs over your broadband for £5/mo. You keep your existing landline number, get unlimited UK landline and mobile calls, and stay covered when Openreach switches off the copper network by 2027."
+        shortAnswer={`OCCTA Digital Home Phone runs over your broadband from £${getFromPrices().landline}/mo. You keep your existing landline number, get unlimited UK landline and mobile calls, and stay covered when Openreach switches off the copper network by 2027.`}
         intro="The traditional landline is going away. Digital Home Phone (VoIP) replaces it — same handset, same number, same behaviour, just plugged into the router instead of the wall."
         sections={[
           { heading: "How it works", body: "Your existing corded or DECT phone plugs into the OCCTA router's green port. Anyone can still ring your number. You can still call 999. No new handset needed." },
